@@ -25,21 +25,15 @@ from neuromation.api.abc import (
     ImageProgressSave,
 )
 
-from .config import _Config
+from .config import Config
 from .core import IllegalArgumentError, _Core
 from .images import (
     _DummyProgress,
     _raise_on_error_chunk,
     _try_parse_image_progress_step,
 )
-from .parser import Volume
-from .parsing_utils import (
-    LocalImage,
-    RemoteImage,
-    _as_repo_str,
-    _ImageNameParser,
-    _is_in_neuro_registry,
-)
+from .parser import Parser, Volume
+from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
 from .utils import NoPublicConstructor, asynccontextmanager
 
 
@@ -50,11 +44,11 @@ INVALID_IMAGE_NAME = "INVALID-IMAGE-NAME"
 class Resources:
     memory_mb: int
     cpu: float
-    gpu: Optional[int]
-    gpu_model: Optional[str]
-    shm: Optional[bool]
-    tpu_type: Optional[str]
-    tpu_software_version: Optional[str]
+    gpu: Optional[int] = None
+    gpu_model: Optional[str] = None
+    shm: bool = True
+    tpu_type: Optional[str] = None
+    tpu_software_version: Optional[str] = None
 
 
 class JobStatus(str, enum.Enum):
@@ -108,6 +102,7 @@ class JobStatusHistory:
 class JobDescription:
     id: str
     owner: str
+    cluster_name: str
     status: JobStatus
     history: JobStatusHistory
     container: Container
@@ -129,9 +124,10 @@ class JobTelemetry:
 
 
 class Jobs(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: _Config) -> None:
+    def __init__(self, core: _Core, config: Config, parse: Parser) -> None:
         self._core = core
         self._config = config
+        self._parse = parse
 
     async def run(
         self,
@@ -141,8 +137,9 @@ class Jobs(metaclass=NoPublicConstructor):
         description: Optional[str] = None,
         is_preemptible: bool = False,
         schedule_timeout: Optional[float] = None,
+        life_span: Optional[float] = None,
     ) -> JobDescription:
-        url = URL("jobs")
+        url = self._config.api_url / "jobs"
         payload: Dict[str, Any] = {
             "container": _container_to_api(container),
             "is_preemptible": is_preemptible,
@@ -153,12 +150,13 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-        async with self._core.request("POST", url, json=payload) as resp:
+        if life_span is not None:
+            payload["max_run_time_minutes"] = int(life_span // 60)
+        payload["cluster_name"] = self._config.cluster_name
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, json=payload, auth=auth) as resp:
             res = await resp.json()
-            return _job_description_from_api(res, parser)
+            return _job_description_from_api(res, self._parse)
 
     async def list(
         self,
@@ -167,7 +165,7 @@ class Jobs(metaclass=NoPublicConstructor):
         name: str = "",
         owners: Iterable[str] = (),
     ) -> List[JobDescription]:
-        url = URL(f"jobs")
+        url = self._config.api_url / "jobs"
         params: MultiDict[str] = MultiDict()
         for status in statuses:
             params.add("status", status.value)
@@ -175,43 +173,47 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("name", name)
         for owner in owners:
             params.add("owner", owner)
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-        async with self._core.request("GET", url, params=params) as resp:
+        params["cluster_name"] = self._config.cluster_name
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, params=params, auth=auth) as resp:
             ret = await resp.json()
-            return [_job_description_from_api(j, parser) for j in ret["jobs"]]
+            return [_job_description_from_api(j, self._parse) for j in ret["jobs"]]
 
     async def kill(self, id: str) -> None:
-        url = URL(f"jobs/{id}")
-        async with self._core.request("DELETE", url):
+        url = self._config.api_url / "jobs" / id
+        auth = await self._config._api_auth()
+        async with self._core.request("DELETE", url, auth=auth):
             # an error is raised for status >= 400
             return None  # 201 status code
 
     async def monitor(self, id: str) -> AsyncIterator[bytes]:
-        url = self._config.cluster_config.monitoring_url / f"{id}/log"
+        url = self._config.monitoring_url / id / "log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)
+        auth = await self._config._api_auth()
         async with self._core.request(
-            "GET", url, headers={"Accept-Encoding": "identity"}, timeout=timeout
+            "GET",
+            url,
+            headers={"Accept-Encoding": "identity"},
+            timeout=timeout,
+            auth=auth,
         ) as resp:
             async for data in resp.content.iter_any():
                 yield data
 
     async def status(self, id: str) -> JobDescription:
-        url = URL(f"jobs/{id}")
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-        async with self._core.request("GET", url) as resp:
+        url = self._config.api_url / "jobs" / id
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
             ret = await resp.json()
-            return _job_description_from_api(ret, parser)
+            return _job_description_from_api(ret, self._parse)
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
-        url = self._config.cluster_config.monitoring_url / f"{id}/top"
+        url = self._config.monitoring_url / id / "top"
+        auth = await self._config._api_auth()
         try:
             received_any = False
-            async for resp in self._core.ws_connect(url):
-                yield _job_telemetry_from_api(resp.json())  # type: ignore
+            async for resp in self._core.ws_connect(url, auth=auth):
+                yield _job_telemetry_from_api(resp.json())
                 received_any = True
             if not received_any:
                 raise ValueError(f"Job is not running. Job Id = {id}")
@@ -232,19 +234,21 @@ class Jobs(metaclass=NoPublicConstructor):
         if progress is None:
             progress = _DummyProgress()
 
-        image_parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-
         payload = {"container": {"image": _as_repo_str(image)}}
-        url = self._config.cluster_config.monitoring_url / f"{id}/save"
+        url = self._config.monitoring_url / id / "save"
 
-        async with self._core.request("POST", url, json=payload) as resp:
+        auth = await self._config._api_auth()
+        timeout = attr.evolve(self._core.timeout, sock_read=None)
+        # `self._code.request` implicitly sets `total=3 * 60`
+        # unless `sock_read is None`
+        async with self._core.request(
+            "POST", url, json=payload, timeout=timeout, auth=auth
+        ) as resp:
             # first, we expect exactly two docker-commit messages
             progress.save(ImageProgressSave(id, image))
 
             chunk_1 = await resp.content.readline()
-            data_1 = _parse_commit_started_chunk(id, _load_chunk(chunk_1), image_parser)
+            data_1 = _parse_commit_started_chunk(id, _load_chunk(chunk_1), self._parse)
             progress.commit_started(data_1)
 
             chunk_2 = await resp.content.readline()
@@ -274,12 +278,12 @@ class Jobs(metaclass=NoPublicConstructor):
         except IllegalArgumentError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {id}")
+            raise ValueError(f"Job is not running. Job Id = {job_status.id}")
         payload = json.dumps(
             {
                 "method": "job_exec",
-                "token": self._config.auth_token.token,
-                "params": {"job": id, "command": list(cmd)},
+                "token": await self._config.token(),
+                "params": {"job": job_status.id, "command": list(cmd)},
             }
         )
         command = ["ssh"]
@@ -327,12 +331,12 @@ class Jobs(metaclass=NoPublicConstructor):
         except IllegalArgumentError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {id}")
+            raise ValueError(f"Job is not running. Job Id = {job_status.id}")
         payload = json.dumps(
             {
                 "method": "job_port_forward",
-                "token": self._config.auth_token.token,
-                "params": {"job": id, "port": job_port},
+                "token": await self._config.token(),
+                "params": {"job": job_status.id, "port": job_port},
             }
         )
         proxy_command = ["ssh"]
@@ -389,7 +393,7 @@ def _load_chunk(chunk: bytes) -> Dict[str, Any]:
 
 
 def _parse_commit_started_chunk(
-    job_id: str, obj: Dict[str, Any], image_parser: _ImageNameParser
+    job_id: str, obj: Dict[str, Any], parse: Parser
 ) -> ImageCommitStarted:
     _raise_for_invalid_commit_chunk(obj, expect_started=True)
     details_json = obj.get("details", {})
@@ -397,7 +401,7 @@ def _parse_commit_started_chunk(
     if not image:
         error_details = {"message": "Missing required details: 'image'"}
         raise DockerError(400, error_details)
-    return ImageCommitStarted(job_id, image_parser.parse_remote(image))
+    return ImageCommitStarted(job_id, parse.remote_image(image))
 
 
 def _parse_commit_finished_chunk(
@@ -448,7 +452,7 @@ def _resources_from_api(data: Dict[str, Any]) -> Resources:
     return Resources(
         memory_mb=data["memory_mb"],
         cpu=data["cpu"],
-        shm=data.get("shm", None),
+        shm=data.get("shm", True),
         gpu=data.get("gpu", None),
         gpu_model=data.get("gpu_model", None),
         tpu_type=tpu_type,
@@ -466,9 +470,9 @@ def _http_port_from_api(data: Dict[str, Any]) -> HTTPPort:
     )
 
 
-def _container_from_api(data: Dict[str, Any], parser: _ImageNameParser) -> Container:
+def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
     try:
-        image = parser.parse_remote(data["image"])
+        image = parse.remote_image(data["image"])
     except ValueError:
         image = RemoteImage(name=INVALID_IMAGE_NAME)
 
@@ -501,11 +505,10 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
     return primitive
 
 
-def _job_description_from_api(
-    res: Dict[str, Any], parser: _ImageNameParser
-) -> JobDescription:
-    container = _container_from_api(res["container"], parser)
+def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescription:
+    container = _container_from_api(res["container"], parse)
     owner = res["owner"]
+    cluster_name = res["cluster_name"]
     name = res.get("name")
     description = res.get("description")
     history = JobStatusHistory(
@@ -525,6 +528,7 @@ def _job_description_from_api(
         status=JobStatus(res["status"]),
         id=res["id"],
         owner=owner,
+        cluster_name=cluster_name,
         history=history,
         container=container,
         is_preemptible=res["is_preemptible"],

@@ -5,6 +5,7 @@ from typing import Any, Dict, Optional, Sequence
 from aiohttp.web import HTTPCreated, HTTPNoContent
 from yarl import URL
 
+from .config import Config
 from .core import ClientError, _Core
 from .utils import NoPublicConstructor
 
@@ -28,15 +29,17 @@ class Share:
 
 
 class Users(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core) -> None:
+    def __init__(self, core: _Core, config: Config) -> None:
         self._core = core
+        self._config = config
 
     async def get_acl(
         self, user: str, scheme: Optional[str] = None
     ) -> Sequence[Permission]:
-        url = URL(f"users/{user}/permissions")
+        url = self._config.api_url / "users" / user / "permissions"
         params = {"scheme": scheme} if scheme else {}
-        async with self._core.request("GET", url, params=params) as resp:
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, params=params, auth=auth) as resp:
             payload = await resp.json()
         ret = []
         for item in payload:
@@ -48,9 +51,10 @@ class Users(metaclass=NoPublicConstructor):
     async def get_shares(
         self, user: str, scheme: Optional[str] = None
     ) -> Sequence[Share]:
-        url = URL(f"users/{user}/permissions/shared")
+        url = self._config.api_url / "users" / user / "permissions" / "shared"
         params = {"scheme": scheme} if scheme else {}
-        async with self._core.request("GET", url, params=params) as resp:
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, params=params, auth=auth) as resp:
             payload = await resp.json()
         ret = []
         for item in payload:
@@ -60,9 +64,10 @@ class Users(metaclass=NoPublicConstructor):
         return ret
 
     async def share(self, user: str, permission: Permission) -> None:
-        url = URL(f"users/{user}/permissions")
+        url = self._config.api_url / "users" / user / "permissions"
         payload = [_permission_to_api(permission)]
-        async with self._core.request("POST", url, json=payload) as resp:
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, json=payload, auth=auth) as resp:
             #  TODO: server part contain TODO record for returning more then
             #  HTTPCreated, this part must me refactored then
             if resp.status != HTTPCreated.status_code:
@@ -70,8 +75,11 @@ class Users(metaclass=NoPublicConstructor):
         return None
 
     async def revoke(self, user: str, uri: URL) -> None:
-        url = URL(f"users/{user}/permissions")
-        async with self._core.request("DELETE", url, params={"uri": str(uri)}) as resp:
+        url = self._config.api_url / "users" / user / "permissions"
+        auth = await self._config._api_auth()
+        async with self._core.request(
+            "DELETE", url, params={"uri": str(uri)}, auth=auth
+        ) as resp:
             #  TODO: server part contain TODO record for returning more then
             #  HTTPNoContent, this part must me refactored then
             if resp.status != HTTPNoContent.status_code:

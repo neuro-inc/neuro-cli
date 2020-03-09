@@ -8,8 +8,13 @@ from aiodocker.exceptions import DockerError
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import AuthorizationError, Client
-from neuromation.api.images import LocalImage, RemoteImage
+from neuromation.api import (
+    AuthorizationError,
+    Client,
+    LocalImage,
+    RemoteImage,
+    TagOption,
+)
 from neuromation.api.parsing_utils import (
     _as_repo_str,
     _get_url_authority,
@@ -38,7 +43,7 @@ class TestImageParser:
         "image",
         [
             "image://me/ubuntu:v10.04",
-            "image://~/ubuntu:v10.04",
+            "image:ubuntu:v10.04",
             "image:///ubuntu:v10.04",
             "image:ubuntu:v10.04",
             "ubuntu:v10.04",
@@ -101,52 +106,42 @@ class TestImageParser:
             _ImageNameParser(default_user="alice", registry_url=URL(registry_url))
 
     def test_split_image_name_no_tag(self) -> None:
-        splitted = self.parser._split_image_name("ubuntu", self.parser.default_tag)
+        splitted = self.parser._split_image_name("ubuntu", "latest")
         assert splitted == ("ubuntu", "latest")
 
     def test_split_image_name_with_tag(self) -> None:
-        splitted = self.parser._split_image_name(
-            "ubuntu:v10.04", self.parser.default_tag
-        )
+        splitted = self.parser._split_image_name("ubuntu:v10.04", "latest")
         assert splitted == ("ubuntu", "v10.04")
 
     def test_split_image_name_empty_tag(self) -> None:
         with pytest.raises(ValueError, match="empty tag"):
-            self.parser._split_image_name("ubuntu:", self.parser.default_tag)
+            self.parser._split_image_name("ubuntu:", "latest")
 
     def test_split_image_name_two_tags(self) -> None:
         with pytest.raises(ValueError, match="too many tags"):
-            self.parser._split_image_name("ubuntu:v10.04:LTS", self.parser.default_tag)
+            self.parser._split_image_name("ubuntu:v10.04:LTS", "latest")
 
     def test_split_image_name_with_registry_port_no_tag(self) -> None:
-        splitted = self.parser._split_image_name(
-            "localhost:5000/ubuntu", self.parser.default_tag
-        )
+        splitted = self.parser._split_image_name("localhost:5000/ubuntu", "latest")
         assert splitted == ("localhost:5000/ubuntu", "latest")
 
     def test_split_image_name_with_registry_port_with_tag(self) -> None:
         splitted = self.parser._split_image_name(
-            "localhost:5000/ubuntu:v10.04", self.parser.default_tag
+            "localhost:5000/ubuntu:v10.04", "latest"
         )
         assert splitted == ("localhost:5000/ubuntu", "v10.04")
 
     def test_split_image_name_with_registry_port_two_tags(self) -> None:
         with pytest.raises(ValueError, match="too many tags"):
-            self.parser._split_image_name(
-                "localhost:5000/ubuntu:v10.04:LTS", self.parser.default_tag
-            )
+            self.parser._split_image_name("localhost:5000/ubuntu:v10.04:LTS", "latest")
 
     def test_split_image_name_with_registry_port_empty_tag(self) -> None:
         with pytest.raises(ValueError, match="empty tag"):
-            self.parser._split_image_name(
-                "localhost:5000/ubuntu:", self.parser.default_tag
-            )
+            self.parser._split_image_name("localhost:5000/ubuntu:", "latest")
 
     def test_split_image_name_with_registry_port_slash_in_tag(self) -> None:
         with pytest.raises(ValueError, match="invalid tag"):
-            self.parser._split_image_name(
-                "localhost:5000/ubuntu:v10/04", self.parser.default_tag
-            )
+            self.parser._split_image_name("localhost:5000/ubuntu:v10/04", "latest")
 
     # public method: parse_local
 
@@ -420,28 +415,28 @@ class TestImageParser:
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag(self) -> None:
-        image = "image://~/ubuntu"
+        image = "image:ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag_2(self) -> None:
-        image = "image://~/library/ubuntu"
+        image = "image:library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="library/ubuntu", tag="latest", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag(self) -> None:
-        image = "image://~/ubuntu:v10.04"
+        image = "image:ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
         )
 
     def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag_2(self) -> None:
-        image = "image://~/library/ubuntu:v10.04"
+        image = "image:library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="library/ubuntu", tag="v10.04", owner="alice", registry="reg.neu.ro"
@@ -497,7 +492,7 @@ class TestImageParser:
 
     def test_parse_as_neuro_image_allow_tag_false_with_scheme_no_tag(self) -> None:
         image = "image:ubuntu"
-        parsed = self.parser.parse_as_neuro_image(image, allow_tag=False)
+        parsed = self.parser.parse_as_neuro_image(image, tag_option=TagOption.DENY)
         assert parsed == RemoteImage(
             name="ubuntu", tag=None, owner="alice", registry="reg.neu.ro"
         )
@@ -505,12 +500,12 @@ class TestImageParser:
     def test_parse_as_neuro_image_allow_tag_false_no_scheme_no_tag(self) -> None:
         image = "ubuntu"
         with pytest.raises(ValueError, match="scheme 'image://' is required"):
-            self.parser.parse_as_neuro_image(image, allow_tag=False)
+            self.parser.parse_as_neuro_image(image, tag_option=TagOption.DENY)
 
     def test_parse_as_neuro_image_allow_tag_false_no_scheme_with_tag(self) -> None:
         image = "ubuntu:latest"
         with pytest.raises(ValueError, match="tag is not allowed"):
-            self.parser.parse_as_neuro_image(image, allow_tag=False)
+            self.parser.parse_as_neuro_image(image, tag_option=TagOption.DENY)
 
     def test_convert_to_local_image(self) -> None:
         neuro_image = RemoteImage(
@@ -527,7 +522,7 @@ class TestImageParser:
         )
 
     def test_normalize_is_neuro_image(self) -> None:
-        image = "image://~/ubuntu"
+        image = "image:ubuntu"
         assert self.parser.normalize(image) == "image://alice/ubuntu:latest"
 
     def test_normalize_is_local_image(self) -> None:

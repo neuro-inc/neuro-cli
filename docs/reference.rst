@@ -14,6 +14,7 @@ Reference
 
    functions_reference
    client_reference
+   config_reference
    jobs_reference
    storage_reference
    images_reference

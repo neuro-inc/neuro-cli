@@ -1,21 +1,27 @@
 import asyncio
 import dataclasses
+import functools
+import inspect
+import itertools
 import logging
+import os
+import pathlib
 import re
 import shlex
+import shutil
 import sys
 import time
-from contextlib import suppress
-from datetime import date, timedelta
-from functools import wraps
 from typing import (
     Any,
     Awaitable,
     Callable,
+    Dict,
     Iterable,
+    Iterator,
     List,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -23,30 +29,30 @@ from typing import (
     cast,
 )
 
-import certifi
 import click
-import pkg_resources
+import humanize
 from click import BadParameter
 from yarl import URL
 
-import neuromation
 from neuromation.api import (
     Action,
     Client,
     Factory,
     JobDescription,
+    JobStatus,
     LocalImage,
     RemoteImage,
+    TagOption,
     Volume,
 )
-from neuromation.api.config import _CookieSession, _PyPIVersion
+from neuromation.api.config import _CookieSession
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 
-from .asyncio_utils import run
-from .parse_utils import to_megabytes
+from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
 from .root import Root
-from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
+from .stats import upload_gmp_stats
+from .version_utils import run_version_checker
 
 
 log = logging.getLogger(__name__)
@@ -54,6 +60,7 @@ log = logging.getLogger(__name__)
 _T = TypeVar("_T")
 
 DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
+DEPRECATED_INVOKE_NOTICE = "DeprecationWarning: The command {name} is deprecated."
 
 # NOTE: these job name defaults are taken from `platform_api` file `validators.py`
 JOB_NAME_MIN_LENGTH = 3
@@ -61,48 +68,7 @@ JOB_NAME_MAX_LENGTH = 40
 JOB_NAME_PATTERN = "^[a-z](?:-?[a-z0-9])*$"
 JOB_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
 
-
-def warn_if_has_newer_version(
-    version: _PyPIVersion,
-    check_neuromation: bool = True,
-    cerfiti_warning_delay_days: int = 14,
-) -> None:
-    if check_neuromation:
-        current = pkg_resources.parse_version(neuromation.__version__)
-        if current < version.pypi_version:
-            update_command = "pip install --upgrade neuromation"
-            click.secho(
-                f"You are using Neuromation Platform Client {current}, "
-                f"however {version.pypi_version} is available.\n"
-                f"You should consider upgrading via "
-                f"the '{update_command}' command.",
-                err=True,
-                fg="yellow",
-            )
-
-    certifi_current = pkg_resources.parse_version(certifi.__version__)  # type: ignore
-
-    if certifi_current < version.certifi_pypi_version and _need_to_warn_after_delay(
-        version.certifi_pypi_upload_date, cerfiti_warning_delay_days
-    ):
-        pip_update_command = "pip install --upgrade certifi"
-        conda_update_command = "conda update certifi"
-        click.secho(
-            f"Your root certificates are out of date.\n"
-            f"You are using certifi {certifi_current}, "
-            f"however {version.certifi_pypi_version} is available.\n"
-            f"Please consider upgrading certifi package, e.g.\n"
-            f"    {pip_update_command}\n"
-            f"or\n"
-            f"    {conda_update_command}",
-            err=True,
-            fg="red",
-        )
-
-
-def _need_to_warn_after_delay(release_date: date, delay_days: int) -> bool:
-    warn_since = date.today() - timedelta(days=delay_days)
-    return release_date < warn_since
+NEURO_STEAL_CONFIG = "NEURO_STEAL_CONFIG"
 
 
 async def _run_async_function(
@@ -113,43 +79,40 @@ async def _run_async_function(
     **kwargs: Any,
 ) -> _T:
     loop = asyncio.get_event_loop()
-    version_checker: AbstractVersionChecker
 
     if init_client:
         await root.init_client()
 
-        version = root._config.pypi
-
-        warn_if_has_newer_version(version, not root.disable_pypi_version_check)
-
-        if root.disable_pypi_version_check:
-            version_checker = DummyVersionChecker(version)
-        else:
-            # (ASvetlov) This branch is not tested intentionally
-            # Don't want to fetch PyPI from unit tests
-            # Later the checker initialization code will be refactored
-            # as a part of config reimplementation
-            version_checker = VersionChecker(version)  # pragma: no cover
-        task: Optional["asyncio.Task[None]"] = loop.create_task(version_checker.run())
+        pypi_task: "asyncio.Task[None]" = loop.create_task(
+            run_version_checker(root.client, root.disable_pypi_version_check)
+        )
+        stats_task: "asyncio.Task[None]" = loop.create_task(
+            upload_gmp_stats(
+                root.client, root.command_path, root.command_params, root.skip_gmp_stats
+            )
+        )
     else:
-        task = None
+        pypi_task = loop.create_task(asyncio.sleep(0))  # do nothing
+        stats_task = loop.create_task(asyncio.sleep(0))  # do nothing
 
     try:
         return await func(root, *args, **kwargs)
     finally:
+        stats_task.cancel()
+        try:
+            await stats_task
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            log.debug("Usage stats sending has failed", exc_info=True)
         new_config = None
-        if task is not None:
-            task.cancel()
-            with suppress(asyncio.CancelledError):
-                await task
-            with suppress(asyncio.CancelledError):
-                await version_checker.close()
-
-            if version_checker.version != root._config.pypi:
-                # Update pypi section
-                new_config = dataclasses.replace(
-                    root._config, pypi=version_checker.version
-                )
+        pypi_task.cancel()
+        try:
+            await pypi_task
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            log.debug("PyPI checker has failed", exc_info=True)
 
         cookie = root.get_session_cookie()
         if cookie is not None:
@@ -167,31 +130,20 @@ async def _run_async_function(
             assert factory is not None
             factory._save(new_config)
 
-        await root.close()
 
-        # looks ugly but proper fix requires aiohttp changes
-        if sys.platform == "win32":
-            # Windows need a longer sleep
-            await asyncio.sleep(0.2)
-        else:
-            await asyncio.sleep(0.1)
+def _wrap_async_callback(
+    callback: Callable[..., Awaitable[_T]], init_client: bool = True,
+) -> Callable[..., _T]:
+    assert inspect.iscoroutinefunction(callback)
+    # N.B. the decorator implies @click.pass_obj
+    @click.pass_obj
+    @functools.wraps(callback)
+    def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
+        return root.run(
+            _run_async_function(init_client, callback, root, *args, **kwargs),
+        )
 
-
-def async_cmd(
-    init_client: bool = True
-) -> Callable[[Callable[..., Awaitable[_T]]], Callable[..., _T]]:
-    def deco(callback: Callable[..., Awaitable[_T]]) -> Callable[..., _T]:
-        # N.B. the decorator implies @click.pass_obj
-        @click.pass_obj
-        @wraps(callback)
-        def wrapper(root: Root, *args: Any, **kwargs: Any) -> _T:
-            return run(
-                _run_async_function(init_client, callback, root, *args, **kwargs)
-            )
-
-        return wrapper
-
-    return deco
+    return wrapper
 
 
 class HelpFormatter(click.HelpFormatter):
@@ -230,6 +182,24 @@ def format_example(example: str, formatter: click.HelpFormatter) -> None:
 
 
 class NeuroClickMixin:
+    def get_help_option(self, ctx: click.Context) -> Optional[click.Option]:
+        help_options = self.get_help_option_names(ctx)  # type: ignore
+        if not help_options or not self.add_help_option:  # type: ignore
+            return None
+
+        def show_help(ctx: click.Context, param: Any, value: Any) -> None:
+            if value and not ctx.resilient_parsing:
+                print_help(ctx)
+
+        return Option(
+            help_options,
+            is_flag=True,
+            is_eager=True,
+            expose_value=False,
+            callback=show_help,
+            help="Show this message and exit.",
+        )
+
     def get_short_help_str(self, limit: int = 45) -> str:
         text = super().get_short_help_str(limit=limit)  # type: ignore
         if text.endswith(".") and not text.endswith("..."):
@@ -240,8 +210,8 @@ class NeuroClickMixin:
         self, ctx: click.Context, formatter: click.HelpFormatter
     ) -> None:
         """Writes the help text to the formatter if it exists."""
-        help = self.help  # type: ignore
         deprecated = self.deprecated  # type: ignore
+        help = self.help  # type: ignore
         if help:
             help_text, *examples = split_examples(help)
             if help_text:
@@ -282,8 +252,62 @@ class NeuroGroupMixin(NeuroClickMixin):
         self.format_commands(ctx, formatter)  # type: ignore
 
 
+def _collect_params(cmd: click.Command, ctx: click.Context) -> Dict[str, Optional[str]]:
+    params = ctx.params.copy()
+    for param in cmd.get_params(ctx):
+        if param.name not in params:
+            continue
+        if params[param.name] == param.get_default(ctx):
+            # drop default param
+            del params[param.name]
+            continue
+        if param.param_type_name != "option":
+            # save name only
+            params[param.name] = None
+        else:
+            if getattr(param, "secure", True):
+                params[param.name] = None
+            else:
+                params[param.name] = str(params[param.name])
+    return params
+
+
 class Command(NeuroClickMixin, click.Command):
-    pass
+    def __init__(
+        self,
+        callback: Any,
+        init_client: bool = True,
+        wrap_async: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        if wrap_async:
+            callback = _wrap_async_callback(callback, init_client=init_client)
+        super().__init__(
+            callback=callback, **kwargs,
+        )
+        self.init_client = init_client
+
+    def invoke(self, ctx: click.Context) -> Any:
+        """Given a context, this invokes the attached callback (if it exists)
+        in the right way.
+        """
+        if self.deprecated:
+            click.echo(
+                click.style(DEPRECATED_INVOKE_NOTICE.format(name=self.name), fg="red"),
+                err=True,
+            )
+        if self.callback is not None:
+            # Collect arguments for sending to google analytics
+            ctx2 = ctx
+            params = [_collect_params(ctx2.command, ctx2)]
+            while ctx2.parent:
+                ctx2 = ctx2.parent
+                params.append(_collect_params(ctx2.command, ctx2))
+            params.reverse()
+            root = cast(Root, ctx.obj)
+            root.command_path = ctx.command_path
+            root.command_params = params
+            return ctx.invoke(self.callback, **ctx.params)
 
 
 def command(
@@ -316,10 +340,30 @@ class Group(NeuroGroupMixin, click.Group):
     def list_commands(self, ctx: click.Context) -> Iterable[str]:
         return self.commands
 
+    def invoke(self, ctx: click.Context) -> None:
+        if not ctx.args and not ctx.protected_args:
+            print_help(ctx)
+        else:
+            super().invoke(ctx)
+
 
 def group(name: Optional[str] = None, **kwargs: Any) -> Group:
     kwargs.setdefault("cls", Group)
+    kwargs.setdefault("invoke_without_command", True)
     return click.group(name=name, **kwargs)  # type: ignore
+
+
+def print_help(ctx: click.Context) -> None:
+    root = cast(Root, ctx.obj)
+    if root is None:
+        tty = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
+        terminal_size = shutil.get_terminal_size()
+    else:
+        tty = root.tty
+        terminal_size = root.terminal_size
+
+    pager_maybe(ctx.get_help().splitlines(), tty, terminal_size)
+    ctx.exit()
 
 
 class DeprecatedGroup(NeuroGroupMixin, click.MultiCommand):
@@ -336,69 +380,6 @@ class DeprecatedGroup(NeuroGroupMixin, click.MultiCommand):
 
     def list_commands(self, ctx: click.Context) -> Iterable[str]:
         return self.origin.list_commands(ctx)
-
-
-class MainGroup(Group):
-    def _format_group(
-        self,
-        title: str,
-        grp: Sequence[Tuple[str, click.Command]],
-        formatter: click.HelpFormatter,
-    ) -> None:
-        # allow for 3 times the default spacing
-        if not grp:
-            return
-
-        width = formatter.width
-        assert width is not None
-        limit = width - 6 - max(len(cmd[0]) for cmd in grp)
-
-        rows = []
-        for subcommand, cmd in grp:
-            help = cmd.get_short_help_str(limit)
-            rows.append((subcommand, help))
-
-        if rows:
-            with formatter.section(title):
-                formatter.write_dl(rows)
-
-    def format_commands(
-        self, ctx: click.Context, formatter: click.HelpFormatter
-    ) -> None:
-        """Extra format methods for multi methods that adds all the commands
-        after the options.
-        """
-        commands: List[Tuple[str, click.Command]] = []
-        groups: List[Tuple[str, click.MultiCommand]] = []
-
-        for subcommand in self.list_commands(ctx):
-            cmd = self.get_command(ctx, subcommand)
-            # What is this, the tool lied about a command.  Ignore it
-            if cmd is None:
-                continue
-            if cmd.hidden:
-                continue
-
-            if isinstance(cmd, click.MultiCommand):
-                groups.append((subcommand, cmd))
-            else:
-                commands.append((subcommand, cmd))
-
-        self._format_group("Commands", groups, formatter)
-        self._format_group("Command Shortcuts", commands, formatter)
-
-    def format_options(
-        self, ctx: click.Context, formatter: click.HelpFormatter
-    ) -> None:
-        self.format_commands(ctx, formatter)
-        formatter.write_paragraph()
-        formatter.write_text(
-            'Use "neuro <command> --help" for more information about a given command.'
-        )
-        formatter.write_text(
-            'Use "neuro --options" for a list of global command-line options '
-            "(applies to all commands)."
-        )
 
 
 def alias(
@@ -426,7 +407,20 @@ def alias(
         add_help_option=origin.add_help_option,
         hidden=hidden,
         deprecated=deprecated,
+        wrap_async=False,
     )
+
+
+class Option(click.Option):
+    def __init__(self, *args: Any, secure: bool = False, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.secure = secure
+
+
+def option(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
+    option_attrs = attrs.copy()
+    option_attrs.setdefault("cls", Option)
+    return click.option(*param_decls, **option_attrs)
 
 
 def volume_to_verbose_str(volume: Volume) -> str:
@@ -436,7 +430,12 @@ def volume_to_verbose_str(volume: Volume) -> str:
     )
 
 
-async def resolve_job(id_or_name_or_uri: str, *, client: Client) -> str:
+JOB_ID_PATTERN = r"job-[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12}"
+
+
+async def resolve_job(
+    id_or_name_or_uri: str, *, client: Client, status: Set[JobStatus]
+) -> str:
     default_user = client.username
     if id_or_name_or_uri.startswith("job:"):
         uri = _normalize_uri(id_or_name_or_uri, username=default_user)
@@ -450,21 +449,22 @@ async def resolve_job(id_or_name_or_uri: str, *, client: Client) -> str:
         id_or_name = id_or_name_or_uri
         owner = default_user
 
+    # Temporary fast path.
+    if re.fullmatch(JOB_ID_PATTERN, id_or_name):
+        return id_or_name
+
     jobs: List[JobDescription] = []
     details = f"name={id_or_name}, owner={owner}"
     try:
         jobs = await client.jobs.list(name=id_or_name, owners={owner})
+    except asyncio.CancelledError:
+        raise
     except Exception as e:
         log.error(
             f"Failed to resolve job-name {id_or_name_or_uri} resolved as "
             f"{details} to a job-ID: {e}"
         )
     if jobs:
-        if len(jobs) > 1:
-            log.warning(
-                f"Found {len(jobs)} jobs matching {details}: "
-                ", ".join(job.id for job in jobs)
-            )
         job_id = jobs[-1].id
         log.debug(f"Job name '{id_or_name}' resolved to job ID '{job_id}'")
     else:
@@ -481,18 +481,19 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     Available schemes: storage, image, job. For image URIs, tags are not allowed.
     """
     if uri.startswith("image:"):
-        parser = _ImageNameParser(root.username, root.registry_url)
-        image = parser.parse_as_neuro_image(uri, allow_tag=False)
+        image = root.client.parse.remote_image(uri, tag_option=TagOption.DENY)
         uri = str(image)
 
-    return uri_from_cli(uri, root.username, allowed_schemes=("storage", "image", "job"))
+    return uri_from_cli(
+        uri, root.client.username, allowed_schemes=("storage", "image", "job")
+    )
 
 
 def parse_file_resource(uri: str, root: Root) -> URL:
     """ Parses the neuromation resource URI string.
     Available schemes: file, storage.
     """
-    return uri_from_cli(uri, root.username, allowed_schemes=("file", "storage"))
+    return uri_from_cli(uri, root.client.username, allowed_schemes=("file", "storage"))
 
 
 def parse_permission_action(action: str) -> Action:
@@ -515,7 +516,8 @@ class LocalImageType(click.ParamType):
         root = cast(Root, ctx.obj)
         config = Factory(root.config_path)._read()
         image_parser = _ImageNameParser(
-            config.auth_token.username, config.cluster_config.registry_url
+            config.auth_token.username,
+            config.clusters[config.cluster_name].registry_url,
         )
         if image_parser.is_in_neuro_registry(value):
             raise click.BadParameter(
@@ -536,7 +538,8 @@ class ImageType(click.ParamType):
         root = cast(Root, ctx.obj)
         config = Factory(root.config_path)._read()
         image_parser = _ImageNameParser(
-            config.auth_token.username, config.cluster_config.registry_url
+            config.auth_token.username,
+            config.clusters[config.cluster_name].registry_url,
         )
         return image_parser.parse_remote(value)
 
@@ -551,9 +554,10 @@ class RemoteTaglessImageType(click.ParamType):
         root = cast(Root, ctx.obj)
         config = Factory(root.config_path)._read()
         image_parser = _ImageNameParser(
-            config.auth_token.username, config.cluster_config.registry_url
+            config.auth_token.username,
+            config.clusters[config.cluster_name].registry_url,
         )
-        return image_parser.parse_as_neuro_image(value, allow_tag=False)
+        return image_parser.parse_as_neuro_image(value, tag_option=TagOption.DENY)
 
 
 class LocalRemotePortParamType(click.ParamType):
@@ -613,6 +617,23 @@ class JobNameType(click.ParamType):
 JOB_NAME = JobNameType()
 
 
+class JobColumnsType(click.ParamType):
+    name = "columns"
+
+    def convert(
+        self,
+        value: Union[str, List[JobColumnInfo]],
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> List[JobColumnInfo]:
+        if isinstance(value, list):
+            return value
+        return parse_columns(value)
+
+
+JOB_COLUMNS = JobColumnsType()
+
+
 def do_deprecated_quiet(
     ctx: click.Context, param: Union[click.Option, click.Parameter], value: Any
 ) -> Any:
@@ -636,7 +657,7 @@ def do_deprecated_quiet(
         handler.setLevel(logging.ERROR)
 
 
-deprecated_quiet_option: Any = click.option(
+deprecated_quiet_option: Any = option(
     "-q",
     "--quiet",
     is_flag=True,
@@ -651,3 +672,42 @@ if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import AsyncExitStack  # noqa
 else:
     from async_exit_stack import AsyncExitStack  # noqa
+
+
+def format_size(value: float) -> str:
+    return humanize.naturalsize(value, gnu=True, format="%.4g")
+
+
+def pager_maybe(
+    lines: Iterable[str], tty: bool, terminal_size: Tuple[int, int]
+) -> None:
+    if not tty:
+        for line in lines:
+            click.echo(line)
+        return
+
+    lines_it: Iterator[str] = iter(lines)
+    count = int(terminal_size[1] * 2 / 3)
+    handled = list(itertools.islice(lines_it, count))
+    if len(handled) < count:
+        # lines list is short, just print it
+        for line in handled:
+            click.echo(line)
+    else:
+        click.echo_via_pager(
+            itertools.chain(["\n".join(handled)], (f"\n{line}" for line in lines_it))
+        )
+
+
+def steal_config_maybe(dst_path: pathlib.Path) -> None:
+    if NEURO_STEAL_CONFIG in os.environ:
+        src = pathlib.Path(os.environ[NEURO_STEAL_CONFIG])
+        dst = Factory(dst_path).path
+        dst.mkdir(mode=0o700)
+        for f in src.iterdir():
+            target = dst / f.name
+            shutil.copy(f, target)
+            # forbid access to other users
+            os.chmod(target, 0o600)
+            f.unlink()
+        src.rmdir()

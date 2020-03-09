@@ -4,14 +4,17 @@ import itertools
 import sys
 import time
 from dataclasses import dataclass
-from math import floor
-from typing import Iterable, Iterator, List, Mapping
+from typing import Iterable, Iterator, List
 
 import humanize
 from click import style, unstyle
 
 from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
+from neuromation.cli.parse_utils import JobColumnInfo
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
+from neuromation.cli.utils import format_size
+
+from .ftable import table
 
 
 COLORS = {
@@ -53,16 +56,20 @@ class JobFormatter:
         out.append(style("Shortcuts", bold=True) + ":")
 
         out.append(
-            f"  neuro status {job_alias}  " + style("# check job status", dim=True)
+            f"  neuro status {job_alias}     " + style("# check job status", dim=True)
         )
         out.append(
-            f"  neuro logs {job_alias}    " + style("# monitor job stdout", dim=True)
+            f"  neuro logs {job_alias}       " + style("# monitor job stdout", dim=True)
         )
         out.append(
-            f"  neuro top {job_alias}     "
+            f"  neuro top {job_alias}        "
             + style("# display real-time job telemetry", dim=True)
         )
-        out.append(f"  neuro kill {job_alias}    " + style("# kill job", dim=True))
+        out.append(
+            f"  neuro exec {job_alias} bash  "
+            + style("# execute bash shell to the job", dim=True)
+        )
+        out.append(f"  neuro kill {job_alias}       " + style("# kill job", dim=True))
         return "\n".join(out)
 
 
@@ -72,6 +79,7 @@ class JobStatusFormatter:
         if job_status.name:
             result += f"Name: {job_status.name}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
+        result += f"Cluster: {job_status.cluster_name}\n"
         if job_status.description:
             result += f"Description: {job_status.description}\n"
         result += f"Status: {job_status.status}"
@@ -83,10 +91,25 @@ class JobStatusFormatter:
             result += f" ({job_status.history.reason})"
         result += f"\nImage: {job_status.container.image}\n"
 
+        if job_status.container.entrypoint:
+            result += f"Entrypoint: {job_status.container.entrypoint}\n"
         result += f"Command: {job_status.container.command}\n"
         resource_formatter = ResourcesFormatter()
         result += resource_formatter(job_status.container.resources) + "\n"
         result += f"Preemptible: {job_status.is_preemptible}\n"
+
+        if job_status.container.volumes:
+            rows = [
+                (
+                    volume.container_path,
+                    f"{volume.storage_uri}",
+                    "READONLY" if volume.read_only else " ",
+                )
+                for volume in job_status.container.volumes
+            ]
+            result += "Volumes:" + "\n  "
+            result += "\n  ".join(table(rows)) + "\n"
+
         if job_status.internal_hostname:
             result += f"Internal Hostname: {job_status.internal_hostname}\n"
         if job_status.http_url:
@@ -189,6 +212,7 @@ class TabularJobRow:
     image: str
     owner: str
     description: str
+    cluster_name: str
     command: str
 
     @classmethod
@@ -214,81 +238,40 @@ class TabularJobRow:
             image=str(job.container.image),
             owner=("<you>" if job.owner == username else job.owner),
             description=job.description if job.description else "",
+            cluster_name=job.cluster_name,
             command=job.container.command if job.container.command else "",
         )
 
+    def to_list(self, columns: List[JobColumnInfo]) -> List[str]:
+        return [getattr(self, column.id) for column in columns]
+
 
 class TabularJobsFormatter(BaseJobsFormatter):
-    def __init__(self, width: int, username: str):
+    def __init__(self, width: int, username: str, columns: List[JobColumnInfo]):
         self.width = width
         self._username = username
-        self.column_length: Mapping[str, List[int]] = {
-            "id": [2, 40],
-            "name": [2, 40],
-            "status": [6, 10],
-            "when": [4, 15],
-            "image": [5, 15],
-            "owner": [5, 25],
-            "description": [11, 50],
-            "command": [7, 0],
-        }
-
-    def _positions(self, rows: Iterable[TabularJobRow]) -> Mapping[str, int]:
-        positions = {}
-        position = 0
-        for name in self.column_length:
-            if rows:
-                sorted_length = sorted(
-                    [len(getattr(row, name)) for row in rows], reverse=True
-                )
-                n90 = floor(len(sorted_length) / 10)
-                length = sorted_length[n90]
-                if self.column_length[name][0]:
-                    length = max(length, self.column_length[name][0])
-                if self.column_length[name][1]:
-                    length = min(length, self.column_length[name][1])
-            else:
-                length = self.column_length[name][0]
-            positions[name] = position
-            position += 2 + length
-        return positions
+        self._columns = columns
 
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
-        rows: List[TabularJobRow] = []
+        rows: List[List[str]] = []
+        rows.append([column.title for column in self._columns])
         for job in jobs:
-            rows.append(TabularJobRow.from_job(job, self._username))
-        header = TabularJobRow(
-            id="ID",
-            name="NAME",
-            status="STATUS",
-            when="WHEN",
-            image="IMAGE",
-            owner="OWNER",
-            description="DESCRIPTION",
-            command="COMMAND",
-        )
-        positions = self._positions(rows)
-        for row in [header] + rows:
-            line = ""
-            for name in positions.keys():
-                value = getattr(row, name)
-                if line:
-                    position = positions[name]
-                    if len(line) > position - 2:
-                        line += "  " + value
-                    else:
-                        line = line.ljust(position) + value
-                else:
-                    line = value
-            if self.width:
-                line = line[: self.width]
+            rows.append(
+                TabularJobRow.from_job(job, self._username).to_list(self._columns)
+            )
+        for line in table(
+            rows,
+            widths=[column.width for column in self._columns],
+            aligns=[column.align for column in self._columns],
+            max_width=self.width if self.width else None,
+        ):
             yield line
 
 
 class ResourcesFormatter:
     def __call__(self, resources: Resources) -> str:
         lines = list()
-        lines.append(f"Memory: {resources.memory_mb} MB")
+        lines.append("Memory: " + format_size(resources.memory_mb * 1024 ** 2))
         lines.append(f"CPU: {resources.cpu:0.1f}")
         if resources.gpu:
             lines.append(f"GPU: {resources.gpu:0.1f} x {resources.gpu_model}")

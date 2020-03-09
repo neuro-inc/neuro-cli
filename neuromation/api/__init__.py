@@ -18,12 +18,12 @@ from .abc import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from .client import Client
+from .client import Client, Preset
+from .config import Config, ConfigError
 from .config_factory import (
     CONFIG_ENV_NAME,
     DEFAULT_API_URL,
     DEFAULT_CONFIG_PATH,
-    ConfigError,
     Factory,
 )
 from .core import (
@@ -34,20 +34,26 @@ from .core import (
     ClientError,
     IllegalArgumentError,
     ResourceNotFound,
+    ServerNotAvailable,
 )
+from .images import Images
 from .jobs import (
     Container,
     HTTPPort,
     JobDescription,
+    Jobs,
     JobStatus,
     JobStatusHistory,
     JobTelemetry,
     Resources,
     Volume,
 )
-from .parsing_utils import LocalImage, RemoteImage
-from .storage import FileStatus, FileStatusType
-from .users import Action, Permission, Share
+from .parser import Parser
+from .parsing_utils import LocalImage, RemoteImage, TagOption
+from .server_cfg import Cluster
+from .storage import FileStatus, FileStatusType, Storage
+from .tracing import gen_trace_id
+from .users import Action, Permission, Share, Users
 from .utils import _ContextManager
 
 
@@ -55,6 +61,7 @@ __all__ = (
     "DEFAULT_API_URL",
     "DEFAULT_CONFIG_PATH",
     "CONFIG_ENV_NAME",
+    "Jobs",
     "JobDescription",
     "JobStatus",
     "JobStatusHistory",
@@ -62,10 +69,13 @@ __all__ = (
     "Resources",
     "Volume",
     "HTTPPort",
+    "Users",
     "Action",
     "Permission",
     "Share",
     "Client",
+    "Preset",
+    "Storage",
     "FileStatusType",
     "FileStatus",
     "Container",
@@ -75,6 +85,7 @@ __all__ = (
     "AuthError",
     "AuthenticationError",
     "AuthorizationError",
+    "ServerNotAvailable",
     "AbstractFileProgress",
     "AbstractRecursiveFileProgress",
     "AbstractDockerImageProgress",
@@ -87,6 +98,7 @@ __all__ = (
     "ImageProgressPull",
     "ImageProgressPush",
     "ImageProgressStep",
+    "TagOption",
     "RemoteImage",
     "LocalImage",
     "Factory",
@@ -94,7 +106,12 @@ __all__ = (
     "login",
     "login_with_token",
     "logout",
+    "Config",
     "ConfigError",
+    "gen_trace_id",
+    "Cluster",
+    "Images",
+    "Parser",
 )
 
 

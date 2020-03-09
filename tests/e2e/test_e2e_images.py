@@ -1,7 +1,7 @@
 import asyncio
 import re
 import subprocess
-import sys
+import urllib.parse
 from pathlib import Path
 from typing import Any, AsyncIterator, Set
 from uuid import uuid4 as uuid
@@ -26,15 +26,6 @@ def parse_docker_ls_output(docker_ls_output: Any) -> Set[str]:
         for repo_tag in info["RepoTags"]
         if repo_tag
     )
-
-
-@pytest.fixture()
-async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
-    if sys.platform == "win32":
-        pytest.skip("aiodocker not supported on windows at this moment")
-    client = aiodocker.Docker()
-    yield client
-    await client.close()
 
 
 @pytest.fixture()
@@ -98,7 +89,7 @@ def test_images_complete_lifecycle(
     assert image not in local_images
 
     # Pull image as with another tag
-    captured = helper.run_cli(["image", "pull", f"image://~/{image}"])
+    captured = helper.run_cli(["image", "pull", f"image:{image}"])
     # stderr has "Used image ..." lines
     # assert not captured.err
     assert captured.out.endswith(image)
@@ -144,7 +135,7 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     result = subprocess.run(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
-    assertion_msg = f"Command {cmd} should fail: {result.stdout} {result.stderr}"
+    assertion_msg = f"Command {cmd} should fail: {result.stdout!r} {result.stderr!r}"
     assert result.returncode, assertion_msg
 
     image_full_str_latest_tag = image_full_str.replace(f":{tag}", ":latest")
@@ -152,8 +143,39 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     result = subprocess.run(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
-    assertion_msg = f"Command {cmd} should fail: {result.stdout} {result.stderr}"
+    assertion_msg = f"Command {cmd} should fail: {result.stdout!r} {result.stderr!r}"
     assert result.returncode, assertion_msg
+
+
+@pytest.mark.e2e
+def test_image_ls(helper: Helper, image: str, tag: str) -> None:
+    # push image
+    captured = helper.run_cli(["image", "push", image])
+
+    image_full_str = f"image://{helper.username}/{image}"
+    assert captured.out.endswith(image_full_str)
+
+    image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
+
+    # check ls short mode
+    captured = helper.run_cli(["image", "ls"])
+    assert image_full_str_no_tag in captured.out.splitlines()
+
+    # check ls long mode
+    captured = helper.run_cli(["image", "ls", "-l"])
+    matching_lines = [
+        line
+        for line in captured.out.splitlines()
+        if image_full_str_no_tag == line.split()[0]
+    ]
+    assert len(matching_lines) == 1
+
+    image_full_https_str_no_tag = f"/{helper.username}/{image}".replace(f":{tag}", "")
+    actual_https_url = urllib.parse.urlparse(matching_lines[0].split()[1])
+    assert (
+        actual_https_url.scheme == "https"
+        and actual_https_url.path == image_full_https_str_no_tag
+    )
 
 
 @pytest.mark.e2e
@@ -170,9 +192,7 @@ def test_images_push_with_specified_name(
     pulled_no_tag = f"{image_no_tag}-pulled"
     pulled = f"{pulled_no_tag}:{tag}"
 
-    captured = helper.run_cli(
-        ["image", "push", image, f"image://~/{pushed_no_tag}:{tag}"]
-    )
+    captured = helper.run_cli(["image", "push", image, f"image:{pushed_no_tag}:{tag}"])
     # stderr has "Used image ..." lines
     # assert not captured.err
     image_pushed_full_str = f"image://{helper.username}/{pushed_no_tag}:{tag}"
@@ -219,17 +239,17 @@ def test_docker_helper(
     )
     assert (
         not result.returncode
-    ), f"Command {tag_cmd} failed: {result.stdout} {result.stderr} "
+    ), f"Command {tag_cmd} failed: {result.stdout!r} {result.stderr!r} "
     push_cmd = f"docker push {full_tag}"
     result = subprocess.run(
         push_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     assert (
         not result.returncode
-    ), f"Command {push_cmd} failed: {result.stdout} {result.stderr} "
+    ), f"Command {push_cmd} failed: {result.stdout!r} {result.stderr!r} "
     # Run image and check output
     image_url = f"image://{username}/{image}"
     job_id = helper.run_job_and_wait_state(
-        image_url, "", JOB_TINY_CONTAINER_PARAMS, JobStatus.SUCCEEDED, JobStatus.FAILED
+        image_url, "", wait_state=JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
     )
     helper.check_job_output(job_id, re.escape(tag))

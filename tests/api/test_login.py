@@ -19,30 +19,21 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from neuromation.api.core import DEFAULT_TIMEOUT
+from neuromation.api import Cluster, Preset
 from neuromation.api.login import (
     AuthCode,
     AuthException,
     AuthNegotiator,
     AuthTokenClient,
     HeadlessNegotiator,
-    RunPreset,
     _AuthConfig,
     _AuthToken,
-    _ClusterConfig,
     create_app_server,
     create_app_server_once,
     create_auth_code_app,
 )
+from neuromation.api.server_cfg import _is_cluster_config_initialized
 from tests import _TestServerFactory
-
-
-@pytest.fixture
-async def connector(
-    loop: asyncio.AbstractEventLoop
-) -> AsyncIterator[aiohttp.BaseConnector]:
-    async with aiohttp.TCPConnector() as connector:
-        yield connector
 
 
 class TestAuthCode:
@@ -332,55 +323,38 @@ async def auth_config(
 
 
 class TestTokenClient:
-    async def test_request(
-        self,
-        connector: aiohttp.BaseConnector,
-        auth_client_id: str,
-        auth_config: _AuthConfig,
-    ) -> None:
+    async def test_request(self, auth_client_id: str, auth_config: _AuthConfig) -> None:
         code = AuthCode()
         code.set_value("test_code")
         code.callback_url = auth_config.callback_urls[0]
 
-        async with AuthTokenClient(
-            connector,
-            auth_config.token_url,
-            client_id=auth_client_id,
-            timeout=DEFAULT_TIMEOUT,
-        ) as client:
-            token = await client.request(code)
-            assert token.token == "test_access_token"
-            assert token.refresh_token == "test_refresh_token"
-            assert not token.is_expired
+        async with aiohttp.ClientSession() as session:
+            async with AuthTokenClient(
+                session, auth_config.token_url, client_id=auth_client_id
+            ) as client:
+                token = await client.request(code)
+                assert token.token == "test_access_token"
+                assert token.refresh_token == "test_refresh_token"
+                assert not token.is_expired
 
-    async def test_refresh(
-        self,
-        connector: aiohttp.BaseConnector,
-        auth_client_id: str,
-        auth_config: _AuthConfig,
-    ) -> None:
+    async def test_refresh(self, auth_client_id: str, auth_config: _AuthConfig) -> None:
         token = _AuthToken.create(
             token="test_access_token",
             expires_in=1234,
             refresh_token="test_refresh_token",
         )
 
-        async with AuthTokenClient(
-            connector,
-            auth_config.token_url,
-            client_id=auth_client_id,
-            timeout=DEFAULT_TIMEOUT,
-        ) as client:
-            new_token = await client.refresh(token)
-            assert new_token.token == "test_access_token_refreshed"
-            assert new_token.refresh_token == "test_refresh_token"
-            assert not token.is_expired
+        async with aiohttp.ClientSession() as session:
+            async with AuthTokenClient(
+                session, auth_config.token_url, client_id=auth_client_id
+            ) as client:
+                new_token = await client.refresh(token)
+                assert new_token.token == "test_access_token_refreshed"
+                assert new_token.refresh_token == "test_refresh_token"
+                assert not token.is_expired
 
     async def test_forbidden(
-        self,
-        connector: aiohttp.BaseConnector,
-        aiohttp_server: _TestServerFactory,
-        auth_config: _AuthConfig,
+        self, aiohttp_server: _TestServerFactory, auth_config: _AuthConfig
     ) -> None:
         code = AuthCode()
         code.callback_url = auth_config.callback_urls[0]
@@ -397,167 +371,90 @@ class TestTokenClient:
         server = await aiohttp_server(app)
         url = server.make_url("/oauth/token")
 
-        async with AuthTokenClient(
-            connector, url, client_id=client_id, timeout=DEFAULT_TIMEOUT
-        ) as client:
-            with pytest.raises(AuthException, match="failed to get an access token."):
-                await client.request(code)
+        async with aiohttp.ClientSession() as session:
+            async with AuthTokenClient(session, url, client_id=client_id) as client:
+                with pytest.raises(
+                    AuthException, match="failed to get an access token."
+                ):
+                    await client.request(code)
 
-            with pytest.raises(AuthException, match="failed to get an access token."):
-                token = _AuthToken.create(
-                    token="test_token",
-                    expires_in=1234,
-                    refresh_token="test_refresh_token",
-                )
-                await client.refresh(token)
-
-
-class TestAuthConfig:
-    def test_is_initialized__no_auth_url(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL(),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is False
-
-    def test_is_initialized__no_token_url(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL(),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is False
-
-    def test_is_initialized__no_client_id(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is False
-
-    def test_is_initialized__no_audience(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is False
-
-    def test_is_initialized__no_callback_urls(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=[],
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is True
-
-    def test_is_initialized__no_success_redirect_url(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=None,
-        )
-        assert auth_config.is_initialized() is True
-
-    def test_is_initialized__no_headless_callback_url(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL(),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=None,
-        )
-        assert auth_config.is_initialized() is False
+                with pytest.raises(
+                    AuthException, match="failed to get an access token."
+                ):
+                    token = _AuthToken.create(
+                        token="test_token",
+                        expires_in=1234,
+                        refresh_token="test_refresh_token",
+                    )
+                    await client.refresh(token)
 
 
 class TestClusterConfig:
     def test_is_initialized(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
-            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
-        assert cluster_config.is_initialized() is True
+        assert _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_registry_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = Cluster(
             registry_url=URL(),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
-            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_storage_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL(),
             users_url=URL("value"),
             monitoring_url=URL("value"),
-            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_users_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL(),
             monitoring_url=URL("value"),
-            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_monitoring_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL(),
-            resource_presets={"default": RunPreset(cpu=1, memory_mb=2 * 1024)},
+            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
+            name="",
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
     def test_is_initialized__no_resource_presets(self) -> None:
-        cluster_config = _ClusterConfig.create(
+        cluster_config = Cluster(
             registry_url=URL("value"),
             storage_url=URL("value"),
             users_url=URL("value"),
             monitoring_url=URL("value"),
-            resource_presets={},
+            presets={},
+            name="",
         )
-        assert cluster_config.is_initialized() is False
+        assert not _is_cluster_config_initialized(cluster_config)
 
 
 class TestAuthNegotiator:
@@ -565,76 +462,58 @@ class TestAuthNegotiator:
         async with ClientSession() as client:
             await client.get(url, allow_redirects=True)
 
-    async def test_get_code(
-        self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
-    ) -> None:
-        negotiator = AuthNegotiator(
-            connector,
-            config=auth_config,
-            show_browser_cb=self.show_dummy_browser,
-            timeout=DEFAULT_TIMEOUT,
-        )
-        code = await negotiator.get_code()
-        assert await code.wait() == "test_code"
-        assert code.callback_url == auth_config.callback_urls[0]
+    async def test_get_code(self, auth_config: _AuthConfig) -> None:
+        async with aiohttp.ClientSession() as session:
+            negotiator = AuthNegotiator(
+                session, config=auth_config, show_browser_cb=self.show_dummy_browser
+            )
+            code = await negotiator.get_code()
+            assert await code.wait() == "test_code"
+            assert code.callback_url == auth_config.callback_urls[0]
 
-    async def test_get_token(
-        self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
-    ) -> None:
-        negotiator = AuthNegotiator(
-            connector,
-            config=auth_config,
-            show_browser_cb=self.show_dummy_browser,
-            timeout=DEFAULT_TIMEOUT,
-        )
-        token = await negotiator.refresh_token(token=None)
-        assert token.token == "test_access_token"
-        assert token.refresh_token == "test_refresh_token"
+    async def test_get_token(self, auth_config: _AuthConfig) -> None:
+        async with aiohttp.ClientSession() as session:
+            negotiator = AuthNegotiator(
+                session, config=auth_config, show_browser_cb=self.show_dummy_browser
+            )
+            token = await negotiator.refresh_token(token=None)
+            assert token.token == "test_access_token"
+            assert token.refresh_token == "test_refresh_token"
 
-    async def test_refresh_token_noop(
-        self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
-    ) -> None:
-        negotiator = AuthNegotiator(
-            connector,
-            config=auth_config,
-            show_browser_cb=self.show_dummy_browser,
-            timeout=DEFAULT_TIMEOUT,
-        )
-        token = await negotiator.refresh_token(token=None)
-        assert token.token == "test_access_token"
-        assert token.refresh_token == "test_refresh_token"
-        assert not token.is_expired
+    async def test_refresh_token_noop(self, auth_config: _AuthConfig) -> None:
+        async with aiohttp.ClientSession() as session:
+            negotiator = AuthNegotiator(
+                session, config=auth_config, show_browser_cb=self.show_dummy_browser
+            )
+            token = await negotiator.refresh_token(token=None)
+            assert token.token == "test_access_token"
+            assert token.refresh_token == "test_refresh_token"
+            assert not token.is_expired
 
-        token = await negotiator.refresh_token(token=token)
-        assert token.token == "test_access_token"
-        assert token.refresh_token == "test_refresh_token"
+            token = await negotiator.refresh_token(token=token)
+            assert token.token == "test_access_token"
+            assert token.refresh_token == "test_refresh_token"
 
-    async def test_refresh_token(
-        self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
-    ) -> None:
-        negotiator = AuthNegotiator(
-            connector,
-            config=auth_config,
-            show_browser_cb=self.show_dummy_browser,
-            timeout=DEFAULT_TIMEOUT,
-        )
-        token = await negotiator.refresh_token(token=None)
-        assert token.token == "test_access_token"
-        assert token.refresh_token == "test_refresh_token"
-        assert not token.is_expired
+    async def test_refresh_token(self, auth_config: _AuthConfig) -> None:
+        async with aiohttp.ClientSession() as session:
+            negotiator = AuthNegotiator(
+                session, config=auth_config, show_browser_cb=self.show_dummy_browser
+            )
+            token = await negotiator.refresh_token(token=None)
+            assert token.token == "test_access_token"
+            assert token.refresh_token == "test_refresh_token"
+            assert not token.is_expired
 
-        token = _AuthToken.create(
-            token=token.token, expires_in=0, refresh_token=token.refresh_token
-        )
-        token = await negotiator.refresh_token(token=token)
-        assert token.token == "test_access_token_refreshed"
-        assert token.refresh_token == "test_refresh_token"
+            token = _AuthToken.create(
+                token=token.token, expires_in=0, refresh_token=token.refresh_token
+            )
+            token = await negotiator.refresh_token(token=token)
+            assert token.token == "test_access_token_refreshed"
+            assert token.refresh_token == "test_refresh_token"
 
 
 class TestHeadlessNegotiator:
-    async def test_get_code(
-        self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
-    ) -> None:
+    async def test_get_code(self, auth_config: _AuthConfig) -> None:
         async def get_auth_code_cb(url: URL) -> str:
             assert url.with_query(None) == auth_config.auth_url
 
@@ -649,26 +528,20 @@ class TestHeadlessNegotiator:
             )
             return "test_code"
 
-        negotiator = HeadlessNegotiator(
-            connector,
-            config=auth_config,
-            get_auth_code_cb=get_auth_code_cb,
-            timeout=DEFAULT_TIMEOUT,
-        )
-        code = await negotiator.get_code()
-        assert await code.wait() == "test_code"
+        async with aiohttp.ClientSession() as session:
+            negotiator = HeadlessNegotiator(
+                session, config=auth_config, get_auth_code_cb=get_auth_code_cb
+            )
+            code = await negotiator.get_code()
+            assert await code.wait() == "test_code"
 
-    async def test_get_code_raises(
-        self, connector: aiohttp.BaseConnector, auth_config: _AuthConfig
-    ) -> None:
+    async def test_get_code_raises(self, auth_config: _AuthConfig) -> None:
         async def get_auth_code_cb(url: URL) -> str:
             raise RuntimeError("callback error")
 
-        negotiator = HeadlessNegotiator(
-            connector,
-            config=auth_config,
-            get_auth_code_cb=get_auth_code_cb,
-            timeout=DEFAULT_TIMEOUT,
-        )
-        with pytest.raises(RuntimeError, match="callback error"):
-            await negotiator.get_code()
+        async with aiohttp.ClientSession() as session:
+            negotiator = HeadlessNegotiator(
+                session, config=auth_config, get_auth_code_cb=get_auth_code_cb
+            )
+            with pytest.raises(RuntimeError, match="callback error"):
+                await negotiator.get_code()

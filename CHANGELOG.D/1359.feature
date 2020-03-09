@@ -1,0 +1,1 @@
+Sort `neuro admin get-cluster-users` by name.

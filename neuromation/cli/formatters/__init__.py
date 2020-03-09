@@ -1,3 +1,4 @@
+from .admin import ClustersFormatter, ClusterUserFormatter
 from .config import ConfigFormatter
 from .images import DockerImageProgress
 from .jobs import (
@@ -21,6 +22,8 @@ from .storage import (
 
 
 __all__ = [
+    "ClusterUserFormatter",
+    "ClustersFormatter",
     "JobFormatter",
     "JobStatusFormatter",
     "BaseJobsFormatter",

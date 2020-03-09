@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import click
 
@@ -7,9 +7,10 @@ from neuromation.api import Permission, Share
 
 from .root import Root
 from .utils import (
-    async_cmd,
     command,
     group,
+    option,
+    pager_maybe,
     parse_permission_action,
     parse_resource_for_sharing,
 )
@@ -29,10 +30,15 @@ def acl() -> None:
 @click.argument("uri")
 @click.argument("user")
 @click.argument("permission", type=click.Choice(["read", "write", "manage"]))
-@async_cmd()
 async def grant(root: Root, uri: str, user: str, permission: str) -> None:
     """
-        Shares resource specified by URI to a USER with PERMISSION
+        Shares resource with another user.
+
+        URI shared resource.
+
+        USER username to share resource with.
+
+        PERMISSION sharing access right: read, write, or manage.
 
         Examples:
         neuro acl grant storage:///sample_data/ alice manage
@@ -54,10 +60,13 @@ async def grant(root: Root, uri: str, user: str, permission: str) -> None:
 @command()
 @click.argument("uri")
 @click.argument("user")
-@async_cmd()
 async def revoke(root: Root, uri: str, user: str) -> None:
     """
-        Revoke from a USER permissions for previously shared resource specified by URI
+        Revoke user access from another user.
+
+        URI previously shared resource to revoke.
+
+        USER to revoke URI resource from.
 
         Examples:
         neuro acl revoke storage:///sample_data/ alice
@@ -75,17 +84,30 @@ async def revoke(root: Root, uri: str, user: str) -> None:
 
 
 @command()
-@click.option("-s", "--scheme", default=None, help="Filter resources by scheme")
-@click.option(
+@option(
+    "-u", "username", default=None, help="Use specified user or role.",
+)
+@option(
+    "-s",
+    "--scheme",
+    default=None,
+    help="Filter resources by scheme, e.g. job, storage, image or user.",
+)
+@option(
     "--shared",
     is_flag=True,
     default=False,
-    help="Output the resources shared by the user",
+    help="Output the resources shared by the user.",
 )
-@async_cmd()
-async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
+async def list(
+    root: Root, username: Optional[str], scheme: Optional[str], shared: bool
+) -> None:
     """
-        List resource available to a USER or shared by a USER
+        List shared resources.
+
+        The command displays a list of resources shared BY current user (default).
+
+        To display a list of resources shared WITH current user apply --shared option.
 
         Examples:
         neuro acl list
@@ -93,25 +115,28 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
         neuro acl list --shared
         neuro acl list --shared --scheme image
     """
+    if username is None:
+        username = root.client.username
+    out: List[str] = []
     if not shared:
 
         def permission_key(p: Permission) -> Any:
             return p.uri, p.action
 
         for p in sorted(
-            await root.client.users.get_acl(root.username, scheme), key=permission_key
+            await root.client.users.get_acl(username, scheme), key=permission_key,
         ):
-            click.echo(f"{p.uri} {p.action.value}")
+            out.append(f"{p.uri} {p.action.value}")
     else:
 
         def shared_permission_key(share: Share) -> Any:
             return share.permission.uri, share.permission.action.value, share.user
 
         for share in sorted(
-            await root.client.users.get_shares(root.username, scheme),
+            await root.client.users.get_shares(username, scheme),
             key=shared_permission_key,
         ):
-            click.echo(
+            out.append(
                 " ".join(
                     [
                         str(share.permission.uri),
@@ -120,6 +145,7 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
                     ]
                 )
             )
+    pager_maybe(out, root.tty, root.terminal_size)
 
 
 acl.add_command(grant)

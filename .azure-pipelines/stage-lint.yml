@@ -1,0 +1,59 @@
+stages:
+- stage: linters
+  displayName: "Lint"
+  jobs:
+  - job: lint
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+      clean: true
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.7'
+      displayName: "User Python 3.7"
+
+    - script: |
+        pip install -U pip wheel
+        pip install -r requirements/ci.txt
+      displayName: 'Install dependencies'
+
+    - script: |
+        make lint
+      displayName: 'Run linters'
+
+    - script: |
+        sudo apt install libenchant-dev
+        pip install -r requirements/doc.txt
+
+    - script: |
+        make api-doc-spelling
+      displayName: 'Run docs spelling'
+      
+  - job: doc
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - checkout: self
+      clean: true
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.7'
+      displayName: "User Python 3.7"
+
+    - script: |
+        pip install -U pip wheel
+        pip install -r requirements/ci.txt
+      displayName: 'Install dependencies'
+
+    - script: |
+        sudo apt install libenchant-dev
+        towncrier --yes
+        pip install -r requirements/doc.txt
+
+    - script: |
+        make api-doc-spelling
+      displayName: 'Run docs spelling'
+      

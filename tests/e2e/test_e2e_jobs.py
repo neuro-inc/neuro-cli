@@ -1,13 +1,11 @@
 import asyncio
-import hashlib
 import os
 import re
 import subprocess
-import sys
-import tarfile
+from contextlib import suppress
 from pathlib import Path
 from time import time
-from typing import Any, AsyncIterator, Callable, Dict, Iterator, Tuple
+from typing import Any, AsyncIterator, Callable, Dict, List, Tuple
 from uuid import uuid4
 
 import aiodocker
@@ -18,9 +16,11 @@ from yarl import URL
 
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
 from neuromation.cli.asyncio_utils import run
-from tests.e2e import Helper
+from tests.e2e.conftest import CLIENT_TIMEOUT, Helper
 from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, JOB_TINY_CONTAINER_PRESET
 
+
+pytestmark = pytest.mark.e2e_job
 
 ALPINE_IMAGE_NAME = "alpine:latest"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
@@ -28,23 +28,24 @@ NGINX_IMAGE_NAME = "nginx:latest"
 TEST_IMAGE_NAME = "neuro-cli-test"
 MIN_PORT = 49152
 MAX_PORT = 65535
+EXEC_TIMEOUT = 180
 
 
 @pytest.mark.e2e
-def test_job_lifecycle(helper: Helper) -> None:
+def test_job_submit(helper: Helper) -> None:
 
     job_name = f"job-{os.urandom(5).hex()}"
 
     # Kill another active jobs with same name, if any
-    captured = helper.run_cli(["-q", "job", "ls", "--name", job_name])
+    # Pass --owner because --name without --owner is too slow for admin users.
+    captured = helper.run_cli(
+        ["-q", "job", "ls", "--owner", helper.username, "--name", job_name]
+    )
     if captured.out:
         jobs_same_name = captured.out.split("\n")
         assert len(jobs_same_name) == 1, f"found multiple active jobs named {job_name}"
         job_id = jobs_same_name[0]
-        helper.run_cli(["job", "kill", job_name])
-        helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-        captured = helper.run_cli(["-q", "job", "ls", "--name", job_name])
-        assert not captured.out
+        helper.kill_job(job_id)
 
     # Remember original running jobs
     captured = helper.run_cli(
@@ -53,7 +54,6 @@ def test_job_lifecycle(helper: Helper) -> None:
     store_out_list = captured.out.split("\n")[1:]
     jobs_orig = [x.split("  ")[0] for x in store_out_list]
 
-    command = 'bash -c "sleep 10m; false"'
     captured = helper.run_cli(
         [
             "job",
@@ -66,7 +66,10 @@ def test_job_lifecycle(helper: Helper) -> None:
             "--name",
             job_name,
             UBUNTU_IMAGE_NAME,
-            command,
+            # use unrolled notation to check shlex.join()
+            "bash",
+            "-c",
+            "sleep 10m; false",
         ]
     )
     match = re.match("Job ID: (.+) Status:", captured.out)
@@ -93,44 +96,8 @@ def test_job_lifecycle(helper: Helper) -> None:
     store_out = captured.out
     assert job_id in store_out
     # Check that the command is in the list
-    assert command in store_out
-
-    # Check that no command is in the list if quite
-    captured = helper.run_cli(["-q", "job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id in store_out
-    assert command not in store_out
-
-    # Kill the job by name
-    captured = helper.run_cli(["job", "kill", job_name])
-
-    # Currently we check that the job is not running anymore
-    # TODO(adavydow): replace to succeeded check when racecon in
-    # platform-api fixed.
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-
-    # Check that it is not in a running job list anymore
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id not in store_out
-
-    # Check job ls by name
-    captured = helper.run_cli(["job", "ls", "-n", job_name, "-s", "succeeded"])
-    store_out = captured.out
-    assert job_id in store_out
-    assert job_name in store_out
-
-    # Check job status by id
-    captured = helper.run_cli(["job", "status", job_id])
-    store_out = captured.out
-    assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
-    # Check correct exit code is returned
-    # assert "Exit code: 0" in store_out
-
-    # Check job status by name
-    captured = helper.run_cli(["job", "status", job_name])
-    store_out = captured.out
-    assert store_out.startswith(f"Job: {job_id}\nName: {job_name}")
+    assert "bash -c 'sleep 10m; false'" in store_out
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -143,7 +110,7 @@ def test_job_description(helper: Helper) -> None:
     jobs_orig = [x.split("  ")[0] for x in store_out_list]
     description = "Test description for a job"
     # Run a new job
-    command = 'bash -c "sleep 10m; false"'
+    command = "bash -c 'sleep 10m; false'"
     captured = helper.run_cli(
         [
             "job",
@@ -192,29 +159,20 @@ def test_job_description(helper: Helper) -> None:
     assert job_id in store_out
     assert description not in store_out
     assert command not in store_out
-
-    # Kill the job
-    captured = helper.run_cli(["job", "kill", job_id])
-
-    # Currently we check that the job is not running anymore
-    # TODO(adavydow): replace to succeeded check when racecon in
-    # platform-api fixed.
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-
-    # Check that it is not in a running job list anymore
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id not in store_out
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
 def test_job_kill_non_existing(helper: Helper) -> None:
     # try to kill non existing job
-    phantom_id = "NOT_A_JOB_ID"
+    phantom_id = "not-a-job-id"
     expected_out = f"Cannot kill job {phantom_id}"
-    captured = helper.run_cli(["job", "kill", phantom_id])
-    killed_jobs = [x.strip() for x in captured.out.split("\n")]
-    assert len(killed_jobs) == 1
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(["job", "kill", phantom_id])
+    assert cm.value.returncode == 1
+    assert cm.value.stdout == ""
+    killed_jobs = cm.value.stderr.splitlines()
+    assert len(killed_jobs) == 1, killed_jobs
     assert killed_jobs[0].startswith(expected_out)
 
 
@@ -372,178 +330,147 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
 def test_e2e_ssh_exec_true(helper: Helper) -> None:
     job_name = f"test-job-{str(uuid4())[:8]}"
     command = 'bash -c "sleep 15m; false"'
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command, name=job_name)
+
     captured = helper.run_cli(
         [
             "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            "-n",
-            job_name,
-            UBUNTU_IMAGE_NAME,
-            command,
+            "exec",
+            "--no-tty",
+            "--no-key-check",
+            "--timeout",
+            str(EXEC_TIMEOUT),
+            job_id,
+            # use unrolled notation to check shlex.join()
+            "bash",
+            "-c",
+            "echo ok; true",
         ]
     )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
-
-    captured = helper.run_cli(
-        ["job", "exec", "--no-tty", "--no-key-check", "--timeout=60", job_id, "true"]
-    )
-    assert captured.out == ""
-
-    captured = helper.run_cli(
-        ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_name, "true"]
-    )
-    assert captured.out == ""
+    assert captured.out == "ok"
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_false(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id, "false"]
+            [
+                "job",
+                "exec",
+                "--no-tty",
+                "--no-key-check",
+                "--timeout",
+                str(EXEC_TIMEOUT),
+                job_id,
+                "false",
+            ]
         )
     assert cm.value.returncode == 1
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id])
+        helper.run_cli(
+            [
+                "job",
+                "exec",
+                "--no-tty",
+                "--no-key-check",
+                "--timeout",
+                str(EXEC_TIMEOUT),
+                job_id,
+            ]
+        )
     assert cm.value.returncode == 2
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_echo(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
+
     captured = helper.run_cli(
         [
             "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
+            "exec",
+            "--no-tty",
+            "--no-key-check",
+            "--timeout",
+            str(EXEC_TIMEOUT),
+            job_id,
+            "echo 1",
         ]
     )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
-
-    captured = helper.run_cli(
-        ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id, "echo 1"]
-    )
     assert captured.out == "1"
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id, "[ -t 1 ]"]
+            [
+                "job",
+                "exec",
+                "--no-tty",
+                "--no-key-check",
+                "--timeout",
+                str(EXEC_TIMEOUT),
+                job_id,
+                "[ -t 1 ]",
+            ]
         )
     assert cm.value.returncode == 1
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_tty(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
+
     captured = helper.run_cli(
         [
             "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
+            "exec",
+            "--no-key-check",
+            "--timeout",
+            str(EXEC_TIMEOUT),
+            job_id,
+            "[ -t 1 ]",
         ]
     )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
-
-    captured = helper.run_cli(
-        ["job", "exec", "--no-key-check", "--timeout=60", job_id, "[ -t 1 ]"]
-    )
     assert captured.out == ""
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
 def test_e2e_ssh_exec_no_job(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["job", "exec", "-T", "--no-key-check", "--timeout=60", "job_id", "true"]
+            [
+                "job",
+                "exec",
+                "--no-tty",
+                "--no-key-check",
+                "--timeout",
+                str(EXEC_TIMEOUT),
+                "job_id",
+                "true",
+            ]
         )
     assert cm.value.returncode == 127
 
@@ -551,28 +478,22 @@ def test_e2e_ssh_exec_no_job(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
     command = "true"
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
+    job_id = helper.run_job_and_wait_state(
+        UBUNTU_IMAGE_NAME, command, wait_state=JobStatus.SUCCEEDED
     )
-    out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
-    assert match is not None
-    job_id = match.group(1)
-
-    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["job", "exec", "-T", "--no-key-check", "--timeout=60", job_id, "true"]
+            [
+                "job",
+                "exec",
+                "--no-tty",
+                "--no-key-check",
+                "--timeout",
+                str(EXEC_TIMEOUT),
+                job_id,
+                "true",
+            ]
         )
     assert cm.value.returncode == 127
 
@@ -584,13 +505,10 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
     image_neuro_name = f"image://{helper.username}/{image}"
     command = "sh -c 'echo -n 123 > /test; sleep 10m'"
     job_id_1 = helper.run_job_and_wait_state(
-        ALPINE_IMAGE_NAME,
-        command=command,
-        params=("-n", job_name),
-        wait_state=JobStatus.RUNNING,
+        ALPINE_IMAGE_NAME, command=command, wait_state=JobStatus.RUNNING
     )
     img_uri = f"image://{helper.username}/{image}"
-    captured = helper.run_cli(["job", "save", job_name, image_neuro_name])
+    captured = helper.run_cli(["job", "save", job_id_1, image_neuro_name])
     out = captured.out
     assert f"Saving job '{job_id_1}' to image '{img_uri}'..." in out
     assert f"Using remote image '{img_uri}'" in out
@@ -601,42 +519,15 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
     assert out.endswith(img_uri)
 
     # wait to free the job name:
-    helper.run_cli(["job", "kill", job_name])
+    helper.run_cli(["job", "kill", job_id_1])
     helper.wait_job_change_state_to(job_id_1, JobStatus.SUCCEEDED)
 
     command = 'sh -c \'[ "$(cat /test)" = "123" ]\''
     helper.run_job_and_wait_state(
-        image_neuro_name,
-        command=command,
-        params=("-n", job_name),
-        wait_state=JobStatus.SUCCEEDED,
+        image_neuro_name, command=command, wait_state=JobStatus.SUCCEEDED
     )
 
     # TODO (A.Yushkovskiy): delete the pushed image in GCR
-
-
-@pytest.fixture
-def nginx_job(helper: Helper) -> Iterator[str]:
-    command = 'timeout 15m /usr/sbin/nginx -g "daemon off;"'
-    captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--detach",
-            NGINX_IMAGE_NAME,
-            command,
-        ]
-    )
-    match = re.match("Job ID: (.+) Status:", captured.out)
-    assert match is not None
-    job_id = match.group(1)
-    helper.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
-
-    yield job_id
-
-    helper.run_cli(["job", "kill", job_id])
 
 
 @pytest.fixture
@@ -668,13 +559,14 @@ async def nginx_job_async(
                 raise AssertionError("Cannot start NGINX job")
             yield job.id, str(secret)
         finally:
-            await client.jobs.kill(job.id)
+            with suppress(Exception):
+                await client.jobs.kill(job.id)
 
 
 @pytest.mark.e2e
-async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
+async def test_port_forward(nmrc_path: Path, nginx_job_async: Tuple[str, str]) -> None:
     loop_sleep = 1
-    service_wait_time = 60
+    service_wait_time = 10 * 60
 
     async def get_(url: str) -> int:
         status = 999
@@ -695,7 +587,7 @@ async def test_port_forward(nmrc_path: Path, nginx_job_async: str) -> None:
                     await asyncio.sleep(loop_sleep)
         return status
 
-    async with api_get(path=nmrc_path) as client:
+    async with api_get(path=nmrc_path, timeout=CLIENT_TIMEOUT) as client:
         port = unused_port()
         # We test client instead of run_cli as asyncio subprocesses do
         # not work if run from thread other than main.
@@ -713,7 +605,7 @@ def test_job_submit_http_auth(
     helper: Helper, secret_job: Callable[..., Dict[str, Any]]
 ) -> None:
     loop_sleep = 1
-    service_wait_time = 60
+    service_wait_time = 10 * 60
 
     async def _test_http_auth_redirect(url: URL) -> None:
         start_time = time()
@@ -789,83 +681,27 @@ def test_job_run(helper: Helper) -> None:
     assert "Exit code: 101" in store_out
 
 
-@pytest.fixture()
-async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
-    if sys.platform == "win32":
-        pytest.skip("aiodocker not supported on windows at this moment")
-    client = aiodocker.Docker()
-    yield client
-    await client.close()
-
-
-async def generate_image(docker: aiodocker.Docker) -> str:
-    dockerfile = Path(__file__).parent / "assets/neuromation-client/Dockerfile"
-    root = Path(__file__).parent.parent.parent
-    image_archive = Path(__file__).parent / "assets/neuro-cli.tar"
-    with tarfile.open(image_archive, "w:gz") as tar:
-        tar.add(str(dockerfile), arcname="Dockerfile")
-        tar.add(str(root / "setup.py"), arcname="setup.py")
-        tar.add(str(root / "README.md"), arcname="README.md")
-        tar.add(str(root / "neuromation/"), arcname="neuromation")
-
-    with open(image_archive, "rb") as f:
-        bytes = f.read()
-        hash = hashlib.sha256(bytes).hexdigest()
-        tag = hash
-
-    image_name = f"{TEST_IMAGE_NAME}:{tag}"
-    with image_archive.open(mode="r+b") as fileobj:
-        result = await docker.images.build(
-            fileobj=fileobj, tag=image_name, buildargs={"TAG": tag}, encoding="identity"
-        )
-        print(result)
-
-    return image_name
-
-
-@pytest.fixture()
-async def image(
-    loop: asyncio.AbstractEventLoop, docker: aiodocker.Docker
-) -> AsyncIterator[str]:
-    image = await generate_image(docker)
-    yield image
-    await docker.images.delete(image, force=True)
-
-
 @pytest.mark.e2e
-def test_pass_config(image: str, helper: Helper) -> None:
-    # Let`s push image
-    captured = helper.run_cli(["image", "push", image])
-
-    image_full_str = f"image://{helper.username}/{image}"
-    assert captured.out.endswith(image_full_str)
-
-    command = 'bash -c "neuro config show"'
-    # Run a new job
+def test_pass_config(helper: Helper) -> None:
     captured = helper.run_cli(
         [
+            "-q",
             "job",
             "run",
-            "-q",
             "-s",
             JOB_TINY_CONTAINER_PRESET,
             "--no-wait-start",
             "--pass-config",
-            image_full_str,
-            command,
+            UBUNTU_IMAGE_NAME,
+            'bash -c "sleep 15 && test -f $(NEURO_STEAL_CONFIG)/db"',
         ]
     )
     job_id = captured.out
 
-    # sleep(1)
-
-    # Wait until the job is running
-    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
-
-    # Verify exit code is returned
-    captured = helper.run_cli(["job", "status", job_id])
-    store_out = captured.out
-    assert "Exit code: 0" in store_out
+    # fails if "test -f ..." check is not succeeded
+    helper.wait_job_change_state_to(
+        job_id, JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
+    )
 
 
 @pytest.mark.parametrize("http_auth", ["--http-auth", "--no-http-auth"])
@@ -915,32 +751,6 @@ def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
 
 
 @pytest.mark.e2e
-def test_job_browse_named(helper: Helper, fakebrowser: Any) -> None:
-    job_name = f"namedjob-{os.urandom(5).hex()}"
-
-    # Run a new job
-    captured = helper.run_cli(
-        [
-            "-q",
-            "job",
-            "run",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
-            "--detach",
-            "--name",
-            job_name,
-            UBUNTU_IMAGE_NAME,
-            "true",
-        ]
-    )
-    job_id = captured.out
-
-    captured = helper.run_cli(["-v", "job", "browse", job_id])
-    assert f"Browsing https://{job_name}--{helper.username}" in captured.out
-    assert f"Open job URL: https://{job_name}--{helper.username}" in captured.err
-
-
-@pytest.mark.e2e
 def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
     captured = helper.run_cli(
@@ -979,9 +789,29 @@ def test_job_run_no_detach(helper: Helper) -> None:
     detach_notification = """\
 Terminal is attached to the remote job, so you receive the job's output.
 Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the job
-with `--detach` option.
+with `--detach` option.\
 """
-    assert detach_notification in captured.out
+    assert detach_notification
+
+
+@pytest.mark.e2e
+def test_job_run_no_detach_quiet_mode(helper: Helper) -> None:
+    token = str(uuid4())
+    # Run a new job
+    captured = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
+            UBUNTU_IMAGE_NAME,
+            f"echo {token}",
+        ]
+    )
+    out = captured.out.strip()
+    assert "Use 'Ctrl-C' to detach (it will NOT terminate the job)" not in out
+    assert out.endswith(token)
 
 
 @pytest.mark.e2e
@@ -1004,42 +834,64 @@ def test_job_submit_no_detach_failure(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
+def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
     # Run a new job
-    captured = helper.run_cli(
-        [
-            "-v",
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--http",
-            "80",
-            "--detach",
-            "--browse",
-            UBUNTU_IMAGE_NAME,
-            "true",
-        ]
-    )
-    assert "Browsing https://job-" in captured.out
-    assert "Open job URL: https://job-" in captured.err
+    captured = None
+    with pytest.raises(subprocess.CalledProcessError) as exc_info:
+        captured = helper.run_cli(
+            [
+                "-v",
+                "job",
+                "run",
+                "-s",
+                JOB_TINY_CONTAINER_PRESET,
+                "--detach",
+                "--browse",
+                UBUNTU_IMAGE_NAME,
+                f"exit 123",
+            ]
+        )
+    assert captured is None
+    assert exc_info.value.returncode == 125
 
 
 @pytest.mark.e2e
 def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
     command = "[ -d /var/storage/home -a -d /var/storage/neuromation ]"
 
-    # first, run without --volume=HOME
-    helper.run_job_and_wait_state(
-        image=UBUNTU_IMAGE_NAME, command=command, wait_state=JobStatus.FAILED
-    )
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        # first, run without --volume=HOME
+        helper.run_cli(
+            [
+                "-q",
+                "job",
+                "run",
+                "--detach",
+                "--preset=cpu-micro",
+                UBUNTU_IMAGE_NAME,
+                command,
+            ]
+        )
+
+    assert cm.value.returncode == 125
 
     # then, run with --volume=HOME
-    helper.run_job_and_wait_state(
-        image=UBUNTU_IMAGE_NAME,
-        command=command,
-        params=("--volume", "HOME"),
-        wait_state=JobStatus.SUCCEEDED,
+    capture = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            "--detach",
+            "--preset=cpu-micro",
+            "--volume",
+            "HOME",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
     )
+
+    job_id_2 = capture.out
+    helper.wait_job_change_state_to(job_id_2, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
 
 @pytest.mark.e2e
@@ -1057,18 +909,17 @@ def test_job_run_volume_all(helper: Helper) -> None:
     command = f"bash -c '{cmd}'"
     img = UBUNTU_IMAGE_NAME
 
-    # first, run without --volume=ALL
-    captured = helper.run_cli(
-        ["--quiet", "run", "--detach", "-s", "cpu-small", img, command]
-    )
-    job_id = captured.out
-    helper.wait_job_change_state_to(job_id, JobStatus.FAILED)
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        # first, run without --volume=ALL
+        captured = helper.run_cli(
+            ["--quiet", "run", "--detach", "-s", "cpu-micro", img, command]
+        )
+    assert cm.value.returncode == 125
 
     # then, run with --volume=ALL
     captured = helper.run_cli(
-        ["run", "--detach", "-s", "cpu-small", "--volume=ALL", img, command]
+        ["run", "--detach", "-s", "cpu-micro", "--volume=ALL", img, command]
     )
-    assert not captured.err
     msg = (
         "Storage mountpoints will be available as the environment variables:\n"
         f"  NEUROMATION_ROOT={root_mountpoint}\n"
@@ -1099,3 +950,82 @@ def test_job_run_volume_all_and_another(helper: Helper) -> None:
         captured = helper.run_cli(["job", "run", *args, UBUNTU_IMAGE_NAME, "sleep 30"])
         msg = "Cannot use `--volume=ALL` together with other `--volume` options"
         assert msg in captured.err
+
+
+@pytest.mark.e2e
+def test_e2e_job_top(helper: Helper) -> None:
+    def split_non_empty_parts(line: str, sep: str) -> List[str]:
+        return [part.strip() for part in line.split(sep) if part.strip()]
+
+    command = f"sleep 300"
+
+    print("Run job... ")
+    job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
+    print("... done")
+    t0 = time()
+    returncode = -1
+    delay = 15.0
+
+    while returncode and time() - t0 < 3 * 60:
+        try:
+            print("Try job top")
+            capture = helper.run_cli(["job", "top", job_id, "--timeout", str(delay)])
+        except subprocess.CalledProcessError as ex:
+            stdout = ex.output
+            stderr = ex.stderr
+            returncode = ex.returncode
+        else:
+            stdout = capture.out
+            stderr = capture.err
+            returncode = 0
+
+        if "TIMESTAMP" in stdout and "MEMORY (MB)" in stdout:
+            # got response from job top telemetery
+            returncode = 0
+            break
+        else:
+            print(f"job top has failed, increase timeout to {delay}")
+            delay = min(delay * 1.5, 60)
+
+    # timeout is reached without info from server
+    assert not returncode, (
+        f"Cannot get response from server "
+        f"in {time() - t0} secs, delay={delay} "
+        f"returncode={returncode}\n"
+        f"stdout = {stdout}\nstdderr = {stderr}"
+    )
+
+    helper.kill_job(job_id, wait=False)
+
+    try:
+        header, *lines = split_non_empty_parts(stdout, sep="\n")
+    except ValueError:
+        assert False, f"cannot unpack\n{stdout}\n{stderr}"
+    header_parts = split_non_empty_parts(header, sep="\t")
+    assert header_parts == [
+        "TIMESTAMP",
+        "CPU",
+        "MEMORY (MB)",
+        "GPU (%)",
+        "GPU_MEMORY (MB)",
+    ]
+
+    for line in lines:
+        line_parts = split_non_empty_parts(line, sep="\t")
+        timestamp_pattern_parts = [
+            ("weekday", "[A-Z][a-z][a-z]"),
+            ("month", "[A-Z][a-z][a-z]"),
+            ("day", r"\d+"),
+            ("day", r"\d\d:\d\d:\d\d"),
+            ("year", r"\d{4}"),
+        ]
+        timestamp_pattern = r"\s+".join([part[1] for part in timestamp_pattern_parts])
+        expected_parts = [
+            ("timestamp", timestamp_pattern),
+            ("cpu", r"\d.\d\d\d"),
+            ("memory", r"\d.\d\d\d"),
+            ("gpu", "0"),
+            ("gpu memory", "0"),
+        ]
+        for actual, (descr, pattern) in zip(line_parts, expected_parts):
+            assert re.match(pattern, actual) is not None, f"error in matching {descr}"

@@ -1,19 +1,12 @@
-import re
-import subprocess
-from typing import List
-from uuid import uuid4
-
 import pytest
 
 import neuromation
-from neuromation.api import JobStatus
 from tests.e2e import Helper
-from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, UBUNTU_IMAGE_NAME
 
 
 @pytest.mark.e2e
 def test_print_version(helper: Helper) -> None:
-    expected_out = f"Neuromation Platform Client {neuromation.__version__}"
+    expected_out = f"Neuro Platform Client {neuromation.__version__}"
 
     captured = helper.run_cli(["--version"])
     assert not captured.err
@@ -42,84 +35,16 @@ def test_print_config_token(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_e2e_job_top(helper: Helper) -> None:
-    def split_non_empty_parts(line: str, sep: str) -> List[str]:
-        return [part.strip() for part in line.split(sep) if part.strip()]
-
-    command = f"sleep 300"
-    job_name = f"test-job-{str(uuid4())[:8]}"
-    aux_params = ["--name", job_name]
-
-    helper.run_job_and_wait_state(
-        image=UBUNTU_IMAGE_NAME,
-        command=command,
-        params=JOB_TINY_CONTAINER_PARAMS + aux_params,
-    )
-
-    try:
-        capture = helper.run_cli(["job", "top", job_name, "--timeout", "30"])
-    except subprocess.CalledProcessError as ex:
-        stdout = ex.output
-        stderr = ex.stderr
-    else:
-        assert False, f"timeout is not caught\n{capture.out}\n{capture.err}"
-
-    helper.kill_job(job_name)
-
-    try:
-        header, *lines = split_non_empty_parts(stdout, sep="\n")
-    except ValueError:
-        assert False, f"cannot unpack\n{stdout}\n{stderr}"
-    header_parts = split_non_empty_parts(header, sep="\t")
-    assert header_parts == [
-        "TIMESTAMP",
-        "CPU",
-        "MEMORY (MB)",
-        "GPU (%)",
-        "GPU_MEMORY (MB)",
-    ]
-
-    for line in lines:
-        line_parts = split_non_empty_parts(line, sep="\t")
-        timestamp_pattern_parts = [
-            ("weekday", "[A-Z][a-z][a-z]"),
-            ("month", "[A-Z][a-z][a-z]"),
-            ("day", r"\d+"),
-            ("day", r"\d\d:\d\d:\d\d"),
-            ("year", "2019"),
-        ]
-        timestamp_pattern = r"\s+".join([part[1] for part in timestamp_pattern_parts])
-        expected_parts = [
-            ("timestamp", timestamp_pattern),
-            ("cpu", r"\d.\d\d\d"),
-            ("memory", r"\d.\d\d\d"),
-            ("gpu", "0"),
-            ("gpu memory", "0"),
-        ]
-        for actual, (descr, pattern) in zip(line_parts, expected_parts):
-            assert re.match(pattern, actual) is not None, f"error in matching {descr}"
+def test_print_get_clusters(helper: Helper) -> None:
+    captured = helper.run_cli(["config", "get-clusters"])
+    assert not captured.err
+    assert "Name: default" in captured.out
+    assert "Presets" in captured.out
 
 
 @pytest.mark.e2e
-@pytest.mark.parametrize(
-    "switch,expected",
-    [["--extshm", True], ["--no-extshm", False], [None, True]],  # default is enabled
-)
-def test_e2e_shm_switch(switch: str, expected: bool, helper: Helper) -> None:
-    # Start the df test job
-    bash_script = "/bin/df --block-size M --output=target,avail /dev/shm | grep 64M"
-    command = f"bash -c '{bash_script}'"
-    params = list(JOB_TINY_CONTAINER_PARAMS)
-    if switch is not None:
-        params.append(switch)
-
-    if expected:
-        job_id = helper.run_job_and_wait_state(
-            UBUNTU_IMAGE_NAME, command, params, JobStatus.FAILED, JobStatus.SUCCEEDED
-        )
-        status = helper.job_info(job_id)
-        assert status.history.exit_code == 1
-    else:
-        helper.run_job_and_wait_state(
-            UBUNTU_IMAGE_NAME, command, params, JobStatus.SUCCEEDED, JobStatus.FAILED
-        )
+def test_root_trace_hide_token_default_true(helper: Helper) -> None:
+    captured = helper.run_cli(["--trace", "ls"])
+    assert "Authorization: Bearer " in captured.err
+    assert "<hidden " in captured.err
+    assert " chars>" in captured.err

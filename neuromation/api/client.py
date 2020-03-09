@@ -1,16 +1,21 @@
 import time
 from http.cookies import Morsel  # noqa
 from http.cookies import SimpleCookie
+from pathlib import Path
 from types import TracebackType
-from typing import Optional, Type
+from typing import Mapping, Optional, Type
 
 import aiohttp
 
-from .config import _Config
-from .core import DEFAULT_TIMEOUT, _Core
+from neuromation.api.quota import _Quota
+
+from .admin import _Admin
+from .config import Config, _ConfigData
+from .core import _Core
 from .images import Images
 from .jobs import Jobs
 from .parser import Parser
+from .server_cfg import Preset
 from .storage import Storage
 from .users import Users
 from .utils import NoPublicConstructor
@@ -22,32 +27,32 @@ SESSION_COOKIE_MAXAGE = 5 * 60  # 5 min
 class Client(metaclass=NoPublicConstructor):
     def __init__(
         self,
-        connector: aiohttp.BaseConnector,
-        config: _Config,
-        *,
-        timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+        session: aiohttp.ClientSession,
+        config_data: _ConfigData,
+        path: Path,
+        trace_id: Optional[str],
     ) -> None:
         self._closed = False
-        config.check_initialized()
-        self._config = config
-        self._connector = connector
-        if time.time() - config.cookie_session.timestamp > SESSION_COOKIE_MAXAGE:
+        self._trace_id = trace_id
+        self._session = session
+        if time.time() - config_data.cookie_session.timestamp > SESSION_COOKIE_MAXAGE:
             # expired
             cookie: Optional["Morsel[str]"] = None
         else:
-            tmp = SimpleCookie()
-            tmp["NEURO_SESSION"] = config.cookie_session.cookie
+            tmp = SimpleCookie()  # type: ignore
+            tmp["NEURO_SESSION"] = config_data.cookie_session.cookie
             cookie = tmp["NEURO_SESSION"]
-            assert config.url.raw_host is not None
-            cookie["domain"] = config.url.raw_host
+            assert config_data.url.raw_host is not None
+            cookie["domain"] = config_data.url.raw_host
             cookie["path"] = "/"
-        self._core = _Core(
-            connector, self._config.url, self._config.auth_token.token, cookie, timeout
-        )
-        self._jobs = Jobs._create(self._core, self._config)
+        self._core = _Core(session, cookie, trace_id)
+        self._config = Config._create(self._core, path, config_data)
+        self._parser = Parser._create(self._config)
+        self._admin = _Admin._create(self._core, self._config)
+        self._jobs = Jobs._create(self._core, self._config, self._parser)
         self._storage = Storage._create(self._core, self._config)
-        self._users = Users._create(self._core)
-        self._parser = Parser._create(self._config, self.username)
+        self._users = Users._create(self._core, self._config)
+        self._quota = _Quota._create(self._core, self._config)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
@@ -57,7 +62,7 @@ class Client(metaclass=NoPublicConstructor):
         await self._core.close()
         if self._images is not None:
             await self._images._close()
-        await self._connector.close()
+        await self._session.close()
 
     async def __aenter__(self) -> "Client":
         return self
@@ -72,7 +77,17 @@ class Client(metaclass=NoPublicConstructor):
 
     @property
     def username(self) -> str:
-        return self._config.auth_token.username
+        return self._config.username
+
+    @property
+    def presets(self) -> Mapping[str, Preset]:
+        # TODO: add deprecation warning eventually.
+        # The preferred API is client.config now.
+        return self._config.presets
+
+    @property
+    def config(self) -> Config:
+        return self._config
 
     @property
     def jobs(self) -> Jobs:
@@ -89,7 +104,7 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def images(self) -> Images:
         if self._images is None:
-            self._images = Images._create(self._core, self._config)
+            self._images = Images._create(self._core, self._config, self._parser)
         return self._images
 
     @property

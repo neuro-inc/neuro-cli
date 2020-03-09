@@ -1,0 +1,71 @@
+parameters:
+  operation_systems:
+  - 'ubuntu'
+  - 'windows'
+  - 'macos'
+  python_versions:
+  - '3.6'
+  - '3.7'
+  targets:
+  - 'jobs'
+  - 'sumo'
+
+stages:
+- stage: e2e
+  displayName: "E2E"
+  jobs:
+  - job:
+    displayName: " "
+    strategy:
+      matrix:
+        ${{ each py in parameters.python_versions }}:
+          ${{ each os in parameters.operation_systems }}:
+            ${{ each tgt in parameters.targets }}:
+              ${{ format('Py-{0}-{1}-{2}', py, os, tgt) }}:
+                python.version: ${{ py }}
+                image: ${{ format('{0}-latest', os) }}
+                target: ${{ format('e2e-{0}', tgt) }}
+                PIP_CACHE_DIR: $(Pipeline.Workspace)/.pip
+
+    pool:
+      vmImage: $[ variables['image'] ]
+
+    timeoutInMinutes: 30
+
+    steps:
+    - checkout: self
+      clean: true
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '$(python.version)'
+      displayName: "Use Python $(python.version)"
+
+    - task: Cache@2
+      inputs:
+        key: 'pip | "$(Agent.OS)" | "$(python.version)" | requirements/base.txt | requirements/ci.txt'
+        path: $(PIP_CACHE_DIR)
+
+    - script: |
+        python -m pip install -U pip wheel
+      displayName: 'Install prerequirements'
+
+    - script: |
+        pip install -r requirements/ci.txt pytest-azurepipelines
+        pip install .
+        touch .update-deps
+      displayName: 'Install dependencies'
+
+    - script: |
+        make $(target)
+      displayName: 'Run $(target)'
+      env:
+        CLIENT_TEST_E2E_USER_NAME: $(e2e.token)
+        PYTEST_XDIST_NUM_THREADS: 8
+
+    - script: |
+        pip install codecov
+        python -m codecov -f coverage.xml -X gcov
+      displayName: 'Upload coverage reports'
+      env:
+        CODECOV_TOKEN: $(codecov.token)

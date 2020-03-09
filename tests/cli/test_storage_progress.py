@@ -1,9 +1,10 @@
 import sys
 from pathlib import Path
-from typing import Any, List
+from typing import Any, Callable, Iterator, List
 from unittest import mock
 
 import click
+import pytest
 from yarl import URL
 
 from neuromation.api import (
@@ -44,26 +45,52 @@ def test_format_url_file() -> None:
     assert format_url(u) == expected
 
 
-def make_root(color: bool, tty: bool, verbose: bool) -> Root:
-    return Root(color, tty, (80, 25), True, 60, Path("~/.nmrc"), verbosity=int(verbose))
+_MakeRoot = Callable[[bool, bool, bool], Root]
 
 
-def test_progress_factory_none() -> None:
+@pytest.fixture
+def make_root() -> Iterator[_MakeRoot]:
+    root = None
+
+    def make(color: bool, tty: bool, verbose: bool) -> Root:
+        nonlocal root
+        root = Root(
+            color,
+            tty,
+            (80, 25),
+            True,
+            60,
+            Path("~/.neuro"),
+            verbosity=int(verbose),
+            trace=False,
+            trace_hide_token=True,
+            command_path="",
+            command_params=[],
+            skip_gmp_stats=True,
+        )
+        return root
+
+    yield make
+    if root is not None:
+        root.close()
+
+
+def test_progress_factory_none(make_root: _MakeRoot) -> None:
     progress = create_storage_progress(make_root(False, False, False), False)
     assert isinstance(progress, StreamProgress)
 
 
-def test_progress_factory_verbose() -> None:
+def test_progress_factory_verbose(make_root: _MakeRoot) -> None:
     progress = create_storage_progress(make_root(False, False, False), False)
     assert isinstance(progress, StreamProgress)
 
 
-def test_progress_factory_percent() -> None:
+def test_progress_factory_percent(make_root: _MakeRoot) -> None:
     progress = create_storage_progress(make_root(False, False, False), True)
     assert isinstance(progress, TTYProgress)
 
 
-def test_quiet_stream_progress(capsys: Any) -> None:
+def test_quiet_stream_progress(capsys: Any, make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, False, False), False)
     src = URL("file:///abc")
     dst = URL("storage:xyz")
@@ -97,7 +124,7 @@ def test_quiet_stream_progress(capsys: Any) -> None:
     assert captured.out == f""
 
 
-def test_stream_progress(capsys: Any) -> None:
+def test_stream_progress(capsys: Any, make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, False, True), False)
     src = URL("file:///abc")
     src_str = "/abc" if not sys.platform == "win32" else "\\abc"
@@ -133,7 +160,7 @@ def test_stream_progress(capsys: Any) -> None:
     assert captured.out == f""
 
 
-def test_stream_fail1(capsys: Any) -> None:
+def test_stream_fail1(capsys: Any, make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), False)
     src = URL("file:///abc")
     src_str = "/abc" if not sys.platform == "win32" else "\\abc"
@@ -144,7 +171,7 @@ def test_stream_fail1(capsys: Any) -> None:
     assert captured.err == f"Failure: '{src_str}' -> 'storage:xyz' [error]\n"
 
 
-def test_stream_fail2(capsys: Any) -> None:
+def test_stream_fail2(capsys: Any, make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), False)
     src = URL("file:///abc")
     src_str = "/abc" if not sys.platform == "win32" else "\\abc"
@@ -155,7 +182,7 @@ def test_stream_fail2(capsys: Any) -> None:
     assert captured.err == f"Failure: '{src_str}' -> 'storage:xyz' [error]\n"
 
 
-def test_tty_progress(capsys: Any) -> None:
+def test_tty_progress(capsys: Any, make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     src = URL("file:///abc")
     dst = URL("storage:xyz")
@@ -167,25 +194,29 @@ def test_tty_progress(capsys: Any) -> None:
     assert captured.out == f"Copy 'file:///abc' => 'storage:xyz'\n"
 
     report.enter(StorageProgressEnterDir(src, dst))
-    assert unstyle(report) == ["'file:///abc'"]
+    assert unstyle(report) == ["'file:///abc' ..."]
 
     report.start(StorageProgressStart(src_f, dst_f, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' [0.00%] 0B of 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [0.00%] 0B of 600B"]
 
     report.step(StorageProgressStep(src_f, dst_f, 300, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' [50.00%] 300B of 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [50.00%] 300B of 600B"]
 
     report.step(StorageProgressStep(src_f, dst_f, 400, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' [66.67%] 400B of 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [66.67%] 400B of 600B"]
 
     report.complete(StorageProgressComplete(src_f, dst_f, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' 600B"]
 
     report.leave(StorageProgressLeaveDir(src, dst))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' 600B"]
+    assert unstyle(report) == [
+        "'file:///abc' ...",
+        "'file.txt' 600B",
+        "'file:///abc' DONE",
+    ]
 
 
-def test_tty_verbose(capsys: Any) -> None:
+def test_tty_verbose(capsys: Any, make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, True), True)
     src = URL("file:///abc")
     dst = URL("storage:xyz")
@@ -195,7 +226,7 @@ def test_tty_verbose(capsys: Any) -> None:
     assert captured.out == f"Copy\n'file:///abc'\n=>\n'storage:xyz'\n"
 
 
-def test_tty_nested() -> None:
+def test_tty_nested(make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     src = URL("file:///abc")
     dst = URL("storage:xyz")
@@ -207,67 +238,72 @@ def test_tty_nested() -> None:
     dst2_f = URL("storage:xyz/cde/file.txt")
 
     report.enter(StorageProgressEnterDir(src, dst))
-    assert unstyle(report) == ["'file:///abc'"]
+    assert unstyle(report) == ["'file:///abc' ..."]
 
     report.start(StorageProgressStart(src_f, dst_f, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' [0.00%] 0B of 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [0.00%] 0B of 600B"]
 
     report.step(StorageProgressStep(src_f, dst_f, 300, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' [50.00%] 300B of 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [50.00%] 300B of 600B"]
 
     report.step(StorageProgressStep(src_f, dst_f, 400, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' [66.67%] 400B of 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [66.67%] 400B of 600B"]
 
     report.complete(StorageProgressComplete(src_f, dst_f, 600))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' 600B"]
 
     report.enter(StorageProgressEnterDir(src2, dst2))
-    assert unstyle(report) == ["'file:///abc'", "'file.txt' 600B", "'file:///abc/cde'"]
+    assert unstyle(report) == [
+        "'file:///abc' ...",
+        "'file.txt' 600B",
+        "'file:///abc/cde' ...",
+    ]
 
     report.start(StorageProgressStart(src2_f, dst2_f, 800))
     assert unstyle(report) == [
-        "'file:///abc'",
+        "'file:///abc' ...",
         "'file.txt' 600B",
-        "'file:///abc/cde'",
+        "'file:///abc/cde' ...",
         "'file.txt' [0.00%] 0B of 800B",
     ]
 
     report.step(StorageProgressStep(src2_f, dst2_f, 300, 800))
     assert unstyle(report) == [
-        "'file:///abc'",
+        "'file:///abc' ...",
         "'file.txt' 600B",
-        "'file:///abc/cde'",
+        "'file:///abc/cde' ...",
         "'file.txt' [37.50%] 300B of 800B",
     ]
 
     report.complete(StorageProgressComplete(src2_f, dst_f, 800))
     assert unstyle(report) == [
-        "'file:///abc'",
+        "'file:///abc' ...",
         "'file.txt' 600B",
-        "'file:///abc/cde'",
+        "'file:///abc/cde' ...",
         "'file.txt' 800B",
     ]
 
     report.leave(StorageProgressLeaveDir(src2, dst2))
     assert unstyle(report) == [
-        "'file:///abc'",
+        "'file:///abc' ...",
         "'file.txt' 600B",
-        "'file:///abc/cde'",
+        "'file:///abc/cde' ...",
         "'file.txt' 800B",
-        "'file:///abc'",
+        "'file:///abc/cde' DONE",
     ]
 
     report.leave(StorageProgressLeaveDir(src, dst))
     assert unstyle(report) == [
-        "'file:///abc'",
+        "'file:///abc' ...",
         "'file.txt' 600B",
-        "'file:///abc/cde'",
+        "'file:///abc/cde' ...",
         "'file.txt' 800B",
-        "'file:///abc'",
+        "'file:///abc/cde' DONE",
+        "'file:///abc' DONE",
     ]
 
 
-def test_fail_tty(capsys: Any) -> None:
+def test_fail_tty(capsys: Any, make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     src = URL("file:///abc")
     dst = URL("storage:xyz")
@@ -277,7 +313,7 @@ def test_fail_tty(capsys: Any) -> None:
     assert captured.err == f"Failure: 'file:///abc' -> 'storage:xyz' [error]\n"
 
 
-def test_tty_fmt_url() -> None:
+def test_tty_fmt_url(make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     assert isinstance(report, TTYProgress)
     url = URL("storage://andrew/folder/file.txt")
@@ -287,7 +323,7 @@ def test_tty_fmt_url() -> None:
     )
 
 
-def test_tty_fmt_storage_url_over_half() -> None:
+def test_tty_fmt_storage_url_over_half(make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     assert isinstance(report, TTYProgress)
     url = URL("storage://andrew/folder0/folder1/file.txt")
@@ -297,7 +333,7 @@ def test_tty_fmt_storage_url_over_half() -> None:
     )
 
 
-def test_tty_fmt_storage_url_over_full() -> None:
+def test_tty_fmt_storage_url_over_full(make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     assert isinstance(report, TTYProgress)
     url = URL(
@@ -311,7 +347,7 @@ def test_tty_fmt_storage_url_over_full() -> None:
     )
 
 
-def test_tty_fmt_url_over_half_single_segment() -> None:
+def test_tty_fmt_url_over_half_single_segment(make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     assert isinstance(report, TTYProgress)
     url = URL("file://" + "a" * 40)
@@ -321,7 +357,7 @@ def test_tty_fmt_url_over_half_single_segment() -> None:
     )
 
 
-def test_tty_fmt_url_over_half_single_segment2() -> None:
+def test_tty_fmt_url_over_half_single_segment2(make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     assert isinstance(report, TTYProgress)
     url = URL("file:///" + "a" * 40)
@@ -331,7 +367,7 @@ def test_tty_fmt_url_over_half_single_segment2() -> None:
     )
 
 
-def test_tty_fmt_url_over_half_long_segment() -> None:
+def test_tty_fmt_url_over_half_long_segment(make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     assert isinstance(report, TTYProgress)
     url = URL("file:///andrew/" + "a" * 30)
@@ -341,7 +377,7 @@ def test_tty_fmt_url_over_half_long_segment() -> None:
     )
 
 
-def test_tty_fmt_file_url_over_half() -> None:
+def test_tty_fmt_file_url_over_half(make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     assert isinstance(report, TTYProgress)
     url = URL("file:///andrew/folder0/folder1/file.txt")
@@ -351,7 +387,7 @@ def test_tty_fmt_file_url_over_half() -> None:
     )
 
 
-def test_tty_fmt_file_url_over_full() -> None:
+def test_tty_fmt_file_url_over_full(make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     assert isinstance(report, TTYProgress)
     url = URL(
@@ -363,7 +399,7 @@ def test_tty_fmt_file_url_over_full() -> None:
     )
 
 
-def test_tty_fmt_url_relative_over() -> None:
+def test_tty_fmt_url_relative_over(make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     assert isinstance(report, TTYProgress)
     url = URL("storage:folder1/folder2/folder3/folder4/folder5")
@@ -373,7 +409,7 @@ def test_tty_fmt_url_relative_over() -> None:
     )
 
 
-def test_tty_fmt_url_relative_over_long_2_segments() -> None:
+def test_tty_fmt_url_relative_over_long_2_segments(make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     assert isinstance(report, TTYProgress)
     url = URL("storage:folder/" + "a" * 30)
@@ -383,7 +419,7 @@ def test_tty_fmt_url_relative_over_long_2_segments() -> None:
     )
 
 
-def test_tty_fmt_url_relative_over_single_segment() -> None:
+def test_tty_fmt_url_relative_over_single_segment(make_root: _MakeRoot) -> None:
     report = create_storage_progress(make_root(False, True, False), True)
     assert isinstance(report, TTYProgress)
     url = URL("storage:" + "a" * 35)
@@ -393,7 +429,7 @@ def test_tty_fmt_url_relative_over_single_segment() -> None:
     )
 
 
-def test_tty_append_files() -> None:
+def test_tty_append_files(make_root: _MakeRoot) -> None:
     with mock.patch.object(TTYProgress, "HEIGHT", 3):
         report = create_storage_progress(make_root(False, True, False), True)
         assert isinstance(report, TTYProgress)
@@ -417,7 +453,7 @@ def test_tty_append_files() -> None:
         ]
 
 
-def test_tty_append_dir() -> None:
+def test_tty_append_dir(make_root: _MakeRoot) -> None:
     with mock.patch.object(TTYProgress, "HEIGHT", 3):
         report = create_storage_progress(make_root(False, True, False), True)
         assert isinstance(report, TTYProgress)
@@ -425,23 +461,23 @@ def test_tty_append_dir() -> None:
         assert report.lines == []
         report.append(URL("a"), "a", is_dir=True)
         assert report.lines == [(URL("a"), True, "a")]
-        report.append(URL("b"), "b")
-        assert report.lines == [(URL("a"), True, "a"), (URL("b"), False, "b")]
-        report.append(URL("c"), "c")
+        report.append(URL("a/b"), "b")
+        assert report.lines == [(URL("a"), True, "a"), (URL("a/b"), False, "b")]
+        report.append(URL("a/c"), "c")
         assert report.lines == [
             (URL("a"), True, "a"),
-            (URL("b"), False, "b"),
-            (URL("c"), False, "c"),
+            (URL("a/b"), False, "b"),
+            (URL("a/c"), False, "c"),
         ]
-        report.append(URL("d"), "d")
+        report.append(URL("a/d"), "d")
         assert report.lines == [
             (URL("a"), True, "a"),
-            (URL("c"), False, "c"),
-            (URL("d"), False, "d"),
+            (URL("a/c"), False, "c"),
+            (URL("a/d"), False, "d"),
         ]
 
 
-def test_tty_append_second_dir() -> None:
+def test_tty_append_second_dir(make_root: _MakeRoot) -> None:
     with mock.patch.object(TTYProgress, "HEIGHT", 3):
         report = create_storage_progress(make_root(False, True, False), True)
         assert isinstance(report, TTYProgress)
@@ -459,7 +495,7 @@ def test_tty_append_second_dir() -> None:
         ]
         report.append(URL("d"), "d")
         assert report.lines == [
-            (URL("b"), False, "b"),
+            (URL("a"), True, "a"),
             (URL("c"), True, "c"),
             (URL("d"), False, "d"),
         ]

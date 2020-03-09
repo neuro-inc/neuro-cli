@@ -1,5 +1,5 @@
 import abc
-from typing import Dict
+from typing import Dict, Iterable
 
 import click
 
@@ -8,12 +8,14 @@ from neuromation.api import (
     ImageProgressPull,
     ImageProgressPush,
     ImageProgressStep,
+    RemoteImage,
 )
 from neuromation.api.abc import (
     ImageCommitFinished,
     ImageCommitStarted,
     ImageProgressSave,
 )
+from neuromation.cli.formatters.ftable import table
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
 
@@ -133,3 +135,30 @@ class StreamDockerImageProgress(DockerImageProgress):
 
     def close(self) -> None:
         self._printer.close()
+
+
+class BaseImagesFormatter:
+    @abc.abstractmethod
+    def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
+        raise NotImplementedError
+
+
+class ShortImagesFormatter(BaseImagesFormatter):
+    def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
+        return (click.style(str(image), underline=True) for image in images)
+
+
+class LongImagesFormatter(BaseImagesFormatter):
+    def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
+        header = [
+            click.style("Neuro URL", bold=True),
+            click.style("Docker URL", bold=True),
+        ]
+        rows = [
+            [
+                click.style(str(image), underline=True),
+                click.style(image.as_docker_url(), underline=True),
+            ]
+            for image in images
+        ]
+        return table([header] + rows)

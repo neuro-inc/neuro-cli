@@ -20,7 +20,7 @@ def test_e2e_storage(data: Tuple[Path, str], tmp_path: Path, helper: Helper) -> 
     srcfile, checksum = data
 
     # Create directory for the test
-    helper.check_create_dir_on_storage("folder")
+    helper.mkdir("folder", parents=True)
 
     # Upload local file
     helper.check_upload_file_to_storage("foo", "folder", str(srcfile))
@@ -48,19 +48,14 @@ def test_e2e_storage(data: Tuple[Path, str], tmp_path: Path, helper: Helper) -> 
 
     # Non-recursive removing should not have any effect
     with pytest.raises(IsADirectoryError, match="Is a directory") as cm:
-        helper.check_rmdir_on_storage("folder2", recursive=False)
+        helper.rm("folder2", recursive=False)
     assert cm.value.errno == errno.EISDIR
     helper.check_file_exists_on_storage("bar", "folder2", FILE_SIZE_B)
-
-    # Remove test dir
-    helper.check_rmdir_on_storage("folder2", recursive=True)
-
-    # And confirm
-    helper.check_dir_absent_on_storage("folder2", "")
 
 
 @pytest.mark.e2e
 def test_empty_directory_ls_output(helper: Helper) -> None:
+    helper.mkdir("")
     # Ensure output of ls - empty directory shall print nothing.
     captured = helper.run_cli(["storage", "ls", helper.tmpstorage])
     assert not captured.out
@@ -68,20 +63,21 @@ def test_empty_directory_ls_output(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_ls_directory_itself(helper: Helper) -> None:
+    helper.mkdir("")
     captured = helper.run_cli(["storage", "ls", "--directory", helper.tmpstorage])
     assert captured.out.splitlines() == [helper.tmpstoragename]
 
 
 @pytest.mark.e2e
 def test_e2e_mkdir(helper: Helper) -> None:
-    helper.run_cli(["storage", "mkdir", helper.tmpstorage + "folder"])
+    helper.run_cli(["storage", "mkdir", "--parents", helper.tmpstorage + "folder"])
     helper.check_dir_exists_on_storage("folder", "")
 
     # Create existing directory
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(["storage", "mkdir", helper.tmpstorage + "folder"])
-    assert cm.value.returncode == 74
-    helper.check_create_dir_on_storage("folder", exist_ok=True)
+    assert cm.value.returncode == EX_OSFILE
+    helper.mkdir("folder", exist_ok=True)
 
     # Create a subdirectory in existing directory
     helper.run_cli(["storage", "mkdir", helper.tmpstorage + "folder/subfolder"])
@@ -90,7 +86,7 @@ def test_e2e_mkdir(helper: Helper) -> None:
     # Create a subdirectory in non-existing directory
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(["storage", "mkdir", helper.tmpstorage + "parent/child"])
-    assert cm.value.returncode == 72
+    assert cm.value.returncode == EX_OSFILE
     helper.check_dir_absent_on_storage("parent", "")
     helper.run_cli(
         ["storage", "mkdir", "--parents", helper.tmpstorage + "parent/child"]
@@ -104,18 +100,12 @@ def test_copy_local_file_to_platform_directory(helper: Helper, data: _Data) -> N
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
-    helper.check_create_dir_on_storage("folder")
+    helper.mkdir("folder", parents=True)
     # Upload local file to existing directory
     helper.run_cli(["storage", "cp", srcfile, helper.tmpstorage + "/folder"])
 
     # Ensure file is there
     helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B)
-
-    # Remove the file from platform
-    helper.check_rm_file_on_storage(file_name, "folder")
-
-    # Ensure file is not there
-    helper.check_file_absent_on_storage(file_name, "folder")
 
 
 @pytest.mark.e2e
@@ -125,18 +115,12 @@ def test_copy_local_file_to_platform_directory_explicit(
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
-    helper.check_create_dir_on_storage("folder")
+    helper.mkdir("folder", parents=True)
     # Upload local file to existing directory
     helper.run_cli(["storage", "cp", "-t", helper.tmpstorage + "/folder", srcfile])
 
     # Ensure file is there
     helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B)
-
-    # Remove the file from platform
-    helper.check_rm_file_on_storage(file_name, "folder")
-
-    # Ensure file is not there
-    helper.check_file_absent_on_storage(file_name, "folder")
 
 
 @pytest.mark.e2e
@@ -145,7 +129,7 @@ def test_copy_local_single_file_to_platform_file(helper: Helper, data: _Data) ->
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
-    helper.check_create_dir_on_storage("folder")
+    helper.mkdir("folder", parents=True)
     # Upload local file to platform
     helper.run_cli(
         ["storage", "cp", srcfile, helper.tmpstorage + "/folder/different_name.txt"]
@@ -154,12 +138,6 @@ def test_copy_local_single_file_to_platform_file(helper: Helper, data: _Data) ->
     # Ensure file is there
     helper.check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
     helper.check_file_absent_on_storage(file_name, "folder")
-
-    # Remove the file from platform
-    helper.check_rm_file_on_storage("different_name.txt", "folder")
-
-    # Ensure file is not there
-    helper.check_file_absent_on_storage("different_name.txt", "folder")
 
 
 @pytest.mark.e2e
@@ -170,7 +148,7 @@ def test_copy_local_single_file_to_platform_file_explicit(
     srcfile, checksum = data
     file_name = str(PurePath(srcfile).name)
 
-    helper.check_create_dir_on_storage("folder")
+    helper.mkdir("folder", parents=True)
     # Upload local file to platform
     helper.run_cli(
         [
@@ -186,17 +164,13 @@ def test_copy_local_single_file_to_platform_file_explicit(
     helper.check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
     helper.check_file_absent_on_storage(file_name, "folder")
 
-    # Remove the file from platform
-    helper.check_rm_file_on_storage("different_name.txt", "folder")
-
-    # Ensure file is not there
-    helper.check_file_absent_on_storage("different_name.txt", "folder")
-
 
 @pytest.mark.e2e
 def test_copy_local_to_platform_single_file_3(helper: Helper, data: _Data) -> None:
     # case when copy happens with rename to 'different_name.txt'
     srcfile, checksum = data
+
+    helper.mkdir("")
 
     # Upload local file to non existing directory
     with pytest.raises(subprocess.CalledProcessError, match=str(EX_OSFILE)):
@@ -280,6 +254,7 @@ def test_e2e_copy_no_target_directory_extra_operand(
 def test_copy_and_remove_multiple_files(
     helper: Helper, data: _Data, data2: _Data, tmp_path: Path
 ) -> None:
+    helper.mkdir("")
     # case when copy happens with rename to 'different_name.txt'
     srcfile, checksum = data
     srcfile2, checksum2 = data2
@@ -329,6 +304,7 @@ def test_copy_and_remove_multiple_files(
 def test_e2e_copy_recursive_to_platform(
     helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path
 ) -> None:
+    helper.mkdir("")
     srcfile, checksum, dir_path = nested_data
     target_file_name = Path(srcfile).name
 
@@ -351,16 +327,28 @@ def test_e2e_copy_recursive_to_platform(
     print("target file", targetfile)
     assert helper.hash_hex(targetfile) == checksum
 
-    # Remove test dir
-    helper.check_rmdir_on_storage("nested")
 
-    # And confirm
-    helper.check_dir_absent_on_storage("nested", "")
+@pytest.mark.e2e
+def test_e2e_copy_recursive_file(helper: Helper, tmp_path: Path) -> None:
+    helper.mkdir("")
+    srcfile = tmp_path / "testfile"
+    dstfile = tmp_path / "copyfile"
+    srcfile.write_bytes(b"abc")
+
+    captured = helper.run_cli(["storage", "cp", "-r", str(srcfile), helper.tmpstorage])
+    assert not captured.out
+
+    captured = helper.run_cli(
+        ["storage", "cp", "-r", helper.tmpstorage + "testfile", str(dstfile)]
+    )
+    assert not captured.out
+
+    assert dstfile.read_bytes() == b"abc"
 
 
 @pytest.mark.e2e
 def test_e2e_rename(helper: Helper) -> None:
-    helper.check_create_dir_on_storage("folder")
+    helper.mkdir("folder", parents=True)
     helper.run_cli(
         [
             "storage",
@@ -375,8 +363,8 @@ def test_e2e_rename(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_e2e_move_to_directory(helper: Helper) -> None:
-    helper.check_create_dir_on_storage("folder")
-    helper.check_create_dir_on_storage("otherfolder")
+    helper.mkdir("folder", parents=True)
+    helper.mkdir("otherfolder", parents=True)
     helper.run_cli(
         [
             "storage",
@@ -392,8 +380,8 @@ def test_e2e_move_to_directory(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_e2e_move_to_directory_explicitly(helper: Helper) -> None:
-    helper.check_create_dir_on_storage("folder")
-    helper.check_create_dir_on_storage("otherfolder")
+    helper.mkdir("folder", parents=True)
+    helper.mkdir("otherfolder", parents=True)
     helper.run_cli(
         [
             "storage",
@@ -410,9 +398,8 @@ def test_e2e_move_to_directory_explicitly(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_e2e_move_content_to_directory(helper: Helper) -> None:
-    helper.check_create_dir_on_storage("folder")
-    helper.check_create_dir_on_storage("folder/subfolder")
-    helper.check_create_dir_on_storage("otherfolder")
+    helper.mkdir("folder/subfolder", parents=True)
+    helper.mkdir("otherfolder", parents=True)
     helper.run_cli(
         [
             "storage",
@@ -482,6 +469,7 @@ def test_e2e_move_no_target_directory_extra_operand(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
     # Create files and directories and copy them to storage
+    helper.mkdir("")
     folder = tmp_path / "folder"
     folder.mkdir()
     (folder / "subfolder").mkdir()
@@ -541,6 +529,7 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
 @pytest.mark.e2e
 def test_e2e_no_glob(tmp_path: Path, helper: Helper) -> None:
     # Create files and directories and copy them to storage
+    helper.mkdir("")
     dir = tmp_path / "[d]"
     dir.mkdir()
     (dir / "f").write_bytes(b"f")
@@ -575,3 +564,96 @@ def test_e2e_no_glob(tmp_path: Path, helper: Helper) -> None:
     helper.run_cli(["storage", "rm", "--no-glob", helper.tmpstorage + "/[df]"])
     captured = helper.run_cli(["storage", "ls", helper.tmpstorage])
     assert sorted(captured.out.splitlines()) == ["d"]
+
+
+@pytest.mark.e2e
+def test_e2e_cp_filter(tmp_path: Path, helper: Helper) -> None:
+    # Create files and directories and copy them to storage
+    helper.mkdir("")
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "subfolder").mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / "bar").write_bytes(b"bar")
+    (folder / "baz").write_bytes(b"baz")
+
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            "--exclude",
+            "*",
+            "--include",
+            "b??",
+            "--exclude",
+            "*z",
+            tmp_path.as_uri() + "/folder",
+            helper.tmpstorage + "/filtered",
+        ]
+    )
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/filtered"])
+    assert captured.out.splitlines() == ["bar"]
+
+    # Copy all files to storage
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            tmp_path.as_uri() + "/folder",
+            helper.tmpstorage + "/folder",
+        ]
+    )
+
+    # Copy filtered files from storage
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            "--exclude",
+            "*",
+            "--include",
+            "b??",
+            "--exclude",
+            "*z",
+            helper.tmpstorage + "/folder",
+            tmp_path.as_uri() + "/filtered",
+        ]
+    )
+    assert os.listdir(tmp_path / "filtered") == ["bar"]
+
+
+@pytest.mark.e2e
+def test_e2e_ls_skip_hidden(tmp_path: Path, helper: Helper) -> None:
+    # Create files and directories and copy them to storage
+    helper.mkdir("")
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / ".bar").write_bytes(b"bar")
+
+    helper.run_cli(
+        ["storage", "cp", "-r", tmp_path.as_uri() + "/folder", helper.tmpstorage]
+    )
+
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/folder"])
+    assert captured.out.splitlines() == ["foo"]
+
+
+@pytest.mark.e2e
+def test_e2e_ls_show_hidden(tmp_path: Path, helper: Helper) -> None:
+    # Create files and directories and copy them to storage
+    helper.mkdir("")
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / ".bar").write_bytes(b"bar")
+
+    helper.run_cli(
+        ["storage", "cp", "-r", tmp_path.as_uri() + "/folder", helper.tmpstorage]
+    )
+
+    captured = helper.run_cli(["storage", "ls", "--all", helper.tmpstorage + "/folder"])
+    assert captured.out.splitlines() == [".bar", "foo"]

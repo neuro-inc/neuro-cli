@@ -11,7 +11,7 @@ from contextlib import suppress
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
-from time import sleep, time
+from time import time
 from typing import (
     Any,
     AsyncIterator,
@@ -21,44 +21,40 @@ from typing import (
     Iterator,
     List,
     Optional,
-    Sequence,
     Tuple,
     Union,
 )
 from uuid import uuid4 as uuid
 
+import aiodocker
 import aiohttp
 import pytest
 from yarl import URL
 
 from neuromation.api import (
+    Container,
     Factory,
     FileStatusType,
     IllegalArgumentError,
     JobDescription,
     JobStatus,
     ResourceNotFound,
+    Resources,
     get as api_get,
     login_with_token,
 )
 from neuromation.api.config import _CookieSession
 from neuromation.cli.asyncio_utils import run
-from neuromation.cli.const import EX_IOERR
 from neuromation.cli.utils import resolve_job
-from tests.e2e.utils import (
-    FILE_SIZE_B,
-    JOB_TINY_CONTAINER_PARAMS,
-    NGINX_IMAGE_NAME,
-    JobWaitStateStopReached,
-)
+from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
 
 
-JOB_TIMEOUT = 60 * 5
+JOB_TIMEOUT = 5 * 60
 JOB_WAIT_SLEEP_SECONDS = 2
-JOB_OUTPUT_TIMEOUT = 60 * 5
+JOB_OUTPUT_TIMEOUT = 5 * 60
 JOB_OUTPUT_SLEEP_SECONDS = 2
-CLI_MAX_WAIT = 180
-NETWORK_TIMEOUT = 60.0 * 3
+CLI_MAX_WAIT = 5 * 60
+NETWORK_TIMEOUT = 3 * 60.0
 CLIENT_TIMEOUT = aiohttp.ClientTimeout(None, None, NETWORK_TIMEOUT, NETWORK_TIMEOUT)
 
 log = logging.getLogger(__name__)
@@ -77,10 +73,6 @@ def loop() -> Iterator[asyncio.AbstractEventLoop]:
     yield loop
     loop.run_until_complete(loop.shutdown_asyncgens())
     loop.close()
-
-
-class TestRetriesExceeded(Exception):
-    pass
 
 
 SysCap = namedtuple("SysCap", "out err")
@@ -113,21 +105,25 @@ class Helper:
         self._tmpstorage = f"storage:{self.tmpstoragename}/"
         self._closed = False
         self._executed_jobs: List[str] = []
-        self.mkdir("")
 
     def close(self) -> None:
         if not self._closed:
             with suppress(Exception):
-                self.rm("")
+                self.rm("", recursive=True)
             self._closed = True
         if self._executed_jobs:
             for job in self._executed_jobs:
-                self.kill_job(job)
+                self.kill_job(job, wait=False)
 
     @property
     def username(self) -> str:
         config = Factory(path=self._nmrc_path)._read()
         return config.auth_token.username
+
+    @property
+    def cluster_name(self) -> str:
+        config = Factory(path=self._nmrc_path)._read()
+        return config.cluster_name
 
     @property
     def token(self) -> str:
@@ -137,7 +133,7 @@ class Helper:
     @property
     def registry_url(self) -> URL:
         config = Factory(path=self._nmrc_path)._read()
-        return config.cluster_config.registry_url
+        return config.clusters[config.cluster_name].registry_url
 
     @property
     def tmpstorage(self) -> str:
@@ -151,20 +147,38 @@ class Helper:
 
     @run_async
     async def mkdir(self, path: str, **kwargs: bool) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mkdir(url, **kwargs)
 
     @run_async
-    async def rm(self, path: str) -> None:
+    async def rm(self, path: str, *, recursive: bool = False) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.storage.rm(url, recursive=True)
+            await client.storage.rm(url, recursive=recursive)
+
+    @run_async
+    async def resolve_job_name_to_id(self, job_name: str) -> str:
+        __tracebackhide__ = True
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            return await resolve_job(
+                job_name,
+                client=client,
+                status={
+                    JobStatus.PENDING,
+                    JobStatus.RUNNING,
+                    JobStatus.SUCCEEDED,
+                    JobStatus.FAILED,
+                },
+            )
 
     @run_async
     async def check_file_exists_on_storage(
         self, name: str, path: str, size: int, *, fromhome: bool = False
     ) -> None:
+        __tracebackhide__ = True
         url = self.make_uri(path, fromhome=fromhome)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(url)
@@ -178,39 +192,8 @@ class Helper:
         raise AssertionError(f"File {name} with size {size} not found in {url}")
 
     @run_async
-    async def check_file_exists_on_storage_retries(
-        self,
-        name: str,
-        path: str,
-        size: int,
-        *,
-        fromhome: bool = False,
-        retries: float = 180,
-    ) -> None:
-        url = self.make_uri(path, fromhome=fromhome)
-        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            t0 = time()
-            delay = 0.2
-            while time() - t0 < retries:
-                try:
-                    files = await client.storage.ls(url)
-                except ResourceNotFound:
-                    await asyncio.sleep(delay)
-                    delay = min(delay * 2, 15)
-                else:
-                    for file in files:
-                        if (
-                            file.type == FileStatusType.FILE
-                            and file.name == name
-                            and file.size == size
-                        ):
-                            return
-                    await asyncio.sleep(delay)
-                    delay = min(delay * 2, 15)
-        raise AssertionError(f"File {name} with size {size} not found in {url}")
-
-    @run_async
     async def check_dir_exists_on_storage(self, name: str, path: str) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(url)
@@ -221,6 +204,7 @@ class Helper:
 
     @run_async
     async def check_dir_absent_on_storage(self, name: str, path: str) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(url)
@@ -230,6 +214,7 @@ class Helper:
 
     @run_async
     async def check_file_absent_on_storage(self, name: str, path: str) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             files = await client.storage.ls(url)
@@ -241,6 +226,7 @@ class Helper:
     async def check_file_on_storage_checksum(
         self, name: str, path: str, checksum: str, tmpdir: str, tmpname: str
     ) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         if tmpname:
             target = join(tmpdir, tmpname)
@@ -255,23 +241,10 @@ class Helper:
             ), "checksum test failed for {url}"
 
     @run_async
-    async def check_create_dir_on_storage(self, path: str, **kwargs: bool) -> None:
-        url = URL(self.tmpstorage + path)
-        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.storage.mkdir(url, **kwargs)
-
-    @run_async
-    async def check_rmdir_on_storage(
-        self, path: str, *, recursive: bool = True
-    ) -> None:
-        url = URL(self.tmpstorage + path)
-        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.storage.rm(url, recursive=recursive)
-
-    @run_async
     async def check_rm_file_on_storage(
         self, name: str, path: str, *, fromhome: bool = False
     ) -> None:
+        __tracebackhide__ = True
         url = self.make_uri(path, fromhome=fromhome)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.rm(url / name)
@@ -280,6 +253,7 @@ class Helper:
     async def check_upload_file_to_storage(
         self, name: str, path: str, local_file: str
     ) -> None:
+        __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             if name is None:
@@ -293,6 +267,7 @@ class Helper:
     async def check_rename_file_on_storage(
         self, name_from: str, path_from: str, name_to: str, path_to: str
     ) -> None:
+        __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mv(
                 URL(f"{self.tmpstorage}{path_from}/{name_from}"),
@@ -310,12 +285,14 @@ class Helper:
     async def check_rename_directory_on_storage(
         self, path_from: str, path_to: str
     ) -> None:
+        __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mv(
                 URL(f"{self.tmpstorage}{path_from}"), URL(f"{self.tmpstorage}{path_to}")
             )
 
     def hash_hex(self, file: Union[str, Path]) -> str:
+        __tracebackhide__ = True
         _hash = sha1()
         with open(file, "rb") as f:
             for block in iter(lambda: f.read(16 * 1024 * 1024), b""):
@@ -327,6 +304,7 @@ class Helper:
     async def wait_job_change_state_from(
         self, job_id: str, wait_state: JobStatus, stop_state: Optional[JobStatus] = None
     ) -> None:
+        __tracebackhide__ = True
         start_time = time()
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
@@ -344,7 +322,9 @@ class Helper:
         job_id: str,
         target_state: JobStatus,
         stop_state: Optional[JobStatus] = None,
+        timeout: float = JOB_TIMEOUT,
     ) -> None:
+        __tracebackhide__ = True
         start_time = time()
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
@@ -353,7 +333,7 @@ class Helper:
                     raise JobWaitStateStopReached(
                         f"failed running job {job_id}: '{stop_state}'"
                     )
-                if int(time() - start_time) > JOB_TIMEOUT:
+                if int(time() - start_time) > timeout:
                     raise AssertionError(
                         f"timeout exceeded, last output: '{job.status}'"
                     )
@@ -362,14 +342,26 @@ class Helper:
 
     @run_async
     async def assert_job_state(self, job_id: str, state: JobStatus) -> None:
+        __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
             assert job.status == state
 
     @run_async
-    async def job_info(self, job_id: str) -> JobDescription:
+    async def job_info(self, job_id: str, wait_start: bool = False) -> JobDescription:
+        __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            return await client.jobs.status(job_id)
+            job = await client.jobs.status(job_id)
+            start_time = time()
+            while (
+                wait_start
+                and job.status == JobStatus.PENDING
+                and time() - start_time < JOB_TIMEOUT
+            ):
+                job = await client.jobs.status(job_id)
+            if int(time() - start_time) > JOB_TIMEOUT:
+                raise AssertionError(f"timeout exceeded, last output: '{job.status}'")
+            return job
 
     @run_async
     async def check_job_output(
@@ -378,6 +370,7 @@ class Helper:
         """
             Wait until job output satisfies given regexp
         """
+        __tracebackhide__ = True
 
         async def _check_job_output() -> AsyncIterator[bytes]:
             async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
@@ -401,98 +394,112 @@ class Helper:
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
         )
 
-    def run_cli(self, arguments: List[str], *, verbosity: int = 0) -> SysCap:
+    def run_cli(
+        self,
+        arguments: List[str],
+        *,
+        verbosity: int = 0,
+        network_timeout: float = NETWORK_TIMEOUT,
+    ) -> SysCap:
+        __tracebackhide__ = True
 
         log.info("Run 'neuro %s'", " ".join(arguments))
 
-        t0 = time()
-        delay = 0.5
-        while time() - t0 < CLI_MAX_WAIT:  # wait up to 3 min
-            args = [
-                "neuro",
-                "--show-traceback",
-                "--disable-pypi-version-check",
-                "--color=no",
-                f"--network-timeout={NETWORK_TIMEOUT}",
-            ]
+        args = [
+            "neuro",
+            "--show-traceback",
+            "--disable-pypi-version-check",
+            "--color=no",
+            f"--network-timeout={network_timeout}",
+            "--skip-stats",
+        ]
 
-            if verbosity < 0:
-                args.append("-" + "q" * (-verbosity))
-            if verbosity > 0:
-                args.append("-" + "v" * verbosity)
+        if verbosity < 0:
+            args.append("-" + "q" * (-verbosity))
+        if verbosity > 0:
+            args.append("-" + "v" * verbosity)
 
-            if self._nmrc_path:
-                args.append(f"--neuromation-config={self._nmrc_path}")
+        if self._nmrc_path:
+            args.append(f"--neuromation-config={self._nmrc_path}")
 
-            # 5 min timeout is overkill
-            proc = subprocess.run(
-                args + arguments,
-                timeout=300,
-                encoding="utf8",
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-            )
-            if proc.returncode == EX_IOERR and "mkdir" not in arguments:
-                # network problem
-                # TODO: Drop this retry maybe?
-                sleep(delay)
-                delay *= 2
-                continue
-            else:
-                try:
-                    proc.check_returncode()
-                except subprocess.CalledProcessError:
-                    log.error(f"Last stdout: '{proc.stdout}'")
-                    log.error(f"Last stderr: '{proc.stderr}'")
-                    raise
-            out = proc.stdout
-            err = proc.stderr
-            if any(
-                start in " ".join(arguments)
-                for start in ("submit", "job submit", "run", "job run")
-            ):
-                match = job_id_pattern.search(out)
-                if match:
-                    self._executed_jobs.append(match.group(1))
-            out = out.strip()
-            err = err.strip()
-            if verbosity > 0:
-                print(f"nero stdout: {out}")
-                print(f"nero stderr: {err}")
-            return SysCap(out, err)
-        else:
-            raise TestRetriesExceeded(
-                f"Retries exceeded during 'neuro {' '.join(arguments)}'"
-            )
-
-    def run_job(self, image: str, command: str = "", params: Sequence[str] = ()) -> str:
-        captured = self.run_cli(
-            ["-q", "job", "submit", "--detach"]
-            + list(params)
-            + ([image, command] if command else [image])
+        # 5 min timeout is overkill
+        proc = subprocess.run(
+            args + arguments,
+            timeout=300,
+            encoding="utf8",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
-        assert not captured.err
-        return captured.out
+        try:
+            proc.check_returncode()
+        except subprocess.CalledProcessError:
+            log.error(f"Last stdout: '{proc.stdout}'")
+            log.error(f"Last stderr: '{proc.stderr}'")
+            raise
+        out = proc.stdout
+        err = proc.stderr
+        if any(
+            start in " ".join(arguments)
+            for start in ("submit", "job submit", "run", "job run")
+        ):
+            match = job_id_pattern.search(out)
+            if match:
+                self._executed_jobs.append(match.group(1))
+        out = out.strip()
+        err = err.strip()
+        if verbosity > 0:
+            print(f"nero stdout: {out}")
+            print(f"nero stderr: {err}")
+        return SysCap(out, err)
 
-    def run_job_and_wait_state(
+    @run_async
+    async def run_job_and_wait_state(
         self,
         image: str,
         command: str = "",
-        params: Sequence[str] = (),
+        *,
+        description: Optional[str] = None,
+        name: Optional[str] = None,
         wait_state: JobStatus = JobStatus.RUNNING,
         stop_state: JobStatus = JobStatus.FAILED,
     ) -> str:
-        job_id = self.run_job(image, command, params)
-        assert job_id
-        self.wait_job_change_state_from(job_id, JobStatus.PENDING, JobStatus.FAILED)
-        self.wait_job_change_state_to(job_id, wait_state, stop_state)
-        return job_id
+        __tracebackhide__ = True
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            preset = client.presets["cpu-micro"]
+            resources = Resources(memory_mb=preset.memory_mb, cpu=preset.cpu)
+            container = Container(
+                image=client.parse.remote_image(image),
+                command=command,
+                resources=resources,
+            )
+            job = await client.jobs.run(
+                container,
+                is_preemptible=preset.is_preemptible,
+                description=description,
+                name=name,
+            )
+
+            start_time = time()
+            while job.status != wait_state:
+                if stop_state == job.status:
+                    raise JobWaitStateStopReached(
+                        f"failed running job {job.id}: {stop_state}"
+                    )
+                if int(time() - start_time) > JOB_TIMEOUT:
+                    raise AssertionError(
+                        f"timeout exceeded, last output: '{job.status}'"
+                    )
+                await asyncio.sleep(JOB_WAIT_SLEEP_SECONDS)
+                job = await client.jobs.status(job.id)
+
+            return job.id
 
     @run_async
     async def check_http_get(self, url: Union[URL, str]) -> str:
         """
             Try to fetch given url few times.
         """
+        __tracebackhide__ = True
         async with aiohttp.ClientSession() as session:
             for i in range(3):
                 async with session.get(url) as resp:
@@ -508,11 +515,19 @@ class Helper:
                 )
 
     @run_async
-    async def kill_job(self, id_or_name: str) -> None:
+    async def kill_job(self, id_or_name: str, *, wait: bool = True) -> None:
+        __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            id = await resolve_job(id_or_name, client=client)
+            id = await resolve_job(
+                id_or_name, client=client, status={JobStatus.PENDING, JobStatus.RUNNING}
+            )
             with suppress(ResourceNotFound, IllegalArgumentError):
                 await client.jobs.kill(id)
+                if wait:
+                    while True:
+                        stat = await client.jobs.status(id)
+                        if stat.status not in (JobStatus.PENDING, JobStatus.RUNNING):
+                            break
 
 
 async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
@@ -521,7 +536,7 @@ async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
         cookie = client._get_session_cookie()
         if cookie is not None:
             new_config = dataclasses.replace(
-                client._config,
+                client.config._config_data,
                 cookie_session=_CookieSession(
                     cookie=cookie.value, timestamp=int(time())
                 ),
@@ -555,7 +570,10 @@ def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
 def helper(tmp_path: Path, nmrc_path: Path) -> Iterator[Helper]:
     ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path)
     yield ret
-    ret.close()
+    with suppress(Exception):
+        # ignore exceptions in helper closing
+        # nothing to do here anyway
+        ret.close()
 
 
 def generate_random_file(path: Path, size: int) -> Tuple[str, str]:
@@ -626,10 +644,11 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
                 if http_auth:
                     description += " with authentication"
         args += ["-d", description]
-        http_job_id = helper.run_job_and_wait_state(
-            NGINX_IMAGE_NAME, command, JOB_TINY_CONTAINER_PARAMS + args
+        capture = helper.run_cli(
+            ["-q", "job", "run", "--detach", *args, NGINX_IMAGE_NAME, command]
         )
-        status: JobDescription = helper.job_info(http_job_id)
+        http_job_id = capture.out
+        status: JobDescription = helper.job_info(http_job_id, wait_start=True)
         return {
             "id": http_job_id,
             "secret": secret,
@@ -638,3 +657,15 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
         }
 
     return go
+
+
+@pytest.fixture()
+async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
+    if sys.platform == "win32":
+        pytest.skip(f"Skip tests for docker on windows")
+    try:
+        client = aiodocker.Docker()
+    except Exception as e:
+        pytest.skip(f"Could not connect to Docker: {e}")
+    yield client
+    await client.close()

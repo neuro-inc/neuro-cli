@@ -41,7 +41,7 @@ memory, ``0.5`` CPU and executes ``sleep 30`` command inside started container.
 .. note::
 
    After return from the call a new job is *scheduled* for execution but usually it's
-   status is *pending*.  The Neuromation Platform takes time for preparing resources for
+   status is *pending*.  The Neuro Platform takes time for preparing resources for
    a job, pulling image from registry etc.  Startup time can vary from seconds for *hot
    start* to minutes for *cold* one.
 
@@ -71,10 +71,10 @@ The following snippet waits for job's *starting execution* or *failure*::
 
 .. _jobs-usage-mounts:
 
-Mount Neuromation Storage folders
+Mount Neuro Storage folders
 =================================
 
-The Neuromation Platform provides access to Neuromation storage (``storage://``) by
+The Neuro Platform provides access to Neuro storage (``storage://``) by
 *mounted folders* inside a container (*volumes* in `Docker <https://www.docker.com>`_
 glossary).
 
@@ -146,7 +146,7 @@ Expose job's TCP ports locally
 ==============================
 
 Sometimes there is a need to access TCP endpoints exposed by a job executed on the
-Neuromation Platform from local workstation.
+Neuro Platform from local workstation.
 
 For example, you've started a gRPC server inside a container on TCP port ``12345`` and
 want to access this service from your laptop.
@@ -181,7 +181,7 @@ Job preemption
 
 Job preemption means that unlike normal jobs preemptible ones can be stopped by kernel
 when the system has lack of resources and restarted later.  All memory and local disk
-changes are lost but data written to the Neuromation Storage (see
+changes are lost but data written to the Neuro Storage (see
 :ref:`jobs-usage-mounts` ) is persistent.
 
 To support preemption job's code should be organized in the following way: it dumps

@@ -1,6 +1,7 @@
+import asyncio
 import errno
+import json
 import os
-import time
 from filecmp import dircmp
 from pathlib import Path
 from shutil import copytree
@@ -60,6 +61,7 @@ async def storage_server(
     PREFIX_LEN = len(PREFIX)
 
     async def handler(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
         op = request.query["op"]
         path = request.path
         assert path.startswith(PREFIX)
@@ -89,7 +91,13 @@ async def storage_server(
                 }
             )
         elif op == "MKDIRS":
-            local_path.mkdir(parents=True, exist_ok=True)
+            try:
+                local_path.mkdir(parents=True, exist_ok=True)
+            except FileExistsError:
+                raise web.HTTPBadRequest(
+                    text=json.dumps({"error": "File exists", "errno": "EEXIST"}),
+                    content_type="application/json",
+                )
             return web.Response(status=201)
         elif op == "LISTSTATUS":
             if not local_path.exists():
@@ -138,6 +146,7 @@ async def test_storage_ls(
     }
 
     async def handler(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "LISTSTATUS"}
         return web.json_response(JSON)
@@ -148,7 +157,7 @@ async def test_storage_ls(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.storage.ls(URL("storage://~/folder"))
+        ret = await client.storage.ls(URL("storage:folder"))
 
     assert ret == [
         FileStatus(
@@ -172,6 +181,7 @@ async def test_storage_glob(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler_home(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
         assert request.path == "/storage/user/"
         assert request.query == {"op": "LISTSTATUS"}
         return web.json_response(
@@ -191,6 +201,7 @@ async def test_storage_glob(
         )
 
     async def handler_folder(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
         assert request.path.rstrip("/") == "/storage/user/folder"
         assert request.query["op"] in ("GETFILESTATUS", "LISTSTATUS")
         if request.query["op"] == "GETFILESTATUS":
@@ -232,6 +243,7 @@ async def test_storage_glob(
             raise web.HTTPInternalServerError
 
     async def handler_foo(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
         assert request.path == "/storage/user/folder/foo"
         assert request.query["op"] in ("GETFILESTATUS", "LISTSTATUS")
         assert request.query == {"op": "GETFILESTATUS"}
@@ -292,10 +304,11 @@ async def test_storage_glob(
 
     srv = await aiohttp_server(app)
 
-    async def glob(pattern: str) -> List[URL]:
-        return [uri async for uri in client.storage.glob(URL(pattern))]
-
     async with make_client(srv.make_url("/")) as client:
+
+        async def glob(pattern: str) -> List[URL]:
+            return [uri async for uri in client.storage.glob(URL(pattern))]
+
         assert await glob("storage:folder") == [URL("storage:folder")]
         assert await glob("storage:folder/") == [URL("storage:folder/")]
         assert await glob("storage:folder/*") == [
@@ -358,7 +371,7 @@ async def test_storage_rm_file(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.rm(URL("storage://~/file"))
+        await client.storage.rm(URL("storage:file"))
 
 
 async def test_storage_rm_directory(
@@ -392,7 +405,7 @@ async def test_storage_rm_directory(
 
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(IsADirectoryError, match="Is a directory") as cm:
-            await client.storage.rm(URL("storage://~/folder"))
+            await client.storage.rm(URL("storage:folder"))
         assert cm.value.errno == errno.EISDIR
 
 
@@ -410,7 +423,7 @@ async def test_storage_rm_recursive(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.rm(URL("storage://~/folder"), recursive=True)
+        await client.storage.rm(URL("storage:folder"), recursive=True)
 
 
 async def test_storage_mv(
@@ -427,7 +440,7 @@ async def test_storage_mv(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mv(URL("storage://~/folder"), URL("storage://~/other"))
+        await client.storage.mv(URL("storage:folder"), URL("storage:other"))
 
 
 async def test_storage_mkdir_parents_exist_ok(
@@ -445,7 +458,7 @@ async def test_storage_mkdir_parents_exist_ok(
 
     async with make_client(srv.make_url("/")) as client:
         await client.storage.mkdir(
-            URL("storage://~/folder/sub"), parents=True, exist_ok=True
+            URL("storage:folder/sub"), parents=True, exist_ok=True
         )
 
 
@@ -469,7 +482,7 @@ async def test_storage_mkdir_parents(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdir(URL("storage://~/folder/sub"), parents=True)
+        await client.storage.mkdir(URL("storage:folder/sub"), parents=True)
 
 
 async def test_storage_mkdir_exist_ok(
@@ -502,7 +515,7 @@ async def test_storage_mkdir_exist_ok(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdir(URL("storage://~/folder/sub"), exist_ok=True)
+        await client.storage.mkdir(URL("storage:folder/sub"), exist_ok=True)
 
 
 async def test_storage_mkdir(
@@ -541,7 +554,7 @@ async def test_storage_mkdir(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdir(URL("storage://~/folder/sub"))
+        await client.storage.mkdir(URL("storage:folder/sub"))
 
 
 async def test_storage_create(
@@ -564,7 +577,7 @@ async def test_storage_create(
             yield str(i).encode("ascii")
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.create(URL("storage://~/file"), gen())
+        await client.storage.create(URL("storage:file"), gen())
 
 
 async def test_storage_stats(
@@ -591,7 +604,7 @@ async def test_storage_stats(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        stats = await client.storage.stat(URL("storage://~/folder"))
+        stats = await client.storage.stat(URL("storage:folder"))
         assert stats == FileStatus(
             path="/user/folder",
             type=FileStatusType.DIRECTORY,
@@ -634,7 +647,7 @@ async def test_storage_open(
 
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
-        async for chunk in client.storage.open(URL("storage://~/file")):
+        async for chunk in client.storage.open(URL("storage:file")):
             buf.extend(chunk)
         assert buf == b"01234"
 
@@ -665,7 +678,7 @@ async def test_storage_open_directory(
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
         with pytest.raises((IsADirectoryError, IllegalArgumentError)):
-            async for chunk in client.storage.open(URL("storage://~/folder")):
+            async for chunk in client.storage.open(URL("storage:folder")):
                 buf.extend(chunk)
         assert not buf
 
@@ -814,7 +827,7 @@ async def test_storage_upload_regular_file_to_not_existing(
 
 
 async def test_storage_upload_recursive_src_doesnt_exist(
-    make_client: _MakeClient
+    make_client: _MakeClient,
 ) -> None:
     async with make_client("https://example.com") as client:
         with pytest.raises(FileNotFoundError):
@@ -1066,7 +1079,7 @@ async def test_storage_upload_file_update(
         )
     assert storage_file.read_bytes() == b"new"
 
-    time.sleep(1)
+    await asyncio.sleep(5)
     storage_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_file(
@@ -1101,7 +1114,7 @@ async def test_storage_upload_dir_update(
         )
     assert storage_file.read_bytes() == b"new"
 
-    time.sleep(1)
+    await asyncio.sleep(5)
     storage_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_dir(
@@ -1134,7 +1147,7 @@ async def test_storage_download_file_update(
         )
     assert local_file.read_bytes() == b"new"
 
-    time.sleep(2)
+    await asyncio.sleep(2)
     local_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_file(
@@ -1169,7 +1182,7 @@ async def test_storage_download_dir_update(
         )
     assert local_file.read_bytes() == b"new"
 
-    time.sleep(2)
+    await asyncio.sleep(2)
     local_file.write_bytes(b"xxx")
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.download_dir(

@@ -1,1 +1,0 @@
-Fix broken volume automount with `neuro run --volume=HOME`: instead of mounting non-public volume `storage://neuromation/` to `/var/storage/neuromation`, now we mount there public volume `storage://neuromation/public`.

@@ -116,6 +116,7 @@ Jobs
                      description: Optional[str] = None, \
                      is_preemptible: bool = False, \
                      schedule_timeout: Optional[float] = None, \
+                     life_span: Optional[float] = None, \
                  ) -> JobDescription
 
       Start a new job.
@@ -133,6 +134,8 @@ Jobs
       :param float schedule_timeout: minimal timeout to wait before reporting that job
                                      cannot be scheduled because the lack of computation
                                      cluster resources (memory, CPU/GPU etc).
+
+      :param float life_span: job run-time limit in seconds. Pass `None` to disable.
 
       :return: :class:`JobDescription` instance with information about started job.
 
@@ -217,7 +220,7 @@ HTTPPort
 
    .. attribute:: requires_auth
 
-      Authentication in Neuromation platform is required for access to exposed HTTP
+      Authentication in Neuro Platform is required for access to exposed HTTP
       server if ``True``, the port is open publicly otherwise.
 
 
@@ -235,6 +238,12 @@ JobDescription
    .. attribute:: owner
 
       A name of user who created a job, :class:`str`.
+
+   .. attribute:: cluster_name
+
+      A name of cluster where job was scheduled, :class:`str`.
+
+      .. versionadded:: 19.9.11
 
    .. attribute:: status
 
@@ -431,6 +440,14 @@ Resources
 
       Use Linux shared memory or not, :class:`bool`. Provide ``True`` if you don't know
       what ``/dev/shm`` device means.
+
+   .. attribute:: tpu_type
+
+      Requested TPU type, see also https://en.wikipedia.org/wiki/Tensor_processing_unit
+
+   .. attribute:: tpu_software_version
+
+      Requested TPU software version.
 
 
 Volume
