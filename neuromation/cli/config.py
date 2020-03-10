@@ -85,9 +85,7 @@ async def login(root: Root, url: URL) -> None:
         await loop.run_in_executor(None, webbrowser.open_new, str(url))
 
     try:
-        await root.factory.login(
-            show_browser, url=url, timeout=root.timeout
-        )
+        await root.factory.login(show_browser, url=url, timeout=root.timeout)
     except (ConfigError, FileExistsError):
         await root.factory.logout(path=root.config_path)
         click.echo("You were successfully logged out.")
@@ -108,9 +106,7 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
     URL is a platform entrypoint URL.
     """
     try:
-        await root.factory.login_with_token(
-            token, url=url, timeout=root.timeout
-        )
+        await root.factory.login_with_token(token, url=url, timeout=root.timeout)
     except ConfigError:
         await root.factory.logout(path=root.config_path)
         click.echo("You were successfully logged out.")
@@ -145,9 +141,7 @@ async def login_headless(root: Root, url: URL) -> None:
         return auth_code
 
     try:
-        await root.factory.login_headless(
-            login_callback, url=url, timeout=root.timeout
-        )
+        await root.factory.login_headless(login_callback, url=url, timeout=root.timeout)
     except ConfigError:
         await root.factory.logout(path=root.config_path)
         click.echo("You were successfully logged out.")
