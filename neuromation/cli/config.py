@@ -9,15 +9,7 @@ from typing import Any, Callable, Dict, Optional
 import click
 from yarl import URL
 
-from neuromation.api import (
-    DEFAULT_API_URL,
-    Client,
-    ConfigError,
-    login as api_login,
-    login_headless as api_login_headless,
-    login_with_token as api_login_with_token,
-    logout as api_logout,
-)
+from neuromation.api import DEFAULT_API_URL, Client, ConfigError
 from neuromation.cli.formatters.config import ClustersFormatter, QuotaInfoFormatter
 
 from .alias import list_aliases
@@ -93,15 +85,11 @@ async def login(root: Root, url: URL) -> None:
         await loop.run_in_executor(None, webbrowser.open_new, str(url))
 
     try:
-        await api_login(
-            show_browser, url=url, path=root.config_path, timeout=root.timeout
-        )
+        await root.factory.login(show_browser, url=url, timeout=root.timeout)
     except (ConfigError, FileExistsError):
-        await api_logout(path=root.config_path)
+        await root.factory.logout()
         click.echo("You were successfully logged out.")
-        await api_login(
-            show_browser, url=url, path=root.config_path, timeout=root.timeout
-        )
+        await root.factory.login(show_browser, url=url, timeout=root.timeout)
     click.echo(f"Logged into {url}")
 
 
@@ -116,15 +104,11 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
     URL is a platform entrypoint URL.
     """
     try:
-        await api_login_with_token(
-            token, url=url, path=root.config_path, timeout=root.timeout
-        )
+        await root.factory.login_with_token(token, url=url, timeout=root.timeout)
     except ConfigError:
-        await api_logout(path=root.config_path)
+        await root.factory.logout()
         click.echo("You were successfully logged out.")
-        await api_login_with_token(
-            token, url=url, path=root.config_path, timeout=root.timeout
-        )
+        await root.factory.login_with_token(token, url=url, timeout=root.timeout)
     click.echo(f"Logged into {url}")
 
 
@@ -153,15 +137,11 @@ async def login_headless(root: Root, url: URL) -> None:
         return auth_code
 
     try:
-        await api_login_headless(
-            login_callback, url=url, path=root.config_path, timeout=root.timeout
-        )
+        await root.factory.login_headless(login_callback, url=url, timeout=root.timeout)
     except ConfigError:
-        await api_logout(path=root.config_path)
+        await root.factory.logout()
         click.echo("You were successfully logged out.")
-        await api_login_headless(
-            login_callback, url=url, path=root.config_path, timeout=root.timeout
-        )
+        await root.factory.login_headless(login_callback, url=url, timeout=root.timeout)
     click.echo(f"Logged into {url}")
 
 
@@ -170,7 +150,7 @@ async def logout(root: Root) -> None:
     """
     Log out.
     """
-    await api_logout(path=root.config_path)
+    await root.factory.logout()
     click.echo("Logged out")
 
 
