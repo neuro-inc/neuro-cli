@@ -34,7 +34,7 @@ EXEC_TIMEOUT = 180
 @pytest.mark.e2e
 def test_job_submit(helper: Helper) -> None:
 
-    job_name = f"job-{os.urandom(5).hex()}"
+    job_name = f"test-job-{os.urandom(5).hex()}"
 
     # Kill another active jobs with same name, if any
     # Pass --owner because --name without --owner is too slow for admin users.
@@ -500,7 +500,7 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
-    job_name = f"job-save-test-{uuid4().hex[:6]}"
+    job_name = f"test-job-save-{uuid4().hex[:6]}"
     image = f"test-image:{job_name}"
     image_neuro_name = f"image://{helper.username}/{image}"
     command = "sh -c 'echo -n 123 > /test; sleep 10m'"
