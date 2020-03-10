@@ -35,10 +35,14 @@ class ClustersFormatter:
             )
             if cluster.cloud_provider:
                 cloud_provider = cluster.cloud_provider
-                out.append(prefix + style("Cloud: ", bold=True) + cloud_provider.type)
-                out.append(
-                    prefix + style("Region: ", bold=True) + cloud_provider.region
-                )
+                if cloud_provider.type != "on_prem":
+                    out.append(
+                        prefix + style("Cloud: ", bold=True) + cloud_provider.type
+                    )
+                if cloud_provider.region:
+                    out.append(
+                        prefix + style("Region: ", bold=True) + cloud_provider.region
+                    )
                 if cloud_provider.zones:
                     out.append(
                         prefix
@@ -60,40 +64,53 @@ class ClustersFormatter:
 
 
 def _format_node_pools(node_pools: Iterable[_NodePool], prefix: str) -> Iterator[str]:
+    is_scalable = _is_scalable(node_pools)
+    has_preemptible = _has_preemptible(node_pools)
     has_tpu = _has_tpu(node_pools)
     has_idle = _has_idle(node_pools)
 
-    headers = ["Machine", "CPU", "Memory", "Preemptible", "GPU"]
+    headers = ["Machine", "CPU", "Memory"]
+    if has_preemptible:
+        headers.append("Preemptible")
+    headers.append("GPU")
     if has_tpu:
         headers.append("TPU")
-    headers.append("Min")
-    headers.append("Max")
+    if is_scalable:
+        headers.append("Min")
+        headers.append("Max")
+    else:
+        headers.append("Size")
     if has_idle:
         headers.append("Idle")
 
     rows = [headers]
-
     for node_pool in node_pools:
         row = [
             node_pool.machine_type,
             str(node_pool.available_cpu),
             format_size(node_pool.available_memory_mb * 1024 ** 2),
-            _yes() if node_pool.is_preemptible else _no(),
-            _gpu(node_pool),
         ]
+        if has_preemptible:
+            row.append(_yes() if node_pool.is_preemptible else _no())
+        row.append(_gpu(node_pool))
         if has_tpu:
             row.append(_yes() if node_pool.is_tpu_enabled else _no())
-        row.append(str(node_pool.min_size))
+        if is_scalable:
+            row.append(str(node_pool.min_size))
         row.append(str(node_pool.max_size))
         if has_idle:
             row.append(str(node_pool.idle_size))
         rows.append(row)
 
-    aligns = [Align.LEFT, Align.RIGHT, Align.RIGHT, Align.CENTER, Align.RIGHT]
+    aligns = [Align.LEFT, Align.RIGHT, Align.RIGHT]
+    if has_preemptible:
+        aligns.append(Align.CENTER)
+    aligns.append(Align.RIGHT)
     if has_tpu:
+        aligns.append(Align.CENTER)
+    aligns.append(Align.RIGHT)
+    if is_scalable:
         aligns.append(Align.RIGHT)
-    aligns.append(Align.RIGHT)
-    aligns.append(Align.RIGHT)
     if has_idle:
         aligns.append(Align.RIGHT)
 
@@ -107,6 +124,20 @@ def _yes() -> str:
 
 def _no() -> str:
     return "No" if sys.platform == "win32" else "✖︎"
+
+
+def _is_scalable(node_pools: Iterable[_NodePool]) -> bool:
+    for node_pool in node_pools:
+        if node_pool.min_size != node_pool.max_size:
+            return True
+    return False
+
+
+def _has_preemptible(node_pools: Iterable[_NodePool]) -> bool:
+    for node_pool in node_pools:
+        if node_pool.is_preemptible:
+            return True
+    return False
 
 
 def _has_tpu(node_pools: Iterable[_NodePool]) -> bool:
