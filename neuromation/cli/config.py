@@ -87,11 +87,9 @@ async def login(root: Root, url: URL) -> None:
     try:
         await root.factory.login(show_browser, url=url, timeout=root.timeout)
     except (ConfigError, FileExistsError):
-        await root.factory.logout(path=root.config_path)
+        await root.factory.logout()
         click.echo("You were successfully logged out.")
-        await root.factory.login(
-            show_browser, url=url, path=root.config_path, timeout=root.timeout
-        )
+        await root.factory.login(show_browser, url=url, timeout=root.timeout)
     click.echo(f"Logged into {url}")
 
 
@@ -108,11 +106,9 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
     try:
         await root.factory.login_with_token(token, url=url, timeout=root.timeout)
     except ConfigError:
-        await root.factory.logout(path=root.config_path)
+        await root.factory.logout()
         click.echo("You were successfully logged out.")
-        await root.factory.login_with_token(
-            token, url=url, path=root.config_path, timeout=root.timeout
-        )
+        await root.factory.login_with_token(token, url=url, timeout=root.timeout)
     click.echo(f"Logged into {url}")
 
 
@@ -143,11 +139,9 @@ async def login_headless(root: Root, url: URL) -> None:
     try:
         await root.factory.login_headless(login_callback, url=url, timeout=root.timeout)
     except ConfigError:
-        await root.factory.logout(path=root.config_path)
+        await root.factory.logout()
         click.echo("You were successfully logged out.")
-        await root.factory.login_headless(
-            login_callback, url=url, path=root.config_path, timeout=root.timeout
-        )
+        await root.factory.login_headless(login_callback, url=url, timeout=root.timeout)
     click.echo(f"Logged into {url}")
 
 
