@@ -32,6 +32,7 @@ import pytest
 from yarl import URL
 
 from neuromation.api import (
+    Config,
     Container,
     Factory,
     FileStatusType,
@@ -146,6 +147,12 @@ class Helper:
             return URL(self.tmpstorage + path)
 
     @run_async
+    async def get_config(self) -> Config:
+        __tracebackhide__ = True
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            return client.config
+
+    @run_async
     async def mkdir(self, path: str, **kwargs: bool) -> None:
         __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
@@ -163,7 +170,16 @@ class Helper:
     async def resolve_job_name_to_id(self, job_name: str) -> str:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            return await resolve_job(job_name, client=client)
+            return await resolve_job(
+                job_name,
+                client=client,
+                status={
+                    JobStatus.PENDING,
+                    JobStatus.RUNNING,
+                    JobStatus.SUCCEEDED,
+                    JobStatus.FAILED,
+                },
+            )
 
     @run_async
     async def check_file_exists_on_storage(
@@ -509,7 +525,9 @@ class Helper:
     async def kill_job(self, id_or_name: str, *, wait: bool = True) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            id = await resolve_job(id_or_name, client=client)
+            id = await resolve_job(
+                id_or_name, client=client, status={JobStatus.PENDING, JobStatus.RUNNING}
+            )
             with suppress(ResourceNotFound, IllegalArgumentError):
                 await client.jobs.kill(id)
                 if wait:
@@ -535,7 +553,7 @@ async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
 
 @pytest.fixture(scope="session")
 def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
-    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
+    e2e_test_token = os.environ.get("E2E_TOKEN")
     if e2e_test_token:
         tmp_path = tmp_path_factory.mktemp("config")
         nmrc_path = tmp_path / "conftest.nmrc"
@@ -650,8 +668,11 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
 
 @pytest.fixture()
 async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
-    if sys.platform != "linux":
-        pytest.skip("Doens't support docker in e2e tests for now")
-    client = aiodocker.Docker()
+    if sys.platform == "win32":
+        pytest.skip(f"Skip tests for docker on windows")
+    try:
+        client = aiodocker.Docker()
+    except Exception as e:
+        pytest.skip(f"Could not connect to Docker: {e}")
     yield client
     await client.close()

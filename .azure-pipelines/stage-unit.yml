@@ -1,3 +1,13 @@
+parameters:
+  operation_systems:
+  - 'ubuntu'
+  - 'windows'
+  - 'macos'
+  python_versions:
+  - '3.6'
+  - '3.7'
+
+
 stages:
 - stage: test
   displayName: "Unit"
@@ -6,24 +16,12 @@ stages:
     displayName: " "
     strategy:
       matrix:
-        Py36-Linux:
-          python.version: '3.6'
-          image: 'ubuntu-latest'
-        Py37-Linux:
-          python.version: '3.7'
-          image: 'ubuntu-latest'
-        Py36-Win64:
-          python.version: '3.6'
-          image: 'vs2017-win2016'
-        Py37-Win64:
-          python.version: '3.7'
-          image: 'vs2017-win2016'
-        Py36-Mac:
-          python.version: '3.6'
-          image: 'macos-latest'
-        Py37-Mac:
-          python.version: '3.7'
-          image: 'macos-latest'
+        ${{ each py in parameters.python_versions }}:
+          ${{ each os in parameters.operation_systems }}:
+            ${{ format('Py-{0}-{1}', py, os) }}:
+              python.version: ${{ py }}
+              image: ${{ format('{0}-latest', os) }}
+              PIP_CACHE_DIR: $(Pipeline.Workspace)/.pip
 
     pool:
       vmImage: $[ variables['image'] ]
@@ -39,6 +37,11 @@ stages:
         versionSpec: '$(python.version)'
       displayName: "Use Python $(python.version)"
 
+    - task: Cache@2
+      inputs:
+        key: 'pip | "$(Agent.OS)" | "$(python.version)" | requirements/base.txt | requirements/ci.txt'
+        path: $(PIP_CACHE_DIR)
+
     - script: |
         python -m pip install -U pip wheel
       displayName: 'Install prerequirements'
@@ -46,6 +49,7 @@ stages:
     - script: |
         pip install -r requirements/ci.txt pytest-azurepipelines
         pip install .
+        touch .update-deps
       displayName: 'Install dependencies'
 
     - script: |
