@@ -606,6 +606,7 @@ def test_job_submit_http_auth(
 ) -> None:
     loop_sleep = 1
     service_wait_time = 10 * 60
+    auth_url = helper.get_config()._config_data.auth_config.auth_url
 
     async def _test_http_auth_redirect(url: URL) -> None:
         start_time = time()
@@ -613,9 +614,7 @@ def test_job_submit_http_auth(
             while time() - start_time < service_wait_time:
                 try:
                     async with session.get(url, allow_redirects=True) as resp:
-                        if resp.status == 200 and re.match(
-                            r".+\.auth0\.com$", resp.url.host
-                        ):
+                        if resp.status == 200 and resp.url.host == auth_url.host:
                             break
                 except aiohttp.ClientConnectionError:
                     pass
