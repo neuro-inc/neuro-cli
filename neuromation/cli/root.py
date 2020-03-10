@@ -87,18 +87,25 @@ class Root:
         assert self._client is not None
         return self._client
 
+    @property
+    def factory(self) -> Factory:
+        if self._factory is None:
+            trace_configs: Optional[List[aiohttp.TraceConfig]]
+            if self.trace:
+                trace_configs = [self._create_trace_config()]
+            else:
+                trace_configs = None
+            self._factory = Factory(
+                path=self.config_path,
+                trace_configs=trace_configs,
+                trace_id=gen_trace_id(),
+            )
+        return self._factory
+
     async def init_client(self) -> Client:
         if self._client is not None:
             return self._client
-        trace_configs: Optional[List[aiohttp.TraceConfig]]
-        if self.trace:
-            trace_configs = [self._create_trace_config()]
-        else:
-            trace_configs = None
-        self._factory = Factory(
-            path=self.config_path, trace_configs=trace_configs, trace_id=gen_trace_id()
-        )
-        client = await self._factory.get(timeout=self.timeout)
+        client = await self.factory.get(timeout=self.timeout)
 
         self._client = client
         return self._client
