@@ -606,7 +606,7 @@ def test_job_submit_http_auth(
 ) -> None:
     loop_sleep = 1
     service_wait_time = 10 * 60
-    auth_url = helper.client.config._config_date.auth_config.auth_url.host
+    auth_url = helper.get_config()._config_date.auth_config.auth_url.host
 
     async def _test_http_auth_redirect(url: URL) -> None:
         start_time = time()
