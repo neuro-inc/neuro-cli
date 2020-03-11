@@ -1,5 +1,6 @@
 import base64
 import contextlib
+import json
 import numbers
 import os
 import re
@@ -11,7 +12,6 @@ from types import MappingProxyType
 from typing import Any, Dict, Iterator, List, Mapping, Set, Union
 
 import toml
-import yaml
 from yarl import URL
 
 import neuromation
@@ -70,7 +70,7 @@ class Config(metaclass=NoPublicConstructor):
 
     async def _fetch_config(self) -> _ServerConfig:
         token = await self.token()
-        return await get_server_config(self._core._session, self.api_url, token,)
+        return await get_server_config(self._core._session, self.api_url, token)
 
     async def check_server(self) -> None:
         if self._config_data.version != neuromation.__version__:
@@ -230,7 +230,7 @@ class Config(metaclass=NoPublicConstructor):
             _init_db_maybe(db)
 
             cur = db.cursor()
-            content = yaml.safe_dump(payload, default_flow_style=False)
+            content = json.dumps(payload)
             cur.execute("DELETE FROM main")
             cur.execute(
                 """

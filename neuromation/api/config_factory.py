@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import sqlite3
 import ssl
@@ -8,7 +9,6 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
 import aiohttp
 import certifi
-import yaml
 from yarl import URL
 
 import neuromation
@@ -209,7 +209,7 @@ class Factory:
                 cur.execute("SELECT content FROM main ORDER BY ROWID ASC LIMIT 1")
                 content = cur.fetchone()[0]
 
-            payload = yaml.safe_load(content)
+            payload = json.loads(content)
 
             api_url = URL(payload["url"])
             auth_config = self._deserialize_auth_config(payload)
