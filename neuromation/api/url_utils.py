@@ -43,8 +43,31 @@ def uri_from_cli(
         )
     if uri.scheme == "file":
         uri = normalize_local_path_uri(uri)
+    elif uri.scheme == "object":
+        uri = normalize_obj_path_uri(uri)
     else:
         uri = _normalize_uri(uri, username)
+    return uri
+
+
+def normalize_obj_path_uri(uri: URL) -> URL:
+    """Normalize Object Storage url."""
+    if uri.scheme != "object":
+        raise ValueError(
+            f"Invalid storage scheme '{uri.scheme}://' " "(only 'object://' is allowed)"
+        )
+
+    stripped_path = uri.path.lstrip("/")
+    # We treat all as same URL's:
+    #   object:my_bucket/object_name
+    #   object:/my_bucket/object_name
+    #   object://my_bucket/object_name
+    #   object:///my_bucket/object_name
+    if not uri.host:
+        if not stripped_path:
+            raise ValueError(f"Bucket name is missing '{str(uri)}'")
+        uri = URL(f"{uri.scheme}://{stripped_path}")
+
     return uri
 
 
@@ -59,6 +82,8 @@ def normalize_storage_path_uri(uri: URL, username: str) -> URL:
 
 
 def _normalize_uri(resource: Union[URL, str], username: str) -> URL:
+    """ Normalize all other user-bound URI's like jobs, storage, images, etc.
+    """
     uri = resource if isinstance(resource, URL) else URL(resource)
     path = uri.path
     if (uri.host or path.lstrip("/")).startswith("~"):

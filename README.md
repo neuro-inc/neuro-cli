@@ -58,6 +58,8 @@
 		* [neuro acl grant](#neuro-acl-grant)
 		* [neuro acl revoke](#neuro-acl-revoke)
 		* [neuro acl list](#neuro-acl-list)
+	* [neuro obj](#neuro-obj)
+		* [neuro obj ls](#neuro-obj-ls)
 	* [neuro help](#neuro-help)
 	* [neuro run](#neuro-run)
 	* [neuro submit](#neuro-submit)
@@ -130,6 +132,7 @@ Name | Description|
 | _[neuro config](#neuro-config)_| Client configuration |
 | _[neuro completion](#neuro-completion)_| Output shell completion code |
 | _[neuro acl](#neuro-acl)_| Access Control List management |
+| _[neuro obj](#neuro-obj)_| Object storage operations |
 
 
 **Commands:**
@@ -1606,6 +1609,55 @@ Name | Description|
 |_-u TEXT_|Use specified user or role.|
 |_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user.|
 |_--shared_|Output the resources shared by the user.|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro obj
+
+Object storage operations.
+
+**Usage:**
+
+```bash
+neuro obj [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro obj ls](#neuro-obj-ls)_| List directory contents |
+
+
+
+
+### neuro obj ls
+
+List directory contents.<br/><br/>By default PATH is equal user's home dir \(storage:)
+
+**Usage:**
+
+```bash
+neuro obj ls [OPTIONS] [PATHS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
+|_-l_|use a long listing format.|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
+|_\-r, --recursive_|List all keys under the URL path provided, not just 1 level depths.|
 |_--help_|Show this message and exit.|
 
 

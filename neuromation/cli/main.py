@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import shutil
 import sys
 import warnings
@@ -16,7 +17,17 @@ import neuromation
 from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError
 from neuromation.cli.root import Root
 
-from . import admin, completion, config, image, job, project, share, storage
+from . import (
+    admin,
+    completion,
+    config,
+    image,
+    job,
+    object_storage,
+    project,
+    share,
+    storage,
+)
 from .alias import find_alias
 from .const import (
     EX_DATAERR,
@@ -441,6 +452,8 @@ cli.add_command(completion.completion)
 cli.add_command(share.acl)
 
 cli.add_command(DeprecatedGroup(storage.storage, name="store", hidden=True))
+if os.environ.get("_NEURO_OBJ_STORAGE"):
+    cli.add_command(object_storage.object_storage)
 
 # shortcuts
 cli.add_command(job.run)
