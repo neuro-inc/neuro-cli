@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable
 from unittest import mock
@@ -13,6 +14,7 @@ from neuromation.api.config import (
     _merge_user_configs,
     _validate_user_config,
 )
+from neuromation.api.login import _AuthToken
 from tests import _TestServerFactory
 
 
@@ -409,3 +411,143 @@ async def test_switch_clusters_unknown(
         with pytest.raises(RuntimeError, match="Cluster another doesn't exist"):
             await client.config.switch_cluster("another")
         assert client.config.cluster_name == "default"
+
+
+async def test_check_server_mismatch_clusters(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    # the test returns the same as for valid answer but the cluster name is different
+    registry_url = "https://registry2-dev.neu.ro"
+    storage_url = "https://storage2-dev.neu.ro"
+    users_url = "https://users2-dev.neu.ro"
+    monitoring_url = "https://jobs2-dev.neu.ro"
+    auth_url = "https://dev-neuromation.auth0.com/authorize"
+    token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    client_id = "this_is_client_id"
+    audience = "https://platform.dev.neuromation.io"
+    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    success_redirect_url = "https://platform.neuromation.io"
+    JSON = {
+        "auth_url": auth_url,
+        "token_url": token_url,
+        "client_id": client_id,
+        "audience": audience,
+        "headless_callback_url": headless_callback_url,
+        "success_redirect_url": success_redirect_url,
+        "clusters": [
+            {
+                "name": "another",
+                "registry_url": registry_url,
+                "storage_url": storage_url,
+                "users_url": users_url,
+                "monitoring_url": monitoring_url,
+                "resource_presets": [
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
+                ],
+            }
+        ],
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.add_routes([web.get("/config", handler)])
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+
+        # Set expired version
+        client.config._config_data.__dict__["version"] = "18.1.1"
+
+        with pytest.raises(ConfigError, match="Neuro Platform CLI was updated"):
+            await client.config.check_server()
+
+
+async def test_check_server_mismatch_auth(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    # the test returns the same as for valid answer but the cluster name is different
+    registry_url = "https://registry2-dev.neu.ro"
+    storage_url = "https://storage2-dev.neu.ro"
+    users_url = "https://users2-dev.neu.ro"
+    monitoring_url = "https://jobs2-dev.neu.ro"
+    auth_url = "https://dev-neuromation.auth0.com/authorize"
+    token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    audience = "https://platform.dev.neuromation.io"
+    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    success_redirect_url = "https://platform.neuromation.io"
+    JSON = {
+        "auth_url": auth_url,
+        "token_url": token_url,
+        "client_id": "other_client_id",
+        "audience": audience,
+        "headless_callback_url": headless_callback_url,
+        "success_redirect_url": success_redirect_url,
+        "clusters": [
+            {
+                "name": "default",
+                "registry_url": registry_url,
+                "storage_url": storage_url,
+                "users_url": users_url,
+                "monitoring_url": monitoring_url,
+                "resource_presets": [
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
+                ],
+            }
+        ],
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.add_routes([web.get("/config", handler)])
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+
+        # Set expired version
+        client.config._config_data.__dict__["version"] = "18.1.1"
+
+        with pytest.raises(ConfigError, match="Neuro Platform CLI was updated"):
+            await client.config.check_server()
+
+
+async def test_refresh_token(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient, token: str
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        req = await request.json()
+        assert req == {
+            "client_id": "CLIENT-ID",
+            "grant_type": "refresh_token",
+            "refresh_token": "REFRESH_TOKEN",
+        }
+        return web.json_response(
+            {
+                "access_token": "ACCESS_TOKEN",
+                "expires_in": 3600,
+                "refresh_token": req["refresh_token"],
+            }
+        )
+
+    app = web.Application()
+    app.add_routes([web.post("/oauth/token", handler)])
+    srv = await aiohttp_server(app)
+
+    async with make_client(
+        srv.make_url("/"), token_url=srv.make_url("/oauth/token")
+    ) as client:
+
+        token1 = await client.config.token()
+
+        # Set expired version to far ago
+        client.config._config_data.__dict__["auth_token"] = replace(
+            _AuthToken.create(token, 3600, "REFRESH_TOKEN"), expiration_time=200
+        )
+
+        token2 = await client.config.token()
+
+        assert token1 != token2
+        assert token2 == "ACCESS_TOKEN"

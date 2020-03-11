@@ -14,9 +14,11 @@ import toml
 import yaml
 from yarl import URL
 
+import neuromation
+
 from .core import _Core
-from .login import _AuthConfig, _AuthToken
-from .server_cfg import Cluster, Preset, get_server_config
+from .login import AuthTokenClient, _AuthConfig, _AuthToken
+from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
 from .utils import NoPublicConstructor
 
 
@@ -66,12 +68,27 @@ class Config(metaclass=NoPublicConstructor):
         name = self._config_data.cluster_name
         return name
 
+    async def _fetch_config(self) -> _ServerConfig:
+        token = await self.token()
+        return await get_server_config(self._core._session, self.api_url, token,)
+
+    async def check_server(self) -> None:
+        if self._config_data.version != neuromation.__version__:
+            config_authorized = await self._fetch_config()
+            if (
+                config_authorized.clusters != self.clusters
+                or config_authorized.auth_config != self._config_data.auth_config
+            ):
+                raise ConfigError(
+                    "Neuro Platform CLI was updated. Please logout and login again."
+                )
+            self._config_data = replace(
+                self._config_data, version=neuromation.__version__
+            )
+            self._save(self._config_data, self._path)
+
     async def fetch(self) -> None:
-        server_config = await get_server_config(
-            self._core._session,
-            self._config_data.url,
-            self._config_data.auth_token.token,
-        )
+        server_config = await self._fetch_config()
         if self.cluster_name not in server_config.clusters:
             # Raise exception here?
             # if yes there is not way to switch cluster without relogin
@@ -121,8 +138,18 @@ class Config(metaclass=NoPublicConstructor):
         return cluster.registry_url
 
     async def token(self) -> str:
-        # TODO: refresh token here if needed
-        return self._config_data.auth_token.token
+        token = self._config_data.auth_token
+        if not token.is_expired():
+            return token.token
+        async with AuthTokenClient(
+            self._core._session,
+            url=self._config_data.auth_config.token_url,
+            client_id=self._config_data.auth_config.client_id,
+        ) as token_client:
+            new_token = await token_client.refresh(token)
+            self._config_data = replace(self._config_data, auth_token=new_token)
+            self._save(self._config_data, self._path)
+            return new_token.token
 
     async def _api_auth(self) -> str:
         token = await self.token()

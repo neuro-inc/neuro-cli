@@ -3,7 +3,6 @@ import os
 import sqlite3
 import ssl
 import sys
-from dataclasses import replace
 from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
@@ -17,13 +16,7 @@ import neuromation
 from .client import Client
 from .config import MALFORMED_CONFIG_MSG, Config, ConfigError, _check_db, _ConfigData
 from .core import DEFAULT_TIMEOUT
-from .login import (
-    AuthNegotiator,
-    HeadlessNegotiator,
-    _AuthConfig,
-    _AuthToken,
-    refresh_token,
-)
+from .login import AuthNegotiator, HeadlessNegotiator, _AuthConfig, _AuthToken
 from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
 from .tracing import _make_trace_config
 from .utils import _ContextManager
@@ -77,35 +70,16 @@ class Factory:
         return self._path
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
-        saved_config = config = self._read()
+        config = self._read()
         session = await _make_session(timeout, self._trace_configs)
         try:
-            new_token = await refresh_token(
-                session, config.auth_config, config.auth_token
-            )
-            if config.version != neuromation.__version__:
-                config_authorized = await get_server_config(
-                    session, config.url, token=new_token.token
-                )
-                if (
-                    config_authorized.clusters != config.clusters
-                    or config_authorized.auth_config != config.auth_config
-                ):
-                    raise ConfigError(
-                        "Neuro Platform CLI updated. Please logout and login again."
-                    )
-                config = replace(config, version=neuromation.__version__)
-            if new_token != config.auth_token:
-                config = replace(config, auth_token=new_token)
-            if config != saved_config:
-                # _save() may raise malformed config exception
-                # Should close connector in this case
-                self._save(config)
+            client = Client._create(session, config, self._path, self._trace_id)
+            await client.config.check_server()
         except (asyncio.CancelledError, Exception):
             await session.close()
             raise
         else:
-            return Client._create(session, config, self._path, self._trace_id)
+            return client
 
     async def login(
         self,

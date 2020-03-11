@@ -200,27 +200,6 @@ class TestConfigFileInteraction:
         await client.close()
         assert await client.config.token() == token
 
-    async def test_token_autorefreshing(
-        self, config_dir: Path, monkeypatch: Any
-    ) -> None:
-        new_token = jwt.encode({"identity": "new_user"}, "secret", algorithm="HS256")
-
-        async def _refresh_token_mock(
-            connector: aiohttp.ClientSession, config: _AuthConfig, token: _AuthToken
-        ) -> _AuthToken:
-            return _AuthToken.create_non_expiring(new_token)
-
-        monkeypatch.setattr(
-            neuromation.api.config_factory, "refresh_token", _refresh_token_mock
-        )
-        factory = Factory(config_dir)
-        old_config = factory._read()
-        client = await factory.get()
-        await client.close()
-        new_config = factory._read()
-        assert await client.config.token() == new_token
-        assert old_config.auth_token != new_config.auth_token
-
     @pytest.mark.skipif(
         sys.platform == "win32",
         reason="Windows does not supports UNIX-like permissions",
@@ -256,21 +235,6 @@ class TestConfigFileInteraction:
 
         config = factory._read()
         assert config.version == neuromation.__version__
-
-    async def test_explicit_update(
-        self, config_dir: Path, mock_for_login: _TestServer
-    ) -> None:
-        # await Factory().login(url=mock_for_login)
-        factory = Factory(config_dir)
-        config = factory._read()
-        config = dataclasses.replace(
-            config,
-            version="10.1.1",  # config belongs old version
-            url=str(mock_for_login.make_url("/")),
-        )
-        factory._save(config)
-        with pytest.raises(ConfigError, match="Neuro Platform CLI updated"):
-            await Factory(config_dir).get()
 
 
 class TestLogin:

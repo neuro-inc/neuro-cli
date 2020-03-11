@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 from typing import Callable, Dict, Optional
 
@@ -62,9 +63,11 @@ def make_client(
 ) -> Callable[..., Client]:
     def go(
         url_str: str,
+        *,
         registry_url: str = "https://registry-dev.neu.ro",
         trace_id: str = "bd7a977555f6b982",
         clusters: Optional[Dict[str, Cluster]] = None,
+        token_url: Optional[URL] = None
     ) -> Client:
         url = URL(url_str)
         if clusters is None:
@@ -86,8 +89,12 @@ def make_client(
                 name="default",
             )
             clusters = {cluster_config.name: cluster_config}
+        if token_url is not None:
+            real_auth_config = replace(auth_config, token_url=token_url)
+        else:
+            real_auth_config = auth_config
         config = _ConfigData(
-            auth_config=auth_config,
+            auth_config=real_auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
             url=URL(url),
             version=neuromation.__version__,
