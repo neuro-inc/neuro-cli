@@ -148,8 +148,7 @@ node_pools:
   min_size: 0
   max_size: 1
 storage:
-  id: standard
-  capacity_tb: 1
+  id: gcs-nfs
 """
 
 
