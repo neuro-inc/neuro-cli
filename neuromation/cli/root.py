@@ -122,11 +122,6 @@ class Root:
         )
         return trace_config
 
-    def get_session_cookie(self) -> Optional["Morsel[str]"]:
-        if self._client is None:
-            return None
-        return self._client._get_session_cookie()
-
     def _print_debug(self, lines: List[str]) -> None:
         txt = "\n".join(click.style(line, dim=True) for line in lines)
         click.echo(txt, err=True)
