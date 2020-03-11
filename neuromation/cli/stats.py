@@ -77,7 +77,7 @@ def select_oldest(
         db.execute(
             """
             SELECT ROWID, cmd, args, timestamp, version
-            FROM stats ORDER BY ROWID ASC LIMIT ?
+            FROM stats ORDER BY timestamp ASC LIMIT ?
             """,
             (limit,),
         )

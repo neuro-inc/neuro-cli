@@ -206,7 +206,8 @@ class Factory:
                 _check_db(db)
 
                 cur = db.cursor()
-                cur.execute("SELECT content FROM main ORDER BY ROWID ASC LIMIT 1")
+                # only one row is always present normally
+                cur.execute("SELECT content FROM main ORDER BY timestamp DESC LIMIT 1")
                 content = cur.fetchone()[0]
 
             payload = json.loads(content)
