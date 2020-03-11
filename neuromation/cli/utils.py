@@ -1,5 +1,4 @@
 import asyncio
-import dataclasses
 import functools
 import inspect
 import itertools
@@ -10,7 +9,6 @@ import re
 import shlex
 import shutil
 import sys
-import time
 from typing import (
     Any,
     Awaitable,
@@ -45,7 +43,6 @@ from neuromation.api import (
     TagOption,
     Volume,
 )
-from neuromation.api.config import _CookieSession
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 
@@ -105,7 +102,6 @@ async def _run_async_function(
             pass
         except Exception:
             log.debug("Usage stats sending has failed", exc_info=True)
-        new_config = None
         pypi_task.cancel()
         try:
             await pypi_task
@@ -113,22 +109,6 @@ async def _run_async_function(
             pass
         except Exception:
             log.debug("PyPI checker has failed", exc_info=True)
-
-        cookie = root.get_session_cookie()
-        if cookie is not None:
-            if new_config is None:
-                new_config = root._config
-            new_config = dataclasses.replace(
-                new_config,
-                cookie_session=_CookieSession(
-                    cookie=cookie.value, timestamp=int(time.time())
-                ),
-            )
-
-        if new_config is not None:
-            factory = root._factory
-            assert factory is not None
-            factory._save(new_config)
 
 
 def _wrap_async_callback(

@@ -28,10 +28,6 @@ def test_timeout(root_uninitialized: Root) -> None:
     assert root_uninitialized.timeout == aiohttp.ClientTimeout(None, None, 60, 60)
 
 
-def test_get_session_cookie(root_uninitialized: Root) -> None:
-    assert root_uninitialized.get_session_cookie() is None
-
-
 class TestTokenSanitization:
     @pytest.mark.parametrize("auth", ["Bearer", "Basic", "Digest", "Mutual"])
     def test_sanitize_header_value_single_token(

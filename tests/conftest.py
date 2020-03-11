@@ -8,7 +8,7 @@ from yarl import URL
 
 import neuromation
 from neuromation.api import Client, Cluster, Preset
-from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData, _CookieSession
+from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData
 from neuromation.api.tracing import _make_trace_config
 
 
@@ -90,7 +90,6 @@ def make_client(
             auth_config=auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
             url=URL(url),
-            cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
             cluster_name=next(iter(clusters)),
             clusters=clusters,

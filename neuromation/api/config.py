@@ -33,30 +33,10 @@ SCHEMA = {"main": "CREATE TABLE main (content TEXT, timestamp REAL)"}
 
 
 @dataclass(frozen=True)
-class _CookieSession:
-    cookie: str
-    timestamp: int
-
-    @classmethod
-    def create_uninitialized(cls) -> "_CookieSession":
-        return cls(cookie="", timestamp=0)
-
-    @classmethod
-    def from_config(cls, data: Dict[str, Any]) -> "_CookieSession":
-        cookie = data.get("cookie", "")
-        timestamp = data.get("timestamp", 0)
-        return cls(cookie=cookie, timestamp=timestamp)
-
-    def to_config(self) -> Dict[str, Any]:
-        return {"cookie": self.cookie, "timestamp": self.timestamp}
-
-
-@dataclass(frozen=True)
 class _ConfigData:
     auth_config: _AuthConfig
     auth_token: _AuthToken
     url: URL
-    cookie_session: _CookieSession
     version: str
     cluster_name: str
     clusters: Mapping[str, Cluster]
@@ -183,8 +163,13 @@ class Config(metaclass=NoPublicConstructor):
 
     @contextlib.contextmanager
     def _open_db(self) -> Iterator[sqlite3.Connection]:
+        self._path.mkdir(0o700, parents=True, exist_ok=True)
+
         config_file = self._path / "db"
         with sqlite3.connect(str(config_file)) as db:
+            # forbid access to other users
+            os.chmod(config_file, 0o600)
+
             db.row_factory = sqlite3.Row
             yield db
             db.commit()
@@ -203,7 +188,6 @@ class Config(metaclass=NoPublicConstructor):
                 "expiration_time": config.auth_token.expiration_time,
                 "refresh_token": config.auth_token.refresh_token,
             }
-            payload["cookie_session"] = config.cookie_session.to_config()
             payload["version"] = config.version
             payload["cluster_name"] = config.cluster_name
         except (AttributeError, KeyError, TypeError, ValueError):

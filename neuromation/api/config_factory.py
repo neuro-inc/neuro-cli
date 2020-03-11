@@ -15,14 +15,7 @@ from yarl import URL
 import neuromation
 
 from .client import Client
-from .config import (
-    MALFORMED_CONFIG_MSG,
-    Config,
-    ConfigError,
-    _check_db,
-    _ConfigData,
-    _CookieSession,
-)
+from .config import MALFORMED_CONFIG_MSG, Config, ConfigError, _check_db, _ConfigData
 from .core import DEFAULT_TIMEOUT
 from .login import (
     AuthNegotiator,
@@ -185,7 +178,6 @@ class Factory:
             auth_config=server_config.auth_config,
             auth_token=token,
             url=url,
-            cookie_session=_CookieSession.create_uninitialized(),
             version=neuromation.__version__,
             cluster_name=cluster_name,
             clusters=server_config.clusters,
@@ -249,9 +241,6 @@ class Factory:
             auth_config = self._deserialize_auth_config(payload)
             clusters = self._deserialize_clusters(payload)
             auth_token = self._deserialize_auth_token(payload)
-            cookie_session = _CookieSession.from_config(
-                payload.get("cookie_session", {})
-            )
             version = payload.get("version", "")
             cluster_name = payload["cluster_name"]
 
@@ -259,7 +248,6 @@ class Factory:
                 auth_config=auth_config,
                 auth_token=auth_token,
                 url=api_url,
-                cookie_session=cookie_session,
                 version=version,
                 cluster_name=cluster_name,
                 clusters=clusters,
