@@ -67,11 +67,11 @@ class TestAuthToken:
             token="test_token",
             expires_in=100,
             refresh_token="test_refresh_token",
-            time_factory=lambda: 2000.0,
+            now=2000.0,
         )
         assert token.token == "test_token"
         assert token.expiration_time == 2075
-        assert not token.is_expired
+        assert not token.is_expired(now=2000)
         assert token.refresh_token == "test_refresh_token"
 
     def test_is_expired(self) -> None:
@@ -79,11 +79,11 @@ class TestAuthToken:
             token="test_token",
             expires_in=0,
             refresh_token="test_refresh_token",
-            time_factory=lambda: 2000.0,
+            now=2000.0,
         )
         assert token.token == "test_token"
         assert token.expiration_time == 2000
-        assert token.is_expired
+        assert token.is_expired(now=2000)
         assert token.refresh_token == "test_refresh_token"
 
 
@@ -335,7 +335,7 @@ class TestTokenClient:
                 token = await client.request(code)
                 assert token.token == "test_access_token"
                 assert token.refresh_token == "test_refresh_token"
-                assert not token.is_expired
+                assert not token.is_expired()
 
     async def test_refresh(self, auth_client_id: str, auth_config: _AuthConfig) -> None:
         token = _AuthToken.create(
@@ -351,7 +351,7 @@ class TestTokenClient:
                 new_token = await client.refresh(token)
                 assert new_token.token == "test_access_token_refreshed"
                 assert new_token.refresh_token == "test_refresh_token"
-                assert not token.is_expired
+                assert not token.is_expired()
 
     async def test_forbidden(
         self, aiohttp_server: _TestServerFactory, auth_config: _AuthConfig
@@ -476,39 +476,8 @@ class TestAuthNegotiator:
             negotiator = AuthNegotiator(
                 session, config=auth_config, show_browser_cb=self.show_dummy_browser
             )
-            token = await negotiator.refresh_token(token=None)
+            token = await negotiator.get_token()
             assert token.token == "test_access_token"
-            assert token.refresh_token == "test_refresh_token"
-
-    async def test_refresh_token_noop(self, auth_config: _AuthConfig) -> None:
-        async with aiohttp.ClientSession() as session:
-            negotiator = AuthNegotiator(
-                session, config=auth_config, show_browser_cb=self.show_dummy_browser
-            )
-            token = await negotiator.refresh_token(token=None)
-            assert token.token == "test_access_token"
-            assert token.refresh_token == "test_refresh_token"
-            assert not token.is_expired
-
-            token = await negotiator.refresh_token(token=token)
-            assert token.token == "test_access_token"
-            assert token.refresh_token == "test_refresh_token"
-
-    async def test_refresh_token(self, auth_config: _AuthConfig) -> None:
-        async with aiohttp.ClientSession() as session:
-            negotiator = AuthNegotiator(
-                session, config=auth_config, show_browser_cb=self.show_dummy_browser
-            )
-            token = await negotiator.refresh_token(token=None)
-            assert token.token == "test_access_token"
-            assert token.refresh_token == "test_refresh_token"
-            assert not token.is_expired
-
-            token = _AuthToken.create(
-                token=token.token, expires_in=0, refresh_token=token.refresh_token
-            )
-            token = await negotiator.refresh_token(token=token)
-            assert token.token == "test_access_token_refreshed"
             assert token.refresh_token == "test_refresh_token"
 
 

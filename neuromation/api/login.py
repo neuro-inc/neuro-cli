@@ -45,17 +45,6 @@ JWT_IDENTITY_CLAIM = "https://platform.neuromation.io/user"
 JWT_IDENTITY_CLAIM_OPTIONS = ("identity", JWT_IDENTITY_CLAIM)
 
 
-def get_token_username(token: str) -> str:
-    try:
-        claims = jwt.get_unverified_claims(token)
-    except JWTError as e:
-        raise ValueError(f"Passed string does not contain valid JWT structure.") from e
-    for identity_claim in JWT_IDENTITY_CLAIM_OPTIONS:
-        if identity_claim in claims:
-            return claims[identity_claim]
-    raise ValueError("JWT Claims structure is not correct.")
-
-
 class AuthException(Exception):
     pass
 
@@ -253,39 +242,42 @@ async def create_app_server(
 @dataclass(frozen=True)
 class _AuthToken:
     token: str
-    expiration_time: int
+    expiration_time: float
     refresh_token: str = field(repr=False)
 
-    time_factory: Callable[[], float] = field(
-        default=time.time, repr=False, compare=False
-    )
-
-    @property
-    def is_expired(self) -> bool:
-        tf = self.time_factory  # type: ignore
-        current_time = int(tf())  # type: ignore
-        return self.expiration_time <= current_time
+    def is_expired(self, *, now: Optional[float] = None) -> bool:
+        if now is None:
+            now = time.time()
+        return self.expiration_time <= now
 
     @property
     def username(self) -> str:
-        return get_token_username(self.token)
+        try:
+            claims = jwt.get_unverified_claims(self.token)
+        except JWTError as e:
+            raise ValueError(
+                f"Passed string does not contain valid JWT structure."
+            ) from e
+        for identity_claim in JWT_IDENTITY_CLAIM_OPTIONS:
+            if identity_claim in claims:
+                return claims[identity_claim]
+        raise ValueError("JWT Claims structure is not correct.")
 
     @classmethod
     def create(
         cls,
         token: str,
-        expires_in: int,
+        expires_in: float,
         refresh_token: str,
         expiration_ratio: float = 0.75,
-        time_factory: Optional[Callable[[], float]] = None,
+        *,
+        now: Optional[float] = None,
     ) -> "_AuthToken":
-        time_factory = time_factory or cls.time_factory
-        expiration_time = int(time_factory()) + int(expires_in * expiration_ratio)
+        if now is None:
+            now = time.time()
+        expiration_time = now + expires_in * expiration_ratio
         return cls(
-            token=token,
-            expiration_time=expiration_time,
-            refresh_token=refresh_token,
-            time_factory=time_factory,
+            token=token, expiration_time=expiration_time, refresh_token=refresh_token,
         )
 
     @classmethod
@@ -407,7 +399,7 @@ async def refresh_token(
     async with AuthTokenClient(
         session, url=config.token_url, client_id=config.client_id
     ) as token_client:
-        if token.is_expired:
+        if token.is_expired():
             return await token_client.refresh(token)
         return token
 
@@ -421,18 +413,12 @@ class BaseNegotiator(abc.ABC):
     async def get_code(self) -> AuthCode:
         pass
 
-    async def refresh_token(self, token: Optional[_AuthToken] = None) -> _AuthToken:
+    async def get_token(self) -> _AuthToken:
         async with AuthTokenClient(
             self._session, url=self._config.token_url, client_id=self._config.client_id
         ) as token_client:
-            if not token:
-                code = await self.get_code()
-                return await token_client.request(code)
-
-            if token.is_expired:
-                return await token_client.refresh(token)
-
-            return token
+            code = await self.get_code()
+            return await token_client.request(code)
 
 
 class AuthNegotiator(BaseNegotiator):

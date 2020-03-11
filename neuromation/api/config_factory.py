@@ -122,7 +122,7 @@ class Factory:
             negotiator = AuthNegotiator(
                 session, config_unauthorized.auth_config, show_browser_cb
             )
-            auth_token = await negotiator.refresh_token()
+            auth_token = await negotiator.get_token()
 
             config_authorized = await get_server_config(
                 session, url, token=auth_token.token
@@ -145,7 +145,7 @@ class Factory:
             negotiator = HeadlessNegotiator(
                 session, config_unauthorized.auth_config, get_auth_code_cb
             )
-            auth_token = await negotiator.refresh_token()
+            auth_token = await negotiator.get_token()
 
             config_authorized = await get_server_config(
                 session, url, token=auth_token.token
