@@ -152,7 +152,7 @@ def test_image_ls(helper: Helper, image: str, tag: str) -> None:
     # push image
     captured = helper.run_cli(["image", "push", image])
 
-    image_full_str = f"image://{helper.username}/{image}"
+    image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
     assert captured.out.endswith(image_full_str)
 
     image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
