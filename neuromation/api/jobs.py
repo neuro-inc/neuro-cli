@@ -135,6 +135,7 @@ class Jobs(metaclass=NoPublicConstructor):
         container: Container,
         *,
         name: Optional[str] = None,
+        tags: Sequence[str] = (),
         description: Optional[str] = None,
         is_preemptible: bool = False,
         schedule_timeout: Optional[float] = None,
@@ -147,6 +148,8 @@ class Jobs(metaclass=NoPublicConstructor):
         }
         if name:
             payload["name"] = name
+        if tags:
+            payload["tags"] = tags
         if description:
             payload["description"] = description
         if schedule_timeout:
@@ -164,6 +167,7 @@ class Jobs(metaclass=NoPublicConstructor):
         *,
         statuses: Iterable[JobStatus] = (),
         name: str = "",
+        tags: Iterable[str] = (),
         owners: Iterable[str] = (),
     ) -> List[JobDescription]:
         url = self._config.api_url / "jobs"
@@ -174,6 +178,8 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("name", name)
         for owner in owners:
             params.add("owner", owner)
+        for tag in tags:
+            params.add("tag", tag)
         params["cluster_name"] = self._config.cluster_name
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, params=params, auth=auth) as resp:

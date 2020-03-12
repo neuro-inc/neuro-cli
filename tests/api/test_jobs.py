@@ -815,6 +815,105 @@ async def test_job_run_with_name_and_description(
         assert ret == _job_description_from_api(JSON, client.parse)
 
 
+async def test_job_run_with_tags(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "tags": ["t1", "t2", "t3"],
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "cluster_name": "default",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "shm": False,
+                "gpu_model": "nvidia-tesla-p4",
+            },
+        },
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "ssh_auth_server": "ssh://my_host.ssh:22",
+        "is_preemptible": False,
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "http": {"port": 8181, "requires_auth": True},
+                "resources": {
+                    "memory_mb": 16384,
+                    "cpu": 7.0,
+                    "shm": True,
+                    "gpu": 1,
+                    "gpu_model": "test-gpu-model",
+                },
+                "volumes": [
+                    {
+                        "src_storage_uri": "storage://test-user/path_read_only",
+                        "dst_path": "/container/read_only",
+                        "read_only": True,
+                    },
+                    {
+                        "src_storage_uri": "storage://test-user/path_read_write",
+                        "dst_path": "/container/path_read_write",
+                        "read_only": False,
+                    },
+                ],
+            },
+            "is_preemptible": False,
+            "tags": ["t1", "t2", "t3"],
+            "cluster_name": "default",
+        }
+
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        volumes: List[Volume] = [
+            Volume(
+                URL("storage://test-user/path_read_only"), "/container/read_only", True
+            ),
+            Volume(
+                URL("storage://test-user/path_read_write"),
+                "/container/path_read_write",
+                False,
+            ),
+        ]
+        container = Container(
+            image=RemoteImage("submit-image-name"),
+            command="submit-command",
+            resources=resources,
+            volumes=volumes,
+            http=HTTPPort(8181),
+        )
+        ret = await client.jobs.run(
+            container, is_preemptible=False, tags=["t1", "t2", "t3"],
+        )
+
+        assert ret == _job_description_from_api(JSON, client.parse)
+
+
 async def test_job_run_no_volumes(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -1190,6 +1289,7 @@ def create_job_response(
     owner: str = "owner",
     name: Optional[str] = None,
     image: str = "submit-image-name",
+    tags: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     result = {
         "id": id,
@@ -1219,6 +1319,8 @@ def create_job_response(
     }
     if name:
         result["name"] = name
+    if tags:
+        result["tags"] = tags
     return result
 
 
@@ -1481,6 +1583,43 @@ async def test_list_filter_by_name_and_statuses(
             _job_description_from_api(job, client.parse) for job in jobs
         ]
         assert ret == job_descriptions[:2]
+
+
+async def test_list_filter_by_tags(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    jobs = [
+        # under filter:
+        create_job_response("job-id-1", "running", tags=["t1", "t2", "t3"]),
+        create_job_response("job-id-2", "running", tags=["t1"]),
+        create_job_response("job-id-3", "running", tags=["t2"]),
+        # out of filter:
+        create_job_response("job-id-4", "running", tags=["t4"]),
+        create_job_response("job-id-5", "running"),
+    ]
+
+    async def handler(request: web.Request) -> web.Response:
+        request_tags = set(request.query.getall("tag"))
+        filtered_jobs = []
+        for job in jobs:
+            tags = job.get("tags")
+            if tags and set(tags).intersection(request_tags):
+                filtered_jobs.append(job)
+        JSON = {"jobs": filtered_jobs}
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    tags = {"t1", "t2"}
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.list(tags=tags)
+
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        assert ret == job_descriptions[:3]
 
 
 async def test_list_filter_by_name_and_statuses_and_owners(

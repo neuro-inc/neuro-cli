@@ -423,6 +423,7 @@ Name | Description|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-n, --name NAME_|Optional job name|
+|_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
@@ -480,6 +481,7 @@ Name | Description|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
+|_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
@@ -516,6 +518,7 @@ neuro ps -a --owner=user-1 --owner=user-2
 neuro ps --name my-experiments-v1 -s failed -s succeeded
 neuro ps --description=my favourite job
 neuro ps -s failed -s succeeded -q
+neuro ps --tag tag1 -t tag2
 
 ```
 
@@ -527,6 +530,7 @@ Name | Description|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
 |_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
 |_\-n, --name NAME_|Filter out jobs by name.|
+|_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
@@ -1669,6 +1673,7 @@ Name | Description|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-n, --name NAME_|Optional job name|
+|_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
@@ -1726,6 +1731,7 @@ Name | Description|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
+|_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
@@ -1762,6 +1768,7 @@ neuro ps -a --owner=user-1 --owner=user-2
 neuro ps --name my-experiments-v1 -s failed -s succeeded
 neuro ps --description=my favourite job
 neuro ps -s failed -s succeeded -q
+neuro ps --tag tag1 -t tag2
 
 ```
 
@@ -1773,6 +1780,7 @@ Name | Description|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
 |_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
 |_\-n, --name NAME_|Filter out jobs by name.|
+|_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
