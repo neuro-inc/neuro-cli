@@ -1,11 +1,9 @@
 import asyncio
-import json
 import os
-import sqlite3
 import ssl
 import sys
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Awaitable, Callable, List, Optional
 
 import aiohttp
 import certifi
@@ -14,15 +12,14 @@ from yarl import URL
 import neuromation
 
 from .client import Client
-from .config import MALFORMED_CONFIG_MSG, ConfigError, _check_db, _ConfigData, _save
+from .config import ConfigError, _ConfigData, _read, _save
 from .core import DEFAULT_TIMEOUT
-from .login import AuthNegotiator, HeadlessNegotiator, _AuthConfig, _AuthToken
-from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
+from .login import AuthNegotiator, HeadlessNegotiator, _AuthToken
+from .server_cfg import _ServerConfig, get_server_config
 from .tracing import _make_trace_config
 from .utils import _ContextManager
 
 
-WIN32 = sys.platform == "win32"
 DEFAULT_CONFIG_PATH = "~/.neuro"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
 DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")
@@ -164,6 +161,7 @@ class Factory:
         if config_file.exists():
             config_file.unlink()
         if self._path.is_file():
+            # Old-styled single file config from 2019
             self._path.unlink()
         else:
             try:
@@ -173,121 +171,7 @@ class Factory:
                 pass
 
     def _read(self) -> _ConfigData:
-        config_file = self._path / "db"
-        if not self._path.exists():
-            raise ConfigError(f"Config at {self._path} does not exists. Please login.")
-        if not self._path.is_dir():
-            raise ConfigError(
-                f"Config at {self._path} is not a directory. "
-                "Please logout and login again."
-            )
-        if not config_file.is_file():
-            raise ConfigError(
-                f"Config {config_file} is not a regular file. "
-                "Please logout and login again."
-            )
-
-        if not WIN32:
-            stat_dir = self._path.stat()
-            if stat_dir.st_mode & 0o777 != 0o700:
-                raise ConfigError(
-                    f"Config {self._path} has compromised permission bits, "
-                    f"run 'chmod 700 {self._path}' first"
-                )
-            stat_file = config_file.stat()
-            if stat_file.st_mode & 0o777 != 0o600:
-                raise ConfigError(
-                    f"Config at {config_file} has compromised permission bits, "
-                    f"run 'chmod 600 {config_file}' first"
-                )
-
-        try:
-            with sqlite3.connect(str(config_file)) as db:
-                _check_db(db)
-
-                cur = db.cursor()
-                # only one row is always present normally
-                cur.execute("SELECT content FROM main ORDER BY timestamp DESC LIMIT 1")
-                content = cur.fetchone()[0]
-
-            payload = json.loads(content)
-
-            api_url = URL(payload["url"])
-            auth_config = self._deserialize_auth_config(payload)
-            clusters = self._deserialize_clusters(payload)
-            auth_token = self._deserialize_auth_token(payload)
-            version = payload.get("version", "")
-            cluster_name = payload["cluster_name"]
-
-            return _ConfigData(
-                auth_config=auth_config,
-                auth_token=auth_token,
-                url=api_url,
-                version=version,
-                cluster_name=cluster_name,
-                clusters=clusters,
-            )
-        except (AttributeError, KeyError, TypeError, ValueError, sqlite3.DatabaseError):
-            raise ConfigError(MALFORMED_CONFIG_MSG)
-
-    def _deserialize_auth_config(self, payload: Dict[str, Any]) -> _AuthConfig:
-        auth_config = payload["auth_config"]
-        success_redirect_url = auth_config.get("success_redirect_url")
-        if success_redirect_url:
-            success_redirect_url = URL(success_redirect_url)
-        return _AuthConfig(
-            auth_url=URL(auth_config["auth_url"]),
-            token_url=URL(auth_config["token_url"]),
-            client_id=auth_config["client_id"],
-            audience=auth_config["audience"],
-            headless_callback_url=URL(auth_config["headless_callback_url"]),
-            success_redirect_url=success_redirect_url,
-            callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
-        )
-
-    def _deserialize_clusters(self, payload: Dict[str, Any]) -> Dict[str, Cluster]:
-        clusters = payload["clusters"]
-        ret: Dict[str, Cluster] = {}
-        for cluster_config in clusters:
-            cluster = Cluster(
-                name=cluster_config["name"],
-                registry_url=URL(cluster_config["registry_url"]),
-                storage_url=URL(cluster_config["storage_url"]),
-                users_url=URL(cluster_config["users_url"]),
-                monitoring_url=URL(cluster_config["monitoring_url"]),
-                presets=dict(
-                    self._deserialize_resource_preset(data)
-                    for data in cluster_config.get("presets", [])
-                ),
-            )
-            ret[cluster.name] = cluster
-        return ret
-
-    def _deserialize_resource_preset(
-        self, payload: Dict[str, Any]
-    ) -> Tuple[str, Preset]:
-        return (
-            payload["name"],
-            Preset(
-                cpu=payload["cpu"],
-                memory_mb=payload["memory_mb"],
-                gpu=payload.get("gpu"),
-                gpu_model=payload.get("gpu_model"),
-                tpu_type=payload.get("tpu_type", None),
-                tpu_software_version=payload.get("tpu_software_version", None),
-                is_preemptible=payload.get("is_preemptible", False),
-            ),
-        )
-
-    def _deserialize_auth_token(self, payload: Dict[str, Any]) -> _AuthToken:
-        auth_payload = payload["auth_token"]
-        return _AuthToken(
-            token=auth_payload["token"],
-            expiration_time=auth_payload["expiration_time"],
-            refresh_token=auth_payload["refresh_token"],
-        )
+        return _read(self._path)
 
     def _save(self, config: _ConfigData) -> None:
-        # Trampoline to Config._save() method
-        # Looks ugly a little, fix me later.
         _save(config, self._path)

@@ -5,11 +5,12 @@ import numbers
 import os
 import re
 import sqlite3
+import sys
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Dict, Iterator, List, Mapping, Set, Union
+from typing import Any, Dict, Iterator, List, Mapping, Set, Tuple, Union
 
 import toml
 from yarl import URL
@@ -26,6 +27,7 @@ class ConfigError(RuntimeError):
     pass
 
 
+WIN32 = sys.platform == "win32"
 CMD_RE = re.compile("[A-Za-z][A-Za-z0-9-]*")
 
 MALFORMED_CONFIG_MSG = "Malformed config. Please logout and login again."
@@ -200,6 +202,123 @@ class Config(metaclass=NoPublicConstructor):
             db.row_factory = sqlite3.Row
             yield db
             db.commit()
+
+
+def _read(path: Path) -> _ConfigData:
+    config_file = path / "db"
+    if not path.exists():
+        raise ConfigError(f"Config at {path} does not exists. Please login.")
+    if not path.is_dir():
+        raise ConfigError(
+            f"Config at {path} is not a directory. Please logout and login again."
+        )
+    if not config_file.is_file():
+        raise ConfigError(
+            f"Config {config_file} is not a regular file. "
+            "Please logout and login again."
+        )
+
+    if not WIN32:
+        stat_dir = path.stat()
+        if stat_dir.st_mode & 0o777 != 0o700:
+            raise ConfigError(
+                f"Config {path} has compromised permission bits, "
+                f"run 'chmod 700 {path}' first"
+            )
+        stat_file = config_file.stat()
+        if stat_file.st_mode & 0o777 != 0o600:
+            raise ConfigError(
+                f"Config at {config_file} has compromised permission bits, "
+                f"run 'chmod 600 {config_file}' first"
+            )
+
+    try:
+        with sqlite3.connect(str(config_file)) as db:
+            _check_db(db)
+
+            cur = db.cursor()
+            # only one row is always present normally
+            cur.execute("SELECT content FROM main ORDER BY timestamp DESC LIMIT 1")
+            content = cur.fetchone()[0]
+
+        payload = json.loads(content)
+
+        api_url = URL(payload["url"])
+        auth_config = _deserialize_auth_config(payload)
+        clusters = _deserialize_clusters(payload)
+        auth_token = _deserialize_auth_token(payload)
+        version = payload.get("version", "")
+        cluster_name = payload["cluster_name"]
+
+        return _ConfigData(
+            auth_config=auth_config,
+            auth_token=auth_token,
+            url=api_url,
+            version=version,
+            cluster_name=cluster_name,
+            clusters=clusters,
+        )
+    except (AttributeError, KeyError, TypeError, ValueError, sqlite3.DatabaseError):
+        raise ConfigError(MALFORMED_CONFIG_MSG)
+
+
+def _deserialize_auth_config(payload: Dict[str, Any]) -> _AuthConfig:
+    auth_config = payload["auth_config"]
+    success_redirect_url = auth_config.get("success_redirect_url")
+    if success_redirect_url:
+        success_redirect_url = URL(success_redirect_url)
+    return _AuthConfig(
+        auth_url=URL(auth_config["auth_url"]),
+        token_url=URL(auth_config["token_url"]),
+        client_id=auth_config["client_id"],
+        audience=auth_config["audience"],
+        headless_callback_url=URL(auth_config["headless_callback_url"]),
+        success_redirect_url=success_redirect_url,
+        callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
+    )
+
+
+def _deserialize_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
+    clusters = payload["clusters"]
+    ret: Dict[str, Cluster] = {}
+    for cluster_config in clusters:
+        cluster = Cluster(
+            name=cluster_config["name"],
+            registry_url=URL(cluster_config["registry_url"]),
+            storage_url=URL(cluster_config["storage_url"]),
+            users_url=URL(cluster_config["users_url"]),
+            monitoring_url=URL(cluster_config["monitoring_url"]),
+            presets=dict(
+                _deserialize_resource_preset(data)
+                for data in cluster_config.get("presets", [])
+            ),
+        )
+        ret[cluster.name] = cluster
+    return ret
+
+
+def _deserialize_resource_preset(payload: Dict[str, Any]) -> Tuple[str, Preset]:
+    return (
+        payload["name"],
+        Preset(
+            cpu=payload["cpu"],
+            memory_mb=payload["memory_mb"],
+            gpu=payload.get("gpu"),
+            gpu_model=payload.get("gpu_model"),
+            tpu_type=payload.get("tpu_type", None),
+            tpu_software_version=payload.get("tpu_software_version", None),
+            is_preemptible=payload.get("is_preemptible", False),
+        ),
+    )
+
+
+def _deserialize_auth_token(payload: Dict[str, Any]) -> _AuthToken:
+    auth_payload = payload["auth_token"]
+    return _AuthToken(
+        token=auth_payload["token"],
+        expiration_time=auth_payload["expiration_time"],
+        refresh_token=auth_payload["refresh_token"],
+    )
 
 
 def _save(config: _ConfigData, path: Path) -> None:
