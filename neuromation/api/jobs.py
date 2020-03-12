@@ -109,6 +109,7 @@ class JobDescription:
     container: Container
     is_preemptible: bool
     name: Optional[str] = None
+    tags: Sequence[str] = ()
     description: Optional[str] = None
     http_url: URL = URL()
     ssh_server: URL = URL()
@@ -519,6 +520,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
     owner = res["owner"]
     cluster_name = res["cluster_name"]
     name = res.get("name")
+    tags = res.get("tags", ())
     description = res.get("description")
     history = JobStatusHistory(
         status=JobStatus(res["history"].get("status", "unknown")),
@@ -542,6 +544,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         container=container,
         is_preemptible=res["is_preemptible"],
         name=name,
+        tags=tags,
         description=description,
         http_url=http_url_named or http_url,
         ssh_server=ssh_server,
