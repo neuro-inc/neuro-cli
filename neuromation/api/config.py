@@ -85,7 +85,7 @@ class Config(metaclass=NoPublicConstructor):
             self._config_data = replace(
                 self._config_data, version=neuromation.__version__
             )
-            self._save(self._config_data, self._path)
+            _save(self._config_data, self._path)
 
     async def fetch(self) -> None:
         server_config = await self._fetch_config()
@@ -99,7 +99,7 @@ class Config(metaclass=NoPublicConstructor):
                 f"Please logout and login again."
             )
         self._config_data = replace(self._config_data, clusters=server_config.clusters)
-        self._save(self._config_data, self._path)
+        _save(self._config_data, self._path)
 
     async def switch_cluster(self, name: str) -> None:
         if name not in self.clusters:
@@ -109,7 +109,7 @@ class Config(metaclass=NoPublicConstructor):
                 f"Please logout and login again."
             )
         self._config_data = replace(self._config_data, cluster_name=name)
-        self._save(self._config_data, self._path)
+        _save(self._config_data, self._path)
 
     @property
     def api_url(self) -> URL:
@@ -148,7 +148,7 @@ class Config(metaclass=NoPublicConstructor):
         ) as token_client:
             new_token = await token_client.refresh(token)
             self._config_data = replace(self._config_data, auth_token=new_token)
-            self._save(self._config_data, self._path)
+            _save(self._config_data, self._path)
             return new_token.token
 
     async def _api_auth(self) -> str:
@@ -201,92 +201,90 @@ class Config(metaclass=NoPublicConstructor):
             yield db
             db.commit()
 
-    @classmethod
-    def _save(cls, config: _ConfigData, path: Path) -> None:
-        # The wierd method signature is required for communicating with existing
-        # Factory._save()
-        payload: Dict[str, Any] = {}
-        try:
-            payload["url"] = str(config.url)
-            payload["auth_config"] = cls._serialize_auth_config(config.auth_config)
-            payload["clusters"] = cls._serialize_clusters(config.clusters)
-            payload["auth_token"] = {
-                "token": config.auth_token.token,
-                "expiration_time": config.auth_token.expiration_time,
-                "refresh_token": config.auth_token.refresh_token,
-            }
-            payload["version"] = config.version
-            payload["cluster_name"] = config.cluster_name
-        except (AttributeError, KeyError, TypeError, ValueError):
-            raise ConfigError(MALFORMED_CONFIG_MSG)
 
-        path.mkdir(0o700, parents=True, exist_ok=True)
-
-        config_file = path / "db"
-        with sqlite3.connect(str(config_file)) as db:
-            # forbid access to other users
-            os.chmod(config_file, 0o600)
-
-            _init_db_maybe(db)
-
-            cur = db.cursor()
-            content = json.dumps(payload)
-            cur.execute("DELETE FROM main")
-            cur.execute(
-                """
-                INSERT INTO main (content, timestamp)
-                VALUES (?, ?)""",
-                (content, time.time()),
-            )
-            db.commit()
-
-    @classmethod
-    def _serialize_auth_config(cls, auth_config: _AuthConfig) -> Dict[str, Any]:
-        success_redirect_url = None
-        if auth_config.success_redirect_url:
-            success_redirect_url = str(auth_config.success_redirect_url)
-        return {
-            "auth_url": str(auth_config.auth_url),
-            "token_url": str(auth_config.token_url),
-            "client_id": auth_config.client_id,
-            "audience": auth_config.audience,
-            "headless_callback_url": str(auth_config.headless_callback_url),
-            "success_redirect_url": success_redirect_url,
-            "callback_urls": [str(u) for u in auth_config.callback_urls],
+def _save(config: _ConfigData, path: Path) -> None:
+    # The wierd method signature is required for communicating with existing
+    # Factory._save()
+    payload: Dict[str, Any] = {}
+    try:
+        payload["url"] = str(config.url)
+        payload["auth_config"] = _serialize_auth_config(config.auth_config)
+        payload["clusters"] = _serialize_clusters(config.clusters)
+        payload["auth_token"] = {
+            "token": config.auth_token.token,
+            "expiration_time": config.auth_token.expiration_time,
+            "refresh_token": config.auth_token.refresh_token,
         }
+        payload["version"] = config.version
+        payload["cluster_name"] = config.cluster_name
+    except (AttributeError, KeyError, TypeError, ValueError):
+        raise ConfigError(MALFORMED_CONFIG_MSG)
 
-    @classmethod
-    def _serialize_clusters(
-        cls, clusters: Mapping[str, Cluster]
-    ) -> List[Dict[str, Any]]:
-        ret: List[Dict[str, Any]] = []
-        for cluster in clusters.values():
-            cluster_config = {
-                "name": cluster.name,
-                "registry_url": str(cluster.registry_url),
-                "storage_url": str(cluster.storage_url),
-                "users_url": str(cluster.users_url),
-                "monitoring_url": str(cluster.monitoring_url),
-                "presets": [
-                    cls._serialize_resource_preset(name, preset)
-                    for name, preset in cluster.presets.items()
-                ],
-            }
-            ret.append(cluster_config)
-        return ret
+    path.mkdir(0o700, parents=True, exist_ok=True)
 
-    @classmethod
-    def _serialize_resource_preset(cls, name: str, preset: Preset) -> Dict[str, Any]:
-        return {
-            "name": name,
-            "cpu": preset.cpu,
-            "memory_mb": preset.memory_mb,
-            "gpu": preset.gpu,
-            "gpu_model": preset.gpu_model,
-            "tpu_type": preset.tpu_type,
-            "tpu_software_version": preset.tpu_software_version,
-            "is_preemptible": preset.is_preemptible,
+    config_file = path / "db"
+    with sqlite3.connect(str(config_file)) as db:
+        # forbid access to other users
+        os.chmod(config_file, 0o600)
+
+        _init_db_maybe(db)
+
+        cur = db.cursor()
+        content = json.dumps(payload)
+        cur.execute("DELETE FROM main")
+        cur.execute(
+            """
+            INSERT INTO main (content, timestamp)
+            VALUES (?, ?)""",
+            (content, time.time()),
+        )
+        db.commit()
+
+
+def _serialize_auth_config(auth_config: _AuthConfig) -> Dict[str, Any]:
+    success_redirect_url = None
+    if auth_config.success_redirect_url:
+        success_redirect_url = str(auth_config.success_redirect_url)
+    return {
+        "auth_url": str(auth_config.auth_url),
+        "token_url": str(auth_config.token_url),
+        "client_id": auth_config.client_id,
+        "audience": auth_config.audience,
+        "headless_callback_url": str(auth_config.headless_callback_url),
+        "success_redirect_url": success_redirect_url,
+        "callback_urls": [str(u) for u in auth_config.callback_urls],
+    }
+
+
+def _serialize_clusters(clusters: Mapping[str, Cluster]) -> List[Dict[str, Any]]:
+    ret: List[Dict[str, Any]] = []
+    for cluster in clusters.values():
+        cluster_config = {
+            "name": cluster.name,
+            "registry_url": str(cluster.registry_url),
+            "storage_url": str(cluster.storage_url),
+            "users_url": str(cluster.users_url),
+            "monitoring_url": str(cluster.monitoring_url),
+            "presets": [
+                _serialize_resource_preset(name, preset)
+                for name, preset in cluster.presets.items()
+            ],
         }
+        ret.append(cluster_config)
+    return ret
+
+
+def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
+    return {
+        "name": name,
+        "cpu": preset.cpu,
+        "memory_mb": preset.memory_mb,
+        "gpu": preset.gpu,
+        "gpu_model": preset.gpu_model,
+        "tpu_type": preset.tpu_type,
+        "tpu_software_version": preset.tpu_software_version,
+        "is_preemptible": preset.is_preemptible,
+    }
 
 
 def _merge_user_configs(

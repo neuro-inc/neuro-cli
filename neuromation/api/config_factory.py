@@ -14,7 +14,7 @@ from yarl import URL
 import neuromation
 
 from .client import Client
-from .config import MALFORMED_CONFIG_MSG, Config, ConfigError, _check_db, _ConfigData
+from .config import MALFORMED_CONFIG_MSG, ConfigError, _check_db, _ConfigData, _save
 from .core import DEFAULT_TIMEOUT
 from .login import AuthNegotiator, HeadlessNegotiator, _AuthConfig, _AuthToken
 from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
@@ -290,4 +290,4 @@ class Factory:
     def _save(self, config: _ConfigData) -> None:
         # Trampoline to Config._save() method
         # Looks ugly a little, fix me later.
-        Config._save(config, self._path)
+        _save(config, self._path)
