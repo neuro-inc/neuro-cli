@@ -13,7 +13,6 @@ from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
-import idna
 from yarl import URL
 
 from neuromation.api import (
@@ -1082,14 +1081,8 @@ async def _build_volumes(
         available = await root.client.users.get_acl(
             root.client.username, scheme="storage"
         )
-        permissions = []
-        for perm in available:
-            try:
-                idna.encode(perm.uri.host)
-            except ValueError:
-                log.warning(f"Skipping invalid URI {perm.uri}")
-            else:
-                permissions.append(perm)
+        cluster_name = root.client.cluster_name
+        permissions = [perm for perm in available if perm.uri.host == cluster_name]
         volumes.update(
             Volume(
                 storage_uri=perm.uri,
