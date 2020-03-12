@@ -420,7 +420,7 @@ async def test_resolve_job_id__from_uri__missing_job_id_2(
         with pytest.raises(
             ValueError, match="Invalid job URI: cluster_name != 'default'",
         ):
-            await resolve_job(uri, client=client)
+            await resolve_job(uri, client=client, status={JobStatus.RUNNING})
 
 
 def test_parse_file_resource_no_scheme(root: Root) -> None:
