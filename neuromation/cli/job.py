@@ -1070,6 +1070,7 @@ def _parse_cmd(cmd: Sequence[str]) -> str:
 async def _build_volumes(
     root: Root, input_volumes: Sequence[str], env_dict: Dict[str, str]
 ) -> Set[Volume]:
+    cluster_name = root.client.cluster_name
     input_volumes_set = set(input_volumes)
     volumes: Set[Volume] = set()
 
@@ -1081,7 +1082,6 @@ async def _build_volumes(
         available = await root.client.users.get_acl(
             root.client.username, scheme="storage"
         )
-        cluster_name = root.client.cluster_name
         permissions = [perm for perm in available if perm.uri.host == cluster_name]
         volumes.update(
             Volume(
@@ -1108,7 +1108,7 @@ async def _build_volumes(
                 )
                 volumes.add(
                     root.client.parse.volume(
-                        f"storage://neuromation/public:"
+                        f"storage://{cluster_name}/neuromation/public:"
                         f"{STORAGE_MOUNTPOINT}/neuromation:ro"
                     )
                 )
