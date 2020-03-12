@@ -43,7 +43,6 @@ from neuromation.api import (
     TagOption,
     Volume,
 )
-from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 
 from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
@@ -494,18 +493,8 @@ class LocalImageType(click.ParamType):
     ) -> LocalImage:
         assert ctx is not None
         root = cast(Root, ctx.obj)
-        config = Factory(root.config_path)._read()
-        image_parser = _ImageNameParser(
-            config.auth_token.username,
-            config.clusters[config.cluster_name].registry_url,
-        )
-        if image_parser.is_in_neuro_registry(value):
-            raise click.BadParameter(
-                "remote image cannot be used as local", ctx, param, self.name
-            )
-        else:
-            parsed_image = image_parser.parse_as_local_image(value)
-        return parsed_image
+        client = root.run(root.init_client())
+        return client.parse.local_image(value)
 
 
 class ImageType(click.ParamType):
@@ -516,12 +505,8 @@ class ImageType(click.ParamType):
     ) -> RemoteImage:
         assert ctx is not None
         root = cast(Root, ctx.obj)
-        config = Factory(root.config_path)._read()
-        image_parser = _ImageNameParser(
-            config.auth_token.username,
-            config.clusters[config.cluster_name].registry_url,
-        )
-        return image_parser.parse_remote(value)
+        client = root.run(root.init_client())
+        return client.parse.remote_image(value)
 
 
 class RemoteTaglessImageType(click.ParamType):
@@ -532,12 +517,8 @@ class RemoteTaglessImageType(click.ParamType):
     ) -> RemoteImage:
         assert ctx is not None
         root = cast(Root, ctx.obj)
-        config = Factory(root.config_path)._read()
-        image_parser = _ImageNameParser(
-            config.auth_token.username,
-            config.clusters[config.cluster_name].registry_url,
-        )
-        return image_parser.parse_as_neuro_image(value, tag_option=TagOption.DENY)
+        client = root.run(root.init_client())
+        return client.parse.remote_image(value, tag_option=TagOption.DENY)
 
 
 class LocalRemotePortParamType(click.ParamType):

@@ -12,7 +12,7 @@ from yarl import URL
 import neuromation
 
 from .client import Client
-from .config import ConfigError, _ConfigData, _read, _save
+from .config import ConfigError, _ConfigData, _save
 from .core import DEFAULT_TIMEOUT
 from .login import AuthNegotiator, HeadlessNegotiator, _AuthToken
 from .server_cfg import _ServerConfig, get_server_config
@@ -67,10 +67,9 @@ class Factory:
         return self._path
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
-        config = self._read()
         session = await _make_session(timeout, self._trace_configs)
         try:
-            client = Client._create(session, config, self._path, self._trace_id)
+            client = Client._create(session, self._path, self._trace_id)
             await client.config.check_server()
         except (asyncio.CancelledError, Exception):
             await session.close()
@@ -169,9 +168,6 @@ class Factory:
             except OSError:
                 # Directory Not Empty or Not A Directory
                 pass
-
-    def _read(self) -> _ConfigData:
-        return _read(self._path)
 
     def _save(self, config: _ConfigData) -> None:
         _save(config, self._path)

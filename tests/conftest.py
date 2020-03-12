@@ -9,7 +9,7 @@ from yarl import URL
 
 import neuromation
 from neuromation.api import Client, Cluster, Preset
-from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData
+from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData, _save
 from neuromation.api.tracing import _make_trace_config
 
 
@@ -101,7 +101,9 @@ def make_client(
             cluster_name=next(iter(clusters)),
             clusters=clusters,
         )
+        config_dir = tmp_path / ".neuro"
+        _save(config, config_dir)
         session = aiohttp.ClientSession(trace_configs=[_make_trace_config()])
-        return Client._create(session, config, tmp_path / ".neuro", trace_id)
+        return Client._create(session, config_dir, trace_id)
 
     return go

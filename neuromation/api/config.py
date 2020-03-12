@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass, replace
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Dict, Iterator, List, Mapping, Set, Tuple, Union
+from typing import Any, Dict, Iterator, List, Mapping, Optional, Set, Tuple, Union
 
 import toml
 from yarl import URL
@@ -47,10 +47,22 @@ class _ConfigData:
 
 
 class Config(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, path: Path, config_data: _ConfigData) -> None:
+    def __init__(self, core: _Core, path: Path) -> None:
         self._core = core
         self._path = path
-        self._config_data = config_data
+        self.__config_data: Optional[_ConfigData] = None
+
+    def _load(self) -> _ConfigData:
+        ret = self.__config_data = _load(self._path)
+        return ret
+
+    @property
+    def _config_data(self) -> _ConfigData:
+        ret = self.__config_data
+        if ret is None:
+            return self._load()
+        else:
+            return ret
 
     @property
     def username(self) -> str:
@@ -84,7 +96,7 @@ class Config(metaclass=NoPublicConstructor):
                 raise ConfigError(
                     "Neuro Platform CLI was updated. Please logout and login again."
                 )
-            self._config_data = replace(
+            self.__config_data = replace(
                 self._config_data, version=neuromation.__version__
             )
             _save(self._config_data, self._path)
@@ -100,7 +112,7 @@ class Config(metaclass=NoPublicConstructor):
                 f"{list(server_config.clusters)}. "
                 f"Please logout and login again."
             )
-        self._config_data = replace(self._config_data, clusters=server_config.clusters)
+        self.__config_data = replace(self._config_data, clusters=server_config.clusters)
         _save(self._config_data, self._path)
 
     async def switch_cluster(self, name: str) -> None:
@@ -110,7 +122,7 @@ class Config(metaclass=NoPublicConstructor):
                 f"a list of available clusters {list(self.clusters)}. "
                 f"Please logout and login again."
             )
-        self._config_data = replace(self._config_data, cluster_name=name)
+        self.__config_data = replace(self._config_data, cluster_name=name)
         _save(self._config_data, self._path)
 
     @property
@@ -149,7 +161,7 @@ class Config(metaclass=NoPublicConstructor):
             client_id=self._config_data.auth_config.client_id,
         ) as token_client:
             new_token = await token_client.refresh(token)
-            self._config_data = replace(self._config_data, auth_token=new_token)
+            self.__config_data = replace(self._config_data, auth_token=new_token)
             _save(self._config_data, self._path)
             return new_token.token
 
@@ -192,19 +204,25 @@ class Config(metaclass=NoPublicConstructor):
 
     @contextlib.contextmanager
     def _open_db(self) -> Iterator[sqlite3.Connection]:
-        self._path.mkdir(0o700, parents=True, exist_ok=True)
-
-        config_file = self._path / "db"
-        with sqlite3.connect(str(config_file)) as db:
-            # forbid access to other users
-            os.chmod(config_file, 0o600)
-
-            db.row_factory = sqlite3.Row
+        with _open_db_rw(self._path) as db:
             yield db
-            db.commit()
 
 
-def _read(path: Path) -> _ConfigData:
+@contextlib.contextmanager
+def _open_db_rw(path: Path) -> Iterator[sqlite3.Connection]:
+    path.mkdir(0o700, parents=True, exist_ok=True)
+
+    config_file = path / "db"
+    with sqlite3.connect(str(config_file)) as db:
+        # forbid access to other users
+        os.chmod(config_file, 0o600)
+
+        db.row_factory = sqlite3.Row
+        yield db
+
+
+@contextlib.contextmanager
+def _open_db_ro(path: Path) -> Iterator[sqlite3.Connection]:
     config_file = path / "db"
     if not path.exists():
         raise ConfigError(f"Config at {path} does not exists. Please login.")
@@ -232,10 +250,18 @@ def _read(path: Path) -> _ConfigData:
                 f"run 'chmod 600 {config_file}' first"
             )
 
-    try:
-        with sqlite3.connect(str(config_file)) as db:
-            _check_db(db)
+    with sqlite3.connect(str(config_file)) as db:
+        # forbid access to other users
+        os.chmod(config_file, 0o600)
 
+        _check_db(db)
+        db.row_factory = sqlite3.Row
+        yield db
+
+
+def _load(path: Path) -> _ConfigData:
+    try:
+        with _open_db_ro(path) as db:
             cur = db.cursor()
             # only one row is always present normally
             cur.execute("SELECT content FROM main ORDER BY timestamp DESC LIMIT 1")
@@ -339,13 +365,7 @@ def _save(config: _ConfigData, path: Path) -> None:
     except (AttributeError, KeyError, TypeError, ValueError):
         raise ConfigError(MALFORMED_CONFIG_MSG)
 
-    path.mkdir(0o700, parents=True, exist_ok=True)
-
-    config_file = path / "db"
-    with sqlite3.connect(str(config_file)) as db:
-        # forbid access to other users
-        os.chmod(config_file, 0o600)
-
+    with _open_db_rw(path) as db:
         _init_db_maybe(db)
 
         cur = db.cursor()

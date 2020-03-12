@@ -1,5 +1,3 @@
-import dataclasses
-import shutil
 import sys
 from pathlib import Path
 from typing import Any, Callable, Dict
@@ -207,33 +205,6 @@ class TestConfigFileInteraction:
         Path(config_dir).chmod(0o777)
         with pytest.raises(ConfigError, match=r"permission"):
             await Factory().get()
-
-    async def test_silent_update(
-        self, config_dir: Path, mock_for_login: _TestServer
-    ) -> None:
-        # make config
-        async def show_dummy_browser(url: URL) -> None:
-            async with aiohttp.ClientSession() as client:
-                await client.get(url, allow_redirects=True)
-
-        shutil.rmtree(config_dir)
-
-        await Factory(config_dir).login(
-            show_dummy_browser, url=mock_for_login.make_url("/")
-        )
-        factory = Factory(config_dir)
-        config = factory._read()
-        config = dataclasses.replace(
-            config,
-            version="10.1.1",  # config belongs old version
-            url=str(mock_for_login.make_url("/")),
-        )
-        factory._save(config)
-        client = await Factory(config_dir).get()
-        await client.close()
-
-        config = factory._read()
-        assert config.version == neuromation.__version__
 
 
 class TestLogin:

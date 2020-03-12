@@ -7,7 +7,7 @@ import aiohttp
 from neuromation.api.quota import _Quota
 
 from .admin import _Admin
-from .config import Config, _ConfigData
+from .config import Config
 from .core import _Core
 from .images import Images
 from .jobs import Jobs
@@ -20,17 +20,17 @@ from .utils import NoPublicConstructor
 
 class Client(metaclass=NoPublicConstructor):
     def __init__(
-        self,
-        session: aiohttp.ClientSession,
-        config_data: _ConfigData,
-        path: Path,
-        trace_id: Optional[str],
+        self, session: aiohttp.ClientSession, path: Path, trace_id: Optional[str],
     ) -> None:
         self._closed = False
         self._trace_id = trace_id
         self._session = session
         self._core = _Core(session, trace_id)
-        self._config = Config._create(self._core, path, config_data)
+        self._config = Config._create(self._core, path)
+
+        # Order does matter, need to check the main config before loading
+        # the storage cookie session
+        self._config._load()
         with self._config._open_db() as db:
             self._core._post_init(db, self._config.storage_url)
         self._parser = Parser._create(self._config)

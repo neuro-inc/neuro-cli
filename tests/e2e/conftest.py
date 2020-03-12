@@ -33,7 +33,6 @@ from yarl import URL
 from neuromation.api import (
     Config,
     Container,
-    Factory,
     FileStatusType,
     IllegalArgumentError,
     JobDescription,
@@ -116,23 +115,28 @@ class Helper:
 
     @property
     def username(self) -> str:
-        config = Factory(path=self._nmrc_path)._read()
-        return config.auth_token.username
+        config = self.get_config()
+        return config.username
 
     @property
     def cluster_name(self) -> str:
-        config = Factory(path=self._nmrc_path)._read()
+        config = self.get_config()
         return config.cluster_name
 
     @property
     def token(self) -> str:
-        config = Factory(path=self._nmrc_path)._read()
-        return config.auth_token.token
+        config = self.get_config()
+
+        @run_async
+        async def get_token() -> str:
+            return await config.token()
+
+        return get_token()
 
     @property
     def registry_url(self) -> URL:
-        config = Factory(path=self._nmrc_path)._read()
-        return config.clusters[config.cluster_name].registry_url
+        config = self.get_config()
+        return config.registry_url
 
     @property
     def tmpstorage(self) -> str:
