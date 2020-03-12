@@ -20,21 +20,27 @@ from tests.e2e.conftest import CLIENT_TIMEOUT, Helper
 from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, JOB_TINY_CONTAINER_PRESET
 
 
+pytestmark = pytest.mark.e2e_job
+
 ALPINE_IMAGE_NAME = "alpine:latest"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 NGINX_IMAGE_NAME = "nginx:latest"
 TEST_IMAGE_NAME = "neuro-cli-test"
 MIN_PORT = 49152
 MAX_PORT = 65535
+EXEC_TIMEOUT = 180
 
 
 @pytest.mark.e2e
 def test_job_submit(helper: Helper) -> None:
 
-    job_name = f"job-{os.urandom(5).hex()}"
+    job_name = f"test-job-{os.urandom(5).hex()}"
 
     # Kill another active jobs with same name, if any
-    captured = helper.run_cli(["-q", "job", "ls", "--name", job_name])
+    # Pass --owner because --name without --owner is too slow for admin users.
+    captured = helper.run_cli(
+        ["-q", "job", "ls", "--owner", helper.username, "--name", job_name]
+    )
     if captured.out:
         jobs_same_name = captured.out.split("\n")
         assert len(jobs_same_name) == 1, f"found multiple active jobs named {job_name}"
@@ -91,6 +97,7 @@ def test_job_submit(helper: Helper) -> None:
     assert job_id in store_out
     # Check that the command is in the list
     assert "bash -c 'sleep 10m; false'" in store_out
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -152,6 +159,7 @@ def test_job_description(helper: Helper) -> None:
     assert job_id in store_out
     assert description not in store_out
     assert command not in store_out
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -330,7 +338,8 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
             "exec",
             "--no-tty",
             "--no-key-check",
-            "--timeout=60",
+            "--timeout",
+            str(EXEC_TIMEOUT),
             job_id,
             # use unrolled notation to check shlex.join()
             "bash",
@@ -339,6 +348,7 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
         ]
     )
     assert captured.out == "ok"
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -353,12 +363,14 @@ def test_e2e_ssh_exec_false(helper: Helper) -> None:
                 "exec",
                 "--no-tty",
                 "--no-key-check",
-                "--timeout=60",
+                "--timeout",
+                str(EXEC_TIMEOUT),
                 job_id,
                 "false",
             ]
         )
     assert cm.value.returncode == 1
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -368,9 +380,18 @@ def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["job", "exec", "--no-tty", "--no-key-check", "--timeout=60", job_id]
+            [
+                "job",
+                "exec",
+                "--no-tty",
+                "--no-key-check",
+                "--timeout",
+                str(EXEC_TIMEOUT),
+                job_id,
+            ]
         )
     assert cm.value.returncode == 2
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -379,9 +400,19 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     captured = helper.run_cli(
-        ["job", "exec", "--no-tty", "--no-key-check", "--timeout=60", job_id, "echo 1"]
+        [
+            "job",
+            "exec",
+            "--no-tty",
+            "--no-key-check",
+            "--timeout",
+            str(EXEC_TIMEOUT),
+            job_id,
+            "echo 1",
+        ]
     )
     assert captured.out == "1"
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -396,12 +427,14 @@ def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
                 "exec",
                 "--no-tty",
                 "--no-key-check",
-                "--timeout=60",
+                "--timeout",
+                str(EXEC_TIMEOUT),
                 job_id,
                 "[ -t 1 ]",
             ]
         )
     assert cm.value.returncode == 1
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -410,9 +443,18 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     captured = helper.run_cli(
-        ["job", "exec", "--no-key-check", "--timeout=60", job_id, "[ -t 1 ]"]
+        [
+            "job",
+            "exec",
+            "--no-key-check",
+            "--timeout",
+            str(EXEC_TIMEOUT),
+            job_id,
+            "[ -t 1 ]",
+        ]
     )
     assert captured.out == ""
+    helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
@@ -424,7 +466,8 @@ def test_e2e_ssh_exec_no_job(helper: Helper) -> None:
                 "exec",
                 "--no-tty",
                 "--no-key-check",
-                "--timeout=60",
+                "--timeout",
+                str(EXEC_TIMEOUT),
                 "job_id",
                 "true",
             ]
@@ -446,7 +489,8 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
                 "exec",
                 "--no-tty",
                 "--no-key-check",
-                "--timeout=60",
+                "--timeout",
+                str(EXEC_TIMEOUT),
                 job_id,
                 "true",
             ]
@@ -456,7 +500,7 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
-    job_name = f"job-save-test-{uuid4().hex[:6]}"
+    job_name = f"test-job-save-{uuid4().hex[:6]}"
     image = f"test-image:{job_name}"
     image_neuro_name = f"image://{helper.cluster_name}/{helper.username}/{image}"
     command = "sh -c 'echo -n 123 > /test; sleep 10m'"
@@ -562,6 +606,7 @@ def test_job_submit_http_auth(
 ) -> None:
     loop_sleep = 1
     service_wait_time = 10 * 60
+    auth_url = helper.get_config()._config_data.auth_config.auth_url
 
     async def _test_http_auth_redirect(url: URL) -> None:
         start_time = time()
@@ -569,9 +614,7 @@ def test_job_submit_http_auth(
             while time() - start_time < service_wait_time:
                 try:
                     async with session.get(url, allow_redirects=True) as resp:
-                        if resp.status == 200 and re.match(
-                            r".+\.auth0\.com$", resp.url.host
-                        ):
+                        if resp.status == 200 and resp.url.host == auth_url.host:
                             break
                 except aiohttp.ClientConnectionError:
                     pass
@@ -707,32 +750,6 @@ def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
 
 
 @pytest.mark.e2e
-def test_job_browse_named(helper: Helper, fakebrowser: Any) -> None:
-    job_name = f"namedjob-{os.urandom(5).hex()}"
-
-    # Run a new job
-    captured = helper.run_cli(
-        [
-            "-q",
-            "job",
-            "run",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
-            "--detach",
-            "--name",
-            job_name,
-            UBUNTU_IMAGE_NAME,
-            "true",
-        ]
-    )
-    job_id = captured.out
-
-    captured = helper.run_cli(["-v", "job", "browse", job_id])
-    assert f"Browsing https://{job_name}--{helper.username}" in captured.out
-    assert f"Open job URL: https://{job_name}--{helper.username}" in captured.err
-
-
-@pytest.mark.e2e
 def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
     captured = helper.run_cli(
@@ -838,24 +855,25 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_submit_browse(helper: Helper, fakebrowser: Any) -> None:
+def test_job_run_with_tty(helper: Helper) -> None:
     # Run a new job
+    command = "test -t 0"
     captured = helper.run_cli(
         [
-            "-v",
+            "-q",
             "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--http",
-            "80",
-            "--detach",
-            "--browse",
+            "run",
+            "-t",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
             UBUNTU_IMAGE_NAME,
-            "true",
+            command,
         ]
     )
-    assert "Browsing https://job-" in captured.out
-    assert "Open job URL: https://job-" in captured.err
+    job_id = captured.out
+
+    # Wait until the job is running
+    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
 
 
 @pytest.mark.e2e
@@ -997,6 +1015,8 @@ def test_e2e_job_top(helper: Helper) -> None:
         f"returncode={returncode}\n"
         f"stdout = {stdout}\nstdderr = {stderr}"
     )
+
+    helper.kill_job(job_id, wait=False)
 
     try:
         header, *lines = split_non_empty_parts(stdout, sep="\n")

@@ -434,6 +434,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
+|_\-t, --tty_|Allocate a TTY|
 |_--help_|Show this message and exit.|
 
 
@@ -490,6 +491,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
+|_\-t, --tty_|Allocate a TTY|
 |_--help_|Show this message and exit.|
 
 
@@ -1089,6 +1091,7 @@ neuro image ls [OPTIONS]
 
 Name | Description|
 |----|------------|
+|_-l_|List in long format.|
 |_--help_|Show this message and exit.|
 
 
@@ -1677,6 +1680,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
+|_\-t, --tty_|Allocate a TTY|
 |_--help_|Show this message and exit.|
 
 
@@ -1733,6 +1737,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
+|_\-t, --tty_|Allocate a TTY|
 |_--help_|Show this message and exit.|
 
 
@@ -2187,6 +2192,7 @@ neuro images [OPTIONS]
 
 Name | Description|
 |----|------------|
+|_-l_|List in long format.|
 |_--help_|Show this message and exit.|
 
 

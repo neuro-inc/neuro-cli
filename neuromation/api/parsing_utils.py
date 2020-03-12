@@ -31,6 +31,14 @@ class RemoteImage:
             if self.owner or self.cluster_name:
                 raise ValueError("required registry")
 
+    def as_docker_url(self) -> str:
+        if _is_in_neuro_registry(self):
+            name = f"https://{self.registry}/{self.owner}/{self.name}"
+            tag = f":{self.tag}" if self.tag else ""
+            return name + tag
+        else:
+            return str(self)
+
     def __str__(self) -> str:
         pre = (
             f"image://{self.cluster_name}/{self.owner}/"

@@ -85,6 +85,7 @@ class Container:
     http: Optional[HTTPPort] = None
     env: Mapping[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
+    tty: bool = False
 
 
 @dataclass(frozen=True)
@@ -278,12 +279,12 @@ class Jobs(metaclass=NoPublicConstructor):
         except IllegalArgumentError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {id}")
+            raise ValueError(f"Job is not running. Job Id = {job_status.id}")
         payload = json.dumps(
             {
                 "method": "job_exec",
                 "token": await self._config.token(),
-                "params": {"job": id, "command": list(cmd)},
+                "params": {"job": job_status.id, "command": list(cmd)},
             }
         )
         command = ["ssh"]
@@ -331,12 +332,12 @@ class Jobs(metaclass=NoPublicConstructor):
         except IllegalArgumentError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {id}")
+            raise ValueError(f"Job is not running. Job Id = {job_status.id}")
         payload = json.dumps(
             {
                 "method": "job_port_forward",
                 "token": await self._config.token(),
-                "params": {"job": id, "port": job_port},
+                "params": {"job": job_status.id, "port": job_port},
             }
         )
         proxy_command = ["ssh"]
@@ -502,6 +503,8 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
         primitive["env"] = container.env
     if container.volumes:
         primitive["volumes"] = [_volume_to_api(v) for v in container.volumes]
+    if container.tty:
+        primitive["tty"] = True
     return primitive
 
 

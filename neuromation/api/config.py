@@ -6,13 +6,10 @@ import re
 import sqlite3
 import time
 from dataclasses import dataclass, replace
-from datetime import date
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Dict, Iterator, List, Mapping, Set, Union
 
-import dateutil.parser
-import pkg_resources
 import toml
 import yaml
 from yarl import URL
@@ -35,108 +32,18 @@ MALFORMED_CONFIG_MSG = "Malformed config. Please logout and login again."
 SCHEMA = {"main": "CREATE TABLE main (content TEXT, timestamp REAL)"}
 
 
-@dataclass
-class _PyPIVersion:
-    NO_VERSION = pkg_resources.parse_version("0.0.0")
-
-    pypi_version: Any
-    check_timestamp: int
-    certifi_pypi_version: Any
-    certifi_check_timestamp: int
-    certifi_pypi_upload_date: date = date.min
-
-    @classmethod
-    def create_uninitialized(cls) -> "_PyPIVersion":
-        return cls(cls.NO_VERSION, 0, cls.NO_VERSION, 0, date.min)
-
-    @classmethod
-    def from_config(cls, data: Dict[str, Any]) -> "_PyPIVersion":
-        try:
-            pypi_version = pkg_resources.parse_version(data["pypi_version"])
-            check_timestamp = int(data["check_timestamp"])
-        except (KeyError, TypeError, ValueError):
-            # config has invalid/missing data, ignore it
-            pypi_version = cls.NO_VERSION
-            check_timestamp = 0
-        try:
-            certifi_pypi_version = pkg_resources.parse_version(
-                data["certifi_pypi_version"]
-            )
-            upload_time_str = data.get("certifi_pypi_upload_date")
-            certifi_pypi_upload_date = (
-                cls._deserialize_date(upload_time_str) if upload_time_str else date.min
-            )
-            certifi_check_timestamp = int(data["certifi_check_timestamp"])
-        except (KeyError, TypeError, ValueError):
-            # config has invalid/missing data, ignore it
-            certifi_pypi_version = cls.NO_VERSION
-            certifi_check_timestamp = 0
-            certifi_pypi_upload_date = date.min
-        return cls(
-            pypi_version=pypi_version,
-            check_timestamp=check_timestamp,
-            certifi_pypi_version=certifi_pypi_version,
-            certifi_pypi_upload_date=certifi_pypi_upload_date,
-            certifi_check_timestamp=certifi_check_timestamp,
-        )
-
-    def to_config(self) -> Dict[str, Any]:
-        ret = {
-            "pypi_version": str(self.pypi_version),
-            "check_timestamp": int(self.check_timestamp),
-            "certifi_pypi_version": str(self.certifi_pypi_version),
-            "certifi_check_timestamp": self.certifi_check_timestamp,
-        }
-        if self.certifi_pypi_upload_date != date.min:
-            value = self._serialize_date(self.certifi_pypi_upload_date)
-            ret["certifi_pypi_upload_date"] = value
-
-        return ret
-
-    @classmethod
-    def _deserialize_date(cls, value: str) -> date:
-        # from format: "2019-08-19"
-        return dateutil.parser.parse(value).date()
-
-    @classmethod
-    def _serialize_date(cls, value: date) -> str:
-        # to format: "2019-08-19"
-        return value.strftime("%Y-%m-%d")
-
-
 @dataclass(frozen=True)
-class _CookieSession:
-    cookie: str
-    timestamp: int
-
-    @classmethod
-    def create_uninitialized(cls) -> "_CookieSession":
-        return cls(cookie="", timestamp=0)
-
-    @classmethod
-    def from_config(cls, data: Dict[str, Any]) -> "_CookieSession":
-        cookie = data.get("cookie", "")
-        timestamp = data.get("timestamp", 0)
-        return cls(cookie=cookie, timestamp=timestamp)
-
-    def to_config(self) -> Dict[str, Any]:
-        return {"cookie": self.cookie, "timestamp": self.timestamp}
-
-
-@dataclass(frozen=True)
-class _Config:
+class _ConfigData:
     auth_config: _AuthConfig
     auth_token: _AuthToken
-    pypi: _PyPIVersion
     url: URL
-    cookie_session: _CookieSession
     version: str
     cluster_name: str
     clusters: Mapping[str, Cluster]
 
 
 class Config(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, path: Path, config_data: _Config) -> None:
+    def __init__(self, core: _Core, path: Path, config_data: _ConfigData) -> None:
         self._core = core
         self._path = path
         self._config_data = config_data
@@ -256,14 +163,19 @@ class Config(metaclass=NoPublicConstructor):
 
     @contextlib.contextmanager
     def _open_db(self) -> Iterator[sqlite3.Connection]:
+        self._path.mkdir(0o700, parents=True, exist_ok=True)
+
         config_file = self._path / "db"
         with sqlite3.connect(str(config_file)) as db:
+            # forbid access to other users
+            os.chmod(config_file, 0o600)
+
             db.row_factory = sqlite3.Row
             yield db
             db.commit()
 
     @classmethod
-    def _save(cls, config: _Config, path: Path) -> None:
+    def _save(cls, config: _ConfigData, path: Path) -> None:
         # The wierd method signature is required for communicating with existing
         # Factory._save()
         payload: Dict[str, Any] = {}
@@ -276,8 +188,6 @@ class Config(metaclass=NoPublicConstructor):
                 "expiration_time": config.auth_token.expiration_time,
                 "refresh_token": config.auth_token.refresh_token,
             }
-            payload["pypi"] = config.pypi.to_config()
-            payload["cookie_session"] = config.cookie_session.to_config()
             payload["version"] = config.version
             payload["cluster_name"] = config.cluster_name
         except (AttributeError, KeyError, TypeError, ValueError):

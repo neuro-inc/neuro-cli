@@ -1,6 +1,7 @@
 import asyncio
 import re
 import subprocess
+import urllib.parse
 from pathlib import Path
 from typing import Any, AsyncIterator, Set
 from uuid import uuid4 as uuid
@@ -144,6 +145,37 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     )
     assertion_msg = f"Command {cmd} should fail: {result.stdout!r} {result.stderr!r}"
     assert result.returncode, assertion_msg
+
+
+@pytest.mark.e2e
+def test_image_ls(helper: Helper, image: str, tag: str) -> None:
+    # push image
+    captured = helper.run_cli(["image", "push", image])
+
+    image_full_str = f"image://{helper.username}/{image}"
+    assert captured.out.endswith(image_full_str)
+
+    image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
+
+    # check ls short mode
+    captured = helper.run_cli(["image", "ls"])
+    assert image_full_str_no_tag in captured.out.splitlines()
+
+    # check ls long mode
+    captured = helper.run_cli(["image", "ls", "-l"])
+    matching_lines = [
+        line
+        for line in captured.out.splitlines()
+        if image_full_str_no_tag == line.split()[0]
+    ]
+    assert len(matching_lines) == 1
+
+    image_full_https_str_no_tag = f"/{helper.username}/{image}".replace(f":{tag}", "")
+    actual_https_url = urllib.parse.urlparse(matching_lines[0].split()[1])
+    assert (
+        actual_https_url.scheme == "https"
+        and actual_https_url.path == image_full_https_str_no_tag
+    )
 
 
 @pytest.mark.e2e

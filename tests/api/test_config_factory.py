@@ -15,13 +15,7 @@ from yarl import URL
 import neuromation
 import neuromation.api.config_factory
 from neuromation.api import Cluster, ConfigError, Factory
-from neuromation.api.config import (
-    _AuthConfig,
-    _AuthToken,
-    _Config,
-    _CookieSession,
-    _PyPIVersion,
-)
+from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData
 from neuromation.api.login import AuthException
 from tests import _TestServerFactory
 
@@ -46,12 +40,10 @@ def config_dir(
 def _create_config(
     nmrc_path: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster
 ) -> str:
-    config = _Config(
+    config = _ConfigData(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
-        pypi=_PyPIVersion.create_uninitialized(),
         url=URL("https://dev.neu.ro/api/v1"),
-        cookie_session=_CookieSession.create_uninitialized(),
         version=neuromation.__version__,
         cluster_name=cluster_config.name,
         clusters={cluster_config.name: cluster_config},

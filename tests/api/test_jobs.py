@@ -1157,6 +1157,45 @@ async def test_job_run_tpu(
         assert ret.container.resources.tpu_software_version == "1.14"
 
 
+async def test_job_run_with_tty(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = create_job_response("job-id-1", "running")
+    JSON["container"]["tty"] = True
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "resources": {"memory_mb": 16384, "cpu": 0.5, "shm": True},
+                "tty": True,
+            },
+            "is_preemptible": False,
+            "cluster_name": "default",
+        }
+
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16384, 0.5)
+        container = Container(
+            image=RemoteImage("submit-image-name"),
+            command="submit-command",
+            resources=resources,
+            tty=True,
+        )
+        ret = await client.jobs.run(container=container)
+
+        assert ret == _job_description_from_api(JSON, client.parse)
+
+
 def create_job_response(
     id: str,
     status: str,
