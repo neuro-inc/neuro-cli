@@ -368,9 +368,11 @@ def _deserialize_auth_token(payload: Dict[str, Any]) -> _AuthToken:
     )
 
 
-def _save_auth_token(db: sqlite3.Connection, token: _AuthToken):
-    db.execute("UPDATE main SET token=?, expiration_time=?, refresh_token=?",
-               (token.token, token.expiration_time, token.refresh_token))
+def _save_auth_token(db: sqlite3.Connection, token: _AuthToken) -> None:
+    db.execute(
+        "UPDATE main SET token=?, expiration_time=?, refresh_token=?",
+        (token.token, token.expiration_time, token.refresh_token),
+    )
     db.commit()
 
 
