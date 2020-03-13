@@ -164,8 +164,8 @@ def test_job_description(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_job_tags(helper: Helper) -> None:
-    tags = [f"test_job_tags:{uuid4()}", "tag:common"]
-    tag_options = [key for pair in [("--opt", t) for t in tags] for key in pair]
+    tags = [f"test-tag:{uuid4()}", "test-tag:common"]
+    tag_options = [key for pair in [("--tag", t) for t in tags] for key in pair]
 
     command = "sleep 10m"
     captured = helper.run_cli(
