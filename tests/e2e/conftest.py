@@ -535,9 +535,14 @@ class Helper:
                             break
 
 
-@pytest.fixture(scope="session")
-def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
-    e2e_test_token = os.environ.get("E2E_TOKEN")
+@pytest.fixture
+def nmrc_path(tmp_path_factory: Any, request: Any) -> Optional[Path]:
+    require_admin = request.keywords.get("require_admin", False)
+    if require_admin:
+        token_env = "E2E_TOKEN"
+    else:
+        token_env = "E2E_USER_TOKEN"
+    e2e_test_token = os.environ.get(token_env)
     if e2e_test_token:
         tmp_path = tmp_path_factory.mktemp("config")
         nmrc_path = tmp_path / "conftest.nmrc"
