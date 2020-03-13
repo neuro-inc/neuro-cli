@@ -1,4 +1,5 @@
 import sys
+import time
 from pathlib import Path
 from typing import Any, Callable, Dict
 from unittest import mock
@@ -283,7 +284,9 @@ class TestHeadlessLogin:
 
 class TestLogout:
     async def test_logout(self, config_dir: Path) -> None:
+        time.sleep(1)
         await Factory().logout()
+        time.sleep(1)
         assert not config_dir.exists(), "Config not removed after logout\n" + "\n".join(
             [p.name for p in config_dir.iterdir()]
         )
