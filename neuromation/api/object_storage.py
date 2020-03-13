@@ -27,8 +27,8 @@ from .abc import (
     StorageProgressStep,
 )
 from .config import Config
-from .core import ResourceNotFound, _Core
-from .storage import FileStatus, FileStatusType, _DummyProgress, _has_magic
+from .core import _Core
+from .storage import FileStatus, FileStatusType, _always, _has_magic, _run_concurrently
 from .url_utils import _extract_path, normalize_local_path_uri, normalize_obj_path_uri
 from .users import Action
 from .utils import NoPublicConstructor, retries
@@ -225,7 +225,9 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         bucket_name = dst.host
         key = dst.path.lstrip("/")
         size = os.stat(src_path).st_size
-        content_md5 = await calc_md5(src_path)
+        # Be careful not to have too many opened files.
+        async with self._file_sem:
+            content_md5 = await calc_md5(src_path)
 
         for retry in retries(f"Fail to upload {dst}"):
             async with retry:
@@ -245,12 +247,10 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         filter: Optional[Callable[[str], Awaitable[bool]]] = None,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
-        if progress is None:
-            progress = _DummyProgress()
         if filter is None:
             filter = _always
         src = normalize_local_path_uri(src)
-        dst = normalize_storage_path_uri(dst, self._config.username)
+        dst = normalize_obj_path_uri(dst)
         path = _extract_path(src).resolve()
         if not path.exists():
             raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
@@ -259,16 +259,8 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         await _run_progress(
             queue,
-            self._upload_dir(
-                src,
-                path,
-                dst,
-                "",
-                update=update,
-                filter=filter,
-                progress=progress,
-                queue=queue,
-            ),
+            progress,
+            self._upload_dir(src, path, dst, "", filter=filter, queue=queue),
         )
 
     async def _upload_dir(
@@ -278,52 +270,23 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         dst: URL,
         rel_path: str,
         *,
-        update: bool,
         filter: Callable[[str], Awaitable[bool]],
-        progress: AbstractRecursiveFileProgress,
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         tasks = []
-        try:
-            exists = False
-            if update:
-                try:
-                    for retry in retries(f"Fail to list {dst}"):
-                        async with retry:
-                            dst_files = {
-                                item.name: item
-                                for item in await self.ls(dst)
-                                if item.is_file()
-                            }
-                    exists = True
-                except ResourceNotFound:
-                    update = False
-            if not exists:
-                for retry in retries(f"Fail to create {dst}"):
-                    async with retry:
-                        await self.mkdir(dst, exist_ok=True)
-        except FileExistsError:
-            raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
-        await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
+        await queue.put(StorageProgressEnterDir(src, dst))
         loop = asyncio.get_event_loop()
         async with self._file_sem:
             folder = await loop.run_in_executor(None, lambda: list(src_path.iterdir()))
+
         for child in folder:
             name = child.name
             child_rel_path = f"{rel_path}/{name}" if rel_path else name
             if not await filter(child_rel_path):
                 continue
             if child.is_file():
-                if (
-                    update
-                    and name in dst_files
-                    and not self._is_local_modified(child.stat(), dst_files[name])
-                ):
-                    continue
                 tasks.append(
-                    self._upload_file(
-                        src_path / name, dst / name, progress=progress, queue=queue
-                    )
+                    self._upload_file(src_path / name, dst / name, queue=queue)
                 )
             elif child.is_dir():
                 tasks.append(
@@ -332,28 +295,20 @@ class ObjectStorage(metaclass=NoPublicConstructor):
                         src_path / name,
                         dst / name,
                         child_rel_path,
-                        update=update,
                         filter=filter,
-                        progress=progress,
                         queue=queue,
                     )
                 )
             else:
-                # This case is for uploading non-regular file,
-                # e.g. blocking device or unix socket
-                # Coverage temporary skipped, the line is waiting for a champion
                 await queue.put(
-                    (
-                        progress.fail,
-                        StorageProgressFail(
-                            src / name,
-                            dst / name,
-                            f"Cannot upload {child}, not regular file/directory",
-                        ),
+                    StorageProgressFail(
+                        src / name,
+                        dst / name,
+                        f"Cannot upload {child}, not regular file/directory",
                     )
-                )  # pragma: no cover
+                )
         await _run_concurrently(tasks)
-        await queue.put((progress.leave, StorageProgressLeaveDir(src, dst)))
+        await queue.put(StorageProgressLeaveDir(src, dst))
 
 
 def _format_bucket_uri(bucket_name: str, key: str = "") -> URL:

@@ -203,7 +203,6 @@ async def cp(
     glob: bool,
     target_directory: Optional[str],
     no_target_directory: bool,
-    update: bool,
     filters: Optional[Tuple[Tuple[bool, str], ...]],
     progress: bool,
 ) -> None:
@@ -287,7 +286,9 @@ async def cp(
         try:
             if src.scheme == "file" and dst.scheme == "object":
                 if recursive and await _is_dir(root, src):
-                    raise NotImplementedError
+                    await root.client.obj.upload_dir(
+                        src, dst, filter=file_filter.match, progress=progress_obj,
+                    )
                 else:
                     await root.client.obj.upload_file(src, dst, progress=progress_obj)
             elif src.scheme == "storage" and dst.scheme == "file":
