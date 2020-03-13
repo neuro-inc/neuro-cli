@@ -406,7 +406,7 @@ def _save(config: _ConfigData, path: Path) -> None:
         db.commit()
 
 
-def _serialize_auth_config(auth_config: _AuthConfig) -> Dict[str, Any]:
+def _serialize_auth_config(auth_config: _AuthConfig) -> str:
     success_redirect_url = None
     if auth_config.success_redirect_url:
         success_redirect_url = str(auth_config.success_redirect_url)
@@ -423,7 +423,7 @@ def _serialize_auth_config(auth_config: _AuthConfig) -> Dict[str, Any]:
     )
 
 
-def _serialize_clusters(clusters: Mapping[str, Cluster]) -> List[Dict[str, Any]]:
+def _serialize_clusters(clusters: Mapping[str, Cluster]) -> str:
     ret: List[Dict[str, Any]] = []
     for cluster in clusters.values():
         cluster_config = {
