@@ -233,6 +233,7 @@ def _open_db_rw(path: Path) -> Iterator[sqlite3.Connection]:
         os.chmod(config_file, 0o600)
 
         db.row_factory = sqlite3.Row
+        db.execute("PRAGMA journal_mode=WAL")
         yield db
 
 
