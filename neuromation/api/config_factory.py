@@ -156,9 +156,11 @@ class Factory:
 
     async def logout(self) -> None:
         # TODO: logout from auth0
-        config_file = self._path / "db"
-        if config_file.exists():
-            config_file.unlink()
+        files = ["db", "db-wal", "db-shm"]
+        for name in files:
+            f = self._path / "db"
+            if f.exists():
+                f.unlink()
         if self._path.is_file():
             # Old-styled single file config from 2019
             self._path.unlink()
