@@ -53,7 +53,6 @@ PYPI_JSON = {
         "release_url": "https://pypi.org/project/neuromation/0.2.1/",
         "requires_dist": [
             "aiohttp (>=3.0)",
-            "pyyaml (>=3.0)",
             "python-jose (>=3.0.0)",
             "python-dateutil (>=2.7.0)",
             "yarl (>=1.3.0)",

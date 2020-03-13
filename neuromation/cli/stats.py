@@ -1,5 +1,6 @@
 # Google Measurement Protocol
 
+import contextlib
 import json
 import logging
 import sqlite3
@@ -55,7 +56,8 @@ def ensure_schema(db: sqlite3.Connection) -> str:
     else:
         uid = str(uuid.uuid4())
         cur.execute("INSERT INTO uid (uid) VALUES (?)", (uid,))
-        db.commit()
+        with contextlib.suppress(sqlite3.OperationalError):
+            db.commit()
         return uid
 
 
@@ -77,7 +79,7 @@ def select_oldest(
         db.execute(
             """
             SELECT ROWID, cmd, args, timestamp, version
-            FROM stats ORDER BY ROWID ASC LIMIT ?
+            FROM stats ORDER BY timestamp ASC LIMIT ?
             """,
             (limit,),
         )
@@ -145,11 +147,13 @@ async def upload_gmp_stats(
             uid = ensure_schema(db)
             old = select_oldest(db)
             add_usage(db, cmd, args)
-            db.commit()
+            with contextlib.suppress(sqlite3.OperationalError):
+                db.commit()
         await send(client, uid, old)
         with client.config._open_db() as db:
             delete_oldest(db, old)
-            db.commit()
+            with contextlib.suppress(sqlite3.OperationalError):
+                db.commit()
     except sqlite3.DatabaseError as exc:
         if str(exc) != "database is locked":
             logger.warning("Cannot send the usage statistics: %s", repr(exc))
