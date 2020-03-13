@@ -626,6 +626,15 @@ async def status(root: Root, job: str) -> None:
 
 
 @command()
+async def tags(root: Root) -> None:
+    """
+    List all tags submitted by the user.
+    """
+    res = await root.client.jobs.tags()
+    pager_maybe(res, root.tty, root.terminal_size)
+
+
+@command()
 @click.argument("job")
 async def browse(root: Root, job: str) -> None:
     """
@@ -941,6 +950,7 @@ job.add_command(run)
 job.add_command(submit)
 job.add_command(ls)
 job.add_command(status)
+job.add_command(tags)
 job.add_command(exec)
 job.add_command(port_forward)
 job.add_command(logs)

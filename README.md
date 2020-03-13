@@ -17,6 +17,7 @@
 		* [neuro job submit](#neuro-job-submit)
 		* [neuro job ls](#neuro-job-ls)
 		* [neuro job status](#neuro-job-status)
+		* [neuro job tags](#neuro-job-tags)
 		* [neuro job exec](#neuro-job-exec)
 		* [neuro job port-forward](#neuro-job-port-forward)
 		* [neuro job logs](#neuro-job-logs)
@@ -377,6 +378,7 @@ Name | Description|
 | _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
+| _[neuro job tags](#neuro-job-tags)_| List all tags submitted by the user |
 | _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
 | _[neuro job port-forward](#neuro-job-port-forward)_| Forward port\(s) of a running job to local port\(s) |
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
@@ -548,6 +550,25 @@ Display status of a job.
 
 ```bash
 neuro job status [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job tags
+
+List all tags submitted by the user.
+
+**Usage:**
+
+```bash
+neuro job tags [OPTIONS]
 ```
 
 **Options:**
