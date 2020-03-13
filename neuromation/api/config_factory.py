@@ -158,7 +158,7 @@ class Factory:
         # TODO: logout from auth0
         files = ["db", "db-wal", "db-shm"]
         for name in files:
-            f = self._path / "db"
+            f = self._path / name
             if f.exists():
                 f.unlink()
         if self._path.is_file():
