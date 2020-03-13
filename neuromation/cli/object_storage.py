@@ -291,8 +291,13 @@ async def cp(
                     )
                 else:
                     await root.client.obj.upload_file(src, dst, progress=progress_obj)
-            elif src.scheme == "storage" and dst.scheme == "file":
-                raise NotImplementedError
+            elif src.scheme == "object" and dst.scheme == "file":
+                if recursive and await _is_dir(root, src):
+                    await root.client.obj.download_dir(
+                        src, dst, filter=file_filter.match, progress=progress_obj,
+                    )
+                else:
+                    await root.client.obj.download_file(src, dst, progress=progress_obj)
             else:
                 raise RuntimeError(
                     f"Copy operation of the file with scheme '{src.scheme}'"
@@ -313,14 +318,14 @@ async def _is_dir(root: Root, uri: URL) -> bool:
     if uri.scheme == "object":
         if uri.path.endswith("/"):
             return True
-        # Check if a key folder exists. As `/` at the end makes a different key, make
-        # sure we ask for one with ending slash
+        # Check if a folder key exists. As `/` at the end makes a different key, make
+        # sure we ask for one with ending slash.
         key = uri.path.lstrip("/") + "/"
         assert uri.host
-        try:
-            await root.client.obj.head_object(bucket_name=uri.host, key=key)
-        except ResourceNotFound:
-            return False
+        objs = await root.client.obj.list_objects(
+            bucket_name=uri.host, prefix=key, recursive=False, max_keys=1
+        )
+        return bool(objs)
 
     elif uri.scheme == "file":
         path = _extract_path(uri)
