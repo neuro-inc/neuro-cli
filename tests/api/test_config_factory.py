@@ -284,6 +284,6 @@ class TestHeadlessLogin:
 class TestLogout:
     async def test_logout(self, config_dir: Path) -> None:
         await Factory().logout()
-        assert not config_dir.exists(), "Config not removed after logout" + [
-            p.name for name in config_dir.iterdir()
-        ]
+        assert not config_dir.exists(), "Config not removed after logout\n" + "\n".join(
+            [p.name for p in config_dir.iterdir()]
+        )
