@@ -22,6 +22,7 @@ def test_list_cluster_users(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
+@pytest.mark.require_admin
 def test_get_cluster_users(helper: Helper) -> None:
     captured = helper.run_cli(["admin", "get-cluster-users"])
     assert captured.err == ""
