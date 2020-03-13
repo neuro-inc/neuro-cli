@@ -220,7 +220,8 @@ def save_cookie(
     cur.execute(
         "DELETE FROM cookie_session WHERE timestamp < ?", (now - SESSION_COOKIE_MAXAGE,)
     )
-    db.commit()
+    with contextlib.suppress(sqlite3.OperationalError):
+        db.commit()
 
 
 def load_cookie(

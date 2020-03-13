@@ -374,7 +374,8 @@ def _save_auth_token(db: sqlite3.Connection, token: _AuthToken) -> None:
         "UPDATE main SET token=?, expiration_time=?, refresh_token=?",
         (token.token, token.expiration_time, token.refresh_token),
     )
-    db.commit()
+    with contextlib.suppress(sqlite3.OperationalError):
+        db.commit()
 
 
 def _save(config: _ConfigData, path: Path) -> None:
