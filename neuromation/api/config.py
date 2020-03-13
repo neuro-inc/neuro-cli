@@ -33,7 +33,21 @@ CMD_RE = re.compile("[A-Za-z][A-Za-z0-9-]*")
 MALFORMED_CONFIG_MSG = "Malformed config. Please logout and login again."
 
 
-SCHEMA = {"main": "CREATE TABLE main (content TEXT, timestamp REAL)"}
+SCHEMA = {
+    "main": """
+        CREATE TABLE main (auth_config TEXT,
+                           token TEXT,
+                           expiration_time REAL,
+                           refresh_token TEXT,
+                           url TEXT,
+                           version TEXT,
+                           cluster_name TEXT,
+                           clusters TEXT,
+                           timestamp REAL)"""
+}
+SCHEMA["main"] = " ".join(
+    line.strip() for line in SCHEMA["main"].splitlines() if line.strip()
+)
 
 
 @dataclass(frozen=True)
@@ -264,17 +278,23 @@ def _load(path: Path) -> _ConfigData:
         with _open_db_ro(path) as db:
             cur = db.cursor()
             # only one row is always present normally
-            cur.execute("SELECT content FROM main ORDER BY timestamp DESC LIMIT 1")
-            content = cur.fetchone()[0]
-
-        payload = json.loads(content)
+            cur.execute(
+                """
+                SELECT auth_config, token, expiration_time, refresh_token,
+                       url, version, cluster_name, clusters
+                FROM main ORDER BY timestamp DESC LIMIT 1"""
+            )
+            payload = cur.fetchone()
 
         api_url = URL(payload["url"])
         auth_config = _deserialize_auth_config(payload)
         clusters = _deserialize_clusters(payload)
-        auth_token = _deserialize_auth_token(payload)
-        version = payload.get("version", "")
+        version = payload["version"]
         cluster_name = payload["cluster_name"]
+
+        auth_token = _AuthToken(
+            payload["token"], payload["expiration_time"], payload["refresh_token"]
+        )
 
         return _ConfigData(
             auth_config=auth_config,
@@ -289,7 +309,7 @@ def _load(path: Path) -> _ConfigData:
 
 
 def _deserialize_auth_config(payload: Dict[str, Any]) -> _AuthConfig:
-    auth_config = payload["auth_config"]
+    auth_config = json.loads(payload["auth_config"])
     success_redirect_url = auth_config.get("success_redirect_url")
     if success_redirect_url:
         success_redirect_url = URL(success_redirect_url)
@@ -305,7 +325,7 @@ def _deserialize_auth_config(payload: Dict[str, Any]) -> _AuthConfig:
 
 
 def _deserialize_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
-    clusters = payload["clusters"]
+    clusters = json.loads(payload["clusters"])
     ret: Dict[str, Cluster] = {}
     for cluster_config in clusters:
         cluster = Cluster(
@@ -350,18 +370,13 @@ def _deserialize_auth_token(payload: Dict[str, Any]) -> _AuthToken:
 def _save(config: _ConfigData, path: Path) -> None:
     # The wierd method signature is required for communicating with existing
     # Factory._save()
-    payload: Dict[str, Any] = {}
     try:
-        payload["url"] = str(config.url)
-        payload["auth_config"] = _serialize_auth_config(config.auth_config)
-        payload["clusters"] = _serialize_clusters(config.clusters)
-        payload["auth_token"] = {
-            "token": config.auth_token.token,
-            "expiration_time": config.auth_token.expiration_time,
-            "refresh_token": config.auth_token.refresh_token,
-        }
-        payload["version"] = config.version
-        payload["cluster_name"] = config.cluster_name
+        url = str(config.url)
+        auth_config = _serialize_auth_config(config.auth_config)
+        clusters = _serialize_clusters(config.clusters)
+        version = config.version
+        cluster_name = config.cluster_name
+        token = config.auth_token
     except (AttributeError, KeyError, TypeError, ValueError):
         raise ConfigError(MALFORMED_CONFIG_MSG)
 
@@ -369,13 +384,24 @@ def _save(config: _ConfigData, path: Path) -> None:
         _init_db_maybe(db)
 
         cur = db.cursor()
-        content = json.dumps(payload)
         cur.execute("DELETE FROM main")
         cur.execute(
             """
-            INSERT INTO main (content, timestamp)
-            VALUES (?, ?)""",
-            (content, time.time()),
+            INSERT INTO main
+            (auth_config, token, expiration_time, refresh_token,
+             url, version, cluster_name, clusters, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                auth_config,
+                token.token,
+                token.expiration_time,
+                token.refresh_token,
+                url,
+                version,
+                cluster_name,
+                clusters,
+                time.time(),
+            ),
         )
         db.commit()
 
@@ -384,15 +410,17 @@ def _serialize_auth_config(auth_config: _AuthConfig) -> Dict[str, Any]:
     success_redirect_url = None
     if auth_config.success_redirect_url:
         success_redirect_url = str(auth_config.success_redirect_url)
-    return {
-        "auth_url": str(auth_config.auth_url),
-        "token_url": str(auth_config.token_url),
-        "client_id": auth_config.client_id,
-        "audience": auth_config.audience,
-        "headless_callback_url": str(auth_config.headless_callback_url),
-        "success_redirect_url": success_redirect_url,
-        "callback_urls": [str(u) for u in auth_config.callback_urls],
-    }
+    return json.dumps(
+        {
+            "auth_url": str(auth_config.auth_url),
+            "token_url": str(auth_config.token_url),
+            "client_id": auth_config.client_id,
+            "audience": auth_config.audience,
+            "headless_callback_url": str(auth_config.headless_callback_url),
+            "success_redirect_url": success_redirect_url,
+            "callback_urls": [str(u) for u in auth_config.callback_urls],
+        }
+    )
 
 
 def _serialize_clusters(clusters: Mapping[str, Cluster]) -> List[Dict[str, Any]]:
@@ -410,7 +438,7 @@ def _serialize_clusters(clusters: Mapping[str, Cluster]) -> List[Dict[str, Any]]
             ],
         }
         ret.append(cluster_config)
-    return ret
+    return json.dumps(ret)
 
 
 def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
