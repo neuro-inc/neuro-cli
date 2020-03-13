@@ -99,7 +99,7 @@ class Helper:
     def __init__(self, nmrc_path: Path, tmp_path: Path) -> None:
         self._nmrc_path = nmrc_path
         self._tmp = tmp_path
-        self.tmpstoragename = str(uuid())
+        self.tmpstoragename = f"test_e2e/{uuid()}"
         self._tmpstorage = f"storage:{self.tmpstoragename}/"
         self._closed = False
         self._executed_jobs: List[str] = []
