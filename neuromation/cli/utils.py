@@ -548,7 +548,12 @@ def parse_file_resource(uri: str, root: Root) -> URL:
 
 def parse_obj_resource(uri: str, root: Root) -> URL:
     # Username will not be used, just part of the signature
-    return uri_from_cli(uri, root.client.username, allowed_schemes=("obj",))
+    return uri_from_cli(uri, root.client.username, allowed_schemes=("object",))
+
+
+def parse_obj_or_file_resource(uri: str, root: Root) -> URL:
+    # Username will not be used, just part of the signature
+    return uri_from_cli(uri, root.client.username, allowed_schemes=("object", "file"))
 
 
 def parse_permission_action(action: str) -> Action:

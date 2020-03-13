@@ -832,7 +832,7 @@ async def _expand(
             if uri.scheme == "storage":
                 async for file in root.client.storage.glob(uri):
                     uris.append(file)
-            elif allow_file and path.startswith("file:"):
+            elif allow_file and uri.scheme == "file":
                 for p in globmodule.iglob(uri_path, recursive=True):
                     uris.append(uri.with_path(p))
             else:

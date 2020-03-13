@@ -9,22 +9,26 @@ from .parsing_utils import LocalImage, RemoteImage
 # storage
 
 
+class StorageProgressEvent:
+    pass
+
+
 @dataclass(frozen=True)
-class StorageProgressStart:
+class StorageProgressStart(StorageProgressEvent):
     src: URL
     dst: URL
     size: int
 
 
 @dataclass(frozen=True)
-class StorageProgressComplete:
+class StorageProgressComplete(StorageProgressEvent):
     src: URL
     dst: URL
     size: int
 
 
 @dataclass(frozen=True)
-class StorageProgressStep:
+class StorageProgressStep(StorageProgressEvent):
     src: URL
     dst: URL
     current: int
@@ -32,19 +36,19 @@ class StorageProgressStep:
 
 
 @dataclass(frozen=True)
-class StorageProgressEnterDir:
+class StorageProgressEnterDir(StorageProgressEvent):
     src: URL
     dst: URL
 
 
 @dataclass(frozen=True)
-class StorageProgressLeaveDir:
+class StorageProgressLeaveDir(StorageProgressEvent):
     src: URL
     dst: URL
 
 
 @dataclass(frozen=True)
-class StorageProgressFail:
+class StorageProgressFail(StorageProgressEvent):
     src: URL
     dst: URL
     message: str
