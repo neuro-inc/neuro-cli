@@ -176,7 +176,8 @@ class Config(metaclass=NoPublicConstructor):
         ) as token_client:
             new_token = await token_client.refresh(token)
             self.__config_data = replace(self._config_data, auth_token=new_token)
-            _save(self._config_data, self._path)
+            with self._open_db() as db:
+                _save_auth_token(db, new_token)
             return new_token.token
 
     async def _api_auth(self) -> str:
@@ -365,6 +366,12 @@ def _deserialize_auth_token(payload: Dict[str, Any]) -> _AuthToken:
         expiration_time=auth_payload["expiration_time"],
         refresh_token=auth_payload["refresh_token"],
     )
+
+
+def _save_auth_token(db: sqlite3.Connection, token: _AuthToken):
+    db.execute("UPDATE main SET token=?, expiration_time=?, refresh_token=?",
+               (token.token, token.expiration_time, token.refresh_token))
+    db.commit()
 
 
 def _save(config: _ConfigData, path: Path) -> None:
