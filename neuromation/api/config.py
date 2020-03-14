@@ -34,7 +34,8 @@ MALFORMED_CONFIG_MSG = "Malformed config. Please logout and login again."
 
 
 SCHEMA = {
-    "main": flat("""
+    "main": flat(
+        """
         CREATE TABLE main (auth_config TEXT,
                            token TEXT,
                            expiration_time REAL,
@@ -43,7 +44,8 @@ SCHEMA = {
                            version TEXT,
                            cluster_name TEXT,
                            clusters TEXT,
-                           timestamp REAL)""")
+                           timestamp REAL)"""
+    )
 }
 
 
