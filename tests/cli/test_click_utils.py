@@ -23,6 +23,7 @@ def test_print() -> None:
 
     main.add_command(sub_command)
     main.add_command(plain_cmd)
+    main.skip_init = True
 
     runner = CliRunner()
     result = runner.invoke(main, [])
@@ -57,6 +58,7 @@ def test_print_use_group_helpers() -> None:
     async def plain_cmd(root: Root) -> None:
         pass
 
+    main.skip_init = True
     runner = CliRunner()
     result = runner.invoke(main, [])
     assert result.exit_code == 0
@@ -154,6 +156,7 @@ def test_print_deprecated_group_content() -> None:
 
     main.add_command(sub_command)
     main.add_command(DeprecatedGroup(sub_command, name="alias"))
+    main.skip_init = True
 
     runner = CliRunner()
     result = runner.invoke(main, ["alias"])

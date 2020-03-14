@@ -102,6 +102,7 @@ LOG_ERROR = log.error
 
 class MainGroup(Group):
     topics = None
+    skip_init = False  # use it for testing onlt
 
     def make_context(
         self,
@@ -111,6 +112,8 @@ class MainGroup(Group):
         **extra: Any,
     ) -> Context:
         ctx = super().make_context(info_name, args, parent, **extra)
+        if self.skip_init:
+            return ctx
         global LOG_ERROR
         if ctx.params["show_traceback"]:
             LOG_ERROR = log.exception
