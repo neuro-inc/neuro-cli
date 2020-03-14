@@ -385,6 +385,7 @@ def cli(
     # ◥ ◣ ▇      Deep network training,
     #   ◥ ▇      inference and datasets
     #     ◥
+    # Parameters parsing is done in MainGroup.make_context()
     pass
 
 
