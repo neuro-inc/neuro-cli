@@ -113,6 +113,7 @@ class MainGroup(Group):
     ) -> Context:
         ctx = super().make_context(info_name, args, parent, **extra)
         if self.skip_init:
+            # Run from test suite
             return ctx
         global LOG_ERROR
         if ctx.params["show_traceback"]:
