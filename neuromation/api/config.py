@@ -20,7 +20,7 @@ import neuromation
 from .core import _Core
 from .login import AuthTokenClient, _AuthConfig, _AuthToken
 from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
-from .utils import NoPublicConstructor
+from .utils import NoPublicConstructor, flat
 
 
 class ConfigError(RuntimeError):
@@ -34,7 +34,7 @@ MALFORMED_CONFIG_MSG = "Malformed config. Please logout and login again."
 
 
 SCHEMA = {
-    "main": """
+    "main": flat("""
         CREATE TABLE main (auth_config TEXT,
                            token TEXT,
                            expiration_time REAL,
@@ -43,11 +43,8 @@ SCHEMA = {
                            version TEXT,
                            cluster_name TEXT,
                            clusters TEXT,
-                           timestamp REAL)"""
+                           timestamp REAL)""")
 }
-SCHEMA["main"] = " ".join(
-    line.strip() for line in SCHEMA["main"].splitlines() if line.strip()
-)
 
 
 @dataclass(frozen=True)
