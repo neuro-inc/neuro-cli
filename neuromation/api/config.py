@@ -579,7 +579,7 @@ def _validate_user_config(
         if not isinstance(value, dict):
             raise ConfigError(
                 f"{filename}: invalid alias command type {type(value)}, "
-                "run neuro help aliases for getting info about specifying "
+                "'run neuro help aliases' for getting info about specifying "
                 "aliases in config files"
             )
         _validate_alias(key, value, filename)

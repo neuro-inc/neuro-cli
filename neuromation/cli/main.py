@@ -231,7 +231,9 @@ class MainGroup(Group):
 
         self._format_group("Commands", groups, formatter)
         self._format_group("Command Shortcuts", commands, formatter)
-        self._format_group("Help topics", topics, formatter)
+        self._format_group(
+            f"Help topics ({ctx.info_name} help <topic>)", topics, formatter
+        )
 
     def format_options(
         self, ctx: click.Context, formatter: click.HelpFormatter
@@ -239,12 +241,12 @@ class MainGroup(Group):
         self.format_commands(ctx, formatter)
         formatter.write_paragraph()
         formatter.write_text(
-            'Use "neuro help <command>" for more information '
+            f'Use "{ctx.info_name} help <command>" for more information '
             "about a given command or topic."
         )
         formatter.write_text(
-            'Use "neuro --options" for a list of global command-line options '
-            "(applies to all commands)."
+            f'Use "{ctx.info_name} --options" for a list of global command-line '
+            "options (applies to all commands)."
         )
 
 
