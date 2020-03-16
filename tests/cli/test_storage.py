@@ -6,7 +6,7 @@ import toml
 from yarl import URL
 
 from neuromation.api import Client
-from neuromation.cli.storage import _expand, calc_filters
+from neuromation.cli.storage import _expand, calc_filters, parse_file_resource
 
 
 _MakeClient = Callable[..., Client]
@@ -53,6 +53,15 @@ async def test_storage__expand_file(
         root = mock.Mock()
         root.verbosity = 0
         root.client = client
+
+        print("TEST it")
+        print(tmp_path)
+        print(type(tmp_path))
+        print(tmp_path.as_uri())
+        print(Path(str(tmp_path)).as_uri())
+        print(tmp_path.as_posix())
+        print(Path(str(tmp_path)).as_posix())
+        print(parse_file_resource(str(tmp_path), root=root))
 
         # Create file structure
         for path in [
