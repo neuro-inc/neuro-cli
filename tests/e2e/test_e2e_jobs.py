@@ -164,7 +164,7 @@ def test_job_description(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_job_tags(helper: Helper) -> None:
-    tags = [f"test-tag:{uuid4().hex[:8]}", f"test-tag:{uuid4().hex[:8]}"]
+    tags = [f"test-tag:{uuid4()}", "test-tag:common"]
     tag_options = [key for pair in [("--tag", t) for t in tags] for key in pair]
 
     command = "sleep 10m"
@@ -187,7 +187,7 @@ def test_job_tags(helper: Helper) -> None:
     captured = helper.run_cli(["ps", *tag_options])
     store_out_list = captured.out.split("\n")[1:]
     jobs = [x.split("  ")[0] for x in store_out_list]
-    assert jobs == [job_id]
+    assert job_id in jobs
 
 
 @pytest.mark.e2e
