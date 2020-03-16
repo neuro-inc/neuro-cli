@@ -193,6 +193,7 @@ def test_job_tags(helper: Helper) -> None:
     tags_listed = captured.out.split("\n")
     assert set(tags) <= set(tags_listed)
 
+
 @pytest.mark.e2e
 def test_job_kill_non_existing(helper: Helper) -> None:
     # try to kill non existing job

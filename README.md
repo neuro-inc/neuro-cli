@@ -520,7 +520,7 @@ neuro ps -a --owner=user-1 --owner=user-2
 neuro ps --name my-experiments-v1 -s failed -s succeeded
 neuro ps --description=my favourite job
 neuro ps -s failed -s succeeded -q
-neuro ps --tag tag1 -t tag2
+neuro ps -t tag1 -t tag2
 
 ```
 
@@ -1789,7 +1789,7 @@ neuro ps -a --owner=user-1 --owner=user-2
 neuro ps --name my-experiments-v1 -s failed -s succeeded
 neuro ps --description=my favourite job
 neuro ps -s failed -s succeeded -q
-neuro ps --tag tag1 -t tag2
+neuro ps -t tag1 -t tag2
 
 ```
 

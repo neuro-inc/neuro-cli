@@ -575,7 +575,7 @@ async def ls(
     neuro ps --name my-experiments-v1 -s failed -s succeeded
     neuro ps --description="my favourite job"
     neuro ps -s failed -s succeeded -q
-    neuro ps --tag tag1 -t tag2
+    neuro ps -t tag1 -t tag2
     """
 
     format = await calc_columns(root.client, format)
