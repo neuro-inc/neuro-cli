@@ -215,6 +215,13 @@ class Jobs(metaclass=NoPublicConstructor):
             ret = await resp.json()
             return _job_description_from_api(ret, self._parse)
 
+    async def tags(self) -> List[str]:
+        url = self._config.api_url / "tags"
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            ret = await resp.json()
+            return ret["tags"]
+
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
         url = self._config.monitoring_url / id / "top"
         auth = await self._config._api_auth()

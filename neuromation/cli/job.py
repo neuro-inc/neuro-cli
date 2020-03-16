@@ -575,7 +575,7 @@ async def ls(
     neuro ps --name my-experiments-v1 -s failed -s succeeded
     neuro ps --description="my favourite job"
     neuro ps -s failed -s succeeded -q
-    neuro ps --tag tag1 -t tag2
+    neuro ps -t tag1 -t tag2
     """
 
     format = await calc_columns(root.client, format)
@@ -623,6 +623,15 @@ async def status(root: Root, job: str) -> None:
     )
     res = await root.client.jobs.status(id)
     click.echo(JobStatusFormatter()(res))
+
+
+@command()
+async def tags(root: Root) -> None:
+    """
+    List all tags submitted by the user.
+    """
+    res = await root.client.jobs.tags()
+    pager_maybe(res, root.tty, root.terminal_size)
 
 
 @command()
@@ -941,6 +950,7 @@ job.add_command(run)
 job.add_command(submit)
 job.add_command(ls)
 job.add_command(status)
+job.add_command(tags)
 job.add_command(exec)
 job.add_command(port_forward)
 job.add_command(logs)
