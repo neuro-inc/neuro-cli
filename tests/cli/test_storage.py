@@ -64,7 +64,7 @@ async def test_storage__expand_file(
             path.parent.mkdir(exist_ok=True)
             with path.open("w"):
                 pass
-        base_url = URL(tmp_path.as_uri())
+        base_url = URL("file://" + tmp_path.as_posix())
 
         assert await _expand(paths=[], root=root, glob=True, allow_file=True) == []
         # User expand cases
@@ -111,7 +111,7 @@ async def test_storage__expand_file(
 
         # File scheme cases
         uris = await _expand(
-            paths=[str(URL(tmp_path.as_uri()) / "**" / "*.json")],
+            paths=[str(base_url / "**" / "*.json")],
             root=root,
             glob=True,
             allow_file=True,
