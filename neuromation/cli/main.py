@@ -115,40 +115,48 @@ class MainGroup(Group):
         if self.skip_init:
             # Run from test suite
             return ctx
+
+        kwargs = {}
+        for param in self.params:
+            if param.expose_value:
+                val = ctx.params.get(param.name)
+                if val is not None:
+                    kwargs[param.name] = val
+                else:
+                    kwargs[param.name] = param.get_default(ctx)
+
         global LOG_ERROR
-        if ctx.params["show_traceback"]:
+        if kwargs["show_traceback"]:
             LOG_ERROR = log.exception
         tty = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
         COLORS = {"yes": True, "no": False, "auto": None}
-        real_color: Optional[bool] = COLORS[ctx.params["color"]]
+        real_color: Optional[bool] = COLORS[kwargs["color"]]
         if real_color is None:
             real_color = tty
         ctx.color = real_color
-        verbosity = ctx.params["verbose"] - ctx.params["quiet"]
+        verbosity = kwargs["verbose"] - kwargs["quiet"]
         setup_logging(verbosity=verbosity, color=real_color)
-        if ctx.params["hide_token"] is None:
+        if kwargs["hide_token"] is None:
             hide_token_bool = True
         else:
-            if not ctx.params["trace"]:
-                option = (
-                    "--hide-token" if ctx.params["hide_token"] else "--no-hide-token"
-                )
+            if not kwargs["trace"]:
+                option = "--hide-token" if kwargs["hide_token"] else "--no-hide-token"
                 raise click.UsageError(f"{option} requires --trace")
-            hide_token_bool = ctx.params["hide_token"]
-        steal_config_maybe(Path(ctx.params["neuromation_config"]))
+            hide_token_bool = kwargs["hide_token"]
+        steal_config_maybe(Path(kwargs["neuromation_config"]))
         root = Root(
             verbosity=verbosity,
             color=real_color,
             tty=tty,
             terminal_size=shutil.get_terminal_size(),
-            disable_pypi_version_check=ctx.params["disable_pypi_version_check"],
-            network_timeout=ctx.params["network_timeout"],
-            config_path=Path(ctx.params["neuromation_config"]),
-            trace=ctx.params["trace"],
+            disable_pypi_version_check=kwargs["disable_pypi_version_check"],
+            network_timeout=kwargs["network_timeout"],
+            config_path=Path(kwargs["neuromation_config"]),
+            trace=kwargs["trace"],
             trace_hide_token=hide_token_bool,
             command_path="",
             command_params=[],
-            skip_gmp_stats=ctx.params["skip_stats"],
+            skip_gmp_stats=kwargs["skip_stats"],
         )
         ctx.obj = root
         ctx.call_on_close(root.close)
