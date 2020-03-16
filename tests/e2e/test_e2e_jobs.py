@@ -187,7 +187,7 @@ def test_job_tags(helper: Helper) -> None:
     captured = helper.run_cli(["ps", *tag_options])
     store_out_list = captured.out.split("\n")[1:]
     jobs = [x.split("  ")[0] for x in store_out_list]
-    assert jobs == [job_id]
+    assert job_id in jobs
 
     captured = helper.run_cli(["job", "tags"])
     tags_listed = captured.out.split("\n")
