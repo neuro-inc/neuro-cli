@@ -20,6 +20,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    cast,
 )
 
 import aiohttp
@@ -31,6 +32,7 @@ from .abc import (
     AbstractRecursiveFileProgress,
     StorageProgressComplete,
     StorageProgressEnterDir,
+    StorageProgressEvent,
     StorageProgressFail,
     StorageProgressLeaveDir,
     StorageProgressStart,
@@ -52,7 +54,7 @@ READ_SIZE = 2 ** 20  # 1 MiB
 TIME_THRESHOLD = 1.0
 
 Printer = Callable[[str], None]
-ProgressQueueItem = Optional[Tuple[Callable[[Any], None], Any]]
+ProgressQueueItem = Optional[StorageProgressEvent]
 
 
 class FileStatusType(str, enum.Enum):
@@ -297,33 +299,22 @@ class Storage(metaclass=NoPublicConstructor):
     # high-level helpers
 
     async def _iterate_file(
-        self,
-        src: Path,
-        dst: URL,
-        *,
-        progress: AbstractFileProgress,
-        queue: "asyncio.Queue[ProgressQueueItem]",
+        self, src: Path, dst: URL, *, queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
         src_url = URL(src.as_uri())
         async with self._file_sem:
             with src.open("rb") as stream:
                 size = os.stat(stream.fileno()).st_size
-                await queue.put(
-                    (progress.start, StorageProgressStart(src_url, dst, size))
-                )
+                await queue.put(StorageProgressStart(src_url, dst, size))
                 chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
                 pos = len(chunk)
                 while chunk:
-                    await queue.put(
-                        (progress.step, StorageProgressStep(src_url, dst, pos, size))
-                    )
+                    await queue.put(StorageProgressStep(src_url, dst, pos, size))
                     yield chunk
                     chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
                     pos += len(chunk)
-                await queue.put(
-                    (progress.complete, StorageProgressComplete(src_url, dst, size))
-                )
+                await queue.put(StorageProgressComplete(src_url, dst, size))
 
     async def upload_file(
         self,
@@ -333,8 +324,6 @@ class Storage(metaclass=NoPublicConstructor):
         update: bool = False,
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
-        if progress is None:
-            progress = _DummyProgress()
         src = normalize_local_path_uri(src)
         dst = normalize_storage_path_uri(dst, self._config.username)
         path = _extract_path(src)
@@ -379,23 +368,15 @@ class Storage(metaclass=NoPublicConstructor):
                     ):
                         return
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
-        await _run_progress(
-            queue, self._upload_file(path, dst, progress=progress, queue=queue)
-        )
+        await _run_progress(queue, progress, self._upload_file(path, dst, queue=queue))
 
     async def _upload_file(
-        self,
-        src_path: Path,
-        dst: URL,
-        *,
-        progress: AbstractFileProgress,
-        queue: "asyncio.Queue[ProgressQueueItem]",
+        self, src_path: Path, dst: URL, *, queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         for retry in retries(f"Fail to upload {dst}"):
             async with retry:
                 await self.create(
-                    dst,
-                    self._iterate_file(src_path, dst, progress=progress, queue=queue),
+                    dst, self._iterate_file(src_path, dst, queue=queue),
                 )
 
     async def upload_dir(
@@ -407,8 +388,6 @@ class Storage(metaclass=NoPublicConstructor):
         filter: Optional[Callable[[str], Awaitable[bool]]] = None,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
-        if progress is None:
-            progress = _DummyProgress()
         if filter is None:
             filter = _always
         src = normalize_local_path_uri(src)
@@ -421,15 +400,9 @@ class Storage(metaclass=NoPublicConstructor):
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         await _run_progress(
             queue,
+            progress,
             self._upload_dir(
-                src,
-                path,
-                dst,
-                "",
-                update=update,
-                filter=filter,
-                progress=progress,
-                queue=queue,
+                src, path, dst, "", update=update, filter=filter, queue=queue,
             ),
         )
 
@@ -442,7 +415,6 @@ class Storage(metaclass=NoPublicConstructor):
         *,
         update: bool,
         filter: Callable[[str], Awaitable[bool]],
-        progress: AbstractRecursiveFileProgress,
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         tasks = []
@@ -466,7 +438,7 @@ class Storage(metaclass=NoPublicConstructor):
                         await self.mkdir(dst, exist_ok=True)
         except FileExistsError:
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
-        await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
+        await queue.put(StorageProgressEnterDir(src, dst))
         loop = asyncio.get_event_loop()
         async with self._file_sem:
             folder = await loop.run_in_executor(None, lambda: list(src_path.iterdir()))
@@ -483,9 +455,7 @@ class Storage(metaclass=NoPublicConstructor):
                 ):
                     continue
                 tasks.append(
-                    self._upload_file(
-                        src_path / name, dst / name, progress=progress, queue=queue
-                    )
+                    self._upload_file(src_path / name, dst / name, queue=queue)
                 )
             elif child.is_dir():
                 tasks.append(
@@ -496,7 +466,6 @@ class Storage(metaclass=NoPublicConstructor):
                         child_rel_path,
                         update=update,
                         filter=filter,
-                        progress=progress,
                         queue=queue,
                     )
                 )
@@ -505,17 +474,14 @@ class Storage(metaclass=NoPublicConstructor):
                 # e.g. blocking device or unix socket
                 # Coverage temporary skipped, the line is waiting for a champion
                 await queue.put(
-                    (
-                        progress.fail,
-                        StorageProgressFail(
-                            src / name,
-                            dst / name,
-                            f"Cannot upload {child}, not regular file/directory",
-                        ),
+                    StorageProgressFail(
+                        src / name,
+                        dst / name,
+                        f"Cannot upload {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
         await _run_concurrently(tasks)
-        await queue.put((progress.leave, StorageProgressLeaveDir(src, dst)))
+        await queue.put(StorageProgressLeaveDir(src, dst))
 
     async def download_file(
         self,
@@ -525,8 +491,6 @@ class Storage(metaclass=NoPublicConstructor):
         update: bool = False,
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
-        if progress is None:
-            progress = _DummyProgress()
         src = normalize_storage_path_uri(src, self._config.username)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
@@ -546,9 +510,8 @@ class Storage(metaclass=NoPublicConstructor):
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         await _run_progress(
             queue,
-            self._download_file(
-                src, dst, path, src_stat.size, progress=progress, queue=queue
-            ),
+            progress,
+            self._download_file(src, dst, path, src_stat.size, queue=queue),
         )
 
     async def _download_file(
@@ -558,28 +521,20 @@ class Storage(metaclass=NoPublicConstructor):
         dst_path: Path,
         size: int,
         *,
-        progress: AbstractFileProgress,
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         loop = asyncio.get_event_loop()
         async with self._file_sem:
             with dst_path.open("wb") as stream:
-                await queue.put((progress.start, StorageProgressStart(src, dst, size)))
+                await queue.put(StorageProgressStart(src, dst, size))
                 for retry in retries(f"Fail to download {src}"):
                     async with retry:
                         pos = 0
                         async for chunk in self.open(src):
                             pos += len(chunk)
-                            await queue.put(
-                                (
-                                    progress.step,
-                                    StorageProgressStep(src, dst, pos, size),
-                                )
-                            )
+                            await queue.put(StorageProgressStep(src, dst, pos, size),)
                             await loop.run_in_executor(None, stream.write, chunk)
-                await queue.put(
-                    (progress.complete, StorageProgressComplete(src, dst, size))
-                )
+                await queue.put(StorageProgressComplete(src, dst, size))
 
     async def download_dir(
         self,
@@ -590,8 +545,6 @@ class Storage(metaclass=NoPublicConstructor):
         filter: Optional[Callable[[str], Awaitable[bool]]] = None,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
-        if progress is None:
-            progress = _DummyProgress()
         if filter is None:
             filter = _always
         src = normalize_storage_path_uri(src, self._config.username)
@@ -600,15 +553,9 @@ class Storage(metaclass=NoPublicConstructor):
         queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
         await _run_progress(
             queue,
+            progress,
             self._download_dir(
-                src,
-                dst,
-                path,
-                "",
-                update=update,
-                filter=filter,
-                progress=progress,
-                queue=queue,
+                src, dst, path, "", update=update, filter=filter, queue=queue,
             ),
         )
 
@@ -621,11 +568,10 @@ class Storage(metaclass=NoPublicConstructor):
         *,
         update: bool,
         filter: Callable[[str], Awaitable[bool]],
-        progress: AbstractRecursiveFileProgress,
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         dst_path.mkdir(parents=True, exist_ok=True)
-        await queue.put((progress.enter, StorageProgressEnterDir(src, dst)))
+        await queue.put(StorageProgressEnterDir(src, dst))
         tasks = []
         if update:
             loop = asyncio.get_event_loop()
@@ -659,7 +605,6 @@ class Storage(metaclass=NoPublicConstructor):
                         dst / name,
                         dst_path / name,
                         child.size,
-                        progress=progress,
                         queue=queue,
                     )
                 )
@@ -672,23 +617,19 @@ class Storage(metaclass=NoPublicConstructor):
                         child_rel_path,
                         update=update,
                         filter=filter,
-                        progress=progress,
                         queue=queue,
                     )
                 )
             else:
                 await queue.put(
-                    (
-                        progress.fail,
-                        StorageProgressFail(
-                            src / name,
-                            dst / name,
-                            f"Cannot download {child}, not regular file/directory",
-                        ),
+                    StorageProgressFail(
+                        src / name,
+                        dst / name,
+                        f"Cannot download {child}, not regular file/directory",
                     )
                 )  # pragma: no cover
         await _run_concurrently(tasks)
-        await queue.put((progress.leave, StorageProgressLeaveDir(src, dst)))
+        await queue.put(StorageProgressLeaveDir(src, dst))
 
 
 _magic_check = re.compile("(?:[*?[])")
@@ -735,7 +676,9 @@ async def _run_concurrently(coros: Iterable[Awaitable[Any]]) -> None:
 
 
 async def _run_progress(
-    queue: "asyncio.Queue[ProgressQueueItem]", coro: Awaitable[None]
+    queue: "asyncio.Queue[ProgressQueueItem]",
+    progress: Optional[AbstractFileProgress],
+    coro: Awaitable[None],
 ) -> None:
     async def wrapped() -> None:
         try:
@@ -749,29 +692,27 @@ async def _run_progress(
         item = await queue.get()
         if item is None:
             break
-        cb, data = item
-        cb(data)
+
+        if progress is None:
+            # Just ignore event if we don't have a listener
+            continue
+        if isinstance(item, StorageProgressStart):
+            progress.start(item)
+        elif isinstance(item, StorageProgressComplete):
+            progress.complete(item)
+        elif isinstance(item, StorageProgressStep):
+            progress.step(item)
+        else:
+            progress = cast(AbstractRecursiveFileProgress, progress)
+
+            if isinstance(item, StorageProgressEnterDir):
+                progress.enter(item)
+            elif isinstance(item, StorageProgressLeaveDir):
+                progress.leave(item)
+            elif isinstance(item, StorageProgressFail):
+                progress.fail(item)
+
     await task
-
-
-class _DummyProgress(AbstractRecursiveFileProgress):
-    def start(self, data: StorageProgressStart) -> None:
-        pass
-
-    def complete(self, data: StorageProgressComplete) -> None:
-        pass
-
-    def step(self, data: StorageProgressStep) -> None:
-        pass
-
-    def enter(self, data: StorageProgressEnterDir) -> None:
-        pass
-
-    def leave(self, data: StorageProgressLeaveDir) -> None:
-        pass
-
-    def fail(self, data: StorageProgressFail) -> None:
-        pass
 
 
 async def _always(path: str) -> bool:
