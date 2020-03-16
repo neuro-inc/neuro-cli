@@ -45,6 +45,7 @@ Jobs
 
    .. comethod:: list(*, statuses: Iterable[JobStatus] = (), \
                       name: str = "" \
+                      tags: Sequence[str] = (), \
                       owners: Iterable[str] = (),
                  ) -> List[JobDescription]
 
@@ -68,6 +69,11 @@ Jobs
       :param str name: Filter jobs by :attr:`~JobDescription.name` (exact match).
 
                        Empty string means that no filter is applied (default).
+
+      :param str name: Filter jobs by :attr:`~JobDescription.tags`. Retrieves all
+                       jobs submitted with at least one tag from the specified list.
+
+                       Empty list means that no filter is applied (default).
 
       :param ~typing.Iterable[str] owners: filter jobs by their owners.
 
@@ -113,6 +119,7 @@ Jobs
    .. comethod:: run(container: Container, \
                      *, \
                      name: Optional[str] = None, \
+                     tags: Sequence[str] = (), \
                      description: Optional[str] = None, \
                      is_preemptible: bool = False, \
                      schedule_timeout: Optional[float] = None, \
@@ -124,6 +131,8 @@ Jobs
       :param Container container: container description to start.
 
       :param str name: optional container name.
+
+      :param str name: optional job tags.
 
       :param str desciption: optional container description.
 
@@ -268,6 +277,11 @@ JobDescription
 
       Job name provided by user at creation time, :class:`str` or ``None`` if name is
       omitted.
+
+   .. attribute:: tags
+
+      List of job tags provided by user at creation time, :class:`Sequence[str]` or
+      ``()`` if tags omitted.
 
    .. attribute:: description
 

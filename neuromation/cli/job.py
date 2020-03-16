@@ -202,6 +202,13 @@ def job() -> None:
     secure=True,
 )
 @option(
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Optional job tag, multiple values allowed",
+    multiple=True,
+)
+@option(
     "-d",
     "--description",
     metavar="DESC",
@@ -298,6 +305,7 @@ async def submit(
     life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
+    tag: Sequence[str],
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
@@ -344,6 +352,7 @@ async def submit(
         life_span=life_span,
         preemptible=preemptible,
         name=name,
+        tags=tag,
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
@@ -517,6 +526,14 @@ async def _print_logs(root: Root, job: str) -> None:
 )
 @option("-n", "--name", metavar="NAME", help="Filter out jobs by name.", secure=True)
 @option(
+    "-t",
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Filter out jobs by tag (multiple option)",
+    multiple=True,
+)
+@option(
     "-d",
     "--description",
     metavar="DESCRIPTION",
@@ -542,6 +559,7 @@ async def ls(
     status: Sequence[str],
     all: bool,
     name: str,
+    tag: Sequence[str],
     owner: Sequence[str],
     description: str,
     wide: bool,
@@ -557,13 +575,17 @@ async def ls(
     neuro ps --name my-experiments-v1 -s failed -s succeeded
     neuro ps --description="my favourite job"
     neuro ps -s failed -s succeeded -q
+    neuro ps --tag tag1 -t tag2
     """
 
     format = await calc_columns(root.client, format)
 
     statuses = calc_statuses(status, all)
     owners = set(owner)
-    jobs = await root.client.jobs.list(statuses=statuses, name=name, owners=owners)
+    tags = set(tag)
+    jobs = await root.client.jobs.list(
+        statuses=statuses, name=name, owners=owners, tags=tags
+    )
 
     # client-side filtering
     if description:
@@ -751,6 +773,13 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     secure=True,
 )
 @option(
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Optional job tag, multiple values allowed",
+    multiple=True,
+)
+@option(
     "-d",
     "--description",
     metavar="DESC",
@@ -843,6 +872,7 @@ async def run(
     life_span: Optional[str],
     preemptible: Optional[bool],
     name: Optional[str],
+    tag: Sequence[str],
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
@@ -897,6 +927,7 @@ async def run(
         life_span=life_span,
         preemptible=job_preset.is_preemptible,
         name=name,
+        tags=tag,
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
@@ -944,6 +975,7 @@ async def run_job(
     life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
+    tags: Sequence[str],
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
@@ -1021,6 +1053,7 @@ async def run_job(
         container,
         is_preemptible=preemptible,
         name=name,
+        tags=tags,
         description=description,
         life_span=job_life_span,
     )
