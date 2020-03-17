@@ -54,9 +54,11 @@ from .utils import (
     LOCAL_REMOTE_PORT,
     MEGABYTE,
     NEURO_STEAL_CONFIG,
+    PRESET,
     AsyncExitStack,
     ImageType,
     alias,
+    argument,
     command,
     deprecated_quiet_option,
     group,
@@ -123,8 +125,8 @@ def job() -> None:
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("image", type=ImageType())
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@argument("image", type=ImageType())
+@argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @option(
     "-g",
     "--gpu",
@@ -363,8 +365,8 @@ async def submit(
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("job")
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
+@argument("job")
+@argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @option(
     "-t/-T",
     "--tty/--no-tty",
@@ -418,8 +420,8 @@ async def exec(
 
 
 @command()
-@click.argument("job")
-@click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
+@argument("job")
+@argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
 @option(
     "--no-key-check",
     is_flag=True,
@@ -471,7 +473,7 @@ async def port_forward(
 
 
 @command()
-@click.argument("job")
+@argument("job")
 async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
@@ -606,7 +608,7 @@ async def ls(
 
 
 @command()
-@click.argument("job")
+@argument("job")
 async def status(root: Root, job: str) -> None:
     """
     Display status of a job.
@@ -626,7 +628,7 @@ async def status(root: Root, job: str) -> None:
 
 
 @command()
-@click.argument("job")
+@argument("job")
 async def browse(root: Root, job: str) -> None:
     """
     Opens a job's URL in a web browser.
@@ -639,7 +641,7 @@ async def browse(root: Root, job: str) -> None:
 
 
 @command()
-@click.argument("job")
+@argument("job")
 @option(
     "--timeout",
     default=0,
@@ -666,8 +668,8 @@ async def top(root: Root, job: str, timeout: float) -> None:
 
 
 @command()
-@click.argument("job")
-@click.argument("image", type=ImageType())
+@argument("job")
+@argument("image", type=ImageType())
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
     Save job's state to an image.
@@ -694,7 +696,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
 
 
 @command()
-@click.argument("jobs", nargs=-1, required=True)
+@argument("jobs", nargs=-1, required=True)
 async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     Kill job(s).
@@ -723,11 +725,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("image", type=ImageType())
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@argument("image", type=ImageType())
+@argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @option(
     "-s",
     "--preset",
+    type=PRESET,
     metavar="PRESET",
     help=(
         "Predefined resource configuration (to see available values, "

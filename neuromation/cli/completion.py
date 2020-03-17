@@ -5,7 +5,7 @@ from pathlib import Path
 import click
 
 from .root import Root
-from .utils import group
+from .utils import argument, group
 
 
 CFG_FILE = {"bash": Path("~/.bashrc"), "zsh": Path("~/.zshrc")}
@@ -22,7 +22,7 @@ def completion() -> None:
 
 
 @completion.command()
-@click.argument("shell", type=click.Choice(["bash", "zsh"]))
+@argument("shell", type=click.Choice(["bash", "zsh"]))
 async def generate(root: Root, shell: str) -> None:
     """
     Provide an instruction for shell completion generation.
@@ -32,7 +32,7 @@ async def generate(root: Root, shell: str) -> None:
 
 
 @completion.command()
-@click.argument("shell", type=click.Choice(["bash", "zsh"]))
+@argument("shell", type=click.Choice(["bash", "zsh"]))
 async def patch(root: Root, shell: str) -> None:
     """
     Automatically patch shell configuration profile to enable completion
