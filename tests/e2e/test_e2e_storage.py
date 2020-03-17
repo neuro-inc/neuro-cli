@@ -65,7 +65,8 @@ def test_empty_directory_ls_output(helper: Helper) -> None:
 def test_ls_directory_itself(helper: Helper) -> None:
     helper.mkdir("")
     captured = helper.run_cli(["storage", "ls", "--directory", helper.tmpstorage])
-    assert captured.out.splitlines() == [helper.tmpstoragename]
+    _, _, name = helper.tmpstoragename.rpartition("/")
+    assert captured.out.splitlines() == [name]
 
 
 @pytest.mark.e2e

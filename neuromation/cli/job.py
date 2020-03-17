@@ -53,9 +53,11 @@ from .utils import (
     LOCAL_REMOTE_PORT,
     MEGABYTE,
     NEURO_STEAL_CONFIG,
+    PRESET,
     AsyncExitStack,
     ImageType,
     alias,
+    argument,
     command,
     deprecated_quiet_option,
     group,
@@ -122,8 +124,8 @@ def job() -> None:
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("image", type=ImageType())
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@argument("image", type=ImageType())
+@argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @option(
     "-g",
     "--gpu",
@@ -199,6 +201,13 @@ def job() -> None:
     help="Optional job name",
     default=None,
     secure=True,
+)
+@option(
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Optional job tag, multiple values allowed",
+    multiple=True,
 )
 @option(
     "-d",
@@ -297,6 +306,7 @@ async def submit(
     life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
+    tag: Sequence[str],
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
@@ -343,6 +353,7 @@ async def submit(
         life_span=life_span,
         preemptible=preemptible,
         name=name,
+        tags=tag,
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
@@ -353,8 +364,8 @@ async def submit(
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("job")
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
+@argument("job")
+@argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @option(
     "-t/-T",
     "--tty/--no-tty",
@@ -408,8 +419,8 @@ async def exec(
 
 
 @command()
-@click.argument("job")
-@click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
+@argument("job")
+@argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
 @option(
     "--no-key-check",
     is_flag=True,
@@ -461,7 +472,7 @@ async def port_forward(
 
 
 @command()
-@click.argument("job")
+@argument("job")
 async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
@@ -516,6 +527,14 @@ async def _print_logs(root: Root, job: str) -> None:
 )
 @option("-n", "--name", metavar="NAME", help="Filter out jobs by name.", secure=True)
 @option(
+    "-t",
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Filter out jobs by tag (multiple option)",
+    multiple=True,
+)
+@option(
     "-d",
     "--description",
     metavar="DESCRIPTION",
@@ -541,6 +560,7 @@ async def ls(
     status: Sequence[str],
     all: bool,
     name: str,
+    tag: Sequence[str],
     owner: Sequence[str],
     description: str,
     wide: bool,
@@ -556,13 +576,17 @@ async def ls(
     neuro ps --name my-experiments-v1 -s failed -s succeeded
     neuro ps --description="my favourite job"
     neuro ps -s failed -s succeeded -q
+    neuro ps -t tag1 -t tag2
     """
 
     format = await calc_columns(root.client, format)
 
     statuses = calc_statuses(status, all)
     owners = set(owner)
-    jobs = await root.client.jobs.list(statuses=statuses, name=name, owners=owners)
+    tags = set(tag)
+    jobs = await root.client.jobs.list(
+        statuses=statuses, name=name, owners=owners, tags=tags
+    )
 
     # client-side filtering
     if description:
@@ -583,7 +607,7 @@ async def ls(
 
 
 @command()
-@click.argument("job")
+@argument("job")
 async def status(root: Root, job: str) -> None:
     """
     Display status of a job.
@@ -603,6 +627,15 @@ async def status(root: Root, job: str) -> None:
 
 
 @command()
+async def tags(root: Root) -> None:
+    """
+    List all tags submitted by the user.
+    """
+    res = await root.client.jobs.tags()
+    pager_maybe(res, root.tty, root.terminal_size)
+
+
+@command()
 @click.argument("job")
 async def browse(root: Root, job: str) -> None:
     """
@@ -616,7 +649,7 @@ async def browse(root: Root, job: str) -> None:
 
 
 @command()
-@click.argument("job")
+@argument("job")
 @option(
     "--timeout",
     default=0,
@@ -643,8 +676,8 @@ async def top(root: Root, job: str, timeout: float) -> None:
 
 
 @command()
-@click.argument("job")
-@click.argument("image", type=ImageType())
+@argument("job")
+@argument("image", type=ImageType())
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
     Save job's state to an image.
@@ -671,7 +704,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
 
 
 @command()
-@click.argument("jobs", nargs=-1, required=True)
+@argument("jobs", nargs=-1, required=True)
 async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     Kill job(s).
@@ -700,11 +733,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("image", type=ImageType())
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@argument("image", type=ImageType())
+@argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @option(
     "-s",
     "--preset",
+    type=PRESET,
     metavar="PRESET",
     help=(
         "Predefined resource configuration (to see available values, "
@@ -748,6 +782,13 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Optional job name",
     default=None,
     secure=True,
+)
+@option(
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Optional job tag, multiple values allowed",
+    multiple=True,
 )
 @option(
     "-d",
@@ -842,6 +883,7 @@ async def run(
     life_span: Optional[str],
     preemptible: Optional[bool],
     name: Optional[str],
+    tag: Sequence[str],
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
@@ -896,6 +938,7 @@ async def run(
         life_span=life_span,
         preemptible=job_preset.is_preemptible,
         name=name,
+        tags=tag,
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
@@ -909,6 +952,7 @@ job.add_command(run)
 job.add_command(submit)
 job.add_command(ls)
 job.add_command(status)
+job.add_command(tags)
 job.add_command(exec)
 job.add_command(port_forward)
 job.add_command(logs)
@@ -943,6 +987,7 @@ async def run_job(
     life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
+    tags: Sequence[str],
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
@@ -1020,6 +1065,7 @@ async def run_job(
         container,
         is_preemptible=preemptible,
         name=name,
+        tags=tags,
         description=description,
         life_span=job_life_span,
     )

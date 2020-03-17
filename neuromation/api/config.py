@@ -1,35 +1,52 @@
 import base64
 import contextlib
+import json
 import numbers
 import os
 import re
 import sqlite3
+import sys
 import time
 from dataclasses import dataclass, replace
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Dict, Iterator, List, Mapping, Set, Union
+from typing import Any, Dict, Iterator, List, Mapping, Optional, Set, Tuple, Union
 
 import toml
-import yaml
 from yarl import URL
 
+import neuromation
+
 from .core import _Core
-from .login import _AuthConfig, _AuthToken
-from .server_cfg import Cluster, Preset, get_server_config
-from .utils import NoPublicConstructor
+from .login import AuthTokenClient, _AuthConfig, _AuthToken
+from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
+from .utils import NoPublicConstructor, flat
 
 
 class ConfigError(RuntimeError):
     pass
 
 
+WIN32 = sys.platform == "win32"
 CMD_RE = re.compile("[A-Za-z][A-Za-z0-9-]*")
 
 MALFORMED_CONFIG_MSG = "Malformed config. Please logout and login again."
 
 
-SCHEMA = {"main": "CREATE TABLE main (content TEXT, timestamp REAL)"}
+SCHEMA = {
+    "main": flat(
+        """
+        CREATE TABLE main (auth_config TEXT,
+                           token TEXT,
+                           expiration_time REAL,
+                           refresh_token TEXT,
+                           url TEXT,
+                           version TEXT,
+                           cluster_name TEXT,
+                           clusters TEXT,
+                           timestamp REAL)"""
+    )
+}
 
 
 @dataclass(frozen=True)
@@ -43,10 +60,22 @@ class _ConfigData:
 
 
 class Config(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, path: Path, config_data: _ConfigData) -> None:
+    def __init__(self, core: _Core, path: Path) -> None:
         self._core = core
         self._path = path
-        self._config_data = config_data
+        self.__config_data: Optional[_ConfigData] = None
+
+    def _load(self) -> _ConfigData:
+        ret = self.__config_data = _load(self._path)
+        return ret
+
+    @property
+    def _config_data(self) -> _ConfigData:
+        ret = self.__config_data
+        if ret is None:
+            return self._load()
+        else:
+            return ret
 
     @property
     def username(self) -> str:
@@ -66,12 +95,27 @@ class Config(metaclass=NoPublicConstructor):
         name = self._config_data.cluster_name
         return name
 
+    async def _fetch_config(self) -> _ServerConfig:
+        token = await self.token()
+        return await get_server_config(self._core._session, self.api_url, token)
+
+    async def check_server(self) -> None:
+        if self._config_data.version != neuromation.__version__:
+            config_authorized = await self._fetch_config()
+            if (
+                config_authorized.clusters != self.clusters
+                or config_authorized.auth_config != self._config_data.auth_config
+            ):
+                raise ConfigError(
+                    "Neuro Platform CLI was updated. Please logout and login again."
+                )
+            self.__config_data = replace(
+                self._config_data, version=neuromation.__version__
+            )
+            _save(self._config_data, self._path)
+
     async def fetch(self) -> None:
-        server_config = await get_server_config(
-            self._core._session,
-            self._config_data.url,
-            self._config_data.auth_token.token,
-        )
+        server_config = await self._fetch_config()
         if self.cluster_name not in server_config.clusters:
             # Raise exception here?
             # if yes there is not way to switch cluster without relogin
@@ -81,8 +125,8 @@ class Config(metaclass=NoPublicConstructor):
                 f"{list(server_config.clusters)}. "
                 f"Please logout and login again."
             )
-        self._config_data = replace(self._config_data, clusters=server_config.clusters)
-        self._save(self._config_data, self._path)
+        self.__config_data = replace(self._config_data, clusters=server_config.clusters)
+        _save(self._config_data, self._path)
 
     async def switch_cluster(self, name: str) -> None:
         if name not in self.clusters:
@@ -91,8 +135,8 @@ class Config(metaclass=NoPublicConstructor):
                 f"a list of available clusters {list(self.clusters)}. "
                 f"Please logout and login again."
             )
-        self._config_data = replace(self._config_data, cluster_name=name)
-        self._save(self._config_data, self._path)
+        self.__config_data = replace(self._config_data, cluster_name=name)
+        _save(self._config_data, self._path)
 
     @property
     def api_url(self) -> URL:
@@ -121,8 +165,19 @@ class Config(metaclass=NoPublicConstructor):
         return cluster.registry_url
 
     async def token(self) -> str:
-        # TODO: refresh token here if needed
-        return self._config_data.auth_token.token
+        token = self._config_data.auth_token
+        if not token.is_expired():
+            return token.token
+        async with AuthTokenClient(
+            self._core._session,
+            url=self._config_data.auth_config.token_url,
+            client_id=self._config_data.auth_config.client_id,
+        ) as token_client:
+            new_token = await token_client.refresh(token)
+            self.__config_data = replace(self._config_data, auth_token=new_token)
+            with self._open_db() as db:
+                _save_auth_token(db, new_token)
+            return new_token.token
 
     async def _api_auth(self) -> str:
         token = await self.token()
@@ -163,62 +218,210 @@ class Config(metaclass=NoPublicConstructor):
 
     @contextlib.contextmanager
     def _open_db(self) -> Iterator[sqlite3.Connection]:
-        self._path.mkdir(0o700, parents=True, exist_ok=True)
-
-        config_file = self._path / "db"
-        with sqlite3.connect(str(config_file)) as db:
-            # forbid access to other users
-            os.chmod(config_file, 0o600)
-
-            db.row_factory = sqlite3.Row
+        with _open_db_rw(self._path) as db:
             yield db
-            db.commit()
 
-    @classmethod
-    def _save(cls, config: _ConfigData, path: Path) -> None:
-        # The wierd method signature is required for communicating with existing
-        # Factory._save()
-        payload: Dict[str, Any] = {}
-        try:
-            payload["url"] = str(config.url)
-            payload["auth_config"] = cls._serialize_auth_config(config.auth_config)
-            payload["clusters"] = cls._serialize_clusters(config.clusters)
-            payload["auth_token"] = {
-                "token": config.auth_token.token,
-                "expiration_time": config.auth_token.expiration_time,
-                "refresh_token": config.auth_token.refresh_token,
-            }
-            payload["version"] = config.version
-            payload["cluster_name"] = config.cluster_name
-        except (AttributeError, KeyError, TypeError, ValueError):
-            raise ConfigError(MALFORMED_CONFIG_MSG)
 
-        path.mkdir(0o700, parents=True, exist_ok=True)
+@contextlib.contextmanager
+def _open_db_rw(path: Path) -> Iterator[sqlite3.Connection]:
+    path.mkdir(0o700, parents=True, exist_ok=True)
 
-        config_file = path / "db"
-        with sqlite3.connect(str(config_file)) as db:
-            # forbid access to other users
-            os.chmod(config_file, 0o600)
+    config_file = path / "db"
+    with sqlite3.connect(str(config_file)) as db:
+        # forbid access to other users
+        os.chmod(config_file, 0o600)
 
-            _init_db_maybe(db)
+        db.row_factory = sqlite3.Row
+        db.execute("PRAGMA journal_mode=WAL")
+        yield db
 
+
+@contextlib.contextmanager
+def _open_db_ro(path: Path) -> Iterator[sqlite3.Connection]:
+    config_file = path / "db"
+    if not path.exists():
+        raise ConfigError(f"Config at {path} does not exists. Please login.")
+    if not path.is_dir():
+        raise ConfigError(
+            f"Config at {path} is not a directory. Please logout and login again."
+        )
+    if not config_file.is_file():
+        raise ConfigError(
+            f"Config {config_file} is not a regular file. "
+            "Please logout and login again."
+        )
+
+    if not WIN32:
+        stat_dir = path.stat()
+        if stat_dir.st_mode & 0o777 != 0o700:
+            raise ConfigError(
+                f"Config {path} has compromised permission bits, "
+                f"run 'chmod 700 {path}' first"
+            )
+        stat_file = config_file.stat()
+        if stat_file.st_mode & 0o777 != 0o600:
+            raise ConfigError(
+                f"Config at {config_file} has compromised permission bits, "
+                f"run 'chmod 600 {config_file}' first"
+            )
+
+    with sqlite3.connect(str(config_file)) as db:
+        # forbid access to other users
+        os.chmod(config_file, 0o600)
+
+        _check_db(db)
+        db.row_factory = sqlite3.Row
+        yield db
+
+
+def _load(path: Path) -> _ConfigData:
+    try:
+        with _open_db_ro(path) as db:
             cur = db.cursor()
-            content = yaml.safe_dump(payload, default_flow_style=False)
-            cur.execute("DELETE FROM main")
+            # only one row is always present normally
             cur.execute(
                 """
-                INSERT INTO main (content, timestamp)
-                VALUES (?, ?)""",
-                (content, time.time()),
+                SELECT auth_config, token, expiration_time, refresh_token,
+                       url, version, cluster_name, clusters
+                FROM main ORDER BY timestamp DESC LIMIT 1"""
             )
-            db.commit()
+            payload = cur.fetchone()
 
-    @classmethod
-    def _serialize_auth_config(cls, auth_config: _AuthConfig) -> Dict[str, Any]:
-        success_redirect_url = None
-        if auth_config.success_redirect_url:
-            success_redirect_url = str(auth_config.success_redirect_url)
-        return {
+        api_url = URL(payload["url"])
+        auth_config = _deserialize_auth_config(payload)
+        clusters = _deserialize_clusters(payload)
+        version = payload["version"]
+        cluster_name = payload["cluster_name"]
+
+        auth_token = _AuthToken(
+            payload["token"], payload["expiration_time"], payload["refresh_token"]
+        )
+
+        return _ConfigData(
+            auth_config=auth_config,
+            auth_token=auth_token,
+            url=api_url,
+            version=version,
+            cluster_name=cluster_name,
+            clusters=clusters,
+        )
+    except (AttributeError, KeyError, TypeError, ValueError, sqlite3.DatabaseError):
+        raise ConfigError(MALFORMED_CONFIG_MSG)
+
+
+def _deserialize_auth_config(payload: Dict[str, Any]) -> _AuthConfig:
+    auth_config = json.loads(payload["auth_config"])
+    success_redirect_url = auth_config.get("success_redirect_url")
+    if success_redirect_url:
+        success_redirect_url = URL(success_redirect_url)
+    return _AuthConfig(
+        auth_url=URL(auth_config["auth_url"]),
+        token_url=URL(auth_config["token_url"]),
+        client_id=auth_config["client_id"],
+        audience=auth_config["audience"],
+        headless_callback_url=URL(auth_config["headless_callback_url"]),
+        success_redirect_url=success_redirect_url,
+        callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
+    )
+
+
+def _deserialize_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
+    clusters = json.loads(payload["clusters"])
+    ret: Dict[str, Cluster] = {}
+    for cluster_config in clusters:
+        cluster = Cluster(
+            name=cluster_config["name"],
+            registry_url=URL(cluster_config["registry_url"]),
+            storage_url=URL(cluster_config["storage_url"]),
+            users_url=URL(cluster_config["users_url"]),
+            monitoring_url=URL(cluster_config["monitoring_url"]),
+            presets=dict(
+                _deserialize_resource_preset(data)
+                for data in cluster_config.get("presets", [])
+            ),
+        )
+        ret[cluster.name] = cluster
+    return ret
+
+
+def _deserialize_resource_preset(payload: Dict[str, Any]) -> Tuple[str, Preset]:
+    return (
+        payload["name"],
+        Preset(
+            cpu=payload["cpu"],
+            memory_mb=payload["memory_mb"],
+            gpu=payload.get("gpu"),
+            gpu_model=payload.get("gpu_model"),
+            tpu_type=payload.get("tpu_type", None),
+            tpu_software_version=payload.get("tpu_software_version", None),
+            is_preemptible=payload.get("is_preemptible", False),
+        ),
+    )
+
+
+def _deserialize_auth_token(payload: Dict[str, Any]) -> _AuthToken:
+    auth_payload = payload["auth_token"]
+    return _AuthToken(
+        token=auth_payload["token"],
+        expiration_time=auth_payload["expiration_time"],
+        refresh_token=auth_payload["refresh_token"],
+    )
+
+
+def _save_auth_token(db: sqlite3.Connection, token: _AuthToken) -> None:
+    db.execute(
+        "UPDATE main SET token=?, expiration_time=?, refresh_token=?",
+        (token.token, token.expiration_time, token.refresh_token),
+    )
+    with contextlib.suppress(sqlite3.OperationalError):
+        db.commit()
+
+
+def _save(config: _ConfigData, path: Path) -> None:
+    # The wierd method signature is required for communicating with existing
+    # Factory._save()
+    try:
+        url = str(config.url)
+        auth_config = _serialize_auth_config(config.auth_config)
+        clusters = _serialize_clusters(config.clusters)
+        version = config.version
+        cluster_name = config.cluster_name
+        token = config.auth_token
+    except (AttributeError, KeyError, TypeError, ValueError):
+        raise ConfigError(MALFORMED_CONFIG_MSG)
+
+    with _open_db_rw(path) as db:
+        _init_db_maybe(db)
+
+        cur = db.cursor()
+        cur.execute("DELETE FROM main")
+        cur.execute(
+            """
+            INSERT INTO main
+            (auth_config, token, expiration_time, refresh_token,
+             url, version, cluster_name, clusters, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                auth_config,
+                token.token,
+                token.expiration_time,
+                token.refresh_token,
+                url,
+                version,
+                cluster_name,
+                clusters,
+                time.time(),
+            ),
+        )
+        db.commit()
+
+
+def _serialize_auth_config(auth_config: _AuthConfig) -> str:
+    success_redirect_url = None
+    if auth_config.success_redirect_url:
+        success_redirect_url = str(auth_config.success_redirect_url)
+    return json.dumps(
+        {
             "auth_url": str(auth_config.auth_url),
             "token_url": str(auth_config.token_url),
             "client_id": auth_config.client_id,
@@ -227,39 +430,38 @@ class Config(metaclass=NoPublicConstructor):
             "success_redirect_url": success_redirect_url,
             "callback_urls": [str(u) for u in auth_config.callback_urls],
         }
+    )
 
-    @classmethod
-    def _serialize_clusters(
-        cls, clusters: Mapping[str, Cluster]
-    ) -> List[Dict[str, Any]]:
-        ret: List[Dict[str, Any]] = []
-        for cluster in clusters.values():
-            cluster_config = {
-                "name": cluster.name,
-                "registry_url": str(cluster.registry_url),
-                "storage_url": str(cluster.storage_url),
-                "users_url": str(cluster.users_url),
-                "monitoring_url": str(cluster.monitoring_url),
-                "presets": [
-                    cls._serialize_resource_preset(name, preset)
-                    for name, preset in cluster.presets.items()
-                ],
-            }
-            ret.append(cluster_config)
-        return ret
 
-    @classmethod
-    def _serialize_resource_preset(cls, name: str, preset: Preset) -> Dict[str, Any]:
-        return {
-            "name": name,
-            "cpu": preset.cpu,
-            "memory_mb": preset.memory_mb,
-            "gpu": preset.gpu,
-            "gpu_model": preset.gpu_model,
-            "tpu_type": preset.tpu_type,
-            "tpu_software_version": preset.tpu_software_version,
-            "is_preemptible": preset.is_preemptible,
+def _serialize_clusters(clusters: Mapping[str, Cluster]) -> str:
+    ret: List[Dict[str, Any]] = []
+    for cluster in clusters.values():
+        cluster_config = {
+            "name": cluster.name,
+            "registry_url": str(cluster.registry_url),
+            "storage_url": str(cluster.storage_url),
+            "users_url": str(cluster.users_url),
+            "monitoring_url": str(cluster.monitoring_url),
+            "presets": [
+                _serialize_resource_preset(name, preset)
+                for name, preset in cluster.presets.items()
+            ],
         }
+        ret.append(cluster_config)
+    return json.dumps(ret)
+
+
+def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
+    return {
+        "name": name,
+        "cpu": preset.cpu,
+        "memory_mb": preset.memory_mb,
+        "gpu": preset.gpu,
+        "gpu_model": preset.gpu_model,
+        "tpu_type": preset.tpu_type,
+        "tpu_software_version": preset.tpu_software_version,
+        "is_preemptible": preset.is_preemptible,
+    }
 
 
 def _merge_user_configs(
@@ -377,7 +579,7 @@ def _validate_user_config(
         if not isinstance(value, dict):
             raise ConfigError(
                 f"{filename}: invalid alias command type {type(value)}, "
-                "run neuro help aliases for getting info about specifying "
+                "'run neuro help aliases' for getting info about specifying "
                 "aliases in config files"
             )
         _validate_alias(key, value, filename)

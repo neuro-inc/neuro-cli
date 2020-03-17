@@ -23,6 +23,7 @@ def test_print() -> None:
 
     main.add_command(sub_command)
     main.add_command(plain_cmd)
+    main.skip_init = True
 
     runner = CliRunner()
     result = runner.invoke(main, [])
@@ -37,8 +38,8 @@ def test_print() -> None:
         Command Shortcuts:
           plain-cmd
 
-        Use "neuro help <command>" for more information about a given command or topic.
-        Use "neuro --options" for a list of global command-line options (applies to all
+        Use "main help <command>" for more information about a given command or topic.
+        Use "main --options" for a list of global command-line options (applies to all
         commands).
     """
     )
@@ -57,6 +58,7 @@ def test_print_use_group_helpers() -> None:
     async def plain_cmd(root: Root) -> None:
         pass
 
+    main.skip_init = True
     runner = CliRunner()
     result = runner.invoke(main, [])
     assert result.exit_code == 0
@@ -70,8 +72,8 @@ def test_print_use_group_helpers() -> None:
         Command Shortcuts:
           plain-cmd
 
-        Use "neuro help <command>" for more information about a given command or topic.
-        Use "neuro --options" for a list of global command-line options (applies to all
+        Use "main help <command>" for more information about a given command or topic.
+        Use "main --options" for a list of global command-line options (applies to all
         commands).
     """
     )
@@ -154,6 +156,7 @@ def test_print_deprecated_group_content() -> None:
 
     main.add_command(sub_command)
     main.add_command(DeprecatedGroup(sub_command, name="alias"))
+    main.skip_init = True
 
     runner = CliRunner()
     result = runner.invoke(main, ["alias"])

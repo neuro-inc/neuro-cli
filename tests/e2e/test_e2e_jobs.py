@@ -163,6 +163,38 @@ def test_job_description(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
+def test_job_tags(helper: Helper) -> None:
+    tags = [f"test-tag:{uuid4()}", "test-tag:common"]
+    tag_options = [key for pair in [("--tag", t) for t in tags] for key in pair]
+
+    command = "sleep 10m"
+    captured = helper.run_cli(
+        [
+            "job",
+            "run",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
+            *tag_options,
+            "--no-wait-start",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+    match = re.match("Job ID: (.+) Status:", captured.out)
+    assert match is not None
+    job_id = match.group(1)
+
+    captured = helper.run_cli(["ps", *tag_options])
+    store_out_list = captured.out.split("\n")[1:]
+    jobs = [x.split("  ")[0] for x in store_out_list]
+    assert job_id in jobs
+
+    captured = helper.run_cli(["job", "tags"])
+    tags_listed = captured.out.split("\n")
+    assert set(tags) <= set(tags_listed)
+
+
+@pytest.mark.e2e
 def test_job_kill_non_existing(helper: Helper) -> None:
     # try to kill non existing job
     phantom_id = "not-a-job-id"

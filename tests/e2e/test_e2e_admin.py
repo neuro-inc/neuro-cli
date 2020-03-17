@@ -1,14 +1,29 @@
 import re
 import subprocess
-from typing import Any
 
 import pytest
 
 from tests.e2e import Helper
 
 
+pytestmark = pytest.mark.require_admin
+
+
 @pytest.mark.e2e
-def test_get_cluster_users(request: Any, helper: Helper) -> None:
+def test_list_clusters(helper: Helper) -> None:
+    # should not fail
+    helper.run_cli(["admin", "get-clusters"])
+
+
+@pytest.mark.e2e
+def test_list_cluster_users(helper: Helper) -> None:
+    # should not fail
+    helper.run_cli(["admin", "get-cluster-users"])
+
+
+@pytest.mark.e2e
+@pytest.mark.require_admin
+def test_get_cluster_users(helper: Helper) -> None:
     captured = helper.run_cli(["admin", "get-cluster-users"])
     assert captured.err == ""
 
@@ -20,7 +35,7 @@ def test_get_cluster_users(request: Any, helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_add_cluster_user_already_exists(request: Any, helper: Helper) -> None:
+def test_add_cluster_user_already_exists(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
             ["admin", "add-cluster-user", helper.cluster_name, helper.username, "user"]
@@ -33,7 +48,7 @@ def test_add_cluster_user_already_exists(request: Any, helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_add_cluster_user_does_not_exist(request: Any, helper: Helper) -> None:
+def test_add_cluster_user_does_not_exist(helper: Helper) -> None:
     username = "some-clearly-invalid-username"
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
@@ -44,7 +59,7 @@ def test_add_cluster_user_does_not_exist(request: Any, helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_add_cluster_user_invalid_role(request: Any, helper: Helper) -> None:
+def test_add_cluster_user_invalid_role(helper: Helper) -> None:
     username = "some-clearly-invalid-username"
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
@@ -56,7 +71,7 @@ def test_add_cluster_user_invalid_role(request: Any, helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_remove_cluster_user_remove_oneself(request: Any, helper: Helper) -> None:
+def test_remove_cluster_user_remove_oneself(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
             ["admin", "remove-cluster-user", helper.cluster_name, helper.username]
@@ -69,7 +84,7 @@ def test_remove_cluster_user_remove_oneself(request: Any, helper: Helper) -> Non
 
 
 @pytest.mark.e2e
-def test_remove_cluster_user_does_not_exist(request: Any, helper: Helper) -> None:
+def test_remove_cluster_user_does_not_exist(helper: Helper) -> None:
     username = "some-clearly-invalid-username"
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(["admin", "remove-cluster-user", helper.cluster_name, username])

@@ -15,6 +15,7 @@ from neuromation.cli.formatters.images import (
 from .root import Root
 from .utils import (
     RemoteTaglessImageType,
+    argument,
     command,
     deprecated_quiet_option,
     group,
@@ -34,8 +35,8 @@ def image() -> None:
 
 
 @command()
-@click.argument("local_image")
-@click.argument("remote_image", required=False)
+@argument("local_image")
+@argument("remote_image", required=False)
 @deprecated_quiet_option
 async def push(root: Root, local_image: str, remote_image: Optional[str]) -> None:
     """
@@ -67,8 +68,8 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
 
 
 @command()
-@click.argument("remote_image")
-@click.argument("local_image", required=False)
+@argument("remote_image")
+@argument("local_image", required=False)
 @deprecated_quiet_option
 async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> None:
     """
@@ -116,7 +117,7 @@ async def ls(root: Root, format_long: bool) -> None:
 
 
 @command()
-@click.argument("image", type=RemoteTaglessImageType())
+@argument("image", type=RemoteTaglessImageType())
 async def tags(root: Root, image: RemoteImage) -> None:
     """
     List tags for image in platform registry.

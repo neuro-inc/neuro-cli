@@ -17,6 +17,7 @@
 		* [neuro job submit](#neuro-job-submit)
 		* [neuro job ls](#neuro-job-ls)
 		* [neuro job status](#neuro-job-status)
+		* [neuro job tags](#neuro-job-tags)
 		* [neuro job exec](#neuro-job-exec)
 		* [neuro job port-forward](#neuro-job-port-forward)
 		* [neuro job logs](#neuro-job-logs)
@@ -377,6 +378,7 @@ Name | Description|
 | _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
+| _[neuro job tags](#neuro-job-tags)_| List all tags submitted by the user |
 | _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
 | _[neuro job port-forward](#neuro-job-port-forward)_| Forward port\(s) of a running job to local port\(s) |
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
@@ -423,6 +425,7 @@ Name | Description|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-n, --name NAME_|Optional job name|
+|_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
@@ -480,6 +483,7 @@ Name | Description|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
+|_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
@@ -516,6 +520,7 @@ neuro ps -a --owner=user-1 --owner=user-2
 neuro ps --name my-experiments-v1 -s failed -s succeeded
 neuro ps --description=my favourite job
 neuro ps -s failed -s succeeded -q
+neuro ps -t tag1 -t tag2
 
 ```
 
@@ -527,6 +532,7 @@ Name | Description|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
 |_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
 |_\-n, --name NAME_|Filter out jobs by name.|
+|_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
@@ -544,6 +550,25 @@ Display status of a job.
 
 ```bash
 neuro job status [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job tags
+
+List all tags submitted by the user.
+
+**Usage:**
+
+```bash
+neuro job tags [OPTIONS]
 ```
 
 **Options:**
@@ -1669,6 +1694,7 @@ Name | Description|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-n, --name NAME_|Optional job name|
+|_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
@@ -1726,6 +1752,7 @@ Name | Description|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
+|_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
@@ -1762,6 +1789,7 @@ neuro ps -a --owner=user-1 --owner=user-2
 neuro ps --name my-experiments-v1 -s failed -s succeeded
 neuro ps --description=my favourite job
 neuro ps -s failed -s succeeded -q
+neuro ps -t tag1 -t tag2
 
 ```
 
@@ -1773,6 +1801,7 @@ Name | Description|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
 |_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
 |_\-n, --name NAME_|Filter out jobs by name.|
+|_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|

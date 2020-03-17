@@ -30,6 +30,7 @@ from typing import (
 import click
 import humanize
 from click import BadParameter
+from click.types import convert_type
 from yarl import URL
 
 from neuromation.api import (
@@ -43,7 +44,6 @@ from neuromation.api import (
     TagOption,
     Volume,
 )
-from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 
 from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
@@ -400,7 +400,18 @@ class Option(click.Option):
 def option(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
     option_attrs = attrs.copy()
     option_attrs.setdefault("cls", Option)
+    typ = convert_type(attrs.get("type"), attrs.get("default"))
+    autocompletion = getattr(typ, "autocompletion", None)
+    option_attrs.setdefault("autocompletion", autocompletion)
     return click.option(*param_decls, **option_attrs)
+
+
+def argument(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
+    arg_attrs = attrs.copy()
+    typ = convert_type(attrs.get("type"), attrs.get("default"))
+    autocompletion = getattr(typ, "autocompletion", None)
+    arg_attrs.setdefault("autocompletion", autocompletion)
+    return click.argument(*param_decls, **arg_attrs)
 
 
 def volume_to_verbose_str(volume: Volume) -> str:
@@ -508,19 +519,8 @@ class LocalImageType(click.ParamType):
     ) -> LocalImage:
         assert ctx is not None
         root = cast(Root, ctx.obj)
-        config = Factory(root.config_path)._read()
-        image_parser = _ImageNameParser(
-            config.auth_token.username,
-            config.cluster_name,
-            config.clusters[config.cluster_name].registry_url,
-        )
-        if image_parser.is_in_neuro_registry(value):
-            raise click.BadParameter(
-                "remote image cannot be used as local", ctx, param, self.name
-            )
-        else:
-            parsed_image = image_parser.parse_as_local_image(value)
-        return parsed_image
+        client = root.run(root.init_client())
+        return client.parse.local_image(value)
 
 
 class ImageType(click.ParamType):
@@ -531,13 +531,8 @@ class ImageType(click.ParamType):
     ) -> RemoteImage:
         assert ctx is not None
         root = cast(Root, ctx.obj)
-        config = Factory(root.config_path)._read()
-        image_parser = _ImageNameParser(
-            config.auth_token.username,
-            config.cluster_name,
-            config.clusters[config.cluster_name].registry_url,
-        )
-        return image_parser.parse_remote(value)
+        client = root.run(root.init_client())
+        return client.parse.remote_image(value)
 
 
 class RemoteTaglessImageType(click.ParamType):
@@ -548,13 +543,8 @@ class RemoteTaglessImageType(click.ParamType):
     ) -> RemoteImage:
         assert ctx is not None
         root = cast(Root, ctx.obj)
-        config = Factory(root.config_path)._read()
-        image_parser = _ImageNameParser(
-            config.auth_token.username,
-            config.cluster_name,
-            config.clusters[config.cluster_name].registry_url,
-        )
-        return image_parser.parse_as_neuro_image(value, tag_option=TagOption.DENY)
+        client = root.run(root.init_client())
+        return client.parse.remote_image(value, tag_option=TagOption.DENY)
 
 
 class LocalRemotePortParamType(click.ParamType):
@@ -629,6 +619,52 @@ class JobColumnsType(click.ParamType):
 
 
 JOB_COLUMNS = JobColumnsType()
+
+
+class PresetType(click.ParamType):
+    name = "preset"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> str:
+        assert ctx is not None
+        root = cast(Root, ctx.obj)
+        return root.run(self._convert(root, value, param, ctx))
+
+    async def _convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> str:
+        client = await root.init_client()
+        if value not in client.presets:
+            raise click.BadParameter(
+                f"Preset {value} is not valid, "
+                "run 'neuro config show' to get a list of available presets",
+                ctx,
+                param,
+            )
+        return value
+
+    def autocompletion(
+        self, ctx: click.Context, args: Sequence[str], incomplete: str
+    ) -> List[Tuple[str, Optional[str]]]:
+        root = cast(Root, ctx.obj)
+        return root.run(self._autocompletion(root, ctx, args, incomplete))
+
+    async def _autocompletion(
+        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
+    ) -> List[Tuple[str, Optional[str]]]:
+        # async context manager is used to prevent a message about
+        # unclosed session
+        async with await root.init_client() as client:
+            presets = list(client.config.presets)
+            return [(p, None) for p in presets if p.startswith(incomplete)]
+
+
+PRESET = PresetType()
 
 
 def do_deprecated_quiet(
