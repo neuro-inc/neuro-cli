@@ -86,7 +86,7 @@ async def test_storage__expand_file(
         ]
         uris = await _expand(paths=["~/**"], root=root, glob=True, allow_file=True)
         assert sorted(uris) == [
-            base_url / "",
+            base_url,
             base_url / "chdir",
             base_url / "file1.txt",
             base_url / "file2.json",
@@ -98,7 +98,7 @@ async def test_storage__expand_file(
         # Relative expand cases
         uris = await _expand(paths=["./**"], root=root, glob=True, allow_file=True)
         assert sorted(uris) == [
-            base_url / "chdir" / "",
+            base_url / "chdir",
         ]
         uris = await _expand(paths=["../*"], root=root, glob=True, allow_file=True)
         assert sorted(uris) == [
@@ -109,7 +109,7 @@ async def test_storage__expand_file(
         ]
         uris = await _expand(paths=["../**"], root=root, glob=True, allow_file=True)
         assert sorted(uris) == [
-            base_url / "chdir" / ".." / "",
+            base_url / "chdir" / "..",
             base_url / "chdir" / ".." / "chdir",
             base_url / "chdir" / ".." / "file1.txt",
             base_url / "chdir" / ".." / "file2.json",

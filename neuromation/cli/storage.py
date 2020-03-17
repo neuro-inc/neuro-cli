@@ -5,6 +5,7 @@ import os
 import secrets
 import shlex
 import sys
+from pathlib import Path
 from typing import Any, Callable, List, Optional, Sequence, Tuple
 
 import aiodocker
@@ -844,7 +845,7 @@ async def _expand(
                     uris.append(file)
             elif allow_file and uri.scheme == "file":
                 for p in globmodule.iglob(uri_path, recursive=True):
-                    uris.append(uri.with_path(p))
+                    uris.append(URL(Path(p).as_uri()))
             else:
                 uris.append(uri)
         else:
