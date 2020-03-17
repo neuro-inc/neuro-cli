@@ -13,7 +13,6 @@ from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
-import idna
 from yarl import URL
 
 from neuromation.api import (
@@ -1117,6 +1116,7 @@ def _parse_cmd(cmd: Sequence[str]) -> str:
 async def _build_volumes(
     root: Root, input_volumes: Sequence[str], env_dict: Dict[str, str]
 ) -> Set[Volume]:
+    cluster_name = root.client.cluster_name
     input_volumes_set = set(input_volumes)
     volumes: Set[Volume] = set()
 
@@ -1128,22 +1128,17 @@ async def _build_volumes(
         available = await root.client.users.get_acl(
             root.client.username, scheme="storage"
         )
-        permissions = []
         for perm in available:
-            try:
-                idna.encode(perm.uri.host)
-            except ValueError:
-                log.warning(f"Skipping invalid URI {perm.uri}")
-            else:
-                permissions.append(perm)
-        volumes.update(
-            Volume(
-                storage_uri=perm.uri,
-                container_path=f"{ROOT_MOUNTPOINT}/{perm.uri.host}{perm.uri.path}",
-                read_only=perm.action not in ("write", "manage"),
-            )
-            for perm in permissions
-        )
+            if perm.uri.host == cluster_name:
+                path = perm.uri.path
+                assert path[0] == "/"
+                volumes.add(
+                    Volume(
+                        storage_uri=perm.uri,
+                        container_path=f"{ROOT_MOUNTPOINT}{path}",
+                        read_only=perm.action not in ("write", "manage"),
+                    )
+                )
         neuro_mountpoint = _get_neuro_mountpoint(root.client.username)
         env_dict[NEUROMATION_HOME_ENV_VAR] = neuro_mountpoint
         env_dict[NEUROMATION_ROOT_ENV_VAR] = ROOT_MOUNTPOINT
@@ -1161,7 +1156,7 @@ async def _build_volumes(
                 )
                 volumes.add(
                     root.client.parse.volume(
-                        f"storage://neuromation/public:"
+                        f"storage://{cluster_name}/neuromation/public:"
                         f"{STORAGE_MOUNTPOINT}/neuromation:ro"
                     )
                 )
@@ -1184,7 +1179,9 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     # store the Neuro CLI config on the storage under some random path
     nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
     random_nmrc_filename = f"{uuid.uuid4()}-cfg"
-    storage_nmrc_folder = URL(f"storage://{root.client.username}/.neuro/")
+    storage_nmrc_folder = URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/.neuro/"
+    )
     storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
     local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/.neuro/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
