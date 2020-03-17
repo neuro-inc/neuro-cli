@@ -38,7 +38,15 @@ from .formatters import (
     get_painter,
 )
 from .root import Root
-from .utils import Option, command, group, option, pager_maybe, parse_file_resource
+from .utils import (
+    Option,
+    argument,
+    command,
+    group,
+    option,
+    pager_maybe,
+    parse_file_resource,
+)
 
 
 MINIO_IMAGE_NAME = "minio/minio"
@@ -57,7 +65,7 @@ def storage() -> None:
 
 
 @command()
-@click.argument("paths", nargs=-1, required=True)
+@argument("paths", nargs=-1, required=True)
 @option(
     "--recursive",
     "-r",
@@ -99,7 +107,7 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
 
 
 @command()
-@click.argument("paths", nargs=-1)
+@argument("paths", nargs=-1)
 @option(
     "--human-readable",
     "-h",
@@ -182,7 +190,7 @@ async def ls(
 
 
 @command()
-@click.argument("patterns", nargs=-1, required=False)
+@argument("patterns", nargs=-1, required=False)
 async def glob(root: Root, patterns: Sequence[str]) -> None:
     """
     List resources that match PATTERNS.
@@ -232,8 +240,8 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
 
 
 @command()
-@click.argument("sources", nargs=-1, required=False)
-@click.argument("destination", required=False)
+@argument("sources", nargs=-1, required=False)
+@argument("destination", required=False)
 @option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
 @option(
     "--glob/--no-glob",
@@ -430,8 +438,8 @@ async def cp(
 
 
 @command(deprecated=True)  # Deprecated since 19.9.4
-@click.argument("sources", nargs=-1, required=False)
-@click.argument("destination", required=False)
+@argument("sources", nargs=-1, required=False)
+@argument("destination", required=False)
 @option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
 @option(
     "--glob/--no-glob",
@@ -682,7 +690,7 @@ aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
 
 
 @command()
-@click.argument("paths", nargs=-1, required=True)
+@argument("paths", nargs=-1, required=True)
 @option(
     "-p",
     "--parents",
@@ -713,8 +721,8 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
 
 
 @command()
-@click.argument("sources", nargs=-1, required=False)
-@click.argument("destination", required=False)
+@argument("sources", nargs=-1, required=False)
+@argument("destination", required=False)
 @option(
     "--glob/--no-glob",
     is_flag=True,
