@@ -156,6 +156,12 @@ Jobs
 
       :return: :class:`JobDescription` instance with job status details.
 
+   .. comethod:: tags() -> List[str]
+
+      Get the list of all tags submitted by the user.
+
+      :return: :class:`List[str]` list of tags.
+
    .. comethod:: top(id: str) -> AsyncIterator[JobTelemetry]
       :async-for:
 

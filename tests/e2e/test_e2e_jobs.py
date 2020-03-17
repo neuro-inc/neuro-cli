@@ -189,6 +189,10 @@ def test_job_tags(helper: Helper) -> None:
     jobs = [x.split("  ")[0] for x in store_out_list]
     assert job_id in jobs
 
+    captured = helper.run_cli(["job", "tags"])
+    tags_listed = captured.out.split("\n")
+    assert set(tags) <= set(tags_listed)
+
 
 @pytest.mark.e2e
 def test_job_kill_non_existing(helper: Helper) -> None:
