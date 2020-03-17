@@ -568,7 +568,7 @@ List all tags submitted by the user.
 **Usage:**
 
 ```bash
-neuro job tags [OPTIONS] JOB
+neuro job tags [OPTIONS]
 ```
 
 **Options:**
