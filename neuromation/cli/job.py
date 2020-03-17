@@ -628,7 +628,6 @@ async def status(root: Root, job: str) -> None:
 
 
 @command()
-@argument("job")
 async def tags(root: Root) -> None:
     """
     List all tags submitted by the user.
