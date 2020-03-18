@@ -69,6 +69,7 @@ class JobColumnInfo:
 COLUMNS = [
     JobColumnInfo("id", "ID", Align.LEFT, ColumnWidth()),
     JobColumnInfo("name", "NAME", Align.LEFT, ColumnWidth(max=40)),
+    JobColumnInfo("tags", "TAGS", Align.LEFT, ColumnWidth(max=40)),
     JobColumnInfo("status", "STATUS", Align.LEFT, ColumnWidth(max=10)),
     JobColumnInfo("when", "WHEN", Align.LEFT, ColumnWidth(max=15)),
     JobColumnInfo("image", "IMAGE", Align.LEFT, ColumnWidth(max=40)),
@@ -77,6 +78,10 @@ COLUMNS = [
     JobColumnInfo("description", "DESCRIPTION", Align.LEFT, ColumnWidth(max=50)),
     JobColumnInfo("command", "COMMAND", Align.LEFT, ColumnWidth(max=100)),
 ]
+
+COLUMNS_DEFAULT_IGNORE = {
+    "tags",
+}
 
 COLUMNS_MAP = {column.id: column for column in COLUMNS}
 

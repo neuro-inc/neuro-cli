@@ -111,10 +111,10 @@ async def ps_format() -> None:
       for indication of alignment, minimum and maximum column width,
       and optional column title:
 
-        `{id;align=center;min=10;max=30;width=20;ID TITLE}`
+        `{id;align=center;min=10;max=30;width=20;TITLE}`
 
       Here **id** is the column id, **align**, **min**, **max**, **width**
-      are properties and **ID TITLE** is the column title.
+      are properties and **TITLE** is the column title.
 
       An alternative form is specifying the column id only without
       additional properties, in this case curly brackets can be omitted:
@@ -138,6 +138,7 @@ async def ps_format() -> None:
       ---------------------------------------------
       id            ID          left  -   -    -
       name          NAME        left  -   40   -
+      tags          TAGS        left  -   40   -
       status        STATUS      left  -   10   -
       when          WHEN        left  -   15   -
       image         IMAGE       left  -   40   -
