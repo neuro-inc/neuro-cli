@@ -1,8 +1,7 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, NoReturn, Tuple
+from typing import Any, Callable, Dict, NoReturn
 from unittest import mock
 
-import click
 import pytest
 from aiohttp import web
 from yarl import URL
@@ -10,7 +9,6 @@ from yarl import URL
 from neuromation.api import Action, Client, JobStatus
 from neuromation.cli.root import Root
 from neuromation.cli.utils import (
-    LocalRemotePortParamType,
     pager_maybe,
     parse_file_resource,
     parse_permission_action,
@@ -560,35 +558,6 @@ def test_parse_permission_action_wrong_empty() -> None:
     err = "invalid permission action '', allowed values: read, write, manage"
     with pytest.raises(ValueError, match=err):
         parse_permission_action(action)
-
-
-@pytest.mark.parametrize(
-    "arg,val",
-    [("1:1", (1, 1)), ("1:10", (1, 10)), ("434:1", (434, 1)), ("0897:123", (897, 123))],
-)
-def test_local_remote_port_param_type_valid(arg: str, val: Tuple[int, int]) -> None:
-    param = LocalRemotePortParamType()
-    assert param.convert(arg, None, None) == val
-
-
-@pytest.mark.parametrize(
-    "arg",
-    [
-        "1:",
-        "-123:10",
-        "34:-65500",
-        "hello:45",
-        "5555:world",
-        "65536:1",
-        "0:0",
-        "none",
-        "",
-    ],
-)
-def test_local_remote_port_param_type_invalid(arg: str) -> None:
-    param = LocalRemotePortParamType()
-    with pytest.raises(click.BadParameter, match=".* is not a valid port combination"):
-        param.convert(arg, None, None)
 
 
 def test_pager_maybe_no_tty() -> None:

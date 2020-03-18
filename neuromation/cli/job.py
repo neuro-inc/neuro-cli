@@ -47,15 +47,10 @@ from .formatters.jobs import (
 )
 from .parse_utils import JobColumnInfo, get_default_columns, parse_columns
 from .root import Root
+from .types import JOB_COLUMNS, JOB_NAME, LOCAL_REMOTE_PORT, MEGABYTE, PRESET, ImageType
 from .utils import (
-    JOB_COLUMNS,
-    JOB_NAME,
-    LOCAL_REMOTE_PORT,
-    MEGABYTE,
     NEURO_STEAL_CONFIG,
-    PRESET,
     AsyncExitStack,
-    ImageType,
     alias,
     argument,
     command,

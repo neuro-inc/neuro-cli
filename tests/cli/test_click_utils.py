@@ -5,7 +5,8 @@ from click.testing import CliRunner
 
 from neuromation.cli.main import MainGroup
 from neuromation.cli.root import Root
-from neuromation.cli.utils import JOB_NAME, DeprecatedGroup, command, group
+from neuromation.cli.types import JOB_NAME
+from neuromation.cli.utils import DeprecatedGroup, command, group
 
 
 def test_print() -> None:

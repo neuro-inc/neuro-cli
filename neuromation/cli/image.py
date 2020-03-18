@@ -13,8 +13,8 @@ from neuromation.cli.formatters.images import (
 )
 
 from .root import Root
+from .types import RemoteTaglessImageType
 from .utils import (
-    RemoteTaglessImageType,
     argument,
     command,
     deprecated_quiet_option,
