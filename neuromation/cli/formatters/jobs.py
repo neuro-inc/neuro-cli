@@ -4,7 +4,7 @@ import itertools
 import sys
 import time
 from dataclasses import dataclass
-from typing import Iterable, Iterator, List, Sequence
+from typing import Iterable, Iterator, List
 
 import humanize
 from click import style, unstyle
