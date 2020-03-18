@@ -1,1 +1,0 @@
-Support hidden files on the storage. Hide names started with a dot by default, provide ``neuro ls --all`` option to show all files.
