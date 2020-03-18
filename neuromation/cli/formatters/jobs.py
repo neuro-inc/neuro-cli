@@ -212,6 +212,7 @@ class SimpleJobsFormatter(BaseJobsFormatter):
 class TabularJobRow:
     id: str
     name: str
+    tags: str
     status: str
     when: str
     image: str
@@ -238,6 +239,7 @@ class TabularJobRow:
         return cls(
             id=job.id,
             name=job.name if job.name else "",
+            tags=",".join(job.tags),
             status=job.status,
             when=when_humanized,
             image=str(job.container.image),
