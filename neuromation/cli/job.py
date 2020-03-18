@@ -592,8 +592,6 @@ async def ls(
     if description:
         jobs = [job for job in jobs if job.description == description]
 
-    jobs.sort(key=lambda job: job.history.created_at)
-
     if root.quiet:
         formatter: BaseJobsFormatter = SimpleJobsFormatter()
     else:
