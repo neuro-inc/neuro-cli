@@ -45,7 +45,7 @@ from .formatters.jobs import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from .parse_utils import COLUMNS, COLUMNS_DEFAULT_IGNORE, JobColumnInfo, parse_columns
+from .parse_utils import JobColumnInfo, get_default_columns, parse_columns
 from .root import Root
 from .utils import (
     JOB_COLUMNS,
@@ -1256,7 +1256,7 @@ async def calc_columns(
             format_str = section.get("ps-format")
             if format_str is not None:
                 return parse_columns(format_str)
-        return [col for col in COLUMNS if col.id not in COLUMNS_DEFAULT_IGNORE]
+        return get_default_columns()
     return format
 
 

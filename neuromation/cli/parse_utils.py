@@ -83,6 +83,11 @@ COLUMNS_DEFAULT_IGNORE = {
     "tags",
 }
 
+
+def get_default_columns() -> List[JobColumnInfo]:
+    return [col for col in COLUMNS if col.id not in COLUMNS_DEFAULT_IGNORE]
+
+
 COLUMNS_MAP = {column.id: column for column in COLUMNS}
 
 COLUMNS_RE = re.compile(
@@ -131,7 +136,7 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
     # columns are separated by commas or spaces
     # spaces in title are forbidden
     if not fmt:
-        return COLUMNS
+        return get_default_columns()
     ret = []
     for m1 in COLUMNS_RE.finditer(fmt):
         if m1.lastgroup == "sep":
