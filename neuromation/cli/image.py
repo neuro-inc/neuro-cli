@@ -12,8 +12,8 @@ from neuromation.cli.formatters.images import (
     ShortImagesFormatter,
 )
 
+from .click_types import RemoteTaglessImageType
 from .root import Root
-from .types import RemoteTaglessImageType
 from .utils import (
     argument,
     command,
