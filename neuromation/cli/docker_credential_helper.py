@@ -9,6 +9,7 @@ from .const import EX_UNAVAILABLE, EX_USAGE
 
 def error(message: str, exit_code: int) -> None:
     print(message)
+    exit(exit_code)
 
 
 async def async_main(action: str) -> None:
