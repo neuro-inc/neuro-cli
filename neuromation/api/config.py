@@ -155,6 +155,12 @@ class Config(metaclass=NoPublicConstructor):
         return cluster.monitoring_url
 
     @property
+    def object_storage_url(self) -> URL:
+        cluster = self._config_data.clusters[self._config_data.cluster_name]
+        # XXX: Updata properly the API to return Object storage as separate URL
+        return URL(str(cluster.storage_url).replace("/storage", "/obs"))
+
+    @property
     def storage_url(self) -> URL:
         cluster = self._config_data.clusters[self._config_data.cluster_name]
         return cluster.storage_url

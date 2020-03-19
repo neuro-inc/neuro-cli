@@ -11,6 +11,7 @@ from .config import Config
 from .core import _Core
 from .images import Images
 from .jobs import Jobs
+from .object_storage import ObjectStorage
 from .parser import Parser
 from .server_cfg import Preset
 from .storage import Storage
@@ -36,6 +37,7 @@ class Client(metaclass=NoPublicConstructor):
         self._parser = Parser._create(self._config)
         self._admin = _Admin._create(self._core, self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)
+        self._object_storage = ObjectStorage._create(self._core, self._config)
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core, self._config)
         self._quota = _Quota._create(self._core, self._config)
@@ -80,6 +82,10 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def jobs(self) -> Jobs:
         return self._jobs
+
+    @property
+    def object_storage(self) -> ObjectStorage:
+        return self._object_storage
 
     @property
     def storage(self) -> Storage:
