@@ -1,4 +1,3 @@
-import aiohttp
 import asyncio
 import base64
 import datetime
@@ -10,9 +9,20 @@ import re
 import time
 from dataclasses import dataclass
 from email.utils import parsedate
-from pathlib import Path
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional, cast
+from pathlib import Path, PurePath
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Union,
+    cast,
+)
 
+import aiohttp
 import attr
 from yarl import URL
 
@@ -21,7 +31,6 @@ from .abc import (
     AbstractRecursiveFileProgress,
     StorageProgressComplete,
     StorageProgressEnterDir,
-    StorageProgressEvent,
     StorageProgressFail,
     StorageProgressLeaveDir,
     StorageProgressStart,
@@ -29,7 +38,7 @@ from .abc import (
 )
 from .config import Config
 from .core import _Core
-from .storage import FileStatusType, _always, _has_magic, _run_concurrently
+from .storage import _always, _has_magic, _run_concurrently
 from .url_utils import _extract_path, normalize_local_path_uri, normalize_obj_path_uri
 from .users import Action
 from .utils import NoPublicConstructor, asynccontextmanager, retries
@@ -38,38 +47,64 @@ from .utils import NoPublicConstructor, asynccontextmanager, retries
 MAX_OPEN_FILES = 20
 READ_SIZE = 2 ** 20  # 1 MiB
 
-ProgressQueueItem = Optional[StorageProgressEvent]
+ProgressQueueItem = Optional[Any]
+
+
+def _format_bucket_uri(bucket_name: str, key: str = "") -> URL:
+    return URL.build(scheme="object", host=bucket_name, path="/" + key.lstrip("/"))
 
 
 @dataclass(frozen=True)
-class ObjectStatus:
-    path: str
-    size: int
-    type: FileStatusType
+class BucketListing:
+    name: str
     modification_time: int
+    # XXX: Add real bucket permission access level
     permission: Action = Action.READ
-
-    def is_file(self) -> bool:
-        return self.type == FileStatusType.FILE
-
-    def is_dir(self) -> bool:
-        return self.type == FileStatusType.DIRECTORY
-
-    @property
-    def name(self) -> str:
-        return Path(self.path).name
-
-    bucket_name: str = ""
 
     @property
     def uri(self) -> URL:
-        return _format_bucket_uri(self.bucket_name, self.path)
+        return _format_bucket_uri(self.name, "")
+
+
+@dataclass(frozen=True)
+class ObjectListing:
+    key: str
+    size: int
+    modification_time: int
+
+    @property
+    def name(self) -> str:
+        return PurePath(self.key).name
+
+    bucket_name: str
+
+    @property
+    def uri(self) -> URL:
+        return _format_bucket_uri(self.bucket_name, self.key)
+
+
+@dataclass(frozen=True)
+class PrefixListing:
+    prefix: str
+
+    @property
+    def name(self) -> str:
+        return PurePath(self.prefix).name
+
+    bucket_name: str
+
+    @property
+    def uri(self) -> URL:
+        return _format_bucket_uri(self.bucket_name, self.prefix)
+
+
+ListResult = Union[PrefixListing, ObjectListing]
 
 
 class Object:
-    def __init__(self, resp: aiohttp.ClientResponse, stats: ObjectStatus):
+    def __init__(self, resp: aiohttp.ClientResponse, stats: ObjectListing):
         self._resp = resp
-        self.stats = ObjectStatus
+        self.stats = ObjectListing
 
     @property
     def body_stream(self) -> aiohttp.StreamReader:
@@ -80,15 +115,16 @@ class ObjectStorage(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core
         self._config = config
+        self._max_keys = 10000
         self._file_sem = asyncio.BoundedSemaphore(MAX_OPEN_FILES)
 
-    async def list_buckets(self, *, token: Optional[str] = None) -> List[ObjectStatus]:
+    async def list_buckets(self) -> List[BucketListing]:
         url = self._config.object_storage_url / "b" / ""
         auth = await self._config._api_auth()
 
         async with self._core.request("GET", url, auth=auth) as resp:
             res = await resp.json()
-            return [_obj_status_from_bucket(bucket) for bucket in res]
+            return [_bucket_status_from_data(bucket) for bucket in res]
 
     async def list_objects(
         self,
@@ -96,17 +132,17 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         prefix: str = "",
         recursive: bool = False,
         max_keys: int = 10000,
-    ) -> List[ObjectStatus]:
+    ) -> List[ListResult]:
         url = self._config.object_storage_url / "o" / bucket_name
         auth = await self._config._api_auth()
 
-        query = {"recursive": str(recursive).lower()}
+        query = {"recursive": str(recursive).lower(), "max_keys": str(self._max_keys)}
         if prefix:
             query["prefix"] = prefix
         url = url.with_query(query)
 
-        contents: List[ObjectStatus] = []
-        common_prefixes: List[ObjectStatus] = []
+        contents: List[ListResult] = []
+        common_prefixes: List[ListResult] = []
         while True:
             async with self._core.request("GET", url, auth=auth) as resp:
                 res = await resp.json()
@@ -121,12 +157,12 @@ class ObjectStorage(metaclass=NoPublicConstructor):
                 )
                 if res["is_truncated"] and res["contents"]:
                     start_after = res["contents"][-1]["key"]
-                    url = url.with_query(start_after=start_after)
+                    url = url.update_query(start_after=start_after)
                 else:
                     break
         return common_prefixes + contents
 
-    async def glob_objects(self, bucket_name: str, pattern: str) -> List[ObjectStatus]:
+    async def glob_objects(self, bucket_name: str, pattern: str) -> List[ObjectListing]:
         pattern = pattern.lstrip("/")
         parts = pattern.split("/")
         # Limit the search to prefix of keys
@@ -139,12 +175,15 @@ class ObjectStorage(metaclass=NoPublicConstructor):
 
         match = re.compile(fnmatch.translate(pattern)).fullmatch
         res = []
-        for obj_status in await self.list_objects(bucket_name, prefix=prefix):
+        for obj_status in await self.list_objects(
+            bucket_name, prefix=prefix, recursive=True
+        ):
             if match(obj_status.name):
-                res.append(obj_status)
+                # We don't have PrefixListing if recursive is used
+                res.append(cast(ObjectListing, obj_status))
         return res
 
-    async def head_object(self, bucket_name: str, key: str) -> ObjectStatus:
+    async def head_object(self, bucket_name: str, key: str) -> ObjectListing:
         url = self._config.object_storage_url / "o" / bucket_name / key
         auth = await self._config._api_auth()
 
@@ -452,59 +491,37 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         await queue.put(StorageProgressLeaveDir(src, dst))
 
 
-def _format_bucket_uri(bucket_name: str, key: str = "") -> URL:
-    return URL.build(scheme="object", host=bucket_name, path="/" + key.lstrip("/"))
-
-
-def _obj_status_from_bucket(data: Dict[str, Any]) -> ObjectStatus:
+def _bucket_status_from_data(data: Dict[str, Any]) -> BucketListing:
     mtime = datetime.datetime.fromisoformat(data["creation_date"]).timestamp()
-    return ObjectStatus(
-        path=data["name"],
-        type=FileStatusType.DIRECTORY,
-        size=0,
-        modification_time=int(mtime),
-        bucket_name=data["name"],
-    )
+    return BucketListing(name=data["name"], modification_time=int(mtime))
 
 
-def _obj_status_from_key(bucket_name: str, data: Dict[str, Any]) -> ObjectStatus:
-    type_ = (
-        FileStatusType.DIRECTORY if data["key"].endswith("/") else FileStatusType.FILE
-    )
-    return ObjectStatus(
-        path=data["key"],
-        type=type_,
+def _obj_status_from_key(bucket_name: str, data: Dict[str, Any]) -> ObjectListing:
+    return ObjectListing(
+        bucket_name=bucket_name,
+        key=data["key"],
         size=int(data["size"]),
         modification_time=int(data["last_modified"]),
-        bucket_name=bucket_name,
     )
 
 
-def _obj_status_from_prefix(bucket_name: str, data: Dict[str, Any]) -> ObjectStatus:
-    return ObjectStatus(
-        path=data["prefix"],
-        type=FileStatusType.DIRECTORY,
-        size=0,
-        modification_time=0,
-        bucket_name=bucket_name,
-    )
+def _obj_status_from_prefix(bucket_name: str, data: Dict[str, Any]) -> PrefixListing:
+    return PrefixListing(bucket_name=bucket_name, prefix=data["prefix"])
 
 
 def _obj_status_from_response(
     bucket_name: str, key: str, resp: aiohttp.ClientResponse
-) -> ObjectStatus:
-    type_ = FileStatusType.DIRECTORY if key.endswith("/") else FileStatusType.FILE
+) -> ObjectListing:
     modification_time = 0
     if "Last-Modified" in resp.headers:
         timetuple = parsedate(resp.headers["Last-Modified"])
         if timetuple is not None:
             modification_time = int(time.mktime(timetuple))
-    return ObjectStatus(
-        path=key,
-        type=type_,
+    return ObjectListing(
+        bucket_name=bucket_name,
+        key=key,
         size=resp.content_length or 0,
         modification_time=modification_time,
-        bucket_name=bucket_name,
     )
 
 
