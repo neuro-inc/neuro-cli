@@ -738,7 +738,7 @@ def steal_config_maybe(dst_path: pathlib.Path) -> None:
         if not src.exists():
             return
         dst = Factory(dst_path).path
-        dst.mkdir(mode=0o700, exist_ok=True)
+        dst.mkdir(mode=0o700)
         for f in src.iterdir():
             target = dst / f.name
             shutil.copy(f, target)
