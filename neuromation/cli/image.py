@@ -12,9 +12,9 @@ from neuromation.cli.formatters.images import (
     ShortImagesFormatter,
 )
 
+from .click_types import RemoteTaglessImageType
 from .root import Root
 from .utils import (
-    RemoteTaglessImageType,
     argument,
     command,
     deprecated_quiet_option,

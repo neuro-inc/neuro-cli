@@ -28,6 +28,14 @@ from neuromation.api import (
 )
 from neuromation.cli.formatters import DockerImageProgress
 
+from .click_types import (
+    JOB_COLUMNS,
+    JOB_NAME,
+    LOCAL_REMOTE_PORT,
+    MEGABYTE,
+    PRESET,
+    ImageType,
+)
 from .const import EX_PLATFORMERROR
 from .defaults import (
     GPU_MODELS,
@@ -48,14 +56,8 @@ from .formatters.jobs import (
 from .parse_utils import JobColumnInfo, get_default_columns, parse_columns
 from .root import Root
 from .utils import (
-    JOB_COLUMNS,
-    JOB_NAME,
-    LOCAL_REMOTE_PORT,
-    MEGABYTE,
     NEURO_STEAL_CONFIG,
-    PRESET,
     AsyncExitStack,
-    ImageType,
     alias,
     argument,
     command,
