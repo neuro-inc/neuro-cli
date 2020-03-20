@@ -23,19 +23,9 @@ def write_meta(meta, out):
     out.append("")
 
 
-def gen_command(index, index2, cmd, target_path, parent_ctx):
-    out = []
+def gen_command(out, index, index2, cmd, target_path, parent_ctx):
     with click.Context(cmd, parent=parent_ctx, info_name=cmd.name) as ctx:
-        category = parent_ctx.command.name
-        if category == "cli":
-            category = "shortcuts"
-        meta = {
-            "title": ctx.command_path,
-            "short_title": cmd.name,
-            "category": category,
-            "path": "/" + category + "/" + cmd.name,
-        }
-        write_meta(meta, out)
+        out.append(f"##{cmd.name}")
 
         out.append(cmd.get_short_help_str())
         out.append("")
@@ -45,6 +35,7 @@ def gen_command(index, index2, cmd, target_path, parent_ctx):
             out.append("")
 
         out.append("### Usage")
+        out.append("")
         out.append("```bash")
         pieces = cmd.collect_usage_pieces(ctx)
         out.append(f"{ctx.command_path} " + " ".join(pieces))
@@ -111,8 +102,7 @@ def gen_command(index, index2, cmd, target_path, parent_ctx):
             descr = descr.ljust(w2)
             out.append(f"| {name} | {descr} |")
 
-        fname = target_path / f"{index:02d}_{index2:02d}__{cmd.name}.md"
-        fname.write_text("\n".join(out))
+        out.append("")
 
 
 def gen_group(index, group, target_path, parent_ctx):
@@ -122,7 +112,7 @@ def gen_group(index, group, target_path, parent_ctx):
             "title": " ".join(["neuro", group.name]),
             "short_title": group.name,
             "category": group.name,
-            "path": "/" + group.name,
+            "path": group.name,
             "index": "true",
         }
         write_meta(meta, out)
@@ -152,24 +142,25 @@ def gen_group(index, group, target_path, parent_ctx):
         out.append("### Commands")
         out.append("")
         for cmd in commands:
-            cmd_path = f"/docs/cli/{group.name}/{cmd.name}"
+            cmd_path = f"docs/cli/{group.name}#{cmd.name}"
             out.append(
                 f"- [neuro {group.name} {cmd.name}]({cmd_path}): "
                 f"{cmd.get_short_help_str()}"
             )
-
-        fname = target_path / f"{index:02d}_00__{group.name}.md"
-        fname.write_text("\n".join(out))
+        out.append("")
 
         for index2, cmd in enumerate(commands, 1):
-            gen_command(index, index2, cmd, target_path, ctx)
+            gen_command(out, index, index2, cmd, target_path, ctx)
+
+        fname = target_path / f"{index:02d}__{group.name}.md"
+        fname.write_text("\n".join(out))
 
 
 def gen_shortcuts(index, commands, target_path, ctx):
     out = []
     meta = {
         "title": "Shortcuts",
-        "path": "/shortcuts",
+        "path": "shortcuts",
         "category": "shortcuts",
         "index": "true",
     }
@@ -180,15 +171,16 @@ def gen_shortcuts(index, commands, target_path, ctx):
 
     for cmd in commands:
         out.append(
-            f"- [neuro {cmd.name}](/docs/cli/shortcuts/{cmd.name}): "
+            f"- [neuro {cmd.name}](docs/cli/shortcuts#{cmd.name}): "
             f"{cmd.get_short_help_str()}"
         )
-
-    fname = target_path / f"{index:02d}_00__shortcuts.md"
-    fname.write_text("\n".join(out))
+    out.append("")
 
     for index2, cmd in enumerate(commands, 1):
-        gen_command(index, index2, cmd, target_path, ctx)
+        gen_command(out, index, index2, cmd, target_path, ctx)
+
+    fname = target_path / f"{index:02d}__shortcuts.md"
+    fname.write_text("\n".join(out))
 
 
 @click.command()
@@ -203,7 +195,7 @@ def gen_shortcuts(index, commands, target_path, ctx):
 )
 def main(target_dir):
     target_path = Path(target_dir)
-    EXCLUDES = ("00",)
+    EXCLUDES = ("cli.md")
     for child in target_path.iterdir():
         if child.suffix != ".md":
             continue
