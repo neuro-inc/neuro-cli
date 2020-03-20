@@ -1,53 +1,28 @@
 import asyncio
 import base64
 import datetime
-import errno
 import fnmatch
 import hashlib
-import os
 import re
 import time
 from dataclasses import dataclass
 from email.utils import parsedate
 from pathlib import Path, PurePath
-from typing import (
-    Any,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Union,
-    cast,
-)
+from typing import Any, AsyncIterator, Dict, List, Optional, Union, cast
 
 import aiohttp
 import attr
 from yarl import URL
 
-from .abc import (
-    AbstractFileProgress,
-    AbstractRecursiveFileProgress,
-    StorageProgressComplete,
-    StorageProgressEnterDir,
-    StorageProgressFail,
-    StorageProgressLeaveDir,
-    StorageProgressStart,
-    StorageProgressStep,
-)
 from .config import Config
 from .core import _Core
-from .storage import _always, _has_magic, _run_concurrently
-from .url_utils import _extract_path, normalize_local_path_uri, normalize_obj_path_uri
+from .storage import _has_magic
 from .users import Action
-from .utils import NoPublicConstructor, asynccontextmanager, retries
+from .utils import NoPublicConstructor, asynccontextmanager
 
 
 MAX_OPEN_FILES = 20
 READ_SIZE = 2 ** 20  # 1 MiB
-
-ProgressQueueItem = Optional[Any]
 
 
 def _format_bucket_uri(bucket_name: str, key: str = "") -> URL:
