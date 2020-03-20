@@ -12,6 +12,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional, Union, cast
 
 import aiohttp
 import attr
+from dateutil.parser import isoparse
 from yarl import URL
 
 from .config import Config
@@ -211,7 +212,7 @@ class ObjectStorage(metaclass=NoPublicConstructor):
 
 
 def _bucket_status_from_data(data: Dict[str, Any]) -> BucketListing:
-    mtime = datetime.datetime.fromisoformat(data["creation_date"]).timestamp()
+    mtime = isoparse(data["creation_date"]).timestamp()
     return BucketListing(name=data["name"], modification_time=int(mtime))
 
 
