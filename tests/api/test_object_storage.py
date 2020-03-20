@@ -1,6 +1,8 @@
+import base64
+import hashlib
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict  # noqa: F401
+from typing import Any, AsyncIterator, Callable, Dict  # noqa: F401
 
 from aiohttp import web
 
@@ -344,7 +346,7 @@ async def test_object_storage_head_object(
         return resp
 
     app = web.Application()
-    app.router.add_get(OBSUrlRotes.HEAD_OBJECT, handler)
+    app.router.add_head(OBSUrlRotes.HEAD_OBJECT, handler)
 
     srv = await aiohttp_server(app)
 
@@ -427,3 +429,39 @@ async def test_object_storage_fetch_object(
         async for data in client.object_storage.fetch_object(bucket_name, key=key):
             buf += data
         assert buf == body
+
+
+async def test_object_storage_put_object(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    bucket_name = "foo"
+    key = "text.txt"
+    body = b"W" * 10 * 1024 * 1024
+    md5 = base64.b64encode(hashlib.md5(body).digest()).decode()
+    etag = repr(hashlib.md5(body).hexdigest())
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.path == f"/obs/o/{bucket_name}/{key}"
+        assert request.match_info == {"bucket": bucket_name, "path": key}
+        assert request.headers["X-Content-Length"] == str(len(body))
+        assert await request.content.read() == body
+        return web.Response(headers={"ETag": etag})
+
+    app = web.Application()
+    app.router.add_put(OBSUrlRotes.PUT_OBJECT, handler)
+
+    srv = await aiohttp_server(app)
+
+    async def async_iter() -> AsyncIterator[bytes]:
+        yield body
+
+    async with make_client(srv.make_url("/")) as client:
+        resp_etag = await client.object_storage.put_object(
+            bucket_name=bucket_name,
+            key=key,
+            body_stream=async_iter(),
+            size=len(body),
+            content_md5=md5,
+        )
+        assert resp_etag == etag
