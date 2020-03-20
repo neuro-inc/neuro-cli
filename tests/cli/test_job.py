@@ -18,7 +18,7 @@ from neuromation.cli.job import (
     calc_life_span,
     calc_statuses,
 )
-from neuromation.cli.parse_utils import COLUMNS, COLUMNS_MAP
+from neuromation.cli.parse_utils import COLUMNS_MAP, get_default_columns
 
 
 logger = logging.getLogger(__name__)
@@ -170,7 +170,7 @@ async def test_calc_columns_section_doesnt_exist(
         local_conf = tmp_path / ".neuro.toml"
         # empty config
         local_conf.write_text("")
-        assert await calc_columns(client, None) == COLUMNS
+        assert await calc_columns(client, None) == get_default_columns()
 
 
 async def test_calc_columns_user_spec(

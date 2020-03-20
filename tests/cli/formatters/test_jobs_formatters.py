@@ -283,6 +283,57 @@ class TestJobOutputFormatter:
             "ErrorDesc\n================="
         )
 
+    def test_job_with_tags(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            tags=["tag1", "tag2", "tag3"],
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage("test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+        )
+
+        status = JobStatusFormatter()(description)
+        resource_formatter = ResourcesFormatter()
+        assert (
+            status == "Job: test-job\n"
+            "Tags: tag1, tag2, tag3\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: test-image\n"
+            "Command: test-command\n"
+            f"{resource_formatter(description.container.resources)}\n"
+            "Preemptible: False\n"
+            "Http URL: http://local.host.test/\n"
+            "Http authentication: True\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "===Description===\n"
+            "ErrorDesc\n================="
+        )
+
     def test_pending_job(self) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
@@ -563,12 +614,12 @@ class TestJobOutputFormatter:
                 http=HTTPPort(port=80, requires_auth=True),
                 volumes=[
                     Volume(
-                        storage_uri=URL("storage://test-user/ro"),
+                        storage_uri=URL("storage://test-cluster/test-user/ro"),
                         container_path="/mnt/ro",
                         read_only=True,
                     ),
                     Volume(
-                        storage_uri=URL("storage://test-user/rw"),
+                        storage_uri=URL("storage://test-cluster/test-user/rw"),
                         container_path="/mnt/rw",
                         read_only=False,
                     ),
@@ -592,8 +643,8 @@ class TestJobOutputFormatter:
             f"{resource_formatter(description.container.resources)}\n"
             "Preemptible: False\n"
             "Volumes:\n"
-            "  /mnt/ro  storage://test-user/ro  READONLY\n"
-            "  /mnt/rw  storage://test-user/rw          \n"
+            "  /mnt/ro  storage://test-cluster/test-user/ro  READONLY\n"
+            "  /mnt/rw  storage://test-cluster/test-user/rw          \n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -721,7 +772,9 @@ class TestSimpleJobsFormatter:
 
 
 class TestTabularJobRow:
-    image_parser = _ImageNameParser("bob", URL("https://registry-test.neu.ro"))
+    image_parser = _ImageNameParser(
+        "bob", "test-cluster", URL("https://registry-test.neu.ro")
+    )
 
     def _job_descr_with_status(
         self, status: JobStatus, image: str = "nginx:latest", name: Optional[str] = None
@@ -784,7 +837,7 @@ class TestTabularJobRow:
             ),
             "owner",
         )
-        assert row.image == "image://bob/swiss-box:red"
+        assert row.image == "image://test-cluster/bob/swiss-box:red"
         assert row.name == ""
 
 
@@ -800,7 +853,9 @@ class TestTabularJobsFormatter:
         "DESCRIPTION",
         "COMMAND",
     ]
-    image_parser = _ImageNameParser("bob", URL("https://registry-test.neu.ro"))
+    image_parser = _ImageNameParser(
+        "bob", "test-cluster", URL("https://registry-test.neu.ro")
+    )
 
     def test_empty(self) -> None:
         formatter = TabularJobsFormatter(0, "owner", parse_columns(None))
@@ -905,6 +960,7 @@ class TestTabularJobsFormatter:
                         "with-long-tag",
                         registry="https://registry.neu.ro",
                         owner="bob",
+                        cluster_name="test-cluster",
                     ),
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                     command="ls -la /some/path",
@@ -918,8 +974,8 @@ class TestTabularJobsFormatter:
         assert result == [
             f"ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  CLUSTER  DESCRIPTION                           COMMAND",  # noqa: E501
             f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag             {owner_printed}  default  some description long long long long  ls -la /some/path",  # noqa: E501
-            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://bob/some-image-name:with-long-    {owner_printed}  default  some description                      ls -la /some/path",  # noqa: E501
-            f"                                                                       tag",  # noqa: E501
+            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://test-cluster/bob/some-image-      {owner_printed}  default  some description                      ls -la /some/path",  # noqa: E501
+            f"                                                                       name:with-long-tag",  # noqa: E501
         ]
 
     def test_custol_columns(self) -> None:

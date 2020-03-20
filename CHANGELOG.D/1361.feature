@@ -1,1 +1,0 @@
-Steal config files on `neuro job --pass-config`.

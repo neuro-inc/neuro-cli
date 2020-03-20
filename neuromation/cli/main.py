@@ -35,6 +35,7 @@ from .utils import (
     DeprecatedGroup,
     Group,
     alias,
+    argument,
     format_example,
     group,
     option,
@@ -400,7 +401,7 @@ def cli(
 
 
 @cli.command(wrap_async=False)
-@click.argument("command", nargs=-1)
+@argument("command", nargs=-1)
 @click.pass_context
 def help(ctx: click.Context, command: Sequence[str]) -> None:
     """Get help on a command."""

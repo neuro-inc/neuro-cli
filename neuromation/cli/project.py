@@ -1,11 +1,10 @@
 import logging
 from typing import Optional
 
-import click
 from cookiecutter.main import cookiecutter
 
 from .root import Root
-from .utils import command, group
+from .utils import argument, command, group
 
 
 log = logging.getLogger(__name__)
@@ -19,7 +18,7 @@ def project() -> None:
 
 
 @command()
-@click.argument("slug", type=str, required=False)
+@argument("slug", type=str, required=False)
 async def init(root: Root, slug: Optional[str]) -> None:
     """
     Initialize an empty project.

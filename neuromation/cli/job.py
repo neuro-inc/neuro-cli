@@ -13,7 +13,6 @@ from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
-import idna
 from yarl import URL
 
 from neuromation.api import (
@@ -29,6 +28,14 @@ from neuromation.api import (
 )
 from neuromation.cli.formatters import DockerImageProgress
 
+from .click_types import (
+    JOB_COLUMNS,
+    JOB_NAME,
+    LOCAL_REMOTE_PORT,
+    MEGABYTE,
+    PRESET,
+    ImageType,
+)
 from .const import EX_PLATFORMERROR
 from .defaults import (
     GPU_MODELS,
@@ -46,17 +53,13 @@ from .formatters.jobs import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from .parse_utils import COLUMNS, JobColumnInfo, parse_columns
+from .parse_utils import JobColumnInfo, get_default_columns, parse_columns
 from .root import Root
 from .utils import (
-    JOB_COLUMNS,
-    JOB_NAME,
-    LOCAL_REMOTE_PORT,
-    MEGABYTE,
     NEURO_STEAL_CONFIG,
     AsyncExitStack,
-    ImageType,
     alias,
+    argument,
     command,
     deprecated_quiet_option,
     group,
@@ -123,8 +126,8 @@ def job() -> None:
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("image", type=ImageType())
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@argument("image", type=ImageType())
+@argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @option(
     "-g",
     "--gpu",
@@ -363,8 +366,8 @@ async def submit(
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("job")
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
+@argument("job")
+@argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @option(
     "-t/-T",
     "--tty/--no-tty",
@@ -418,8 +421,8 @@ async def exec(
 
 
 @command()
-@click.argument("job")
-@click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
+@argument("job")
+@argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
 @option(
     "--no-key-check",
     is_flag=True,
@@ -471,7 +474,7 @@ async def port_forward(
 
 
 @command()
-@click.argument("job")
+@argument("job")
 async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
@@ -591,8 +594,6 @@ async def ls(
     if description:
         jobs = [job for job in jobs if job.description == description]
 
-    jobs.sort(key=lambda job: job.history.created_at)
-
     if root.quiet:
         formatter: BaseJobsFormatter = SimpleJobsFormatter()
     else:
@@ -606,7 +607,7 @@ async def ls(
 
 
 @command()
-@click.argument("job")
+@argument("job")
 async def status(root: Root, job: str) -> None:
     """
     Display status of a job.
@@ -648,7 +649,7 @@ async def browse(root: Root, job: str) -> None:
 
 
 @command()
-@click.argument("job")
+@argument("job")
 @option(
     "--timeout",
     default=0,
@@ -675,8 +676,8 @@ async def top(root: Root, job: str, timeout: float) -> None:
 
 
 @command()
-@click.argument("job")
-@click.argument("image", type=ImageType())
+@argument("job")
+@argument("image", type=ImageType())
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
     Save job's state to an image.
@@ -703,7 +704,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
 
 
 @command()
-@click.argument("jobs", nargs=-1, required=True)
+@argument("jobs", nargs=-1, required=True)
 async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     Kill job(s).
@@ -732,11 +733,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("image", type=ImageType())
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@argument("image", type=ImageType())
+@argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @option(
     "-s",
     "--preset",
+    type=PRESET,
     metavar="PRESET",
     help=(
         "Predefined resource configuration (to see available values, "
@@ -1114,6 +1116,7 @@ def _parse_cmd(cmd: Sequence[str]) -> str:
 async def _build_volumes(
     root: Root, input_volumes: Sequence[str], env_dict: Dict[str, str]
 ) -> Set[Volume]:
+    cluster_name = root.client.cluster_name
     input_volumes_set = set(input_volumes)
     volumes: Set[Volume] = set()
 
@@ -1125,22 +1128,17 @@ async def _build_volumes(
         available = await root.client.users.get_acl(
             root.client.username, scheme="storage"
         )
-        permissions = []
         for perm in available:
-            try:
-                idna.encode(perm.uri.host)
-            except ValueError:
-                log.warning(f"Skipping invalid URI {perm.uri}")
-            else:
-                permissions.append(perm)
-        volumes.update(
-            Volume(
-                storage_uri=perm.uri,
-                container_path=f"{ROOT_MOUNTPOINT}/{perm.uri.host}{perm.uri.path}",
-                read_only=perm.action not in ("write", "manage"),
-            )
-            for perm in permissions
-        )
+            if perm.uri.host == cluster_name:
+                path = perm.uri.path
+                assert path[0] == "/"
+                volumes.add(
+                    Volume(
+                        storage_uri=perm.uri,
+                        container_path=f"{ROOT_MOUNTPOINT}{path}",
+                        read_only=perm.action not in ("write", "manage"),
+                    )
+                )
         neuro_mountpoint = _get_neuro_mountpoint(root.client.username)
         env_dict[NEUROMATION_HOME_ENV_VAR] = neuro_mountpoint
         env_dict[NEUROMATION_ROOT_ENV_VAR] = ROOT_MOUNTPOINT
@@ -1158,7 +1156,7 @@ async def _build_volumes(
                 )
                 volumes.add(
                     root.client.parse.volume(
-                        f"storage://neuromation/public:"
+                        f"storage://{cluster_name}/neuromation/public:"
                         f"{STORAGE_MOUNTPOINT}/neuromation:ro"
                     )
                 )
@@ -1181,7 +1179,9 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     # store the Neuro CLI config on the storage under some random path
     nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
     random_nmrc_filename = f"{uuid.uuid4()}-cfg"
-    storage_nmrc_folder = URL(f"storage://{root.client.username}/.neuro/")
+    storage_nmrc_folder = URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/.neuro/"
+    )
     storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
     local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/.neuro/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
@@ -1256,7 +1256,7 @@ async def calc_columns(
             format_str = section.get("ps-format")
             if format_str is not None:
                 return parse_columns(format_str)
-        return COLUMNS
+        return get_default_columns()
     return format
 
 

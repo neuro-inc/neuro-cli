@@ -78,6 +78,8 @@ class JobStatusFormatter:
         result: str = f"Job: {job_status.id}\n"
         if job_status.name:
             result += f"Name: {job_status.name}\n"
+        if job_status.tags:
+            result += f"Tags: {', '.join(job_status.tags)}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
         result += f"Cluster: {job_status.cluster_name}\n"
         if job_status.description:
@@ -210,6 +212,7 @@ class SimpleJobsFormatter(BaseJobsFormatter):
 class TabularJobRow:
     id: str
     name: str
+    tags: str
     status: str
     when: str
     image: str
@@ -236,6 +239,7 @@ class TabularJobRow:
         return cls(
             id=job.id,
             name=job.name if job.name else "",
+            tags=",".join(job.tags),
             status=job.status,
             when=when_humanized,
             image=str(job.container.image),

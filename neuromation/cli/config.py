@@ -15,7 +15,7 @@ from neuromation.cli.formatters.config import ClustersFormatter, QuotaInfoFormat
 from .alias import list_aliases
 from .formatters.config import AliasesFormatter, ConfigFormatter
 from .root import Root
-from .utils import command, group, option, pager_maybe
+from .utils import argument, command, group, option, pager_maybe
 
 
 @group()
@@ -41,7 +41,7 @@ async def show_token(root: Root) -> None:
 
 
 @command()
-@click.argument("user", required=False, default=None, type=str)
+@argument("user", required=False, default=None, type=str)
 async def show_quota(root: Root, user: Optional[str]) -> None:
     """
     Print quota and remaining computation time for active cluster.
@@ -72,7 +72,7 @@ async def add_quota(root: Root) -> None:
 
 
 @command(init_client=False)
-@click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
+@argument("url", required=False, default=DEFAULT_API_URL, type=URL)
 async def login(root: Root, url: URL) -> None:
     """
     Log into Neuro Platform.
@@ -94,8 +94,8 @@ async def login(root: Root, url: URL) -> None:
 
 
 @command(init_client=False)
-@click.argument("token", required=True, type=str)
-@click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
+@argument("token", required=True, type=str)
+@argument("url", required=False, default=DEFAULT_API_URL, type=URL)
 async def login_with_token(root: Root, token: str, url: URL) -> None:
     """
     Log into Neuro Platform with token.
@@ -113,7 +113,7 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
 
 
 @command(init_client=False)
-@click.argument("url", required=False, default=DEFAULT_API_URL, type=URL)
+@argument("url", required=False, default=DEFAULT_API_URL, type=URL)
 async def login_headless(root: Root, url: URL) -> None:
     """
     Log into Neuro Platform from non-GUI server environment.
@@ -218,7 +218,7 @@ async def get_clusters(root: Root) -> None:
 
 
 @command()
-@click.argument("cluster_name", required=False, default=None, type=str)
+@argument("cluster_name", required=False, default=None, type=str)
 async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
     """Switch the active cluster.
 

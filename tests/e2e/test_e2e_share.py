@@ -16,8 +16,8 @@ def revoke(helper: Helper, uri: str, username: str) -> None:
 
 @pytest.mark.e2e
 def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
-    uri = f"storage://{helper.username}/{uuid4()}"
-    uri2 = f"image://{helper.username}/{uuid4()}"
+    uri = f"storage://{helper.cluster_name}/{helper.username}/{uuid4()}"
+    uri2 = f"image://{helper.cluster_name}/{helper.username}/{uuid4()}"
 
     another_test_user = "test2"
 
@@ -36,13 +36,19 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     captured = helper.run_cli(["-v", "acl", "list"])
     assert captured.err == ""
     result = captured.out.splitlines()
-    assert f"storage://{helper.username} manage" in result
+    assert (
+        f"storage://{helper.cluster_name}/{helper.username} manage" in result
+        or f"storage://{helper.cluster_name} manage" in result
+    )
     assert f"user://{helper.username} read" in result
 
     captured = helper.run_cli(["-v", "acl", "list", "--scheme", "storage"])
     assert captured.err == ""
     result = captured.out.splitlines()
-    assert f"storage://{helper.username} manage" in result
+    assert (
+        f"storage://{helper.cluster_name}/{helper.username} manage" in result
+        or f"storage://{helper.cluster_name} manage" in result
+    )
     for line in result:
         assert line.startswith("storage://")
 
@@ -52,7 +58,6 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     assert f"{uri} read public" in result
     assert f"{uri2} write {another_test_user}" in result
     for line in result:
-        assert not line.startswith("storage://{helper.username} ")
         assert not line.endswith(f" {helper.username}")
 
     captured = helper.run_cli(["-v", "acl", "list", "--shared", "--scheme", "storage"])
@@ -61,7 +66,6 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     assert f"{uri} read public" in result
     for line in result:
         assert line.startswith("storage://")
-        assert not line.startswith("storage://{helper.username} ")
         assert not line.endswith(f" {helper.username}")
 
     captured = helper.run_cli(["-v", "acl", "list", "--shared", "--scheme", "image"])
@@ -92,7 +96,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_revoke_no_effect(helper: Helper) -> None:
-    uri = f"storage://{helper.username}/{uuid4()}"
+    uri = f"storage://{helper.cluster_name}/{helper.username}/{uuid4()}"
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(["-v", "acl", "revoke", uri, "public"])
     assert cm.value.returncode == 127
@@ -104,7 +108,7 @@ def test_revoke_no_effect(helper: Helper) -> None:
 def test_grant_image_no_tag(request: Any, helper: Helper) -> None:
     rel_path = str(uuid4())
     rel_uri = f"image:{rel_path}"
-    uri = f"image://{helper.username}/{rel_path}"
+    uri = f"image://{helper.cluster_name}/{helper.username}/{rel_path}"
     another_test_user = "test2"
 
     request.addfinalizer(lambda: revoke(helper, rel_uri, another_test_user))
@@ -122,7 +126,7 @@ def test_grant_image_no_tag(request: Any, helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_grant_image_with_tag_fails(request: Any, helper: Helper) -> None:
-    uri = f"image://{helper.username}/{uuid4()}:latest"
+    uri = f"image://{helper.cluster_name}/{helper.username}/{uuid4()}:latest"
     another_test_user = "test2"
     with pytest.raises(subprocess.CalledProcessError) as cm:
         request.addfinalizer(lambda: revoke(helper, uri, another_test_user))

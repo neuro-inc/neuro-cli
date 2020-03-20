@@ -12,7 +12,7 @@ from neuromation.api.admin import _ClusterUserRoleType
 from .formatters import ClustersFormatter, ClusterUserFormatter
 from .formatters.config import QuotaFormatter
 from .root import Root
-from .utils import command, group, option, pager_maybe
+from .utils import argument, command, group, option, pager_maybe
 
 
 @group()
@@ -33,8 +33,8 @@ async def get_clusters(root: Root) -> None:
 
 
 @command()
-@click.argument("cluster_name", required=True, type=str)
-@click.argument("config", required=True, type=click.File(encoding="utf8", lazy=False))
+@argument("cluster_name", required=True, type=str)
+@argument("config", required=True, type=click.File(encoding="utf8", lazy=False))
 async def add_cluster(root: Root, cluster_name: str, config: IO[str]) -> None:
     """
     Create a new cluster and start its provisioning.
@@ -49,7 +49,7 @@ async def add_cluster(root: Root, cluster_name: str, config: IO[str]) -> None:
 
 
 @command()
-@click.argument(
+@argument(
     "config",
     required=False,
     type=click.Path(exists=False, path_type=str),
@@ -167,7 +167,7 @@ async def generate_gcp() -> str:
 
 
 @command()
-@click.argument("cluster_name", required=False, default=None, type=str)
+@argument("cluster_name", required=False, default=None, type=str)
 async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     """
     Print the list of all users in the cluster with their assigned role.
@@ -178,9 +178,9 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
 
 
 @command()
-@click.argument("cluster_name", required=True, type=str)
-@click.argument("user_name", required=True, type=str)
-@click.argument(
+@argument("cluster_name", required=True, type=str)
+@argument("user_name", required=True, type=str)
+@argument(
     "role",
     required=False,
     default=_ClusterUserRoleType.USER.value,
@@ -226,8 +226,8 @@ def _parse_quota_value(
 
 
 @command()
-@click.argument("cluster_name", required=True, type=str)
-@click.argument("user_name", required=True, type=str)
+@argument("cluster_name", required=True, type=str)
+@argument("user_name", required=True, type=str)
 async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> None:
     """
     Remove user access from the cluster.
@@ -241,8 +241,8 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
 
 
 @command()
-@click.argument("cluster_name", required=True, type=str)
-@click.argument("user_name", required=True, type=str)
+@argument("cluster_name", required=True, type=str)
+@argument("user_name", required=True, type=str)
 @option(
     "-g",
     "--gpu",
@@ -281,8 +281,8 @@ async def set_user_quota(
 
 
 @command()
-@click.argument("cluster_name", required=True, type=str)
-@click.argument("user_name", required=True, type=str)
+@argument("cluster_name", required=True, type=str)
+@argument("user_name", required=True, type=str)
 @option(
     "-g",
     "--gpu",
