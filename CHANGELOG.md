@@ -5,6 +5,16 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.3.20 (2020-03-20)
+================================
+
+Bugfixes
+--------
+
+
+- Fix `--pass-config` error: File exists: '/root/.neuro'. ([#1415](https://github.com/neuromation/platform-api-clients/issues/1415))
+
+
 Neuromation 20.3.18 (2020-03-18)
 ================================
 
@@ -40,6 +50,10 @@ Bugfixes
 
 
 - Fix the alias finding routine when user is not logged in. ([#1360](https://github.com/neuromation/platform-api-clients/issues/1360))
+
+- `neuro kill` exits now non-zero code if it failed to kill any job in the list. ([#1272](https://github.com/neuromation/platform-api-clients/issues/1272))
+
+- Support un-quoted commands for neuro-exec: `neuro exec bash -c "ls && pwd"` is now a valid syntax. ([#1321](https://github.com/neuromation/platform-api-clients/issues/1321))
 
 
 Neuromation 20.2.24 (2020-02-24)
