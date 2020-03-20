@@ -1,6 +1,5 @@
 import asyncio
 import base64
-import datetime
 import fnmatch
 import hashlib
 import re
