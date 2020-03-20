@@ -104,7 +104,7 @@ ListResult = Union[PrefixListing, ObjectListing]
 class Object:
     def __init__(self, resp: aiohttp.ClientResponse, stats: ObjectListing):
         self._resp = resp
-        self.stats = ObjectListing
+        self.stats = stats
 
     @property
     def body_stream(self) -> aiohttp.StreamReader:
@@ -178,9 +178,10 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         for obj_status in await self.list_objects(
             bucket_name, prefix=prefix, recursive=True
         ):
-            if match(obj_status.name):
-                # We don't have PrefixListing if recursive is used
-                res.append(cast(ObjectListing, obj_status))
+            # We don't have PrefixListing if recursive is used
+            obj_status = cast(ObjectListing, obj_status)
+            if match(obj_status.key):
+                res.append(obj_status)
         return res
 
     async def head_object(self, bucket_name: str, key: str) -> ObjectListing:
