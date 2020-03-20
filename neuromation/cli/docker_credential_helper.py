@@ -18,22 +18,19 @@ async def async_main(action: str) -> None:
     elif action == "erase":
         print("Please use `neuro logout` instead `docker logout ...`", EX_UNAVAILABLE)
     else:
-        try:
-            async with get() as client:
-                config = client.config
-                registry = sys.stdin.readline().strip()
-                neuro_registry = config.registry_url.host
-                if registry != neuro_registry:
-                    error(
-                        f"Unknown registry {registry}. "
-                        "neuro configured with {neuro_registry}.",
-                        EX_DATAERR,
-                    )
-                token = await config.token()
-                payload = {"Username": "token", "Secret": token}
-                print(dumps(payload))
-        except Exception:
-            print(dumps({"Username": "", "Secret": ""}))
+        async with get() as client:
+            config = client.config
+            registry = sys.stdin.readline().strip()
+            neuro_registry = config.registry_url.host
+            if registry != neuro_registry:
+                error(
+                    f"Unknown registry {registry}. "
+                    "neuro configured with {neuro_registry}.",
+                    EX_DATAERR,
+                )
+            token = await config.token()
+            payload = {"Username": "token", "Secret": token}
+            print(dumps(payload))
 
 
 def main() -> None:
