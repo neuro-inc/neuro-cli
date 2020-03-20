@@ -7,6 +7,7 @@ from typing import Any, AsyncIterator, Callable, Dict  # noqa: F401
 from aiohttp import web
 
 from neuromation.api import Action, BucketListing, Client, ObjectListing, PrefixListing
+from neuromation.api.object_storage import calc_md5
 from tests import _TestServerFactory
 
 
@@ -465,3 +466,30 @@ async def test_object_storage_put_object(
             content_md5=md5,
         )
         assert resp_etag == etag
+
+
+async def test_object_storage_calc_md5(tmp_path: Path) -> None:
+    txt_file = tmp_path / "test.txt"
+    body = b"""
+    This is the greatest day of my whole life!!!
+    """
+    body_md5 = base64.b64encode(hashlib.md5(body).digest()).decode("ascii")
+    with txt_file.open("wb") as f:
+        f.write(body)
+    assert await calc_md5(txt_file) == body_md5
+
+
+async def test_object_storage_large_calc_md5(tmp_path: Path) -> None:
+    txt_file = tmp_path / "test.txt"
+    size_mb = 20
+    body = b"W" * (1024 * 1024)
+    md5 = hashlib.md5()
+    for _ in range(size_mb):
+        md5.update(body)
+    body_md5 = base64.b64encode(md5.digest()).decode("ascii")
+
+    # Will write 100MB file
+    with txt_file.open("wb") as f:
+        for _ in range(size_mb):
+            f.write(body)
+    assert await calc_md5(txt_file) == body_md5
