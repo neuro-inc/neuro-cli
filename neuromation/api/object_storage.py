@@ -558,6 +558,11 @@ class ObjectStorage(metaclass=NoPublicConstructor):
                 )
 
         for child in folder:
+            # Skip "folder" keys, as they will be returned as ObjectListing here again,
+            # previously being a common prefix
+            if child.path == prefix_path:
+                continue
+
             name = child.name
             assert child.path.startswith(prefix_path)
             child_rel_path = child.path[len(prefix_path) :]

@@ -59,6 +59,24 @@ class OBSUrlRotes:
 _ContentsObj = Dict[str, Dict[str, Any]]
 
 
+def dir_list(path: Path) -> List[Dict[str, Any]]:
+    # List all files and folders in directory
+    res = []
+    for item in path.glob("**/*"):
+        if item.is_dir():
+            res.append({"path": str(item.relative_to(path)), "dir": True})
+        else:
+            res.append(
+                {
+                    "path": str(item.relative_to(path)),
+                    "dir": False,
+                    "size": item.stat().st_size,
+                    "body": item.read_bytes(),
+                }
+            )
+    return res
+
+
 @pytest.fixture
 def object_storage_contents() -> _ContentsObj:
     mtime1 = datetime(2019, 1, 1)
@@ -914,290 +932,166 @@ async def test_object_storage_upload_recursive_slash_ending(
     ]
 
 
-# async def test_storage_download_regular_file_to_absent_file(
-#     storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
-# ) -> None:
-#     src_file = DATA_FOLDER / "file.txt"
-#     storage_file = storage_path / "file.txt"
-#     storage_file.write_bytes(src_file.read_bytes())
-#     local_dir = tmp_path / "local"
-#     local_dir.mkdir()
-#     local_file = local_dir / "file.txt"
-#     progress = mock.Mock()
+async def test_object_storage_download_regular_file_to_absent_file(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+    tmp_path: Path,
+) -> None:
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
+    local_file = local_dir / "file.txt"
+    progress = mock.Mock()
 
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.download_file(
-#             URL("storage:file.txt"), URL(local_file.as_uri()), progress=progress
-#         )
+    async with make_client(object_storage_server.make_url("/")) as client:
+        await client.object_storage.download_file(
+            URL("object:foo/test1.txt"), URL(local_file.as_uri()), progress=progress
+        )
 
-#     expected = src_file.read_bytes()
-#     downloaded = local_file.read_bytes()
-#     assert downloaded == expected
+    expected = object_storage_contents["test1.txt"]["body"]
+    downloaded = local_file.read_bytes()
+    assert downloaded == expected
 
-#     src = URL("storage://default/user/file.txt")
-#     dst = URL(local_file.as_uri())
-#     file_size = src_file.stat().st_size
-#     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
-#     progress.step.assert_called_with(
-#         StorageProgressStep(src, dst, file_size, file_size)
-#     )
-#     progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
-
-
-# async def test_storage_download_regular_file_to_existing_file(
-#     storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
-# ) -> None:
-#     src_file = DATA_FOLDER / "file.txt"
-#     storage_file = storage_path / "file.txt"
-#     storage_file.write_bytes(src_file.read_bytes())
-#     local_dir = tmp_path / "local"
-#     local_dir.mkdir()
-#     local_file = local_dir / "file.txt"
-#     local_file.write_bytes(b"Previous data")
-
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.download_file(
-#             URL("storage:file.txt"), URL(local_file.as_uri())
-#         )
-
-#     expected = src_file.read_bytes()
-#     downloaded = local_file.read_bytes()
-#     assert downloaded == expected
+    src = URL("object://foo/test1.txt")
+    dst = URL(local_file.as_uri())
+    file_size = len(expected)
+    progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
+    progress.step.assert_called_with(
+        StorageProgressStep(src, dst, file_size, file_size)
+    )
+    progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
 
 
-# async def test_storage_download_regular_file_to_dir(
-#     storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
-# ) -> None:
-#     src_file = DATA_FOLDER / "file.txt"
-#     storage_file = storage_path / "file.txt"
-#     storage_file.write_bytes(src_file.read_bytes())
-#     local_dir = tmp_path / "local"
-#     local_dir.mkdir()
+async def test_object_storage_download_regular_file_to_existing_file(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+    tmp_path: Path,
+) -> None:
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
+    local_file = local_dir / "file.txt"
+    local_file.write_bytes(b"Previous data")
 
-#     async with make_client(storage_server.make_url("/")) as client:
-#         with pytest.raises((IsADirectoryError, PermissionError)):
-#             await client.storage.download_file(
-#                 URL("storage:file.txt"), URL(local_dir.as_uri())
-#             )
+    async with make_client(object_storage_server.make_url("/")) as client:
+        await client.object_storage.download_file(
+            URL("object:foo/test1.txt"), URL(local_file.as_uri())
+        )
 
-
-# async def test_storage_download_regular_file_to_dir_slash_ended(
-#     storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
-# ) -> None:
-#     src_file = DATA_FOLDER / "file.txt"
-#     storage_file = storage_path / "file.txt"
-#     storage_file.write_bytes(src_file.read_bytes())
-#     local_dir = tmp_path / "local"
-#     local_dir.mkdir()
-
-#     async with make_client(storage_server.make_url("/")) as client:
-#         with pytest.raises((IsADirectoryError, PermissionError)):
-#             await client.storage.download_file(
-#                 URL("storage:file.txt"), URL(local_dir.as_uri() + "/")
-#             )
+    expected = object_storage_contents["test1.txt"]["body"]
+    downloaded = local_file.read_bytes()
+    assert downloaded == expected
 
 
-# async def test_storage_download_regular_file_to_non_file(
-#     storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
-# ) -> None:
-#     src_file = DATA_FOLDER / "file.txt"
-#     storage_file = storage_path / "file.txt"
-#     storage_file.write_bytes(src_file.read_bytes())
+async def test_object_storage_download_regular_file_to_dir(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+    tmp_path: Path,
+) -> None:
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
 
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.download_file(
-#             URL("storage:file.txt"), URL(Path(os.devnull).absolute().as_uri())
-#         )
-
-
-# async def test_storage_download_empty_dir(
-#     storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
-# ) -> None:
-#     storage_dir = storage_path / "folder"
-#     storage_dir.mkdir()
-#     assert list(storage_dir.iterdir()) == []
-#     target_dir = tmp_path / "empty"
-#     assert not target_dir.exists()
-
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.download_dir(
-#             URL("storage:folder"), URL(target_dir.as_uri())
-#         )
-
-#     assert list(target_dir.iterdir()) == []
+    async with make_client(object_storage_server.make_url("/")) as client:
+        with pytest.raises(IsADirectoryError):
+            await client.object_storage.download_file(
+                URL("object:foo/test1.txt"), URL(local_dir.as_uri())
+            )
 
 
-# async def test_storage_download_dir(
-#     storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
-# ) -> None:
-#     storage_dir = storage_path / "folder"
-#     copytree(DATA_FOLDER / "nested", storage_dir)
-#     local_dir = tmp_path / "local"
-#     local_dir.mkdir()
-#     target_dir = local_dir / "nested"
+async def test_object_storage_download_regular_file_to_dir_slash_ended(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+    tmp_path: Path,
+) -> None:
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
 
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.download_dir(
-#             URL("storage:folder"), URL(target_dir.as_uri())
-#         )
-
-#     diff = dircmp(DATA_FOLDER / "nested", target_dir)  # type: ignore
-#     assert not calc_diff(diff)  # type: ignore
+    async with make_client(object_storage_server.make_url("/")) as client:
+        with pytest.raises(IsADirectoryError):
+            await client.object_storage.download_file(
+                URL("object:foo/test1.txt"), URL(local_dir.as_uri() + "/")
+            )
 
 
-# async def test_storage_download_dir_slash_ending(
-#     storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
-# ) -> None:
-#     storage_dir = storage_path / "folder"
-#     copytree(DATA_FOLDER / "nested", storage_dir / "nested")
-#     local_dir = tmp_path / "local"
-#     local_dir.mkdir()
+async def test_object_storage_download_regular_file_to_non_file(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+    tmp_path: Path,
+) -> None:
 
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.download_dir(
-#             URL("storage:folder"), URL(local_dir.as_uri() + "/")
-#         )
-
-#     diff = dircmp(DATA_FOLDER / "nested", local_dir / "nested")  # type: ignore
-#     assert not calc_diff(diff)  # type: ignore
+    async with make_client(object_storage_server.make_url("/")) as client:
+        await client.object_storage.download_file(
+            URL("object:foo/test1.txt"), URL(Path(os.devnull).absolute().as_uri())
+        )
 
 
-# @pytest.fixture
-# def zero_time_threshold(monkeypatch: Any) -> None:
-#     monkeypatch.setattr(neuromation.api.storage, "TIME_THRESHOLD", 0.0)
+async def test_object_storage_download_empty_dir(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+    tmp_path: Path,
+) -> None:
+    target_dir = tmp_path / "empty"
+    assert not target_dir.exists()
+
+    async with make_client(object_storage_server.make_url("/")) as client:
+        await client.object_storage.download_dir(
+            URL("object:foo/empty"), URL(target_dir.as_uri())
+        )
+
+    assert list(target_dir.iterdir()) == []
 
 
-# async def test_storage_upload_file_update(
-#     storage_server: Any,
-#     make_client: _MakeClient,
-#     tmp_path: Path,
-#     storage_path: Path,
-#     zero_time_threshold: None,
-# ) -> None:
-#     storage_file = storage_path / "file.txt"
-#     local_file = tmp_path / "file.txt"
+async def test_object_storage_download_dir(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+    tmp_path: Path,
+) -> None:
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
 
-#     local_file.write_bytes(b"old")
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.upload_file(
-#             URL(local_file.as_uri()), URL("storage:file.txt"), update=True
-#         )
-#     assert storage_file.read_bytes() == b"old"
+    async with make_client(object_storage_server.make_url("/")) as client:
+        await client.object_storage.download_dir(
+            URL("object:foo"), URL(local_dir.as_uri())
+        )
 
-#     local_file.write_bytes(b"new")
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.upload_file(
-#             URL(local_file.as_uri()), URL("storage:file.txt"), update=True
-#         )
-#     assert storage_file.read_bytes() == b"new"
-
-#     await asyncio.sleep(5)
-#     storage_file.write_bytes(b"xxx")
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.upload_file(
-#             URL(local_file.as_uri()), URL("storage:file.txt"), update=True
-#         )
-#     assert storage_file.read_bytes() == b"xxx"
+    files = sorted(dir_list(local_dir), key=lambda x: x["path"])
+    assert files == [
+        {"dir": True, "path": "empty"},
+        {"dir": True, "path": "folder1"},
+        {"body": b"w", "dir": False, "path": "folder1/xxx.txt", "size": 1},
+        {"body": b"bb", "dir": False, "path": "folder1/yyy.json", "size": 2},
+        {"body": b"w" * 213, "dir": False, "path": "test.json", "size": 213},
+        {"body": b"w" * 111, "dir": False, "path": "test1.txt", "size": 111},
+        {"body": b"w" * 222, "dir": False, "path": "test2.txt", "size": 222},
+    ]
 
 
-# async def test_storage_upload_dir_update(
-#     storage_server: Any,
-#     make_client: _MakeClient,
-#     tmp_path: Path,
-#     storage_path: Path,
-#     zero_time_threshold: None,
-# ) -> None:
-#     storage_file = storage_path / "folder" / "nested" / "file.txt"
-#     local_dir = tmp_path / "folder"
-#     local_file = local_dir / "nested" / "file.txt"
-#     local_file.parent.mkdir(parents=True)
+async def test_object_storage_download_dir_with_slash(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+    tmp_path: Path,
+) -> None:
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
 
-#     local_file.write_bytes(b"old")
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.upload_dir(
-#             URL(local_dir.as_uri()), URL("storage:folder"), update=True
-#         )
-#     assert storage_file.read_bytes() == b"old"
+    async with make_client(object_storage_server.make_url("/")) as client:
+        await client.object_storage.download_dir(
+            URL("object:foo"), URL(local_dir.as_uri() + "/")
+        )
 
-#     local_file.write_bytes(b"new")
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.upload_dir(
-#             URL(local_dir.as_uri()), URL("storage:folder"), update=True
-#         )
-#     assert storage_file.read_bytes() == b"new"
-
-#     await asyncio.sleep(5)
-#     storage_file.write_bytes(b"xxx")
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.upload_dir(
-#             URL(local_dir.as_uri()), URL("storage:folder"), update=True
-#         )
-#     assert storage_file.read_bytes() == b"xxx"
-
-
-# async def test_storage_download_file_update(
-#     storage_server: Any,
-#     make_client: _MakeClient,
-#     tmp_path: Path,
-#     storage_path: Path,
-#     zero_time_threshold: None,
-# ) -> None:
-#     storage_file = storage_path / "file.txt"
-#     local_file = tmp_path / "file.txt"
-
-#     storage_file.write_bytes(b"old")
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.download_file(
-#             URL("storage:file.txt"), URL(local_file.as_uri()), update=True
-#         )
-#     assert local_file.read_bytes() == b"old"
-
-#     storage_file.write_bytes(b"new")
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.download_file(
-#             URL("storage:file.txt"), URL(local_file.as_uri()), update=True
-#         )
-#     assert local_file.read_bytes() == b"new"
-
-#     await asyncio.sleep(2)
-#     local_file.write_bytes(b"xxx")
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.download_file(
-#             URL("storage:file.txt"), URL(local_file.as_uri()), update=True
-#         )
-#     assert local_file.read_bytes() == b"xxx"
-
-
-# async def test_storage_download_dir_update(
-#     storage_server: Any,
-#     make_client: _MakeClient,
-#     tmp_path: Path,
-#     storage_path: Path,
-#     zero_time_threshold: None,
-# ) -> None:
-#     storage_file = storage_path / "folder" / "nested" / "file.txt"
-#     local_dir = tmp_path / "folder"
-#     local_file = local_dir / "nested" / "file.txt"
-#     storage_file.parent.mkdir(parents=True)
-
-#     storage_file.write_bytes(b"old")
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.download_dir(
-#             URL("storage:folder"), URL(local_dir.as_uri()), update=True
-#         )
-#     assert local_file.read_bytes() == b"old"
-
-#     storage_file.write_bytes(b"new")
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.download_dir(
-#             URL("storage:folder"), URL(local_dir.as_uri()), update=True
-#         )
-#     assert local_file.read_bytes() == b"new"
-
-#     await asyncio.sleep(2)
-#     local_file.write_bytes(b"xxx")
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.download_dir(
-#             URL("storage:folder"), URL(local_dir.as_uri()), update=True
-#         )
-#     assert local_file.read_bytes() == b"xxx"
+    files = sorted(dir_list(local_dir), key=lambda x: x["path"])
+    assert files == [
+        {"dir": True, "path": "empty"},
+        {"dir": True, "path": "folder1"},
+        {"body": b"w", "dir": False, "path": "folder1/xxx.txt", "size": 1},
+        {"body": b"bb", "dir": False, "path": "folder1/yyy.json", "size": 2},
+        {"body": b"w" * 213, "dir": False, "path": "test.json", "size": 213},
+        {"body": b"w" * 111, "dir": False, "path": "test1.txt", "size": 111},
+        {"body": b"w" * 222, "dir": False, "path": "test2.txt", "size": 222},
+    ]

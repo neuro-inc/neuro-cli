@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import sys
-from datetime import datetime
 from types import TracebackType
 from typing import (
     Any,
