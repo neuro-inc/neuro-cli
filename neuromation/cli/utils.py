@@ -1,5 +1,4 @@
 import asyncio
-import dataclasses
 import functools
 import inspect
 import itertools
@@ -10,9 +9,6 @@ import re
 import shlex
 import shutil
 import sys
-import time
-from contextlib import suppress
-from datetime import date, timedelta
 from typing import (
     Any,
     Awaitable,
@@ -23,6 +19,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Set,
     Tuple,
     Type,
     TypeVar,
@@ -30,32 +27,25 @@ from typing import (
     cast,
 )
 
-import certifi
 import click
 import humanize
-import pkg_resources
-from click import BadParameter
+from click.types import convert_type
 from yarl import URL
 
-import neuromation
 from neuromation.api import (
     Action,
     Client,
     Factory,
     JobDescription,
-    LocalImage,
-    RemoteImage,
+    JobStatus,
     TagOption,
     Volume,
 )
-from neuromation.api.config import _CookieSession, _PyPIVersion
-from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 
-from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
 from .root import Root
 from .stats import upload_gmp_stats
-from .version_utils import AbstractVersionChecker, DummyVersionChecker, VersionChecker
+from .version_utils import run_version_checker
 
 
 log = logging.getLogger(__name__)
@@ -65,56 +55,7 @@ _T = TypeVar("_T")
 DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
 DEPRECATED_INVOKE_NOTICE = "DeprecationWarning: The command {name} is deprecated."
 
-# NOTE: these job name defaults are taken from `platform_api` file `validators.py`
-JOB_NAME_MIN_LENGTH = 3
-JOB_NAME_MAX_LENGTH = 40
-JOB_NAME_PATTERN = "^[a-z](?:-?[a-z0-9])*$"
-JOB_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
-
 NEURO_STEAL_CONFIG = "NEURO_STEAL_CONFIG"
-
-
-def warn_if_has_newer_version(
-    version: _PyPIVersion,
-    check_neuromation: bool = True,
-    cerfiti_warning_delay_days: int = 14,
-) -> None:
-    if check_neuromation:
-        current = pkg_resources.parse_version(neuromation.__version__)
-        if current < version.pypi_version:
-            update_command = "pip install --upgrade neuromation"
-            click.secho(
-                f"You are using Neuro Platform Client {current}, "
-                f"however {version.pypi_version} is available.\n"
-                f"You should consider upgrading via "
-                f"the '{update_command}' command.",
-                err=True,
-                fg="yellow",
-            )
-
-    certifi_current = pkg_resources.parse_version(certifi.__version__)  # type: ignore
-
-    if certifi_current < version.certifi_pypi_version and _need_to_warn_after_delay(
-        version.certifi_pypi_upload_date, cerfiti_warning_delay_days
-    ):
-        pip_update_command = "pip install --upgrade certifi"
-        conda_update_command = "conda update certifi"
-        click.secho(
-            f"Your root certificates are out of date.\n"
-            f"You are using certifi {certifi_current}, "
-            f"however {version.certifi_pypi_version} is available.\n"
-            f"Please consider upgrading certifi package, e.g.\n"
-            f"    {pip_update_command}\n"
-            f"or\n"
-            f"    {conda_update_command}",
-            err=True,
-            fg="red",
-        )
-
-
-def _need_to_warn_after_delay(release_date: date, delay_days: int) -> bool:
-    warn_since = date.today() - timedelta(days=delay_days)
-    return release_date < warn_since
 
 
 async def _run_async_function(
@@ -125,25 +66,12 @@ async def _run_async_function(
     **kwargs: Any,
 ) -> _T:
     loop = asyncio.get_event_loop()
-    version_checker: AbstractVersionChecker
 
     if init_client:
         await root.init_client()
 
-        version = root._config.pypi
-
-        warn_if_has_newer_version(version, not root.disable_pypi_version_check)
-
-        if root.disable_pypi_version_check:
-            version_checker = DummyVersionChecker(version)
-        else:
-            # (ASvetlov) This branch is not tested intentionally
-            # Don't want to fetch PyPI from unit tests
-            # Later the checker initialization code will be refactored
-            # as a part of config reimplementation
-            version_checker = VersionChecker(version)  # pragma: no cover
-        pypi_task: Optional["asyncio.Task[None]"] = loop.create_task(
-            version_checker.run()
+        pypi_task: "asyncio.Task[None]" = loop.create_task(
+            run_version_checker(root.client, root.disable_pypi_version_check)
         )
         stats_task: "asyncio.Task[None]" = loop.create_task(
             upload_gmp_stats(
@@ -151,43 +79,26 @@ async def _run_async_function(
             )
         )
     else:
-        pypi_task = None
+        pypi_task = loop.create_task(asyncio.sleep(0))  # do nothing
         stats_task = loop.create_task(asyncio.sleep(0))  # do nothing
 
     try:
         return await func(root, *args, **kwargs)
     finally:
-        with suppress(asyncio.CancelledError):
+        stats_task.cancel()
+        try:
             await stats_task
-        new_config = None
-        if pypi_task is not None:
-            pypi_task.cancel()
-            with suppress(asyncio.CancelledError):
-                await pypi_task
-            with suppress(asyncio.CancelledError):
-                await version_checker.close()
-
-            if version_checker.version != root._config.pypi:
-                # Update pypi section
-                new_config = dataclasses.replace(
-                    root._config, pypi=version_checker.version
-                )
-
-        cookie = root.get_session_cookie()
-        if cookie is not None:
-            if new_config is None:
-                new_config = root._config
-            new_config = dataclasses.replace(
-                new_config,
-                cookie_session=_CookieSession(
-                    cookie=cookie.value, timestamp=int(time.time())
-                ),
-            )
-
-        if new_config is not None:
-            factory = root._factory
-            assert factory is not None
-            factory._save(new_config)
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            log.debug("Usage stats sending has failed", exc_info=True)
+        pypi_task.cancel()
+        try:
+            await pypi_task
+        except asyncio.CancelledError:
+            pass
+        except Exception:
+            log.debug("PyPI checker has failed", exc_info=True)
 
 
 def _wrap_async_callback(
@@ -479,7 +390,18 @@ class Option(click.Option):
 def option(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
     option_attrs = attrs.copy()
     option_attrs.setdefault("cls", Option)
+    typ = convert_type(attrs.get("type"), attrs.get("default"))
+    autocompletion = getattr(typ, "autocompletion", None)
+    option_attrs.setdefault("autocompletion", autocompletion)
     return click.option(*param_decls, **option_attrs)
+
+
+def argument(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
+    arg_attrs = attrs.copy()
+    typ = convert_type(attrs.get("type"), attrs.get("default"))
+    autocompletion = getattr(typ, "autocompletion", None)
+    arg_attrs.setdefault("autocompletion", autocompletion)
+    return click.argument(*param_decls, **arg_attrs)
 
 
 def volume_to_verbose_str(volume: Volume) -> str:
@@ -489,12 +411,23 @@ def volume_to_verbose_str(volume: Volume) -> str:
     )
 
 
-async def resolve_job(id_or_name_or_uri: str, *, client: Client) -> str:
+JOB_ID_PATTERN = r"job-[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12}"
+
+
+async def resolve_job(
+    id_or_name_or_uri: str, *, client: Client, status: Set[JobStatus]
+) -> str:
     default_user = client.username
+    default_cluster = client.cluster_name
     if id_or_name_or_uri.startswith("job:"):
-        uri = _normalize_uri(id_or_name_or_uri, username=default_user)
-        id_or_name = uri.path.lstrip("/")
-        owner = uri.host or default_user
+        uri = _normalize_uri(
+            id_or_name_or_uri, username=default_user, cluster_name=default_cluster,
+        )
+        if uri.host != default_cluster:
+            raise ValueError(f"Invalid job URI: cluster_name != '{default_cluster}'")
+        owner, _, id_or_name = uri.path.lstrip("/").partition("/")
+        if not owner:
+            raise ValueError(f"Invalid job URI: missing owner")
         if not id_or_name:
             raise ValueError(
                 f"Invalid job URI: owner='{owner}', missing job-id or job-name"
@@ -503,10 +436,16 @@ async def resolve_job(id_or_name_or_uri: str, *, client: Client) -> str:
         id_or_name = id_or_name_or_uri
         owner = default_user
 
+    # Temporary fast path.
+    if re.fullmatch(JOB_ID_PATTERN, id_or_name):
+        return id_or_name
+
     jobs: List[JobDescription] = []
     details = f"name={id_or_name}, owner={owner}"
     try:
         jobs = await client.jobs.list(name=id_or_name, owners={owner})
+    except asyncio.CancelledError:
+        raise
     except Exception as e:
         log.error(
             f"Failed to resolve job-name {id_or_name_or_uri} resolved as "
@@ -533,7 +472,10 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
         uri = str(image)
 
     return uri_from_cli(
-        uri, root.client.username, allowed_schemes=("storage", "image", "job")
+        uri,
+        root.client.username,
+        root.client.cluster_name,
+        allowed_schemes=("storage", "image", "job"),
     )
 
 
@@ -541,7 +483,12 @@ def parse_file_resource(uri: str, root: Root) -> URL:
     """ Parses the neuromation resource URI string.
     Available schemes: file, storage.
     """
-    return uri_from_cli(uri, root.client.username, allowed_schemes=("file", "storage"))
+    return uri_from_cli(
+        uri,
+        root.client.username,
+        root.client.cluster_name,
+        allowed_schemes=("file", "storage"),
+    )
 
 
 def parse_permission_action(action: str) -> Action:
@@ -552,134 +499,6 @@ def parse_permission_action(action: str) -> Action:
         raise ValueError(
             f"invalid permission action '{action}', allowed values: {valid_actions}"
         )
-
-
-class LocalImageType(click.ParamType):
-    name = "local_image"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> LocalImage:
-        assert ctx is not None
-        root = cast(Root, ctx.obj)
-        config = Factory(root.config_path)._read()
-        image_parser = _ImageNameParser(
-            config.auth_token.username,
-            config.clusters[config.cluster_name].registry_url,
-        )
-        if image_parser.is_in_neuro_registry(value):
-            raise click.BadParameter(
-                "remote image cannot be used as local", ctx, param, self.name
-            )
-        else:
-            parsed_image = image_parser.parse_as_local_image(value)
-        return parsed_image
-
-
-class ImageType(click.ParamType):
-    name = "image"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> RemoteImage:
-        assert ctx is not None
-        root = cast(Root, ctx.obj)
-        config = Factory(root.config_path)._read()
-        image_parser = _ImageNameParser(
-            config.auth_token.username,
-            config.clusters[config.cluster_name].registry_url,
-        )
-        return image_parser.parse_remote(value)
-
-
-class RemoteTaglessImageType(click.ParamType):
-    name = "image"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> RemoteImage:
-        assert ctx is not None
-        root = cast(Root, ctx.obj)
-        config = Factory(root.config_path)._read()
-        image_parser = _ImageNameParser(
-            config.auth_token.username,
-            config.clusters[config.cluster_name].registry_url,
-        )
-        return image_parser.parse_as_neuro_image(value, tag_option=TagOption.DENY)
-
-
-class LocalRemotePortParamType(click.ParamType):
-    name = "local-remote-port-pair"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> Tuple[int, int]:
-        try:
-            local_str, remote_str = value.split(":")
-            local, remote = int(local_str), int(remote_str)
-            if not (0 < local <= 65535 and 0 < remote <= 65535):
-                raise ValueError("Port should be in range 1 to 65535")
-            return local, remote
-        except ValueError as e:
-            raise BadParameter(f"{value} is not a valid port combination: {e}")
-
-
-LOCAL_REMOTE_PORT = LocalRemotePortParamType()
-
-
-class MegabyteType(click.ParamType):
-    name = "megabyte"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> int:
-        return to_megabytes(value)
-
-
-MEGABYTE = MegabyteType()
-
-
-class JobNameType(click.ParamType):
-    name = "job_name"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> str:
-        if (
-            len(value) < JOB_NAME_MIN_LENGTH
-            or len(value) > JOB_NAME_MAX_LENGTH
-            or JOB_NAME_REGEX.match(value) is None
-        ):
-            raise ValueError(
-                f"Invalid job name '{value}'.\n"
-                "The name can only contain lowercase letters, numbers and hyphens "
-                "with the following rules: \n"
-                "  - the first character must be a letter; \n"
-                "  - each hyphen must be surrounded by non-hyphen characters; \n"
-                f"  - total length must be between {JOB_NAME_MIN_LENGTH} and "
-                f"{JOB_NAME_MAX_LENGTH} characters long."
-            )
-        return value
-
-
-JOB_NAME = JobNameType()
-
-
-class JobColumnsType(click.ParamType):
-    name = "columns"
-
-    def convert(
-        self,
-        value: Union[str, List[JobColumnInfo]],
-        param: Optional[click.Parameter],
-        ctx: Optional[click.Context],
-    ) -> List[JobColumnInfo]:
-        if isinstance(value, list):
-            return value
-        return parse_columns(value)
-
-
-JOB_COLUMNS = JobColumnsType()
 
 
 def do_deprecated_quiet(
@@ -750,6 +569,8 @@ def pager_maybe(
 def steal_config_maybe(dst_path: pathlib.Path) -> None:
     if NEURO_STEAL_CONFIG in os.environ:
         src = pathlib.Path(os.environ[NEURO_STEAL_CONFIG])
+        if not src.exists():
+            return
         dst = Factory(dst_path).path
         dst.mkdir(mode=0o700)
         for f in src.iterdir():

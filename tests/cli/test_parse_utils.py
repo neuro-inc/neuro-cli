@@ -2,9 +2,9 @@ import pytest
 
 from neuromation.cli.formatters.ftable import Align, ColumnWidth
 from neuromation.cli.parse_utils import (
-    COLUMNS,
     COLUMNS_MAP,
     JobColumnInfo,
+    get_default_columns,
     parse_columns,
     parse_memory,
 )
@@ -43,8 +43,9 @@ def test_parse_memory() -> None:
 
 
 def test_parse_columns_default() -> None:
-    assert parse_columns("") == COLUMNS
-    assert parse_columns(None) == COLUMNS
+    default_columns = get_default_columns()
+    assert parse_columns("") == default_columns
+    assert parse_columns(None) == default_columns
 
 
 def test_parse_columns_short() -> None:

@@ -35,6 +35,7 @@ from .utils import (
     DeprecatedGroup,
     Group,
     alias,
+    argument,
     format_example,
     group,
     option,
@@ -102,22 +103,65 @@ LOG_ERROR = log.error
 
 class MainGroup(Group):
     topics = None
+    skip_init = False  # use it for testing onlt
 
-    def invoke(self, ctx: click.Context) -> None:
-        args = ctx.protected_args + ctx.args
-        ctx.args = []
-        ctx.protected_args = []
+    def make_context(
+        self,
+        info_name: str,
+        args: Sequence[str],
+        parent: Optional[click.Context] = None,
+        **extra: Any,
+    ) -> Context:
+        ctx = super().make_context(info_name, args, parent, **extra)
+        if self.skip_init:
+            # Run from test suite
+            return ctx
 
-        with ctx:  # type: ignore
-            ctx.invoke(self.callback, **ctx.params)  # type: ignore
-            if not args:
-                print_help(ctx)
-            cmd_name, cmd, args = self.resolve_command(ctx, args)
-            ctx.invoked_subcommand = cmd_name
-            sub_ctx = cmd.make_context(cmd_name, args, parent=ctx)
-            with sub_ctx:  # type: ignore
-                sub_ctx.command.invoke(sub_ctx)
-                return
+        kwargs = {}
+        for param in self.params:
+            if param.expose_value:
+                val = ctx.params.get(param.name)
+                if val is not None:
+                    kwargs[param.name] = val
+                else:
+                    kwargs[param.name] = param.get_default(ctx)
+
+        global LOG_ERROR
+        if kwargs["show_traceback"]:
+            LOG_ERROR = log.exception
+        tty = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
+        COLORS = {"yes": True, "no": False, "auto": None}
+        real_color: Optional[bool] = COLORS[kwargs["color"]]
+        if real_color is None:
+            real_color = tty
+        ctx.color = real_color
+        verbosity = kwargs["verbose"] - kwargs["quiet"]
+        setup_logging(verbosity=verbosity, color=real_color)
+        if kwargs["hide_token"] is None:
+            hide_token_bool = True
+        else:
+            if not kwargs["trace"]:
+                option = "--hide-token" if kwargs["hide_token"] else "--no-hide-token"
+                raise click.UsageError(f"{option} requires --trace")
+            hide_token_bool = kwargs["hide_token"]
+        steal_config_maybe(Path(kwargs["neuromation_config"]))
+        root = Root(
+            verbosity=verbosity,
+            color=real_color,
+            tty=tty,
+            terminal_size=shutil.get_terminal_size(),
+            disable_pypi_version_check=kwargs["disable_pypi_version_check"],
+            network_timeout=kwargs["network_timeout"],
+            config_path=Path(kwargs["neuromation_config"]),
+            trace=kwargs["trace"],
+            trace_hide_token=hide_token_bool,
+            command_path="",
+            command_params=[],
+            skip_gmp_stats=kwargs["skip_stats"],
+        )
+        ctx.obj = root
+        ctx.call_on_close(root.close)
+        return ctx
 
     def resolve_command(
         self, ctx: click.Context, args: List[str]
@@ -196,7 +240,9 @@ class MainGroup(Group):
 
         self._format_group("Commands", groups, formatter)
         self._format_group("Command Shortcuts", commands, formatter)
-        self._format_group("Help topics", topics, formatter)
+        self._format_group(
+            f"Help topics ({ctx.info_name} help <topic>)", topics, formatter
+        )
 
     def format_options(
         self, ctx: click.Context, formatter: click.HelpFormatter
@@ -204,12 +250,12 @@ class MainGroup(Group):
         self.format_commands(ctx, formatter)
         formatter.write_paragraph()
         formatter.write_text(
-            'Use "neuro help <command>" for more information '
+            f'Use "{ctx.info_name} help <command>" for more information '
             "about a given command or topic."
         )
         formatter.write_text(
-            'Use "neuro --options" for a list of global command-line options '
-            "(applies to all commands)."
+            f'Use "{ctx.info_name} --options" for a list of global command-line '
+            "options (applies to all commands)."
         )
 
 
@@ -350,45 +396,12 @@ def cli(
     # ◥ ◣ ▇      Deep network training,
     #   ◥ ▇      inference and datasets
     #     ◥
-    global LOG_ERROR
-    if show_traceback:
-        LOG_ERROR = log.exception
-    tty = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
-    COLORS = {"yes": True, "no": False, "auto": None}
-    real_color: Optional[bool] = COLORS[color]
-    if real_color is None:
-        real_color = tty
-    ctx.color = real_color
-    verbosity = verbose - quiet
-    setup_logging(verbosity=verbosity, color=real_color)
-    if hide_token is None:
-        hide_token_bool = True
-    else:
-        if not trace:
-            option = "--hide-token" if hide_token else "--no-hide-token"
-            raise click.UsageError(f"{option} requires --trace")
-        hide_token_bool = hide_token
-    steal_config_maybe(Path(neuromation_config))
-    root = Root(
-        verbosity=verbosity,
-        color=real_color,
-        tty=tty,
-        terminal_size=shutil.get_terminal_size(),
-        disable_pypi_version_check=disable_pypi_version_check,
-        network_timeout=network_timeout,
-        config_path=Path(neuromation_config),
-        trace=trace,
-        trace_hide_token=hide_token_bool,
-        command_path="",
-        command_params=[],
-        skip_gmp_stats=skip_stats,
-    )
-    ctx.obj = root
-    ctx.call_on_close(root.close)
+    # Parameters parsing is done in MainGroup.make_context()
+    pass
 
 
 @cli.command(wrap_async=False)
-@click.argument("command", nargs=-1)
+@argument("command", nargs=-1)
 @click.pass_context
 def help(ctx: click.Context, command: Sequence[str]) -> None:
     """Get help on a command."""

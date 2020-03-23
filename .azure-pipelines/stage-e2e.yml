@@ -1,3 +1,15 @@
+parameters:
+  operation_systems:
+  - 'ubuntu'
+  - 'windows'
+  - 'macos'
+  python_versions:
+  - '3.6'
+  - '3.7'
+  targets:
+  - 'jobs'
+  - 'sumo'
+
 stages:
 - stage: e2e
   displayName: "E2E"
@@ -6,24 +18,14 @@ stages:
     displayName: " "
     strategy:
       matrix:
-        Py36-Linux:
-          python.version: '3.6'
-          image: 'ubuntu-latest'
-        Py37-Linux:
-          python.version: '3.7'
-          image: 'ubuntu-latest'
-        Py36-Win64:
-          python.version: '3.6'
-          image: 'vs2017-win2016'
-        Py37-Win64:
-          python.version: '3.7'
-          image: 'vs2017-win2016'
-        Py36-Mac:
-          python.version: '3.6'
-          image: 'macos-latest'
-        Py37-Mac:
-          python.version: '3.7'
-          image: 'macos-latest'
+        ${{ each py in parameters.python_versions }}:
+          ${{ each os in parameters.operation_systems }}:
+            ${{ each tgt in parameters.targets }}:
+              ${{ format('Py-{0}-{1}-{2}', py, os, tgt) }}:
+                python.version: ${{ py }}
+                image: ${{ format('{0}-latest', os) }}
+                target: ${{ format('e2e-{0}', tgt) }}
+                PIP_CACHE_DIR: $(Pipeline.Workspace)/.pip
 
     pool:
       vmImage: $[ variables['image'] ]
@@ -39,6 +41,11 @@ stages:
         versionSpec: '$(python.version)'
       displayName: "Use Python $(python.version)"
 
+    - task: Cache@2
+      inputs:
+        key: 'pip | "$(Agent.OS)" | "$(python.version)" | requirements/base.txt | requirements/ci.txt'
+        path: $(PIP_CACHE_DIR)
+
     - script: |
         python -m pip install -U pip wheel
       displayName: 'Install prerequirements'
@@ -46,13 +53,15 @@ stages:
     - script: |
         pip install -r requirements/ci.txt pytest-azurepipelines
         pip install .
+        touch .update-deps
       displayName: 'Install dependencies'
 
     - script: |
-        make e2e
-      displayName: 'Run e2e'
+        make $(target)
+      displayName: 'Run $(target)'
       env:
-        CLIENT_TEST_E2E_USER_NAME: $(e2e.token)
+        E2E_TOKEN: $(e2e.token)
+        E2E_USER_TOKEN: $(e2e-user.token)
         PYTEST_XDIST_NUM_THREADS: 8
 
     - script: |

@@ -85,6 +85,7 @@ class Container:
     http: Optional[HTTPPort] = None
     env: Mapping[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
+    tty: bool = False
 
 
 @dataclass(frozen=True)
@@ -108,6 +109,7 @@ class JobDescription:
     container: Container
     is_preemptible: bool
     name: Optional[str] = None
+    tags: Sequence[str] = ()
     description: Optional[str] = None
     http_url: URL = URL()
     ssh_server: URL = URL()
@@ -134,6 +136,7 @@ class Jobs(metaclass=NoPublicConstructor):
         container: Container,
         *,
         name: Optional[str] = None,
+        tags: Sequence[str] = (),
         description: Optional[str] = None,
         is_preemptible: bool = False,
         schedule_timeout: Optional[float] = None,
@@ -146,6 +149,8 @@ class Jobs(metaclass=NoPublicConstructor):
         }
         if name:
             payload["name"] = name
+        if tags:
+            payload["tags"] = tags
         if description:
             payload["description"] = description
         if schedule_timeout:
@@ -163,6 +168,7 @@ class Jobs(metaclass=NoPublicConstructor):
         *,
         statuses: Iterable[JobStatus] = (),
         name: str = "",
+        tags: Iterable[str] = (),
         owners: Iterable[str] = (),
     ) -> List[JobDescription]:
         url = self._config.api_url / "jobs"
@@ -173,6 +179,8 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("name", name)
         for owner in owners:
             params.add("owner", owner)
+        for tag in tags:
+            params.add("tag", tag)
         params["cluster_name"] = self._config.cluster_name
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, params=params, auth=auth) as resp:
@@ -206,6 +214,13 @@ class Jobs(metaclass=NoPublicConstructor):
         async with self._core.request("GET", url, auth=auth) as resp:
             ret = await resp.json()
             return _job_description_from_api(ret, self._parse)
+
+    async def tags(self) -> List[str]:
+        url = self._config.api_url / "tags"
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            ret = await resp.json()
+            return ret["tags"]
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
         url = self._config.monitoring_url / id / "top"
@@ -278,12 +293,12 @@ class Jobs(metaclass=NoPublicConstructor):
         except IllegalArgumentError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {id}")
+            raise ValueError(f"Job is not running. Job Id = {job_status.id}")
         payload = json.dumps(
             {
                 "method": "job_exec",
                 "token": await self._config.token(),
-                "params": {"job": id, "command": list(cmd)},
+                "params": {"job": job_status.id, "command": list(cmd)},
             }
         )
         command = ["ssh"]
@@ -331,12 +346,12 @@ class Jobs(metaclass=NoPublicConstructor):
         except IllegalArgumentError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {id}")
+            raise ValueError(f"Job is not running. Job Id = {job_status.id}")
         payload = json.dumps(
             {
                 "method": "job_port_forward",
                 "token": await self._config.token(),
-                "params": {"job": id, "port": job_port},
+                "params": {"job": job_status.id, "port": job_port},
             }
         )
         proxy_command = ["ssh"]
@@ -502,6 +517,8 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
         primitive["env"] = container.env
     if container.volumes:
         primitive["volumes"] = [_volume_to_api(v) for v in container.volumes]
+    if container.tty:
+        primitive["tty"] = True
     return primitive
 
 
@@ -510,6 +527,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
     owner = res["owner"]
     cluster_name = res["cluster_name"]
     name = res.get("name")
+    tags = res.get("tags", ())
     description = res.get("description")
     history = JobStatusHistory(
         status=JobStatus(res["history"].get("status", "unknown")),
@@ -533,6 +551,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         container=container,
         is_preemptible=res["is_preemptible"],
         name=name,
+        tags=tags,
         description=description,
         http_url=http_url_named or http_url,
         ssh_server=ssh_server,

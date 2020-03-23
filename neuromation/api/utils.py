@@ -108,3 +108,7 @@ def retries(
         sleeptime += 0.1
         attempts -= 1
         yield retry()
+
+
+def flat(sql: str) -> str:
+    return " ".join(line.strip() for line in sql.splitlines() if line.strip())

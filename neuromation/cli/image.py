@@ -6,13 +6,20 @@ import click
 
 from neuromation.api import LocalImage, RemoteImage
 from neuromation.cli.formatters import DockerImageProgress
+from neuromation.cli.formatters.images import (
+    BaseImagesFormatter,
+    LongImagesFormatter,
+    ShortImagesFormatter,
+)
 
+from .click_types import RemoteTaglessImageType
 from .root import Root
 from .utils import (
-    RemoteTaglessImageType,
+    argument,
     command,
     deprecated_quiet_option,
     group,
+    option,
     pager_maybe,
 )
 
@@ -28,8 +35,8 @@ def image() -> None:
 
 
 @command()
-@click.argument("local_image")
-@click.argument("remote_image", required=False)
+@argument("local_image")
+@argument("remote_image", required=False)
 @deprecated_quiet_option
 async def push(root: Root, local_image: str, remote_image: Optional[str]) -> None:
     """
@@ -61,8 +68,8 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
 
 
 @command()
-@click.argument("remote_image")
-@click.argument("local_image", required=False)
+@argument("remote_image")
+@argument("local_image", required=False)
 @deprecated_quiet_option
 async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> None:
     """
@@ -93,17 +100,24 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 
 
 @command()
-async def ls(root: Root) -> None:
+@option("-l", "format_long", is_flag=True, help="List in long format.")
+async def ls(root: Root, format_long: bool) -> None:
     """
     List images.
     """
 
     images = await root.client.images.ls()
-    pager_maybe((str(image) for image in images), root.tty, root.terminal_size)
+
+    formatter: BaseImagesFormatter
+    if format_long:
+        formatter = LongImagesFormatter()
+    else:
+        formatter = ShortImagesFormatter()
+    pager_maybe(formatter(images), root.tty, root.terminal_size)
 
 
 @command()
-@click.argument("image", type=RemoteTaglessImageType())
+@argument("image", type=RemoteTaglessImageType())
 async def tags(root: Root, image: RemoteImage) -> None:
     """
     List tags for image in platform registry.

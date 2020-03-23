@@ -1,5 +1,3 @@
-import dataclasses
-import shutil
 import sys
 from pathlib import Path
 from typing import Any, Callable, Dict
@@ -9,19 +7,12 @@ import aiohttp
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestServer as _TestServer
-from jose import jwt
 from yarl import URL
 
 import neuromation
 import neuromation.api.config_factory
 from neuromation.api import Cluster, ConfigError, Factory
-from neuromation.api.config import (
-    _AuthConfig,
-    _AuthToken,
-    _Config,
-    _CookieSession,
-    _PyPIVersion,
-)
+from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData
 from neuromation.api.login import AuthException
 from tests import _TestServerFactory
 
@@ -46,12 +37,10 @@ def config_dir(
 def _create_config(
     nmrc_path: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster
 ) -> str:
-    config = _Config(
+    config = _ConfigData(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
-        pypi=_PyPIVersion.create_uninitialized(),
         url=URL("https://dev.neu.ro/api/v1"),
-        cookie_session=_CookieSession.create_uninitialized(),
         version=neuromation.__version__,
         cluster_name=cluster_config.name,
         clusters={cluster_config.name: cluster_config},
@@ -208,27 +197,6 @@ class TestConfigFileInteraction:
         await client.close()
         assert await client.config.token() == token
 
-    async def test_token_autorefreshing(
-        self, config_dir: Path, monkeypatch: Any
-    ) -> None:
-        new_token = jwt.encode({"identity": "new_user"}, "secret", algorithm="HS256")
-
-        async def _refresh_token_mock(
-            connector: aiohttp.ClientSession, config: _AuthConfig, token: _AuthToken
-        ) -> _AuthToken:
-            return _AuthToken.create_non_expiring(new_token)
-
-        monkeypatch.setattr(
-            neuromation.api.config_factory, "refresh_token", _refresh_token_mock
-        )
-        factory = Factory(config_dir)
-        old_config = factory._read()
-        client = await factory.get()
-        await client.close()
-        new_config = factory._read()
-        assert await client.config.token() == new_token
-        assert old_config.auth_token != new_config.auth_token
-
     @pytest.mark.skipif(
         sys.platform == "win32",
         reason="Windows does not supports UNIX-like permissions",
@@ -237,48 +205,6 @@ class TestConfigFileInteraction:
         Path(config_dir).chmod(0o777)
         with pytest.raises(ConfigError, match=r"permission"):
             await Factory().get()
-
-    async def test_silent_update(
-        self, config_dir: Path, mock_for_login: _TestServer
-    ) -> None:
-        # make config
-        async def show_dummy_browser(url: URL) -> None:
-            async with aiohttp.ClientSession() as client:
-                await client.get(url, allow_redirects=True)
-
-        shutil.rmtree(config_dir)
-
-        await Factory(config_dir).login(
-            show_dummy_browser, url=mock_for_login.make_url("/")
-        )
-        factory = Factory(config_dir)
-        config = factory._read()
-        config = dataclasses.replace(
-            config,
-            version="10.1.1",  # config belongs old version
-            url=str(mock_for_login.make_url("/")),
-        )
-        factory._save(config)
-        client = await Factory(config_dir).get()
-        await client.close()
-
-        config = factory._read()
-        assert config.version == neuromation.__version__
-
-    async def test_explicit_update(
-        self, config_dir: Path, mock_for_login: _TestServer
-    ) -> None:
-        # await Factory().login(url=mock_for_login)
-        factory = Factory(config_dir)
-        config = factory._read()
-        config = dataclasses.replace(
-            config,
-            version="10.1.1",  # config belongs old version
-            url=str(mock_for_login.make_url("/")),
-        )
-        factory._save(config)
-        with pytest.raises(ConfigError, match="Neuro Platform CLI updated"):
-            await Factory(config_dir).get()
 
 
 class TestLogin:
@@ -358,4 +284,6 @@ class TestHeadlessLogin:
 class TestLogout:
     async def test_logout(self, config_dir: Path) -> None:
         await Factory().logout()
-        assert not config_dir.exists(), "Config not removed after logout"
+        assert not config_dir.exists(), "Config not removed after logout\n" + "\n".join(
+            [p.name for p in config_dir.iterdir()]
+        )

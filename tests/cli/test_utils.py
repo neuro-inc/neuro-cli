@@ -1,16 +1,14 @@
 from pathlib import Path
-from typing import Any, Callable, Dict, NoReturn, Tuple
+from typing import Any, Callable, Dict, NoReturn
 from unittest import mock
 
-import click
 import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuromation.api import Action, Client
+from neuromation.api import Action, Client, JobStatus
 from neuromation.cli.root import Root
 from neuromation.cli.utils import (
-    LocalRemotePortParamType,
     pager_maybe,
     parse_file_resource,
     parse_permission_action,
@@ -60,10 +58,13 @@ async def test_resolve_job_id__from_string__no_jobs_found(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_id:
-            pytest.fail(f"received: {name}")
+            raise web.HTTPBadRequest(text=(f"received: {name}"))
         owner = request.query.get("owner")
         if owner != "user":
-            pytest.fail(f"received: {owner}")
+            raise web.HTTPBadRequest(text=(f"received: {owner}"))
+        status = request.query.getall("status")
+        if status != ["running"]:
+            raise web.HTTPBadRequest(text=(f"received: {status}"))
         return web.json_response(JSON)
 
     app = web.Application()
@@ -72,7 +73,7 @@ async def test_resolve_job_id__from_string__no_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(job_id, client=client)
+        resolved = await resolve_job(job_id, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id
 
 
@@ -81,7 +82,7 @@ async def test_resolve_job_id__from_uri_with_owner__no_jobs_found(
 ) -> None:
     job_owner = "job-owner"
     job_name = "job-name"
-    uri = f"job://{job_owner}/{job_name}"
+    uri = f"job://default/{job_owner}/{job_name}"
     JSON: Dict[str, Any] = {"jobs": []}
 
     async def handler(request: web.Request) -> web.Response:
@@ -100,7 +101,7 @@ async def test_resolve_job_id__from_uri_with_owner__no_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_name
 
 
@@ -127,7 +128,7 @@ async def test_resolve_job_id__from_uri_without_owner__no_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_name
 
 
@@ -154,7 +155,9 @@ async def test_resolve_job_id__from_string__single_job_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(job_name, client=client)
+        resolved = await resolve_job(
+            job_name, client=client, status={JobStatus.RUNNING}
+        )
         assert resolved == job_id
 
 
@@ -163,7 +166,7 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
 ) -> None:
     job_owner = "job-owner"
     job_name = "job-name"
-    uri = f"job://{job_owner}/{job_name}"
+    uri = f"job://default/{job_owner}/{job_name}"
     job_id = "job-id-1"
     JSON = {"jobs": [_job_entry(job_id)]}
 
@@ -183,7 +186,7 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id
 
 
@@ -211,7 +214,7 @@ async def test_resolve_job_id__from_uri_without_owner__single_job_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id
 
 
@@ -239,7 +242,9 @@ async def test_resolve_job_id__from_string__multiple_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(job_name, client=client)
+        resolved = await resolve_job(
+            job_name, client=client, status={JobStatus.RUNNING}
+        )
         assert resolved == job_id_2
 
 
@@ -248,7 +253,7 @@ async def test_resolve_job_id__from_uri_with_owner__multiple_jobs_found(
 ) -> None:
     job_owner = "job-owner"
     job_name = "job-name"
-    uri = f"job://{job_owner}/{job_name}"
+    uri = f"job://default/{job_owner}/{job_name}"
     job_id_1 = "job-id-1"
     job_id_2 = "job-id-2"
     JSON = {"jobs": [_job_entry(job_id_1), _job_entry(job_id_2)]}
@@ -269,7 +274,7 @@ async def test_resolve_job_id__from_uri_with_owner__multiple_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id_2
 
 
@@ -298,7 +303,7 @@ async def test_resolve_job_id__from_uri_without_owner__multiple_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id_2
 
 
@@ -324,7 +329,9 @@ async def test_resolve_job_id__server_error(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(job_name, client=client)
+        resolved = await resolve_job(
+            job_name, client=client, status={JobStatus.RUNNING}
+        )
         assert resolved == job_id
 
 
@@ -333,7 +340,7 @@ async def test_resolve_job_id__from_uri_with_owner__with_owner__server_error(
 ) -> None:
     job_owner = "job-owner"
     job_name = "job-name"
-    uri = f"job://{job_owner}/{job_name}"
+    uri = f"job://default/{job_owner}/{job_name}"
 
     async def handler(request: web.Request) -> NoReturn:
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
@@ -351,7 +358,7 @@ async def test_resolve_job_id__from_uri_with_owner__with_owner__server_error(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_name
 
 
@@ -377,11 +384,28 @@ async def test_resolve_job_id__from_uri_without_owner__server_error(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client)
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_name
 
 
 async def test_resolve_job_id__from_uri__missing_job_id(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+
+    uri = "job://default/job-name"
+
+    app = web.Application()
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        with pytest.raises(
+            ValueError,
+            match="Invalid job URI: owner='job-name', missing job-id or job-name",
+        ):
+            await resolve_job(uri, client=client, status={JobStatus.RUNNING})
+
+
+async def test_resolve_job_id__from_uri__missing_job_id_2(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
 
@@ -392,10 +416,9 @@ async def test_resolve_job_id__from_uri__missing_job_id(
 
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(
-            ValueError,
-            match="Invalid job URI: owner='job-name', missing job-id or job-name",
+            ValueError, match="Invalid job URI: cluster_name != 'default'",
         ):
-            await resolve_job(uri, client=client)
+            await resolve_job(uri, client=client, status={JobStatus.RUNNING})
 
 
 def test_parse_file_resource_no_scheme(root: Root) -> None:
@@ -414,16 +437,20 @@ def test_parse_file_resource_unsupported_scheme(root: Root) -> None:
 
 def test_parse_file_resource_user_less(root: Root) -> None:
     user_less_permission = parse_file_resource("storage:resource", root)
-    assert user_less_permission == URL(f"storage://{root.client.username}/resource")
+    assert user_less_permission == URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/resource"
+    )
 
 
 def test_parse_file_resource_with_user(root: Root) -> None:
     full_permission = parse_file_resource(
-        f"storage://{root.client.username}/resource", root
+        f"storage://{root.client.cluster_name}/{root.client.username}/resource", root
     )
-    assert full_permission == URL(f"storage://{root.client.username}/resource")
-    full_permission = parse_file_resource(f"storage://alice/resource", root)
-    assert full_permission == URL(f"storage://alice/resource")
+    assert full_permission == URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/resource"
+    )
+    full_permission = parse_file_resource(f"storage://default/alice/resource", root)
+    assert full_permission == URL(f"storage://default/alice/resource")
 
 
 def test_parse_file_resource_with_tilde(root: Root) -> None:
@@ -434,7 +461,9 @@ def test_parse_file_resource_with_tilde(root: Root) -> None:
 def test_parse_resource_for_sharing_image_no_tag(root: Root) -> None:
     uri = "image:ubuntu"
     parsed = parse_resource_for_sharing(uri, root)
-    assert parsed == URL(f"image://{root.client.username}/ubuntu")
+    assert parsed == URL(
+        f"image://{root.client.cluster_name}/{root.client.username}/ubuntu"
+    )
 
 
 def test_parse_resource_for_sharing_image_with_tag_fail(root: Root) -> None:
@@ -459,16 +488,22 @@ def test_parse_resource_for_sharing_unsupported_scheme(root: Root) -> None:
 
 def test_parse_resource_for_sharing_user_less(root: Root) -> None:
     user_less_permission = parse_resource_for_sharing("storage:resource", root)
-    assert user_less_permission == URL(f"storage://{root.client.username}/resource")
+    assert user_less_permission == URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/resource"
+    )
 
 
 def test_parse_resource_for_sharing_with_user(root: Root) -> None:
     full_permission = parse_resource_for_sharing(
-        f"storage://{root.client.username}/resource", root
+        f"storage://{root.client.cluster_name}/{root.client.username}/resource", root
     )
-    assert full_permission == URL(f"storage://{root.client.username}/resource")
-    full_permission = parse_resource_for_sharing(f"storage://alice/resource", root)
-    assert full_permission == URL(f"storage://alice/resource")
+    assert full_permission == URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/resource"
+    )
+    full_permission = parse_resource_for_sharing(
+        f"storage://default/alice/resource", root
+    )
+    assert full_permission == URL(f"storage://default/alice/resource")
 
 
 def test_parse_resource_for_sharing_with_tilde(root: Root) -> None:
@@ -523,35 +558,6 @@ def test_parse_permission_action_wrong_empty() -> None:
     err = "invalid permission action '', allowed values: read, write, manage"
     with pytest.raises(ValueError, match=err):
         parse_permission_action(action)
-
-
-@pytest.mark.parametrize(
-    "arg,val",
-    [("1:1", (1, 1)), ("1:10", (1, 10)), ("434:1", (434, 1)), ("0897:123", (897, 123))],
-)
-def test_local_remote_port_param_type_valid(arg: str, val: Tuple[int, int]) -> None:
-    param = LocalRemotePortParamType()
-    assert param.convert(arg, None, None) == val
-
-
-@pytest.mark.parametrize(
-    "arg",
-    [
-        "1:",
-        "-123:10",
-        "34:-65500",
-        "hello:45",
-        "5555:world",
-        "65536:1",
-        "0:0",
-        "none",
-        "",
-    ],
-)
-def test_local_remote_port_param_type_invalid(arg: str) -> None:
-    param = LocalRemotePortParamType()
-    with pytest.raises(click.BadParameter, match=".* is not a valid port combination"):
-        param.convert(arg, None, None)
 
 
 def test_pager_maybe_no_tty() -> None:

@@ -69,6 +69,7 @@ class JobColumnInfo:
 COLUMNS = [
     JobColumnInfo("id", "ID", Align.LEFT, ColumnWidth()),
     JobColumnInfo("name", "NAME", Align.LEFT, ColumnWidth(max=40)),
+    JobColumnInfo("tags", "TAGS", Align.LEFT, ColumnWidth(max=40)),
     JobColumnInfo("status", "STATUS", Align.LEFT, ColumnWidth(max=10)),
     JobColumnInfo("when", "WHEN", Align.LEFT, ColumnWidth(max=15)),
     JobColumnInfo("image", "IMAGE", Align.LEFT, ColumnWidth(max=40)),
@@ -77,6 +78,15 @@ COLUMNS = [
     JobColumnInfo("description", "DESCRIPTION", Align.LEFT, ColumnWidth(max=50)),
     JobColumnInfo("command", "COMMAND", Align.LEFT, ColumnWidth(max=100)),
 ]
+
+COLUMNS_DEFAULT_IGNORE = {
+    "tags",
+}
+
+
+def get_default_columns() -> List[JobColumnInfo]:
+    return [col for col in COLUMNS if col.id not in COLUMNS_DEFAULT_IGNORE]
+
 
 COLUMNS_MAP = {column.id: column for column in COLUMNS}
 
@@ -126,7 +136,7 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
     # columns are separated by commas or spaces
     # spaces in title are forbidden
     if not fmt:
-        return COLUMNS
+        return get_default_columns()
     ret = []
     for m1 in COLUMNS_RE.finditer(fmt):
         if m1.lastgroup == "sep":

@@ -1,6 +1,3 @@
-import time
-from http.cookies import Morsel  # noqa
-from http.cookies import SimpleCookie
 from pathlib import Path
 from types import TracebackType
 from typing import Mapping, Optional, Type
@@ -10,7 +7,7 @@ import aiohttp
 from neuromation.api.quota import _Quota
 
 from .admin import _Admin
-from .config import Config, _Config
+from .config import Config
 from .core import _Core
 from .images import Images
 from .jobs import Jobs
@@ -21,32 +18,21 @@ from .users import Users
 from .utils import NoPublicConstructor
 
 
-SESSION_COOKIE_MAXAGE = 5 * 60  # 5 min
-
-
 class Client(metaclass=NoPublicConstructor):
     def __init__(
-        self,
-        session: aiohttp.ClientSession,
-        config_data: _Config,
-        path: Path,
-        trace_id: Optional[str],
+        self, session: aiohttp.ClientSession, path: Path, trace_id: Optional[str],
     ) -> None:
         self._closed = False
         self._trace_id = trace_id
         self._session = session
-        if time.time() - config_data.cookie_session.timestamp > SESSION_COOKIE_MAXAGE:
-            # expired
-            cookie: Optional["Morsel[str]"] = None
-        else:
-            tmp = SimpleCookie()  # type: ignore
-            tmp["NEURO_SESSION"] = config_data.cookie_session.cookie
-            cookie = tmp["NEURO_SESSION"]
-            assert config_data.url.raw_host is not None
-            cookie["domain"] = config_data.url.raw_host
-            cookie["path"] = "/"
-        self._core = _Core(session, cookie, trace_id)
-        self._config = Config._create(self._core, path, config_data)
+        self._core = _Core(session, trace_id)
+        self._config = Config._create(self._core, path)
+
+        # Order does matter, need to check the main config before loading
+        # the storage cookie session
+        self._config._load()
+        with self._config._open_db() as db:
+            self._core._post_init(db, self._config.storage_url)
         self._parser = Parser._create(self._config)
         self._admin = _Admin._create(self._core, self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)
@@ -59,6 +45,8 @@ class Client(metaclass=NoPublicConstructor):
         if self._closed:
             return
         self._closed = True
+        with self._config._open_db() as db:
+            self._core._save_cookie(db)
         await self._core.close()
         if self._images is not None:
             await self._images._close()
@@ -78,6 +66,10 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def username(self) -> str:
         return self._config.username
+
+    @property
+    def cluster_name(self) -> str:
+        return self._config.cluster_name
 
     @property
     def presets(self) -> Mapping[str, Preset]:
@@ -110,9 +102,3 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def parse(self) -> Parser:
         return self._parser
-
-    def _get_session_cookie(self) -> Optional["Morsel[str]"]:
-        for cookie in self._core._session.cookie_jar:
-            if cookie.key == "NEURO_SESSION":
-                return cookie
-        return None

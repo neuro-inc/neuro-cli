@@ -11,13 +11,14 @@ from neuromation.api import Client, JobStatus
 from neuromation.cli.job import (
     DEFAULT_JOB_LIFE_SPAN,
     NEUROMATION_ROOT_ENV_VAR,
+    _parse_cmd,
     _parse_timedelta,
     build_env,
     calc_columns,
     calc_life_span,
     calc_statuses,
 )
-from neuromation.cli.parse_utils import COLUMNS, COLUMNS_MAP
+from neuromation.cli.parse_utils import COLUMNS_MAP, get_default_columns
 
 
 logger = logging.getLogger(__name__)
@@ -169,7 +170,7 @@ async def test_calc_columns_section_doesnt_exist(
         local_conf = tmp_path / ".neuro.toml"
         # empty config
         local_conf.write_text("")
-        assert await calc_columns(client, None) == COLUMNS
+        assert await calc_columns(client, None) == get_default_columns()
 
 
 async def test_calc_columns_user_spec(
@@ -284,3 +285,13 @@ def test_parse_timedelta_invalid() -> None:
 def test_parse_timedelta_invalid_negative() -> None:
     with pytest.raises(click.UsageError, match="Should be like"):
         _parse_timedelta("-1d")
+
+
+def test_parse_cmd_single() -> None:
+    cmd = ["bash -c 'ls -l && pwd'"]
+    assert _parse_cmd(cmd) == "bash -c 'ls -l && pwd'"
+
+
+def test_parse_cmd_multiple() -> None:
+    cmd = ["bash", "-c", "ls -l && pwd"]
+    assert _parse_cmd(cmd) == "bash -c 'ls -l && pwd'"
