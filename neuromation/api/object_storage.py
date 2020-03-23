@@ -47,7 +47,6 @@ from .utils import NoPublicConstructor, asynccontextmanager, retries
 MAX_OPEN_FILES = 20
 READ_SIZE = 2 ** 20  # 1 MiB
 
-
 ProgressQueueItem = Optional[Any]
 
 
