@@ -625,7 +625,7 @@ async def test_object_storage_put_object(
         resp_etag = await client.object_storage.put_object(
             bucket_name=bucket_name,
             key=key,
-            body_stream=async_iter(),
+            body=async_iter(),
             size=len(body),
             content_md5=md5,
         )
@@ -831,59 +831,87 @@ async def test_object_storage_upload_recursive_src_is_a_file(
 
 
 async def test_object_storage_upload_recursive_target_is_a_file(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    object_storage_server: Any, make_client: _MakeClient,
 ) -> None:
-    target_file = storage_path / "file.txt"
-    target_file.write_bytes(b"dummy")
 
-    async with make_client(storage_server.make_url("/")) as client:
+    async with make_client(object_storage_server.make_url("/")) as client:
         with pytest.raises(NotADirectoryError):
-            await client.storage.upload_dir(
-                URL(DATA_FOLDER.as_uri()), URL("storage:file.txt")
+            await client.object_storage.upload_dir(
+                URL(DATA_FOLDER.as_uri()), URL("object:foo/test1.txt")
             )
 
 
-# async def test_storage_upload_empty_dir(
-#     storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
-# ) -> None:
-#     target_dir = storage_path / "folder"
-#     assert not target_dir.exists()
-#     src_dir = tmp_path / "empty"
-#     src_dir.mkdir()
-#     assert list(src_dir.iterdir()) == []
+async def test_object_storage_upload_empty_dir(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+    tmp_path: Path,
+) -> None:
+    src_dir = tmp_path / "empty"
+    src_dir.mkdir()
+    assert list(src_dir.iterdir()) == []
 
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.upload_dir(URL(src_dir.as_uri()), URL("storage:folder"))
+    async with make_client(object_storage_server.make_url("/")) as client:
+        await client.object_storage.upload_dir(
+            URL(src_dir.as_uri()), URL("object:foo/folder")
+        )
 
-#     assert list(target_dir.iterdir()) == []
-
-
-# async def test_storage_upload_recursive_ok(
-#     storage_server: Any, make_client: _MakeClient, storage_path: Path
-# ) -> None:
-#     target_dir = storage_path / "folder"
-#     target_dir.mkdir()
-
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.upload_dir(
-#             URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder")
-#         )
-#     diff = dircmp(DATA_FOLDER / "nested", target_dir)  # type: ignore
-#     assert not calc_diff(diff)  # type: ignore
+    assert "folder" not in object_storage_contents
+    uploaded = object_storage_contents["folder/"]
+    assert uploaded == {
+        "key": "folder/",
+        "size": 0,
+        "last_modified": mock.ANY,
+        "body": b"",
+    }
 
 
-# async def test_storage_upload_recursive_slash_ending(
-#     storage_server: Any, make_client: _MakeClient, storage_path: Path
-# ) -> None:
-#     target_dir = storage_path / "folder"
-#     target_dir.mkdir()
+async def test_object_storage_upload_recursive_ok(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+) -> None:
 
-#     async with make_client(storage_server.make_url("/")) as client:
-#         await client.storage.upload_dir(
-#             URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder/")
-#         )
-#     diff = dircmp(DATA_FOLDER / "nested", target_dir)  # type: ignore
-#     assert not calc_diff(diff)  # type: ignore
+    async with make_client(object_storage_server.make_url("/")) as client:
+        await client.object_storage.upload_dir(
+            URL(DATA_FOLDER.as_uri()) / "nested", URL("object:foo/folder")
+        )
+
+    keys = [v for k, v in object_storage_contents.items() if k.startswith("folder/")]
+    assert keys == [
+        {"key": "folder/", "size": 0, "last_modified": mock.ANY, "body": b""},
+        {"key": "folder/folder/", "size": 0, "last_modified": mock.ANY, "body": b""},
+        {
+            "key": "folder/folder/file.txt",
+            "size": 20,
+            "last_modified": mock.ANY,
+            "body": b"Nested file content\n",
+        },
+    ]
+
+
+async def test_object_storage_upload_recursive_slash_ending(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+) -> None:
+
+    async with make_client(object_storage_server.make_url("/")) as client:
+        await client.object_storage.upload_dir(
+            URL(DATA_FOLDER.as_uri()) / "nested", URL("object:foo/folder/")
+        )
+
+    keys = [v for k, v in object_storage_contents.items() if k.startswith("folder/")]
+    assert keys == [
+        {"key": "folder/", "size": 0, "last_modified": mock.ANY, "body": b""},
+        {"key": "folder/folder/", "size": 0, "last_modified": mock.ANY, "body": b""},
+        {
+            "key": "folder/folder/file.txt",
+            "size": 20,
+            "last_modified": mock.ANY,
+            "body": b"Nested file content\n",
+        },
+    ]
 
 
 # async def test_storage_download_regular_file_to_absent_file(

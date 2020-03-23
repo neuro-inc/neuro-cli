@@ -38,7 +38,7 @@ from .abc import (
 )
 from .config import Config
 from .core import ResourceNotFound, _Core
-from .storage import _always, _has_magic, _run_concurrently
+from .storage import _always, _has_magic, run_concurrently
 from .url_utils import _extract_path, normalize_local_path_uri, normalize_obj_path_uri
 from .users import Action
 from .utils import NoPublicConstructor, asynccontextmanager, retries
@@ -249,13 +249,22 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         self,
         bucket_name: str,
         key: str,
-        body_stream: AsyncIterator[bytes],
-        size: int,
+        body: Union[AsyncIterator[bytes], bytes],
+        size: Optional[int] = None,
         content_md5: Optional[str] = None,
     ) -> str:
         url = self._config.object_storage_url / "o" / bucket_name / key
         auth = await self._config._api_auth()
         timeout = attr.evolve(self._core.timeout, sock_read=None)
+
+        if isinstance(body, bytes):
+            size = len(body)
+        elif not isinstance(body, AsyncIterator):
+            raise ValueError(
+                "`body` should be either of type `bytes` or an `AsyncIterator`"
+            )
+        elif size is None:
+            raise ValueError("`size` is required if `body` is an `AsyncIterator`")
 
         # We don't provide Content-Length as transfer endcoding will be `chunked`.
         # But the server needs to know the decoded length of the file.
@@ -264,7 +273,7 @@ class ObjectStorage(metaclass=NoPublicConstructor):
             headers["Content-MD5"] = content_md5
 
         async with self._core.request(
-            "PUT", url, data=body_stream, timeout=timeout, auth=auth, headers=headers
+            "PUT", url, data=body, timeout=timeout, auth=auth, headers=headers
         ) as resp:
             etag = resp.headers["ETag"]
             return etag
@@ -307,6 +316,11 @@ class ObjectStorage(metaclass=NoPublicConstructor):
             bucket_name=uri.host, prefix=key, recursive=False, max_keys=1
         )
         return bool(objs)
+
+    async def _mkdir(self, uri: URL) -> None:
+        assert uri.host
+        assert uri.path.endswith("/")
+        await self.put_object(bucket_name=uri.host, key=_extract_key(uri), body=b"")
 
     async def upload_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None,
@@ -365,7 +379,7 @@ class ObjectStorage(metaclass=NoPublicConstructor):
                 await self.put_object(
                     bucket_name=bucket_name,
                     key=key,
-                    body_stream=self._iterate_file(src_path, dst, size, queue=queue),
+                    body=self._iterate_file(src_path, dst, size, queue=queue),
                     size=size,
                     content_md5=content_md5,
                 )
@@ -405,6 +419,20 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         queue: "asyncio.Queue[ProgressQueueItem]",
     ) -> None:
         tasks = []
+        if not dst.path.endswith("/"):
+            dst = dst / ""
+        assert dst.host
+
+        # Make sure we don't have name conflicts
+        try:
+            await self.head_object(
+                bucket_name=dst.host, key=_extract_key(dst).rstrip("/")
+            )
+        except ResourceNotFound:
+            await self._mkdir(dst)
+        else:
+            raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
+
         await queue.put(StorageProgressEnterDir(src, dst))
         loop = asyncio.get_event_loop()
         async with self._file_sem:
@@ -438,7 +466,7 @@ class ObjectStorage(metaclass=NoPublicConstructor):
                         f"Cannot upload {child}, not regular file/directory",
                     )
                 )
-        await _run_concurrently(tasks)
+        await run_concurrently(tasks)
         await queue.put(StorageProgressLeaveDir(src, dst))
 
     async def download_file(
@@ -557,7 +585,7 @@ class ObjectStorage(metaclass=NoPublicConstructor):
                         queue=queue,
                     )
                 )
-        await _run_concurrently(tasks)
+        await run_concurrently(tasks)
         await queue.put(StorageProgressLeaveDir(src, dst))
 
 
