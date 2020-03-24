@@ -93,23 +93,19 @@ def _normalize_uri(resource: Union[URL, str], username: str, cluster_name: str) 
     if (uri.host or path.lstrip("/")).startswith("~"):
         raise ValueError(f"Cannot expand user for {uri}")
     if not uri.host:
-        if path.startswith("/"):
-            path = path.lstrip("/")
-            if path:
-                uri = URL(f"{uri.scheme}://{path}")
-        elif uri.scheme in CLUSTER_SCHEMES:
-            if path:
-                uri = URL(f"{uri.scheme}://{cluster_name}/{username}/{path}")
+        if uri.scheme in CLUSTER_SCHEMES:
+            host = cluster_name
+            if path.startswith("/"):
+                path = path.lstrip("/")
             else:
-                uri = URL(f"{uri.scheme}://{cluster_name}/{username}")
+                path = f"{username}/{path}" if path else username
         else:
-            uri = URL(f"{uri.scheme}://{username}/{path}")
-
-    path = uri.path
-    if path.startswith("/"):
-        path = path.lstrip("/")
-        if path or uri.host:
-            uri = uri.with_path(path)
+            if path.startswith("/"):
+                path = path.lstrip("/")
+                host, _, path = path.partition("/")
+            else:
+                host = username
+        uri = URL.build(scheme=uri.scheme, host=host, path="/" + path)
 
     return uri
 
