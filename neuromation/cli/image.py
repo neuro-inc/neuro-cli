@@ -11,6 +11,11 @@ from neuromation.cli.formatters.images import (
     LongImagesFormatter,
     ShortImagesFormatter,
 )
+from neuromation.cli.formatters.utils import (
+    ImageFormatter,
+    image_formatter,
+    uri_formatter,
+)
 
 from .click_types import RemoteTaglessImageType
 from .root import Root
@@ -101,18 +106,27 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 
 @command()
 @option("-l", "format_long", is_flag=True, help="List in long format.")
-async def ls(root: Root, format_long: bool) -> None:
+@option("--full-uri", is_flag=True, help="Output full image URI.")
+async def ls(root: Root, format_long: bool, full_uri: bool) -> None:
     """
     List images.
     """
 
     images = await root.client.images.ls()
 
+    image_fmtr: ImageFormatter
+    if full_uri:
+        image_fmtr = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username, cluster_name=root.client.cluster_name
+        )
+        image_fmtr = image_formatter(uri_formatter=uri_fmtr)
     formatter: BaseImagesFormatter
     if format_long:
-        formatter = LongImagesFormatter()
+        formatter = LongImagesFormatter(image_formatter=image_fmtr)
     else:
-        formatter = ShortImagesFormatter()
+        formatter = ShortImagesFormatter(image_formatter=image_fmtr)
     pager_maybe(formatter(images), root.tty, root.terminal_size)
 
 

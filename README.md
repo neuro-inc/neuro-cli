@@ -537,6 +537,7 @@ Name | Description|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
+|_\--full-uri_|Output full image URI.|
 |_--help_|Show this message and exit.|
 
 
@@ -556,6 +557,7 @@ neuro job status [OPTIONS] JOB
 
 Name | Description|
 |----|------------|
+|_\--full-uri_|Output full URI.|
 |_--help_|Show this message and exit.|
 
 
@@ -1117,6 +1119,7 @@ neuro image ls [OPTIONS]
 Name | Description|
 |----|------------|
 |_-l_|List in long format.|
+|_\--full-uri_|Output full image URI.|
 |_--help_|Show this message and exit.|
 
 
@@ -1635,6 +1638,7 @@ Name | Description|
 |_-u TEXT_|Use specified user or role.|
 |_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user.|
 |_--shared_|Output the resources shared by the user.|
+|_\--full-uri_|Output full URI.|
 |_--help_|Show this message and exit.|
 
 
@@ -1806,6 +1810,7 @@ Name | Description|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
+|_\--full-uri_|Output full image URI.|
 |_--help_|Show this message and exit.|
 
 
@@ -1825,6 +1830,7 @@ neuro status [OPTIONS] JOB
 
 Name | Description|
 |----|------------|
+|_\--full-uri_|Output full URI.|
 |_--help_|Show this message and exit.|
 
 
@@ -2222,6 +2228,7 @@ neuro images [OPTIONS]
 Name | Description|
 |----|------------|
 |_-l_|List in long format.|
+|_\--full-uri_|Output full image URI.|
 |_--help_|Show this message and exit.|
 
 
