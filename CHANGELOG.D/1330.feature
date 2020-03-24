@@ -1,1 +1,1 @@
-Commands `neuro ps`, `neuro job status` and `nauro image list` output now URIs in the short form if possible. Use the new `--full-uri` option to get full qualified URIs.
+Commands `neuro ps`, `neuro job status`, `nauro image list` and `neuro acl list` output now URIs in the short form if possible. Use the new `--full-uri` option to get full qualified URIs.
