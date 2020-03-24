@@ -8,7 +8,7 @@ from pathlib import Path
 import click
 from click.formatting import wrap_text
 
-from neuromation.cli.main import cli
+from neuromation.cli.main import cli, topics
 from neuromation.cli.utils import split_examples
 
 
@@ -183,6 +183,37 @@ def gen_shortcuts(index, commands, target_path, ctx):
     fname.write_text("\n".join(out))
 
 
+def gen_topics(index, target_path, ctx):
+    out = []
+    meta = {
+        "title": "Topics",
+        "path": "topics",
+        "category": "topics",
+        "index": "true",
+    }
+    write_meta(meta, out)
+
+    out.append("### Topics")
+    out.append("")
+
+    for name in topics.list_commands(ctx):
+        topic = topics.get_command(ctx, name)
+        out.append(
+            f"- [neuro {topic.name}](docs/cli/topics#{topic.name}): "
+            f"{topic.get_short_help_str()}"
+        )
+    out.append("")
+
+    for name in topics.list_commands(ctx):
+        topic = topics.get_command(ctx, name)
+        out.append(f"## {topic.name}")
+        out.append("")
+        out.append(topic.help)
+
+    fname = target_path / f"{index:02d}__topics.md"
+    fname.write_text("\n".join(out))
+
+
 @click.command()
 @click.option(
     "--target-dir",
@@ -195,7 +226,7 @@ def gen_shortcuts(index, commands, target_path, ctx):
 )
 def main(target_dir):
     target_path = Path(target_dir)
-    EXCLUDES = ("cli.md")
+    EXCLUDES = "cli.md"
     for child in target_path.iterdir():
         if child.suffix != ".md":
             continue
@@ -226,6 +257,9 @@ def main(target_dir):
 
     for i, group in enumerate(groups, 2):
         gen_group(i, group, target_path, ctx)
+
+    # Topics generator produces ugly looking markdown, sorry
+    # gen_topics(i + 1, target_path, ctx)
 
 
 if __name__ == "__main__":
