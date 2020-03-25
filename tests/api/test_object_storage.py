@@ -66,12 +66,13 @@ def dir_list(path: Path) -> List[Dict[str, Any]]:
         if item.is_dir():
             res.append({"path": str(item.relative_to(path)), "dir": True})
         else:
+            body = item.read_bytes().replace(b"\n\r", b"\n")
             res.append(
                 {
-                    "path": str(item.relative_to(path)),
+                    "path": item.relative_to(path).as_posix(),
                     "dir": False,
-                    "size": item.stat().st_size,
-                    "body": item.read_bytes().replace(b"\n\r", b"\n"),  # Fix Windows
+                    "size": len(body),
+                    "body": body,  # Fix Windows
                 }
             )
     return res
@@ -929,14 +930,15 @@ async def test_object_storage_upload_recursive_ok(
         )
 
     keys = [v for k, v in object_storage_contents.items() if k.startswith("folder/")]
+    body = (DATA_FOLDER / "nested" / "folder" / "file.txt").read_bytes()
     assert keys == [
         {"key": "folder/", "size": 0, "last_modified": mock.ANY, "body": b""},
         {"key": "folder/folder/", "size": 0, "last_modified": mock.ANY, "body": b""},
         {
             "key": "folder/folder/file.txt",
-            "size": 20,
+            "size": len(body),
             "last_modified": mock.ANY,
-            "body": b"Nested file content\n",
+            "body": body,
         },
     ]
 
@@ -953,14 +955,15 @@ async def test_object_storage_upload_recursive_slash_ending(
         )
 
     keys = [v for k, v in object_storage_contents.items() if k.startswith("folder/")]
+    body = (DATA_FOLDER / "nested" / "folder" / "file.txt").read_bytes()
     assert keys == [
         {"key": "folder/", "size": 0, "last_modified": mock.ANY, "body": b""},
         {"key": "folder/folder/", "size": 0, "last_modified": mock.ANY, "body": b""},
         {
             "key": "folder/folder/file.txt",
-            "size": 20,
+            "size": len(body),
             "last_modified": mock.ANY,
-            "body": b"Nested file content\n",
+            "body": body,
         },
     ]
 
@@ -1066,7 +1069,8 @@ async def test_object_storage_download_regular_file_to_dir(
     local_dir.mkdir()
 
     async with make_client(object_storage_server.make_url("/")) as client:
-        with pytest.raises(IsADirectoryError):
+        # On Windows it will be signaled as PermissionError instead...
+        with pytest.raises((IsADirectoryError, PermissionError)):
             await client.object_storage.download_file(
                 URL("object:foo/test1.txt"), URL(local_dir.as_uri())
             )
@@ -1082,7 +1086,8 @@ async def test_object_storage_download_regular_file_to_dir_slash_ended(
     local_dir.mkdir()
 
     async with make_client(object_storage_server.make_url("/")) as client:
-        with pytest.raises(IsADirectoryError):
+        # On Windows it will be signaled as PermissionError instead...
+        with pytest.raises((IsADirectoryError, PermissionError)):
             await client.object_storage.download_file(
                 URL("object:foo/test1.txt"), URL(local_dir.as_uri() + "/")
             )
