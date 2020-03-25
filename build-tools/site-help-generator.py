@@ -132,7 +132,7 @@ def gen_group(group, target_path, parent_ctx):
         for cmd in commands:
             cmd_path = f"{group.name}.md#{cmd.name}"
             out.append(
-                f"- [neuro {group.name} {cmd.name}]({cmd_path}): "
+                f"* [neuro {group.name} {cmd.name}]({cmd_path}): "
                 f"{cmd.get_short_help_str()}"
             )
         out.append("")
@@ -149,7 +149,7 @@ def gen_shortcuts(commands, target_path, ctx):
 
     for cmd in commands:
         out.append(
-            f"- [neuro {cmd.name}](shortcuts.md#{cmd.name}): "
+            f"* [neuro {cmd.name}](shortcuts.md#{cmd.name}): "
             f"{cmd.get_short_help_str()}"
         )
     out.append("")
@@ -167,7 +167,7 @@ def gen_topics(target_path, ctx):
     for name in topics.list_commands(ctx):
         topic = topics.get_command(ctx, name)
         out.append(
-            f"- [neuro {topic.name}](topics.md#{topic.name}): "
+            f"* [neuro {topic.name}](topics.md#{topic.name}): "
             f"{topic.get_short_help_str()}"
         )
     out.append("")
