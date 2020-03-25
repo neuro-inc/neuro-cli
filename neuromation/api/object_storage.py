@@ -3,7 +3,6 @@ import base64
 import errno
 import fnmatch
 import hashlib
-import os
 import re
 import time
 from dataclasses import dataclass
@@ -17,6 +16,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
     cast,
 )
@@ -377,10 +377,9 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         assert dst.host
         bucket_name = dst.host
         key = _extract_key(dst)
-        size = os.stat(src_path).st_size
         # Be careful not to have too many opened files.
         async with self._file_sem:
-            content_md5 = await calc_md5(src_path)
+            content_md5, size = await calc_md5(src_path)
 
         for retry in retries(f"Fail to upload {dst}"):
             async with retry:
@@ -636,20 +635,22 @@ def _obj_status_from_response(
     )
 
 
-async def calc_md5(path: Path) -> str:
+async def calc_md5(path: Path) -> Tuple[str, int]:
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, _calc_md5_blocking, path)
 
 
-def _calc_md5_blocking(path: Path) -> str:
+def _calc_md5_blocking(path: Path) -> Tuple[str, int]:
     md5 = hashlib.md5()
+    size = 0
     with path.open("rb") as stream:
         while True:
             chunk = stream.read(READ_SIZE)
             if not chunk:
                 break
             md5.update(chunk)
-    return base64.b64encode(md5.digest()).decode("ascii")
+            size += len(chunk)
+    return base64.b64encode(md5.digest()).decode("ascii"), size
 
 
 async def _run_progress(

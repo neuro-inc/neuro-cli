@@ -71,7 +71,7 @@ def dir_list(path: Path) -> List[Dict[str, Any]]:
                     "path": str(item.relative_to(path)),
                     "dir": False,
                     "size": item.stat().st_size,
-                    "body": item.read_bytes(),
+                    "body": item.read_bytes().replace(b"\n\r", b"\n"),  # Fix Windows
                 }
             )
     return res
@@ -654,7 +654,7 @@ async def test_object_storage_calc_md5(tmp_path: Path) -> None:
     body_md5 = base64.b64encode(hashlib.md5(body).digest()).decode("ascii")
     with txt_file.open("wb") as f:
         f.write(body)
-    assert await calc_md5(txt_file) == body_md5
+    assert (await calc_md5(txt_file))[0] == body_md5
 
 
 async def test_object_storage_large_calc_md5(tmp_path: Path) -> None:
@@ -670,7 +670,7 @@ async def test_object_storage_large_calc_md5(tmp_path: Path) -> None:
     with txt_file.open("wb") as f:
         for _ in range(size_mb):
             f.write(body)
-    assert await calc_md5(txt_file) == body_md5
+    assert (await calc_md5(txt_file))[0] == body_md5
 
 
 # high level API
