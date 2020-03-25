@@ -4,6 +4,7 @@ ISORT_DIRS := neuromation tests build-tools setup.py
 BLACK_DIRS := $(ISORT_DIRS)
 MYPY_DIRS :=  neuromation tests
 FLAKE8_DIRS := $(ISORT_DIRS)
+PYTEST_ARGS=
 
 PYTEST_XDIST_NUM_THREADS ?= auto
 
@@ -63,6 +64,7 @@ e2e: .update-deps
 		--cov-report xml:coverage.xml \
 		--verbose \
 		--durations 10 \
+		$(PYTEST_ARGS) \
 		tests
 
 .PHONY: e2e-jobs
@@ -75,6 +77,7 @@ e2e-jobs: .update-deps
 		--cov-report xml:coverage.xml \
 		--verbose \
 		--durations 10 \
+		$(PYTEST_ARGS) \
 		tests
 
 .PHONY: e2e-sumo
@@ -87,6 +90,7 @@ e2e-sumo: .update-deps
 		--cov-report xml:coverage.xml \
 		--verbose \
 		--durations 10 \
+		$(PYTEST_ARGS) \
 		tests
 
 
@@ -97,6 +101,7 @@ test: .update-deps
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
+		$(PYTEST_ARGS) \
 		tests
 
 .PHONY: test-all
