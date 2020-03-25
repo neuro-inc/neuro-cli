@@ -323,7 +323,7 @@ ObjectListing
 PrefixListing
 =============
 
-.. class:: ObjectListing
+.. class:: PrefixListing
 
    *Read-only* :class:`~dataclasses.dataclass` for describing common prefixes for
    objects in non-recursive listing. You can treat it as a kind of *folder* on Object
