@@ -21,7 +21,7 @@ Object Storage
 
    Object Storage interaction subsystem, available as :attr:`Client.object_storage`.
 
-   The subsystem helps take advantage of many basic funtionality of Object Storage
+   The subsystem helps take advantage of many basic functionality of Object Storage
    solutions different cloud providers support. For AWS it would be S3, for GCP -
    Cloud Storage, etc.
 
@@ -149,7 +149,7 @@ Object Storage
              body=body_stream, size=size, content_md5=file_md5
          )
 
-      ``md5`` should be a Base64 encoding of the 128 bit md5 digest, e.g::
+      ``md5`` should be a Base64 encoding of the 128 bit digest, e.g::
 
             body = b"My file body"
             md5_digest = hashlib.md5(body).digest()
@@ -283,7 +283,7 @@ BucketListing
 
    .. attribute:: permission
 
-      Permission (*read*, *write* or *manage*), :class:`Action`. Deriviated from
+      Permission (*read*, *write* or *manage*), :class:`Action`. Derived from
       ACL permission action on ``object://{cluster_name}/{bucket_name}/`` resource.
 
    .. attribute:: uri
