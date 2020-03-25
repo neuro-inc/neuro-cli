@@ -251,14 +251,10 @@ async def test_object_storage_list_buckets(
 
     assert ret == [
         BucketListing(
-            name="foo",
-            modification_time=int(mtime1.timestamp()),
-            permission=Action.READ,
+            name="foo", creation_time=int(mtime1.timestamp()), permission=Action.READ,
         ),
         BucketListing(
-            name="bar",
-            modification_time=int(mtime2.timestamp()),
-            permission=Action.READ,
+            name="bar", creation_time=int(mtime2.timestamp()), permission=Action.READ,
         ),
     ]
 
