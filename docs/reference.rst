@@ -17,6 +17,7 @@ Reference
    config_reference
    jobs_reference
    storage_reference
+   object_storage_reference
    images_reference
    users_reference
    parse_reference

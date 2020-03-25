@@ -61,7 +61,7 @@ def _extract_key(uri: URL) -> str:
 @dataclass(frozen=True)
 class BucketListing:
     name: str
-    modification_time: int
+    creation_time: int
     # XXX: Add real bucket permission access level
     permission: Action = Action.READ
 
@@ -75,6 +75,10 @@ class BucketListing:
     def is_dir(self) -> bool:
         # Let's treat buckets as dirs in formatter output
         return True
+
+    @property
+    def modification_time(self) -> int:
+        return self.creation_time
 
 
 @dataclass(frozen=True)
@@ -321,6 +325,10 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         assert uri.host
         assert uri.path.endswith("/")
         await self.put_object(bucket_name=uri.host, key=_extract_key(uri), body=b"")
+
+    def make_url(self, bucket_name: str, key: str) -> URL:
+        key = key.lstrip("/")
+        return URL(f"object:{bucket_name}/{key}")
 
     async def upload_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None,
@@ -596,7 +604,7 @@ class ObjectStorage(metaclass=NoPublicConstructor):
 
 def _bucket_status_from_data(data: Dict[str, Any]) -> BucketListing:
     mtime = isoparse(data["creation_date"]).timestamp()
-    return BucketListing(name=data["name"], modification_time=int(mtime))
+    return BucketListing(name=data["name"], creation_time=int(mtime))
 
 
 def _obj_status_from_key(bucket_name: str, data: Dict[str, Any]) -> ObjectListing:

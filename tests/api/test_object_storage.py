@@ -749,6 +749,43 @@ async def test_object_storage_upload_regular_file_new_file(
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
 
 
+async def test_object_storage_upload_large_file(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+    tmp_path: Path,
+) -> None:
+    local_dir = tmp_path / "local"
+    local_dir.mkdir(exist_ok=True)
+    local_file = local_dir / "file.txt"
+
+    with local_file.open("wb") as f:
+        for i in range(1024):
+            f.write(b"yncuNRzU0xhKSqIh" * (4 * 1024))
+
+    progress = mock.Mock()
+
+    async with make_client(object_storage_server.make_url("/")) as client:
+        await client.object_storage.upload_file(
+            URL(local_file.as_uri()),
+            URL("object:foo/folder2/big_file"),
+            progress=progress,
+        )
+
+    expected = local_file.read_bytes()
+    uploaded = object_storage_contents["folder2/big_file"]
+    assert uploaded["body"] == expected
+
+    src = URL(local_file.as_uri())
+    dst = URL("object://foo/folder2/big_file")
+    file_size = len(expected)
+    progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
+    progress.step.assert_called_with(
+        StorageProgressStep(src, dst, file_size, file_size)
+    )
+    progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
+
+
 async def test_object_storage_upload_regular_file_to_existing_file(
     object_storage_server: Any,
     make_client: _MakeClient,
@@ -955,6 +992,46 @@ async def test_object_storage_download_regular_file_to_absent_file(
     src = URL("object://foo/test1.txt")
     dst = URL(local_file.as_uri())
     file_size = len(expected)
+    progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
+    progress.step.assert_called_with(
+        StorageProgressStep(src, dst, file_size, file_size)
+    )
+    progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
+
+
+async def test_object_storage_download_large_file(
+    object_storage_server: Any,
+    make_client: _MakeClient,
+    object_storage_contents: _ContentsObj,
+    tmp_path: Path,
+) -> None:
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
+    local_file = local_dir / "file.txt"
+    progress = mock.Mock()
+
+    # 16 * 4 = 64 MB of data
+    large_payload = b"yncuNRzU0xhKSqIh" * (4 * 1024 * 1024)
+    object_storage_contents["folder2/big_file"] = {
+        "key": "folder2/big_file",
+        "size": len(large_payload),
+        "last_modified": datetime(2019, 1, 3).timestamp(),
+        "body": large_payload,
+    }
+
+    async with make_client(object_storage_server.make_url("/")) as client:
+        await client.object_storage.download_file(
+            URL("object:foo/folder2/big_file"),
+            URL(local_file.as_uri()),
+            progress=progress,
+        )
+
+    downloaded = local_file.read_bytes()
+    assert downloaded == large_payload
+
+    src = URL("object://foo/folder2/big_file")
+    dst = URL(local_file.as_uri())
+    file_size = len(large_payload)
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
     progress.step.assert_called_with(
         StorageProgressStep(src, dst, file_size, file_size)
