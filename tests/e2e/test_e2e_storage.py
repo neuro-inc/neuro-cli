@@ -672,6 +672,9 @@ def test_tree(helper: Helper, data: _Data, tmp_path: Path) -> None:
     folder.mkdir()
     (folder / "foo").write_bytes(b"foo")
     (folder / "bar").write_bytes(b"bar")
+    subfolder = folder / "folder"
+    subfolder.mkdir()
+    (subfolder / "baz").write_bytes(b"baz")
 
     helper.run_cli(["storage", "cp", "-r", folder.as_uri(), helper.tmpstorage])
 
@@ -682,9 +685,11 @@ def test_tree(helper: Helper, data: _Data, tmp_path: Path) -> None:
         f"""\
          '{helper.tmpstorage}'
          ├── 'bar'
+         ├── 'folder'
+         │   └── 'baz'
          └── 'foo'
 
-         0 directories, 2 files"""
+         1 directories, 3 files"""
     )
     if sys.platform == "win32":
         trans = str.maketrans(
