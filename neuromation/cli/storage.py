@@ -886,7 +886,7 @@ async def tree(
     try:
         tree = await fetch_tree(root.client, uri, show_all)
         tree = dataclasses.replace(tree, name=str(path))
-    except (OSError, ResourceNotFound, IllegalArgumentError) as error:
+    except (OSError, ResourceNotFound) as error:
         log.error(f"cannot fetch tree for {uri}: {error}")
         errors = True
     else:

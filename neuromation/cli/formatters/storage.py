@@ -813,12 +813,12 @@ class TTYProgress(BaseStorageProgress):
         self.last_update_time = self.time_factory()
 
 
-@dataclass
+@dataclass(frozen=True)
 class Tree:
     name: str
     size: int
-    folders: List["Tree"]
-    files: List[FileStatus]
+    folders: Sequence["Tree"]
+    files: Sequence[FileStatus]
 
 
 class TreeFormatter:
