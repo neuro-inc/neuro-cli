@@ -93,6 +93,7 @@ e2e-sumo: .update-deps
 		$(PYTEST_ARGS) \
 		tests
 
+
 .PHONY: test
 test: .update-deps
 	pytest \
