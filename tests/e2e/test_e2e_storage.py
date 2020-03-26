@@ -667,10 +667,13 @@ def test_e2e_ls_show_hidden(tmp_path: Path, helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_tree(helper: Helper, data: _Data) -> None:
-    assets = Path(__file__).parent / "assets"
+def test_tree(helper: Helper, data: _Data, tmp_path: Path) -> None:
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / "bar").write_bytes(b"bar")
 
-    helper.run_cli(["storage", "cp", "-r", assets.as_uri(), helper.tmpstorage])
+    helper.run_cli(["storage", "cp", "-r", folder.as_uri(), helper.tmpstorage])
 
     capture = helper.run_cli(["storage", "tree", helper.tmpstorage])
     assert capture.err == ""
@@ -678,8 +681,8 @@ def test_tree(helper: Helper, data: _Data) -> None:
     expected = textwrap.dedent(
         f"""\
          '{helper.tmpstorage}'
-         ├── 'echo-tag.tar'
-         └── 'neuro-cli.tar'
+         ├── 'bar'
+         └── 'foo'
 
          0 directories, 2 files"""
     )
