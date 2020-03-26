@@ -26,6 +26,7 @@ def _job_entry(job_id: str) -> Dict[str, Any]:
         "id": job_id,
         "owner": "job-owner",
         "cluster_name": "default",
+        "uri": f"job://default/job-owner/{job_id}",
         "status": "running",
         "history": {
             "status": "running",
