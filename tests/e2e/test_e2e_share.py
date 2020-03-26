@@ -33,7 +33,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     expected_err2 = f"Using resource '{uri2}'"
     assert expected_err2 in captured.err
 
-    captured = helper.run_cli(["-v", "acl", "list"])
+    captured = helper.run_cli(["-v", "acl", "list", "--full-uri"])
     assert captured.err == ""
     result = captured.out.splitlines()
     assert (
@@ -42,7 +42,9 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     )
     assert f"user://{helper.username} read" in result
 
-    captured = helper.run_cli(["-v", "acl", "list", "--scheme", "storage"])
+    captured = helper.run_cli(
+        ["-v", "acl", "list", "--full-uri", "--scheme", "storage"]
+    )
     assert captured.err == ""
     result = captured.out.splitlines()
     assert (
@@ -52,7 +54,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     for line in result:
         assert line.startswith("storage://")
 
-    captured = helper.run_cli(["-v", "acl", "list", "--shared"])
+    captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"{uri} read public" in result
@@ -60,7 +62,9 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     for line in result:
         assert not line.endswith(f" {helper.username}")
 
-    captured = helper.run_cli(["-v", "acl", "list", "--shared", "--scheme", "storage"])
+    captured = helper.run_cli(
+        ["-v", "acl", "list", "--full-uri", "--shared", "--scheme", "storage"]
+    )
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"{uri} read public" in result
@@ -68,7 +72,9 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
         assert line.startswith("storage://")
         assert not line.endswith(f" {helper.username}")
 
-    captured = helper.run_cli(["-v", "acl", "list", "--shared", "--scheme", "image"])
+    captured = helper.run_cli(
+        ["-v", "acl", "list", "--full-uri", "--shared", "--scheme", "image"]
+    )
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"{uri2} write {another_test_user}" in result
@@ -84,7 +90,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     assert captured.out == ""
     assert expected_err2 in captured.err
 
-    captured = helper.run_cli(["-v", "acl", "list", "--shared"])
+    captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
     assert f"{uri} read public" not in result

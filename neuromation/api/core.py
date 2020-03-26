@@ -151,7 +151,11 @@ class _Core:
             if 400 <= resp.status:
                 err_text = await resp.text()
                 if resp.content_type.lower() == "application/json":
-                    payload = jsonmodule.loads(err_text)
+                    try:
+                        payload = jsonmodule.loads(err_text)
+                    except ValueError:
+                        # One example would be a HEAD request for application/json
+                        payload = {}
                     if "error" in payload:
                         err_text = payload["error"]
                 else:

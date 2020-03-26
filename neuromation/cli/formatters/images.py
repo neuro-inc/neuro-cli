@@ -15,8 +15,10 @@ from neuromation.api.abc import (
     ImageCommitStarted,
     ImageProgressSave,
 )
-from neuromation.cli.formatters.ftable import table
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
+
+from .ftable import table
+from .utils import ImageFormatter
 
 
 class DockerImageProgress(AbstractDockerImageProgress):
@@ -138,6 +140,9 @@ class StreamDockerImageProgress(DockerImageProgress):
 
 
 class BaseImagesFormatter:
+    def __init__(self, image_formatter: ImageFormatter) -> None:
+        self._format_image = image_formatter
+
     @abc.abstractmethod
     def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
         raise NotImplementedError
@@ -145,7 +150,9 @@ class BaseImagesFormatter:
 
 class ShortImagesFormatter(BaseImagesFormatter):
     def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
-        return (click.style(str(image), underline=True) for image in images)
+        return (
+            click.style(self._format_image(image), underline=True) for image in images
+        )
 
 
 class LongImagesFormatter(BaseImagesFormatter):
@@ -156,7 +163,7 @@ class LongImagesFormatter(BaseImagesFormatter):
         ]
         rows = [
             [
-                click.style(str(image), underline=True),
+                click.style(self._format_image(image), underline=True),
                 click.style(image.as_docker_url(), underline=True),
             ]
             for image in images

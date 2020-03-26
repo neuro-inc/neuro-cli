@@ -141,8 +141,8 @@ class TestClustersFormatter:
               \x1b[1mStatus: \x1b[0mDeployed
               \x1b[1mNode pools:\x1b[0m
                 Machine       CPU  Memory                   GPU  Size
-                n1-highmem-8  7.0     45G                           2
-                n1-highmem-8  7.0     45G  1 x nvidia-tesla-k80     2"""
+                n1-highmem-8  7.0   45.0G                           2
+                n1-highmem-8  7.0   45.0G  1 x nvidia-tesla-k80     2"""  # noqa: E501, ignore line length
         )
         assert "\n".join(formatter(clusters)) == expected_out
 
@@ -176,7 +176,7 @@ class TestClustersFormatter:
               \x1b[1mRegion: \x1b[0mus-central1
               \x1b[1mNode pools:\x1b[0m
                 Machine       CPU  Memory  Preemptible  GPU  TPU  Min  Max  Idle
-                n1-highmem-8  7.0     45G      {self._yes}           {self._yes}    1    2     1
-                n1-highmem-8  7.0     45G       {self._no}            {self._no}    1    2     0"""  # noqa: E501, ignore line length
+                n1-highmem-8  7.0   45.0G      {self._yes}           {self._yes}    1    2     1
+                n1-highmem-8  7.0   45.0G       {self._no}            {self._no}    1    2     0"""  # noqa: E501, ignore line length
         )
         assert "\n".join(formatter(clusters)) == expected_out

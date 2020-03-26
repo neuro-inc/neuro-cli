@@ -1,0 +1,1 @@
+Changed interpretatation of cluster related URIs (with schemes `storage:`, `image:` and `job:`) with missed host and path started with `/`. `storage:/user/path` is expanded now to `storage://{defaultcluster}/user/path`, so you do not need to specify the cluster name when refer to other user's resources on the same cluster.
