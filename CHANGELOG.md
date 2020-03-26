@@ -5,6 +5,16 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.3.23 (2020-03-23)
+================================
+
+Bugfixes
+--------
+
+
+- Bump `typing_extensions` dependency version to satisfy CLI requirements. ([#1421](https://github.com/neuromation/platform-api-clients/issues/1421))
+
+
 Neuromation 20.3.20 (2020-03-20)
 ================================
 

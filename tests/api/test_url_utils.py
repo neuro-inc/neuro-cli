@@ -84,7 +84,7 @@ def test_uri_from_cli_relative_storage_uri() -> None:
     uri = uri_from_cli("storage:path/to/file.txt", "testuser", "test-cluster")
     assert str(uri) == "storage://test-cluster/testuser/path/to/file.txt"
     uri = uri_from_cli("storage:/path/to/file.txt", "testuser", "test-cluster")
-    assert str(uri) == "storage://path/to/file.txt"
+    assert str(uri) == "storage://test-cluster/path/to/file.txt"
 
 
 def test_uri_from_cli_absolute_storage_uri() -> None:
@@ -93,7 +93,7 @@ def test_uri_from_cli_absolute_storage_uri() -> None:
     )
     assert str(uri) == "storage://otheruser/path/to/file.txt"
     uri = uri_from_cli("storage:///path/to/file.txt", "testuser", "test-cluster")
-    assert str(uri) == "storage://path/to/file.txt"
+    assert str(uri) == "storage://test-cluster/path/to/file.txt"
 
 
 def test_uri_from_cli_numberic_path() -> None:
@@ -166,9 +166,9 @@ async def test_normalize_storage_path_uri__1_slash_absolute(client: Client) -> N
     url = URL("storage:/path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username, "test-cluster")
     assert url.scheme == "storage"
-    assert url.host == "path"
-    assert url.path == "/to/file.txt"
-    assert str(url) == "storage://path/to/file.txt"
+    assert url.host == "test-cluster"
+    assert url.path == "/path/to/file.txt"
+    assert str(url) == "storage://test-cluster/path/to/file.txt"
 
 
 async def test_normalize_local_path_uri__1_slash_absolute(pwd: Path) -> None:
@@ -198,9 +198,9 @@ async def test_normalize_storage_path_uri__3_slashes_relative(client: Client) ->
     url = URL("storage:///path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username, "test-cluster")
     assert url.scheme == "storage"
-    assert url.host == "path"
-    assert url.path == "/to/file.txt"
-    assert str(url) == "storage://path/to/file.txt"
+    assert url.host == "test-cluster"
+    assert url.path == "/path/to/file.txt"
+    assert str(url) == "storage://test-cluster/path/to/file.txt"
 
 
 async def test_normalize_local_path_uri__3_slashes_relative(pwd: Path) -> None:
@@ -215,9 +215,9 @@ async def test_normalize_storage_path_uri__4_slashes_relative(client: Client) ->
     url = URL("storage:////path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username, "test-cluster")
     assert url.scheme == "storage"
-    assert url.host == "path"
-    assert url.path == "/to/file.txt"
-    assert str(url) == "storage://path/to/file.txt"
+    assert url.host == "test-cluster"
+    assert url.path == "/path/to/file.txt"
+    assert str(url) == "storage://test-cluster/path/to/file.txt"
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="Doesn't work on Windows")
@@ -369,9 +369,9 @@ async def test_normalize_storage_path_uri__3_slashes__double(client: Client) -> 
     url = URL("storage:///path/to/file.txt")
     url = normalize_storage_path_uri(url, client.username, "test-cluster")
     assert url.scheme == "storage"
-    assert url.host == "path"
-    assert url.path == "/to/file.txt"
-    assert str(url) == "storage://path/to/file.txt"
+    assert url.host == "test-cluster"
+    assert url.path == "/path/to/file.txt"
+    assert str(url) == "storage://test-cluster/path/to/file.txt"
 
 
 async def test_normalize_local_path_uri__3_slashes__double(pwd: Path) -> None:

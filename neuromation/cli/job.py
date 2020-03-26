@@ -27,6 +27,11 @@ from neuromation.api import (
     Volume,
 )
 from neuromation.cli.formatters import DockerImageProgress
+from neuromation.cli.formatters.utils import (
+    URIFormatter,
+    image_formatter,
+    uri_formatter,
+)
 
 from .click_types import (
     JOB_COLUMNS,
@@ -557,6 +562,7 @@ async def _print_logs(root: Root, job: str) -> None:
     ),
     default=None,
 )
+@option("--full-uri", is_flag=True, help="Output full image URI.")
 async def ls(
     root: Root,
     status: Sequence[str],
@@ -567,6 +573,7 @@ async def ls(
     description: str,
     wide: bool,
     format: Optional[List[JobColumnInfo]],
+    full_uri: bool,
 ) -> None:
     """
     List all jobs.
@@ -594,6 +601,13 @@ async def ls(
     if description:
         jobs = [job for job in jobs if job.description == description]
 
+    uri_fmtr: URIFormatter
+    if full_uri:
+        uri_fmtr = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username, cluster_name=root.client.cluster_name
+        )
     if root.quiet:
         formatter: BaseJobsFormatter = SimpleJobsFormatter()
     else:
@@ -601,14 +615,18 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        formatter = TabularJobsFormatter(width, root.client.username, format)
+        image_fmtr = image_formatter(uri_formatter=uri_fmtr)
+        formatter = TabularJobsFormatter(
+            width, root.client.username, format, image_formatter=image_fmtr
+        )
 
     pager_maybe(formatter(jobs), root.tty, root.terminal_size)
 
 
 @command()
 @argument("job")
-async def status(root: Root, job: str) -> None:
+@option("--full-uri", is_flag=True, help="Output full URI.")
+async def status(root: Root, job: str, full_uri: bool) -> None:
     """
     Display status of a job.
     """
@@ -623,7 +641,14 @@ async def status(root: Root, job: str) -> None:
         },
     )
     res = await root.client.jobs.status(id)
-    click.echo(JobStatusFormatter()(res))
+    uri_fmtr: URIFormatter
+    if full_uri:
+        uri_fmtr = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username, cluster_name=root.client.cluster_name
+        )
+    click.echo(JobStatusFormatter(uri_formatter=uri_fmtr)(res))
 
 
 @command()

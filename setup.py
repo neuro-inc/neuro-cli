@@ -37,7 +37,7 @@ setup(
         'colorama>=0.4; platform_system=="Windows"',
         "humanize>=0.5",
         "psutil>=5.5.0",
-        "typing_extensions>=3.7.2",
+        "typing_extensions>=3.7.4",
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead
         "certifi",
