@@ -675,12 +675,14 @@ def test_tree(helper: Helper, data: _Data) -> None:
     capture = helper.run_cli(["storage", "tree", helper.tmpstorage])
     assert capture.err == ""
 
-    expected = textwrap.dedent(f"""\
+    expected = textwrap.dedent(
+        f"""\
          '{helper.tmpstorage}'
          ├── 'echo-tag.tar'
          └── 'neuro-cli.tar'
 
-         0 directories, 2 files""")
+         0 directories, 2 files"""
+    )
     if sys.platform == "win32":
         trans = str.maketrans(TreeFormatter.ANSI_DELIMS, TreeFormatter.SIMPLE_DELIMS)
         expected = expected.translate(trans)
