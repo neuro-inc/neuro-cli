@@ -108,6 +108,7 @@ class JobDescription:
     history: JobStatusHistory
     container: Container
     is_preemptible: bool
+    uri: URL
     name: Optional[str] = None
     tags: Sequence[str] = ()
     description: Optional[str] = None
@@ -556,6 +557,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         http_url=http_url_named or http_url,
         ssh_server=ssh_server,
         internal_hostname=internal_hostname,
+        uri=URL(res["uri"]),
     )
 
 
