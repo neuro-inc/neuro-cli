@@ -471,12 +471,18 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
         image = root.client.parse.remote_image(uri, tag_option=TagOption.DENY)
         uri = str(image)
 
-    return uri_from_cli(
+    uri_res = uri_from_cli(
         uri,
         root.client.username,
         root.client.cluster_name,
-        allowed_schemes=("storage", "image", "job"),
+        allowed_schemes=("storage", "image" "job", "object"),
     )
+    # URI's for object storage can only operate on bucket level
+    if uri_res.scheme == "object" and "/" in uri_res.path.strip("/"):
+        raise ValueError(
+            "Only bucket level permissions are supported for Object Storage"
+        )
+    return uri_res
 
 
 def parse_file_resource(uri: str, root: Root) -> URL:
@@ -488,6 +494,23 @@ def parse_file_resource(uri: str, root: Root) -> URL:
         root.client.username,
         root.client.cluster_name,
         allowed_schemes=("file", "storage"),
+    )
+
+
+def parse_obj_resource(uri: str, root: Root) -> URL:
+    # Username will not be used, just part of the signature
+    return uri_from_cli(
+        uri, root.client.username, root.client.cluster_name, allowed_schemes=("object",)
+    )
+
+
+def parse_obj_or_file_resource(uri: str, root: Root) -> URL:
+    # Username will not be used, just part of the signature
+    return uri_from_cli(
+        uri,
+        root.client.username,
+        root.client.cluster_name,
+        allowed_schemes=("object", "file"),
     )
 
 

@@ -51,7 +51,10 @@ ProgressQueueItem = Optional[Any]
 
 
 def _format_bucket_uri(bucket_name: str, key: str = "") -> URL:
-    return URL.build(scheme="object", host=bucket_name, path="/" + key.lstrip("/"))
+    if key:
+        return URL(f"object:{bucket_name}/{key}")
+    else:
+        return URL(f"object:{bucket_name}")
 
 
 def _extract_key(uri: URL) -> str:

@@ -10,6 +10,11 @@ from .jobs import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
+from .object_storage import (
+    BaseObjectFormatter,
+    LongObjectFormatter,
+    SimpleObjectFormatter,
+)
 from .storage import (
     BaseFilesFormatter,
     FilesSorter,
@@ -32,6 +37,10 @@ __all__ = [
     "JobTelemetryFormatter",
     "JobStartProgress",
     "ConfigFormatter",
+    "BaseObjectFormatter",
+    "LongObjectFormatter",
+    "SimpleObjectFormatter",
+    "VerticalColumnsObjectFormatter",
     "BaseFilesFormatter",
     "LongFilesFormatter",
     "SimpleFilesFormatter",
