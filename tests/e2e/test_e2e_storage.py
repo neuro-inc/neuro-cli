@@ -684,6 +684,8 @@ def test_tree(helper: Helper, data: _Data) -> None:
          0 directories, 2 files"""
     )
     if sys.platform == "win32":
-        trans = str.maketrans(TreeFormatter.ANSI_DELIMS, TreeFormatter.SIMPLE_DELIMS)
+        trans = str.maketrans(
+            "".join(TreeFormatter.ANSI_DELIMS), "".join(TreeFormatter.SIMPLE_DELIMS)
+        )
         expected = expected.translate(trans)
     assert capture.out == expected
