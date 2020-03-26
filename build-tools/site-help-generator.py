@@ -15,17 +15,10 @@ from neuromation.cli.utils import split_examples
 HERE = Path(sys.argv[0]).resolve().parent
 
 
-def write_meta(meta, out):
-    out.append("---")
-    for key, val in meta.items():
-        out.append(f'{key}: "{val}"')
-    out.append("---")
-    out.append("")
-
-
-def gen_command(out, index, index2, cmd, target_path, parent_ctx):
+def gen_command(out, cmd, parent_ctx):
     with click.Context(cmd, parent=parent_ctx, info_name=cmd.name) as ctx:
-        out.append(f"##{cmd.name}")
+        out.append(f"### {cmd.name}")
+        out.append("")
 
         out.append(cmd.get_short_help_str())
         out.append("")
@@ -34,7 +27,7 @@ def gen_command(out, index, index2, cmd, target_path, parent_ctx):
             out.append("~~DEPRECATED~~")
             out.append("")
 
-        out.append("### Usage")
+        out.append("#### Usage")
         out.append("")
         out.append("```bash")
         pieces = cmd.collect_usage_pieces(ctx)
@@ -49,7 +42,7 @@ def gen_command(out, index, index2, cmd, target_path, parent_ctx):
         out.append("")
 
         for example in examples:
-            out.append("### Examples")
+            out.append("#### Examples")
             out.append("")
             out.append("```bash")
             example2 = click.unstyle(example)
@@ -73,7 +66,7 @@ def gen_command(out, index, index2, cmd, target_path, parent_ctx):
                 continue
             name, descr = rv
 
-            # durty code for wrapping options with backticks
+            # dirty code for wrapping options with backticks
             l4 = []
             l1 = re.split(" ?/ ?", name)
             for part in l1:
@@ -92,7 +85,7 @@ def gen_command(out, index, index2, cmd, target_path, parent_ctx):
         name_sep = "-" * w1
         descr_sep = "-" * w2
 
-        out.append("### Options")
+        out.append("#### Options")
         out.append("")
         out.append(f"| {name_title} | {descr_title} |")
         out.append(f"| {name_sep} | {descr_sep} |")
@@ -105,22 +98,17 @@ def gen_command(out, index, index2, cmd, target_path, parent_ctx):
         out.append("")
 
 
-def gen_group(index, group, target_path, parent_ctx):
+def gen_group(group, target_path, parent_ctx):
     out = []
     with click.Context(group, parent=parent_ctx, info_name=group.name) as ctx:
-        meta = {
-            "title": " ".join(["neuro", group.name]),
-            "short_title": group.name,
-            "category": group.name,
-            "path": group.name,
-            "index": "true",
-        }
-        write_meta(meta, out)
+        out.append(f"# {group.name}")
+        out.append("")
 
         out.append(group.get_short_help_str())
         out.append("")
 
-        out.append("### Usage")
+        out.append("## Usage")
+        out.append("")
         out.append("```bash")
         pieces = group.collect_usage_pieces(ctx)
         out.append(f"neuro {group.name} " + " ".join(pieces))
@@ -139,67 +127,47 @@ def gen_group(index, group, target_path, parent_ctx):
                 continue
             commands.append(cmd)
 
-        out.append("### Commands")
+        out.append("## Commands")
         out.append("")
         for cmd in commands:
-            cmd_path = f"docs/cli/{group.name}#{cmd.name}"
+            cmd_path = f"{group.name}.md#{cmd.name}"
             out.append(
-                f"- [neuro {group.name} {cmd.name}]({cmd_path}): "
+                f"* [neuro {group.name} {cmd.name}]({cmd_path}): "
                 f"{cmd.get_short_help_str()}"
             )
         out.append("")
 
         for index2, cmd in enumerate(commands, 1):
-            gen_command(out, index, index2, cmd, target_path, ctx)
+            gen_command(out, cmd, ctx)
 
-        fname = target_path / f"{index:02d}__{group.name}.md"
+        fname = target_path / f"{group.name}.md"
         fname.write_text("\n".join(out))
 
 
-def gen_shortcuts(index, commands, target_path, ctx):
-    out = []
-    meta = {
-        "title": "Shortcuts",
-        "path": "shortcuts",
-        "category": "shortcuts",
-        "index": "true",
-    }
-    write_meta(meta, out)
-
-    out.append("### Shortcuts")
-    out.append("")
+def gen_shortcuts(commands, target_path, ctx):
+    out = ["# Shortcuts", "", "## Commands", ""]
 
     for cmd in commands:
         out.append(
-            f"- [neuro {cmd.name}](docs/cli/shortcuts#{cmd.name}): "
+            f"* [neuro {cmd.name}](shortcuts.md#{cmd.name}): "
             f"{cmd.get_short_help_str()}"
         )
     out.append("")
 
     for index2, cmd in enumerate(commands, 1):
-        gen_command(out, index, index2, cmd, target_path, ctx)
+        gen_command(out, cmd, ctx)
 
-    fname = target_path / f"{index:02d}__shortcuts.md"
+    fname = target_path / f"shortcuts.md"
     fname.write_text("\n".join(out))
 
 
-def gen_topics(index, target_path, ctx):
-    out = []
-    meta = {
-        "title": "Topics",
-        "path": "topics",
-        "category": "topics",
-        "index": "true",
-    }
-    write_meta(meta, out)
-
-    out.append("### Topics")
-    out.append("")
+def gen_topics(target_path, ctx):
+    out = ["# Topics", ""]
 
     for name in topics.list_commands(ctx):
         topic = topics.get_command(ctx, name)
         out.append(
-            f"- [neuro {topic.name}](docs/cli/topics#{topic.name}): "
+            f"* [neuro {topic.name}](topics.md#{topic.name}): "
             f"{topic.get_short_help_str()}"
         )
     out.append("")
@@ -210,7 +178,7 @@ def gen_topics(index, target_path, ctx):
         out.append("")
         out.append(topic.help)
 
-    fname = target_path / f"{index:02d}__topics.md"
+    fname = target_path / f"topics.md"
     fname.write_text("\n".join(out))
 
 
@@ -221,12 +189,12 @@ def gen_topics(index, target_path, ctx):
         exists=True, file_okay=False, dir_okay=True, writable=True, resolve_path=True
     ),
     help="Target dir in platform-web project",
-    default=str(HERE.parent.parent / "platform-web/content/docs/cli"),
+    default=str(HERE.parent.parent / "platform-docs/references/cli-reference"),
     show_default=True,
 )
 def main(target_dir):
     target_path = Path(target_dir)
-    EXCLUDES = "cli.md"
+    EXCLUDES = "README.md"
     for child in target_path.iterdir():
         if child.suffix != ".md":
             continue
@@ -253,13 +221,13 @@ def main(target_dir):
             else:
                 shortcuts.append(cmd)
 
-    gen_shortcuts(1, shortcuts, target_path, ctx)
+    gen_shortcuts(shortcuts, target_path, ctx)
 
     for i, group in enumerate(groups, 2):
-        gen_group(i, group, target_path, ctx)
+        gen_group(group, target_path, ctx)
 
     # Topics generator produces ugly looking markdown, sorry
-    # gen_topics(i + 1, target_path, ctx)
+    gen_topics(target_path, ctx)
 
 
 if __name__ == "__main__":
