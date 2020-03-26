@@ -847,7 +847,7 @@ class TreeFormatter:
     def __call__(self, tree: Tree) -> List[str]:
         ret = self.listdir(tree)
         ret.append("")
-        ret.append(f"{self._numdirs} directories, {self._numfiles} files ")
+        ret.append(f"{self._numdirs} directories, {self._numfiles} files")
         return ret
 
     def listdir(self, tree: Tree) -> List[str]:
