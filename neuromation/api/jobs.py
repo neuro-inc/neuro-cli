@@ -116,9 +116,6 @@ class JobDescription:
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
 
-    def __post_init__(self) -> None:
-        assert self.uri == URL(f"job://{self.cluster_name}/{self.owner}/{self.id}")
-
 
 @dataclass(frozen=True)
 class JobTelemetry:
