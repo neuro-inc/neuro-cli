@@ -44,6 +44,7 @@ def job_descr_no_name() -> JobDescription:
         id=TEST_JOB_ID,
         owner="owner",
         cluster_name="default",
+        uri=URL(f"job://default/owner/{TEST_JOB_ID}"),
         history=JobStatusHistory(
             status=JobStatus.PENDING,
             reason="ErrorReason",
@@ -69,6 +70,7 @@ def job_descr() -> JobDescription:
         name=TEST_JOB_NAME,
         owner="owner",
         cluster_name="default",
+        uri=URL(f"job://default/owner/{TEST_JOB_ID}"),
         history=JobStatusHistory(
             status=JobStatus.PENDING,
             reason="ErrorReason",
@@ -172,6 +174,7 @@ class TestJobStartProgress:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             description="test job description",
             http_url=URL("http://local.host.test/"),
             history=JobStatusHistory(
@@ -239,6 +242,7 @@ class TestJobOutputFormatter:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             name="test-job-name",
             description="test job description",
             http_url=URL("http://local.host.test/"),
@@ -291,6 +295,7 @@ class TestJobOutputFormatter:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             tags=["tag1", "tag2", "tag3"],
             description="test job description",
             http_url=URL("http://local.host.test/"),
@@ -343,6 +348,7 @@ class TestJobOutputFormatter:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             description="test job description",
             http_url=URL("http://local.host.test/"),
             history=JobStatusHistory(
@@ -409,6 +415,7 @@ class TestJobOutputFormatter:
             is_preemptible=True,
             owner="owner",
             cluster_name="default",
+            uri=URL("job://default/owner/test-job"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -449,6 +456,7 @@ class TestJobOutputFormatter:
             is_preemptible=True,
             owner="owner",
             cluster_name="default",
+            uri=URL("job://default/owner/test-job"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -489,6 +497,7 @@ class TestJobOutputFormatter:
             is_preemptible=True,
             owner="owner",
             cluster_name="default",
+            uri=URL("job://default/owner/test-job"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -512,6 +521,7 @@ class TestJobOutputFormatter:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             description="test job description",
             history=JobStatusHistory(
                 status=JobStatus.RUNNING,
@@ -557,6 +567,7 @@ class TestJobOutputFormatter:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             description="test job description",
             history=JobStatusHistory(
                 status=JobStatus.RUNNING,
@@ -604,6 +615,7 @@ class TestJobOutputFormatter:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             name="test-job-name",
             description="test job description",
             http_url=URL("http://local.host.test/"),
@@ -683,6 +695,7 @@ class TestJobOutputFormatter:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             name="test-job-name",
             description="test job description",
             http_url=URL("http://local.host.test/"),
@@ -820,6 +833,7 @@ class TestSimpleJobsFormatter:
                 id="job-42687e7c-6c76-4857-a6a7-1166f8295391",
                 owner="owner",
                 cluster_name="default",
+                uri=URL("job://default/owner/job-42687e7c-6c76-4857-a6a7-1166f8295391"),
                 history=JobStatusHistory(
                     status=JobStatus.PENDING,
                     reason="ErrorReason",
@@ -841,6 +855,7 @@ class TestSimpleJobsFormatter:
                 name="this-job-has-a-name",
                 owner="owner",
                 cluster_name="default",
+                uri=URL("job://default/owner/job-cf33bd55-9e3b-4df7-a894-9c148a908a66"),
                 history=JobStatusHistory(
                     status=JobStatus.FAILED,
                     reason="ErrorReason",
@@ -880,6 +895,7 @@ class TestTabularJobRow:
             name=name,
             owner="owner",
             cluster_name="default",
+            uri=URL("job://default/owner/job-1f5ab792-e534-4bb4-be56-8af1ce722692"),
             description="some",
             history=JobStatusHistory(
                 status=status,
@@ -994,6 +1010,7 @@ class TestTabularJobsFormatter:
             id="j",
             owner=owner_name,
             cluster_name="dc",
+            uri=URL(f"job://dc/{owner_name}/j"),
             name="name",
             description="d",
             history=JobStatusHistory(
@@ -1042,6 +1059,10 @@ class TestTabularJobsFormatter:
                 name="name1",
                 owner=owner_name,
                 cluster_name="default",
+                uri=URL(
+                    f"job://default/{owner_name}/"
+                    f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82"
+                ),
                 description="some description long long long long",
                 history=JobStatusHistory(
                     status=JobStatus.FAILED,
@@ -1065,6 +1086,10 @@ class TestTabularJobsFormatter:
                 name="name2",
                 owner=owner_name,
                 cluster_name="default",
+                uri=URL(
+                    f"job://default/{owner_name}/"
+                    f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84"
+                ),
                 description="some description",
                 history=JobStatusHistory(
                     status=JobStatus.PENDING,
@@ -1106,6 +1131,7 @@ class TestTabularJobsFormatter:
             id="j",
             owner="owner",
             cluster_name="dc",
+            uri=URL("job://dc/owner/j"),
             name="name",
             description="d",
             history=JobStatusHistory(

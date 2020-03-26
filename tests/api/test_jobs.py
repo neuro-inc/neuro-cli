@@ -465,6 +465,7 @@ async def test_status_failed(
         "is_preemptible": True,
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-id",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -525,6 +526,7 @@ async def test_status_with_ssh_and_http(
         "is_preemptible": True,
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-id",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -585,6 +587,7 @@ async def test_status_with_tpu(
         "is_preemptible": True,
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-id",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -644,6 +647,7 @@ async def test_job_run(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -741,6 +745,7 @@ async def test_job_run_with_name_and_description(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -844,6 +849,7 @@ async def test_job_run_with_tags(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -943,6 +949,7 @@ async def test_job_run_no_volumes(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1023,6 +1030,7 @@ async def test_job_run_preemptible(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1125,6 +1133,7 @@ async def test_job_run_schedule_timeout(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1197,6 +1206,7 @@ async def test_job_run_tpu(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1328,6 +1338,7 @@ def create_job_response(
         "is_preemptible": True,
         "owner": owner,
         "cluster_name": "default",
+        "uri": f"job://default/{owner}/{id}",
     }
     if name:
         result["name"] = name

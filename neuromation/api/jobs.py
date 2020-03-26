@@ -108,12 +108,16 @@ class JobDescription:
     history: JobStatusHistory
     container: Container
     is_preemptible: bool
+    uri: URL
     name: Optional[str] = None
     tags: Sequence[str] = ()
     description: Optional[str] = None
     http_url: URL = URL()
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        assert self.uri == URL(f"job://{self.cluster_name}/{self.owner}/{self.id}")
 
 
 @dataclass(frozen=True)
@@ -556,6 +560,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         http_url=http_url_named or http_url,
         ssh_server=ssh_server,
         internal_hostname=internal_hostname,
+        uri=URL(res["uri"]),
     )
 
 
