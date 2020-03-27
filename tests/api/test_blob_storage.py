@@ -12,15 +12,15 @@ from yarl import URL
 
 from neuromation.api import (
     Action,
+    BlobListing,
     BucketListing,
     Client,
-    ObjectListing,
     PrefixListing,
     StorageProgressComplete,
     StorageProgressStart,
     StorageProgressStep,
 )
-from neuromation.api.object_storage import calc_md5
+from neuromation.api.blob_storage import calc_md5
 from tests import _TestServerFactory
 
 
@@ -31,16 +31,16 @@ FOLDER = Path(__file__).parent
 DATA_FOLDER = FOLDER / "data"
 
 
-class OBSUrlRotes:
+class BlobUrlRotes:
 
-    LIST_BUCKETS = r"/obs/b/"
-    PUT_BUCKET = r"/obs/b/{bucket}"
-    DELETE_BUCKET = r"/obs/b/{bucket}"
+    LIST_BUCKETS = r"/blob/b/"
+    PUT_BUCKET = r"/blob/b/{bucket}"
+    DELETE_BUCKET = r"/blob/b/{bucket}"
 
-    LIST_OBJECTS = r"/obs/o/{bucket}"
-    HEAD_OBJECT = r"/obs/o/{bucket}/{path:.+}"
-    GET_OBJECT = r"/obs/o/{bucket}/{path:.+}"
-    PUT_OBJECT = r"/obs/o/{bucket}/{path:.+}"
+    LIST_OBJECTS = r"/blob/o/{bucket}"
+    HEAD_OBJECT = r"/blob/o/{bucket}/{path:.+}"
+    GET_OBJECT = r"/blob/o/{bucket}/{path:.+}"
+    PUT_OBJECT = r"/blob/o/{bucket}/{path:.+}"
 
 
 # Bucket `foo` structure
@@ -79,7 +79,7 @@ def dir_list(path: Path) -> List[Dict[str, Any]]:
 
 
 @pytest.fixture
-def object_storage_contents() -> _ContentsObj:
+def blob_storage_contents() -> _ContentsObj:
     mtime1 = datetime(2019, 1, 1)
     mtime2 = datetime(2019, 1, 2)
 
@@ -125,12 +125,12 @@ def object_storage_contents() -> _ContentsObj:
 
 
 @pytest.fixture
-async def object_storage_server(
-    aiohttp_server: _TestServerFactory, object_storage_contents: _ContentsObj,
+async def blob_storage_server(
+    aiohttp_server: _TestServerFactory, blob_storage_contents: _ContentsObj,
 ) -> Any:
-    """ Minimal functional Object Storage server implementation
+    """ Minimal functional Blob Storage server implementation
     """
-    CONTENTS = object_storage_contents
+    CONTENTS = blob_storage_contents
 
     def with_keys(d: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
         res = {}
@@ -150,7 +150,7 @@ async def object_storage_server(
             [{"name": "foo", "creation_date": datetime(2019, 1, 1).isoformat()}]
         )
 
-    async def list_objects(request: web.Request) -> web.Response:
+    async def list_blobs(request: web.Request) -> web.Response:
         assert "b3" in request.headers
         assert request.match_info["bucket"] == "foo"
 
@@ -180,53 +180,53 @@ async def object_storage_server(
             }
         )
 
-    async def get_object(request: web.Request) -> web.StreamResponse:
+    async def get_blob(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
         assert request.match_info["bucket"] == "foo"
 
         key = request.match_info["path"]
         if key not in CONTENTS:
             raise web.HTTPNotFound()
-        obj = CONTENTS[key]
+        blob = CONTENTS[key]
 
         resp = web.StreamResponse(status=200)
-        etag = hashlib.md5(obj["body"]).hexdigest()
+        etag = hashlib.md5(blob["body"]).hexdigest()
         resp.headers.update({"ETag": repr(etag)})
-        resp.last_modified = obj["last_modified"]
-        resp.content_length = len(obj["body"])
+        resp.last_modified = blob["last_modified"]
+        resp.content_length = len(blob["body"])
         resp.content_type = "plain/text"
         await resp.prepare(request)
-        await resp.write(obj["body"])
+        await resp.write(blob["body"])
         return resp
 
-    async def put_object(request: web.Request) -> web.Response:
+    async def put_blob(request: web.Request) -> web.Response:
         assert "b3" in request.headers
         assert request.match_info["bucket"] == "foo"
 
         key = request.match_info["path"]
         body = await request.content.read()
-        obj = {
+        blob = {
             "key": key,
             "size": len(body),
             "last_modified": datetime.now().timestamp(),
             "body": body,
         }
-        CONTENTS[key] = obj
-        etag = hashlib.md5(obj["body"]).hexdigest()
+        CONTENTS[key] = blob
+        etag = hashlib.md5(blob["body"]).hexdigest()
 
         return web.Response(headers={"ETag": repr(etag)})
 
     app = web.Application()
-    app.router.add_get(OBSUrlRotes.LIST_BUCKETS, list_buckets)
-    app.router.add_get(OBSUrlRotes.LIST_OBJECTS, list_objects)
+    app.router.add_get(BlobUrlRotes.LIST_BUCKETS, list_buckets)
+    app.router.add_get(BlobUrlRotes.LIST_OBJECTS, list_blobs)
     # HEAD will also use this
-    app.router.add_get(OBSUrlRotes.GET_OBJECT, get_object)
-    app.router.add_put(OBSUrlRotes.PUT_OBJECT, put_object)
+    app.router.add_get(BlobUrlRotes.GET_OBJECT, get_blob)
+    app.router.add_put(BlobUrlRotes.PUT_OBJECT, put_blob)
 
     return await aiohttp_server(app)
 
 
-async def test_object_storage_list_buckets(
+async def test_blob_storage_list_buckets(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     mtime1 = datetime.now()
@@ -238,17 +238,17 @@ async def test_object_storage_list_buckets(
 
     async def handler(request: web.Request) -> web.Response:
         assert "b3" in request.headers
-        assert request.path == OBSUrlRotes.LIST_BUCKETS
+        assert request.path == BlobUrlRotes.LIST_BUCKETS
         assert request.query == {}
         return web.json_response(JSON)
 
     app = web.Application()
-    app.router.add_get(OBSUrlRotes.LIST_BUCKETS, handler)
+    app.router.add_get(BlobUrlRotes.LIST_BUCKETS, handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.object_storage.list_buckets()
+        ret = await client.blob_storage.list_buckets()
 
     assert ret == [
         BucketListing(
@@ -260,7 +260,7 @@ async def test_object_storage_list_buckets(
     ]
 
 
-async def test_object_storage_list_objects(
+async def test_blob_storage_list_blobs(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     bucket_name = "foo"
@@ -284,7 +284,7 @@ async def test_object_storage_list_objects(
 
     async def handler(request: web.Request) -> web.Response:
         assert "b3" in request.headers
-        assert request.path == OBSUrlRotes.LIST_OBJECTS.format(bucket=bucket_name)
+        assert request.path == BlobUrlRotes.LIST_OBJECTS.format(bucket=bucket_name)
 
         if "start_after" not in request.query:
             assert request.query == {"recursive": "false", "max_keys": "3"}
@@ -298,31 +298,31 @@ async def test_object_storage_list_objects(
             return web.json_response(PAGE2_JSON)
 
     app = web.Application()
-    app.router.add_get(OBSUrlRotes.LIST_OBJECTS, handler)
+    app.router.add_get(BlobUrlRotes.LIST_OBJECTS, handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        client.object_storage._max_keys = 3
-        ret = await client.object_storage.list_objects(bucket_name)
+        client.blob_storage._max_keys = 3
+        ret = await client.blob_storage.list_blobs(bucket_name)
 
     assert ret == [
         PrefixListing(prefix="empty/", bucket_name=bucket_name),
         PrefixListing(prefix="folder1/", bucket_name=bucket_name),
         PrefixListing(prefix="folder2/", bucket_name=bucket_name),
-        ObjectListing(
+        BlobListing(
             key="test.json",
             size=213,
             modification_time=int(mtime1.timestamp()),
             bucket_name=bucket_name,
         ),
-        ObjectListing(
+        BlobListing(
             key="test1.txt",
             size=111,
             modification_time=int(mtime1.timestamp()),
             bucket_name=bucket_name,
         ),
-        ObjectListing(
+        BlobListing(
             key="test2.txt",
             size=222,
             modification_time=int(mtime2.timestamp()),
@@ -331,7 +331,7 @@ async def test_object_storage_list_objects(
     ]
 
 
-async def test_object_storage_list_objects_recursive(
+async def test_blob_storage_list_blobs_recursive(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     bucket_name = "foo"
@@ -353,7 +353,7 @@ async def test_object_storage_list_objects_recursive(
 
     async def handler(request: web.Request) -> web.Response:
         assert "b3" in request.headers
-        assert request.path == OBSUrlRotes.LIST_OBJECTS.format(bucket=bucket_name)
+        assert request.path == BlobUrlRotes.LIST_OBJECTS.format(bucket=bucket_name)
         assert request.query == {
             "recursive": "true",
             "max_keys": "10000",
@@ -362,29 +362,29 @@ async def test_object_storage_list_objects_recursive(
         return web.json_response(PAGE1_JSON)
 
     app = web.Application()
-    app.router.add_get(OBSUrlRotes.LIST_OBJECTS, handler)
+    app.router.add_get(BlobUrlRotes.LIST_OBJECTS, handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.object_storage.list_objects(
+        ret = await client.blob_storage.list_blobs(
             bucket_name, recursive=True, prefix="folder"
         )
 
     assert ret == [
-        ObjectListing(
+        BlobListing(
             key="folder1/xxx.txt",
             size=1,
             modification_time=int(mtime1.timestamp()),
             bucket_name=bucket_name,
         ),
-        ObjectListing(
+        BlobListing(
             key="folder1/yyy.json",
             size=2,
             modification_time=int(mtime2.timestamp()),
             bucket_name=bucket_name,
         ),
-        ObjectListing(
+        BlobListing(
             key="folder2/big_file",
             size=120 * 1024 * 1024,
             modification_time=int(mtime1.timestamp()),
@@ -393,7 +393,7 @@ async def test_object_storage_list_objects_recursive(
     ]
 
 
-async def test_object_storage_glob_objects(
+async def test_blob_storage_glob_blobs(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     bucket_name = "foo"
@@ -418,7 +418,7 @@ async def test_object_storage_glob_objects(
 
     async def handler(request: web.Request) -> web.Response:
         assert "b3" in request.headers
-        assert request.path == OBSUrlRotes.LIST_OBJECTS.format(bucket=bucket_name)
+        assert request.path == BlobUrlRotes.LIST_OBJECTS.format(bucket=bucket_name)
         expected = {
             "recursive": "true",
             "max_keys": "10000",
@@ -437,21 +437,21 @@ async def test_object_storage_glob_objects(
         return web.json_response(resp)
 
     app = web.Application()
-    app.router.add_get(OBSUrlRotes.LIST_OBJECTS, handler)
+    app.router.add_get(BlobUrlRotes.LIST_OBJECTS, handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.object_storage.glob_objects(bucket_name, pattern="folder1/*")
+        ret = await client.blob_storage.glob_blobs(bucket_name, pattern="folder1/*")
 
         assert ret == [
-            ObjectListing(
+            BlobListing(
                 key="folder1/xxx.txt",
                 size=1,
                 modification_time=int(mtime1.timestamp()),
                 bucket_name=bucket_name,
             ),
-            ObjectListing(
+            BlobListing(
                 key="folder1/yyy.json",
                 size=2,
                 modification_time=int(mtime2.timestamp()),
@@ -459,16 +459,16 @@ async def test_object_storage_glob_objects(
             ),
         ]
 
-        ret = await client.object_storage.glob_objects(bucket_name, pattern="**.json")
+        ret = await client.blob_storage.glob_blobs(bucket_name, pattern="**.json")
 
         assert ret == [
-            ObjectListing(
+            BlobListing(
                 key="folder1/yyy.json",
                 size=2,
                 modification_time=int(mtime2.timestamp()),
                 bucket_name=bucket_name,
             ),
-            ObjectListing(
+            BlobListing(
                 key="test.json",
                 size=213,
                 modification_time=int(mtime1.timestamp()),
@@ -476,10 +476,10 @@ async def test_object_storage_glob_objects(
             ),
         ]
 
-        ret = await client.object_storage.glob_objects(bucket_name, pattern="*/*.txt")
+        ret = await client.blob_storage.glob_blobs(bucket_name, pattern="*/*.txt")
 
         assert ret == [
-            ObjectListing(
+            BlobListing(
                 key="folder1/xxx.txt",
                 size=1,
                 modification_time=int(mtime1.timestamp()),
@@ -487,18 +487,16 @@ async def test_object_storage_glob_objects(
             )
         ]
 
-        ret = await client.object_storage.glob_objects(
-            bucket_name, pattern="test[1-9].*"
-        )
+        ret = await client.blob_storage.glob_blobs(bucket_name, pattern="test[1-9].*")
 
         assert ret == [
-            ObjectListing(
+            BlobListing(
                 key="test1.txt",
                 size=111,
                 modification_time=int(mtime1.timestamp()),
                 bucket_name="foo",
             ),
-            ObjectListing(
+            BlobListing(
                 key="test2.txt",
                 size=222,
                 modification_time=int(mtime2.timestamp()),
@@ -507,7 +505,7 @@ async def test_object_storage_glob_objects(
         ]
 
 
-async def test_object_storage_head_object(
+async def test_blob_storage_head_blob(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     bucket_name = "foo"
@@ -516,7 +514,7 @@ async def test_object_storage_head_object(
 
     async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path == f"/obs/o/{bucket_name}/{key}"
+        assert request.path == f"/blob/o/{bucket_name}/{key}"
         assert request.match_info == {"bucket": bucket_name, "path": key}
         resp = web.StreamResponse(status=200)
         resp.headers.update({"ETag": '"12312908asd"'})
@@ -526,14 +524,14 @@ async def test_object_storage_head_object(
         return resp
 
     app = web.Application()
-    app.router.add_head(OBSUrlRotes.HEAD_OBJECT, handler)
+    app.router.add_head(BlobUrlRotes.HEAD_OBJECT, handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.object_storage.head_object(bucket_name, key=key)
+        ret = await client.blob_storage.head_blob(bucket_name, key=key)
 
-    assert ret == ObjectListing(
+    assert ret == BlobListing(
         key=key,
         size=111,
         modification_time=int(mtime1.timestamp()),
@@ -541,7 +539,7 @@ async def test_object_storage_head_object(
     )
 
 
-async def test_object_storage_get_object(
+async def test_blob_storage_get_blob(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     bucket_name = "foo"
@@ -551,7 +549,7 @@ async def test_object_storage_get_object(
 
     async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path == f"/obs/o/{bucket_name}/{key}"
+        assert request.path == f"/blob/o/{bucket_name}/{key}"
         assert request.match_info == {"bucket": bucket_name, "path": key}
         resp = web.StreamResponse(status=200)
         resp.headers.update({"ETag": '"12312908asd"'})
@@ -563,13 +561,13 @@ async def test_object_storage_get_object(
         return resp
 
     app = web.Application()
-    app.router.add_get(OBSUrlRotes.GET_OBJECT, handler)
+    app.router.add_get(BlobUrlRotes.GET_OBJECT, handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        async with client.object_storage.get_object(bucket_name, key=key) as ret:
-            assert ret.stats == ObjectListing(
+        async with client.blob_storage.get_blob(bucket_name, key=key) as ret:
+            assert ret.stats == BlobListing(
                 key=key,
                 size=1000,
                 modification_time=int(mtime1.timestamp()),
@@ -578,7 +576,7 @@ async def test_object_storage_get_object(
             assert await ret.body_stream.read() == body
 
 
-async def test_object_storage_fetch_object(
+async def test_blob_storage_fetch_blob(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     bucket_name = "foo"
@@ -588,7 +586,7 @@ async def test_object_storage_fetch_object(
 
     async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path == f"/obs/o/{bucket_name}/{key}"
+        assert request.path == f"/blob/o/{bucket_name}/{key}"
         assert request.match_info == {"bucket": bucket_name, "path": key}
         resp = web.StreamResponse(status=200)
         resp.headers.update({"ETag": '"12312908asd"'})
@@ -600,18 +598,18 @@ async def test_object_storage_fetch_object(
         return resp
 
     app = web.Application()
-    app.router.add_get(OBSUrlRotes.GET_OBJECT, handler)
+    app.router.add_get(BlobUrlRotes.GET_OBJECT, handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
         buf = b""
-        async for data in client.object_storage.fetch_object(bucket_name, key=key):
+        async for data in client.blob_storage.fetch_blob(bucket_name, key=key):
             buf += data
         assert buf == body
 
 
-async def test_object_storage_put_object(
+async def test_blob_storage_put_blob(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     bucket_name = "foo"
@@ -622,14 +620,14 @@ async def test_object_storage_put_object(
 
     async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path == f"/obs/o/{bucket_name}/{key}"
+        assert request.path == f"/blob/o/{bucket_name}/{key}"
         assert request.match_info == {"bucket": bucket_name, "path": key}
         assert request.headers["X-Content-Length"] == str(len(body))
         assert await request.content.read() == body
         return web.Response(headers={"ETag": etag})
 
     app = web.Application()
-    app.router.add_put(OBSUrlRotes.PUT_OBJECT, handler)
+    app.router.add_put(BlobUrlRotes.PUT_OBJECT, handler)
 
     srv = await aiohttp_server(app)
 
@@ -637,7 +635,7 @@ async def test_object_storage_put_object(
         yield body
 
     async with make_client(srv.make_url("/")) as client:
-        resp_etag = await client.object_storage.put_object(
+        resp_etag = await client.blob_storage.put_blob(
             bucket_name=bucket_name,
             key=key,
             body=async_iter(),
@@ -647,7 +645,7 @@ async def test_object_storage_put_object(
         assert resp_etag == etag
 
 
-async def test_object_storage_calc_md5(tmp_path: Path) -> None:
+async def test_blob_storage_calc_md5(tmp_path: Path) -> None:
     txt_file = tmp_path / "test.txt"
     body = b"""
     This is the greatest day of my whole life!!!
@@ -658,7 +656,7 @@ async def test_object_storage_calc_md5(tmp_path: Path) -> None:
     assert (await calc_md5(txt_file))[0] == body_md5
 
 
-async def test_object_storage_large_calc_md5(tmp_path: Path) -> None:
+async def test_blob_storage_large_calc_md5(tmp_path: Path) -> None:
     txt_file = tmp_path / "test.txt"
     size_mb = 20
     body = b"W" * (1024 * 1024)
@@ -677,68 +675,68 @@ async def test_object_storage_large_calc_md5(tmp_path: Path) -> None:
 # high level API
 
 
-async def test_object_storage_upload_file_does_not_exists(
+async def test_blob_storage_upload_file_does_not_exists(
     make_client: _MakeClient,
 ) -> None:
     async with make_client("https://example.com") as client:
         with pytest.raises(FileNotFoundError):
-            await client.object_storage.upload_file(
-                URL("file:///not-exists-file"), URL("object://host/path/to/file.txt")
+            await client.blob_storage.upload_file(
+                URL("file:///not-exists-file"), URL("blob://host/path/to/file.txt")
             )
 
 
-async def test_object_storage_upload_dir_doesnt_exist(make_client: _MakeClient) -> None:
+async def test_blob_storage_upload_dir_doesnt_exist(make_client: _MakeClient) -> None:
     async with make_client("https://example.com") as client:
         with pytest.raises(IsADirectoryError):
-            await client.object_storage.upload_file(
-                URL(FOLDER.as_uri()), URL("object://host/path/to")
+            await client.blob_storage.upload_file(
+                URL(FOLDER.as_uri()), URL("blob://host/path/to")
             )
 
 
-async def test_object_storage_upload_not_a_file(
-    object_storage_server: Any,
+async def test_blob_storage_upload_not_a_file(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
 ) -> None:
 
     file_path = Path(os.devnull).absolute()
     progress = mock.Mock()
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.upload_file(
-            URL(file_path.as_uri()), URL("object:foo/file.txt"), progress=progress
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_file(
+            URL(file_path.as_uri()), URL("blob:foo/file.txt"), progress=progress
         )
 
-    uploaded = object_storage_contents["file.txt"]
+    uploaded = blob_storage_contents["file.txt"]
     assert uploaded["body"] == b""
 
     src = URL(file_path.as_uri())
-    dst = URL("object://foo/file.txt")
+    dst = URL("blob://foo/file.txt")
     progress.start.assert_called_with(StorageProgressStart(src, dst, 0))
     progress.step.assert_not_called()
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, 0))
 
 
-async def test_object_storage_upload_regular_file_new_file(
-    object_storage_server: Any,
+async def test_blob_storage_upload_regular_file_new_file(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
     file_size = file_path.stat().st_size
     progress = mock.Mock()
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.upload_file(
-            URL(file_path.as_uri()), URL("object:foo/file.txt"), progress=progress
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_file(
+            URL(file_path.as_uri()), URL("blob:foo/file.txt"), progress=progress
         )
 
     expected = file_path.read_bytes()
-    uploaded = object_storage_contents["file.txt"]
+    uploaded = blob_storage_contents["file.txt"]
     assert uploaded["body"] == expected
 
     src = URL(file_path.as_uri())
-    dst = URL("object://foo/file.txt")
+    dst = URL("blob://foo/file.txt")
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
     progress.step.assert_called_with(
         StorageProgressStep(src, dst, file_size, file_size)
@@ -746,10 +744,10 @@ async def test_object_storage_upload_regular_file_new_file(
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
 
 
-async def test_object_storage_upload_large_file(
-    object_storage_server: Any,
+async def test_blob_storage_upload_large_file(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
     tmp_path: Path,
 ) -> None:
     local_dir = tmp_path / "local"
@@ -762,19 +760,19 @@ async def test_object_storage_upload_large_file(
 
     progress = mock.Mock()
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.upload_file(
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_file(
             URL(local_file.as_uri()),
-            URL("object:foo/folder2/big_file"),
+            URL("blob:foo/folder2/big_file"),
             progress=progress,
         )
 
     expected = local_file.read_bytes()
-    uploaded = object_storage_contents["folder2/big_file"]
+    uploaded = blob_storage_contents["folder2/big_file"]
     assert uploaded["body"] == expected
 
     src = URL(local_file.as_uri())
-    dst = URL("object://foo/folder2/big_file")
+    dst = URL("blob://foo/folder2/big_file")
     file_size = len(expected)
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
     progress.step.assert_called_with(
@@ -783,133 +781,133 @@ async def test_object_storage_upload_large_file(
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
 
 
-async def test_object_storage_upload_regular_file_to_existing_file(
-    object_storage_server: Any,
+async def test_blob_storage_upload_regular_file_to_existing_file(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.upload_file(
-            URL(file_path.as_uri()), URL("object:foo/test1.txt")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_file(
+            URL(file_path.as_uri()), URL("blob:foo/test1.txt")
         )
 
     expected = file_path.read_bytes()
-    uploaded = object_storage_contents["test1.txt"]
+    uploaded = blob_storage_contents["test1.txt"]
     assert uploaded["body"] == expected
 
 
-async def test_object_storage_upload_regular_file_to_existing_dir_with_slash(
-    object_storage_server: Any,
+async def test_blob_storage_upload_regular_file_to_existing_dir_with_slash(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
 
-    async with make_client(object_storage_server.make_url("/")) as client:
+    async with make_client(blob_storage_server.make_url("/")) as client:
         with pytest.raises(IsADirectoryError):
-            await client.object_storage.upload_file(
-                URL(file_path.as_uri()), URL("object:foo/empty/")
+            await client.blob_storage.upload_file(
+                URL(file_path.as_uri()), URL("blob:foo/empty/")
             )
 
 
-async def test_object_storage_upload_regular_file_to_existing_dir_without_slash(
-    object_storage_server: Any,
+async def test_blob_storage_upload_regular_file_to_existing_dir_without_slash(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
 
-    async with make_client(object_storage_server.make_url("/")) as client:
+    async with make_client(blob_storage_server.make_url("/")) as client:
         with pytest.raises(IsADirectoryError):
-            await client.object_storage.upload_file(
-                URL(file_path.as_uri()), URL("object:foo/empty")
+            await client.blob_storage.upload_file(
+                URL(file_path.as_uri()), URL("blob:foo/empty")
             )
 
 
-async def test_object_storage_upload_regular_file_to_existing_non_dir(
-    object_storage_server: Any,
+async def test_blob_storage_upload_regular_file_to_existing_non_dir(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
 
-    async with make_client(object_storage_server.make_url("/")) as client:
+    async with make_client(blob_storage_server.make_url("/")) as client:
         with pytest.raises(NotADirectoryError):
-            await client.object_storage.upload_file(
-                URL(file_path.as_uri()), URL("object:foo/test1.txt/subfile.txt")
+            await client.blob_storage.upload_file(
+                URL(file_path.as_uri()), URL("blob:foo/test1.txt/subfile.txt")
             )
 
 
-async def test_object_storage_upload_regular_file_to_not_existing(
-    object_storage_server: Any,
+async def test_blob_storage_upload_regular_file_to_not_existing(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
 ) -> None:
-    # In object storage it's perfectly fine to upload on non-exising path
+    # In blob storage it's perfectly fine to upload on non-exising path
     file_path = DATA_FOLDER / "file.txt"
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.upload_file(
-            URL(file_path.as_uri()), URL("object:foo/absent-dir/absent-file.txt")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_file(
+            URL(file_path.as_uri()), URL("blob:foo/absent-dir/absent-file.txt")
         )
 
     expected = file_path.read_bytes()
-    uploaded = object_storage_contents["absent-dir/absent-file.txt"]
+    uploaded = blob_storage_contents["absent-dir/absent-file.txt"]
     assert uploaded["body"] == expected
 
 
-async def test_object_storage_upload_recursive_src_doesnt_exist(
+async def test_blob_storage_upload_recursive_src_doesnt_exist(
     make_client: _MakeClient,
 ) -> None:
     async with make_client("https://example.com") as client:
         with pytest.raises(FileNotFoundError):
-            await client.object_storage.upload_dir(
-                URL("file:does_not_exist"), URL("object://host/path/to")
+            await client.blob_storage.upload_dir(
+                URL("file:does_not_exist"), URL("blob://host/path/to")
             )
 
 
-async def test_object_storage_upload_recursive_src_is_a_file(
+async def test_blob_storage_upload_recursive_src_is_a_file(
     make_client: _MakeClient,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
 
     async with make_client("https://example.com") as client:
         with pytest.raises(NotADirectoryError):
-            await client.object_storage.upload_dir(
-                URL(file_path.as_uri()), URL("object://host/path/to")
+            await client.blob_storage.upload_dir(
+                URL(file_path.as_uri()), URL("blob://host/path/to")
             )
 
 
-async def test_object_storage_upload_recursive_target_is_a_file(
-    object_storage_server: Any, make_client: _MakeClient,
+async def test_blob_storage_upload_recursive_target_is_a_file(
+    blob_storage_server: Any, make_client: _MakeClient,
 ) -> None:
 
-    async with make_client(object_storage_server.make_url("/")) as client:
+    async with make_client(blob_storage_server.make_url("/")) as client:
         with pytest.raises(NotADirectoryError):
-            await client.object_storage.upload_dir(
-                URL(DATA_FOLDER.as_uri()), URL("object:foo/test1.txt")
+            await client.blob_storage.upload_dir(
+                URL(DATA_FOLDER.as_uri()), URL("blob:foo/test1.txt")
             )
 
 
-async def test_object_storage_upload_empty_dir(
-    object_storage_server: Any,
+async def test_blob_storage_upload_empty_dir(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
     tmp_path: Path,
 ) -> None:
     src_dir = tmp_path / "empty"
     src_dir.mkdir()
     assert list(src_dir.iterdir()) == []
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.upload_dir(
-            URL(src_dir.as_uri()), URL("object:foo/folder")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_dir(
+            URL(src_dir.as_uri()), URL("blob:foo/folder")
         )
 
-    assert "folder" not in object_storage_contents
-    uploaded = object_storage_contents["folder/"]
+    assert "folder" not in blob_storage_contents
+    uploaded = blob_storage_contents["folder/"]
     assert uploaded == {
         "key": "folder/",
         "size": 0,
@@ -918,18 +916,18 @@ async def test_object_storage_upload_empty_dir(
     }
 
 
-async def test_object_storage_upload_recursive_ok(
-    object_storage_server: Any,
+async def test_blob_storage_upload_recursive_ok(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
 ) -> None:
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.upload_dir(
-            URL(DATA_FOLDER.as_uri()) / "nested", URL("object:foo/folder")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_dir(
+            URL(DATA_FOLDER.as_uri()) / "nested", URL("blob:foo/folder")
         )
 
-    keys = [v for k, v in object_storage_contents.items() if k.startswith("folder/")]
+    keys = [v for k, v in blob_storage_contents.items() if k.startswith("folder/")]
     body = (DATA_FOLDER / "nested" / "folder" / "file.txt").read_bytes()
     assert keys == [
         {"key": "folder/", "size": 0, "last_modified": mock.ANY, "body": b""},
@@ -943,18 +941,18 @@ async def test_object_storage_upload_recursive_ok(
     ]
 
 
-async def test_object_storage_upload_recursive_slash_ending(
-    object_storage_server: Any,
+async def test_blob_storage_upload_recursive_slash_ending(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
 ) -> None:
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.upload_dir(
-            URL(DATA_FOLDER.as_uri()) / "nested", URL("object:foo/folder/")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_dir(
+            URL(DATA_FOLDER.as_uri()) / "nested", URL("blob:foo/folder/")
         )
 
-    keys = [v for k, v in object_storage_contents.items() if k.startswith("folder/")]
+    keys = [v for k, v in blob_storage_contents.items() if k.startswith("folder/")]
     body = (DATA_FOLDER / "nested" / "folder" / "file.txt").read_bytes()
     assert keys == [
         {"key": "folder/", "size": 0, "last_modified": mock.ANY, "body": b""},
@@ -968,10 +966,10 @@ async def test_object_storage_upload_recursive_slash_ending(
     ]
 
 
-async def test_object_storage_download_regular_file_to_absent_file(
-    object_storage_server: Any,
+async def test_blob_storage_download_regular_file_to_absent_file(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
     tmp_path: Path,
 ) -> None:
     local_dir = tmp_path / "local"
@@ -979,16 +977,16 @@ async def test_object_storage_download_regular_file_to_absent_file(
     local_file = local_dir / "file.txt"
     progress = mock.Mock()
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.download_file(
-            URL("object:foo/test1.txt"), URL(local_file.as_uri()), progress=progress
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_file(
+            URL("blob:foo/test1.txt"), URL(local_file.as_uri()), progress=progress
         )
 
-    expected = object_storage_contents["test1.txt"]["body"]
+    expected = blob_storage_contents["test1.txt"]["body"]
     downloaded = local_file.read_bytes()
     assert downloaded == expected
 
-    src = URL("object://foo/test1.txt")
+    src = URL("blob://foo/test1.txt")
     dst = URL(local_file.as_uri())
     file_size = len(expected)
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
@@ -998,10 +996,10 @@ async def test_object_storage_download_regular_file_to_absent_file(
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
 
 
-async def test_object_storage_download_large_file(
-    object_storage_server: Any,
+async def test_blob_storage_download_large_file(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
     tmp_path: Path,
 ) -> None:
     local_dir = tmp_path / "local"
@@ -1011,16 +1009,16 @@ async def test_object_storage_download_large_file(
 
     # 16 * 4 = 64 MB of data
     large_payload = b"yncuNRzU0xhKSqIh" * (4 * 1024 * 1024)
-    object_storage_contents["folder2/big_file"] = {
+    blob_storage_contents["folder2/big_file"] = {
         "key": "folder2/big_file",
         "size": len(large_payload),
         "last_modified": datetime(2019, 1, 3).timestamp(),
         "body": large_payload,
     }
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.download_file(
-            URL("object:foo/folder2/big_file"),
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_file(
+            URL("blob:foo/folder2/big_file"),
             URL(local_file.as_uri()),
             progress=progress,
         )
@@ -1028,7 +1026,7 @@ async def test_object_storage_download_large_file(
     downloaded = local_file.read_bytes()
     assert downloaded == large_payload
 
-    src = URL("object://foo/folder2/big_file")
+    src = URL("blob://foo/folder2/big_file")
     dst = URL(local_file.as_uri())
     file_size = len(large_payload)
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
@@ -1038,10 +1036,10 @@ async def test_object_storage_download_large_file(
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, file_size))
 
 
-async def test_object_storage_download_regular_file_to_existing_file(
-    object_storage_server: Any,
+async def test_blob_storage_download_regular_file_to_existing_file(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
     tmp_path: Path,
 ) -> None:
     local_dir = tmp_path / "local"
@@ -1049,93 +1047,91 @@ async def test_object_storage_download_regular_file_to_existing_file(
     local_file = local_dir / "file.txt"
     local_file.write_bytes(b"Previous data")
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.download_file(
-            URL("object:foo/test1.txt"), URL(local_file.as_uri())
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_file(
+            URL("blob:foo/test1.txt"), URL(local_file.as_uri())
         )
 
-    expected = object_storage_contents["test1.txt"]["body"]
+    expected = blob_storage_contents["test1.txt"]["body"]
     downloaded = local_file.read_bytes()
     assert downloaded == expected
 
 
-async def test_object_storage_download_regular_file_to_dir(
-    object_storage_server: Any,
+async def test_blob_storage_download_regular_file_to_dir(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
     tmp_path: Path,
 ) -> None:
     local_dir = tmp_path / "local"
     local_dir.mkdir()
 
-    async with make_client(object_storage_server.make_url("/")) as client:
+    async with make_client(blob_storage_server.make_url("/")) as client:
         # On Windows it will be signaled as PermissionError instead...
         with pytest.raises((IsADirectoryError, PermissionError)):
-            await client.object_storage.download_file(
-                URL("object:foo/test1.txt"), URL(local_dir.as_uri())
+            await client.blob_storage.download_file(
+                URL("blob:foo/test1.txt"), URL(local_dir.as_uri())
             )
 
 
-async def test_object_storage_download_regular_file_to_dir_slash_ended(
-    object_storage_server: Any,
+async def test_blob_storage_download_regular_file_to_dir_slash_ended(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
     tmp_path: Path,
 ) -> None:
     local_dir = tmp_path / "local"
     local_dir.mkdir()
 
-    async with make_client(object_storage_server.make_url("/")) as client:
+    async with make_client(blob_storage_server.make_url("/")) as client:
         # On Windows it will be signaled as PermissionError instead...
         with pytest.raises((IsADirectoryError, PermissionError)):
-            await client.object_storage.download_file(
-                URL("object:foo/test1.txt"), URL(local_dir.as_uri() + "/")
+            await client.blob_storage.download_file(
+                URL("blob:foo/test1.txt"), URL(local_dir.as_uri() + "/")
             )
 
 
-async def test_object_storage_download_regular_file_to_non_file(
-    object_storage_server: Any,
+async def test_blob_storage_download_regular_file_to_non_file(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
     tmp_path: Path,
 ) -> None:
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.download_file(
-            URL("object:foo/test1.txt"), URL(Path(os.devnull).absolute().as_uri())
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_file(
+            URL("blob:foo/test1.txt"), URL(Path(os.devnull).absolute().as_uri())
         )
 
 
-async def test_object_storage_download_empty_dir(
-    object_storage_server: Any,
+async def test_blob_storage_download_empty_dir(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
     tmp_path: Path,
 ) -> None:
     target_dir = tmp_path / "empty"
     assert not target_dir.exists()
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.download_dir(
-            URL("object:foo/empty"), URL(target_dir.as_uri())
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_dir(
+            URL("blob:foo/empty"), URL(target_dir.as_uri())
         )
 
     assert list(target_dir.iterdir()) == []
 
 
-async def test_object_storage_download_dir(
-    object_storage_server: Any,
+async def test_blob_storage_download_dir(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
     tmp_path: Path,
 ) -> None:
     local_dir = tmp_path / "local"
     local_dir.mkdir()
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.download_dir(
-            URL("object:foo"), URL(local_dir.as_uri())
-        )
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_dir(URL("blob:foo"), URL(local_dir.as_uri()))
 
     files = sorted(dir_list(local_dir), key=lambda x: x["path"])
     assert files == [
@@ -1149,18 +1145,18 @@ async def test_object_storage_download_dir(
     ]
 
 
-async def test_object_storage_download_dir_with_slash(
-    object_storage_server: Any,
+async def test_blob_storage_download_dir_with_slash(
+    blob_storage_server: Any,
     make_client: _MakeClient,
-    object_storage_contents: _ContentsObj,
+    blob_storage_contents: _ContentsObj,
     tmp_path: Path,
 ) -> None:
     local_dir = tmp_path / "local"
     local_dir.mkdir()
 
-    async with make_client(object_storage_server.make_url("/")) as client:
-        await client.object_storage.download_dir(
-            URL("object:foo"), URL(local_dir.as_uri() + "/")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_dir(
+            URL("blob:foo"), URL(local_dir.as_uri() + "/")
         )
 
     files = sorted(dir_list(local_dir), key=lambda x: x["path"])
