@@ -5,8 +5,10 @@ import click
 
 from neuromation.api import Permission, Share
 
+from .formatters.utils import URIFormatter, uri_formatter
 from .root import Root
 from .utils import (
+    argument,
     command,
     group,
     option,
@@ -27,9 +29,9 @@ def acl() -> None:
 
 
 @command()
-@click.argument("uri")
-@click.argument("user")
-@click.argument("permission", type=click.Choice(["read", "write", "manage"]))
+@argument("uri")
+@argument("user")
+@argument("permission", type=click.Choice(["read", "write", "manage"]))
 async def grant(root: Root, uri: str, user: str, permission: str) -> None:
     """
         Shares resource with another user.
@@ -58,8 +60,8 @@ async def grant(root: Root, uri: str, user: str, permission: str) -> None:
 
 
 @command()
-@click.argument("uri")
-@click.argument("user")
+@argument("uri")
+@argument("user")
 async def revoke(root: Root, uri: str, user: str) -> None:
     """
         Revoke user access from another user.
@@ -99,8 +101,13 @@ async def revoke(root: Root, uri: str, user: str) -> None:
     default=False,
     help="Output the resources shared by the user.",
 )
+@option("--full-uri", is_flag=True, help="Output full URI.")
 async def list(
-    root: Root, username: Optional[str], scheme: Optional[str], shared: bool
+    root: Root,
+    username: Optional[str],
+    scheme: Optional[str],
+    shared: bool,
+    full_uri: bool,
 ) -> None:
     """
         List shared resources.
@@ -117,6 +124,15 @@ async def list(
     """
     if username is None:
         username = root.client.username
+
+    uri_fmtr: URIFormatter
+    if full_uri:
+        uri_fmtr = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username, cluster_name=root.client.cluster_name
+        )
+
     out: List[str] = []
     if not shared:
 
@@ -126,7 +142,7 @@ async def list(
         for p in sorted(
             await root.client.users.get_acl(username, scheme), key=permission_key,
         ):
-            out.append(f"{p.uri} {p.action.value}")
+            out.append(f"{uri_fmtr(p.uri)} {p.action.value}")
     else:
 
         def shared_permission_key(share: Share) -> Any:
@@ -139,7 +155,7 @@ async def list(
             out.append(
                 " ".join(
                     [
-                        str(share.permission.uri),
+                        uri_fmtr(share.permission.uri),
                         share.permission.action.value,
                         share.user,
                     ]

@@ -56,7 +56,7 @@ class _Storage:
 @dataclass(frozen=True)
 class _CloudProvider:
     type: str
-    region: str
+    region: Optional[str]
     zones: List[str]
     node_pools: List[_NodePool]
     storage: Optional[_Storage]
@@ -215,7 +215,7 @@ def _cluster_from_api(payload: Dict[str, Any]) -> _Cluster:
             status=payload["status"],
             cloud_provider=_CloudProvider(
                 type=cloud_provider["type"],
-                region=cloud_provider["region"],
+                region=cloud_provider.get("region"),
                 zones=(
                     [cloud_provider["zone"]]
                     if "zone" in cloud_provider

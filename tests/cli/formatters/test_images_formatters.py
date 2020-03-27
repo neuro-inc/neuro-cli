@@ -65,7 +65,13 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(tty=False, quiet=False)
         formatter.pull(
             ImageProgressPull(
-                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+                RemoteImage(
+                    "output",
+                    "stream",
+                    "bob",
+                    "https://registry-dev.neu.ro",
+                    cluster_name="test-cluster",
+                ),
                 LocalImage("input", "latest"),
             )
         )
@@ -76,7 +82,7 @@ class TestDockerImageProgress:
         out, err = capfd.readouterr()
         assert err == ""
         assert "input:latest" in out
-        assert "image://bob/output:stream" in out
+        assert "image://test-cluster/bob/output:stream" in out
         assert "message1" not in out
         assert "message2" not in out
         assert CSI not in out
@@ -86,7 +92,13 @@ class TestDockerImageProgress:
         formatter.push(
             ImageProgressPush(
                 LocalImage("input", "latest"),
-                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+                RemoteImage(
+                    "output",
+                    "stream",
+                    "bob",
+                    "https://registry-dev.neu.ro",
+                    cluster_name="test-cluster",
+                ),
             )
         )
         formatter.step(ImageProgressStep("message1", "layer1"))
@@ -96,7 +108,7 @@ class TestDockerImageProgress:
         out, err = capfd.readouterr()
         assert err == ""
         assert "input:latest" in out
-        assert "image://bob/output:stream" in out
+        assert "image://test-cluster/bob/output:stream" in out
         assert "message1" not in out
         assert "message2" not in out
         assert CSI not in out
@@ -106,12 +118,21 @@ class TestDockerImageProgress:
         formatter.save(
             ImageProgressSave(
                 "job-id",
-                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+                RemoteImage(
+                    "output",
+                    "stream",
+                    "bob",
+                    "https://registry-dev.neu.ro",
+                    cluster_name="test-cluster",
+                ),
             )
         )
         formatter.close()
         out, err = capfd.readouterr()
-        assert "Saving job 'job-id' to image 'image://bob/output:stream'" in out
+        assert (
+            "Saving job 'job-id' to image 'image://test-cluster/bob/output:stream'"
+            in out
+        )
         assert err == ""
 
     def test_no_tty_commit_started(self, capfd: Any) -> None:
@@ -120,13 +141,17 @@ class TestDockerImageProgress:
             ImageCommitStarted(
                 job_id="job-id",
                 target_image=RemoteImage(
-                    "output", "stream", "bob", "https://registry-dev.neu.ro"
+                    "output",
+                    "stream",
+                    "bob",
+                    "https://registry-dev.neu.ro",
+                    cluster_name="test-cluster",
                 ),
             )
         )
         formatter.close()
         out, err = capfd.readouterr()
-        assert "Using remote image 'image://bob/output:stream'" in out
+        assert "Using remote image 'image://test-cluster/bob/output:stream'" in out
         assert f"Creating image from the job container..." in out
         assert err == ""
 
@@ -142,7 +167,13 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(tty=True, quiet=False)
         formatter.pull(
             ImageProgressPull(
-                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+                RemoteImage(
+                    "output",
+                    "stream",
+                    "bob",
+                    "https://registry-dev.neu.ro",
+                    cluster_name="test-cluster",
+                ),
                 LocalImage("input", "latest"),
             )
         )
@@ -152,7 +183,7 @@ class TestDockerImageProgress:
         out, err = capfd.readouterr()
         assert err == ""
         assert "input:latest" in out
-        assert "image://bob/output:stream" in out
+        assert "image://test-cluster/bob/output:stream" in out
         assert "message1" in out
         assert "message2" in out
         assert CSI in out
@@ -162,7 +193,13 @@ class TestDockerImageProgress:
         formatter.push(
             ImageProgressPush(
                 LocalImage("input", "latest"),
-                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+                RemoteImage(
+                    "output",
+                    "stream",
+                    "bob",
+                    "https://registry-dev.neu.ro",
+                    cluster_name="test-cluster",
+                ),
             )
         )
         formatter.step(ImageProgressStep("message1", "layer1"))
@@ -171,7 +208,7 @@ class TestDockerImageProgress:
         out, err = capfd.readouterr()
         assert err == ""
         assert "input:latest" in out
-        assert "image://bob/output:stream" in out
+        assert "image://test-cluster/bob/output:stream" in out
         assert "message1" in out
         assert "message2" in out
         assert CSI in out
@@ -181,14 +218,20 @@ class TestDockerImageProgress:
         formatter.save(
             ImageProgressSave(
                 "job-id",
-                RemoteImage("output", "stream", "bob", "https://registry-dev.neu.ro"),
+                RemoteImage(
+                    "output",
+                    "stream",
+                    "bob",
+                    "https://registry-dev.neu.ro",
+                    cluster_name="test-cluster",
+                ),
             )
         )
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
         assert "job-id" in out
-        assert "image://bob/output:stream" in out
+        assert "image://test-cluster/bob/output:stream" in out
         assert CSI in out
 
     def test_tty_commit_started(self, capfd: Any, click_tty_emulation: Any) -> None:

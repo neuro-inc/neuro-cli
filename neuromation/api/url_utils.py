@@ -7,9 +7,13 @@ from typing import Sequence, Union
 from yarl import URL
 
 
+CLUSTER_SCHEMES = ("storage", "image", "job")
+
+
 def uri_from_cli(
     path_or_uri: str,
     username: str,
+    cluster_name: str,
     *,
     allowed_schemes: Sequence[str] = ("file", "storage"),
 ) -> URL:
@@ -43,39 +47,65 @@ def uri_from_cli(
         )
     if uri.scheme == "file":
         uri = normalize_local_path_uri(uri)
+    elif uri.scheme == "object":
+        uri = normalize_obj_path_uri(uri)
     else:
-        uri = _normalize_uri(uri, username)
+        uri = _normalize_uri(uri, username, cluster_name)
     return uri
 
 
-def normalize_storage_path_uri(uri: URL, username: str) -> URL:
+def normalize_storage_path_uri(uri: URL, username: str, cluster_name: str) -> URL:
     """Normalize storage url."""
     if uri.scheme != "storage":
         raise ValueError(
             f"Invalid storage scheme '{uri.scheme}://' "
             "(only 'storage://' is allowed)"
         )
-    return _normalize_uri(uri, username)
+    return _normalize_uri(uri, username, cluster_name)
 
 
-def _normalize_uri(resource: Union[URL, str], username: str) -> URL:
+def normalize_obj_path_uri(uri: URL) -> URL:
+    """Normalize Object Storage url."""
+    if uri.scheme != "object":
+        raise ValueError(
+            f"Invalid storage scheme '{uri.scheme}://' " "(only 'object://' is allowed)"
+        )
+
+    stripped_path = uri.path.lstrip("/")
+    # We treat all as same URL's:
+    #   object:my_bucket/object_name
+    #   object:/my_bucket/object_name
+    #   object://my_bucket/object_name
+    #   object:///my_bucket/object_name
+    if not uri.host:
+        if not stripped_path:
+            raise ValueError(f"Bucket name is missing '{str(uri)}'")
+        uri = URL(f"{uri.scheme}://{stripped_path}")
+
+    return uri
+
+
+def _normalize_uri(resource: Union[URL, str], username: str, cluster_name: str) -> URL:
+    """ Normalize all other user-bound URI's like jobs, storage, images, etc.
+    """
     uri = resource if isinstance(resource, URL) else URL(resource)
     path = uri.path
     if (uri.host or path.lstrip("/")).startswith("~"):
         raise ValueError(f"Cannot expand user for {uri}")
     if not uri.host:
-        if not path.startswith("/"):
-            uri = URL(f"{uri.scheme}://{username}/{path}")
+        if uri.scheme in CLUSTER_SCHEMES:
+            host = cluster_name
+            if path.startswith("/"):
+                path = path.lstrip("/")
+            else:
+                path = f"{username}/{path}" if path else username
         else:
-            path = uri.path.lstrip("/")
-            if path:
-                uri = URL(f"{uri.scheme}://{path}")
-
-    path = uri.path
-    if path.startswith("/"):
-        path = uri.path.lstrip("/")
-        if path or uri.host:
-            uri = uri.with_path(path)
+            if path.startswith("/"):
+                path = path.lstrip("/")
+                host, _, path = path.partition("/")
+            else:
+                host = username
+        uri = URL.build(scheme=uri.scheme, host=host, path="/" + path)
 
     return uri
 

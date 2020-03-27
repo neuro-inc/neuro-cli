@@ -182,7 +182,7 @@ async def test_storage_glob(
 ) -> None:
     async def handler_home(request: web.Request) -> web.Response:
         assert "b3" in request.headers
-        assert request.path == "/storage/user/"
+        assert request.path == "/storage/user"
         assert request.query == {"op": "LISTSTATUS"}
         return web.json_response(
             {
@@ -721,7 +721,7 @@ async def test_storage_upload_not_a_file(
     assert uploaded == b""
 
     src = URL(file_path.as_uri())
-    dst = URL("storage://user/file.txt")
+    dst = URL("storage://default/user/file.txt")
     progress.start.assert_called_with(StorageProgressStart(src, dst, 0))
     progress.step.assert_not_called()
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, 0))
@@ -745,7 +745,7 @@ async def test_storage_upload_regular_file_to_existing_file_target(
     assert uploaded == expected
 
     src = URL(file_path.as_uri())
-    dst = URL("storage://user/file.txt")
+    dst = URL("storage://default/user/file.txt")
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
     progress.step.assert_called_with(
         StorageProgressStep(src, dst, file_size, file_size)
@@ -922,7 +922,7 @@ async def test_storage_download_regular_file_to_absent_file(
     downloaded = local_file.read_bytes()
     assert downloaded == expected
 
-    src = URL("storage://user/file.txt")
+    src = URL("storage://default/user/file.txt")
     dst = URL(local_file.as_uri())
     file_size = src_file.stat().st_size
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))

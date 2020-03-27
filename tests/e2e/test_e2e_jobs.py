@@ -34,7 +34,7 @@ EXEC_TIMEOUT = 180
 @pytest.mark.e2e
 def test_job_submit(helper: Helper) -> None:
 
-    job_name = f"job-{os.urandom(5).hex()}"
+    job_name = f"test-job-{os.urandom(5).hex()}"
 
     # Kill another active jobs with same name, if any
     # Pass --owner because --name without --owner is too slow for admin users.
@@ -160,6 +160,38 @@ def test_job_description(helper: Helper) -> None:
     assert description not in store_out
     assert command not in store_out
     helper.kill_job(job_id, wait=False)
+
+
+@pytest.mark.e2e
+def test_job_tags(helper: Helper) -> None:
+    tags = [f"test-tag:{uuid4()}", "test-tag:common"]
+    tag_options = [key for pair in [("--tag", t) for t in tags] for key in pair]
+
+    command = "sleep 10m"
+    captured = helper.run_cli(
+        [
+            "job",
+            "run",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
+            *tag_options,
+            "--no-wait-start",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+    match = re.match("Job ID: (.+) Status:", captured.out)
+    assert match is not None
+    job_id = match.group(1)
+
+    captured = helper.run_cli(["ps", *tag_options])
+    store_out_list = captured.out.split("\n")[1:]
+    jobs = [x.split("  ")[0] for x in store_out_list]
+    assert job_id in jobs
+
+    captured = helper.run_cli(["job", "tags"])
+    tags_listed = captured.out.split("\n")
+    assert set(tags) <= set(tags_listed)
 
 
 @pytest.mark.e2e
@@ -500,14 +532,14 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
-    job_name = f"job-save-test-{uuid4().hex[:6]}"
+    job_name = f"test-job-save-{uuid4().hex[:6]}"
     image = f"test-image:{job_name}"
-    image_neuro_name = f"image://{helper.username}/{image}"
+    image_neuro_name = f"image://{helper.cluster_name}/{helper.username}/{image}"
     command = "sh -c 'echo -n 123 > /test; sleep 10m'"
     job_id_1 = helper.run_job_and_wait_state(
         ALPINE_IMAGE_NAME, command=command, wait_state=JobStatus.RUNNING
     )
-    img_uri = f"image://{helper.username}/{image}"
+    img_uri = f"image://{helper.cluster_name}/{helper.username}/{image}"
     captured = helper.run_cli(["job", "save", job_id_1, image_neuro_name])
     out = captured.out
     assert f"Saving job '{job_id_1}' to image '{img_uri}'..." in out
@@ -606,6 +638,7 @@ def test_job_submit_http_auth(
 ) -> None:
     loop_sleep = 1
     service_wait_time = 10 * 60
+    auth_url = helper.get_config()._config_data.auth_config.auth_url
 
     async def _test_http_auth_redirect(url: URL) -> None:
         start_time = time()
@@ -613,9 +646,7 @@ def test_job_submit_http_auth(
             while time() - start_time < service_wait_time:
                 try:
                     async with session.get(url, allow_redirects=True) as resp:
-                        if resp.status == 200 and re.match(
-                            r".+\.auth0\.com$", resp.url.host
-                        ):
+                        if resp.status == 200 and resp.url.host == auth_url.host:
                             break
                 except aiohttp.ClientConnectionError:
                     pass
@@ -853,6 +884,28 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
         )
     assert captured is None
     assert exc_info.value.returncode == 125
+
+
+@pytest.mark.e2e
+def test_job_run_with_tty(helper: Helper) -> None:
+    # Run a new job
+    command = "test -t 0"
+    captured = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            "-t",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+    job_id = captured.out
+
+    # Wait until the job is running
+    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
 
 
 @pytest.mark.e2e

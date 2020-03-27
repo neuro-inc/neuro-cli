@@ -48,6 +48,13 @@ from .jobs import (
     Resources,
     Volume,
 )
+from .object_storage import (
+    BucketListing,
+    Object,
+    ObjectListing,
+    ObjectStorage,
+    PrefixListing,
+)
 from .parser import Parser
 from .parsing_utils import LocalImage, RemoteImage, TagOption
 from .server_cfg import Cluster
@@ -75,6 +82,11 @@ __all__ = (
     "Share",
     "Client",
     "Preset",
+    "ObjectStorage",
+    "BucketListing",
+    "ObjectListing",
+    "Object",
+    "PrefixListing",
     "Storage",
     "FileStatusType",
     "FileStatus",

@@ -1,3 +1,4 @@
+import contextlib
 import logging
 import sqlite3
 import time
@@ -53,7 +54,8 @@ async def run_version_checker(client: Client, disable_check: bool) -> None:
             inserts,
         )
         db.execute("DELETE FROM pypi WHERE checked < ?", (time.time() - 7 * 24 * 3600,))
-        db.commit()
+        with contextlib.suppress(sqlite3.OperationalError):
+            db.commit()
 
 
 async def _add_record(

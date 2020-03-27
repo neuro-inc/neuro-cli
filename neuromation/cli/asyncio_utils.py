@@ -169,7 +169,7 @@ def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
 
 
 if sys.platform != "win32":
-    from asyncio.unix_events import AbstractChildWatcher  # type: ignore
+    from asyncio.unix_events import AbstractChildWatcher
 
     _Callback = Callable[..., None]
 
@@ -228,13 +228,13 @@ if sys.platform != "win32":
             self._threads[pid] = thread
             thread.start()
 
-        def remove_child_handler(self, pid: int) -> bool:
+        def remove_child_handler(self, pid: int) -> bool:  # type: ignore
             # asyncio never calls remove_child_handler() !!!
             # The method is no-op but is implemented because
             # abstract base classe requires it
             return True
 
-        def attach_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+        def attach_loop(self, loop: Optional[asyncio.AbstractEventLoop]) -> None:
             pass
 
         def _do_waitpid(

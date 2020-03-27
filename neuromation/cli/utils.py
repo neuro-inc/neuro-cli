@@ -1,5 +1,4 @@
 import asyncio
-import dataclasses
 import functools
 import inspect
 import itertools
@@ -10,7 +9,6 @@ import re
 import shlex
 import shutil
 import sys
-import time
 from typing import (
     Any,
     Awaitable,
@@ -31,7 +29,7 @@ from typing import (
 
 import click
 import humanize
-from click import BadParameter
+from click.types import convert_type
 from yarl import URL
 
 from neuromation.api import (
@@ -40,16 +38,11 @@ from neuromation.api import (
     Factory,
     JobDescription,
     JobStatus,
-    LocalImage,
-    RemoteImage,
     TagOption,
     Volume,
 )
-from neuromation.api.config import _CookieSession
-from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.api.url_utils import _normalize_uri, uri_from_cli
 
-from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
 from .root import Root
 from .stats import upload_gmp_stats
 from .version_utils import run_version_checker
@@ -61,12 +54,6 @@ _T = TypeVar("_T")
 
 DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
 DEPRECATED_INVOKE_NOTICE = "DeprecationWarning: The command {name} is deprecated."
-
-# NOTE: these job name defaults are taken from `platform_api` file `validators.py`
-JOB_NAME_MIN_LENGTH = 3
-JOB_NAME_MAX_LENGTH = 40
-JOB_NAME_PATTERN = "^[a-z](?:-?[a-z0-9])*$"
-JOB_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
 
 NEURO_STEAL_CONFIG = "NEURO_STEAL_CONFIG"
 
@@ -105,7 +92,6 @@ async def _run_async_function(
             pass
         except Exception:
             log.debug("Usage stats sending has failed", exc_info=True)
-        new_config = None
         pypi_task.cancel()
         try:
             await pypi_task
@@ -113,22 +99,6 @@ async def _run_async_function(
             pass
         except Exception:
             log.debug("PyPI checker has failed", exc_info=True)
-
-        cookie = root.get_session_cookie()
-        if cookie is not None:
-            if new_config is None:
-                new_config = root._config
-            new_config = dataclasses.replace(
-                new_config,
-                cookie_session=_CookieSession(
-                    cookie=cookie.value, timestamp=int(time.time())
-                ),
-            )
-
-        if new_config is not None:
-            factory = root._factory
-            assert factory is not None
-            factory._save(new_config)
 
 
 def _wrap_async_callback(
@@ -420,7 +390,18 @@ class Option(click.Option):
 def option(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
     option_attrs = attrs.copy()
     option_attrs.setdefault("cls", Option)
+    typ = convert_type(attrs.get("type"), attrs.get("default"))
+    autocompletion = getattr(typ, "autocompletion", None)
+    option_attrs.setdefault("autocompletion", autocompletion)
     return click.option(*param_decls, **option_attrs)
+
+
+def argument(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
+    arg_attrs = attrs.copy()
+    typ = convert_type(attrs.get("type"), attrs.get("default"))
+    autocompletion = getattr(typ, "autocompletion", None)
+    arg_attrs.setdefault("autocompletion", autocompletion)
+    return click.argument(*param_decls, **arg_attrs)
 
 
 def volume_to_verbose_str(volume: Volume) -> str:
@@ -437,10 +418,16 @@ async def resolve_job(
     id_or_name_or_uri: str, *, client: Client, status: Set[JobStatus]
 ) -> str:
     default_user = client.username
+    default_cluster = client.cluster_name
     if id_or_name_or_uri.startswith("job:"):
-        uri = _normalize_uri(id_or_name_or_uri, username=default_user)
-        id_or_name = uri.path.lstrip("/")
-        owner = uri.host or default_user
+        uri = _normalize_uri(
+            id_or_name_or_uri, username=default_user, cluster_name=default_cluster,
+        )
+        if uri.host != default_cluster:
+            raise ValueError(f"Invalid job URI: cluster_name != '{default_cluster}'")
+        owner, _, id_or_name = uri.path.lstrip("/").partition("/")
+        if not owner:
+            raise ValueError(f"Invalid job URI: missing owner")
         if not id_or_name:
             raise ValueError(
                 f"Invalid job URI: owner='{owner}', missing job-id or job-name"
@@ -485,7 +472,10 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
         uri = str(image)
 
     return uri_from_cli(
-        uri, root.client.username, allowed_schemes=("storage", "image", "job")
+        uri,
+        root.client.username,
+        root.client.cluster_name,
+        allowed_schemes=("storage", "image", "job"),
     )
 
 
@@ -493,7 +483,12 @@ def parse_file_resource(uri: str, root: Root) -> URL:
     """ Parses the neuromation resource URI string.
     Available schemes: file, storage.
     """
-    return uri_from_cli(uri, root.client.username, allowed_schemes=("file", "storage"))
+    return uri_from_cli(
+        uri,
+        root.client.username,
+        root.client.cluster_name,
+        allowed_schemes=("file", "storage"),
+    )
 
 
 def parse_permission_action(action: str) -> Action:
@@ -504,134 +499,6 @@ def parse_permission_action(action: str) -> Action:
         raise ValueError(
             f"invalid permission action '{action}', allowed values: {valid_actions}"
         )
-
-
-class LocalImageType(click.ParamType):
-    name = "local_image"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> LocalImage:
-        assert ctx is not None
-        root = cast(Root, ctx.obj)
-        config = Factory(root.config_path)._read()
-        image_parser = _ImageNameParser(
-            config.auth_token.username,
-            config.clusters[config.cluster_name].registry_url,
-        )
-        if image_parser.is_in_neuro_registry(value):
-            raise click.BadParameter(
-                "remote image cannot be used as local", ctx, param, self.name
-            )
-        else:
-            parsed_image = image_parser.parse_as_local_image(value)
-        return parsed_image
-
-
-class ImageType(click.ParamType):
-    name = "image"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> RemoteImage:
-        assert ctx is not None
-        root = cast(Root, ctx.obj)
-        config = Factory(root.config_path)._read()
-        image_parser = _ImageNameParser(
-            config.auth_token.username,
-            config.clusters[config.cluster_name].registry_url,
-        )
-        return image_parser.parse_remote(value)
-
-
-class RemoteTaglessImageType(click.ParamType):
-    name = "image"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> RemoteImage:
-        assert ctx is not None
-        root = cast(Root, ctx.obj)
-        config = Factory(root.config_path)._read()
-        image_parser = _ImageNameParser(
-            config.auth_token.username,
-            config.clusters[config.cluster_name].registry_url,
-        )
-        return image_parser.parse_as_neuro_image(value, tag_option=TagOption.DENY)
-
-
-class LocalRemotePortParamType(click.ParamType):
-    name = "local-remote-port-pair"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> Tuple[int, int]:
-        try:
-            local_str, remote_str = value.split(":")
-            local, remote = int(local_str), int(remote_str)
-            if not (0 < local <= 65535 and 0 < remote <= 65535):
-                raise ValueError("Port should be in range 1 to 65535")
-            return local, remote
-        except ValueError as e:
-            raise BadParameter(f"{value} is not a valid port combination: {e}")
-
-
-LOCAL_REMOTE_PORT = LocalRemotePortParamType()
-
-
-class MegabyteType(click.ParamType):
-    name = "megabyte"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> int:
-        return to_megabytes(value)
-
-
-MEGABYTE = MegabyteType()
-
-
-class JobNameType(click.ParamType):
-    name = "job_name"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> str:
-        if (
-            len(value) < JOB_NAME_MIN_LENGTH
-            or len(value) > JOB_NAME_MAX_LENGTH
-            or JOB_NAME_REGEX.match(value) is None
-        ):
-            raise ValueError(
-                f"Invalid job name '{value}'.\n"
-                "The name can only contain lowercase letters, numbers and hyphens "
-                "with the following rules: \n"
-                "  - the first character must be a letter; \n"
-                "  - each hyphen must be surrounded by non-hyphen characters; \n"
-                f"  - total length must be between {JOB_NAME_MIN_LENGTH} and "
-                f"{JOB_NAME_MAX_LENGTH} characters long."
-            )
-        return value
-
-
-JOB_NAME = JobNameType()
-
-
-class JobColumnsType(click.ParamType):
-    name = "columns"
-
-    def convert(
-        self,
-        value: Union[str, List[JobColumnInfo]],
-        param: Optional[click.Parameter],
-        ctx: Optional[click.Context],
-    ) -> List[JobColumnInfo]:
-        if isinstance(value, list):
-            return value
-        return parse_columns(value)
-
-
-JOB_COLUMNS = JobColumnsType()
 
 
 def do_deprecated_quiet(
@@ -702,6 +569,8 @@ def pager_maybe(
 def steal_config_maybe(dst_path: pathlib.Path) -> None:
     if NEURO_STEAL_CONFIG in os.environ:
         src = pathlib.Path(os.environ[NEURO_STEAL_CONFIG])
+        if not src.exists():
+            return
         dst = Factory(dst_path).path
         dst.mkdir(mode=0o700)
         for f in src.iterdir():

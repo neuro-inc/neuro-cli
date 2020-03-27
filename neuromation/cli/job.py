@@ -13,7 +13,6 @@ from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
-import idna
 from yarl import URL
 
 from neuromation.api import (
@@ -28,7 +27,20 @@ from neuromation.api import (
     Volume,
 )
 from neuromation.cli.formatters import DockerImageProgress
+from neuromation.cli.formatters.utils import (
+    URIFormatter,
+    image_formatter,
+    uri_formatter,
+)
 
+from .click_types import (
+    JOB_COLUMNS,
+    JOB_NAME,
+    LOCAL_REMOTE_PORT,
+    MEGABYTE,
+    PRESET,
+    ImageType,
+)
 from .const import EX_PLATFORMERROR
 from .defaults import (
     GPU_MODELS,
@@ -46,17 +58,13 @@ from .formatters.jobs import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from .parse_utils import COLUMNS, JobColumnInfo, parse_columns
+from .parse_utils import JobColumnInfo, get_default_columns, parse_columns
 from .root import Root
 from .utils import (
-    JOB_COLUMNS,
-    JOB_NAME,
-    LOCAL_REMOTE_PORT,
-    MEGABYTE,
     NEURO_STEAL_CONFIG,
     AsyncExitStack,
-    ImageType,
     alias,
+    argument,
     command,
     deprecated_quiet_option,
     group,
@@ -123,8 +131,8 @@ def job() -> None:
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("image", type=ImageType())
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@argument("image", type=ImageType())
+@argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @option(
     "-g",
     "--gpu",
@@ -202,6 +210,13 @@ def job() -> None:
     secure=True,
 )
 @option(
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Optional job tag, multiple values allowed",
+    multiple=True,
+)
+@option(
     "-d",
     "--description",
     metavar="DESC",
@@ -277,6 +292,7 @@ def job() -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
+@option("-t", "--tty", is_flag=True, help="Allocate a TTY")
 async def submit(
     root: Root,
     image: RemoteImage,
@@ -297,11 +313,13 @@ async def submit(
     life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
+    tag: Sequence[str],
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
     browse: bool,
     detach: bool,
+    tty: bool,
 ) -> None:
     """
     Submit an image to run on the cluster.
@@ -342,17 +360,19 @@ async def submit(
         life_span=life_span,
         preemptible=preemptible,
         name=name,
+        tags=tag,
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
         browse=browse,
         detach=detach,
+        tty=tty,
     )
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("job")
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
+@argument("job")
+@argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @option(
     "-t/-T",
     "--tty/--no-tty",
@@ -406,8 +426,8 @@ async def exec(
 
 
 @command()
-@click.argument("job")
-@click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
+@argument("job")
+@argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
 @option(
     "--no-key-check",
     is_flag=True,
@@ -459,7 +479,7 @@ async def port_forward(
 
 
 @command()
-@click.argument("job")
+@argument("job")
 async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
@@ -514,6 +534,14 @@ async def _print_logs(root: Root, job: str) -> None:
 )
 @option("-n", "--name", metavar="NAME", help="Filter out jobs by name.", secure=True)
 @option(
+    "-t",
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Filter out jobs by tag (multiple option)",
+    multiple=True,
+)
+@option(
     "-d",
     "--description",
     metavar="DESCRIPTION",
@@ -534,15 +562,18 @@ async def _print_logs(root: Root, job: str) -> None:
     ),
     default=None,
 )
+@option("--full-uri", is_flag=True, help="Output full image URI.")
 async def ls(
     root: Root,
     status: Sequence[str],
     all: bool,
     name: str,
+    tag: Sequence[str],
     owner: Sequence[str],
     description: str,
     wide: bool,
     format: Optional[List[JobColumnInfo]],
+    full_uri: bool,
 ) -> None:
     """
     List all jobs.
@@ -554,20 +585,29 @@ async def ls(
     neuro ps --name my-experiments-v1 -s failed -s succeeded
     neuro ps --description="my favourite job"
     neuro ps -s failed -s succeeded -q
+    neuro ps -t tag1 -t tag2
     """
 
     format = await calc_columns(root.client, format)
 
     statuses = calc_statuses(status, all)
     owners = set(owner)
-    jobs = await root.client.jobs.list(statuses=statuses, name=name, owners=owners)
+    tags = set(tag)
+    jobs = await root.client.jobs.list(
+        statuses=statuses, name=name, owners=owners, tags=tags
+    )
 
     # client-side filtering
     if description:
         jobs = [job for job in jobs if job.description == description]
 
-    jobs.sort(key=lambda job: job.history.created_at)
-
+    uri_fmtr: URIFormatter
+    if full_uri:
+        uri_fmtr = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username, cluster_name=root.client.cluster_name
+        )
     if root.quiet:
         formatter: BaseJobsFormatter = SimpleJobsFormatter()
     else:
@@ -575,14 +615,18 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        formatter = TabularJobsFormatter(width, root.client.username, format)
+        image_fmtr = image_formatter(uri_formatter=uri_fmtr)
+        formatter = TabularJobsFormatter(
+            width, root.client.username, format, image_formatter=image_fmtr
+        )
 
     pager_maybe(formatter(jobs), root.tty, root.terminal_size)
 
 
 @command()
-@click.argument("job")
-async def status(root: Root, job: str) -> None:
+@argument("job")
+@option("--full-uri", is_flag=True, help="Output full URI.")
+async def status(root: Root, job: str, full_uri: bool) -> None:
     """
     Display status of a job.
     """
@@ -597,7 +641,23 @@ async def status(root: Root, job: str) -> None:
         },
     )
     res = await root.client.jobs.status(id)
-    click.echo(JobStatusFormatter()(res))
+    uri_fmtr: URIFormatter
+    if full_uri:
+        uri_fmtr = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username, cluster_name=root.client.cluster_name
+        )
+    click.echo(JobStatusFormatter(uri_formatter=uri_fmtr)(res))
+
+
+@command()
+async def tags(root: Root) -> None:
+    """
+    List all tags submitted by the user.
+    """
+    res = await root.client.jobs.tags()
+    pager_maybe(res, root.tty, root.terminal_size)
 
 
 @command()
@@ -614,7 +674,7 @@ async def browse(root: Root, job: str) -> None:
 
 
 @command()
-@click.argument("job")
+@argument("job")
 @option(
     "--timeout",
     default=0,
@@ -641,8 +701,8 @@ async def top(root: Root, job: str, timeout: float) -> None:
 
 
 @command()
-@click.argument("job")
-@click.argument("image", type=ImageType())
+@argument("job")
+@argument("image", type=ImageType())
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
     Save job's state to an image.
@@ -669,7 +729,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
 
 
 @command()
-@click.argument("jobs", nargs=-1, required=True)
+@argument("jobs", nargs=-1, required=True)
 async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     Kill job(s).
@@ -698,11 +758,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("image", type=ImageType())
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@argument("image", type=ImageType())
+@argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @option(
     "-s",
     "--preset",
+    type=PRESET,
     metavar="PRESET",
     help=(
         "Predefined resource configuration (to see available values, "
@@ -746,6 +807,13 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Optional job name",
     default=None,
     secure=True,
+)
+@option(
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Optional job tag, multiple values allowed",
+    multiple=True,
 )
 @option(
     "-d",
@@ -824,6 +892,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
+@option("-t", "--tty", is_flag=True, help="Allocate a TTY")
 async def run(
     root: Root,
     image: RemoteImage,
@@ -839,11 +908,13 @@ async def run(
     life_span: Optional[str],
     preemptible: Optional[bool],
     name: Optional[str],
+    tag: Sequence[str],
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
     browse: bool,
     detach: bool,
+    tty: bool,
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -892,11 +963,13 @@ async def run(
         life_span=life_span,
         preemptible=job_preset.is_preemptible,
         name=name,
+        tags=tag,
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
         browse=browse,
         detach=detach,
+        tty=tty,
     )
 
 
@@ -904,6 +977,7 @@ job.add_command(run)
 job.add_command(submit)
 job.add_command(ls)
 job.add_command(status)
+job.add_command(tags)
 job.add_command(exec)
 job.add_command(port_forward)
 job.add_command(logs)
@@ -938,11 +1012,13 @@ async def run_job(
     life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
+    tags: Sequence[str],
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
     browse: bool,
     detach: bool,
+    tty: bool,
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -1007,12 +1083,14 @@ async def run_job(
         resources=resources,
         env=env_dict,
         volumes=list(volumes),
+        tty=tty,
     )
 
     job = await root.client.jobs.run(
         container,
         is_preemptible=preemptible,
         name=name,
+        tags=tags,
         description=description,
         life_span=job_life_span,
     )
@@ -1063,6 +1141,7 @@ def _parse_cmd(cmd: Sequence[str]) -> str:
 async def _build_volumes(
     root: Root, input_volumes: Sequence[str], env_dict: Dict[str, str]
 ) -> Set[Volume]:
+    cluster_name = root.client.cluster_name
     input_volumes_set = set(input_volumes)
     volumes: Set[Volume] = set()
 
@@ -1074,22 +1153,17 @@ async def _build_volumes(
         available = await root.client.users.get_acl(
             root.client.username, scheme="storage"
         )
-        permissions = []
         for perm in available:
-            try:
-                idna.encode(perm.uri.host)
-            except ValueError:
-                log.warning(f"Skipping invalid URI {perm.uri}")
-            else:
-                permissions.append(perm)
-        volumes.update(
-            Volume(
-                storage_uri=perm.uri,
-                container_path=f"{ROOT_MOUNTPOINT}/{perm.uri.host}{perm.uri.path}",
-                read_only=perm.action not in ("write", "manage"),
-            )
-            for perm in permissions
-        )
+            if perm.uri.host == cluster_name:
+                path = perm.uri.path
+                assert path[0] == "/"
+                volumes.add(
+                    Volume(
+                        storage_uri=perm.uri,
+                        container_path=f"{ROOT_MOUNTPOINT}{path}",
+                        read_only=perm.action not in ("write", "manage"),
+                    )
+                )
         neuro_mountpoint = _get_neuro_mountpoint(root.client.username)
         env_dict[NEUROMATION_HOME_ENV_VAR] = neuro_mountpoint
         env_dict[NEUROMATION_ROOT_ENV_VAR] = ROOT_MOUNTPOINT
@@ -1107,7 +1181,7 @@ async def _build_volumes(
                 )
                 volumes.add(
                     root.client.parse.volume(
-                        f"storage://neuromation/public:"
+                        f"storage://{cluster_name}/neuromation/public:"
                         f"{STORAGE_MOUNTPOINT}/neuromation:ro"
                     )
                 )
@@ -1130,7 +1204,9 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     # store the Neuro CLI config on the storage under some random path
     nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
     random_nmrc_filename = f"{uuid.uuid4()}-cfg"
-    storage_nmrc_folder = URL(f"storage://{root.client.username}/.neuro/")
+    storage_nmrc_folder = URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/.neuro/"
+    )
     storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
     local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/.neuro/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
@@ -1205,7 +1281,7 @@ async def calc_columns(
             format_str = section.get("ps-format")
             if format_str is not None:
                 return parse_columns(format_str)
-        return COLUMNS
+        return get_default_columns()
     return format
 
 

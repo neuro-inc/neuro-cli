@@ -69,12 +69,12 @@ def test_images_complete_lifecycle(
     # stderr has "Used image ..." lines
     # assert not captured.err
 
-    image_full_str = f"image://{helper.username}/{image}"
+    image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
     assert captured.out.endswith(image_full_str)
     image_url = URL(image_full_str)
 
     # Check if image available on registry
-    captured = helper.run_cli(["image", "ls"])
+    captured = helper.run_cli(["image", "ls", "--full-uri"])
 
     image_urls = [URL(line) for line in captured.out.splitlines() if line]
     for url in image_urls:
@@ -123,7 +123,7 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     # push image
     captured = helper.run_cli(["image", "push", image])
 
-    image_full_str = f"image://{helper.username}/{image}"
+    image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
     assert captured.out.endswith(image_full_str)
 
     # check the tag is present now
@@ -152,13 +152,18 @@ def test_image_ls(helper: Helper, image: str, tag: str) -> None:
     # push image
     captured = helper.run_cli(["image", "push", image])
 
-    image_full_str = f"image://{helper.username}/{image}"
+    image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
+    image_short_str = f"image:{image}"
     assert captured.out.endswith(image_full_str)
 
     image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
+    image_short_str_no_tag = image_short_str.replace(f":{tag}", "")
 
     # check ls short mode
     captured = helper.run_cli(["image", "ls"])
+    assert image_short_str_no_tag in captured.out.splitlines()
+
+    captured = helper.run_cli(["image", "ls", "--full-uri"])
     assert image_full_str_no_tag in captured.out.splitlines()
 
     # check ls long mode
@@ -166,16 +171,22 @@ def test_image_ls(helper: Helper, image: str, tag: str) -> None:
     matching_lines = [
         line
         for line in captured.out.splitlines()
-        if image_full_str_no_tag == line.split()[0]
+        if image_short_str_no_tag == line.split()[0]
     ]
     assert len(matching_lines) == 1
 
     image_full_https_str_no_tag = f"/{helper.username}/{image}".replace(f":{tag}", "")
     actual_https_url = urllib.parse.urlparse(matching_lines[0].split()[1])
-    assert (
-        actual_https_url.scheme == "https"
-        and actual_https_url.path == image_full_https_str_no_tag
-    )
+    assert actual_https_url.scheme == "https"
+    assert actual_https_url.path == image_full_https_str_no_tag
+
+    captured = helper.run_cli(["image", "ls", "-l", "--full-uri"])
+    matching_lines = [
+        line
+        for line in captured.out.splitlines()
+        if image_full_str_no_tag == line.split()[0]
+    ]
+    assert len(matching_lines) == 1
 
 
 @pytest.mark.e2e
@@ -195,12 +206,14 @@ def test_images_push_with_specified_name(
     captured = helper.run_cli(["image", "push", image, f"image:{pushed_no_tag}:{tag}"])
     # stderr has "Used image ..." lines
     # assert not captured.err
-    image_pushed_full_str = f"image://{helper.username}/{pushed_no_tag}:{tag}"
+    image_pushed_full_str = (
+        f"image://{helper.cluster_name}/{helper.username}/{pushed_no_tag}:{tag}"
+    )
     assert captured.out.endswith(image_pushed_full_str)
     image_url_without_tag = image_pushed_full_str.replace(f":{tag}", "")
 
     # Check if image available on registry
-    captured = helper.run_cli(["image", "ls"])
+    captured = helper.run_cli(["image", "ls", "--full-uri"])
     image_urls = captured.out.splitlines()
     assert image_url_without_tag in image_urls
 
@@ -248,7 +261,7 @@ def test_docker_helper(
         not result.returncode
     ), f"Command {push_cmd} failed: {result.stdout!r} {result.stderr!r} "
     # Run image and check output
-    image_url = f"image://{username}/{image}"
+    image_url = f"image://{helper.cluster_name}/{username}/{image}"
     job_id = helper.run_job_and_wait_state(
         image_url, "", wait_state=JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
     )

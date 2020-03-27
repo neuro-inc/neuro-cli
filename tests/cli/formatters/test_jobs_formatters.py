@@ -28,6 +28,7 @@ from neuromation.cli.formatters import (
     TabularJobsFormatter,
 )
 from neuromation.cli.formatters.jobs import ResourcesFormatter, TabularJobRow
+from neuromation.cli.formatters.utils import image_formatter, uri_formatter
 from neuromation.cli.parse_utils import parse_columns
 from neuromation.cli.printer import CSI
 
@@ -43,6 +44,7 @@ def job_descr_no_name() -> JobDescription:
         id=TEST_JOB_ID,
         owner="owner",
         cluster_name="default",
+        uri=URL(f"job://default/owner/{TEST_JOB_ID}"),
         history=JobStatusHistory(
             status=JobStatus.PENDING,
             reason="ErrorReason",
@@ -68,6 +70,7 @@ def job_descr() -> JobDescription:
         name=TEST_JOB_NAME,
         owner="owner",
         cluster_name="default",
+        uri=URL(f"job://default/owner/{TEST_JOB_ID}"),
         history=JobStatusHistory(
             status=JobStatus.PENDING,
             reason="ErrorReason",
@@ -171,6 +174,7 @@ class TestJobStartProgress:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             description="test job description",
             http_url=URL("http://local.host.test/"),
             history=JobStatusHistory(
@@ -238,6 +242,7 @@ class TestJobOutputFormatter:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             name="test-job-name",
             description="test job description",
             http_url=URL("http://local.host.test/"),
@@ -260,11 +265,65 @@ class TestJobOutputFormatter:
             is_preemptible=False,
         )
 
-        status = JobStatusFormatter()(description)
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
             "Name: test-job-name\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: test-image\n"
+            "Command: test-command\n"
+            f"{resource_formatter(description.container.resources)}\n"
+            "Preemptible: False\n"
+            "Http URL: http://local.host.test/\n"
+            "Http authentication: True\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "===Description===\n"
+            "ErrorDesc\n================="
+        )
+
+    def test_job_with_tags(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            tags=["tag1", "tag2", "tag3"],
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage("test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        resource_formatter = ResourcesFormatter()
+        assert (
+            status == "Job: test-job\n"
+            "Tags: tag1, tag2, tag3\n"
             "Owner: test-user\n"
             "Cluster: default\n"
             "Description: test job description\n"
@@ -289,6 +348,7 @@ class TestJobOutputFormatter:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             description="test job description",
             http_url=URL("http://local.host.test/"),
             history=JobStatusHistory(
@@ -310,7 +370,8 @@ class TestJobOutputFormatter:
             is_preemptible=False,
         )
 
-        status = JobStatusFormatter()(description)
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -354,9 +415,11 @@ class TestJobOutputFormatter:
             is_preemptible=True,
             owner="owner",
             cluster_name="default",
+            uri=URL("job://default/owner/test-job"),
         )
 
-        status = JobStatusFormatter()(description)
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -393,9 +456,11 @@ class TestJobOutputFormatter:
             is_preemptible=True,
             owner="owner",
             cluster_name="default",
+            uri=URL("job://default/owner/test-job"),
         )
 
-        status = JobStatusFormatter()(description)
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -432,9 +497,11 @@ class TestJobOutputFormatter:
             is_preemptible=True,
             owner="owner",
             cluster_name="default",
+            uri=URL("job://default/owner/test-job"),
         )
 
-        status = JobStatusFormatter()(description)
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -454,6 +521,7 @@ class TestJobOutputFormatter:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             description="test job description",
             history=JobStatusHistory(
                 status=JobStatus.RUNNING,
@@ -474,7 +542,8 @@ class TestJobOutputFormatter:
             internal_hostname="host.local",
         )
 
-        status = JobStatusFormatter()(description)
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -498,6 +567,7 @@ class TestJobOutputFormatter:
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             description="test job description",
             history=JobStatusHistory(
                 status=JobStatus.RUNNING,
@@ -519,7 +589,8 @@ class TestJobOutputFormatter:
             internal_hostname="host.local",
         )
 
-        status = JobStatusFormatter()(description)
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -538,12 +609,13 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:24.759433+00:00"
         )
 
-    def test_job_with_volumes(self) -> None:
+    def test_job_with_volumes_short(self) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
             cluster_name="default",
             id="test-job",
+            uri=URL("job://default/test-user/test-job"),
             name="test-job-name",
             description="test job description",
             http_url=URL("http://local.host.test/"),
@@ -558,17 +630,103 @@ class TestJobOutputFormatter:
             ),
             container=Container(
                 command="test-command",
-                image=RemoteImage("test-image"),
+                image=RemoteImage(
+                    "test-image",
+                    "sometag",
+                    registry="https://registry.neu.ro",
+                    owner="test-user",
+                    cluster_name="test-cluster",
+                ),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
                 volumes=[
                     Volume(
-                        storage_uri=URL("storage://test-user/ro"),
+                        storage_uri=URL("storage://test-cluster/otheruser/ro"),
                         container_path="/mnt/ro",
                         read_only=True,
                     ),
                     Volume(
-                        storage_uri=URL("storage://test-user/rw"),
+                        storage_uri=URL("storage://test-cluster/test-user/rw"),
+                        container_path="/mnt/rw",
+                        read_only=False,
+                    ),
+                    Volume(
+                        storage_uri=URL("storage://othercluster/otheruser/ro"),
+                        container_path="/mnt/ro2",
+                        read_only=True,
+                    ),
+                ],
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        resource_formatter = ResourcesFormatter()
+        assert (
+            status == "Job: test-job\n"
+            "Name: test-job-name\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: image:test-image:sometag\n"
+            "Command: test-command\n"
+            f"{resource_formatter(description.container.resources)}\n"
+            "Preemptible: False\n"
+            "Volumes:\n"
+            "  /mnt/ro   storage:/otheruser/ro                READONLY\n"
+            "  /mnt/rw   storage:rw                                   \n"
+            "  /mnt/ro2  storage://othercluster/otheruser/ro  READONLY\n"
+            "Http URL: http://local.host.test/\n"
+            "Http authentication: True\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "===Description===\n"
+            "ErrorDesc\n================="
+        )
+
+    def test_job_with_volumes_long(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            name="test-job-name",
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage(
+                    "test-image",
+                    "sometag",
+                    registry="https://registry.neu.ro",
+                    owner="test-user",
+                    cluster_name="test-cluster",
+                ),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+                volumes=[
+                    Volume(
+                        storage_uri=URL("storage://test-cluster/otheruser/ro"),
+                        container_path="/mnt/ro",
+                        read_only=True,
+                    ),
+                    Volume(
+                        storage_uri=URL("storage://test-cluster/test-user/rw"),
                         container_path="/mnt/rw",
                         read_only=False,
                     ),
@@ -578,7 +736,7 @@ class TestJobOutputFormatter:
             is_preemptible=False,
         )
 
-        status = JobStatusFormatter()(description)
+        status = JobStatusFormatter(uri_formatter=str)(description)
         resource_formatter = ResourcesFormatter()
         assert (
             status == "Job: test-job\n"
@@ -587,13 +745,13 @@ class TestJobOutputFormatter:
             "Cluster: default\n"
             "Description: test job description\n"
             "Status: failed (ErrorReason)\n"
-            "Image: test-image\n"
+            "Image: image://test-cluster/test-user/test-image:sometag\n"
             "Command: test-command\n"
             f"{resource_formatter(description.container.resources)}\n"
             "Preemptible: False\n"
             "Volumes:\n"
-            "  /mnt/ro  storage://test-user/ro  READONLY\n"
-            "  /mnt/rw  storage://test-user/rw          \n"
+            "  /mnt/ro  storage://test-cluster/otheruser/ro  READONLY\n"
+            "  /mnt/rw  storage://test-cluster/test-user/rw          \n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -675,6 +833,7 @@ class TestSimpleJobsFormatter:
                 id="job-42687e7c-6c76-4857-a6a7-1166f8295391",
                 owner="owner",
                 cluster_name="default",
+                uri=URL("job://default/owner/job-42687e7c-6c76-4857-a6a7-1166f8295391"),
                 history=JobStatusHistory(
                     status=JobStatus.PENDING,
                     reason="ErrorReason",
@@ -696,6 +855,7 @@ class TestSimpleJobsFormatter:
                 name="this-job-has-a-name",
                 owner="owner",
                 cluster_name="default",
+                uri=URL("job://default/owner/job-cf33bd55-9e3b-4df7-a894-9c148a908a66"),
                 history=JobStatusHistory(
                     status=JobStatus.FAILED,
                     reason="ErrorReason",
@@ -721,7 +881,9 @@ class TestSimpleJobsFormatter:
 
 
 class TestTabularJobRow:
-    image_parser = _ImageNameParser("bob", URL("https://registry-test.neu.ro"))
+    image_parser = _ImageNameParser(
+        "bob", "test-cluster", URL("https://registry-test.neu.ro")
+    )
 
     def _job_descr_with_status(
         self, status: JobStatus, image: str = "nginx:latest", name: Optional[str] = None
@@ -733,6 +895,7 @@ class TestTabularJobRow:
             name=name,
             owner="owner",
             cluster_name="default",
+            uri=URL("job://default/owner/job-1f5ab792-e534-4bb4-be56-8af1ce722692"),
             description="some",
             history=JobStatusHistory(
                 status=status,
@@ -753,13 +916,17 @@ class TestTabularJobRow:
 
     def test_with_job_name(self) -> None:
         row = TabularJobRow.from_job(
-            self._job_descr_with_status(JobStatus.RUNNING, name="job-name"), "owner"
+            self._job_descr_with_status(JobStatus.RUNNING, name="job-name"),
+            "owner",
+            image_formatter=str,
         )
         assert row.name == "job-name"
 
     def test_without_job_name(self) -> None:
         row = TabularJobRow.from_job(
-            self._job_descr_with_status(JobStatus.RUNNING, name=None), "owner"
+            self._job_descr_with_status(JobStatus.RUNNING, name=None),
+            "owner",
+            image_formatter=str,
         )
         assert row.name == ""
 
@@ -773,18 +940,34 @@ class TestTabularJobRow:
         ],
     )
     def test_status_date_relation(self, status: JobStatus, date: str) -> None:
-        row = TabularJobRow.from_job(self._job_descr_with_status(status), "owner")
+        row = TabularJobRow.from_job(
+            self._job_descr_with_status(status), "owner", image_formatter=str
+        )
         assert row.status == f"{status}"
         assert row.when == date
 
-    def test_image_from_registry_parsing(self) -> None:
+    def test_image_from_registry_parsing_short(self) -> None:
+        uri_fmtr = uri_formatter(username="bob", cluster_name="test-cluster")
+        image_fmtr = image_formatter(uri_formatter=uri_fmtr)
         row = TabularJobRow.from_job(
             self._job_descr_with_status(
-                JobStatus.PENDING, "registry-test.neu.ro/bob/swiss-box:red"
+                JobStatus.PENDING, "registry-test.neu.ro/bob/swiss-box:red",
+            ),
+            "bob",
+            image_formatter=image_fmtr,
+        )
+        assert row.image == "image:swiss-box:red"
+        assert row.name == ""
+
+    def test_image_from_registry_parsing_long(self) -> None:
+        row = TabularJobRow.from_job(
+            self._job_descr_with_status(
+                JobStatus.PENDING, "registry-test.neu.ro/bob/swiss-box:red",
             ),
             "owner",
+            image_formatter=str,
         )
-        assert row.image == "image://bob/swiss-box:red"
+        assert row.image == "image://test-cluster/bob/swiss-box:red"
         assert row.name == ""
 
 
@@ -800,15 +983,21 @@ class TestTabularJobsFormatter:
         "DESCRIPTION",
         "COMMAND",
     ]
-    image_parser = _ImageNameParser("bob", URL("https://registry-test.neu.ro"))
+    image_parser = _ImageNameParser(
+        "bob", "test-cluster", URL("https://registry-test.neu.ro")
+    )
 
     def test_empty(self) -> None:
-        formatter = TabularJobsFormatter(0, "owner", parse_columns(None))
+        formatter = TabularJobsFormatter(
+            0, "owner", parse_columns(None), image_formatter=str
+        )
         result = [item for item in formatter([])]
         assert result == ["  ".join(self.columns)]
 
     def test_width_cutting(self) -> None:
-        formatter = TabularJobsFormatter(10, "owner", parse_columns(None))
+        formatter = TabularJobsFormatter(
+            10, "owner", parse_columns(None), image_formatter=str
+        )
         result = [item for item in formatter([])]
         assert result == ["  ".join(self.columns)[:10]]
 
@@ -821,6 +1010,7 @@ class TestTabularJobsFormatter:
             id="j",
             owner=owner_name,
             cluster_name="dc",
+            uri=URL(f"job://dc/{owner_name}/j"),
             name="name",
             description="d",
             history=JobStatusHistory(
@@ -839,7 +1029,9 @@ class TestTabularJobsFormatter:
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
         )
-        formatter = TabularJobsFormatter(0, "owner", parse_columns(None))
+        formatter = TabularJobsFormatter(
+            0, "owner", parse_columns(None), image_formatter=str
+        )
         result = [item.rstrip() for item in formatter([job])]
         assert result in [
             [
@@ -867,6 +1059,10 @@ class TestTabularJobsFormatter:
                 name="name1",
                 owner=owner_name,
                 cluster_name="default",
+                uri=URL(
+                    f"job://default/{owner_name}/"
+                    f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82"
+                ),
                 description="some description long long long long",
                 history=JobStatusHistory(
                     status=JobStatus.FAILED,
@@ -890,6 +1086,10 @@ class TestTabularJobsFormatter:
                 name="name2",
                 owner=owner_name,
                 cluster_name="default",
+                uri=URL(
+                    f"job://default/{owner_name}/"
+                    f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84"
+                ),
                 description="some description",
                 history=JobStatusHistory(
                     status=JobStatus.PENDING,
@@ -905,6 +1105,7 @@ class TestTabularJobsFormatter:
                         "with-long-tag",
                         registry="https://registry.neu.ro",
                         owner="bob",
+                        cluster_name="test-cluster",
                     ),
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                     command="ls -la /some/path",
@@ -913,13 +1114,15 @@ class TestTabularJobsFormatter:
                 is_preemptible=True,
             ),
         ]
-        formatter = TabularJobsFormatter(0, "owner", parse_columns(None))
+        formatter = TabularJobsFormatter(
+            0, "owner", parse_columns(None), image_formatter=str
+        )
         result = [item.rstrip() for item in formatter(jobs)]
         assert result == [
             f"ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  CLUSTER  DESCRIPTION                           COMMAND",  # noqa: E501
             f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag             {owner_printed}  default  some description long long long long  ls -la /some/path",  # noqa: E501
-            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://bob/some-image-name:with-long-    {owner_printed}  default  some description                      ls -la /some/path",  # noqa: E501
-            f"                                                                       tag",  # noqa: E501
+            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://test-cluster/bob/some-image-      {owner_printed}  default  some description                      ls -la /some/path",  # noqa: E501
+            f"                                                                       name:with-long-tag",  # noqa: E501
         ]
 
     def test_custol_columns(self) -> None:
@@ -928,6 +1131,7 @@ class TestTabularJobsFormatter:
             id="j",
             owner="owner",
             cluster_name="dc",
+            uri=URL("job://dc/owner/j"),
             name="name",
             description="d",
             history=JobStatusHistory(
@@ -948,7 +1152,7 @@ class TestTabularJobsFormatter:
         )
 
         columns = parse_columns("{status;align=right;min=20;Status Code}")
-        formatter = TabularJobsFormatter(0, "owner", columns)
+        formatter = TabularJobsFormatter(0, "owner", columns, image_formatter=str)
         result = [item.rstrip() for item in formatter([job])]
 
         assert result == ["         Status Code", "              failed"]

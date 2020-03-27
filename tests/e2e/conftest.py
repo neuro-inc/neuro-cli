@@ -1,5 +1,4 @@
 import asyncio
-import dataclasses
 import hashlib
 import logging
 import os
@@ -32,8 +31,8 @@ import pytest
 from yarl import URL
 
 from neuromation.api import (
+    Config,
     Container,
-    Factory,
     FileStatusType,
     IllegalArgumentError,
     JobDescription,
@@ -43,7 +42,6 @@ from neuromation.api import (
     get as api_get,
     login_with_token,
 )
-from neuromation.api.config import _CookieSession
 from neuromation.cli.asyncio_utils import run
 from neuromation.cli.utils import resolve_job
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
@@ -101,7 +99,7 @@ class Helper:
     def __init__(self, nmrc_path: Path, tmp_path: Path) -> None:
         self._nmrc_path = nmrc_path
         self._tmp = tmp_path
-        self.tmpstoragename = str(uuid())
+        self.tmpstoragename = f"test_e2e/{uuid()}"
         self._tmpstorage = f"storage:{self.tmpstoragename}/"
         self._closed = False
         self._executed_jobs: List[str] = []
@@ -117,23 +115,28 @@ class Helper:
 
     @property
     def username(self) -> str:
-        config = Factory(path=self._nmrc_path)._read()
-        return config.auth_token.username
+        config = self.get_config()
+        return config.username
 
     @property
     def cluster_name(self) -> str:
-        config = Factory(path=self._nmrc_path)._read()
+        config = self.get_config()
         return config.cluster_name
 
     @property
     def token(self) -> str:
-        config = Factory(path=self._nmrc_path)._read()
-        return config.auth_token.token
+        config = self.get_config()
+
+        @run_async
+        async def get_token() -> str:
+            return await config.token()
+
+        return get_token()
 
     @property
     def registry_url(self) -> URL:
-        config = Factory(path=self._nmrc_path)._read()
-        return config.clusters[config.cluster_name].registry_url
+        config = self.get_config()
+        return config.registry_url
 
     @property
     def tmpstorage(self) -> str:
@@ -141,9 +144,15 @@ class Helper:
 
     def make_uri(self, path: str, *, fromhome: bool = False) -> URL:
         if fromhome:
-            return URL(f"storage://{self.username}/{path}")
+            return URL(f"storage://{self.cluster_name}/{self.username}/{path}")
         else:
             return URL(self.tmpstorage + path)
+
+    @run_async
+    async def get_config(self) -> Config:
+        __tracebackhide__ = True
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            return client.config
 
     @run_async
     async def mkdir(self, path: str, **kwargs: bool) -> None:
@@ -530,23 +539,14 @@ class Helper:
                             break
 
 
-async def _get_storage_cookie(nmrc_path: Optional[Path]) -> None:
-    async with api_get(timeout=CLIENT_TIMEOUT, path=nmrc_path) as client:
-        await client.storage.ls(URL("storage:/"))
-        cookie = client._get_session_cookie()
-        if cookie is not None:
-            new_config = dataclasses.replace(
-                client.config._config_data,
-                cookie_session=_CookieSession(
-                    cookie=cookie.value, timestamp=int(time())
-                ),
-            )
-            Factory(nmrc_path)._save(new_config)
-
-
-@pytest.fixture(scope="session")
-def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
-    e2e_test_token = os.environ.get("CLIENT_TEST_E2E_USER_NAME")
+@pytest.fixture
+def nmrc_path(tmp_path_factory: Any, request: Any) -> Optional[Path]:
+    require_admin = request.keywords.get("require_admin", False)
+    if require_admin:
+        token_env = "E2E_TOKEN"
+    else:
+        token_env = "E2E_USER_TOKEN"
+    e2e_test_token = os.environ.get(token_env)
     if e2e_test_token:
         tmp_path = tmp_path_factory.mktemp("config")
         nmrc_path = tmp_path / "conftest.nmrc"
@@ -558,11 +558,8 @@ def nmrc_path(tmp_path_factory: Any) -> Optional[Path]:
                 timeout=CLIENT_TIMEOUT,
             )
         )
-        run(_get_storage_cookie(nmrc_path))
         return nmrc_path
     else:
-        # Update storage cookie
-        run(_get_storage_cookie(None))
         return None
 
 

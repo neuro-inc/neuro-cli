@@ -81,6 +81,23 @@ async def test_list_clusters_with_cloud_provider(
                 },
             },
             {
+                "name": "on-prem",
+                "status": "deployed",
+                "cloud_provider": {
+                    "type": "on_prem",
+                    "node_pools": [
+                        {
+                            "min_size": 2,
+                            "max_size": 2,
+                            "machine_type": "n1-highmem-8",
+                            "available_cpu": 7,
+                            "available_memory_mb": 46080,
+                        },
+                    ],
+                    "storage": {"description": "NFS"},
+                },
+            },
+            {
                 "name": "other1",
                 "status": "deployed",
                 "cloud_provider": {
@@ -134,6 +151,25 @@ async def test_list_clusters_with_cloud_provider(
                         ),
                     ],
                     storage=_Storage(description="Filestore"),
+                ),
+            ),
+            "on-prem": _Cluster(
+                name="on-prem",
+                status="deployed",
+                cloud_provider=_CloudProvider(
+                    type="on_prem",
+                    region=None,
+                    zones=[],
+                    node_pools=[
+                        _NodePool(
+                            min_size=2,
+                            max_size=2,
+                            machine_type="n1-highmem-8",
+                            available_cpu=7.0,
+                            available_memory_mb=46080,
+                        ),
+                    ],
+                    storage=_Storage(description="NFS"),
                 ),
             ),
             "other1": _Cluster(

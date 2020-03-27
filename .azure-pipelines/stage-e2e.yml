@@ -60,7 +60,8 @@ stages:
         make $(target)
       displayName: 'Run $(target)'
       env:
-        CLIENT_TEST_E2E_USER_NAME: $(e2e.token)
+        E2E_TOKEN: $(e2e.token)
+        E2E_USER_TOKEN: $(e2e-user.token)
         PYTEST_XDIST_NUM_THREADS: 8
 
     - script: |

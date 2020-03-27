@@ -65,7 +65,8 @@ def test_empty_directory_ls_output(helper: Helper) -> None:
 def test_ls_directory_itself(helper: Helper) -> None:
     helper.mkdir("")
     captured = helper.run_cli(["storage", "ls", "--directory", helper.tmpstorage])
-    assert captured.out.splitlines() == [helper.tmpstoragename]
+    _, _, name = helper.tmpstoragename.rpartition("/")
+    assert captured.out.splitlines() == [name]
 
 
 @pytest.mark.e2e
@@ -517,7 +518,10 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
 
     # Test subcommand "glob"
     captured = helper.run_cli(["storage", "glob", helper.tmpstorage + "/**"])
-    prefix = f"storage://{helper.username}/{URL(helper.tmpstorage).path}"
+    prefix = (
+        f"storage://{helper.cluster_name}/{helper.username}/"
+        f"{URL(helper.tmpstorage).path}"
+    )
     assert sorted(captured.out.splitlines()) == [
         prefix,
         prefix + "folder",
