@@ -18,11 +18,11 @@ from neuromation.cli.root import Root
 
 from . import (
     admin,
+    blob_storage,
     completion,
     config,
     image,
     job,
-    object_storage,
     project,
     share,
     storage,
@@ -464,7 +464,7 @@ cli.add_command(image.image)
 cli.add_command(config.config)
 cli.add_command(completion.completion)
 cli.add_command(share.acl)
-cli.add_command(object_storage.object_storage)
+cli.add_command(blob_storage.blob_storage)
 
 cli.add_command(DeprecatedGroup(storage.storage, name="store", hidden=True))
 

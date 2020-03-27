@@ -7,15 +7,15 @@ import click
 from yarl import URL
 
 from neuromation.api import FileStatusType, IllegalArgumentError, ResourceNotFound
+from neuromation.api.blob_storage import BlobListing, BucketListing, PrefixListing
 from neuromation.api.file_filter import FileFilter
-from neuromation.api.object_storage import BucketListing, ObjectListing, PrefixListing
 from neuromation.api.url_utils import _extract_path
 
 from .const import EX_OSFILE
 from .formatters import (
-    BaseObjectFormatter,
-    LongObjectFormatter,
-    SimpleObjectFormatter,
+    BaseBlobFormatter,
+    LongBlobFormatter,
+    SimpleBlobFormatter,
     create_storage_progress,
     get_painter,
 )
@@ -26,22 +26,22 @@ from .utils import (
     group,
     option,
     pager_maybe,
-    parse_obj_or_file_resource,
-    parse_obj_resource,
+    parse_blob_or_file_resource,
+    parse_blob_resource,
 )
 
 
 log = logging.getLogger(__name__)
 
 
-@group(name="obj")
-def object_storage() -> None:
+@group(name="blob")
+def blob_storage() -> None:
     """
-    Object storage operations.
+    Blob storage operations.
     """
 
 
-ObjectListings = Union[BucketListing, ObjectListing, PrefixListing]
+BlobListings = Union[BucketListing, BlobListing, PrefixListing]
 
 
 @command()
@@ -76,17 +76,17 @@ async def ls(
     """
     List buckets or bucket contents.
     """
-    uris = [parse_obj_resource(path, root) for path in paths]
+    uris = [parse_blob_resource(path, root) for path in paths]
 
-    obj = root.client.object_storage
+    blob = root.client.blob_storage
 
-    obj_listings: List[List[ObjectListings]] = []
+    blob_listings: List[List[BlobListings]] = []
 
     if not uris:
-        # List Buckets instead of objects in bucket
-        listing: List[ObjectListings] = []
-        obj_listings.append(listing)
-        for bucket in await obj.list_buckets():
+        # List Buckets instead of blobs in bucket
+        listing: List[BlobListings] = []
+        blob_listings.append(listing)
+        for bucket in await blob.list_buckets():
             listing.append(bucket)
     else:
         for uri in uris:
@@ -94,33 +94,33 @@ async def ls(
             assert bucket_name
 
             listing = []
-            obj_listings.append(listing)
+            blob_listings.append(listing)
 
-            for res in await obj.list_objects(
+            for res in await blob.list_blobs(
                 bucket_name=bucket_name,
                 prefix=uri.path.lstrip("/"),
                 recursive=recursive,
             ):
                 listing.append(res)
 
-    formatter: BaseObjectFormatter
+    formatter: BaseBlobFormatter
     if format_long:
         # Similar to `ls -l`
-        formatter = LongObjectFormatter(human_readable=human_readable, color=root.color)
+        formatter = LongBlobFormatter(human_readable=human_readable, color=root.color)
     else:
         # Similar to `ls -1`, default for non-terminal on UNIX. We show full uris of
-        # objects, thus column formatting does not work too well.
-        formatter = SimpleObjectFormatter(root.color)
+        # blobs, thus column formatting does not work too well.
+        formatter = SimpleBlobFormatter(root.color)
 
-    if len(obj_listings) > 1:
+    if len(blob_listings) > 1:
         buffer = []
-        for uri, listing in zip(uris, obj_listings):
+        for uri, listing in zip(uris, blob_listings):
             buffer.append(click.style(str(uri), bold=True) + ":")
             buffer.extend(formatter(listing))
         pager_maybe("".join(buffer), root.tty, root.terminal_size)
     else:
-        assert obj_listings
-        pager_maybe(formatter(obj_listings[0]), root.tty, root.terminal_size)
+        assert blob_listings
+        pager_maybe(formatter(blob_listings[0]), root.tty, root.terminal_size)
 
 
 @command()
@@ -130,7 +130,7 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     List resources that match PATTERNS.
     """
     for pattern in patterns:
-        uri = parse_obj_resource(pattern, root)
+        uri = parse_blob_resource(pattern, root)
         if root.verbosity > 0:
             painter = get_painter(root.color, quote=True)
             curi = painter.paint(str(uri), FileStatusType.FILE)
@@ -140,11 +140,11 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
             raise ValueError(
                 "You can not glob on bucket names. Please provide name explicitly."
             )
-        objects = await root.client.object_storage.glob_objects(
+        blobs = await root.client.blob_storage.glob_blobs(
             bucket_name=uri.host, pattern=uri.path
         )
-        for obj in objects:
-            click.echo(obj.uri)
+        for blob in blobs:
+            click.echo(blob.uri)
 
 
 @command()
@@ -210,15 +210,15 @@ async def cp(
     progress: bool,
 ) -> None:
     """
-    Simple utility to copy files and directories into and from Object Storage.
-    Either SOURCES or DESTINATION should have `object://` scheme.
+    Simple utility to copy files and directories into and from Blob Storage.
+    Either SOURCES or DESTINATION should have `blob://` scheme.
     If scheme is omitted, file:// scheme is assumed. It is currently not possible to
-    copy files between Object Storage (`object://`) destination, nor with `storage://`
+    copy files between Blob Storage (`blob://`) destination, nor with `storage://`
     scheme paths.
     Use `/dev/stdin` and `/dev/stdout` file names to upload a file from standard input
     or output to stdout.
     File permissions, modification times and other attributes will not be passed to
-    Object Storage metadata during upload.
+    Blob Storage metadata during upload.
     """
     target_dir: Optional[URL]
     dst: Optional[URL]
@@ -232,7 +232,7 @@ async def cp(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         sources = *sources, destination
-        target_dir = parse_obj_or_file_resource(target_directory, root)
+        target_dir = parse_blob_or_file_resource(target_directory, root)
         dst = None
     else:
         if destination is None:
@@ -243,7 +243,7 @@ async def cp(
             raise click.MissingParameter(
                 param_type="argument", param_hint='"SOURCES..."'
             )
-        dst = parse_obj_or_file_resource(destination, root)
+        dst = parse_blob_or_file_resource(destination, root)
 
         # From gsutil:
         #
@@ -253,9 +253,9 @@ async def cp(
 
         # gsutil cp -r dir1/dir2 gs://my-bucket/subdir
 
-        # will create the object gs://my-bucket/subdir/dir2/a/b/c. In contrast, if
+        # will create the blob gs://my-bucket/subdir/dir2/a/b/c. In contrast, if
         # gs://my-bucket/subdir does not exist, this same gsutil cp command will create
-        # the object gs://my-bucket/subdir/a/b/c.
+        # the blob gs://my-bucket/subdir/a/b/c.
         if no_target_directory or not await _is_dir(root, dst):
             target_dir = None
         else:
@@ -279,27 +279,27 @@ async def cp(
             dst = target_dir / src.name
         assert dst
 
-        progress_obj = create_storage_progress(root, show_progress)
-        progress_obj.begin(src, dst)
+        progress_blob = create_storage_progress(root, show_progress)
+        progress_blob.begin(src, dst)
 
         try:
-            if src.scheme == "file" and dst.scheme == "object":
+            if src.scheme == "file" and dst.scheme == "blob":
                 if recursive and await _is_dir(root, src):
-                    await root.client.object_storage.upload_dir(
-                        src, dst, filter=file_filter.match, progress=progress_obj,
+                    await root.client.blob_storage.upload_dir(
+                        src, dst, filter=file_filter.match, progress=progress_blob,
                     )
                 else:
-                    await root.client.object_storage.upload_file(
-                        src, dst, progress=progress_obj
+                    await root.client.blob_storage.upload_file(
+                        src, dst, progress=progress_blob
                     )
-            elif src.scheme == "object" and dst.scheme == "file":
+            elif src.scheme == "blob" and dst.scheme == "file":
                 if recursive and await _is_dir(root, src):
-                    await root.client.object_storage.download_dir(
-                        src, dst, filter=file_filter.match, progress=progress_obj,
+                    await root.client.blob_storage.download_dir(
+                        src, dst, filter=file_filter.match, progress=progress_blob,
                     )
                 else:
-                    await root.client.object_storage.download_file(
-                        src, dst, progress=progress_obj
+                    await root.client.blob_storage.download_file(
+                        src, dst, progress=progress_blob
                     )
             else:
                 raise RuntimeError(
@@ -311,15 +311,15 @@ async def cp(
             log.error(f"cannot copy {src} to {dst}: {error}")
             errors = True
 
-        progress_obj.end()
+        progress_blob.end()
 
     if errors:
         sys.exit(EX_OSFILE)
 
 
 async def _is_dir(root: Root, uri: URL) -> bool:
-    if uri.scheme == "object":
-        return await root.client.object_storage._is_dir(uri)
+    if uri.scheme == "blob":
+        return await root.client.blob_storage._is_dir(uri)
 
     elif uri.scheme == "file":
         path = _extract_path(uri)
@@ -332,25 +332,25 @@ async def _expand(
 ) -> List[URL]:
     uris = []
     for path in paths:
-        uri = parse_obj_or_file_resource(path, root)
+        uri = parse_blob_or_file_resource(path, root)
         if root.verbosity > 0:
             painter = get_painter(root.color, quote=True)
             curi = painter.paint(str(uri), FileStatusType.FILE)
             click.echo(f"Expand {curi}")
         uri_path = str(_extract_path(uri))
         if glob and globmodule.has_magic(uri_path):
-            if uri.scheme == "object":
+            if uri.scheme == "blob":
                 assert uri.host
                 if globmodule.has_magic(uri.host):
                     raise ValueError(
                         "You can not glob on bucket names. Please provide name "
                         "explicitly."
                     )
-                objects = await root.client.object_storage.glob_objects(
+                blobs = await root.client.blob_storage.glob_blobs(
                     bucket_name=uri.host, pattern=uri.path
                 )
-                for obj in objects:
-                    uris.append(obj.uri)
+                for blob in blobs:
+                    uris.append(blob.uri)
             elif allow_file and uri.scheme == "file":
                 for p in globmodule.iglob(uri_path, recursive=True):
                     uris.append(uri.with_path(p))
@@ -361,6 +361,6 @@ async def _expand(
     return uris
 
 
-object_storage.add_command(cp)
-object_storage.add_command(ls)
-object_storage.add_command(glob)
+blob_storage.add_command(cp)
+blob_storage.add_command(ls)
+blob_storage.add_command(glob)

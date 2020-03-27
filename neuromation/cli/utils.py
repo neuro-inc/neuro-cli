@@ -475,13 +475,11 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
         uri,
         root.client.username,
         root.client.cluster_name,
-        allowed_schemes=("storage", "image" "job", "object"),
+        allowed_schemes=("storage", "image" "job", "blob"),
     )
     # URI's for object storage can only operate on bucket level
-    if uri_res.scheme == "object" and "/" in uri_res.path.strip("/"):
-        raise ValueError(
-            "Only bucket level permissions are supported for Object Storage"
-        )
+    if uri_res.scheme == "blob" and "/" in uri_res.path.strip("/"):
+        raise ValueError("Only bucket level permissions are supported for Blob Storage")
     return uri_res
 
 
@@ -497,20 +495,20 @@ def parse_file_resource(uri: str, root: Root) -> URL:
     )
 
 
-def parse_obj_resource(uri: str, root: Root) -> URL:
+def parse_blob_resource(uri: str, root: Root) -> URL:
     # Username will not be used, just part of the signature
     return uri_from_cli(
-        uri, root.client.username, root.client.cluster_name, allowed_schemes=("object",)
+        uri, root.client.username, root.client.cluster_name, allowed_schemes=("blob",)
     )
 
 
-def parse_obj_or_file_resource(uri: str, root: Root) -> URL:
+def parse_blob_or_file_resource(uri: str, root: Root) -> URL:
     # Username will not be used, just part of the signature
     return uri_from_cli(
         uri,
         root.client.username,
         root.client.cluster_name,
-        allowed_schemes=("object", "file"),
+        allowed_schemes=("blob", "file"),
     )
 
 

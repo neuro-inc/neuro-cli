@@ -59,10 +59,10 @@
 		* [neuro acl grant](#neuro-acl-grant)
 		* [neuro acl revoke](#neuro-acl-revoke)
 		* [neuro acl list](#neuro-acl-list)
-	* [neuro obj](#neuro-obj)
-		* [neuro obj cp](#neuro-obj-cp)
-		* [neuro obj ls](#neuro-obj-ls)
-		* [neuro obj glob](#neuro-obj-glob)
+	* [neuro blob](#neuro-blob)
+		* [neuro blob cp](#neuro-blob-cp)
+		* [neuro blob ls](#neuro-blob-ls)
+		* [neuro blob glob](#neuro-blob-glob)
 	* [neuro help](#neuro-help)
 	* [neuro run](#neuro-run)
 	* [neuro submit](#neuro-submit)
@@ -135,7 +135,7 @@ Name | Description|
 | _[neuro config](#neuro-config)_| Client configuration |
 | _[neuro completion](#neuro-completion)_| Output shell completion code |
 | _[neuro acl](#neuro-acl)_| Access Control List management |
-| _[neuro obj](#neuro-obj)_| Object storage operations |
+| _[neuro blob](#neuro-blob)_| Blob storage operations |
 
 
 **Commands:**
@@ -1649,14 +1649,14 @@ Name | Description|
 
 
 
-## neuro obj
+## neuro blob
 
-Object storage operations.
+Blob storage operations.
 
 **Usage:**
 
 ```bash
-neuro obj [OPTIONS] COMMAND [ARGS]...
+neuro blob [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -1670,21 +1670,21 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro obj cp](#neuro-obj-cp)_| Simple utility to copy files and directories into and from Object Storage |
-| _[neuro obj ls](#neuro-obj-ls)_| List buckets or bucket contents |
-| _[neuro obj glob](#neuro-obj-glob)_| List resources that match PATTERNS |
+| _[neuro blob cp](#neuro-blob-cp)_| Simple utility to copy files and directories into and from Blob Storage |
+| _[neuro blob ls](#neuro-blob-ls)_| List buckets or bucket contents |
+| _[neuro blob glob](#neuro-blob-glob)_| List resources that match PATTERNS |
 
 
 
 
-### neuro obj cp
+### neuro blob cp
 
-Simple utility to copy files and directories into and from Object Storage.<br/>Either SOURCES or DESTINATION should have `object://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy<br/>files between Object Storage \(`object://`) destination, nor with<br/>`storage://` scheme paths. Use `/dev/stdin` and `/dev/stdout` file names to<br/>upload a file from standard input or output to stdout. File permissions,<br/>modification times and other attributes will not be passed to Object Storage<br/>metadata during upload.
+Simple utility to copy files and directories into and from Blob Storage.<br/>Either SOURCES or DESTINATION should have `blob://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy<br/>files between Blob Storage \(`blob://`) destination, nor with `storage://`<br/>scheme paths. Use `/dev/stdin` and `/dev/stdout` file names to upload a file<br/>from standard input or output to stdout. File permissions, modification<br/>times and other attributes will not be passed to Blob Storage metadata<br/>during upload.
 
 **Usage:**
 
 ```bash
-neuro obj cp [OPTIONS] [SOURCES]... [DESTINATION]
+neuro blob cp [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Options:**
@@ -1703,14 +1703,14 @@ Name | Description|
 
 
 
-### neuro obj ls
+### neuro blob ls
 
 List buckets or bucket contents.
 
 **Usage:**
 
 ```bash
-neuro obj ls [OPTIONS] [PATHS]...
+neuro blob ls [OPTIONS] [PATHS]...
 ```
 
 **Options:**
@@ -1726,14 +1726,14 @@ Name | Description|
 
 
 
-### neuro obj glob
+### neuro blob glob
 
 List resources that match PATTERNS.
 
 **Usage:**
 
 ```bash
-neuro obj glob [OPTIONS] [PATTERNS]...
+neuro blob glob [OPTIONS] [PATTERNS]...
 ```
 
 **Options:**

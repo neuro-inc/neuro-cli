@@ -5,9 +5,9 @@ from typing import Iterator, Sequence, Union
 
 from neuromation.api import (
     Action,
+    BlobListing,
     BucketListing,
     FileStatusType,
-    ObjectListing,
     PrefixListing,
 )
 from neuromation.cli.utils import format_size
@@ -16,25 +16,25 @@ from ..text_helper import StyledTextHelper
 from .storage import TIME_FORMAT, get_painter
 
 
-ObjectListings = Union[BucketListing, ObjectListing, PrefixListing]
+BlobListings = Union[BucketListing, BlobListing, PrefixListing]
 
 
-def get_file_type(file: ObjectListings) -> FileStatusType:
+def get_file_type(file: BlobListings) -> FileStatusType:
     if file.is_dir():
         return FileStatusType.DIRECTORY
     else:
         return FileStatusType.FILE
 
 
-class BaseObjectFormatter:
+class BaseBlobFormatter:
     @abc.abstractmethod
     def __call__(
-        self, files: Sequence[ObjectListings]
+        self, files: Sequence[BlobListings]
     ) -> Iterator[str]:  # pragma: no cover
         pass
 
 
-class LongObjectFormatter(BaseObjectFormatter):
+class LongBlobFormatter(BaseBlobFormatter):
     permissions_mapping = {Action.MANAGE: "m", Action.WRITE: "w", Action.READ: "r"}
 
     def __init__(self, human_readable: bool, color: bool):
@@ -42,7 +42,7 @@ class LongObjectFormatter(BaseObjectFormatter):
         self.painter = get_painter(color)
 
     @singledispatch
-    def to_columns(self, file: ObjectListings) -> Sequence[str]:
+    def to_columns(self, file: BlobListings) -> Sequence[str]:
         # Permission Size Date Name
         return ["", "", "", file.name]
 
@@ -54,7 +54,7 @@ class LongObjectFormatter(BaseObjectFormatter):
         return [f"b{permission}", f"", f"{date}", f"{name}"]
 
     @to_columns.register
-    def to_columns_object(self, file: ObjectListing) -> Sequence[str]:
+    def to_columns_blob(self, file: BlobListing) -> Sequence[str]:
         date = time.strftime(TIME_FORMAT, time.localtime(file.modification_time))
         if self.human_readable:
             size = format_size(file.size).rstrip("B")
@@ -68,7 +68,7 @@ class LongObjectFormatter(BaseObjectFormatter):
         name = self.painter.paint(str(file.uri), get_file_type(file))
         return ["p", "", "", f"{name}"]
 
-    def __call__(self, files: Sequence[ObjectListings]) -> Iterator[str]:
+    def __call__(self, files: Sequence[BlobListings]) -> Iterator[str]:
         if not files:
             return
         table = [self.to_columns(file) for file in files]
@@ -88,10 +88,10 @@ class LongObjectFormatter(BaseObjectFormatter):
             yield " ".join(line)
 
 
-class SimpleObjectFormatter(BaseObjectFormatter):
+class SimpleBlobFormatter(BaseBlobFormatter):
     def __init__(self, color: bool):
         self.painter = get_painter(color)
 
-    def __call__(self, files: Sequence[ObjectListings]) -> Iterator[str]:
+    def __call__(self, files: Sequence[BlobListings]) -> Iterator[str]:
         for file in files:
             yield self.painter.paint(str(file.uri), get_file_type(file))
