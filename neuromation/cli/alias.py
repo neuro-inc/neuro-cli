@@ -214,13 +214,11 @@ def _parse_args(source: str) -> List[click.Parameter]:
     brackets = False
     arg = None
     for item in src2:
-        if item == "[":
-            if brackets:
-                raise ConfigError(f'Nested brackets in "{source}"')
-            brackets = True
-        elif item == "]":
+        if item == "]":
             if not brackets:
                 raise ConfigError(f'Missing open bracket in "{source}"')
+            if arg is None:
+                raise ConfigError(f'Missing argument inside brackets in "{source}"')
             brackets = False
             required = False
         elif item == "...":
@@ -230,6 +228,8 @@ def _parse_args(source: str) -> List[click.Parameter]:
                 )
             if brackets:
                 raise ConfigError(f'Ellipsis (...) inside of brackets in "{source}"')
+            if multiple:
+                raise ConfigError(f'Successive ellipsis (...) in "{source}"')
             multiple = True
         else:
             if arg is not None:
@@ -247,7 +247,12 @@ def _parse_args(source: str) -> List[click.Parameter]:
                 multiple = False
                 brackets = False
                 arg = None
-            arg = item.upper()
+            if item == "[":
+                if brackets:
+                    raise ConfigError(f'Nested brackets in "{source}"')
+                brackets = True
+            else:
+                arg = item.upper()
     if arg is not None:
         if brackets:
             raise ConfigError(f'Missing close bracket in "{source}"')
