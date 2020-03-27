@@ -59,6 +59,10 @@
 		* [neuro acl grant](#neuro-acl-grant)
 		* [neuro acl revoke](#neuro-acl-revoke)
 		* [neuro acl list](#neuro-acl-list)
+	* [neuro obj](#neuro-obj)
+		* [neuro obj cp](#neuro-obj-cp)
+		* [neuro obj ls](#neuro-obj-ls)
+		* [neuro obj glob](#neuro-obj-glob)
 	* [neuro help](#neuro-help)
 	* [neuro run](#neuro-run)
 	* [neuro submit](#neuro-submit)
@@ -131,6 +135,7 @@ Name | Description|
 | _[neuro config](#neuro-config)_| Client configuration |
 | _[neuro completion](#neuro-completion)_| Output shell completion code |
 | _[neuro acl](#neuro-acl)_| Access Control List management |
+| _[neuro obj](#neuro-obj)_| Object storage operations |
 
 
 **Commands:**
@@ -1639,6 +1644,102 @@ Name | Description|
 |_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user.|
 |_--shared_|Output the resources shared by the user.|
 |_\--full-uri_|Output full URI.|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro obj
+
+Object storage operations.
+
+**Usage:**
+
+```bash
+neuro obj [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro obj cp](#neuro-obj-cp)_| Simple utility to copy files and directories into and from Object Storage |
+| _[neuro obj ls](#neuro-obj-ls)_| List buckets or bucket contents |
+| _[neuro obj glob](#neuro-obj-glob)_| List resources that match PATTERNS |
+
+
+
+
+### neuro obj cp
+
+Simple utility to copy files and directories into and from Object Storage.<br/>Either SOURCES or DESTINATION should have `object://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy<br/>files between Object Storage \(`object://`) destination, nor with<br/>`storage://` scheme paths. Use `/dev/stdin` and `/dev/stdout` file names to<br/>upload a file from standard input or output to stdout. File permissions,<br/>modification times and other attributes will not be passed to Object Storage<br/>metadata during upload.
+
+**Usage:**
+
+```bash
+neuro obj cp [OPTIONS] [SOURCES]... [DESTINATION]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-r, --recursive_|Recursive copy, off by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY.|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
+|_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro obj ls
+
+List buckets or bucket contents.
+
+**Usage:**
+
+```bash
+neuro obj ls [OPTIONS] [PATHS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
+|_-l_|use a long listing format.|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
+|_\-r, --recursive_|List all keys under the URL path provided, not just 1 level depths.|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro obj glob
+
+List resources that match PATTERNS.
+
+**Usage:**
+
+```bash
+neuro obj glob [OPTIONS] [PATTERNS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 

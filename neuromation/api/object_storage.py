@@ -61,10 +61,6 @@ def _extract_key(uri: URL) -> str:
     return uri.path.lstrip("/")
 
 
-def _extract_key(uri: URL) -> str:
-    return uri.path.lstrip("/")
-
-
 @dataclass(frozen=True)
 class BucketListing:
     name: str
