@@ -38,7 +38,7 @@ Blob Storage
       - ``blob://{cluster_name}/{bucket_name}/`` *READ* - access to list single
         bucket
 
-      :return: a :class:`list` of :class:`BucketListing` blobs available to user.
+      :return: a :class:`list` of :class:`BucketListing` objects available to user.
 
    .. comethod:: list_blobs(bucket_name: str, prefix: str = "", \
                               recursive: bool = False, max_keys: int = 10000 \
