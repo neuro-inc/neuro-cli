@@ -54,7 +54,7 @@ def _format_bucket_uri(bucket_name: str, key: str = "") -> URL:
     if key:
         return URL(f"blob:{bucket_name}/{key}")
     else:
-        return URL(f" blob:{bucket_name}")
+        return URL(f"blob:{bucket_name}")
 
 
 def _extract_key(uri: URL) -> str:

@@ -1,6 +1,5 @@
 import abc
 import time
-from functools import singledispatch
 from typing import Iterator, Sequence, Union
 
 from neuromation.api import (
@@ -41,19 +40,20 @@ class LongBlobFormatter(BaseBlobFormatter):
         self.human_readable = human_readable
         self.painter = get_painter(color)
 
-    @singledispatch
     def to_columns(self, file: BlobListings) -> Sequence[str]:
-        # Permission Size Date Name
-        return ["", "", "", file.name]
+        if isinstance(file, BucketListing):
+            return self.to_columns_bucket(file)
+        elif isinstance(file, BlobListing):
+            return self.to_columns_blob(file)
+        else:
+            return self.to_columns_prefix(file)
 
-    @to_columns.register
     def to_columns_bucket(self, file: BucketListing) -> Sequence[str]:
         permission = self.permissions_mapping[file.permission]
         date = time.strftime(TIME_FORMAT, time.localtime(file.creation_time))
         name = self.painter.paint(str(file.uri), get_file_type(file))
-        return [f"b{permission}", f"", f"{date}", f"{name}"]
+        return [f"{permission}", f"", f"{date}", f"{name}"]
 
-    @to_columns.register
     def to_columns_blob(self, file: BlobListing) -> Sequence[str]:
         date = time.strftime(TIME_FORMAT, time.localtime(file.modification_time))
         if self.human_readable:
@@ -61,12 +61,11 @@ class LongBlobFormatter(BaseBlobFormatter):
         else:
             size = str(file.size)
         name = self.painter.paint(str(file.uri), get_file_type(file))
-        return ["o", f"{size}", f"{date}", f"{name}"]
+        return ["", f"{size}", f"{date}", f"{name}"]
 
-    @to_columns.register
     def to_columns_prefix(self, file: PrefixListing) -> Sequence[str]:
         name = self.painter.paint(str(file.uri), get_file_type(file))
-        return ["p", "", "", f"{name}"]
+        return ["", "", "", f"{name}"]
 
     def __call__(self, files: Sequence[BlobListings]) -> Iterator[str]:
         if not files:
