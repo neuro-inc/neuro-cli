@@ -18,6 +18,7 @@ from .abc import (
     StorageProgressStart,
     StorageProgressStep,
 )
+from .blob_storage import Blob, BlobListing, BlobStorage, BucketListing, PrefixListing
 from .client import Client, Preset
 from .config import Config, ConfigError
 from .config_factory import (
@@ -48,13 +49,6 @@ from .jobs import (
     Resources,
     Volume,
 )
-from .object_storage import (
-    BucketListing,
-    Object,
-    ObjectListing,
-    ObjectStorage,
-    PrefixListing,
-)
 from .parser import Parser
 from .parsing_utils import LocalImage, RemoteImage, TagOption
 from .server_cfg import Cluster
@@ -82,10 +76,10 @@ __all__ = (
     "Share",
     "Client",
     "Preset",
-    "ObjectStorage",
+    "BlobStorage",
     "BucketListing",
-    "ObjectListing",
-    "Object",
+    "BlobListing",
+    "Blob",
     "PrefixListing",
     "Storage",
     "FileStatusType",
