@@ -26,6 +26,7 @@ from neuromation.api import (
 from neuromation.api.file_filter import FileFilter
 from neuromation.api.url_utils import _extract_path
 
+from .click_types import STORAGE
 from .const import EX_OSFILE
 from .formatters import (
     BaseFilesFormatter,
@@ -65,7 +66,7 @@ def storage() -> None:
 
 
 @command()
-@argument("paths", nargs=-1, required=True)
+@argument("paths", nargs=-1, required=True, type=STORAGE)
 @option(
     "--recursive",
     "-r",
@@ -107,7 +108,7 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
 
 
 @command()
-@argument("paths", nargs=-1)
+@argument("paths", nargs=-1, type=STORAGE)
 @option(
     "--human-readable",
     "-h",
@@ -190,7 +191,7 @@ async def ls(
 
 
 @command()
-@argument("patterns", nargs=-1, required=False)
+@argument("patterns", nargs=-1, required=False, type=STORAGE)
 async def glob(root: Root, patterns: Sequence[str]) -> None:
     """
     List resources that match PATTERNS.
@@ -240,8 +241,8 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
 
 
 @command()
-@argument("sources", nargs=-1, required=False)
-@argument("destination", required=False)
+@argument("sources", nargs=-1, required=False, type=STORAGE)
+@argument("destination", required=False, type=STORAGE)
 @option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
 @option(
     "--glob/--no-glob",
@@ -690,7 +691,7 @@ aws --endpoint-url {job.http_url} s3 {" ".join(map(shlex.quote, cp_cmd))}
 
 
 @command()
-@argument("paths", nargs=-1, required=True)
+@argument("paths", nargs=-1, required=True, type=STORAGE)
 @option(
     "-p",
     "--parents",
@@ -721,8 +722,8 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
 
 
 @command()
-@argument("sources", nargs=-1, required=False)
-@argument("destination", required=False)
+@argument("sources", nargs=-1, required=False, type=STORAGE)
+@argument("destination", required=False, type=STORAGE)
 @option(
     "--glob/--no-glob",
     is_flag=True,

@@ -391,16 +391,16 @@ def option(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
     option_attrs = attrs.copy()
     option_attrs.setdefault("cls", Option)
     typ = convert_type(attrs.get("type"), attrs.get("default"))
-    autocompletion = getattr(typ, "autocompletion", None)
-    option_attrs.setdefault("autocompletion", autocompletion)
+    complete = getattr(typ, "complete", None)
+    option_attrs.setdefault("autocompletion", complete)
     return click.option(*param_decls, **option_attrs)
 
 
 def argument(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
     arg_attrs = attrs.copy()
     typ = convert_type(attrs.get("type"), attrs.get("default"))
-    autocompletion = getattr(typ, "autocompletion", None)
-    arg_attrs.setdefault("autocompletion", autocompletion)
+    complete = getattr(typ, "complete", None)
+    arg_attrs.setdefault("autocompletion", complete)
     return click.argument(*param_decls, **arg_attrs)
 
 
