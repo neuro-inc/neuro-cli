@@ -260,6 +260,46 @@ async def test_blob_storage_list_buckets(
     ]
 
 
+async def test_blob_storage_create_bucket(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    name = "my_bucket"
+
+    async def handler(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
+        assert request.path == BlobUrlRotes.PUT_BUCKET.format(bucket=name)
+        assert request.query == {}
+        return web.json_response({"location": "ua-east-1"})
+
+    app = web.Application()
+    app.router.add_put(BlobUrlRotes.PUT_BUCKET, handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.blob_storage.create_bucket(name)
+
+
+async def test_blob_storage_delete_bucket(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    name = "my_bucket"
+
+    async def handler(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
+        assert request.path == BlobUrlRotes.DELETE_BUCKET.format(bucket=name)
+        assert request.query == {}
+        return web.Response(status=204)
+
+    app = web.Application()
+    app.router.add_delete(BlobUrlRotes.DELETE_BUCKET, handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.blob_storage.delete_bucket(name)
+
+
 async def test_blob_storage_list_blobs(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
