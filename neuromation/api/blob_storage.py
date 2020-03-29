@@ -57,10 +57,6 @@ def _format_bucket_uri(bucket_name: str, key: str = "") -> URL:
         return URL(f"blob:{bucket_name}")
 
 
-def _extract_key(uri: URL) -> str:
-    return uri.path.lstrip("/")
-
-
 @dataclass(frozen=True)
 class BucketListing:
     name: str
@@ -167,6 +163,20 @@ class BlobStorage(metaclass=NoPublicConstructor):
         async with self._core.request("GET", url, auth=auth) as resp:
             res = await resp.json()
             return [_bucket_status_from_data(bucket) for bucket in res]
+
+    async def create_bucket(self, bucket_name: str) -> None:
+        url = self._config.blob_storage_url / "b" / bucket_name
+        auth = await self._config._api_auth()
+
+        async with self._core.request("PUT", url, auth=auth) as resp:
+            assert resp.status == 200
+
+    async def delete_bucket(self, bucket_name: str) -> None:
+        url = self._config.blob_storage_url / "b" / bucket_name
+        auth = await self._config._api_auth()
+
+        async with self._core.request("DELETE", url, auth=auth) as resp:
+            assert resp.status == 204
 
     async def list_blobs(
         self,
@@ -304,6 +314,18 @@ class BlobStorage(metaclass=NoPublicConstructor):
                     pos += len(chunk)
                 await progress.complete(StorageProgressComplete(src_url, dst, size))
 
+    def _extract_bucket_and_key(self, uri: URL) -> Tuple[str, str]:
+        cluster_name = self._config.cluster_name
+        uri = normalize_blob_path_uri(uri, cluster_name)
+        if uri.host != self._config.cluster_name:
+            raise ValueError(
+                f"When using full URL's please specify cluster name "
+                f"{cluster_name!r} as host part. For example: "
+                f"blob://{cluster_name!r}/my_bucket/path/to/file."
+            )
+        bucket_name, _, key = uri.path.lstrip("/").partition("/")
+        return bucket_name, key
+
     async def _is_dir(self, uri: URL) -> bool:
         """ Check if provided path is an dir or serves as a prefix to a different key,
         as it would result in name conflicts on download.
@@ -312,17 +334,16 @@ class BlobStorage(metaclass=NoPublicConstructor):
             return True
         # Check if a folder key exists. As `/` at the end makes a different key, make
         # sure we ask for one with ending slash.
-        key = _extract_key(uri) + "/"
-        assert uri.host
+        bucket_name, key = self._extract_bucket_and_key(uri)
         blobs = await self.list_blobs(
-            bucket_name=uri.host, prefix=key, recursive=False, max_keys=1
+            bucket_name=bucket_name, prefix=key + "/", recursive=False, max_keys=1
         )
         return bool(blobs)
 
     async def _mkdir(self, uri: URL) -> None:
-        assert uri.host
-        assert uri.path.endswith("/")
-        await self.put_blob(bucket_name=uri.host, key=_extract_key(uri), body=b"")
+        bucket_name, key = self._extract_bucket_and_key(uri)
+        assert key.endswith("/")
+        await self.put_blob(bucket_name=bucket_name, key=key, body=b"")
 
     def make_url(self, bucket_name: str, key: str) -> URL:
         """ Helper function to let users create correct URL's for upload/download from
@@ -334,7 +355,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
-        dst = normalize_blob_path_uri(dst)
+        dst = normalize_blob_path_uri(dst, self._config.cluster_name)
 
         path = _extract_path(src)
         try:
@@ -351,14 +372,19 @@ class BlobStorage(metaclass=NoPublicConstructor):
             # See https://bugs.python.org/issue37074
 
         # Avoid name conflicts when uploading
-        parent = dst.parent
+        bucket_name, key = self._extract_bucket_and_key(dst)
+        parent, _, _ = key.rpartition("/")
         if await self._is_dir(dst):
+            # Uploading to keys like `prefix/` is prohibited, as they count as `folder`
+            # keys and should only be 0-sized blobs.
             raise IsADirectoryError(errno.EISDIR, "Is a directory", str(dst))
-        elif parent.path.strip("/"):
-            assert not parent.path.endswith("/")
-            assert parent.host
+        elif parent:
+            # We can't upload files to path like: `path/to/file.txt/new_file.json`
+            # if a file `path/to/file.txt` already exists. This is likely an error in
+            # the cli command call and will cause confusing behaviour on download.
+            assert not parent.endswith("/")
             try:
-                await self.head_blob(bucket_name=parent.host, key=_extract_key(parent))
+                await self.head_blob(bucket_name=bucket_name, key=parent)
             except ResourceNotFound:
                 pass
             else:
@@ -373,8 +399,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         self, src_path: Path, dst: URL, *, progress: QueuedProgress,
     ) -> None:
         assert dst.host
-        bucket_name = dst.host
-        key = _extract_key(dst)
+        bucket_name, key = self._extract_bucket_and_key(dst)
         # Be careful not to have too many opened files.
         async with self._file_sem:
             content_md5, size = await calc_md5(src_path)
@@ -400,7 +425,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         if filter is None:
             filter = _always
         src = normalize_local_path_uri(src)
-        dst = normalize_blob_path_uri(dst)
+        dst = normalize_blob_path_uri(dst, self._config.cluster_name)
         path = _extract_path(src).resolve()
         if not path.exists():
             raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
@@ -425,17 +450,18 @@ class BlobStorage(metaclass=NoPublicConstructor):
         tasks = []
         if not dst.path.endswith("/"):
             dst = dst / ""
-        assert dst.host
 
         # Make sure we don't have name conflicts
+        bucket_name, key = self._extract_bucket_and_key(dst)
         try:
-            await self.head_blob(
-                bucket_name=dst.host, key=_extract_key(dst).rstrip("/")
-            )
+            # We can't upload to folder `/path/to/file.txt/` if `/path/to/file.txt`
+            # already exists
+            await self.head_blob(bucket_name=bucket_name, key=key.rstrip("/"))
         except ResourceNotFound:
-            await self._mkdir(dst)
+            pass
         else:
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
+        await self._mkdir(dst)
 
         await progress.enter(StorageProgressEnterDir(src, dst))
         loop = asyncio.get_event_loop()
@@ -481,11 +507,11 @@ class BlobStorage(metaclass=NoPublicConstructor):
         update: bool = False,
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
-        src = normalize_blob_path_uri(src)
+        src = normalize_blob_path_uri(src, self._config.cluster_name)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        assert src.host
-        src_stat = await self.head_blob(bucket_name=src.host, key=_extract_key(src))
+        bucket_name, key = self._extract_bucket_and_key(src)
+        src_stat = await self.head_blob(bucket_name=bucket_name, key=key)
         queued = QueuedProgress(progress)
         await run_progress(
             queued, self._download_file(src, dst, path, src_stat.size, progress=queued),
@@ -507,9 +533,9 @@ class BlobStorage(metaclass=NoPublicConstructor):
                 for retry in retries(f"Fail to download {src}"):
                     async with retry:
                         pos = 0
-                        assert src.host is not None
+                        bucket_name, key = self._extract_bucket_and_key(src)
                         async for chunk in self.fetch_blob(
-                            bucket_name=src.host, key=_extract_key(src)
+                            bucket_name=bucket_name, key=key
                         ):
                             pos += len(chunk)
                             await progress.step(
@@ -528,7 +554,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
     ) -> None:
         if filter is None:
             filter = _always
-        src = normalize_blob_path_uri(src)
+        src = normalize_blob_path_uri(src, self._config.cluster_name)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         queued = QueuedProgress(progress)
@@ -547,21 +573,22 @@ class BlobStorage(metaclass=NoPublicConstructor):
     ) -> None:
         dst_path.mkdir(parents=True, exist_ok=True)
         await progress.enter(StorageProgressEnterDir(src, dst))
-        assert src.host
         tasks = []
-
-        prefix_path = src.path.strip("/")
+        bucket_name, folder_key = self._extract_bucket_and_key(src)
+        prefix_path = folder_key.strip("/")
+        # If we are downloading the whole bucket we need to specify an empty prefix '',
+        # not "/", thus only add it if path not empty
         if prefix_path:
             prefix_path += "/"
         for retry in retries(f"Fail to list {src}"):
             async with retry:
                 folder = await self.list_blobs(
-                    bucket_name=src.host, prefix=prefix_path, recursive=False
+                    bucket_name=bucket_name, prefix=prefix_path, recursive=False
                 )
 
         for child in folder:
-            # Skip "folder" keys, as they will be returned as BlobListing here again,
-            # previously being a common prefix
+            # Skip "folder" keys, as they will be returned as BlobListing results again,
+            # previously being a common prefix, ie. PrefixListing.
             if child.path == prefix_path:
                 continue
 
@@ -571,7 +598,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
             if not await filter(child_rel_path):
                 continue
             if child.is_file():
-                # Only BlobListing can be a file
+                # Only BlobListing can be a file, so it's safe to just cast
                 child = cast(BlobListing, child)
                 tasks.append(
                     self._download_file(
@@ -598,7 +625,11 @@ class BlobStorage(metaclass=NoPublicConstructor):
 
 def _bucket_status_from_data(data: Dict[str, Any]) -> BucketListing:
     mtime = isoparse(data["creation_date"]).timestamp()
-    return BucketListing(name=data["name"], creation_time=int(mtime))
+    return BucketListing(
+        name=data["name"],
+        creation_time=int(mtime),
+        permission=Action(data.get("permission", "read")),
+    )
 
 
 def _blob_status_from_key(bucket_name: str, data: Dict[str, Any]) -> BlobListing:

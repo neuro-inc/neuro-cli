@@ -64,7 +64,7 @@ def normalize_storage_path_uri(uri: URL, username: str, cluster_name: str) -> UR
     return _normalize_uri(uri, username, cluster_name)
 
 
-def normalize_blob_path_uri(uri: URL) -> URL:
+def normalize_blob_path_uri(uri: URL, cluster_name: str) -> URL:
     """Normalize Blob Storage url."""
     if uri.scheme != "blob":
         raise ValueError(
@@ -72,16 +72,17 @@ def normalize_blob_path_uri(uri: URL) -> URL:
         )
 
     stripped_path = uri.path.lstrip("/")
-    # We treat all as same URL's:
+    # We treat all those as same URL's:
     #   blob:my_bucket/object_name
     #   blob:/my_bucket/object_name
-    #   blob://my_bucket/object_name
     #   blob:///my_bucket/object_name
+    # For full URL we require it to have cluster name as host:
+    #   blob://my_cluster/my_bucket/object_name
+
     if not uri.host:
         if not stripped_path:
             raise ValueError(f"Bucket name is missing '{str(uri)}'")
-        uri = URL(f"{uri.scheme}://{stripped_path}")
-
+        uri = URL.build(scheme=uri.scheme, host=cluster_name, path="/" + stripped_path)
     return uri
 
 
