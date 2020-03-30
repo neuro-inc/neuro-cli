@@ -475,7 +475,7 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
         uri,
         root.client.username,
         root.client.cluster_name,
-        allowed_schemes=("storage", "image" "job", "blob"),
+        allowed_schemes=("storage", "image", "job", "blob"),
     )
     # URI's for object storage can only operate on bucket level
     if uri_res.scheme == "blob" and "/" in uri_res.path.strip("/"):
