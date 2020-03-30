@@ -90,16 +90,13 @@ async def ls(
             listing.append(bucket)
     else:
         for uri in uris:
-            bucket_name = uri.host
-            assert bucket_name
+            bucket_name, key = blob._extract_bucket_and_key(uri)
 
             listing = []
             blob_listings.append(listing)
 
             for res in await blob.list_blobs(
-                bucket_name=bucket_name,
-                prefix=uri.path.lstrip("/"),
-                recursive=recursive,
+                bucket_name=bucket_name, prefix=key, recursive=recursive,
             ):
                 listing.append(res)
 
