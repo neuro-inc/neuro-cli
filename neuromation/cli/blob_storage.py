@@ -337,14 +337,14 @@ async def _expand(
         uri_path = str(_extract_path(uri))
         if glob and globmodule.has_magic(uri_path):
             if uri.scheme == "blob":
-                assert uri.host
-                if globmodule.has_magic(uri.host):
+                bucket_name, key = root.client.blob_storage._extract_bucket_and_key(uri)
+                if globmodule.has_magic(bucket_name):
                     raise ValueError(
                         "You can not glob on bucket names. Please provide name "
                         "explicitly."
                     )
                 blobs = await root.client.blob_storage.glob_blobs(
-                    bucket_name=uri.host, pattern=uri.path
+                    bucket_name=bucket_name, pattern=key
                 )
                 for blob in blobs:
                     uris.append(blob.uri)

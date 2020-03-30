@@ -22,6 +22,7 @@ from typing import (
     Optional,
     Tuple,
     Union,
+    cast,
 )
 from uuid import uuid4 as uuid
 
@@ -31,6 +32,7 @@ import pytest
 from yarl import URL
 
 from neuromation.api import (
+    BlobListing,
     Config,
     Container,
     FileStatusType,
@@ -96,12 +98,12 @@ def run_async(coro: Any) -> Callable[..., Any]:
 
 
 class Helper:
-    def __init__(self, nmrc_path: Path, tmp_path: Path) -> None:
+    def __init__(self, nmrc_path: Path, tmp_path: Path, tmpbucketname: str) -> None:
         self._nmrc_path = nmrc_path
         self._tmp = tmp_path
         self.tmpstoragename = f"test_e2e/{uuid()}"
         self._tmpstorage = f"storage:{self.tmpstoragename}/"
-        self._tmpbucketname = f"neuro_{self.tmpstoragename.replace('/', '_')}"
+        self._tmpbucketname = tmpbucketname
         self._closed = False
         self._executed_jobs: List[str] = []
 
@@ -144,7 +146,7 @@ class Helper:
         return self._tmpstorage
 
     @property
-    def tmpbucketname(self):
+    def tmpbucketname(self) -> str:
         return self._tmpbucketname
 
     def make_uri(self, path: str, *, fromhome: bool = False) -> URL:
@@ -556,6 +558,24 @@ class Helper:
             await client.blob_storage.delete_bucket(name)
 
     @run_async
+    async def cleanup_bucket(self, bucket_name: str) -> None:
+        __tracebackhide__ = True
+        # Each test needs a clean bucket state and we can't delete bucket until it's
+        # cleaned
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            blobs = await client.blob_storage.list_blobs(bucket_name, recursive=True)
+            if not blobs:
+                return
+
+            # XXX: We do assume we will not have tests that run 10000 of objects. If we
+            # do, please add a semaphore here.
+            tasks = []
+            for blob in blobs:
+                blob = cast(BlobListing, blob)
+                tasks.append(client.blob_storage.delete_blob(bucket_name, key=blob.key))
+            await asyncio.gather(*tasks)
+
+    @run_async
     async def upload_blob(self, bucket_name: str, key: str, file: Path) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
@@ -608,8 +628,12 @@ def nmrc_path(tmp_path_factory: Any, request: Any) -> Optional[Path]:
 
 
 @pytest.fixture
-def helper(tmp_path: Path, nmrc_path: Path) -> Iterator[Helper]:
-    ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path)
+def helper(
+    tmp_path: Path, nmrc_path: Path, tmp_bucket_allocate: str
+) -> Iterator[Helper]:
+    ret = Helper(
+        nmrc_path=nmrc_path, tmp_path=tmp_path, tmpbucketname=tmp_bucket_allocate
+    )
     yield ret
     with suppress(Exception):
         # ignore exceptions in helper closing
@@ -661,7 +685,7 @@ def nested_data(static_path: Path) -> Tuple[str, str, str]:
 
 
 @pytest.fixture(scope="session")
-def tmp_bucket(tmp_path_factory: Any, request: Any) -> Iterator[str]:
+def tmp_bucket_allocate(tmp_path_factory: Any, request: Any) -> Iterator[str]:
     e2e_test_token = os.environ.get("E2E_USER_TOKEN")
     assert e2e_test_token, "E2E_USER_TOKEN not provided"
 
@@ -677,10 +701,17 @@ def tmp_bucket(tmp_path_factory: Any, request: Any) -> Iterator[str]:
     )
     tmp_path = tmp_path_factory.mktemp("tmp_bucket")
 
-    helper = Helper(nmrc_path, tmp_path)
+    tmpbucketname = f"neuro_test_e2e_{uuid()}"
+    helper = Helper(nmrc_path, tmp_path, tmpbucketname)
     helper.create_bucket(helper.tmpbucketname)
     yield helper.tmpbucketname
     helper.delete_bucket(helper.tmpbucketname)
+
+
+@pytest.fixture
+def tmp_bucket(tmp_bucket_allocate: str, helper: Helper) -> Iterator[str]:
+    yield tmp_bucket_allocate
+    helper.cleanup_bucket(tmp_bucket_allocate)
 
 
 @pytest.fixture

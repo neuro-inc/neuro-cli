@@ -405,7 +405,6 @@ class BlobStorage(metaclass=NoPublicConstructor):
     async def _upload_file(
         self, src_path: Path, dst: URL, *, progress: QueuedProgress,
     ) -> None:
-        assert dst.host
         bucket_name, key = self._extract_bucket_and_key(dst)
         # Be careful not to have too many opened files.
         async with self._file_sem:
