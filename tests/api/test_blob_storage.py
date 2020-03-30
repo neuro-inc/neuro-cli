@@ -1006,6 +1006,30 @@ async def test_blob_storage_upload_recursive_slash_ending(
     ]
 
 
+async def test_blob_storage_upload_to_bucket_root(
+    blob_storage_server: Any,
+    make_client: _MakeClient,
+    blob_storage_contents: _ContentsObj,
+) -> None:
+
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_dir(
+            URL(DATA_FOLDER.as_uri()) / "nested", URL("blob:foo/")
+        )
+
+    keys = [v for k, v in blob_storage_contents.items() if k.startswith("folder/")]
+    body = (DATA_FOLDER / "nested" / "folder" / "file.txt").read_bytes()
+    assert keys == [
+        {"key": "folder/", "size": 0, "last_modified": mock.ANY, "body": b""},
+        {
+            "key": "folder/file.txt",
+            "size": len(body),
+            "last_modified": mock.ANY,
+            "body": body,
+        },
+    ]
+
+
 async def test_blob_storage_download_regular_file_to_absent_file(
     blob_storage_server: Any,
     make_client: _MakeClient,
