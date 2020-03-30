@@ -260,6 +260,46 @@ async def test_blob_storage_list_buckets(
     ]
 
 
+async def test_blob_storage_create_bucket(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    name = "my_bucket"
+
+    async def handler(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
+        assert request.path == BlobUrlRotes.PUT_BUCKET.format(bucket=name)
+        assert request.query == {}
+        return web.json_response({"location": "ua-east-1"})
+
+    app = web.Application()
+    app.router.add_put(BlobUrlRotes.PUT_BUCKET, handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.blob_storage.create_bucket(name)
+
+
+async def test_blob_storage_delete_bucket(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    name = "my_bucket"
+
+    async def handler(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
+        assert request.path == BlobUrlRotes.DELETE_BUCKET.format(bucket=name)
+        assert request.query == {}
+        return web.Response(status=204)
+
+    app = web.Application()
+    app.router.add_delete(BlobUrlRotes.DELETE_BUCKET, handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.blob_storage.delete_bucket(name)
+
+
 async def test_blob_storage_list_blobs(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -711,7 +751,7 @@ async def test_blob_storage_upload_not_a_file(
     assert uploaded["body"] == b""
 
     src = URL(file_path.as_uri())
-    dst = URL("blob://foo/file.txt")
+    dst = URL("blob://default/foo/file.txt")
     progress.start.assert_called_with(StorageProgressStart(src, dst, 0))
     progress.step.assert_not_called()
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, 0))
@@ -736,7 +776,7 @@ async def test_blob_storage_upload_regular_file_new_file(
     assert uploaded["body"] == expected
 
     src = URL(file_path.as_uri())
-    dst = URL("blob://foo/file.txt")
+    dst = URL("blob://default/foo/file.txt")
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
     progress.step.assert_called_with(
         StorageProgressStep(src, dst, file_size, file_size)
@@ -772,7 +812,7 @@ async def test_blob_storage_upload_large_file(
     assert uploaded["body"] == expected
 
     src = URL(local_file.as_uri())
-    dst = URL("blob://foo/folder2/big_file")
+    dst = URL("blob://default/foo/folder2/big_file")
     file_size = len(expected)
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
     progress.step.assert_called_with(
@@ -986,7 +1026,7 @@ async def test_blob_storage_download_regular_file_to_absent_file(
     downloaded = local_file.read_bytes()
     assert downloaded == expected
 
-    src = URL("blob://foo/test1.txt")
+    src = URL("blob://default/foo/test1.txt")
     dst = URL(local_file.as_uri())
     file_size = len(expected)
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
@@ -1026,7 +1066,7 @@ async def test_blob_storage_download_large_file(
     downloaded = local_file.read_bytes()
     assert downloaded == large_payload
 
-    src = URL("blob://foo/folder2/big_file")
+    src = URL("blob://default/foo/folder2/big_file")
     dst = URL(local_file.as_uri())
     file_size = len(large_payload)
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
