@@ -47,8 +47,8 @@ def uri_from_cli(
         )
     if uri.scheme == "file":
         uri = normalize_local_path_uri(uri)
-    elif uri.scheme == "object":
-        uri = normalize_obj_path_uri(uri)
+    elif uri.scheme == "blob":
+        uri = normalize_blob_path_uri(uri)
     else:
         uri = _normalize_uri(uri, username, cluster_name)
     return uri
@@ -64,19 +64,19 @@ def normalize_storage_path_uri(uri: URL, username: str, cluster_name: str) -> UR
     return _normalize_uri(uri, username, cluster_name)
 
 
-def normalize_obj_path_uri(uri: URL) -> URL:
-    """Normalize Object Storage url."""
-    if uri.scheme != "object":
+def normalize_blob_path_uri(uri: URL) -> URL:
+    """Normalize Blob Storage url."""
+    if uri.scheme != "blob":
         raise ValueError(
-            f"Invalid storage scheme '{uri.scheme}://' " "(only 'object://' is allowed)"
+            f"Invalid storage scheme '{uri.scheme}://' " "(only 'blob://' is allowed)"
         )
 
     stripped_path = uri.path.lstrip("/")
     # We treat all as same URL's:
-    #   object:my_bucket/object_name
-    #   object:/my_bucket/object_name
-    #   object://my_bucket/object_name
-    #   object:///my_bucket/object_name
+    #   blob:my_bucket/object_name
+    #   blob:/my_bucket/object_name
+    #   blob://my_bucket/object_name
+    #   blob:///my_bucket/object_name
     if not uri.host:
         if not stripped_path:
             raise ValueError(f"Bucket name is missing '{str(uri)}'")
