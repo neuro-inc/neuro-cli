@@ -3,7 +3,7 @@ import hashlib
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, Dict, List, Set  # noqa: F401
+from typing import Any, AsyncIterator, Callable, Dict, List, NoReturn, Set  # noqa: F401
 from unittest import mock
 
 import pytest
@@ -41,6 +41,7 @@ class BlobUrlRotes:
     HEAD_OBJECT = r"/blob/o/{bucket}/{path:.+}"
     GET_OBJECT = r"/blob/o/{bucket}/{path:.+}"
     PUT_OBJECT = r"/blob/o/{bucket}/{path:.+}"
+    DELETE_OBJECT = r"/blob/o/{bucket}/{path:.+}"
 
 
 # Bucket `foo` structure
@@ -216,12 +217,25 @@ async def blob_storage_server(
 
         return web.Response(headers={"ETag": repr(etag)})
 
+    async def delete_blob(request: web.Request) -> NoReturn:
+        assert "b3" in request.headers
+        assert request.match_info["bucket"] == "foo"
+
+        key = request.match_info["path"]
+        if key not in CONTENTS:
+            raise web.HTTPNotFound()
+
+        del CONTENTS[key]
+
+        raise web.HTTPNoContent()
+
     app = web.Application()
     app.router.add_get(BlobUrlRotes.LIST_BUCKETS, list_buckets)
     app.router.add_get(BlobUrlRotes.LIST_OBJECTS, list_blobs)
     # HEAD will also use this
     app.router.add_get(BlobUrlRotes.GET_OBJECT, get_blob)
     app.router.add_put(BlobUrlRotes.PUT_OBJECT, put_blob)
+    app.router.add_delete(BlobUrlRotes.DELETE_OBJECT, delete_blob)
 
     return await aiohttp_server(app)
 
@@ -643,6 +657,27 @@ async def test_blob_storage_put_blob(
             content_md5=md5,
         )
         assert resp_etag == etag
+
+
+async def test_blob_storage_delete_blob(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    bucket_name = "foo"
+    key = "text.txt"
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.path == f"/blob/o/{bucket_name}/{key}"
+        return web.Response(status=204)
+
+    app = web.Application()
+    app.router.add_delete(BlobUrlRotes.DELETE_OBJECT, handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        res = await client.blob_storage.delete_blob(bucket_name=bucket_name, key=key,)
+        assert res is None
 
 
 async def test_blob_storage_calc_md5(tmp_path: Path) -> None:
