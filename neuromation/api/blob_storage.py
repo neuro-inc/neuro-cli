@@ -52,9 +52,9 @@ ProgressQueueItem = Optional[Any]
 
 def _format_bucket_uri(bucket_name: str, key: str = "") -> URL:
     if key:
-        return URL(f"blob:{bucket_name}/{key}")
+        return URL("blob:") / bucket_name / key
     else:
-        return URL(f"blob:{bucket_name}")
+        return URL("blob:") / bucket_name
 
 
 @dataclass(frozen=True)
@@ -328,7 +328,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
             raise ValueError(
                 f"When using full URL's please specify cluster name "
                 f"{cluster_name!r} as host part. For example: "
-                f"blob://{cluster_name!r}/my_bucket/path/to/file."
+                f"blob://{cluster_name}/my_bucket/path/to/file."
             )
         bucket_name, _, key = uri.path.lstrip("/").partition("/")
         return bucket_name, key
@@ -349,7 +349,8 @@ class BlobStorage(metaclass=NoPublicConstructor):
 
     async def _mkdir(self, uri: URL) -> None:
         bucket_name, key = self._extract_bucket_and_key(uri)
-        assert key.endswith("/")
+        assert key.endswith("/"), "Key should end with a trailing slash"
+        assert key.strip("/"), "Can not create a bucket root folder"
         await self.put_blob(bucket_name=bucket_name, key=key, body=b"")
 
     def make_url(self, bucket_name: str, key: str) -> URL:
@@ -457,17 +458,20 @@ class BlobStorage(metaclass=NoPublicConstructor):
         if not dst.path.endswith("/"):
             dst = dst / ""
 
-        # Make sure we don't have name conflicts
         bucket_name, key = self._extract_bucket_and_key(dst)
-        try:
-            # We can't upload to folder `/path/to/file.txt/` if `/path/to/file.txt`
-            # already exists
-            await self.head_blob(bucket_name=bucket_name, key=key.rstrip("/"))
-        except ResourceNotFound:
-            pass
-        else:
-            raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
-        await self._mkdir(dst)
+        if key.rstrip("/"):
+            try:
+                # Make sure we don't have name conflicts
+                # We can't upload to folder `/path/to/file.txt/` if `/path/to/file.txt`
+                # already exists
+                await self.head_blob(bucket_name=bucket_name, key=key.rstrip("/"))
+            except ResourceNotFound:
+                pass
+            else:
+                raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
+
+            # Only create folder if we are not uploading to bucket root
+            await self._mkdir(dst)
 
         await progress.enter(StorageProgressEnterDir(src, dst))
         loop = asyncio.get_event_loop()
