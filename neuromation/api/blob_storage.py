@@ -342,6 +342,11 @@ class BlobStorage(metaclass=NoPublicConstructor):
         # Check if a folder key exists. As `/` at the end makes a different key, make
         # sure we ask for one with ending slash.
         bucket_name, key = self._extract_bucket_and_key(uri)
+
+        # bucket "root" should always be considered a directory
+        if not key:
+            return True
+
         blobs = await self.list_blobs(
             bucket_name=bucket_name, prefix=key + "/", recursive=False, max_keys=1
         )

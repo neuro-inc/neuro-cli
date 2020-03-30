@@ -112,14 +112,14 @@ def test_e2e_blob_storage_copy_no_sources_no_destination(helper: Helper) -> None
 @pytest.mark.e2e
 def test_e2e_blob_storage_copy_no_sources(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(["blob", "cp", helper.tmpstorage])
+        helper.run_cli(["blob", "cp", "blob:foo"])
     assert 'Missing argument "SOURCES..."' in cm.value.stderr
 
 
 @pytest.mark.e2e
 def test_e2e_blob_storage_copy_no_sources_target_directory(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(["blob", "cp", "-t", helper.tmpstorage])
+        helper.run_cli(["blob", "cp", "-t", "blob:foo"])
     assert 'Missing argument "SOURCES..."' in cm.value.stderr
 
 
@@ -128,7 +128,7 @@ def test_e2e_blob_storage_copy_target_directory_no_target_directory(
     helper: Helper, tmp_path: Path
 ) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(["blob", "cp", "-t", helper.tmpstorage, "-T", str(tmp_path)])
+        helper.run_cli(["blob", "cp", "-t", "blob:foo", "-T", str(tmp_path)])
     assert "Cannot combine" in cm.value.stderr
 
 
@@ -137,9 +137,7 @@ def test_e2e_blob_storage_copy_no_target_directory_extra_operand(
     helper: Helper, tmp_path: Path
 ) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(
-            [" blob", "cp", "-T", str(tmp_path), helper.tmpstorage, str(tmp_path)]
-        )
+        helper.run_cli(["blob", "cp", "-T", str(tmp_path), "blob:foo", str(tmp_path)])
     assert "Extra operand after " in cm.value.stderr
 
 
@@ -150,7 +148,7 @@ def test_e2e_blob_storage_copy_recursive(
     srcfile, checksum, dir_path = nested_data
     target_file_name = Path(srcfile).name
 
-    # Upload local file
+    # Upload local folder .../neested_data/nested to bucket root
     captured = helper.run_cli(["blob", "cp", "-r", dir_path, f"blob:{tmp_bucket}"])
     # stderr has logs like "Using path ..."
     # assert not captured.err
@@ -163,7 +161,7 @@ def test_e2e_blob_storage_copy_recursive(
     # Download into local directory and confirm checksum
     targetdir = tmp_path / "bar"
     targetdir.mkdir()
-    helper.run_cli(["storage", "cp", "-r", f"blob:{tmp_bucket}", str(targetdir)])
+    helper.run_cli(["blob", "cp", "-r", f"blob:{tmp_bucket}/", str(targetdir)])
     targetfile = targetdir / "nested" / "directory" / "for" / "test" / target_file_name
     print("source file", srcfile)
     print("target file", targetfile)

@@ -111,6 +111,7 @@ class Helper:
         if not self._closed:
             with suppress(Exception):
                 self.rm("", recursive=True)
+            self.cleanup_bucket(self._tmpbucketname)
             self._closed = True
         if self._executed_jobs:
             for job in self._executed_jobs:
@@ -571,6 +572,7 @@ class Helper:
             # do, please add a semaphore here.
             tasks = []
             for blob in blobs:
+                log.info("Removing %s %s", bucket_name, blob.key)
                 blob = cast(BlobListing, blob)
                 tasks.append(client.blob_storage.delete_blob(bucket_name, key=blob.key))
             await asyncio.gather(*tasks)
@@ -628,12 +630,8 @@ def nmrc_path(tmp_path_factory: Any, request: Any) -> Optional[Path]:
 
 
 @pytest.fixture
-def helper(
-    tmp_path: Path, nmrc_path: Path, tmp_bucket_allocate: str
-) -> Iterator[Helper]:
-    ret = Helper(
-        nmrc_path=nmrc_path, tmp_path=tmp_path, tmpbucketname=tmp_bucket_allocate
-    )
+def helper(tmp_path: Path, nmrc_path: Path, tmp_bucket: str) -> Iterator[Helper]:
+    ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path, tmpbucketname=tmp_bucket)
     yield ret
     with suppress(Exception):
         # ignore exceptions in helper closing
@@ -685,7 +683,7 @@ def nested_data(static_path: Path) -> Tuple[str, str, str]:
 
 
 @pytest.fixture(scope="session")
-def tmp_bucket_allocate(tmp_path_factory: Any, request: Any) -> Iterator[str]:
+def tmp_bucket(tmp_path_factory: Any, request: Any) -> Iterator[str]:
     e2e_test_token = os.environ.get("E2E_USER_TOKEN")
     assert e2e_test_token, "E2E_USER_TOKEN not provided"
 
@@ -706,12 +704,6 @@ def tmp_bucket_allocate(tmp_path_factory: Any, request: Any) -> Iterator[str]:
     helper.create_bucket(helper.tmpbucketname)
     yield helper.tmpbucketname
     helper.delete_bucket(helper.tmpbucketname)
-
-
-@pytest.fixture
-def tmp_bucket(tmp_bucket_allocate: str, helper: Helper) -> Iterator[str]:
-    yield tmp_bucket_allocate
-    helper.cleanup_bucket(tmp_bucket_allocate)
 
 
 @pytest.fixture

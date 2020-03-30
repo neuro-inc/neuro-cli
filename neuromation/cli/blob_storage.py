@@ -272,6 +272,11 @@ async def cp(
 
     errors = False
     for src in srcs:
+        # `src.name` will return empty string if URL has trailing slash, ie.:
+        # `neuro blob cp data/ blob:my_bucket` -> dst == blob:my_bucket/file.txt
+        # `neuro blob cp data blob:my_bucket` -> dst == blob:my_bucket/data/file.txt
+        # `neuro blob cp blob:my_bucket data` -> dst == data/my_bucket/file.txt
+        # `neuro blob cp blob:my_bucket/ data` -> dst == data/file.txt
         if target_dir:
             dst = target_dir / src.name
         assert dst
