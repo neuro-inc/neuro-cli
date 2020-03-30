@@ -295,6 +295,13 @@ class BlobStorage(metaclass=NoPublicConstructor):
             etag = resp.headers["ETag"]
             return etag
 
+    async def delete_blob(self, bucket_name: str, key: str) -> None:
+        url = self._config.blob_storage_url / "o" / bucket_name / key
+        auth = await self._config._api_auth()
+
+        async with self._core.request("DELETE", url, auth=auth) as resp:
+            assert resp.status == 204
+
     # high-level helpers
 
     async def _iterate_file(

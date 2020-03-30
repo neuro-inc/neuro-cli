@@ -78,7 +78,6 @@ def normalize_blob_path_uri(uri: URL, cluster_name: str) -> URL:
     #   blob:///my_bucket/object_name
     # For full URL we require it to have cluster name as host:
     #   blob://my_cluster/my_bucket/object_name
-
     if not uri.host:
         if not stripped_path:
             raise ValueError(f"Bucket name is missing '{str(uri)}'")

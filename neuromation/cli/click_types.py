@@ -1,5 +1,6 @@
+import abc
 import re
-from typing import List, Optional, Sequence, Tuple, Union, cast
+from typing import Generic, List, Optional, Sequence, Tuple, TypeVar, Union, cast
 
 import click
 from click import BadParameter
@@ -15,6 +16,40 @@ JOB_NAME_MIN_LENGTH = 3
 JOB_NAME_MAX_LENGTH = 40
 JOB_NAME_PATTERN = "^[a-z](?:-?[a-z0-9])*$"
 JOB_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
+
+
+_T = TypeVar("_T")
+
+
+class AsyncType(click.ParamType, Generic[_T], abc.ABC):
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> _T:
+        assert ctx is not None
+        root = cast(Root, ctx.obj)
+        return root.run(self.async_convert(root, value, param, ctx))
+
+    @abc.abstractmethod
+    async def async_convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> _T:
+        pass
+
+    def complete(
+        self, ctx: click.Context, args: Sequence[str], incomplete: str
+    ) -> List[Tuple[str, Optional[str]]]:
+        root = cast(Root, ctx.obj)
+        return root.run(self.async_complete(root, ctx, args, incomplete))
+
+    @abc.abstractmethod
+    async def async_complete(
+        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
+    ) -> List[Tuple[str, Optional[str]]]:
+        pass
 
 
 class LocalImageType(click.ParamType):
@@ -127,17 +162,10 @@ class JobColumnsType(click.ParamType):
 JOB_COLUMNS = JobColumnsType()
 
 
-class PresetType(click.ParamType):
+class PresetType(AsyncType[str]):
     name = "preset"
 
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> str:
-        assert ctx is not None
-        root = cast(Root, ctx.obj)
-        return root.run(self._convert(root, value, param, ctx))
-
-    async def _convert(
+    async def async_convert(
         self,
         root: Root,
         value: str,
@@ -154,13 +182,7 @@ class PresetType(click.ParamType):
             )
         return value
 
-    def autocompletion(
-        self, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
-        root = cast(Root, ctx.obj)
-        return root.run(self._autocompletion(root, ctx, args, incomplete))
-
-    async def _autocompletion(
+    async def async_complete(
         self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
     ) -> List[Tuple[str, Optional[str]]]:
         # async context manager is used to prevent a message about
