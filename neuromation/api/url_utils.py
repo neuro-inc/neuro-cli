@@ -48,7 +48,7 @@ def uri_from_cli(
     if uri.scheme == "file":
         uri = normalize_local_path_uri(uri)
     elif uri.scheme == "blob":
-        uri = normalize_blob_path_uri(uri)
+        uri = normalize_blob_path_uri(uri, cluster_name)
     else:
         uri = _normalize_uri(uri, username, cluster_name)
     return uri

@@ -3,12 +3,7 @@ from typing import List, Union, cast
 
 import pytest
 
-from neuromation.api import (
-    Action,
-    BlobListing,
-    BucketListing,
-    PrefixListing,
-)
+from neuromation.api import Action, BlobListing, BucketListing, PrefixListing
 from neuromation.cli.formatters import (
     BaseBlobFormatter,
     LongBlobFormatter,
