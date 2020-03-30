@@ -321,7 +321,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
             raise ValueError(
                 f"When using full URL's please specify cluster name "
                 f"{cluster_name!r} as host part. For example: "
-                f"blob://{cluster_name!r}/my_bucket/path/to/file."
+                f"blob://{cluster_name}/my_bucket/path/to/file."
             )
         bucket_name, _, key = uri.path.lstrip("/").partition("/")
         return bucket_name, key
