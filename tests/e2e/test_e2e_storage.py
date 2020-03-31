@@ -1,6 +1,8 @@
 import errno
 import os
 import subprocess
+import sys
+import textwrap
 from pathlib import Path, PurePath
 from typing import Tuple
 
@@ -8,6 +10,7 @@ import pytest
 from yarl import URL
 
 from neuromation.cli.const import EX_OSFILE
+from neuromation.cli.formatters.storage import TreeFormatter
 from tests.e2e import Helper
 from tests.e2e.utils import FILE_SIZE_B
 
@@ -661,3 +664,36 @@ def test_e2e_ls_show_hidden(tmp_path: Path, helper: Helper) -> None:
 
     captured = helper.run_cli(["storage", "ls", "--all", helper.tmpstorage + "/folder"])
     assert captured.out.splitlines() == [".bar", "foo"]
+
+
+@pytest.mark.e2e
+def test_tree(helper: Helper, data: _Data, tmp_path: Path) -> None:
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / "bar").write_bytes(b"bar")
+    subfolder = folder / "folder"
+    subfolder.mkdir()
+    (subfolder / "baz").write_bytes(b"baz")
+
+    helper.run_cli(["storage", "cp", "-r", folder.as_uri(), helper.tmpstorage])
+
+    capture = helper.run_cli(["storage", "tree", helper.tmpstorage])
+    assert capture.err == ""
+
+    expected = textwrap.dedent(
+        f"""\
+         '{helper.tmpstorage}'
+         ├── 'bar'
+         ├── 'folder'
+         │   └── 'baz'
+         └── 'foo'
+
+         1 directories, 3 files"""
+    )
+    if sys.platform == "win32":
+        trans = str.maketrans(
+            "".join(TreeFormatter.ANSI_DELIMS), "".join(TreeFormatter.SIMPLE_DELIMS)
+        )
+        expected = expected.translate(trans)
+    assert capture.out == expected

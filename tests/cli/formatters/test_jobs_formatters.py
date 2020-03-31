@@ -1172,7 +1172,7 @@ class TestResourcesFormatter:
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
-            "  Memory: 16M\n"
+            "  Memory: 16.0M\n"
             "  CPU: 0.1"
         )
 
@@ -1189,7 +1189,7 @@ class TestResourcesFormatter:
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
-            "  Memory: 1G\n"
+            "  Memory: 1.0G\n"
             "  CPU: 2.0\n"
             "  GPU: 1.0 x nvidia-tesla-p4"
         )
@@ -1207,7 +1207,7 @@ class TestResourcesFormatter:
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources) == "Resources:\n"
-            "  Memory: 16M\n"
+            "  Memory: 16.0M\n"
             "  CPU: 0.1\n"
             "  Additional: Extended SHM space"
         )
@@ -1225,7 +1225,7 @@ class TestResourcesFormatter:
         resource_formatter = ResourcesFormatter()
         assert (
             resource_formatter(resources=resources) == "Resources:\n"
-            "  Memory: 16M\n"
+            "  Memory: 16.0M\n"
             "  CPU: 0.1\n"
             "  TPU: v2-8/1.14\n"
             "  Additional: Extended SHM space"
