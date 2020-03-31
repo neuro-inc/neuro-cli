@@ -80,7 +80,7 @@ async def ls(
 
     blob = root.client.blob_storage
 
-    blob_listings: List[List[BlobListings]] = []
+    blob_listings: List[Sequence[BlobListings]] = []
 
     if not uris:
         # List Buckets instead of blobs in bucket
