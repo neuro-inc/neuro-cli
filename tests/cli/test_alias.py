@@ -454,7 +454,7 @@ class TestExternalAliasArgs:
         )
         assert expected == capture.out
 
-    def test_external_alias_three_args_optional_multiple_regular_help(
+    def test_external_alias_three_args_regular_multiple_optional_help(
         self, run_cli: _RunCli, nmrc_path: Path
     ) -> None:
         user_cfg = nmrc_path / "user.toml"
@@ -464,7 +464,7 @@ class TestExternalAliasArgs:
                     "alias": {
                         "user-cmd": {
                             "exec": "script {arg1} {arg2} {arg3}",
-                            "args": "[ARG1] ARG2... ARG3",
+                            "args": "ARG1 ARG2... [ARG3]",
                         }
                     }
                 }
@@ -475,7 +475,7 @@ class TestExternalAliasArgs:
         prog_name = Path(sys.argv[0]).name
         expected = inspect.cleandoc(
             f"""\
-            Usage: {prog_name} user-cmd [OPTIONS] [ARG1] ARG2... ARG3
+            Usage: {prog_name} user-cmd [OPTIONS] ARG1 ARG2... [ARG3]
 
             Alias for "script {{arg1}} {{arg2}} {{arg3}}"
 
@@ -959,6 +959,17 @@ class TestExternalAliasParseErrors:
         assert capture.code == 70, capture
         assert capture.err.startswith('Missing open bracket in "ARG]"')
 
+    def test_external_alias_missing_argument_inside_brackets(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps({"alias": {"user-cmd": {"exec": "script {arg}", "args": "[]"}}})
+        )
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith('Missing argument inside brackets in "[]"')
+
     def test_external_alias_ellipsis_should_follow_arg(
         self, run_cli: _RunCli, nmrc_path: Path
     ) -> None:
@@ -972,7 +983,7 @@ class TestExternalAliasParseErrors:
             'Ellipsis (...) should follow an argument in "..."'
         )
 
-    def test_external_alias_ellipsis_inside_brackes(
+    def test_external_alias_ellipsis_inside_brackets(
         self, run_cli: _RunCli, nmrc_path: Path
     ) -> None:
         user_cfg = nmrc_path / "user.toml"
@@ -984,6 +995,19 @@ class TestExternalAliasParseErrors:
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
         assert capture.err.startswith('Ellipsis (...) inside of brackets in "[ARG...]"')
+
+    def test_external_alias_successive_ellipsis(
+        self, run_cli: _RunCli, nmrc_path: Path
+    ) -> None:
+        user_cfg = nmrc_path / "user.toml"
+        user_cfg.write_text(
+            toml.dumps(
+                {"alias": {"user-cmd": {"exec": "script {arg}", "args": "ARG......"}}}
+            )
+        )
+        capture = run_cli(["user-cmd"])
+        assert capture.code == 70, capture
+        assert capture.err.startswith('Successive ellipsis (...) in "ARG......"')
 
     def test_external_alias_missing_close_bracket1(
         self, run_cli: _RunCli, nmrc_path: Path

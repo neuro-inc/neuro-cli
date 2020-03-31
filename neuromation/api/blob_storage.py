@@ -39,7 +39,7 @@ from .abc import (
 from .config import Config
 from .core import ResourceNotFound, _Core
 from .storage import QueuedProgress, _always, _has_magic, run_concurrently, run_progress
-from .url_utils import _extract_path, normalize_local_path_uri, normalize_obj_path_uri
+from .url_utils import _extract_path, normalize_blob_path_uri, normalize_local_path_uri
 from .users import Action
 from .utils import NoPublicConstructor, asynccontextmanager, retries
 
@@ -51,11 +51,10 @@ ProgressQueueItem = Optional[Any]
 
 
 def _format_bucket_uri(bucket_name: str, key: str = "") -> URL:
-    return URL.build(scheme="object", host=bucket_name, path="/" + key.lstrip("/"))
-
-
-def _extract_key(uri: URL) -> str:
-    return uri.path.lstrip("/")
+    if key:
+        return URL("blob:") / bucket_name / key
+    else:
+        return URL("blob:") / bucket_name
 
 
 @dataclass(frozen=True)
@@ -82,7 +81,7 @@ class BucketListing:
 
 
 @dataclass(frozen=True)
-class ObjectListing:
+class BlobListing:
     key: str
     size: int
     modification_time: int
@@ -103,7 +102,7 @@ class ObjectListing:
 
     # It common pattern to make treat keys with `/` at the end as folder keys.
     # It may be returned as part of recursive results if created explicitly on
-    # the Object storage backend.
+    # the Blob storage backend.
 
     def is_file(self) -> bool:
         return not self.key.endswith("/")
@@ -137,11 +136,11 @@ class PrefixListing:
         return True
 
 
-ListResult = Union[PrefixListing, ObjectListing]
+ListResult = Union[PrefixListing, BlobListing]
 
 
-class Object:
-    def __init__(self, resp: aiohttp.ClientResponse, stats: ObjectListing):
+class Blob:
+    def __init__(self, resp: aiohttp.ClientResponse, stats: BlobListing):
         self._resp = resp
         self.stats = stats
 
@@ -150,7 +149,7 @@ class Object:
         return self._resp.content
 
 
-class ObjectStorage(metaclass=NoPublicConstructor):
+class BlobStorage(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core
         self._config = config
@@ -158,21 +157,35 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         self._file_sem = asyncio.BoundedSemaphore(MAX_OPEN_FILES)
 
     async def list_buckets(self) -> List[BucketListing]:
-        url = self._config.object_storage_url / "b" / ""
+        url = self._config.blob_storage_url / "b" / ""
         auth = await self._config._api_auth()
 
         async with self._core.request("GET", url, auth=auth) as resp:
             res = await resp.json()
             return [_bucket_status_from_data(bucket) for bucket in res]
 
-    async def list_objects(
+    async def create_bucket(self, bucket_name: str) -> None:
+        url = self._config.blob_storage_url / "b" / bucket_name
+        auth = await self._config._api_auth()
+
+        async with self._core.request("PUT", url, auth=auth) as resp:
+            assert resp.status == 200
+
+    async def delete_bucket(self, bucket_name: str) -> None:
+        url = self._config.blob_storage_url / "b" / bucket_name
+        auth = await self._config._api_auth()
+
+        async with self._core.request("DELETE", url, auth=auth) as resp:
+            assert resp.status == 204
+
+    async def list_blobs(
         self,
         bucket_name: str,
         prefix: str = "",
         recursive: bool = False,
         max_keys: int = 10000,
     ) -> List[ListResult]:
-        url = self._config.object_storage_url / "o" / bucket_name
+        url = self._config.blob_storage_url / "o" / bucket_name
         auth = await self._config._api_auth()
 
         query = {"recursive": str(recursive).lower(), "max_keys": str(self._max_keys)}
@@ -186,11 +199,11 @@ class ObjectStorage(metaclass=NoPublicConstructor):
             async with self._core.request("GET", url, auth=auth) as resp:
                 res = await resp.json()
                 contents.extend(
-                    [_obj_status_from_key(bucket_name, key) for key in res["contents"]]
+                    [_blob_status_from_key(bucket_name, key) for key in res["contents"]]
                 )
                 common_prefixes.extend(
                     [
-                        _obj_status_from_prefix(bucket_name, prefix)
+                        _blob_status_from_prefix(bucket_name, prefix)
                         for prefix in res["common_prefixes"]
                     ]
                 )
@@ -201,7 +214,7 @@ class ObjectStorage(metaclass=NoPublicConstructor):
                     break
         return common_prefixes + contents
 
-    async def glob_objects(self, bucket_name: str, pattern: str) -> List[ObjectListing]:
+    async def glob_blobs(self, bucket_name: str, pattern: str) -> List[BlobListing]:
         pattern = pattern.lstrip("/")
         parts = pattern.split("/")
         # Limit the search to prefix of keys
@@ -214,42 +227,42 @@ class ObjectStorage(metaclass=NoPublicConstructor):
 
         match = re.compile(fnmatch.translate(pattern)).fullmatch
         res = []
-        for obj_status in await self.list_objects(
+        for blob_status in await self.list_blobs(
             bucket_name, prefix=prefix, recursive=True
         ):
             # We don't have PrefixListing if recursive is used
-            obj_status = cast(ObjectListing, obj_status)
-            if match(obj_status.key):
-                res.append(obj_status)
+            blob_status = cast(BlobListing, blob_status)
+            if match(blob_status.key):
+                res.append(blob_status)
         return res
 
-    async def head_object(self, bucket_name: str, key: str) -> ObjectListing:
-        url = self._config.object_storage_url / "o" / bucket_name / key
+    async def head_blob(self, bucket_name: str, key: str) -> BlobListing:
+        url = self._config.blob_storage_url / "o" / bucket_name / key
         auth = await self._config._api_auth()
 
         async with self._core.request("HEAD", url, auth=auth) as resp:
-            return _obj_status_from_response(bucket_name, key, resp)
+            return _blob_status_from_response(bucket_name, key, resp)
 
     @asynccontextmanager
-    async def get_object(self, bucket_name: str, key: str) -> AsyncIterator[Object]:
-        """ Return object status and body stream of the object
+    async def get_blob(self, bucket_name: str, key: str) -> AsyncIterator[Blob]:
+        """ Return blob status and body stream of the blob
         """
-        url = self._config.object_storage_url / "o" / bucket_name / key
+        url = self._config.blob_storage_url / "o" / bucket_name / key
         auth = await self._config._api_auth()
 
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         async with self._core.request("GET", url, timeout=timeout, auth=auth) as resp:
-            stats = _obj_status_from_response(bucket_name, key, resp)
-            yield Object(resp, stats)
+            stats = _blob_status_from_response(bucket_name, key, resp)
+            yield Blob(resp, stats)
 
-    async def fetch_object(self, bucket_name: str, key: str) -> AsyncIterator[bytes]:
-        """ Return only bytes data of the object
+    async def fetch_blob(self, bucket_name: str, key: str) -> AsyncIterator[bytes]:
+        """ Return only bytes data of the blob
         """
-        async with self.get_object(bucket_name, key) as obj:
-            async for data in obj.body_stream.iter_any():
+        async with self.get_blob(bucket_name, key) as blob:
+            async for data in blob.body_stream.iter_any():
                 yield data
 
-    async def put_object(
+    async def put_blob(
         self,
         bucket_name: str,
         key: str,
@@ -257,7 +270,7 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         size: Optional[int] = None,
         content_md5: Optional[str] = None,
     ) -> str:
-        url = self._config.object_storage_url / "o" / bucket_name / key
+        url = self._config.blob_storage_url / "o" / bucket_name / key
         auth = await self._config._api_auth()
         timeout = attr.evolve(self._core.timeout, sock_read=None)
 
@@ -282,6 +295,13 @@ class ObjectStorage(metaclass=NoPublicConstructor):
             etag = resp.headers["ETag"]
             return etag
 
+    async def delete_blob(self, bucket_name: str, key: str) -> None:
+        url = self._config.blob_storage_url / "o" / bucket_name / key
+        auth = await self._config._api_auth()
+
+        async with self._core.request("DELETE", url, auth=auth) as resp:
+            assert resp.status == 204
+
     # high-level helpers
 
     async def _iterate_file(
@@ -301,6 +321,18 @@ class ObjectStorage(metaclass=NoPublicConstructor):
                     pos += len(chunk)
                 await progress.complete(StorageProgressComplete(src_url, dst, size))
 
+    def _extract_bucket_and_key(self, uri: URL) -> Tuple[str, str]:
+        cluster_name = self._config.cluster_name
+        uri = normalize_blob_path_uri(uri, cluster_name)
+        if uri.host != self._config.cluster_name:
+            raise ValueError(
+                f"When using full URL's please specify cluster name "
+                f"{cluster_name!r} as host part. For example: "
+                f"blob://{cluster_name}/my_bucket/path/to/file."
+            )
+        bucket_name, _, key = uri.path.lstrip("/").partition("/")
+        return bucket_name, key
+
     async def _is_dir(self, uri: URL) -> bool:
         """ Check if provided path is an dir or serves as a prefix to a different key,
         as it would result in name conflicts on download.
@@ -309,30 +341,29 @@ class ObjectStorage(metaclass=NoPublicConstructor):
             return True
         # Check if a folder key exists. As `/` at the end makes a different key, make
         # sure we ask for one with ending slash.
-        key = _extract_key(uri) + "/"
-        assert uri.host
-        objs = await self.list_objects(
-            bucket_name=uri.host, prefix=key, recursive=False, max_keys=1
+        bucket_name, key = self._extract_bucket_and_key(uri)
+        blobs = await self.list_blobs(
+            bucket_name=bucket_name, prefix=key + "/", recursive=False, max_keys=1
         )
-        return bool(objs)
+        return bool(blobs)
 
     async def _mkdir(self, uri: URL) -> None:
-        assert uri.host
-        assert uri.path.endswith("/")
-        await self.put_object(bucket_name=uri.host, key=_extract_key(uri), body=b"")
+        bucket_name, key = self._extract_bucket_and_key(uri)
+        assert key.endswith("/"), "Key should end with a trailing slash"
+        assert key.strip("/"), "Can not create a bucket root folder"
+        await self.put_blob(bucket_name=bucket_name, key=key, body=b"")
 
     def make_url(self, bucket_name: str, key: str) -> URL:
         """ Helper function to let users create correct URL's for upload/download from
         bucket_name and key.
         """
-        key = key.lstrip("/")
-        return URL(f"object:{bucket_name}/{key}")
+        return _format_bucket_uri(bucket_name, key)
 
     async def upload_file(
         self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
-        dst = normalize_obj_path_uri(dst)
+        dst = normalize_blob_path_uri(dst, self._config.cluster_name)
 
         path = _extract_path(src)
         try:
@@ -349,16 +380,19 @@ class ObjectStorage(metaclass=NoPublicConstructor):
             # See https://bugs.python.org/issue37074
 
         # Avoid name conflicts when uploading
-        parent = dst.parent
+        bucket_name, key = self._extract_bucket_and_key(dst)
+        parent, _, _ = key.rpartition("/")
         if await self._is_dir(dst):
+            # Uploading to keys like `prefix/` is prohibited, as they count as `folder`
+            # keys and should only be 0-sized blobs.
             raise IsADirectoryError(errno.EISDIR, "Is a directory", str(dst))
-        elif parent.path.strip("/"):
-            assert not parent.path.endswith("/")
-            assert parent.host
+        elif parent:
+            # We can't upload files to path like: `path/to/file.txt/new_file.json`
+            # if a file `path/to/file.txt` already exists. This is likely an error in
+            # the cli command call and will cause confusing behaviour on download.
+            assert not parent.endswith("/")
             try:
-                await self.head_object(
-                    bucket_name=parent.host, key=_extract_key(parent)
-                )
+                await self.head_blob(bucket_name=bucket_name, key=parent)
             except ResourceNotFound:
                 pass
             else:
@@ -373,15 +407,14 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         self, src_path: Path, dst: URL, *, progress: QueuedProgress,
     ) -> None:
         assert dst.host
-        bucket_name = dst.host
-        key = _extract_key(dst)
+        bucket_name, key = self._extract_bucket_and_key(dst)
         # Be careful not to have too many opened files.
         async with self._file_sem:
             content_md5, size = await calc_md5(src_path)
 
         for retry in retries(f"Fail to upload {dst}"):
             async with retry:
-                await self.put_object(
+                await self.put_blob(
                     bucket_name=bucket_name,
                     key=key,
                     body=self._iterate_file(src_path, dst, size, progress=progress),
@@ -400,7 +433,7 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         if filter is None:
             filter = _always
         src = normalize_local_path_uri(src)
-        dst = normalize_obj_path_uri(dst)
+        dst = normalize_blob_path_uri(dst, self._config.cluster_name)
         path = _extract_path(src).resolve()
         if not path.exists():
             raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
@@ -425,17 +458,21 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         tasks = []
         if not dst.path.endswith("/"):
             dst = dst / ""
-        assert dst.host
 
-        # Make sure we don't have name conflicts
-        try:
-            await self.head_object(
-                bucket_name=dst.host, key=_extract_key(dst).rstrip("/")
-            )
-        except ResourceNotFound:
+        bucket_name, key = self._extract_bucket_and_key(dst)
+        if key.rstrip("/"):
+            try:
+                # Make sure we don't have name conflicts
+                # We can't upload to folder `/path/to/file.txt/` if `/path/to/file.txt`
+                # already exists
+                await self.head_blob(bucket_name=bucket_name, key=key.rstrip("/"))
+            except ResourceNotFound:
+                pass
+            else:
+                raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
+
+            # Only create folder if we are not uploading to bucket root
             await self._mkdir(dst)
-        else:
-            raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
 
         await progress.enter(StorageProgressEnterDir(src, dst))
         loop = asyncio.get_event_loop()
@@ -481,11 +518,11 @@ class ObjectStorage(metaclass=NoPublicConstructor):
         update: bool = False,
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
-        src = normalize_obj_path_uri(src)
+        src = normalize_blob_path_uri(src, self._config.cluster_name)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        assert src.host
-        src_stat = await self.head_object(bucket_name=src.host, key=_extract_key(src))
+        bucket_name, key = self._extract_bucket_and_key(src)
+        src_stat = await self.head_blob(bucket_name=bucket_name, key=key)
         queued = QueuedProgress(progress)
         await run_progress(
             queued, self._download_file(src, dst, path, src_stat.size, progress=queued),
@@ -507,9 +544,9 @@ class ObjectStorage(metaclass=NoPublicConstructor):
                 for retry in retries(f"Fail to download {src}"):
                     async with retry:
                         pos = 0
-                        assert src.host is not None
-                        async for chunk in self.fetch_object(
-                            bucket_name=src.host, key=_extract_key(src)
+                        bucket_name, key = self._extract_bucket_and_key(src)
+                        async for chunk in self.fetch_blob(
+                            bucket_name=bucket_name, key=key
                         ):
                             pos += len(chunk)
                             await progress.step(
@@ -528,7 +565,7 @@ class ObjectStorage(metaclass=NoPublicConstructor):
     ) -> None:
         if filter is None:
             filter = _always
-        src = normalize_obj_path_uri(src)
+        src = normalize_blob_path_uri(src, self._config.cluster_name)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         queued = QueuedProgress(progress)
@@ -547,21 +584,22 @@ class ObjectStorage(metaclass=NoPublicConstructor):
     ) -> None:
         dst_path.mkdir(parents=True, exist_ok=True)
         await progress.enter(StorageProgressEnterDir(src, dst))
-        assert src.host
         tasks = []
-
-        prefix_path = src.path.strip("/")
+        bucket_name, folder_key = self._extract_bucket_and_key(src)
+        prefix_path = folder_key.strip("/")
+        # If we are downloading the whole bucket we need to specify an empty prefix '',
+        # not "/", thus only add it if path not empty
         if prefix_path:
             prefix_path += "/"
         for retry in retries(f"Fail to list {src}"):
             async with retry:
-                folder = await self.list_objects(
-                    bucket_name=src.host, prefix=prefix_path, recursive=False
+                folder = await self.list_blobs(
+                    bucket_name=bucket_name, prefix=prefix_path, recursive=False
                 )
 
         for child in folder:
-            # Skip "folder" keys, as they will be returned as ObjectListing here again,
-            # previously being a common prefix
+            # Skip "folder" keys, as they will be returned as BlobListing results again,
+            # previously being a common prefix, ie. PrefixListing.
             if child.path == prefix_path:
                 continue
 
@@ -571,8 +609,8 @@ class ObjectStorage(metaclass=NoPublicConstructor):
             if not await filter(child_rel_path):
                 continue
             if child.is_file():
-                # Only ObjectListing can be a file
-                child = cast(ObjectListing, child)
+                # Only BlobListing can be a file, so it's safe to just cast
+                child = cast(BlobListing, child)
                 tasks.append(
                     self._download_file(
                         src / name,
@@ -598,11 +636,15 @@ class ObjectStorage(metaclass=NoPublicConstructor):
 
 def _bucket_status_from_data(data: Dict[str, Any]) -> BucketListing:
     mtime = isoparse(data["creation_date"]).timestamp()
-    return BucketListing(name=data["name"], creation_time=int(mtime))
+    return BucketListing(
+        name=data["name"],
+        creation_time=int(mtime),
+        permission=Action(data.get("permission", "read")),
+    )
 
 
-def _obj_status_from_key(bucket_name: str, data: Dict[str, Any]) -> ObjectListing:
-    return ObjectListing(
+def _blob_status_from_key(bucket_name: str, data: Dict[str, Any]) -> BlobListing:
+    return BlobListing(
         bucket_name=bucket_name,
         key=data["key"],
         size=int(data["size"]),
@@ -610,19 +652,19 @@ def _obj_status_from_key(bucket_name: str, data: Dict[str, Any]) -> ObjectListin
     )
 
 
-def _obj_status_from_prefix(bucket_name: str, data: Dict[str, Any]) -> PrefixListing:
+def _blob_status_from_prefix(bucket_name: str, data: Dict[str, Any]) -> PrefixListing:
     return PrefixListing(bucket_name=bucket_name, prefix=data["prefix"])
 
 
-def _obj_status_from_response(
+def _blob_status_from_response(
     bucket_name: str, key: str, resp: aiohttp.ClientResponse
-) -> ObjectListing:
+) -> BlobListing:
     modification_time = 0
     if "Last-Modified" in resp.headers:
         timetuple = parsedate(resp.headers["Last-Modified"])
         if timetuple is not None:
             modification_time = int(time.mktime(timetuple))
-    return ObjectListing(
+    return BlobListing(
         bucket_name=bucket_name,
         key=key,
         size=resp.content_length or 0,
