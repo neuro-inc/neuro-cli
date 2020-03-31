@@ -572,8 +572,8 @@ class Helper:
             # do, please add a semaphore here.
             tasks = []
             for blob in blobs:
-                log.info("Removing %s %s", bucket_name, blob.key)
                 blob = cast(BlobListing, blob)
+                log.info("Removing %s %s", bucket_name, blob.key)
                 tasks.append(client.blob_storage.delete_blob(bucket_name, key=blob.key))
             await asyncio.gather(*tasks)
 
