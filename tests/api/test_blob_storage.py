@@ -497,7 +497,6 @@ async def test_blob_storage_glob_blobs(
 
     async with make_client(srv.make_url("/")) as client:
         ret = await client.blob_storage.glob_blobs(bucket_name, pattern="folder1/*")
-
         assert ret == [
             BlobListing(
                 key="folder1/xxx.txt",
@@ -513,25 +512,17 @@ async def test_blob_storage_glob_blobs(
             ),
         ]
 
-        ret = await client.blob_storage.glob_blobs(bucket_name, pattern="**.json")
-
+        ret = await client.blob_storage.glob_blobs(bucket_name, pattern="**/*.json")
         assert ret == [
             BlobListing(
                 key="folder1/yyy.json",
                 size=2,
                 modification_time=int(mtime2.timestamp()),
                 bucket_name=bucket_name,
-            ),
-            BlobListing(
-                key="test.json",
-                size=213,
-                modification_time=int(mtime1.timestamp()),
-                bucket_name="foo",
-            ),
+            )
         ]
 
         ret = await client.blob_storage.glob_blobs(bucket_name, pattern="*/*.txt")
-
         assert ret == [
             BlobListing(
                 key="folder1/xxx.txt",
@@ -542,7 +533,6 @@ async def test_blob_storage_glob_blobs(
         ]
 
         ret = await client.blob_storage.glob_blobs(bucket_name, pattern="test[1-9].*")
-
         assert ret == [
             BlobListing(
                 key="test1.txt",

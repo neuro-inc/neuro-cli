@@ -3,6 +3,7 @@ import base64
 import errno
 import fnmatch
 import hashlib
+import itertools
 import re
 import time
 from dataclasses import dataclass
@@ -217,6 +218,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
     async def glob_blobs(self, bucket_name: str, pattern: str) -> List[BlobListing]:
         pattern = pattern.lstrip("/")
         parts = pattern.split("/")
+
         # Limit the search to prefix of keys
         prefix = ""
         for part in parts:
@@ -225,7 +227,40 @@ class BlobStorage(metaclass=NoPublicConstructor):
             else:
                 prefix += part + "/"
 
-        match = re.compile(fnmatch.translate(pattern)).fullmatch
+        # Prepare matcher for full key path
+        matcher_parts: List[str] = []
+        recursive = False
+        for part in parts:
+            if part == "**":
+                matcher_parts.append(".*")
+                recursive = True
+            elif _has_magic(part):
+                part_re = fnmatch.translate(part)
+                assert part_re.endswith(r"\Z")
+                part_re = part_re[:-2]  # Cut the \Z part
+                matcher_parts.append(part_re)
+            else:
+                matcher_parts.append(re.escape(part))
+
+        match: Callable[..., Any]
+        if not recursive:
+            # We need to match exactly for each path level, so that "*.json" does not
+            # match all folders
+            matchers = [re.compile(p).fullmatch for p in matcher_parts]
+
+            def match(key: str) -> bool:
+                parts = key.split("/")
+                for matcher, part in itertools.zip_longest(matchers, parts):
+                    if part is None or matcher is None:
+                        return False
+                    if not matcher(part):
+                        return False
+                return True
+
+        else:
+            matcher = "/".join(matcher_parts) + r"\Z"
+            match = re.compile(matcher).fullmatch
+
         res = []
         for blob_status in await self.list_blobs(
             bucket_name, prefix=prefix, recursive=True
