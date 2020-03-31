@@ -142,7 +142,7 @@ def test_e2e_blob_storage_copy_no_target_directory_extra_operand(
 
 
 @pytest.mark.e2e
-def test_e2e_blob_storage_copy_recursive(
+def test_e2e_blob_storage_copy_recursive_folder(
     helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path, tmp_bucket: str
 ) -> None:
     srcfile, checksum, dir_path = nested_data
@@ -163,6 +163,62 @@ def test_e2e_blob_storage_copy_recursive(
     targetdir.mkdir()
     helper.run_cli(["blob", "cp", "-r", f"blob:{tmp_bucket}/", str(targetdir)])
     targetfile = targetdir / "nested" / "directory" / "for" / "test" / target_file_name
-    print("source file", srcfile)
-    print("target file", targetfile)
     assert helper.hash_hex(targetfile) == checksum
+
+
+@pytest.mark.e2e
+def test_e2e_blob_storage_copy_recursive_file(
+    helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path, tmp_bucket: str
+) -> None:
+    srcfile = tmp_path / "testfile"
+    dstfile = tmp_path / "copyfile"
+    srcfile.write_bytes(b"abc")
+
+    captured = helper.run_cli(["blob", "cp", "-r", str(srcfile), f"blob:{tmp_bucket}"])
+    assert not captured.out
+
+    captured = helper.run_cli(
+        ["blob", "cp", "-r", f"blob:{tmp_bucket}/testfile", str(dstfile)]
+    )
+    assert not captured.out
+
+    assert dstfile.read_bytes() == b"abc"
+
+
+@pytest.mark.e2e
+def test_e2e_blob_storage_glob_copy(
+    helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path, tmp_bucket: str
+) -> None:
+    # Create files and directories and copy them with pattern
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "subfolder").mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / "bar").write_bytes(b"bar")
+    (folder / "baz").write_bytes(b"baz")
+    helper.run_cli(
+        ["blob", "cp", "-r", tmp_path.as_uri() + "/f*", f"blob:{tmp_bucket}/folder"]
+    )
+    captured = helper.run_cli(["blob", "ls", f"blob:{tmp_bucket}/folder/"])
+    prefix = f"blob:{tmp_bucket}/folder/"
+    assert sorted(captured.out.splitlines()) == [
+        prefix,
+        prefix + "bar",
+        prefix + "baz",
+        prefix + "foo",
+        prefix + "subfolder/",
+    ]
+
+    # Test subcommand "glob"
+    captured = helper.run_cli(["blob", "glob", f"blob:{tmp_bucket}/folder/*"])
+    assert sorted(captured.out.splitlines()) == [
+        prefix + "foo",
+        prefix + "bar",
+        prefix + "baz",
+    ]
+
+    # Download files with pattern
+    download = tmp_path / "download"
+    download.mkdir()
+    helper.run_cli(["blob", "cp", f"blob:{tmp_bucket}/**/b*" + "", str(download)])
+    assert sorted(download.iterdir()) == [download / "bar", download / "baz"]

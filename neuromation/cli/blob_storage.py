@@ -132,16 +132,9 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
             painter = get_painter(root.color, quote=True)
             curi = painter.paint(str(uri), FileStatusType.FILE)
             click.echo(f"Using pattern {curi}:")
-        assert uri.host
-        if globmodule.has_magic(uri.host):
-            raise ValueError(
-                "You can not glob on bucket names. Please provide name explicitly."
-            )
-        blobs = await root.client.blob_storage.glob_blobs(
-            bucket_name=uri.host, pattern=uri.path
-        )
-        for blob in blobs:
-            click.echo(blob.uri)
+
+        for sub_uri in await _expand([str(uri)], root=root, glob=True):
+            click.echo(sub_uri)
 
 
 @command()
