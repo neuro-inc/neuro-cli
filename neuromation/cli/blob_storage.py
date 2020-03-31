@@ -84,21 +84,16 @@ async def ls(
 
     if not uris:
         # List Buckets instead of blobs in bucket
-        listing: List[BlobListings] = []
-        blob_listings.append(listing)
-        for bucket in await blob.list_buckets():
-            listing.append(bucket)
+        blob_listings.append(await blob.list_buckets())
     else:
         for uri in uris:
             bucket_name, key = blob._extract_bucket_and_key(uri)
 
-            listing = []
-            blob_listings.append(listing)
-
-            for res in await blob.list_blobs(
-                bucket_name=bucket_name, prefix=key, recursive=recursive,
-            ):
-                listing.append(res)
+            blob_listings.append(
+                await blob.list_blobs(
+                    bucket_name=bucket_name, prefix=key, recursive=recursive,
+                )
+            )
 
     formatter: BaseBlobFormatter
     if format_long:
@@ -114,7 +109,7 @@ async def ls(
         for uri, listing in zip(uris, blob_listings):
             buffer.append(click.style(str(uri), bold=True) + ":")
             buffer.extend(formatter(listing))
-        pager_maybe("".join(buffer), root.tty, root.terminal_size)
+        pager_maybe(buffer, root.tty, root.terminal_size)
     else:
         assert blob_listings
         pager_maybe(formatter(blob_listings[0]), root.tty, root.terminal_size)
