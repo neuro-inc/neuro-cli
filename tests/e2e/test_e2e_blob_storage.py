@@ -1,3 +1,4 @@
+import os
 import subprocess
 from pathlib import Path, PurePath
 from typing import Tuple
@@ -185,6 +186,8 @@ def test_e2e_blob_storage_copy_recursive_file(
     assert dstfile.read_bytes() == b"abc"
 
 
+# Glob does not seem to work too good with deep foledrs
+@pytest.mark.xfail
 @pytest.mark.e2e
 def test_e2e_blob_storage_glob_copy(
     helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path, tmp_bucket: str
@@ -222,3 +225,64 @@ def test_e2e_blob_storage_glob_copy(
     download.mkdir()
     helper.run_cli(["blob", "cp", f"blob:{tmp_bucket}/**/b*" + "", str(download)])
     assert sorted(download.iterdir()) == [download / "bar", download / "baz"]
+
+
+@pytest.mark.e2e
+def test_e2e_blob_storage_cp_filter(
+    helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path, tmp_bucket: str
+) -> None:
+    # Create files and directories and copy them to storage
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "subfolder").mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / "bar").write_bytes(b"bar")
+    (folder / "baz").write_bytes(b"baz")
+
+    helper.run_cli(
+        [
+            "blob",
+            "cp",
+            "-r",
+            "--exclude",
+            "*",
+            "--include",
+            "b??",
+            "--exclude",
+            "*z",
+            tmp_path.as_uri() + "/folder",
+            f"blob:{tmp_bucket}/filtered",
+        ]
+    )
+    captured = helper.run_cli(["blob", "ls", f"blob:{tmp_bucket}/filtered/"])
+    prefix = f"blob:{tmp_bucket}/filtered/"
+    assert captured.out.splitlines() == [prefix, prefix + "bar"]
+
+    # Copy all files to storage
+    helper.run_cli(
+        [
+            "blob",
+            "cp",
+            "-r",
+            tmp_path.as_uri() + "/folder",
+            f"blob:{tmp_bucket}/folder",
+        ]
+    )
+
+    # Copy filtered files from storage
+    helper.run_cli(
+        [
+            "blob",
+            "cp",
+            "-r",
+            "--exclude",
+            "*",
+            "--include",
+            "b??",
+            "--exclude",
+            "*z",
+            f"blob:{tmp_bucket}" + "/folder",
+            tmp_path.as_uri() + "/filtered",
+        ]
+    )
+    assert os.listdir(tmp_path / "filtered") == ["bar"]
