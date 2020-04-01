@@ -41,7 +41,7 @@ from neuromation.api import (
     TagOption,
     Volume,
 )
-from neuromation.api.url_utils import _normalize_uri, uri_from_cli
+from neuromation.api.url_utils import uri_from_cli
 
 from .root import Root
 from .stats import upload_gmp_stats
@@ -420,8 +420,11 @@ async def resolve_job(
     default_user = client.username
     default_cluster = client.cluster_name
     if id_or_name_or_uri.startswith("job:"):
-        uri = _normalize_uri(
-            id_or_name_or_uri, username=default_user, cluster_name=default_cluster,
+        uri = uri_from_cli(
+            id_or_name_or_uri,
+            username=default_user,
+            cluster_name=default_cluster,
+            allowed_schemes=("job",),
         )
         if uri.host != default_cluster:
             raise ValueError(f"Invalid job URI: cluster_name != '{default_cluster}'")
@@ -460,7 +463,7 @@ async def resolve_job(
     return job_id
 
 
-SHARE_SCHEMES = ("storage", "image", "job")
+SHARE_SCHEMES = ("storage", "image", "job", "blob", "role")
 
 
 def parse_resource_for_sharing(uri: str, root: Root) -> URL:
@@ -475,7 +478,7 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
         uri,
         root.client.username,
         root.client.cluster_name,
-        allowed_schemes=("storage", "image", "job"),
+        allowed_schemes=SHARE_SCHEMES,
     )
 
 

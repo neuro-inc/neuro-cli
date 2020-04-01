@@ -322,13 +322,13 @@ async def test_normalize_local_path_uri__tilde_in_host(
 
 
 async def test_normalize_storage_path_uri__bad_scheme(client: Client) -> None:
-    with pytest.raises(ValueError, match="Invalid storage scheme 'other://'"):
+    with pytest.raises(ValueError, match="Invalid storage scheme 'other:'"):
         url = URL("other:path/to/file.txt")
         normalize_storage_path_uri(url, client.username, "test-cluster")
 
 
 async def test_normalize_local_path_uri__bad_scheme() -> None:
-    with pytest.raises(ValueError, match="Invalid local file scheme 'other://'"):
+    with pytest.raises(ValueError, match="Invalid local file scheme 'other:'"):
         url = URL("other:path/to/file.txt")
         normalize_local_path_uri(url)
 
