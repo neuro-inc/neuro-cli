@@ -115,6 +115,7 @@ class JobDescription:
     http_url: URL = URL()
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
+    life_span: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -543,6 +544,10 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
     http_url_named = URL(res.get("http_url_named", ""))
     ssh_server = URL(res.get("ssh_server", ""))
     internal_hostname = res.get("internal_hostname", None)
+    max_run_time_minutes = res.get("max_run_time_minutes")
+    life_span = (
+        max_run_time_minutes * 60.0 if max_run_time_minutes is not None else None
+    )
     return JobDescription(
         status=JobStatus(res["status"]),
         id=res["id"],
@@ -558,6 +563,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         ssh_server=ssh_server,
         internal_hostname=internal_hostname,
         uri=URL(res["uri"]),
+        life_span=life_span,
     )
 
 
