@@ -176,7 +176,7 @@ async def blob_storage_server(
         return web.json_response(
             {
                 "contents": sorted(contents, key=lambda x: x["key"]),
-                "common_prefixes": [{"prefix": p} for p in common_prefixes],
+                "common_prefixes": [{"prefix": p} for p in sorted(common_prefixes)],
                 "is_truncated": False,
             }
         )
@@ -341,7 +341,8 @@ async def test_blob_storage_list_blobs(
         assert request.path == BlobUrlRotes.LIST_OBJECTS.format(bucket=bucket_name)
 
         if "start_after" not in request.query:
-            assert request.query == {"recursive": "false", "max_keys": "3"}
+            assert request.query["recursive"] == "false"
+            assert request.query["max_keys"] in ("3", "6")
             return web.json_response(PAGE1_JSON)
         else:
             assert request.query == {
@@ -357,32 +358,53 @@ async def test_blob_storage_list_blobs(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        client.blob_storage._max_keys = 3
-        ret = await client.blob_storage.list_blobs(bucket_name)
+        ret = await client.blob_storage.list_blobs(bucket_name, max_keys=3)
 
-    assert ret == [
-        PrefixListing(prefix="empty/", bucket_name=bucket_name),
-        PrefixListing(prefix="folder1/", bucket_name=bucket_name),
-        PrefixListing(prefix="folder2/", bucket_name=bucket_name),
-        BlobListing(
-            key="test.json",
-            size=213,
-            modification_time=int(mtime1.timestamp()),
-            bucket_name=bucket_name,
-        ),
-        BlobListing(
-            key="test1.txt",
-            size=111,
-            modification_time=int(mtime1.timestamp()),
-            bucket_name=bucket_name,
-        ),
-        BlobListing(
-            key="test2.txt",
-            size=222,
-            modification_time=int(mtime2.timestamp()),
-            bucket_name=bucket_name,
-        ),
-    ]
+    assert ret == (
+        [
+            BlobListing(
+                key="test.json",
+                size=213,
+                modification_time=int(mtime1.timestamp()),
+                bucket_name=bucket_name,
+            ),
+        ],
+        [
+            PrefixListing(prefix="empty/", bucket_name=bucket_name),
+            PrefixListing(prefix="folder1/", bucket_name=bucket_name),
+        ],
+    )
+
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.blob_storage.list_blobs(bucket_name, max_keys=6)
+
+    assert ret == (
+        [
+            BlobListing(
+                key="test.json",
+                size=213,
+                modification_time=int(mtime1.timestamp()),
+                bucket_name=bucket_name,
+            ),
+            BlobListing(
+                key="test1.txt",
+                size=111,
+                modification_time=int(mtime1.timestamp()),
+                bucket_name=bucket_name,
+            ),
+            BlobListing(
+                key="test2.txt",
+                size=222,
+                modification_time=int(mtime2.timestamp()),
+                bucket_name=bucket_name,
+            ),
+        ],
+        [
+            PrefixListing(prefix="empty/", bucket_name=bucket_name),
+            PrefixListing(prefix="folder1/", bucket_name=bucket_name),
+            PrefixListing(prefix="folder2/", bucket_name=bucket_name),
+        ],
+    )
 
 
 async def test_blob_storage_list_blobs_recursive(
@@ -410,7 +432,7 @@ async def test_blob_storage_list_blobs_recursive(
         assert request.path == BlobUrlRotes.LIST_OBJECTS.format(bucket=bucket_name)
         assert request.query == {
             "recursive": "true",
-            "max_keys": "10000",
+            "max_keys": "1000",
             "prefix": "folder",
         }
         return web.json_response(PAGE1_JSON)
@@ -425,128 +447,29 @@ async def test_blob_storage_list_blobs_recursive(
             bucket_name, recursive=True, prefix="folder"
         )
 
-    assert ret == [
-        BlobListing(
-            key="folder1/xxx.txt",
-            size=1,
-            modification_time=int(mtime1.timestamp()),
-            bucket_name=bucket_name,
-        ),
-        BlobListing(
-            key="folder1/yyy.json",
-            size=2,
-            modification_time=int(mtime2.timestamp()),
-            bucket_name=bucket_name,
-        ),
-        BlobListing(
-            key="folder2/big_file",
-            size=120 * 1024 * 1024,
-            modification_time=int(mtime1.timestamp()),
-            bucket_name=bucket_name,
-        ),
-    ]
-
-
-async def test_blob_storage_glob_blobs(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
-) -> None:
-    bucket_name = "foo"
-    mtime1 = datetime.now()
-    mtime2 = datetime.now()
-    PAGE1_JSON: Dict[str, Any] = {
-        "contents": [
-            {"key": "folder1/xxx.txt", "size": 1, "last_modified": mtime1.timestamp()},
-            {"key": "folder1/yyy.json", "size": 2, "last_modified": mtime2.timestamp()},
-            {
-                "key": "folder2/big_file",
-                "size": 120 * 1024 * 1024,
-                "last_modified": mtime1.timestamp(),
-            },
-            {"key": "test.json", "size": 213, "last_modified": mtime1.timestamp()},
-            {"key": "test1.txt", "size": 111, "last_modified": mtime1.timestamp()},
-            {"key": "test2.txt", "size": 222, "last_modified": mtime2.timestamp()},
+    assert ret == (
+        [
+            BlobListing(
+                key="folder1/xxx.txt",
+                size=1,
+                modification_time=int(mtime1.timestamp()),
+                bucket_name=bucket_name,
+            ),
+            BlobListing(
+                key="folder1/yyy.json",
+                size=2,
+                modification_time=int(mtime2.timestamp()),
+                bucket_name=bucket_name,
+            ),
+            BlobListing(
+                key="folder2/big_file",
+                size=120 * 1024 * 1024,
+                modification_time=int(mtime1.timestamp()),
+                bucket_name=bucket_name,
+            ),
         ],
-        "common_prefixes": [],
-        "is_truncated": False,
-    }
-
-    async def handler(request: web.Request) -> web.Response:
-        assert "b3" in request.headers
-        assert request.path == BlobUrlRotes.LIST_OBJECTS.format(bucket=bucket_name)
-        expected = {
-            "recursive": "true",
-            "max_keys": "10000",
-        }
-        prefix = ""
-        if "prefix" in request.query:
-            expected["prefix"] = prefix = request.query["prefix"]
-        assert request.query == expected
-        # Filter by prefix
-        contents = []
-        for ob in PAGE1_JSON["contents"]:
-            if ob["key"].startswith(prefix):
-                contents.append(ob)
-        resp = PAGE1_JSON.copy()
-        resp["contents"] = contents
-        return web.json_response(resp)
-
-    app = web.Application()
-    app.router.add_get(BlobUrlRotes.LIST_OBJECTS, handler)
-
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        ret = await client.blob_storage.glob_blobs(bucket_name, pattern="folder1/*")
-        assert ret == [
-            BlobListing(
-                key="folder1/xxx.txt",
-                size=1,
-                modification_time=int(mtime1.timestamp()),
-                bucket_name=bucket_name,
-            ),
-            BlobListing(
-                key="folder1/yyy.json",
-                size=2,
-                modification_time=int(mtime2.timestamp()),
-                bucket_name=bucket_name,
-            ),
-        ]
-
-        ret = await client.blob_storage.glob_blobs(bucket_name, pattern="**/*.json")
-        assert ret == [
-            BlobListing(
-                key="folder1/yyy.json",
-                size=2,
-                modification_time=int(mtime2.timestamp()),
-                bucket_name=bucket_name,
-            )
-        ]
-
-        ret = await client.blob_storage.glob_blobs(bucket_name, pattern="*/*.txt")
-        assert ret == [
-            BlobListing(
-                key="folder1/xxx.txt",
-                size=1,
-                modification_time=int(mtime1.timestamp()),
-                bucket_name=bucket_name,
-            )
-        ]
-
-        ret = await client.blob_storage.glob_blobs(bucket_name, pattern="test[1-9].*")
-        assert ret == [
-            BlobListing(
-                key="test1.txt",
-                size=111,
-                modification_time=int(mtime1.timestamp()),
-                bucket_name="foo",
-            ),
-            BlobListing(
-                key="test2.txt",
-                size=222,
-                modification_time=int(mtime2.timestamp()),
-                bucket_name="foo",
-            ),
-        ]
+        [],
+    )
 
 
 async def test_blob_storage_head_blob(
@@ -1258,3 +1181,45 @@ async def test_blob_storage_download_dir_with_slash(
         {"body": b"w" * 111, "dir": False, "path": "test1.txt", "size": 111},
         {"body": b"w" * 222, "dir": False, "path": "test2.txt", "size": 222},
     ]
+
+
+@pytest.mark.parametrize(
+    "pattern,expected_keys",
+    [
+        ("folder1/*", ["folder1/xxx.txt", "folder1/yyy.json"]),
+        ("folder?/*", ["folder1/xxx.txt", "folder1/yyy.json", "folder2/big_file"]),
+        ("**/*.json", ["folder1/yyy.json", "test.json"]),
+        ("*/*.txt", ["folder1/xxx.txt"]),
+        ("test[1-9].*", ["test1.txt", "test2.txt"]),
+        ("test[2-3].*", ["test2.txt"]),
+        # Should not match `/` for deep paths
+        ("*.txt", ["test1.txt", "test2.txt"]),
+        ("folder*", []),
+        # Only glob style recursive supported:
+        #   **/file
+        #   folder/**/file
+        #   folder/**
+        ("folder**", []),
+    ],
+)
+async def test_blob_storage_glob_blobs(
+    blob_storage_server: Any,
+    make_client: _MakeClient,
+    blob_storage_contents: _ContentsObj,
+    pattern: str,
+    expected_keys: List[str],
+) -> None:
+    bucket_name = "foo"
+    blob_storage_contents["folder2/big_file"] = {
+        "key": "folder2/big_file",
+        "size": 2 * 1024,
+        "last_modified": datetime(2019, 1, 2).timestamp(),
+        "body": b"bb" * 1024,
+    }
+
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        ret = [
+            x.key
+            async for x in client.blob_storage.glob_blobs(bucket_name, pattern=pattern)
+        ]
+        assert ret == expected_keys

@@ -1,15 +1,15 @@
 .. _blob-storage-reference:
 
-============================
+==========================
 Blob Storage API Reference
-============================
+==========================
 
 
 .. currentmodule:: neuromation.api
 
 
 Blob Storage
-==============
+============
 
 .. note::
    Be careful with using trailing slashes in Blob Storage URL's, keys and prefixes.
@@ -42,24 +42,23 @@ Blob Storage
 
    .. comethod:: list_blobs(bucket_name: str, prefix: str = "", \
                               recursive: bool = False, max_keys: int = 10000 \
-                  ) -> List[Union[BlobListing, PrefixListing]]
+                  ) -> Tuple[Sequence[BlobListing], Sequence[PrefixListing]]
 
       List blobs in the bucket. You can filter by prefix and return results similar
       to a folder structure if ``recursive=False`` is provided ::
 
-         content = await client.blob_storage.list_blobs(
+         blobs, prefixes = await client.blob_storage.list_blobs(
             bucket_name="my_bucket",
             recursive=False,
             prefix="parent/"
          )
-         for blob in content:
-            if isinstance(blob, BlobListing):
-               print("File ", blob.key)
-            else:
-               print("Folder ", blob.prefix)
+         for blob in blobs:
+            print("File ", blob.key)
+         for folder in prefixes:
+            print("Folder ", folder.prefix)
 
       :param str bucket_name: Name of the bucket.
-      :param str prefix: Filter results by a prefix in it's key.
+      :param str prefix: Filter results by a prefix of it's key.
       :param recursive bool: If ``True`` listing will contain *all* keys filtered by
           prefix, while with ``False`` only ones up to next ``/`` will be returned.
           To indicate missing keys, all that were listed will be combined under a
@@ -293,7 +292,7 @@ BucketListing
 
 
 BlobListing
-=============
+===========
 
 .. class:: BlobListing
 
@@ -344,7 +343,7 @@ PrefixListing
       ``blob:my_bucket/my_folder/``.
 
 Blob
-======
+====
 
 .. class:: Blob
 
