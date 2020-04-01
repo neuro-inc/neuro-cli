@@ -128,6 +128,6 @@ def test_make_record_web_shell() -> None:
         args="args",
         version="version",
     )
-    os.environ[NEURO_EVENT_CATEGORY] = ""
+    del os.environ[NEURO_EVENT_CATEGORY]
     parsed_record = urllib.parse.parse_qs(record)
     assert parsed_record["ec"] == ["WEB-CLI"]
