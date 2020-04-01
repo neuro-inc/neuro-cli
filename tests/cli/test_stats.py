@@ -1,14 +1,19 @@
+import os
 import sqlite3
+import urllib
 from unittest import mock
 
 import pytest
+from yarl import URL
 
 import neuromation
 from neuromation.cli.stats import (
+    NEURO_EVENT_CATEGORY,
     SCHEMA,
     add_usage,
     delete_oldest,
     ensure_schema,
+    make_record,
     select_oldest,
 )
 
@@ -100,3 +105,29 @@ def test_delete_oldest(db: sqlite3.Connection) -> None:
         "args": '[{}, {"-s": "(\'failed\', \'running\')", "image": null, "cmd": null}]',
         "version": neuromation.__version__,
     }
+
+
+def test_make_record_cli() -> None:
+    record = make_record(
+        uid="uid",
+        url=URL("https://dev.neu.ro/api/v1"),
+        cmd="cmd",
+        args="args",
+        version="version",
+    )
+    parsed_record = urllib.parse.parse_qs(record)
+    assert parsed_record["ec"] == ["CLI"]
+
+
+def test_make_record_web_shell() -> None:
+    os.environ[NEURO_EVENT_CATEGORY] = "WEB-CLI"
+    record = make_record(
+        uid="uid",
+        url=URL("https://dev.neu.ro/api/v1"),
+        cmd="cmd",
+        args="args",
+        version="version",
+    )
+    os.environ[NEURO_EVENT_CATEGORY] = ""
+    parsed_record = urllib.parse.parse_qs(record)
+    assert parsed_record["ec"] == ["WEB-CLI"]

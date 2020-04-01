@@ -3,6 +3,7 @@
 import contextlib
 import json
 import logging
+import os
 import sqlite3
 import time
 import uuid
@@ -18,6 +19,7 @@ from neuromation.api import Client
 logger = logging.getLogger(__name__)
 
 GA_URL = URL("http://www.google-analytics.com/batch")
+NEURO_EVENT_CATEGORY = "NEURO_EVENT_CATEGORY"
 
 # Google Analytics supports up to 20 records in a batch
 GA_CACHE_LIMIT = 20
@@ -96,6 +98,8 @@ def delete_oldest(db: sqlite3.Connection, old: List[sqlite3.Row]) -> None:
 
 
 def make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
+    ec = os.environ.get(NEURO_EVENT_CATEGORY) or "CLI"
+
     # fmt: off
     ret = {
         "v": "1",                      # version
@@ -103,7 +107,7 @@ def make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
         "tid": "UA-106571369-3",       # tid
         "cid": uid,                    # client id, uuid4
         "ds": "cli",                   # data source, cli
-        "ec": "CLI",                   # event category, CLI
+        "ec": ec,                      # event category, CLI / WEB-CLI
         "ea": cmd,                     # event action, "neuro ps"
         "el": args,                    # event label, "[{}, {"all", true}]
         "an": "neuro",                 # application name, neuro
