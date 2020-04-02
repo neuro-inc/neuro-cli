@@ -22,7 +22,6 @@ from typing import (
     Optional,
     Tuple,
     Union,
-    cast,
 )
 from uuid import uuid4 as uuid
 
@@ -32,7 +31,6 @@ import pytest
 from yarl import URL
 
 from neuromation.api import (
-    BlobListing,
     Config,
     Container,
     FileStatusType,
@@ -564,7 +562,7 @@ class Helper:
         # Each test needs a clean bucket state and we can't delete bucket until it's
         # cleaned
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            blobs = await client.blob_storage.list_blobs(bucket_name, recursive=True)
+            blobs, _ = await client.blob_storage.list_blobs(bucket_name, recursive=True)
             if not blobs:
                 return
 
@@ -572,7 +570,6 @@ class Helper:
             # do, please add a semaphore here.
             tasks = []
             for blob in blobs:
-                blob = cast(BlobListing, blob)
                 log.info("Removing %s %s", bucket_name, blob.key)
                 tasks.append(client.blob_storage.delete_blob(bucket_name, key=blob.key))
             await asyncio.gather(*tasks)

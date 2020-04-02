@@ -256,7 +256,7 @@ def test_e2e_blob_storage_cp_filter(
     )
     captured = helper.run_cli(["blob", "ls", f"blob:{tmp_bucket}/filtered/"])
     prefix = f"blob:{tmp_bucket}/filtered/"
-    assert captured.out.splitlines() == [prefix, prefix + "bar"]
+    assert sorted(captured.out.splitlines()) == [prefix, prefix + "bar"]
 
     # Copy all files to storage
     helper.run_cli(
