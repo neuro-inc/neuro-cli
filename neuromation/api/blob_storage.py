@@ -238,9 +238,9 @@ class BlobStorage(metaclass=NoPublicConstructor):
             ]
             yield contents, common_prefixes
 
-            if res["is_truncated"] and res["contents"]:
-                start_after = res["contents"][-1]["key"]
-                url = url.update_query(start_after=start_after)
+            if res["is_truncated"]:
+                continuation_token = res["continuation_token"]
+                url = url.update_query(continuation_token=continuation_token)
                 # Limit the next page if we are reaching max_keys limit
                 if max_keys is not None:
                     max_keys -= len(contents) + len(common_prefixes)

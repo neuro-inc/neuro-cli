@@ -318,6 +318,7 @@ async def test_blob_storage_list_blobs(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     bucket_name = "foo"
+    continuation_token = "cool_token"
     mtime1 = datetime.now()
     mtime2 = datetime.now()
     PAGE1_JSON = {
@@ -326,6 +327,7 @@ async def test_blob_storage_list_blobs(
         ],
         "common_prefixes": [{"prefix": "empty/"}, {"prefix": "folder1/"}],
         "is_truncated": True,
+        "continuation_token": continuation_token,
     }
     PAGE2_JSON = {
         "contents": [
@@ -334,13 +336,14 @@ async def test_blob_storage_list_blobs(
         ],
         "common_prefixes": [{"prefix": "folder2/"}],
         "is_truncated": False,
+        "continuation_token": None,
     }
 
     async def handler(request: web.Request) -> web.Response:
         assert "b3" in request.headers
         assert request.path == BlobUrlRotes.LIST_OBJECTS.format(bucket=bucket_name)
 
-        if "start_after" not in request.query:
+        if "continuation_token" not in request.query:
             assert request.query["recursive"] == "false"
             assert request.query["max_keys"] in ("3", "6")
             return web.json_response(PAGE1_JSON)
@@ -348,7 +351,7 @@ async def test_blob_storage_list_blobs(
             assert request.query == {
                 "recursive": "false",
                 "max_keys": "3",
-                "start_after": "test.json",
+                "continuation_token": continuation_token,
             }
             return web.json_response(PAGE2_JSON)
 
