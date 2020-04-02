@@ -1,7 +1,8 @@
 import glob as globmodule  # avoid conflict with subcommand "glob"
 import logging
 import sys
-from typing import List, Optional, Sequence, Tuple, Union
+from itertools import chain
+from typing import List, Optional, Sequence, Tuple, Union, cast
 
 import click
 from yarl import URL
@@ -14,6 +15,7 @@ from neuromation.api.url_utils import _extract_path
 from .const import EX_OSFILE
 from .formatters import (
     BaseBlobFormatter,
+    FilesSorter,
     LongBlobFormatter,
     SimpleBlobFormatter,
     create_storage_progress,
@@ -78,22 +80,7 @@ async def ls(
     """
     uris = [parse_blob_resource(path, root) for path in paths]
 
-    blob = root.client.blob_storage
-
-    blob_listings: List[Sequence[BlobListings]] = []
-
-    if not uris:
-        # List Buckets instead of blobs in bucket
-        blob_listings.append(await blob.list_buckets())
-    else:
-        for uri in uris:
-            bucket_name, key = blob._extract_bucket_and_key(uri)
-
-            blob_listings.append(
-                await blob.list_blobs(
-                    bucket_name=bucket_name, prefix=key, recursive=recursive,
-                )
-            )
+    blob_storage = root.client.blob_storage
 
     formatter: BaseBlobFormatter
     if format_long:
@@ -103,16 +90,36 @@ async def ls(
         # Similar to `ls -1`, default for non-terminal on UNIX. We show full uris of
         # blobs, thus column formatting does not work too well.
         formatter = SimpleBlobFormatter(root.color)
+    sorter = FilesSorter(sort)
 
-    if len(blob_listings) > 1:
-        buffer = []
-        for uri, listing in zip(uris, blob_listings):
-            buffer.append(click.style(str(uri), bold=True) + ":")
-            buffer.extend(formatter(listing))
-        pager_maybe(buffer, root.tty, root.terminal_size)
+    errors = False
+    if not uris:
+        # List Buckets instead of blobs in bucket
+        buckets = await blob_storage.list_buckets()
+        pager_maybe(formatter(buckets), root.tty, root.terminal_size)
     else:
-        assert blob_listings
-        pager_maybe(formatter(blob_listings[0]), root.tty, root.terminal_size)
+        for uri in uris:
+            bucket_name, key = blob_storage._extract_bucket_and_key(uri)
+            short_uri = blob_storage.make_url(bucket_name, key)
+            if root.verbosity > 0:
+                painter = get_painter(root.color, quote=True)
+                curi = painter.paint(str(short_uri), FileStatusType.DIRECTORY)
+                click.echo(f"List of {curi}:")
+
+            try:
+                blobs, prefixes = await blob_storage.list_blobs(
+                    bucket_name=bucket_name, prefix=key, recursive=recursive,
+                )
+                items = cast(Sequence[BlobListings], chain(blobs, prefixes))
+            except ResourceNotFound as error:
+                log.error(f"cannot access {short_uri}: {error}")
+                errors = True
+            else:
+                items = sorted(items, key=sorter.key())
+                pager_maybe(formatter(items), root.tty, root.terminal_size)
+
+    if errors:
+        sys.exit(EX_OSFILE)
 
 
 @command()
@@ -121,15 +128,24 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     """
     List resources that match PATTERNS.
     """
+    blob_storage = root.client.blob_storage
     for pattern in patterns:
         uri = parse_blob_resource(pattern, root)
+        bucket_name, pattern = blob_storage._extract_bucket_and_key(uri)
+        short_uri = blob_storage.make_url(bucket_name, pattern)
+
+        if globmodule.has_magic(bucket_name):
+            raise ValueError(
+                "You can not glob on bucket names. Please provide name " "explicitly."
+            )
+
         if root.verbosity > 0:
             painter = get_painter(root.color, quote=True)
-            curi = painter.paint(str(uri), FileStatusType.FILE)
+            curi = painter.paint(str(short_uri), FileStatusType.FILE)
             click.echo(f"Using pattern {curi}:")
 
-        for sub_uri in await _expand([str(uri)], root=root, glob=True):
-            click.echo(sub_uri)
+        async for blob in blob_storage.glob_blobs(bucket_name, pattern):
+            click.echo(blob.uri)
 
 
 @command()
@@ -336,10 +352,9 @@ async def _expand(
                         "You can not glob on bucket names. Please provide name "
                         "explicitly."
                     )
-                blobs = await root.client.blob_storage.glob_blobs(
+                async for blob in root.client.blob_storage.glob_blobs(
                     bucket_name=bucket_name, pattern=key
-                )
-                for blob in blobs:
+                ):
                     uris.append(blob.uri)
             elif allow_file and uri.scheme == "file":
                 for p in globmodule.iglob(uri_path, recursive=True):
