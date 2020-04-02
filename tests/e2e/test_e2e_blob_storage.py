@@ -186,8 +186,6 @@ def test_e2e_blob_storage_copy_recursive_file(
     assert dstfile.read_bytes() == b"abc"
 
 
-# Glob does not seem to work too good with deep foledrs
-@pytest.mark.xfail
 @pytest.mark.e2e
 def test_e2e_blob_storage_glob_copy(
     helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path, tmp_bucket: str
@@ -215,9 +213,10 @@ def test_e2e_blob_storage_glob_copy(
     # Test subcommand "glob"
     captured = helper.run_cli(["blob", "glob", f"blob:{tmp_bucket}/folder/*"])
     assert sorted(captured.out.splitlines()) == [
-        prefix + "foo",
+        prefix,
         prefix + "bar",
         prefix + "baz",
+        prefix + "foo",
     ]
 
     # Download files with pattern
