@@ -58,8 +58,7 @@ def normalize_storage_path_uri(uri: URL, username: str, cluster_name: str) -> UR
     """Normalize storage url."""
     if uri.scheme != "storage":
         raise ValueError(
-            f"Invalid storage scheme '{uri.scheme}://' "
-            "(only 'storage://' is allowed)"
+            f"Invalid storage scheme '{uri.scheme}:' (only 'storage:' is allowed)"
         )
     return _normalize_uri(uri, username, cluster_name)
 
@@ -68,7 +67,7 @@ def normalize_blob_path_uri(uri: URL, cluster_name: str) -> URL:
     """Normalize Blob Storage url."""
     if uri.scheme != "blob":
         raise ValueError(
-            f"Invalid storage scheme '{uri.scheme}://' " "(only 'blob://' is allowed)"
+            f"Invalid storage scheme '{uri.scheme}:' (only 'blob:' is allowed)"
         )
 
     stripped_path = uri.path.lstrip("/")
@@ -101,11 +100,7 @@ def _normalize_uri(resource: Union[URL, str], username: str, cluster_name: str) 
             else:
                 path = f"{username}/{path}" if path else username
         else:
-            if path.startswith("/"):
-                path = path.lstrip("/")
-                host, _, path = path.partition("/")
-            else:
-                host = username
+            raise ValueError(f"Absolute URI is required for scheme {uri.scheme}")
         uri = URL.build(scheme=uri.scheme, host=host, path="/" + path)
 
     return uri
@@ -115,8 +110,7 @@ def normalize_local_path_uri(uri: URL) -> URL:
     """Normalize local file url."""
     if uri.scheme != "file":
         raise ValueError(
-            f"Invalid local file scheme '{uri.scheme}://' "
-            "(only 'file://' is allowed)"
+            f"Invalid local file scheme '{uri.scheme}:' (only 'file:' is allowed)"
         )
     if uri.host:
         raise ValueError(f"Host part is not allowed, found '{uri.host}'")
