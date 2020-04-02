@@ -238,9 +238,9 @@ class BlobStorage(metaclass=NoPublicConstructor):
             ]
             yield contents, common_prefixes
 
-            if res["is_truncated"] and res["contents"]:
-                start_after = res["contents"][-1]["key"]
-                url = url.update_query(start_after=start_after)
+            if res["is_truncated"]:
+                continuation_token = res["continuation_token"]
+                url = url.update_query(continuation_token=continuation_token)
                 # Limit the next page if we are reaching max_keys limit
                 if max_keys is not None:
                     max_keys -= len(contents) + len(common_prefixes)
@@ -278,7 +278,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
             return
 
         has_magic = _has_magic(part)
-        # Optimize the prefix for matchin. If we have a pattern `folder1/b*/*.json`
+        # Optimize the prefix for matching. If we have a pattern `folder1/b*/*.json`
         # it's better to scan with prefix `folder1/b` on the 2nd step, not `folder1/`
         if has_magic:
             opt_prefix = prefix + _glob_safe_prefix(part)
