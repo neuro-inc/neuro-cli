@@ -23,7 +23,7 @@ setup(
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
-        "aiohttp>=3.6.1",
+        "aiohttp>=3.6.2",
         'dataclasses>=0.5; python_version<"3.7"',
         "pyyaml>=3.0",
         'async-generator>=1.5; python_version<"3.7"',
@@ -45,6 +45,7 @@ setup(
         "atomicwrites>=1.0",
         "wcwidth>=0.1.7",
         "toml>=0.10.0",
+        "prompt-toolkit>=3.0",
     ],
     include_package_data=True,
     description="Neuro Platform API client",
