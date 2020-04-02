@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 import click
+from prompt_toolkit import PromptSession
+from prompt_toolkit.patch_stdout import patch_stdout
 from yarl import URL
 
 from neuromation.api import DEFAULT_API_URL, Client, ConfigError
@@ -129,9 +131,11 @@ async def login_headless(root: Root, url: URL) -> None:
     """
 
     async def login_callback(url: URL) -> str:
+        session = PromptSession()
         click.echo(f"Open {url} in a browser")
         click.echo("Put the code displayed in a browser after successful login")
-        auth_code = input("Code (empty for exit)-> ")
+        with patch_stdout():
+            auth_code = await session.prompt_async("Code (empty for exit)-> ")
         if not auth_code:
             sys.exit()
         return auth_code
@@ -244,13 +248,18 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
 
 
 async def prompt_cluster(
-    client: Client, *, prompt: Callable[[str], str] = input
+    client: Client, *, session: Optional[PromptSession] = None
 ) -> str:
+    if session is None:
+        session = PromptSession()
     clusters = client.config.clusters
     while True:
         fmt = ClustersFormatter()
         click.echo("\n".join(fmt(clusters.values(), client.config.cluster_name)))
-        answer = prompt(f"Select cluster to switch [{client.config.cluster_name}]: ")
+        with patch_stdout():
+            answer = await session.prompt_async(
+                f"Select cluster to switch [{client.config.cluster_name}]: "
+            )
         answer = answer.strip()
         if not answer:
             answer = client.config.cluster_name
