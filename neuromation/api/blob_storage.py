@@ -1,7 +1,6 @@
 import asyncio
 import base64
 import errno
-import fnmatch
 import hashlib
 import itertools
 import re
@@ -432,7 +431,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         blobs, prefixes = await self.list_blobs(
             bucket_name=bucket_name, prefix=key + "/", recursive=False, max_keys=1
         )
-        return blobs or prefixes
+        return bool(blobs) or bool(prefixes)
 
     async def _mkdir(self, uri: URL) -> None:
         bucket_name, key = self._extract_bucket_and_key(uri)
