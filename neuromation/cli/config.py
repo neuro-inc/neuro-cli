@@ -4,7 +4,7 @@ import os
 import sys
 import webbrowser
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict, Optional
 
 import click
 from prompt_toolkit import PromptSession
