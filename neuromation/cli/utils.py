@@ -555,7 +555,6 @@ deprecated_quiet_option: Any = option(
     is_eager=True,
 )
 
-
 if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import AsyncExitStack  # noqa
 else:
@@ -563,7 +562,7 @@ else:
 
 
 def format_size(value: float) -> str:
-    return humanize.naturalsize(value, gnu=True, format="%.4g")
+    return humanize.naturalsize(value, gnu=True)
 
 
 def pager_maybe(

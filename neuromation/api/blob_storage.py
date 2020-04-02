@@ -1,8 +1,8 @@
 import asyncio
 import base64
 import errno
-import fnmatch
 import hashlib
+import itertools
 import re
 import time
 from dataclasses import dataclass
@@ -16,6 +16,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Tuple,
     Union,
     cast,
@@ -38,7 +39,15 @@ from .abc import (
 )
 from .config import Config
 from .core import ResourceNotFound, _Core
-from .storage import QueuedProgress, _always, _has_magic, run_concurrently, run_progress
+from .file_filter import translate
+from .storage import (
+    QueuedProgress,
+    _always,
+    _has_magic,
+    _magic_check,
+    run_concurrently,
+    run_progress,
+)
 from .url_utils import _extract_path, normalize_blob_path_uri, normalize_local_path_uri
 from .users import Action
 from .utils import NoPublicConstructor, asynccontextmanager, retries
@@ -136,9 +145,6 @@ class PrefixListing:
         return True
 
 
-ListResult = Union[PrefixListing, BlobListing]
-
-
 class Blob:
     def __init__(self, resp: aiohttp.ClientResponse, stats: BlobListing):
         self._resp = resp
@@ -153,7 +159,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core
         self._config = config
-        self._max_keys = 10000
+        self._default_batch_size = 1000
         self._file_sem = asyncio.BoundedSemaphore(MAX_OPEN_FILES)
 
     async def list_buckets(self) -> List[BucketListing]:
@@ -183,58 +189,138 @@ class BlobStorage(metaclass=NoPublicConstructor):
         bucket_name: str,
         prefix: str = "",
         recursive: bool = False,
-        max_keys: int = 10000,
-    ) -> List[ListResult]:
+        max_keys: Optional[int] = None,
+    ) -> Tuple[Sequence[BlobListing], Sequence[PrefixListing]]:
+        contents: List[BlobListing] = []
+        common_prefixes: List[PrefixListing] = []
+
+        async for blobs, prefixes in self._iter_blob_pages(
+            bucket_name, prefix, recursive=recursive, max_keys=max_keys
+        ):
+            contents.extend(blobs)
+            common_prefixes.extend(prefixes)
+        return contents, common_prefixes
+
+    async def _iter_blob_pages(
+        self,
+        bucket_name: str,
+        prefix: str = "",
+        *,
+        recursive: bool = False,
+        batch_size: Optional[int] = None,
+        max_keys: Optional[int] = None,
+    ) -> AsyncIterator[Tuple[Sequence[BlobListing], Sequence[PrefixListing]]]:
         url = self._config.blob_storage_url / "o" / bucket_name
         auth = await self._config._api_auth()
+        if batch_size is None:
+            batch_size = self._default_batch_size
 
-        query = {"recursive": str(recursive).lower(), "max_keys": str(self._max_keys)}
+        # 1st page may be less then max_keys
+        next_page_size = batch_size
+        if max_keys is not None:
+            next_page_size = min(batch_size, max_keys)
+
+        query = {"recursive": str(recursive).lower(), "max_keys": str(next_page_size)}
         if prefix:
             query["prefix"] = prefix
         url = url.with_query(query)
 
-        contents: List[ListResult] = []
-        common_prefixes: List[ListResult] = []
         while True:
             async with self._core.request("GET", url, auth=auth) as resp:
                 res = await resp.json()
-                contents.extend(
-                    [_blob_status_from_key(bucket_name, key) for key in res["contents"]]
-                )
-                common_prefixes.extend(
-                    [
-                        _blob_status_from_prefix(bucket_name, prefix)
-                        for prefix in res["common_prefixes"]
-                    ]
-                )
-                if res["is_truncated"] and res["contents"]:
-                    start_after = res["contents"][-1]["key"]
-                    url = url.update_query(start_after=start_after)
-                else:
-                    break
-        return common_prefixes + contents
+            contents = [
+                _blob_status_from_key(bucket_name, key) for key in res["contents"]
+            ]
 
-    async def glob_blobs(self, bucket_name: str, pattern: str) -> List[BlobListing]:
-        pattern = pattern.lstrip("/")
-        parts = pattern.split("/")
-        # Limit the search to prefix of keys
-        prefix = ""
-        for part in parts:
-            if _has_magic(part):
-                break
+            common_prefixes = [
+                _blob_status_from_prefix(bucket_name, prefix)
+                for prefix in res["common_prefixes"]
+            ]
+            yield contents, common_prefixes
+
+            if res["is_truncated"] and res["contents"]:
+                start_after = res["contents"][-1]["key"]
+                url = url.update_query(start_after=start_after)
+                # Limit the next page if we are reaching max_keys limit
+                if max_keys is not None:
+                    max_keys -= len(contents) + len(common_prefixes)
+                    if max_keys <= 0:
+                        break
+                    next_page_size = min(max_keys, batch_size)
+                    url = url.update_query(max_keys=str(next_page_size))
             else:
-                prefix += part + "/"
+                break
 
-        match = re.compile(fnmatch.translate(pattern)).fullmatch
-        res = []
-        for blob_status in await self.list_blobs(
-            bucket_name, prefix=prefix, recursive=True
-        ):
-            # We don't have PrefixListing if recursive is used
-            blob_status = cast(BlobListing, blob_status)
-            if match(blob_status.key):
-                res.append(blob_status)
-        return res
+    async def glob_blobs(
+        self, bucket_name: str, pattern: str
+    ) -> AsyncIterator[BlobListing]:
+        pattern = pattern.lstrip("/")
+
+        async for blob in self._glob_search(bucket_name, "", pattern):
+            yield blob
+
+    async def _glob_search(
+        self, bucket_name: str, prefix: str, pattern: str
+    ) -> AsyncIterator[BlobListing]:
+        part, _, remaining = pattern.partition("/")
+
+        # Yield all remaining files recursively, as *all* keys may match the query
+        # **/.json
+        if _isrecursive(part):
+            full_match = re.compile(translate(pattern)).fullmatch
+            async for blobs, prefixes in self._iter_blob_pages(
+                bucket_name, prefix, recursive=True
+            ):
+                assert not prefixes, "No prefixes in recursive mode"
+                for blob in blobs:
+                    if full_match(blob.key[len(prefix) :]):
+                        yield blob
+            return
+
+        has_magic = _has_magic(part)
+        # Optimize the prefix for matchin. If we have a pattern `folder1/b*/*.json`
+        # it's better to scan with prefix `folder1/b` on the 2nd step, not `folder1/`
+        if has_magic:
+            opt_prefix = prefix + _glob_safe_prefix(part)
+            match = re.compile(translate(part)).fullmatch
+
+        # If this is the last part in the search pattern we have to scan keys, not
+        # just prefixes
+        if not remaining:
+            if has_magic:
+                async for blobs, _ in self._iter_blob_pages(
+                    bucket_name, opt_prefix, recursive=False
+                ):
+                    for blob in blobs:
+                        if match(blob.name):
+                            yield blob
+            else:
+                try:
+                    blob = await self.head_blob(bucket_name, prefix + part)
+                    yield blob
+                except ResourceNotFound:
+                    pass
+            return
+
+        # We can be sure no blobs on this level will match the pattern, as results are
+        # deeper down the tree. Recursively scan folders only.
+        if has_magic:
+            async for blobs, prefixes in self._iter_blob_pages(
+                bucket_name, opt_prefix, recursive=False
+            ):
+                for folder in prefixes:
+                    if not match(folder.name):
+                        continue
+                    async for blob in self._glob_search(
+                        bucket_name, folder.prefix, remaining
+                    ):
+                        yield blob
+
+        else:
+            async for blob in self._glob_search(
+                bucket_name, prefix + part + "/", remaining
+            ):
+                yield blob
 
     async def head_blob(self, bucket_name: str, key: str) -> BlobListing:
         url = self._config.blob_storage_url / "o" / bucket_name / key
@@ -347,10 +433,10 @@ class BlobStorage(metaclass=NoPublicConstructor):
         if not key:
             return True
 
-        blobs = await self.list_blobs(
+        blobs, prefixes = await self.list_blobs(
             bucket_name=bucket_name, prefix=key + "/", recursive=False, max_keys=1
         )
-        return bool(blobs)
+        return bool(blobs) or bool(prefixes)
 
     async def _mkdir(self, uri: URL) -> None:
         bucket_name, key = self._extract_bucket_and_key(uri)
@@ -597,11 +683,13 @@ class BlobStorage(metaclass=NoPublicConstructor):
             prefix_path += "/"
         for retry in retries(f"Fail to list {src}"):
             async with retry:
-                folder = await self.list_blobs(
+                blobs, prefixes = await self.list_blobs(
                     bucket_name=bucket_name, prefix=prefix_path, recursive=False
                 )
 
-        for child in folder:
+        for child in itertools.chain(blobs, prefixes):
+            child = cast(Union[PrefixListing, BlobListing], child)
+
             # Skip "folder" keys, as they will be returned as BlobListing results again,
             # previously being a common prefix, ie. PrefixListing.
             if child.path == prefix_path:
@@ -636,6 +724,14 @@ class BlobStorage(metaclass=NoPublicConstructor):
                 )
         await run_concurrently(tasks)
         await progress.leave(StorageProgressLeaveDir(src, dst))
+
+
+def _glob_safe_prefix(pattern: str) -> str:
+    return _magic_check.split(pattern, 1)[0]
+
+
+def _isrecursive(pattern: str) -> bool:
+    return pattern == "**"
 
 
 def _bucket_status_from_data(data: Dict[str, Any]) -> BucketListing:

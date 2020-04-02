@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import glob as globmodule  # avoid conflict with subcommand "glob"
 import logging
 import os
@@ -27,12 +28,14 @@ from neuromation.api.file_filter import FileFilter
 from neuromation.api.url_utils import _extract_path
 
 from .const import EX_OSFILE
-from .formatters import (
+from .formatters.jobs import JobStartProgress
+from .formatters.storage import (
     BaseFilesFormatter,
     FilesSorter,
-    JobStartProgress,
     LongFilesFormatter,
     SimpleFilesFormatter,
+    Tree,
+    TreeFormatter,
     VerticalColumnsFilesFormatter,
     create_storage_progress,
     get_painter,
@@ -109,6 +112,19 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
 @command()
 @argument("paths", nargs=-1)
 @option(
+    "-a",
+    "--all",
+    "show_all",
+    is_flag=True,
+    help="do not ignore entries starting with .",
+)
+@option(
+    "-d",
+    "--directory",
+    is_flag=True,
+    help="list directories themselves, not their contents.",
+)
+@option(
     "--human-readable",
     "-h",
     is_flag=True,
@@ -120,19 +136,6 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
     type=click.Choice(["name", "size", "time"]),
     default="name",
     help="sort by given field, default is name.",
-)
-@option(
-    "-d",
-    "--directory",
-    is_flag=True,
-    help="list directories themselves, not their contents.",
-)
-@option(
-    "-a",
-    "--all",
-    "show_all",
-    is_flag=True,
-    help="do not ignore entries starting with .",
 )
 async def ls(
     root: Root,
@@ -835,6 +838,67 @@ async def mv(
         sys.exit(EX_OSFILE)
 
 
+@command()
+@click.argument("path", required=False)
+@option(
+    "-a",
+    "--all",
+    "show_all",
+    is_flag=True,
+    help="do not ignore entries starting with .",
+)
+@option(
+    "--human-readable",
+    "-h",
+    is_flag=True,
+    help="Print the size in a more human readable way.",
+)
+@option(
+    "--size", "-s", is_flag=True, help="Print the size in bytes of each file.",
+)
+@option(
+    "--sort",
+    type=click.Choice(["name", "size", "time"]),
+    default="name",
+    help="sort by given field, default is name",
+)
+async def tree(
+    root: Root, path: str, size: bool, human_readable: bool, sort: str, show_all: bool
+) -> None:
+    """List contents of directories in a tree-like format.
+
+    Tree is a recursive directory listing program that produces a depth indented listing
+    of files, which is colorized ala dircolors if the LS_COLORS environment variable is
+    set and output is to tty.  With no arguments, tree lists the files in the storage:
+    directory.  When directory arguments are given, tree lists all the files and/or
+    directories found in the given directories each in turn.  Upon completion of listing
+    all files/directories found, tree returns the total number of files and/or
+    directories listed.
+
+    By default PATH is equal user's home dir (storage:)
+
+    """
+    if not path:
+        path = "storage:"
+    uri = parse_file_resource(path, root)
+
+    errors = False
+    try:
+        tree = await fetch_tree(root.client, uri, show_all)
+        tree = dataclasses.replace(tree, name=str(path))
+    except (OSError, ResourceNotFound) as error:
+        log.error(f"cannot fetch tree for {uri}: {error}")
+        errors = True
+    else:
+        formatter = TreeFormatter(
+            color=root.color, size=size, human_readable=human_readable, sort=sort
+        )
+        pager_maybe(formatter(tree), root.tty, root.terminal_size)
+
+    if errors:
+        sys.exit(EX_OSFILE)
+
+
 async def _expand(
     paths: Sequence[str], root: Root, glob: bool, allow_file: bool = False
 ) -> List[URL]:
@@ -879,6 +943,7 @@ storage.add_command(glob)
 storage.add_command(rm)
 storage.add_command(mkdir)
 storage.add_command(mv)
+storage.add_command(tree)
 storage.add_command(load)
 
 
@@ -897,3 +962,27 @@ async def calc_filters(
             else:
                 ret.append((True, flt))
     return tuple(ret)
+
+
+async def fetch_tree(client: Client, uri: URL, show_all: bool) -> Tree:
+    loop = asyncio.get_event_loop()
+    folders = []
+    files = []
+    tasks = []
+    size = 0
+    items = await client.storage.ls(uri)
+    for item in items:
+        if not show_all and item.name.startswith("."):
+            continue
+        if item.is_dir():
+            tasks.append(
+                loop.create_task(fetch_tree(client, uri / item.name, show_all))
+            )
+        else:
+            files.append(item)
+            size += item.size
+    for task in tasks:
+        subtree = await task
+        folders.append(subtree)
+        size += subtree.size
+    return Tree(uri.name, size, folders, files)

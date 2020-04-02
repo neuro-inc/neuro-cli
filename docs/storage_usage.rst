@@ -13,9 +13,9 @@ scenarios like uploading / downloading directories recursively.
 
 There are many methods in :class:`Storage` namespace, here we describe a few.
 
-Object Storage API (available as :attr:`Client.object_storage`) is another subsystem,
+Blob Storage API (available as :attr:`Client.blob_storage`) is another subsystem,
 which has a similar Upload/Download interface as methods shown below. Please refer to
-:class:`ObjectStorage` documentation for more details.
+:class:`BlobStorage` documentation for more details.
 
 
 Upload a Folder

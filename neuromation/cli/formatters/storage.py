@@ -1,8 +1,11 @@
 import abc
+import contextlib
 import enum
 import operator
 import os
+import sys
 import time
+from dataclasses import dataclass
 from fnmatch import fnmatch
 from math import ceil
 from time import monotonic
@@ -808,3 +811,95 @@ class TTYProgress(BaseStorageProgress):
         self.first_line = len(self.lines)
         self.last_line = 0
         self.last_update_time = self.time_factory()
+
+
+@dataclass(frozen=True)
+class Tree:
+    name: str
+    size: int
+    folders: Sequence["Tree"]
+    files: Sequence[FileStatus]
+
+
+class TreeFormatter:
+    ANSI_DELIMS = ["├", "└", "─", "│"]
+    SIMPLE_DELIMS = ["+", "+", "-", "|"]
+
+    def __init__(
+        self, *, color: bool, size: bool, human_readable: bool, sort: str
+    ) -> None:
+        self._ident: List[bool] = []
+        self._numdirs = 0
+        self._numfiles = 0
+        self._painter = get_painter(color, quote=True)
+        if sys.platform != "win32":
+            self._delims = self.ANSI_DELIMS
+        else:
+            self._delims = self.SIMPLE_DELIMS
+        if human_readable:
+            self._size_func = self._human_readable
+        elif size:
+            self._size_func = self._size
+        else:
+            self._size_func = self._none
+        self._key = FilesSorter(sort).key()
+
+    def __call__(self, tree: Tree) -> List[str]:
+        ret = self.listdir(tree)
+        ret.append("")
+        ret.append(f"{self._numdirs} directories, {self._numfiles} files")
+        return ret
+
+    def listdir(self, tree: Tree) -> List[str]:
+        ret = []
+        items = sorted(tree.folders + tree.files, key=self._key)  # type: ignore
+        ret.append(
+            self.pre()
+            + self._size_func(tree.size)
+            + self._painter.paint(tree.name, FileStatusType.DIRECTORY)
+        )
+        for num, item in enumerate(items):
+            if isinstance(item, Tree):
+                self._numdirs += 1
+                with self.ident(num == len(items) - 1):
+                    ret.extend(self.listdir(item))
+            else:
+                self._numfiles += 1
+                with self.ident(num == len(items) - 1):
+                    ret.append(
+                        self.pre()
+                        + self._size_func(item.size)
+                        + self._painter.paint(item.name, FileStatusType.FILE)
+                    )
+        return ret
+
+    def pre(self) -> str:
+        ret = []
+        for last in self._ident[:-1]:
+            if last:
+                ret.append(" " * 4)
+            else:
+                ret.append(self._delims[3] + " " * 3)
+        if self._ident:
+            last = self._ident[-1]
+            ret.append(self._delims[1] if last else self._delims[0])
+            ret.append(self._delims[2] * 2)
+            ret.append(" ")
+        return "".join(ret)
+
+    @contextlib.contextmanager
+    def ident(self, last: bool) -> Iterator[None]:
+        self._ident.append(last)
+        try:
+            yield
+        finally:
+            self._ident.pop()
+
+    def _size(self, size: int) -> str:
+        return f"[{size:>11}]  "
+
+    def _human_readable(self, size: int) -> str:
+        return f"[{format_size(size):>7}]  "
+
+    def _none(self, size: int) -> str:
+        return ""

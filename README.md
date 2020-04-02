@@ -34,6 +34,7 @@
 		* [neuro storage rm](#neuro-storage-rm)
 		* [neuro storage mkdir](#neuro-storage-mkdir)
 		* [neuro storage mv](#neuro-storage-mv)
+		* [neuro storage tree](#neuro-storage-tree)
 		* [neuro storage load](#neuro-storage-load)
 	* [neuro image](#neuro-image)
 		* [neuro image ls](#neuro-image-ls)
@@ -852,6 +853,7 @@ Name | Description|
 | _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
+| _[neuro storage tree](#neuro-storage-tree)_| List contents of directories in a tree-like format |
 | _[neuro storage load](#neuro-storage-load)_| Copy files and directories using MinIO \(EXPERIMENTAL) |
 
 
@@ -928,11 +930,11 @@ neuro storage ls [OPTIONS] [PATHS]...
 
 Name | Description|
 |----|------------|
+|_\-a, --all_|do not ignore entries starting with .|
+|_\-d, --directory_|list directories themselves, not their contents.|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
 |_-l_|use a long listing format.|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
-|_\-d, --directory_|list directories themselves, not their contents.|
-|_\-a, --all_|do not ignore entries starting with .|
 |_--help_|Show this message and exit.|
 
 
@@ -1050,6 +1052,29 @@ Name | Description|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro storage tree
+
+List contents of directories in a tree-like format.<br/><br/>Tree is a recursive directory listing program that produces a depth indented<br/>listing of files, which is colorized ala dircolors if the LS_COLORS<br/>environment variable is set and output is to tty.  With no arguments, tree<br/>lists the files in the storage: directory.  When directory arguments are<br/>given, tree lists all the files and/or directories found in the given<br/>directories each in turn.  Upon completion of listing all files/directories<br/>found, tree returns the total number of files and/or directories listed.<br/><br/>By default PATH is equal user's home dir \(storage:)
+
+**Usage:**
+
+```bash
+neuro storage tree [OPTIONS] [PATH]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-a, --all_|do not ignore entries starting with .|
+|_\-h, --human-readable_|Print the size in a more human readable way.|
+|_\-s, --size_|Print the size in bytes of each file.|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
 |_--help_|Show this message and exit.|
 
 
@@ -2206,11 +2231,11 @@ neuro ls [OPTIONS] [PATHS]...
 
 Name | Description|
 |----|------------|
+|_\-a, --all_|do not ignore entries starting with .|
+|_\-d, --directory_|list directories themselves, not their contents.|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
 |_-l_|use a long listing format.|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
-|_\-d, --directory_|list directories themselves, not their contents.|
-|_\-a, --all_|do not ignore entries starting with .|
 |_--help_|Show this message and exit.|
 
 
