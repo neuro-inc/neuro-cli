@@ -278,7 +278,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
             return
 
         has_magic = _has_magic(part)
-        # Optimize the prefix for matchin. If we have a pattern `folder1/b*/*.json`
+        # Optimize the prefix for matching. If we have a pattern `folder1/b*/*.json`
         # it's better to scan with prefix `folder1/b` on the 2nd step, not `folder1/`
         if has_magic:
             opt_prefix = prefix + _glob_safe_prefix(part)
