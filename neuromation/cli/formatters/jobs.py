@@ -31,6 +31,26 @@ def format_job_status(status: JobStatus) -> str:
     return style(status.value, fg=COLORS.get(status, "reset"))
 
 
+def format_timedelta(delta: datetime.timedelta) -> str:
+    s = int(delta.total_seconds())
+    if s < 0:
+        raise ValueError(f"Invalid delta {delta}: expect non-negative total value")
+    _sec_in_minute = 60
+    _sec_in_hour = _sec_in_minute * 60
+    _sec_in_day = _sec_in_hour * 24
+    d, s = divmod(s, _sec_in_day)
+    h, s = divmod(s, _sec_in_hour)
+    m, s = divmod(s, _sec_in_minute)
+    return "".join(
+        [
+            f"{d}d" if d else "",
+            f"{h}h" if h else "",
+            f"{m}m" if m else "",
+            f"{s}s" if s else "",
+        ]
+    )
+
+
 class JobFormatter:
     def __init__(self, quiet: bool = True) -> None:
         self._quiet = quiet
@@ -104,6 +124,13 @@ class JobStatusFormatter:
         resource_formatter = ResourcesFormatter()
         result += resource_formatter(job_status.container.resources) + "\n"
         result += f"Preemptible: {job_status.is_preemptible}\n"
+        if job_status.life_span is not None:
+            limit = (
+                "no limit"
+                if job_status.life_span == 0
+                else format_timedelta(datetime.timedelta(seconds=job_status.life_span))
+            )
+            result += f"Life span: {limit}\n"
 
         if job_status.container.tty:
             result += "TTY: True\n"

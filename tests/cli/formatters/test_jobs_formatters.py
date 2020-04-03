@@ -27,7 +27,11 @@ from neuromation.cli.formatters import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from neuromation.cli.formatters.jobs import ResourcesFormatter, TabularJobRow
+from neuromation.cli.formatters.jobs import (
+    ResourcesFormatter,
+    TabularJobRow,
+    format_timedelta,
+)
 from neuromation.cli.formatters.utils import image_formatter, uri_formatter
 from neuromation.cli.parse_utils import parse_columns
 from neuromation.cli.printer import CSI
@@ -332,6 +336,112 @@ class TestJobOutputFormatter:
             "Command: test-command\n"
             f"{resource_formatter(description.container.resources)}\n"
             "Preemptible: False\n"
+            "Http URL: http://local.host.test/\n"
+            "Http authentication: True\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "===Description===\n"
+            "ErrorDesc\n================="
+        )
+
+    def test_job_with_life_span_with_value(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage("test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+            life_span=1.0 * ((60 * 60 * 24 * 1) + (60 * 60 * 2) + (60 * 3) + 4),
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        resource_formatter = ResourcesFormatter()
+        assert (
+            status == "Job: test-job\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: test-image\n"
+            "Command: test-command\n"
+            f"{resource_formatter(description.container.resources)}\n"
+            "Preemptible: False\n"
+            "Life span: 1d2h3m4s\n"
+            "Http URL: http://local.host.test/\n"
+            "Http authentication: True\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "===Description===\n"
+            "ErrorDesc\n================="
+        )
+
+    def test_job_with_life_span_without_value(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage("test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+            life_span=0.0,
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        resource_formatter = ResourcesFormatter()
+        assert (
+            status == "Job: test-job\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: test-image\n"
+            "Command: test-command\n"
+            f"{resource_formatter(description.container.resources)}\n"
+            "Preemptible: False\n"
+            "Life span: no limit\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -818,6 +928,42 @@ class TestJobTelemetryFormatter:
             gpu="99",
             gpu_mem=f"64.500",
         )
+
+
+class TestJobStatusFormatter:
+    def test_format_timedelta(self) -> None:
+        delta = timedelta(days=1, hours=2, minutes=3, seconds=4)
+        assert format_timedelta(delta) == "1d2h3m4s"
+
+    def test_format_timedelta_no_days(self) -> None:
+        delta = timedelta(hours=2, minutes=3, seconds=4)
+        assert format_timedelta(delta) == "2h3m4s"
+
+    def test_format_timedelta_no_hours(self) -> None:
+        delta = timedelta(days=1, minutes=3, seconds=4)
+        assert format_timedelta(delta) == "1d3m4s"
+
+    def test_format_timedelta_no_minutes(self) -> None:
+        delta = timedelta(days=1, hours=2, seconds=4)
+        assert format_timedelta(delta) == "1d2h4s"
+
+    def test_format_timedelta_no_seconds(self) -> None:
+        delta = timedelta(days=1, hours=2, minutes=3)
+        assert format_timedelta(delta) == "1d2h3m"
+
+    def test_format_timedelta_overfill(self) -> None:
+        minutes = 60 * 24 * 30 + 20
+        delta = timedelta(minutes=minutes, seconds=10)
+        assert format_timedelta(delta) == "30d20m10s"
+
+    def test_format_timedelta_zero(self) -> None:
+        delta = timedelta(0)
+        assert format_timedelta(delta) == ""
+
+    def test_format_timedelta_negative(self) -> None:
+        delta = timedelta(-1)
+        with pytest.raises(ValueError, match="Invalid delta"):
+            assert format_timedelta(delta)
 
 
 class TestSimpleJobsFormatter:
