@@ -60,6 +60,10 @@
 		* [neuro acl grant](#neuro-acl-grant)
 		* [neuro acl revoke](#neuro-acl-revoke)
 		* [neuro acl list](#neuro-acl-list)
+	* [neuro blob](#neuro-blob)
+		* [neuro blob cp](#neuro-blob-cp)
+		* [neuro blob ls](#neuro-blob-ls)
+		* [neuro blob glob](#neuro-blob-glob)
 	* [neuro help](#neuro-help)
 	* [neuro run](#neuro-run)
 	* [neuro submit](#neuro-submit)
@@ -132,6 +136,7 @@ Name | Description|
 | _[neuro config](#neuro-config)_| Client configuration |
 | _[neuro completion](#neuro-completion)_| Output shell completion code |
 | _[neuro acl](#neuro-acl)_| Access Control List management |
+| _[neuro blob](#neuro-blob)_| Blob storage operations |
 
 
 **Commands:**
@@ -1664,6 +1669,102 @@ Name | Description|
 |_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user.|
 |_--shared_|Output the resources shared by the user.|
 |_\--full-uri_|Output full URI.|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro blob
+
+Blob storage operations.
+
+**Usage:**
+
+```bash
+neuro blob [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro blob cp](#neuro-blob-cp)_| Simple utility to copy files and directories into and from Blob Storage |
+| _[neuro blob ls](#neuro-blob-ls)_| List buckets or bucket contents |
+| _[neuro blob glob](#neuro-blob-glob)_| List resources that match PATTERNS |
+
+
+
+
+### neuro blob cp
+
+Simple utility to copy files and directories into and from Blob Storage.<br/>Either SOURCES or DESTINATION should have `blob://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy<br/>files between Blob Storage \(`blob://`) destination, nor with `storage://`<br/>scheme paths. Use `/dev/stdin` and `/dev/stdout` file names to upload a file<br/>from standard input or output to stdout. File permissions, modification<br/>times and other attributes will not be passed to Blob Storage metadata<br/>during upload.
+
+**Usage:**
+
+```bash
+neuro blob cp [OPTIONS] [SOURCES]... [DESTINATION]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-r, --recursive_|Recursive copy, off by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY.|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
+|_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro blob ls
+
+List buckets or bucket contents.
+
+**Usage:**
+
+```bash
+neuro blob ls [OPTIONS] [PATHS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
+|_-l_|use a long listing format.|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
+|_\-r, --recursive_|List all keys under the URL path provided, not just 1 level depths.|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro blob glob
+
+List resources that match PATTERNS.
+
+**Usage:**
+
+```bash
+neuro blob glob [OPTIONS] [PATTERNS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 

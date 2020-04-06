@@ -96,11 +96,12 @@ def run_async(coro: Any) -> Callable[..., Any]:
 
 
 class Helper:
-    def __init__(self, nmrc_path: Path, tmp_path: Path) -> None:
+    def __init__(self, nmrc_path: Path, tmp_path: Path, tmpbucketname: str) -> None:
         self._nmrc_path = nmrc_path
         self._tmp = tmp_path
         self.tmpstoragename = f"test_e2e/{uuid()}"
         self._tmpstorage = f"storage:{self.tmpstoragename}/"
+        self._tmpbucketname = tmpbucketname
         self._closed = False
         self._executed_jobs: List[str] = []
 
@@ -108,6 +109,7 @@ class Helper:
         if not self._closed:
             with suppress(Exception):
                 self.rm("", recursive=True)
+            self.cleanup_bucket(self._tmpbucketname)
             self._closed = True
         if self._executed_jobs:
             for job in self._executed_jobs:
@@ -141,6 +143,10 @@ class Helper:
     @property
     def tmpstorage(self) -> str:
         return self._tmpstorage
+
+    @property
+    def tmpbucketname(self) -> str:
+        return self._tmpbucketname
 
     def make_uri(self, path: str, *, fromhome: bool = False) -> URL:
         if fromhome:
@@ -538,6 +544,63 @@ class Helper:
                         if stat.status not in (JobStatus.PENDING, JobStatus.RUNNING):
                             break
 
+    @run_async
+    async def create_bucket(self, name: str) -> None:
+        __tracebackhide__ = True
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            await client.blob_storage.create_bucket(name)
+
+    @run_async
+    async def delete_bucket(self, name: str) -> None:
+        __tracebackhide__ = True
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            await client.blob_storage.delete_bucket(name)
+
+    @run_async
+    async def cleanup_bucket(self, bucket_name: str) -> None:
+        __tracebackhide__ = True
+        # Each test needs a clean bucket state and we can't delete bucket until it's
+        # cleaned
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            blobs, _ = await client.blob_storage.list_blobs(bucket_name, recursive=True)
+            if not blobs:
+                return
+
+            # XXX: We do assume we will not have tests that run 10000 of objects. If we
+            # do, please add a semaphore here.
+            tasks = []
+            for blob in blobs:
+                log.info("Removing %s %s", bucket_name, blob.key)
+                tasks.append(client.blob_storage.delete_blob(bucket_name, key=blob.key))
+            await asyncio.gather(*tasks)
+
+    @run_async
+    async def upload_blob(self, bucket_name: str, key: str, file: Path) -> None:
+        __tracebackhide__ = True
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            await client.blob_storage.upload_file(
+                URL("file:" + str(file)), client.blob_storage.make_url(bucket_name, key)
+            )
+
+    @run_async
+    async def check_blob_size(self, bucket_name: str, key: str, size: int) -> None:
+        __tracebackhide__ = True
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            blob = await client.blob_storage.head_blob(bucket_name, key)
+            assert blob.size == size
+
+    @run_async
+    async def check_blob_checksum(
+        self, bucket_name: str, key: str, checksum: str, tmp_path: Path
+    ) -> None:
+        __tracebackhide__ = True
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            await client.blob_storage.download_file(
+                client.blob_storage.make_url(bucket_name, key),
+                URL("file:" + str(tmp_path)),
+            )
+            assert self.hash_hex(tmp_path) == checksum, "checksum test failed for {url}"
+
 
 @pytest.fixture
 def nmrc_path(tmp_path_factory: Any, request: Any) -> Optional[Path]:
@@ -564,8 +627,8 @@ def nmrc_path(tmp_path_factory: Any, request: Any) -> Optional[Path]:
 
 
 @pytest.fixture
-def helper(tmp_path: Path, nmrc_path: Path) -> Iterator[Helper]:
-    ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path)
+def helper(tmp_path: Path, nmrc_path: Path, tmp_bucket: str) -> Iterator[Helper]:
+    ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path, tmpbucketname=tmp_bucket)
     yield ret
     with suppress(Exception):
         # ignore exceptions in helper closing
@@ -614,6 +677,30 @@ def nested_data(static_path: Path) -> Tuple[str, str, str]:
     nested_dir.mkdir(parents=True, exist_ok=True)
     generated_file, hash = generate_random_file(nested_dir, FILE_SIZE_B)
     return generated_file, hash, str(root_dir)
+
+
+@pytest.fixture(scope="session")
+def tmp_bucket(tmp_path_factory: Any, request: Any) -> Iterator[str]:
+    e2e_test_token = os.environ.get("E2E_USER_TOKEN")
+    assert e2e_test_token, "E2E_USER_TOKEN not provided"
+
+    tmp_path = tmp_path_factory.mktemp("tmp_bucket_config")
+    nmrc_path = tmp_path / "conftest.nmrc"
+    run(
+        login_with_token(
+            e2e_test_token,
+            url=URL("https://dev.neu.ro/api/v1"),
+            path=nmrc_path,
+            timeout=CLIENT_TIMEOUT,
+        )
+    )
+    tmp_path = tmp_path_factory.mktemp("tmp_bucket")
+
+    tmpbucketname = f"neuro_test_e2e_{uuid()}"
+    helper = Helper(nmrc_path, tmp_path, tmpbucketname)
+    helper.create_bucket(helper.tmpbucketname)
+    yield helper.tmpbucketname
+    helper.delete_bucket(helper.tmpbucketname)
 
 
 @pytest.fixture

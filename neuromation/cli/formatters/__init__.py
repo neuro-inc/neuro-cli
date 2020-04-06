@@ -1,4 +1,5 @@
 from .admin import ClustersFormatter, ClusterUserFormatter
+from .blob_storage import BaseBlobFormatter, LongBlobFormatter, SimpleBlobFormatter
 from .config import ConfigFormatter
 from .images import DockerImageProgress
 from .jobs import (
@@ -32,6 +33,9 @@ __all__ = [
     "JobTelemetryFormatter",
     "JobStartProgress",
     "ConfigFormatter",
+    "BaseBlobFormatter",
+    "LongBlobFormatter",
+    "SimpleBlobFormatter",
     "BaseFilesFormatter",
     "LongFilesFormatter",
     "SimpleFilesFormatter",

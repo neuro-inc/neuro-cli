@@ -428,6 +428,11 @@ class BlobStorage(metaclass=NoPublicConstructor):
         # Check if a folder key exists. As `/` at the end makes a different key, make
         # sure we ask for one with ending slash.
         bucket_name, key = self._extract_bucket_and_key(uri)
+
+        # bucket "root" should always be considered a directory
+        if not key:
+            return True
+
         blobs, prefixes = await self.list_blobs(
             bucket_name=bucket_name, prefix=key + "/", recursive=False, max_keys=1
         )
@@ -492,7 +497,6 @@ class BlobStorage(metaclass=NoPublicConstructor):
     async def _upload_file(
         self, src_path: Path, dst: URL, *, progress: QueuedProgress,
     ) -> None:
-        assert dst.host
         bucket_name, key = self._extract_bucket_and_key(dst)
         # Be careful not to have too many opened files.
         async with self._file_sem:
