@@ -10,7 +10,7 @@ click==7.1.1
 colorama==0.4.3; platform_system=="Windows"
 humanize==2.2.0
 # upgrade setup.py after pinning certtifi to new version
-certifi==2019.11.28
+certifi==2020.4.5.1
 psutil==5.7.0
 typing_extensions==3.7.4.2
 wcwidth==0.1.9
