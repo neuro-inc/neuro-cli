@@ -190,8 +190,7 @@ class Helper:
         __tracebackhide__ = True
         url = self.make_uri(path, fromhome=fromhome)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            files = await client.storage.ls(url)
-            for file in files:
+            async for file in client.storage.ls(url):
                 if (
                     file.type == FileStatusType.FILE
                     and file.name == name
@@ -205,8 +204,7 @@ class Helper:
         __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            files = await client.storage.ls(url)
-            for file in files:
+            async for file in client.storage.ls(url):
                 if file.type == FileStatusType.DIRECTORY and file.path == name:
                     return
         raise AssertionError(f"Dir {name} not found in {url}")
@@ -216,8 +214,7 @@ class Helper:
         __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            files = await client.storage.ls(url)
-            for file in files:
+            async for file in client.storage.ls(url):
                 if file.type == FileStatusType.DIRECTORY and file.path == name:
                     raise AssertionError(f"Dir {name} found in {url}")
 
@@ -226,8 +223,7 @@ class Helper:
         __tracebackhide__ = True
         url = URL(self.tmpstorage + path)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            files = await client.storage.ls(url)
-            for file in files:
+            async for file in client.storage.ls(url):
                 if file.type == FileStatusType.FILE and file.path == name:
                     raise AssertionError(f"File {name} found in {url}")
 
@@ -282,12 +278,16 @@ class Helper:
                 URL(f"{self.tmpstorage}{path_from}/{name_from}"),
                 URL(f"{self.tmpstorage}{path_to}/{name_to}"),
             )
-            files1 = await client.storage.ls(URL(f"{self.tmpstorage}{path_from}"))
-            names1 = {f.name for f in files1}
+            names1 = {
+                f.name
+                async for f in client.storage.ls(URL(f"{self.tmpstorage}{path_from}"))
+            }
             assert name_from not in names1
 
-            files2 = await client.storage.ls(URL(f"{self.tmpstorage}{path_to}"))
-            names2 = {f.name for f in files2}
+            names2 = {
+                f.name
+                async for f in client.storage.ls(URL(f"{self.tmpstorage}{path_to}"))
+            }
             assert name_to in names2
 
     @run_async
