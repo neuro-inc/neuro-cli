@@ -5,6 +5,22 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.4.6 (2020-04-06)
+===============================
+
+Features
+--------
+
+
+- Commands `neuro ps`, `neuro job status`, `nauro image list` and `neuro acl list` output now URIs in the short form if possible. Use the new `--full-uri` option to get full qualified URIs. ([#1330](https://github.com/neuromation/platform-api-clients/issues/1330))
+
+- Changed interpretatation of cluster related URIs (with schemes `storage:`, `image:` and `job:`) with missed host and path started with `/`. `storage:/user/path` is expanded now to `storage://{defaultcluster}/user/path`, so you do not need to specify the cluster name when refer to other user's resources on the same cluster. ([#1424](https://github.com/neuromation/platform-api-clients/issues/1424))
+
+- Implement `neuro storage tree` command for displaying the directory tree on storage. ([#1435](https://github.com/neuromation/platform-api-clients/issues/1435))
+
+- Filter patterns are now more compatible with `.gitignore`. Added support of `**` which matches zero or more path components. `?` and `*` no longer match `/`. Patterns which does not contain `/` at the beginning or middle matches now files in subdirectories. ([#1444](https://github.com/neuromation/platform-api-clients/issues/1444))
+
+
 Neuromation 20.3.23 (2020-03-23)
 ================================
 
