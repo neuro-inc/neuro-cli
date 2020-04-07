@@ -46,6 +46,27 @@ async def test_exclude_with_slash() -> None:
     assert await ff.match("parent/dir/spam.txt")
 
 
+async def test_exclude_crosscomponent() -> None:
+    ff = FileFilter()
+    ff.exclude("a?b")
+    assert not await ff.match("a-b")
+    assert await ff.match("a/b")
+
+    ff = FileFilter()
+    ff.exclude("a*b")
+    assert not await ff.match("ab")
+    assert not await ff.match("a-b")
+    assert not await ff.match("arab")
+    assert await ff.match("a/b")
+    assert await ff.match("alice/bob")
+
+    ff = FileFilter()
+    ff.exclude("a[!0-9]b")
+    assert await ff.match("a0b")
+    assert not await ff.match("a-b")
+    assert await ff.match("a/b")
+
+
 async def test_exclude_recursive() -> None:
     ff = FileFilter()
     ff.exclude("**/dir/*.txt")
@@ -87,10 +108,10 @@ def test_translate() -> None:
     assert translate("abc") == "abc"
     assert translate("a?c") == "a[^/]c"
     assert translate("a*c") == "a[^/]*c"
-    assert translate("a[bc]d") == "a[bc]d"
-    assert translate("a[b-d]e") == "a[b-d]e"
-    assert translate("a[!b-d]e") == "a[^b-d]e"
-    assert translate("[a-zA-Z_]") == "[a-zA-Z_]"
+    assert translate("a[bc]d") == "a[bc](?<!/)d"
+    assert translate("a[b-d]e") == "a[b-d](?<!/)e"
+    assert translate("a[!b-d]e") == "a[^b-d](?<!/)e"
+    assert translate("[a-zA-Z_]") == "[a-zA-Z_](?<!/)"
 
 
 def test_translate_recursive() -> None:
