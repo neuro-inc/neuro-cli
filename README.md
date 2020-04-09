@@ -536,10 +536,12 @@ Name | Description|
 |----|------------|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
-|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
+|_--since DATE_|Show jobs created after a specific date \(including).|
+|_--until DATE_|Show jobs created before a specific date \(including).|
+|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
@@ -1929,10 +1931,12 @@ Name | Description|
 |----|------------|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
-|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
+|_--since DATE_|Show jobs created after a specific date \(including).|
+|_--until DATE_|Show jobs created before a specific date \(including).|
+|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|

@@ -5,7 +5,7 @@ import shlex
 import signal
 from contextlib import suppress
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
 
 import async_timeout
@@ -172,6 +172,8 @@ class Jobs(metaclass=NoPublicConstructor):
         name: str = "",
         tags: Iterable[str] = (),
         owners: Iterable[str] = (),
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
     ) -> List[JobDescription]:
         url = self._config.api_url / "jobs"
         params: MultiDict[str] = MultiDict()
@@ -183,6 +185,16 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("owner", owner)
         for tag in tags:
             params.add("tag", tag)
+        if since:
+            if since.tzinfo is None:
+                # XXX (serhiy 09-Apr-2020) Should we use local time zone or
+                # raise an error?  "neuro ps" outputs date in UTC timezone.
+                since = since.replace(tzinfo=timezone.utc)
+            params.add("since", since.isoformat())
+        if until:
+            if until.tzinfo is None:
+                until = until.replace(tzinfo=timezone.utc)
+            params.add("until", until.isoformat())
         params["cluster_name"] = self._config.cluster_name
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, params=params, auth=auth) as resp:

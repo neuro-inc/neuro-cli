@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, List, Optional
 import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
+from dateutil.parser import isoparse
 from yarl import URL
 
 from neuromation.api import (
@@ -1690,6 +1691,60 @@ async def test_list_filter_by_name_and_statuses_and_owners(
             _job_description_from_api(job, client.parse) for job in jobs
         ]
         assert ret == job_descriptions[:2]
+
+
+async def test_list_filter_by_date_range(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    jobs = [
+        create_job_response("job-id-1", "running"),
+        create_job_response("job-id-2", "running"),
+        create_job_response("job-id-3", "running"),
+    ]
+    jobs[0]["history"]["created_at"] = "2018-09-25T12:28:21.298672+00:00"
+    jobs[1]["history"]["created_at"] = "2018-09-25T12:28:26.698687+00:00"
+    jobs[2]["history"]["created_at"] = "2018-09-25T12:28:31.642202+00:00"
+
+    t1 = isoparse(jobs[0]["history"]["created_at"])
+    t2 = isoparse(jobs[1]["history"]["created_at"])
+    t3 = isoparse(jobs[2]["history"]["created_at"])
+    t2naive = t2.replace(tzinfo=None)
+
+    async def handler(request: web.Request) -> web.Response:
+        since = isoparse(request.query.get("since", "0001-01-01T00:00:00+00:00"))
+        until = isoparse(request.query.get("until", "9999-12-31T23:59:59.999999+00:00"))
+        filtered_jobs = [
+            job
+            for job in jobs
+            if since <= isoparse(job["history"]["created_at"]) <= until
+        ]
+        return web.json_response({"jobs": filtered_jobs})
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.list()
+        assert {job.id for job in ret} == {"job-id-1", "job-id-2", "job-id-3"}
+
+        ret = await client.jobs.list(since=t2)
+        assert {job.id for job in ret} == {"job-id-2", "job-id-3"}
+
+        ret = await client.jobs.list(until=t2)
+        assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
+
+        ret = await client.jobs.list(since=t1, until=t2)
+        assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
+
+        ret = await client.jobs.list(since=t1, until=t3)
+        assert {job.id for job in ret} == {"job-id-1", "job-id-2", "job-id-3"}
+
+        ret = await client.jobs.list(since=t2naive)
+        assert {job.id for job in ret} == {"job-id-2", "job-id-3"}
+
+        ret = await client.jobs.list(until=t2naive)
+        assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
 
 
 async def test_job_run_life_span(
