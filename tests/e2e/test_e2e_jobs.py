@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 from contextlib import suppress
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from time import time
 from typing import Any, AsyncIterator, Callable, Dict, List, Tuple
@@ -192,6 +193,35 @@ def test_job_tags(helper: Helper) -> None:
     captured = helper.run_cli(["job", "tags"])
     tags_listed = captured.out.split("\n")
     assert set(tags) <= set(tags_listed)
+
+
+@pytest.mark.e2e
+def test_job_filter_by_date_range(helper: Helper) -> None:
+    captured = helper.run_cli(
+        [
+            "job",
+            "run",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
+            "--no-wait-start",
+            UBUNTU_IMAGE_NAME,
+            "sleep 300",
+        ]
+    )
+    match = re.match("Job ID: (.+) Status:", captured.out)
+    assert match is not None
+    job_id = match.group(1)
+    now = datetime.now(timezone.utc)
+
+    captured = helper.run_cli(["ps", "--since", (now - timedelta(days=1)).isoformat()])
+    store_out_list = captured.out.split("\n")[1:]
+    jobs = [x.split("  ")[0] for x in store_out_list]
+    assert job_id in jobs
+
+    captured = helper.run_cli(["ps", "--until", (now + timedelta(days=1)).isoformat()])
+    store_out_list = captured.out.split("\n")[1:]
+    jobs = [x.split("  ")[0] for x in store_out_list]
+    assert job_id in jobs
 
 
 @pytest.mark.e2e

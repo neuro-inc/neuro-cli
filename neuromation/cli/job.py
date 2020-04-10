@@ -8,11 +8,12 @@ import sys
 import textwrap
 import uuid
 import webbrowser
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
+from dateutil.parser import isoparse
 from yarl import URL
 
 from neuromation.api import (
@@ -522,16 +523,6 @@ async def _print_logs(root: Root, job: str) -> None:
     help="Filter out jobs by owner (multiple option).",
     secure=True,
 )
-@option(
-    "-a",
-    "--all",
-    is_flag=True,
-    default=False,
-    help=(
-        "Show all jobs regardless the status (equivalent to "
-        "`-s pending -s running -s succeeded -s failed`)."
-    ),
-)
 @option("-n", "--name", metavar="NAME", help="Filter out jobs by name.", secure=True)
 @option(
     "-t",
@@ -548,6 +539,26 @@ async def _print_logs(root: Root, job: str) -> None:
     default="",
     help="Filter out jobs by description (exact match).",
     secure=True,
+)
+@option(
+    "--since",
+    metavar="DATE",
+    help="Show jobs created after a specific date (including).",
+)
+@option(
+    "--until",
+    metavar="DATE",
+    help="Show jobs created before a specific date (including).",
+)
+@option(
+    "-a",
+    "--all",
+    is_flag=True,
+    default=False,
+    help=(
+        "Show all jobs regardless the status (equivalent to "
+        "`-s pending -s running -s succeeded -s failed`)."
+    ),
 )
 @deprecated_quiet_option
 @option("-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width.")
@@ -570,6 +581,8 @@ async def ls(
     name: str,
     tag: Sequence[str],
     owner: Sequence[str],
+    since: str,
+    until: str,
     description: str,
     wide: bool,
     format: Optional[List[JobColumnInfo]],
@@ -594,7 +607,12 @@ async def ls(
     owners = set(owner)
     tags = set(tag)
     jobs = await root.client.jobs.list(
-        statuses=statuses, name=name, owners=owners, tags=tags
+        statuses=statuses,
+        name=name,
+        owners=owners,
+        tags=tags,
+        since=_parse_date(since),
+        until=_parse_date(until),
     )
 
     # client-side filtering
@@ -1326,3 +1344,13 @@ def _parse_timedelta(value: str) -> timedelta:
         minutes=int(match.group("m") or 0),
         seconds=int(match.group("s") or 0),
     )
+
+
+def _parse_date(value: str) -> Optional[datetime]:
+    if value:
+        try:
+            return isoparse(value)
+        except ValueError:
+            raise ValueError("Date should be in ISO-8601 format")
+    else:
+        return None
