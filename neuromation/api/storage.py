@@ -3,6 +3,7 @@ import datetime
 import enum
 import errno
 import fnmatch
+import json
 import os
 import re
 import time
@@ -17,7 +18,6 @@ from typing import (
     Callable,
     Dict,
     Iterable,
-    List,
     Optional,
     Tuple,
     cast,
@@ -126,19 +126,23 @@ class Storage(metaclass=NoPublicConstructor):
             < self._max_time_diff + TIME_THRESHOLD + 1.0
         )
 
-    async def ls(self, uri: URL) -> List[FileStatus]:
+    async def ls(self, uri: URL) -> AsyncIterator[FileStatus]:
         url = self._config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="LISTSTATUS")
+        headers = {"Accept": "application/x-ndjson"}
 
         request_time = time.time()
         auth = await self._config._api_auth()
-        async with self._core.request("GET", url, auth=auth) as resp:
+        async with self._core.request("GET", url, headers=headers, auth=auth) as resp:
             self._set_time_diff(request_time, resp)
-            res = await resp.json()
-            return [
-                _file_status_from_api(status)
-                for status in res["FileStatuses"]["FileStatus"]
-            ]
+            if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
+                async for line in resp.content:
+                    status = json.loads(line)["FileStatus"]
+                    yield _file_status_from_api(status)
+            else:
+                res = await resp.json()
+                for status in res["FileStatuses"]["FileStatus"]:
+                    yield _file_status_from_api(status)
 
     async def glob(self, uri: URL, *, dironly: bool = False) -> AsyncIterator[URL]:
         if not _has_magic(uri.path):
@@ -185,7 +189,7 @@ class Storage(metaclass=NoPublicConstructor):
         yield uri
 
     async def _iterdir(self, uri: URL, dironly: bool) -> AsyncIterator[FileStatus]:
-        for stat in await self.ls(uri):
+        async for stat in self.ls(uri):
             if not dironly or stat.is_dir():
                 yield stat
 
@@ -433,7 +437,7 @@ class Storage(metaclass=NoPublicConstructor):
                         async with retry:
                             dst_files = {
                                 item.name: item
-                                for item in await self.ls(dst)
+                                async for item in self.ls(dst)
                                 if item.is_file()
                             }
                     exists = True
@@ -595,7 +599,7 @@ class Storage(metaclass=NoPublicConstructor):
 
         for retry in retries(f"Fail to list {src}"):
             async with retry:
-                folder = await self.ls(src)
+                folder = [item async for item in self.ls(src)]
 
         for child in folder:
             name = child.name

@@ -60,7 +60,7 @@ async def storage_server(
     PREFIX = "/storage/user"
     PREFIX_LEN = len(PREFIX)
 
-    async def handler(request: web.Request) -> web.Response:
+    async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
         op = request.query["op"]
         path = request.path
@@ -114,14 +114,14 @@ async def storage_server(
                         "permission": "write",
                     }
                 )
-            return web.json_response({"FileStatuses": {"FileStatus": ret}})
+            return await make_listiter_response(request, ret)
         else:
             raise web.HTTPInternalServerError(text=f"Unsupported operation {op}")
 
     return await aiohttp_raw_server(handler)
 
 
-async def test_storage_ls(
+async def test_storage_ls_legacy(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
@@ -157,7 +157,72 @@ async def test_storage_ls(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.storage.ls(URL("storage:folder"))
+        ret = [file async for file in client.storage.ls(URL("storage:folder"))]
+
+    assert ret == [
+        FileStatus(
+            path="foo",
+            size=1024,
+            type=FileStatusType.FILE,
+            modification_time=0,
+            permission=Action.READ,
+        ),
+        FileStatus(
+            path="bar",
+            size=4 * 1024,
+            type=FileStatusType.DIRECTORY,
+            modification_time=0,
+            permission=Action.READ,
+        ),
+    ]
+
+
+async def make_listiter_response(
+    request: web.Request, file_statuses: List[Any]
+) -> web.StreamResponse:
+    assert request.query == {"op": "LISTSTATUS"}
+    assert request.headers["Accept"] == "application/x-ndjson"
+    resp = web.StreamResponse()
+    resp.headers["Content-Type"] = "application/x-ndjson"
+    await resp.prepare(request)
+    for item in file_statuses:
+        await resp.write(json.dumps({"FileStatus": item}).encode() + b"\n")
+    return resp
+
+
+async def test_storage_ls(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    file_statuses = [
+        {
+            "path": "foo",
+            "length": 1024,
+            "type": "FILE",
+            "modificationTime": 0,
+            "permission": "read",
+        },
+        {
+            "path": "bar",
+            "length": 4 * 1024,
+            "type": "DIRECTORY",
+            "modificationTime": 0,
+            "permission": "read",
+        },
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.path == "/storage/user/folder"
+        assert request.query == {"op": "LISTSTATUS"}
+        return await make_listiter_response(request, file_statuses)
+
+    app = web.Application()
+    app.router.add_get("/storage/user/folder", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        ret = [file async for file in client.storage.ls(URL("storage:folder"))]
 
     assert ret == [
         FileStatus(
@@ -180,27 +245,24 @@ async def test_storage_ls(
 async def test_storage_glob(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    async def handler_home(request: web.Request) -> web.Response:
+    async def handler_home(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
         assert request.path == "/storage/user"
         assert request.query == {"op": "LISTSTATUS"}
-        return web.json_response(
-            {
-                "FileStatuses": {
-                    "FileStatus": [
-                        {
-                            "path": "folder",
-                            "length": 0,
-                            "type": "DIRECTORY",
-                            "modificationTime": 0,
-                            "permission": "read",
-                        }
-                    ]
+        return await make_listiter_response(
+            request,
+            [
+                {
+                    "path": "folder",
+                    "length": 0,
+                    "type": "DIRECTORY",
+                    "modificationTime": 0,
+                    "permission": "read",
                 }
-            }
+            ],
         )
 
-    async def handler_folder(request: web.Request) -> web.Response:
+    async def handler_folder(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
         assert request.path.rstrip("/") == "/storage/user/folder"
         assert request.query["op"] in ("GETFILESTATUS", "LISTSTATUS")
@@ -217,27 +279,24 @@ async def test_storage_glob(
                 }
             )
         elif request.query["op"] == "LISTSTATUS":
-            return web.json_response(
-                {
-                    "FileStatuses": {
-                        "FileStatus": [
-                            {
-                                "path": "foo",
-                                "length": 1024,
-                                "type": "FILE",
-                                "modificationTime": 0,
-                                "permission": "read",
-                            },
-                            {
-                                "path": "bar",
-                                "length": 0,
-                                "type": "DIRECTORY",
-                                "modificationTime": 0,
-                                "permission": "read",
-                            },
-                        ]
-                    }
-                }
+            return await make_listiter_response(
+                request,
+                [
+                    {
+                        "path": "foo",
+                        "length": 1024,
+                        "type": "FILE",
+                        "modificationTime": 0,
+                        "permission": "read",
+                    },
+                    {
+                        "path": "bar",
+                        "length": 0,
+                        "type": "DIRECTORY",
+                        "modificationTime": 0,
+                        "permission": "read",
+                    },
+                ],
             )
         else:
             raise web.HTTPInternalServerError
@@ -245,7 +304,6 @@ async def test_storage_glob(
     async def handler_foo(request: web.Request) -> web.Response:
         assert "b3" in request.headers
         assert request.path == "/storage/user/folder/foo"
-        assert request.query["op"] in ("GETFILESTATUS", "LISTSTATUS")
         assert request.query == {"op": "GETFILESTATUS"}
         return web.json_response(
             {
@@ -259,7 +317,7 @@ async def test_storage_glob(
             }
         )
 
-    async def handler_bar(request: web.Request) -> web.Response:
+    async def handler_bar(request: web.Request) -> web.StreamResponse:
         assert request.path.rstrip("/") == "/storage/user/folder/bar"
         if request.query["op"] == "GETFILESTATUS":
             return web.json_response(
@@ -274,20 +332,17 @@ async def test_storage_glob(
                 }
             )
         elif request.query["op"] == "LISTSTATUS":
-            return web.json_response(
-                {
-                    "FileStatuses": {
-                        "FileStatus": [
-                            {
-                                "path": "baz",
-                                "length": 0,
-                                "type": "FILE",
-                                "modificationTime": 0,
-                                "permission": "read",
-                            }
-                        ]
+            return await make_listiter_response(
+                request,
+                [
+                    {
+                        "path": "baz",
+                        "length": 0,
+                        "type": "FILE",
+                        "modificationTime": 0,
+                        "permission": "read",
                     }
-                }
+                ],
             )
         else:
             raise web.HTTPInternalServerError
