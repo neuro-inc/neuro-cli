@@ -96,7 +96,9 @@ def run_async(coro: Any) -> Callable[..., Any]:
 
 
 class Helper:
-    def __init__(self, nmrc_path: Path, tmp_path: Path, tmpbucketname: str) -> None:
+    def __init__(
+        self, nmrc_path: Optional[Path], tmp_path: Path, tmpbucketname: str
+    ) -> None:
         self._nmrc_path = nmrc_path
         self._tmp = tmp_path
         self.tmpstoragename = f"test_e2e/{uuid()}"
@@ -605,6 +607,10 @@ class Helper:
 @pytest.fixture
 def nmrc_path(tmp_path_factory: Any, request: Any) -> Optional[Path]:
     require_admin = request.keywords.get("require_admin", False)
+    return _get_nmrc_path(tmp_path_factory, require_admin)
+
+
+def _get_nmrc_path(tmp_path_factory: Any, require_admin: bool) -> Optional[Path]:
     if require_admin:
         token_env = "E2E_TOKEN"
     else:
@@ -623,6 +629,9 @@ def nmrc_path(tmp_path_factory: Any, request: Any) -> Optional[Path]:
         )
         return nmrc_path
     else:
+        # By providing `None` we allow Helper to login using default configuration
+        # in user's home folder. Tests will use current logged in user and current
+        # cluster from neuro cli.
         return None
 
 
@@ -681,22 +690,10 @@ def nested_data(static_path: Path) -> Tuple[str, str, str]:
 
 @pytest.fixture(scope="session")
 def tmp_bucket(tmp_path_factory: Any, request: Any) -> Iterator[str]:
-    e2e_test_token = os.environ.get("E2E_USER_TOKEN")
-    assert e2e_test_token, "E2E_USER_TOKEN not provided"
-
-    tmp_path = tmp_path_factory.mktemp("tmp_bucket_config")
-    nmrc_path = tmp_path / "conftest.nmrc"
-    run(
-        login_with_token(
-            e2e_test_token,
-            url=URL("https://dev.neu.ro/api/v1"),
-            path=nmrc_path,
-            timeout=CLIENT_TIMEOUT,
-        )
-    )
     tmp_path = tmp_path_factory.mktemp("tmp_bucket")
-
     tmpbucketname = f"neuro_test_e2e_{uuid()}"
+    nmrc_path = _get_nmrc_path(tmp_path_factory, require_admin=False)
+
     helper = Helper(nmrc_path, tmp_path, tmpbucketname)
     helper.create_bucket(helper.tmpbucketname)
     yield helper.tmpbucketname

@@ -30,7 +30,7 @@ Config
       A :class:`typing.Mapping` of preset name (:class:`str`) to
       :class:`Preset` dataclass for the current cluster.
 
-   .. attribute:: presets
+   .. attribute:: clusters
 
       A :class:`typing.Mapping` of cluster name (:class:`str`) to
       :class:`Cluster` dataclass for available clusters.
