@@ -413,6 +413,72 @@ class Jobs(metaclass=NoPublicConstructor):
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
+    def attach(
+        self, id: str, *, stdin=False, stdout=False, stderr=False, logs=False
+    ) -> "Stream":
+        return Stream(self._core, self._config, id, stdin, stdout, stderr, logs)
+
+
+@dataclass(frozen=True)
+class Message:
+    stream: int
+    data: bytes
+
+
+class Stream:
+    def __init__(
+        self,
+        core: _Core,
+        config: Config,
+        id: str,
+        stdin: bool,
+        stdout: bool,
+        stderr: bool,
+        logs: bool,
+    ) -> None:
+        self._core = core
+        self._config = config
+        self._id = id
+        self._stdin = stdin
+        self._stdout = stdout
+        self._stderr = stderr
+        self._logs = logs
+        self._ws = None
+
+    async def __aenter__(self):
+        await self._init()
+
+    async def _init(self):
+        if self._ws is not None:
+            return
+        url = self._config.monitoring_url / self._id / "attach"
+        url = url.with_query(
+            stdin=str(int(self._stdin)),
+            stdout=str(int(self._stdout)),
+            stderr=str(int(self._stderr)),
+            logs=str(int(self._logs)),
+        )
+        auth = await self._config._api_auth()
+        self._ws = await self._core._session.ws_connect(
+            url, method="POST", headers={"Authorization": auth}
+        )
+
+    async def __aexit__(self, *args):
+        await self.close()
+
+    async def close(self):
+        if self._ws is not None:
+            await self._ws.close()
+
+    async def read_out(self) -> Message:
+        await self._init()
+        msg = await self._ws.receive_bytes()
+        return Message(ord(msg[0]), msg[1:])
+
+    async def write_in(self, data: bytes) -> None:
+        await self._init()
+        await self._ws.send_bytes(data)
+
 
 #  ############## Internal helpers ###################
 

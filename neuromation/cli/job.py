@@ -506,6 +506,36 @@ async def _print_logs(root: Root, job: str) -> None:
 
 
 @command()
+@argument("job")
+async def attach(root: Root, job: str) -> None:
+    """
+    Print the logs for a container.
+    """
+    id = await resolve_job(
+        job,
+        client=root.client,
+        status={
+            JobStatus.PENDING,
+            JobStatus.RUNNING,
+            JobStatus.SUCCEEDED,
+            JobStatus.FAILED,
+        },
+    )
+    await _print_logs(root, id)
+
+
+async def _attach(root: Root, job: str) -> None:
+    async with root.client.jobs.attach(
+        job, stdout=True, stderr=True, logs=True
+    ) as stream:
+        while True:
+            chunk = await stream.read_out()
+            if not chunk:
+                break
+            click.echo(chunk.decode(errors="ignore"), nl=False)
+
+
+@command()
 @option(
     "-s",
     "--status",
@@ -1003,6 +1033,7 @@ job.add_command(kill)
 job.add_command(top)
 job.add_command(save)
 job.add_command(browse)
+job.add_command(attach)
 
 
 job.add_command(alias(ls, "list", hidden=True))
