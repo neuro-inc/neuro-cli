@@ -1125,7 +1125,7 @@ async def run_job(
     # Even if we detached, but the job has failed to start
     # (most common reason - no resources), the command fails
     if job.status == JobStatus.FAILED:
-        sys.exit(EX_PLATFORMERROR)
+        sys.exit(job.history.exit_code or EX_PLATFORMERROR)
 
     if not detach:
         if not root.quiet:
@@ -1142,6 +1142,8 @@ async def run_job(
         while job.status in (JobStatus.PENDING, JobStatus.RUNNING):
             await asyncio.sleep(0.1)
             job = await root.client.jobs.status(job.id)
+        if job.status == JobStatus.FAILED:
+            sys.exit(job.history.exit_code or EX_PLATFORMERROR)
         sys.exit(job.history.exit_code)
 
     return job
