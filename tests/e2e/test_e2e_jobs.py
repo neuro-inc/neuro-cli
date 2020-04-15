@@ -956,7 +956,7 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
             ]
         )
 
-    assert cm.value.returncode == 125
+    assert cm.value.returncode == 1
 
     # then, run with --volume=HOME
     capture = helper.run_cli(
