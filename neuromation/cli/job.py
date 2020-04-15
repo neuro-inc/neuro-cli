@@ -521,7 +521,7 @@ async def attach(root: Root, job: str) -> None:
             JobStatus.FAILED,
         },
     )
-    await _print_logs(root, id)
+    await _attach(root, id)
 
 
 async def _attach(root: Root, job: str) -> None:
@@ -532,7 +532,11 @@ async def _attach(root: Root, job: str) -> None:
             chunk = await stream.read_out()
             if not chunk:
                 break
-            click.echo(chunk.decode(errors="ignore"), nl=False)
+            if chunk.stream == 2:
+                err = True
+            else:
+                err = False
+            click.echo(chunk.decode(errors="ignore"), nl=False, err=err)
 
 
 @command()
