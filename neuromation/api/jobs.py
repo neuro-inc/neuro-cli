@@ -174,8 +174,10 @@ class Jobs(metaclass=NoPublicConstructor):
         owners: Iterable[str] = (),
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
-    ) -> List[JobDescription]:
+        reverse: bool = False,
+    ) -> AsyncIterator[JobDescription]:
         url = self._config.api_url / "jobs"
+        headers = {"Accept": "application/x-ndjson"}
         params: MultiDict[str] = MultiDict()
         for status in statuses:
             params.add("status", status.value)
@@ -196,10 +198,20 @@ class Jobs(metaclass=NoPublicConstructor):
                 until = until.replace(tzinfo=timezone.utc)
             params.add("until", until.isoformat())
         params["cluster_name"] = self._config.cluster_name
+        if reverse:
+            params.add("reverse", "1")
         auth = await self._config._api_auth()
-        async with self._core.request("GET", url, params=params, auth=auth) as resp:
-            ret = await resp.json()
-            return [_job_description_from_api(j, self._parse) for j in ret["jobs"]]
+        async with self._core.request(
+            "GET", url, headers=headers, params=params, auth=auth
+        ) as resp:
+            if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
+                async for line in resp.content:
+                    j = json.loads(line)
+                    yield _job_description_from_api(j, self._parse)
+            else:
+                ret = await resp.json()
+                for j in ret["jobs"]:
+                    yield _job_description_from_api(j, self._parse)
 
     async def kill(self, id: str) -> None:
         url = self._config.api_url / "jobs" / id

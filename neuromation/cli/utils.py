@@ -32,15 +32,7 @@ import humanize
 from click.types import convert_type
 from yarl import URL
 
-from neuromation.api import (
-    Action,
-    Client,
-    Factory,
-    JobDescription,
-    JobStatus,
-    TagOption,
-    Volume,
-)
+from neuromation.api import Action, Client, Factory, JobStatus, TagOption, Volume
 from neuromation.api.url_utils import uri_from_cli
 
 from .root import Root
@@ -443,10 +435,13 @@ async def resolve_job(
     if re.fullmatch(JOB_ID_PATTERN, id_or_name):
         return id_or_name
 
-    jobs: List[JobDescription] = []
     details = f"name={id_or_name}, owner={owner}"
     try:
-        jobs = await client.jobs.list(name=id_or_name, owners={owner})
+        async for job in client.jobs.list(
+            name=id_or_name, owners={owner}, reverse=True
+        ):
+            log.debug(f"Job name '{id_or_name}' resolved to job ID '{job.id}'")
+            return job.id
     except asyncio.CancelledError:
         raise
     except Exception as e:
@@ -454,13 +449,8 @@ async def resolve_job(
             f"Failed to resolve job-name {id_or_name_or_uri} resolved as "
             f"{details} to a job-ID: {e}"
         )
-    if jobs:
-        job_id = jobs[-1].id
-        log.debug(f"Job name '{id_or_name}' resolved to job ID '{job_id}'")
-    else:
-        job_id = id_or_name
 
-    return job_id
+    return id_or_name
 
 
 SHARE_SCHEMES = ("storage", "image", "job", "blob", "role")
