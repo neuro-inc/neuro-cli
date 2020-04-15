@@ -913,7 +913,7 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
             ]
         )
     assert captured is None
-    assert exc_info.value.returncode == 125
+    assert exc_info.value.returncode == 127
 
 
 @pytest.mark.e2e
@@ -997,7 +997,7 @@ def test_job_run_volume_all(helper: Helper) -> None:
         captured = helper.run_cli(
             ["--quiet", "run", "--detach", "-s", "cpu-micro", img, command]
         )
-    assert cm.value.returncode == 125
+    assert cm.value.returncode == 1
 
     # then, run with --volume=ALL
     captured = helper.run_cli(
