@@ -96,14 +96,11 @@ def run_async(coro: Any) -> Callable[..., Any]:
 
 
 class Helper:
-    def __init__(
-        self, nmrc_path: Optional[Path], tmp_path: Path, tmpbucketname: str
-    ) -> None:
+    def __init__(self, nmrc_path: Optional[Path], tmp_path: Path) -> None:
         self._nmrc_path = nmrc_path
         self._tmp = tmp_path
         self.tmpstoragename = f"test_e2e/{uuid()}"
         self._tmpstorage = f"storage:{self.tmpstoragename}/"
-        self._tmpbucketname = tmpbucketname
         self._closed = False
         self._executed_jobs: List[str] = []
 
@@ -111,7 +108,6 @@ class Helper:
         if not self._closed:
             with suppress(Exception):
                 self.rm("", recursive=True)
-            self.cleanup_bucket(self._tmpbucketname)
             self._closed = True
         if self._executed_jobs:
             for job in self._executed_jobs:
@@ -145,10 +141,6 @@ class Helper:
     @property
     def tmpstorage(self) -> str:
         return self._tmpstorage
-
-    @property
-    def tmpbucketname(self) -> str:
-        return self._tmpbucketname
 
     def make_uri(self, path: str, *, fromhome: bool = False) -> URL:
         if fromhome:
@@ -636,8 +628,8 @@ def _get_nmrc_path(tmp_path_factory: Any, require_admin: bool) -> Optional[Path]
 
 
 @pytest.fixture
-def helper(tmp_path: Path, nmrc_path: Path, tmp_bucket: str) -> Iterator[Helper]:
-    ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path, tmpbucketname=tmp_bucket)
+def helper(tmp_path: Path, nmrc_path: Path) -> Iterator[Helper]:
+    ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path)
     yield ret
     with suppress(Exception):
         # ignore exceptions in helper closing
@@ -689,15 +681,25 @@ def nested_data(static_path: Path) -> Tuple[str, str, str]:
 
 
 @pytest.fixture(scope="session")
-def tmp_bucket(tmp_path_factory: Any, request: Any) -> Iterator[str]:
+def tmp_bucket_create(
+    tmp_path_factory: Any, request: Any
+) -> Iterator[Tuple[str, Helper]]:
     tmp_path = tmp_path_factory.mktemp("tmp_bucket")
     tmpbucketname = f"neuro_test_e2e_{uuid()}"
     nmrc_path = _get_nmrc_path(tmp_path_factory, require_admin=False)
 
-    helper = Helper(nmrc_path, tmp_path, tmpbucketname)
-    helper.create_bucket(helper.tmpbucketname)
-    yield helper.tmpbucketname
-    helper.delete_bucket(helper.tmpbucketname)
+    helper = Helper(nmrc_path, tmp_path)
+    helper.create_bucket(tmpbucketname)
+    yield tmpbucketname, helper
+    helper.delete_bucket(tmpbucketname)
+    helper.close()
+
+
+@pytest.fixture
+def tmp_bucket(tmp_bucket_create: Tuple[str, Helper]) -> Iterator[str]:
+    tmpbucketname, helper = tmp_bucket_create
+    yield tmpbucketname
+    helper.cleanup_bucket(tmpbucketname)
 
 
 @pytest.fixture
