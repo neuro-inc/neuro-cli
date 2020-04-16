@@ -35,7 +35,7 @@ configuration file::
   from neuromation import api
 
   async with api.get() as client:
-      jobs = await client.jobs.list()
+      jobs = [job async for job in client.jobs.list()]
 
 
 The example above instantiates a ``client`` object in *async context manager* and

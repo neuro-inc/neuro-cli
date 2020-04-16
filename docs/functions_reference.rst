@@ -24,7 +24,8 @@ API functions
    The usage is::
 
       async with neuromation.api.get() as client:
-          ret = await client.jobs.list()
+          async for job in client.jobs.list():
+              print(job.id)
 
    See :meth:`Factory.get` for optional function arguments meaning.
 

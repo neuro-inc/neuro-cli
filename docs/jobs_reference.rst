@@ -47,7 +47,8 @@ Jobs
                       name: str = "" \
                       tags: Sequence[str] = (), \
                       owners: Iterable[str] = (),
-                 ) -> List[JobDescription]
+                      reverse: bool = False,
+                 ) -> AsyncIterator[JobDescription]
 
       List user jobs, all scheduled, running and finished jobs by default.
 
@@ -84,7 +85,14 @@ Jobs
                                            No owners filter is applied if the iterable
                                            is empty.
 
-      :return: a :class:`list` of :class:`JobDescription` objects.
+      :param bool reverse: iterate jobs in the reverse order.
+
+                           If *reverse* is false (default) the jobs are iterated in
+                           the order of their creation date, from earlier to later.
+                           If *reverse* is true, they are iterated in the reverse order,
+                           from later to earlier.
+
+      :return: asynchronous iterator which emits :class:`JobDescription` objects.
 
 
    .. comethod:: monitor(id: str) -> AsyncIterator[bytes]
