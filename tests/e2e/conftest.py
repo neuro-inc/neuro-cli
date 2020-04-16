@@ -681,7 +681,7 @@ def nested_data(static_path: Path) -> Tuple[str, str, str]:
 
 
 @pytest.fixture(scope="session")
-def tmp_bucket_create(
+def _tmp_bucket_create(
     tmp_path_factory: Any, request: Any
 ) -> Iterator[Tuple[str, Helper]]:
     tmp_path = tmp_path_factory.mktemp("tmp_bucket")
@@ -696,8 +696,8 @@ def tmp_bucket_create(
 
 
 @pytest.fixture
-def tmp_bucket(tmp_bucket_create: Tuple[str, Helper]) -> Iterator[str]:
-    tmpbucketname, helper = tmp_bucket_create
+def tmp_bucket(_tmp_bucket_create: Tuple[str, Helper]) -> Iterator[str]:
+    tmpbucketname, helper = _tmp_bucket_create
     yield tmpbucketname
     helper.cleanup_bucket(tmpbucketname)
 
