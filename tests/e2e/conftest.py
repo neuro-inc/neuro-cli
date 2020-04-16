@@ -31,6 +31,7 @@ import pytest
 from yarl import URL
 
 from neuromation.api import (
+    AuthorizationError,
     Config,
     Container,
     FileStatusType,
@@ -686,10 +687,15 @@ def _tmp_bucket_create(
 ) -> Iterator[Tuple[str, Helper]]:
     tmp_path = tmp_path_factory.mktemp("tmp_bucket")
     tmpbucketname = f"neuro_test_e2e_{uuid()}"
-    nmrc_path = _get_nmrc_path(tmp_path_factory, require_admin=False)
+    nmrc_path = _get_nmrc_path(tmp_path_factory, require_admin=True)
 
     helper = Helper(nmrc_path, tmp_path)
-    helper.create_bucket(tmpbucketname)
+    try:
+        helper.create_bucket(tmpbucketname)
+    except AuthorizationError:
+        pytest.skip("No permission to create bucket for user E2E_TOKEN")
+        yield "", helper
+        return
     yield tmpbucketname, helper
     helper.delete_bucket(tmpbucketname)
     helper.close()
@@ -699,7 +705,8 @@ def _tmp_bucket_create(
 def tmp_bucket(_tmp_bucket_create: Tuple[str, Helper]) -> Iterator[str]:
     tmpbucketname, helper = _tmp_bucket_create
     yield tmpbucketname
-    helper.cleanup_bucket(tmpbucketname)
+    if tmpbucketname:
+        helper.cleanup_bucket(tmpbucketname)
 
 
 @pytest.fixture
