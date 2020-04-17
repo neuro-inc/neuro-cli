@@ -91,7 +91,7 @@ Jobs
 
                                        Retrieves only jobs submitted after the specified date
                                        (including) if it is not ``None``.  If the parameter
-                                       is a naive datetime object, it represents UTC.
+                                       is a naive datetime object, it represents local time.
 
                                        ``None`` means that no filter is applied (default).
 
@@ -99,7 +99,7 @@ Jobs
 
                                        Retrieves only jobs submitted before the specified date
                                        (including) if it is not ``None``.  If the parameter
-                                       is a naive datetime object, it represents UTC.
+                                       is a naive datetime object, it represents local time.
 
                                        ``None`` means that no filter is applied (default).
 
