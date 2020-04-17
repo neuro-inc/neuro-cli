@@ -685,7 +685,7 @@ def nested_data(static_path: Path) -> Tuple[str, str, str]:
 def _tmp_bucket_create(
     tmp_path_factory: Any, request: Any
 ) -> Iterator[Tuple[str, Helper]]:
-    tmp_path = tmp_path_factory.mktemp("tmp_bucket")
+    tmp_path = tmp_path_factory.mktemp("tmp_bucket" + str(uuid()))
     tmpbucketname = f"neuro_test_e2e_{uuid()}"
     nmrc_path = _get_nmrc_path(tmp_path_factory, require_admin=True)
 
@@ -694,8 +694,6 @@ def _tmp_bucket_create(
         helper.create_bucket(tmpbucketname)
     except AuthorizationError:
         pytest.skip("No permission to create bucket for user E2E_TOKEN")
-        yield "", helper
-        return
     yield tmpbucketname, helper
     helper.delete_bucket(tmpbucketname)
     helper.close()
@@ -705,8 +703,7 @@ def _tmp_bucket_create(
 def tmp_bucket(_tmp_bucket_create: Tuple[str, Helper]) -> Iterator[str]:
     tmpbucketname, helper = _tmp_bucket_create
     yield tmpbucketname
-    if tmpbucketname:
-        helper.cleanup_bucket(tmpbucketname)
+    helper.cleanup_bucket(tmpbucketname)
 
 
 @pytest.fixture
