@@ -175,6 +175,7 @@ class Jobs(metaclass=NoPublicConstructor):
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
         reverse: bool = False,
+        limit: Optional[int] = None,
     ) -> AsyncIterator[JobDescription]:
         url = self._config.api_url / "jobs"
         headers = {"Accept": "application/x-ndjson"}
@@ -199,6 +200,8 @@ class Jobs(metaclass=NoPublicConstructor):
         params["cluster_name"] = self._config.cluster_name
         if reverse:
             params.add("reverse", "1")
+        if limit is not None:
+            params.add("limit", str(limit))
         auth = await self._config._api_auth()
         async with self._core.request(
             "GET", url, headers=headers, params=params, auth=auth

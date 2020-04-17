@@ -111,6 +111,10 @@ Jobs
                            If *reverse* is true, they are iterated in the reverse order,
                            from later to earlier.
 
+      :param int limit: limit the number of jobs.
+
+                        ``None`` means no limit (default).
+
       :return: asynchronous iterator which emits :class:`JobDescription` objects.
 
 

@@ -438,7 +438,7 @@ async def resolve_job(
     details = f"name={id_or_name}, owner={owner}"
     try:
         async for job in client.jobs.list(
-            name=id_or_name, owners={owner}, reverse=True
+            name=id_or_name, owners={owner}, reverse=True, limit=1
         ):
             log.debug(f"Job name '{id_or_name}' resolved to job ID '{job.id}'")
             return job.id
