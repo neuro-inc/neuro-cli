@@ -269,7 +269,7 @@ class TabularJobRow:
         if delta < datetime.timedelta(days=1):
             when_humanized = humanize.naturaltime(delta)
         else:
-            when_humanized = humanize.naturaldate(when)
+            when_humanized = humanize.naturaldate(when.astimezone())
         return cls(
             id=job.id,
             name=job.name if job.name else "",
