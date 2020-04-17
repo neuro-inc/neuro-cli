@@ -189,13 +189,12 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("tag", tag)
         if since:
             if since.tzinfo is None:
-                # XXX (serhiy 09-Apr-2020) Should we use local time zone or
-                # raise an error?  "neuro ps" outputs date in UTC timezone.
-                since = since.replace(tzinfo=timezone.utc)
+                # Interpret naive datetime object as local time.
+                since = since.astimezone(timezone.utc)
             params.add("since", since.isoformat())
         if until:
             if until.tzinfo is None:
-                until = until.replace(tzinfo=timezone.utc)
+                until = until.astimezone(timezone.utc)
             params.add("until", until.isoformat())
         params["cluster_name"] = self._config.cluster_name
         if reverse:

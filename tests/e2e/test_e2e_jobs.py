@@ -3,7 +3,7 @@ import os
 import re
 import subprocess
 from contextlib import suppress
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 from time import time
 from typing import Any, AsyncIterator, Callable, Dict, List, Tuple
@@ -211,14 +211,25 @@ def test_job_filter_by_date_range(helper: Helper) -> None:
     match = re.match("Job ID: (.+) Status:", captured.out)
     assert match is not None
     job_id = match.group(1)
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
+    delta = timedelta(minutes=10)
 
-    captured = helper.run_cli(["ps", "--since", (now - timedelta(days=1)).isoformat()])
+    captured = helper.run_cli(["ps", "--since", (now - delta).isoformat()])
     store_out_list = captured.out.split("\n")[1:]
     jobs = [x.split("  ")[0] for x in store_out_list]
     assert job_id in jobs
 
-    captured = helper.run_cli(["ps", "--until", (now + timedelta(days=1)).isoformat()])
+    captured = helper.run_cli(["ps", "--since", (now + delta).isoformat()])
+    store_out_list = captured.out.split("\n")[1:]
+    jobs = [x.split("  ")[0] for x in store_out_list]
+    assert job_id not in jobs
+
+    captured = helper.run_cli(["ps", "--until", (now - delta).isoformat()])
+    store_out_list = captured.out.split("\n")[1:]
+    jobs = [x.split("  ")[0] for x in store_out_list]
+    assert job_id not in jobs
+
+    captured = helper.run_cli(["ps", "--until", (now + delta).isoformat()])
     store_out_list = captured.out.split("\n")[1:]
     jobs = [x.split("  ")[0] for x in store_out_list]
     assert job_id in jobs
@@ -913,7 +924,7 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
             ]
         )
     assert captured is None
-    assert exc_info.value.returncode == 125
+    assert exc_info.value.returncode == 127
 
 
 @pytest.mark.e2e
@@ -956,7 +967,7 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
             ]
         )
 
-    assert cm.value.returncode == 125
+    assert cm.value.returncode == 1
 
     # then, run with --volume=HOME
     capture = helper.run_cli(
@@ -997,7 +1008,7 @@ def test_job_run_volume_all(helper: Helper) -> None:
         captured = helper.run_cli(
             ["--quiet", "run", "--detach", "-s", "cpu-micro", img, command]
         )
-    assert cm.value.returncode == 125
+    assert cm.value.returncode == 1
 
     # then, run with --volume=ALL
     captured = helper.run_cli(
