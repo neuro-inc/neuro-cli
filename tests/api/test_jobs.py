@@ -1367,7 +1367,7 @@ async def test_list_no_filter(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list()
+        ret = [job async for job in client.jobs.list()]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1405,7 +1405,7 @@ async def test_list_filter_by_name(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(name=name_1)
+        ret = [job async for job in client.jobs.list(name=name_1)]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1444,7 +1444,7 @@ async def test_list_filter_by_statuses(
 
     statuses = {JobStatus.FAILED, JobStatus.SUCCEEDED}
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(statuses=statuses)
+        ret = [job async for job in client.jobs.list(statuses=statuses)]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1476,7 +1476,7 @@ async def test_list_incorrect_image(
 
     statuses = {JobStatus.FAILED, JobStatus.SUCCEEDED}
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(statuses=statuses)
+        ret = [job async for job in client.jobs.list(statuses=statuses)]
     for job in ret:
         if job.status == JobStatus.FAILED:
             assert job.container.image.name == INVALID_IMAGE_NAME
@@ -1601,7 +1601,7 @@ async def test_list_filter_by_name_and_statuses(
     statuses = {JobStatus.PENDING, JobStatus.SUCCEEDED}
     name = "job-name-1"
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(statuses=statuses, name=name)
+        ret = [job async for job in client.jobs.list(statuses=statuses, name=name)]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1638,7 +1638,7 @@ async def test_list_filter_by_tags(
 
     tags = {"t1", "t2"}
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(tags=tags)
+        ret = [job async for job in client.jobs.list(tags=tags)]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1685,7 +1685,12 @@ async def test_list_filter_by_name_and_statuses_and_owners(
     name = name_1
     owners = {owner_1, owner_2}
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(statuses=statuses, name=name, owners=owners)
+        ret = [
+            job
+            async for job in client.jobs.list(
+                statuses=statuses, name=name, owners=owners
+            )
+        ]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1725,25 +1730,25 @@ async def test_list_filter_by_date_range(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list()
+        ret = [job async for job in client.jobs.list()]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2", "job-id-3"}
 
-        ret = await client.jobs.list(since=t2)
+        ret = [job async for job in client.jobs.list(since=t2)]
         assert {job.id for job in ret} == {"job-id-2", "job-id-3"}
 
-        ret = await client.jobs.list(until=t2)
+        ret = [job async for job in client.jobs.list(until=t2)]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
 
-        ret = await client.jobs.list(since=t1, until=t2)
+        ret = [job async for job in client.jobs.list(since=t1, until=t2)]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
 
-        ret = await client.jobs.list(since=t1, until=t3)
+        ret = [job async for job in client.jobs.list(since=t1, until=t3)]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2", "job-id-3"}
 
-        ret = await client.jobs.list(since=t2naive)
+        ret = [job async for job in client.jobs.list(since=t2naive)]
         assert {job.id for job in ret} == {"job-id-2", "job-id-3"}
 
-        ret = await client.jobs.list(until=t2naive)
+        ret = [job async for job in client.jobs.list(until=t2naive)]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
 
 

@@ -49,7 +49,8 @@ Jobs
                       owners: Iterable[str] = (), \
                       since: Optional[datetime] = None, \
                       until: Optional[datetime] = None, \
-                 ) -> List[JobDescription]
+                      reverse: bool = False, \
+                 ) -> AsyncIterator[JobDescription]
 
       List user jobs, all scheduled, running and finished jobs by default.
 
@@ -103,7 +104,18 @@ Jobs
 
                                        ``None`` means that no filter is applied (default).
 
-      :return: a :class:`list` of :class:`JobDescription` objects.
+      :param bool reverse: iterate jobs in the reverse order.
+
+                           If *reverse* is false (default) the jobs are iterated in
+                           the order of their creation date, from earlier to later.
+                           If *reverse* is true, they are iterated in the reverse order,
+                           from later to earlier.
+
+      :param int limit: limit the number of jobs.
+
+                        ``None`` means no limit (default).
+
+      :return: asynchronous iterator which emits :class:`JobDescription` objects.
 
 
    .. comethod:: monitor(id: str) -> AsyncIterator[bytes]

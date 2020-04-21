@@ -606,7 +606,7 @@ async def ls(
     statuses = calc_statuses(status, all)
     owners = set(owner)
     tags = set(tag)
-    jobs = await root.client.jobs.list(
+    jobs = root.client.jobs.list(
         statuses=statuses,
         name=name,
         owners=owners,
@@ -617,7 +617,7 @@ async def ls(
 
     # client-side filtering
     if description:
-        jobs = [job for job in jobs if job.description == description]
+        jobs = (job async for job in jobs if job.description == description)
 
     uri_fmtr: URIFormatter
     if full_uri:
@@ -638,7 +638,7 @@ async def ls(
             width, root.client.username, format, image_formatter=image_fmtr
         )
 
-    pager_maybe(formatter(jobs), root.tty, root.terminal_size)
+    pager_maybe(formatter([job async for job in jobs]), root.tty, root.terminal_size)
 
 
 @command()
