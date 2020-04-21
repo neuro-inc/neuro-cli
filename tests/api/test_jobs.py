@@ -1713,7 +1713,7 @@ async def test_list_filter_by_date_range(
     t1 = isoparse(jobs[0]["history"]["created_at"])
     t2 = isoparse(jobs[1]["history"]["created_at"])
     t3 = isoparse(jobs[2]["history"]["created_at"])
-    t2naive = t2.replace(tzinfo=None)
+    t2naive = t2.astimezone(None).replace(tzinfo=None)
 
     async def handler(request: web.Request) -> web.Response:
         since = isoparse(request.query.get("since", "0001-01-01T00:00:00+00:00"))
