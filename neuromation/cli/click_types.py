@@ -212,7 +212,7 @@ class JobType(AsyncType[str]):
         self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
     ) -> List[Tuple[str, Optional[str]]]:
         async with await root.init_client() as client:
-            ret = []
+            ret: List[Tuple[str, Optional[str]]] = []
             now = datetime.now()
             async for job in client.jobs.list(since=now - timedelta(hours=1)):
                 job_name = job.name or ""
