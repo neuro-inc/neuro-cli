@@ -99,6 +99,18 @@ class JobStatusHistory:
     exit_code: Optional[int] = None
 
 
+class JobRestartPolicy(str, enum.Enum):
+    NEVER = "never"
+    ON_FAILURE = "on-failure"
+    ALWAYS = "always"
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return repr(self.value)
+
+
 @dataclass(frozen=True)
 class JobDescription:
     id: str
@@ -115,6 +127,7 @@ class JobDescription:
     http_url: URL = URL()
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
+    restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER
     life_span: Optional[float] = None
 
 
@@ -142,6 +155,7 @@ class Jobs(metaclass=NoPublicConstructor):
         description: Optional[str] = None,
         is_preemptible: bool = False,
         schedule_timeout: Optional[float] = None,
+        restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
         life_span: Optional[float] = None,
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
@@ -157,6 +171,8 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
+        if restart_policy != JobRestartPolicy.NEVER:
+            payload["restart_policy"] = str(restart_policy)
         if life_span is not None:
             payload["max_run_time_minutes"] = int(life_span // 60)
         payload["cluster_name"] = self._config.cluster_name
@@ -570,6 +586,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
     http_url_named = URL(res.get("http_url_named", ""))
     ssh_server = URL(res.get("ssh_server", ""))
     internal_hostname = res.get("internal_hostname", None)
+    restart_policy = JobRestartPolicy(res.get("restart_policy", JobRestartPolicy.NEVER))
     max_run_time_minutes = res.get("max_run_time_minutes")
     life_span = (
         max_run_time_minutes * 60.0 if max_run_time_minutes is not None else None
@@ -589,6 +606,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         ssh_server=ssh_server,
         internal_hostname=internal_hostname,
         uri=URL(res["uri"]),
+        restart_policy=restart_policy,
         life_span=life_span,
     )
 

@@ -5,7 +5,7 @@ import subprocess
 from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
-from time import time
+from time import sleep, time
 from typing import Any, AsyncIterator, Callable, Dict, List, Tuple
 from uuid import uuid4
 
@@ -64,6 +64,8 @@ def test_job_submit(helper: Helper) -> None:
             "80",
             "--non-preemptible",
             "--no-wait-start",
+            "--restart",
+            "never",
             "--name",
             job_name,
             UBUNTU_IMAGE_NAME,
@@ -1123,3 +1125,30 @@ def test_e2e_job_top(helper: Helper) -> None:
         ]
         for actual, (descr, pattern) in zip(line_parts, expected_parts):
             assert re.match(pattern, actual) is not None, f"error in matching {descr}"
+
+
+@pytest.mark.e2e
+def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
+    captured = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            "--restart",
+            "on-failure",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
+            "--detach",
+            UBUNTU_IMAGE_NAME,
+            "false",
+        ]
+    )
+    job_id = captured.out
+    request.addfinalizer(lambda: helper.kill_job(job_id, wait=False))
+
+    captured = helper.run_cli(["job", "status", job_id])
+    assert "Restart policy: on-failure" in captured.out.splitlines()
+
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+    sleep(1)
+    helper.assert_job_state(job_id, JobStatus.RUNNING)
