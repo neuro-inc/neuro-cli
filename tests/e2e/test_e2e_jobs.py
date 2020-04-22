@@ -64,7 +64,7 @@ def test_job_submit(helper: Helper) -> None:
             "80",
             "--non-preemptible",
             "--no-wait-start",
-            "--reset",
+            "--restart",
             "never",
             "--name",
             job_name,
