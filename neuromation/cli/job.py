@@ -35,6 +35,7 @@ from neuromation.cli.formatters.utils import (
 )
 
 from .click_types import (
+    JOB,
     JOB_COLUMNS,
     JOB_NAME,
     LOCAL_REMOTE_PORT,
@@ -372,7 +373,7 @@ async def submit(
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@argument("job")
+@argument("job", type=JOB)
 @argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @option(
     "-t/-T",
@@ -427,7 +428,7 @@ async def exec(
 
 
 @command()
-@argument("job")
+@argument("job", type=JOB)
 @argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
 @option(
     "--no-key-check",
@@ -480,7 +481,7 @@ async def port_forward(
 
 
 @command()
-@argument("job")
+@argument("job", type=JOB)
 async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
@@ -642,7 +643,7 @@ async def ls(
 
 
 @command()
-@argument("job")
+@argument("job", type=JOB)
 @option("--full-uri", is_flag=True, help="Output full URI.")
 async def status(root: Root, job: str, full_uri: bool) -> None:
     """
@@ -679,7 +680,7 @@ async def tags(root: Root) -> None:
 
 
 @command()
-@click.argument("job")
+@click.argument("job", type=JOB)
 async def browse(root: Root, job: str) -> None:
     """
     Opens a job's URL in a web browser.
@@ -692,7 +693,7 @@ async def browse(root: Root, job: str) -> None:
 
 
 @command()
-@argument("job")
+@argument("job", type=JOB)
 @option(
     "--timeout",
     default=0,
@@ -719,7 +720,7 @@ async def top(root: Root, job: str, timeout: float) -> None:
 
 
 @command()
-@argument("job")
+@argument("job", type=JOB)
 @argument("image", type=ImageType())
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
@@ -747,7 +748,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
 
 
 @command()
-@argument("jobs", nargs=-1, required=True)
+@argument("jobs", nargs=-1, required=True, type=JOB)
 async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     Kill job(s).

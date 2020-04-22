@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 import re
+import shlex
 import subprocess
 import sys
 from collections import namedtuple
@@ -461,6 +462,42 @@ class Helper:
             print(f"nero stdout: {out}")
             print(f"nero stderr: {err}")
         return SysCap(out, err)
+
+    def autocomplete(
+        self, arguments: List[str], *, network_timeout: float = NETWORK_TIMEOUT,
+    ) -> str:
+        __tracebackhide__ = True
+
+        log.info("Run 'neuro %s'", " ".join(arguments))
+
+        args = [
+            "neuro",
+            "--show-traceback",
+            "--disable-pypi-version-check",
+            "--color=no",
+            f"--network-timeout={network_timeout}",
+            "--skip-stats",
+        ]
+
+        if self._nmrc_path:
+            args.append(f"--neuromation-config={self._nmrc_path}")
+
+        env = dict(os.environ)
+        env["_NEURO_COMPLETE"] = "complete_zsh"
+        env["COMP_WORDS"] = " ".join(shlex.quote(arg) for arg in args + arguments)
+        env["COMP_CWORD"] = str(len(args + arguments) - 1)
+
+        proc = subprocess.run(
+            "neuro",
+            timeout=300,
+            encoding="utf8",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+        )
+        assert proc.returncode == 1
+        assert not proc.stderr
+        return proc.stdout
 
     @run_async
     async def run_job_and_wait_state(
