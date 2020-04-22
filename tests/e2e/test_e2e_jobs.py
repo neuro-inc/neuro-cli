@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 import subprocess
+import sys
 from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -1154,6 +1155,9 @@ def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
     helper.assert_job_state(job_id, JobStatus.RUNNING)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Autocompletion is not supported on Windows"
+)
 @pytest.mark.e2e
 def test_job_autocomplete(helper: Helper) -> None:
 
