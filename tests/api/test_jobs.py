@@ -11,6 +11,7 @@ from neuromation.api import (
     Client,
     Container,
     HTTPPort,
+    JobRestartPolicy,
     JobStatus,
     JobTelemetry,
     RemoteImage,
@@ -1782,3 +1783,37 @@ async def test_job_run_life_span(
             resources=resources,
         )
         await client.jobs.run(container=container, life_span=10 * 60)
+
+
+async def test_job_run_restart_policy(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+                "command": "submit-command",
+            },
+            "is_preemptible": False,
+            "restart_policy": "always",
+            "cluster_name": "default",
+        }
+        return web.json_response(create_job_response("job-id-1", "running"))
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16, 0.5)
+        container = Container(
+            image=RemoteImage("submit-image-name"),
+            command="submit-command",
+            resources=resources,
+        )
+        await client.jobs.run(
+            container=container, restart_policy=JobRestartPolicy.ALWAYS
+        )

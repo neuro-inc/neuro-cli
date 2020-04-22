@@ -22,6 +22,7 @@ from neuromation.api import (
     Container,
     HTTPPort,
     JobDescription,
+    JobRestartPolicy,
     JobStatus,
     RemoteImage,
     Resources,
@@ -267,6 +268,13 @@ def job() -> None:
     secure=True,
 )
 @option(
+    "--restart",
+    default="never",
+    show_default=True,
+    type=click.Choice(JobRestartPolicy),
+    help="Restart policy to apply when a job exits",
+)
+@option(
     "--life-span",
     type=str,
     metavar="TIMEDELTA",
@@ -312,6 +320,7 @@ async def submit(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    restart: str,
     life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
@@ -359,6 +368,7 @@ async def submit(
         volume=volume,
         env=env,
         env_file=env_file,
+        restart=restart,
         life_span=life_span,
         preemptible=preemptible,
         name=name,
@@ -883,6 +893,13 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     secure=True,
 )
 @option(
+    "--restart",
+    default="never",
+    show_default=True,
+    type=click.Choice(JobRestartPolicy),
+    help="Restart policy to apply when a job exits",
+)
+@option(
     "--life-span",
     type=str,
     metavar="TIMEDELTA",
@@ -924,6 +941,7 @@ async def run(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    restart: str,
     life_span: Optional[str],
     preemptible: Optional[bool],
     name: Optional[str],
@@ -979,6 +997,7 @@ async def run(
         volume=volume,
         env=env,
         env_file=env_file,
+        restart=restart,
         life_span=life_span,
         preemptible=job_preset.is_preemptible,
         name=name,
@@ -1028,6 +1047,7 @@ async def run_job(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    restart: str,
     life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
@@ -1052,6 +1072,9 @@ async def run_job(
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
     if not wait_start:
         detach = True
+
+    job_restart_policy = JobRestartPolicy(restart)
+    log.debug(f"Job restart policy: {job_restart_policy}")
 
     job_life_span = await calc_life_span(root.client, life_span)
     log.debug(f"Job run-time limit: {job_life_span}")
@@ -1111,6 +1134,7 @@ async def run_job(
         name=name,
         tags=tags,
         description=description,
+        restart_policy=job_restart_policy,
         life_span=job_life_span,
     )
     click.echo(JobFormatter(root.quiet)(job))
