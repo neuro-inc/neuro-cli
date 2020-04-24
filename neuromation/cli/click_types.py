@@ -218,11 +218,15 @@ class JobType(AsyncType[str]):
                 since=now - timedelta(days=7), reverse=True, limit=100
             ):
                 job_name = job.name or ""
-                if job.id.startswith(incomplete):
-                    ret.append((job.id, job_name))
-                else:
-                    if job_name.startswith(incomplete):
-                        ret.append((job.id, job_name))
+                for test in (
+                    job.id,
+                    job_name,
+                    f"job:{job.id}",
+                    f"job:/{client.username}/{job.id}",
+                    f"job://{client.cluster_name}/{client.username}/{job.id}",
+                ):
+                    if test.startswith(incomplete):
+                        ret.append((test, job_name))
 
             return ret
 

@@ -1167,9 +1167,23 @@ def test_job_autocomplete(helper: Helper) -> None:
 
     out = helper.autocomplete(["kill", "test-job"])
     assert job_name in out
-    assert job_id in out
+    assert job_id not in out
 
     out = helper.autocomplete(["kill", "job-"])
+    assert job_name in out
+    assert job_id in out
+
+    out = helper.autocomplete(["kill", "job:job-"])
+    assert job_name in out
+    assert job_id in out
+
+    out = helper.autocomplete(["kill", f"job:/{helper.username}/job-"])
+    assert job_name in out
+    assert job_id in out
+
+    out = helper.autocomplete(
+        ["kill", f"job://{helper.cluster_name}/{helper.username}/job-"]
+    )
     assert job_name in out
     assert job_id in out
 
