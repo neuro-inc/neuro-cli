@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 import subprocess
+import sys
 from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -1152,3 +1153,38 @@ def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
     sleep(1)
     helper.assert_job_state(job_id, JobStatus.RUNNING)
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Autocompletion is not supported on Windows"
+)
+@pytest.mark.e2e
+def test_job_autocomplete(helper: Helper) -> None:
+
+    job_name = f"test-job-{os.urandom(5).hex()}"
+    helper.kill_job(job_name)
+    job_id = helper.run_job_and_wait_state(ALPINE_IMAGE_NAME, "sleep 60", name=job_name)
+
+    out = helper.autocomplete(["kill", "test-job"])
+    assert job_name in out
+    assert job_id not in out
+
+    out = helper.autocomplete(["kill", "job-"])
+    assert job_name in out
+    assert job_id in out
+
+    out = helper.autocomplete(["kill", "job:job-"])
+    assert job_name in out
+    assert job_id in out
+
+    out = helper.autocomplete(["kill", f"job:/{helper.username}/job-"])
+    assert job_name in out
+    assert job_id in out
+
+    out = helper.autocomplete(
+        ["kill", f"job://{helper.cluster_name}/{helper.username}/job-"]
+    )
+    assert job_name in out
+    assert job_id in out
+
+    helper.kill_job(job_id)
