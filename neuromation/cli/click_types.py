@@ -214,7 +214,9 @@ class JobType(AsyncType[str]):
         async with await root.init_client() as client:
             ret: List[Tuple[str, Optional[str]]] = []
             now = datetime.now()
-            async for job in client.jobs.list(since=now - timedelta(hours=1)):
+            async for job in client.jobs.list(
+                since=now - timedelta(days=7), reverse=True, limit=100
+            ):
                 job_name = job.name or ""
                 if job.id.startswith(incomplete):
                     ret.append((job.id, job_name))
