@@ -222,8 +222,8 @@ class JobType(AsyncType[str]):
                     job.id,
                     job_name,
                     f"job:{job.id}",
-                    f"job:/{client.username}/{job.id}",
-                    f"job://{client.cluster_name}/{client.username}/{job.id}",
+                    f"job:/{job.owner}/{job.id}",
+                    f"job://{job.cluster_name}/{job.owner}/{job.id}",
                 ):
                     if test.startswith(incomplete):
                         ret.append((test, job_name))
