@@ -131,6 +131,8 @@ class Images(metaclass=NoPublicConstructor):
                 raise AuthorizationError(f"Access denied {remote}") from error
             raise  # pragma: no cover
 
+        await self._docker.images.tag(repo, str(local))
+
         return local
 
     async def ls(self) -> List[RemoteImage]:
