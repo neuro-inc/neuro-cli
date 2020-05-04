@@ -393,9 +393,20 @@ async def submit(
     help="Allocate virtual tty. Useful for interactive jobs.",
 )
 @option(
+    "-i/-I",
+    "--interactive/--no-interactive",
+    default=None,
+    is_flag=True,
+    help=(
+        "Keep STDIN open even if not attached. "
+        "On for tty by default, false otherwise."
+    ),
+)
+@option(
     "--no-key-check",
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
+    hidden=True,
 )
 @option(
     "--timeout",
@@ -408,6 +419,7 @@ async def exec(
     root: Root,
     job: str,
     tty: bool,
+    interactive: Optional[bool],
     no_key_check: bool,
     cmd: Sequence[str],
     timeout: float,
@@ -427,14 +439,13 @@ async def exec(
     id = await resolve_job(
         job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
     )
-    retcode = await root.client.jobs.exec(
-        id,
-        shlex.split(real_cmd),
-        tty=tty,
-        no_key_check=no_key_check,
-        timeout=timeout if timeout else None,
-    )
-    sys.exit(retcode)
+    if interactive is None:
+        interactive = tty
+    async with async_timeout.timeout(timeout if timeout else None,):
+        retcode = await root.client.jobs.exec(
+            id, shlex.split(real_cmd), tty=tty, no_key_check=no_key_check,
+        )
+        sys.exit(retcode)
 
 
 @command()

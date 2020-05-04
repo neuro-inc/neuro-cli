@@ -8,7 +8,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
 
-import async_timeout
 import attr
 import psutil
 from aiodocker.exceptions import DockerError
@@ -330,7 +329,6 @@ class Jobs(metaclass=NoPublicConstructor):
         *,
         tty: bool = False,
         no_key_check: bool = False,
-        timeout: Optional[float] = None,
     ) -> int:
         try:
             job_status = await self.status(id)
@@ -362,8 +360,7 @@ class Jobs(metaclass=NoPublicConstructor):
         command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
         proc = await asyncio.create_subprocess_exec(*command)
         try:
-            async with async_timeout.timeout(timeout):
-                return await proc.wait()
+            return await proc.wait()
         finally:
             await _kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
