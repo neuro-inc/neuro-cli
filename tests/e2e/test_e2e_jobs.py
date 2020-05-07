@@ -1112,3 +1112,20 @@ def test_e2e_job_top(helper: Helper) -> None:
         ]
         for actual, (descr, pattern) in zip(line_parts, expected_parts):
             assert re.match(pattern, actual) is not None, f"error in matching {descr}"
+
+
+@pytest.mark.e2e
+def test_job_attach(helper: Helper) -> None:
+    # Run a new job
+    command = 'bash -c "for count in {1..10}; do echo $count; sleep 0.5; done"'
+    job_id = helper.run_job_and_wait_state(
+            UBUNTU_IMAGE_NAME,
+            command,
+    )
+
+
+    captured = helper.run_cli(
+        ["job", "attach", job_id])
+
+    assert captured.err == ""
+    assert captured.out == ""

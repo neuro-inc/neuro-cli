@@ -414,9 +414,9 @@ class Jobs(metaclass=NoPublicConstructor):
             await asyncio.sleep(0.1)
 
     def attach(
-        self, id: str, *, stdin=False, stdout=False, stderr=False, logs=False, w=80, h=25
+        self, id: str, *, stdin=False, stdout=False, stderr=False, logs=False
     ) -> "Stream":
-        return Stream(self._core, self._config, id, w, h, stdin, stdout, stderr, logs)
+        return Stream(self._core, self._config, id, stdin, stdout, stderr, logs)
 
 
 @dataclass(frozen=True)
@@ -431,8 +431,6 @@ class Stream:
         core: _Core,
         config: Config,
         id: str,
-        w: int,
-        h: int,
         stdin: bool,
         stdout: bool,
         stderr: bool,
@@ -441,8 +439,6 @@ class Stream:
         self._core = core
         self._config = config
         self._id = id
-        self._w = w
-        self._h = h
         self._stdin = stdin
         self._stdout = stdout
         self._stderr = stderr
@@ -457,8 +453,6 @@ class Stream:
             return
         url = self._config.monitoring_url / self._id / "attach"
         url = url.with_query(
-            w=str(self._w),
-            h=str(self._h),
             stdin=str(int(self._stdin)),
             stdout=str(int(self._stdout)),
             stderr=str(int(self._stderr)),

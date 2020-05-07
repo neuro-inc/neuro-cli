@@ -537,6 +537,8 @@ async def _attach(root: Root, job: str) -> None:
             else:
                 err = False
             click.echo(chunk.decode(errors="ignore"), nl=False, err=err)
+        status = await root.client.status(job)
+        sys.exit(status.history.exit_code)
 
 
 @command()
@@ -1172,7 +1174,7 @@ async def run_job(
                 """
             )
             click.echo(click.style(msg, dim=True))
-        await _print_logs(root, job.id)
+        await _attach(root, job.id)
         job = await root.client.jobs.status(job.id)
         while job.status in (JobStatus.PENDING, JobStatus.RUNNING):
             await asyncio.sleep(0.1)
