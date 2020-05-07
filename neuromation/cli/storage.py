@@ -298,7 +298,7 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     "--progress/--no-progress",
     is_flag=True,
     default=True,
-    help="Show progress, on by default.",
+    help="Show progress, on by default in TTY mode, off otherwise.",
 )
 async def cp(
     root: Root,
