@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
 
+import aiohttp
 import async_timeout
 import attr
 import psutil
@@ -447,6 +448,7 @@ class Stream:
 
     async def __aenter__(self):
         await self._init()
+        return self
 
     async def _init(self):
         if self._ws is not None:
@@ -460,7 +462,7 @@ class Stream:
         )
         auth = await self._config._api_auth()
         self._ws = await self._core._session.ws_connect(
-            url, method="POST", headers={"Authorization": auth}
+            url, headers={"Authorization": auth}
         )
 
     async def __aexit__(self, *args):
@@ -470,10 +472,16 @@ class Stream:
         if self._ws is not None:
             await self._ws.close()
 
-    async def read_out(self) -> Message:
+    async def read_out(self) -> Optional[Message]:
         await self._init()
-        msg = await self._ws.receive_bytes()
-        return Message(ord(msg[0]), msg[1:])
+        msg = await self._ws.receive()
+        if msg.type in (
+            aiohttp.WSMsgType.CLOSE,
+            aiohttp.WSMsgType.CLOSING,
+            aiohttp.WSMsgType.CLOSED,
+        ):
+            return None
+        return Message(msg.data[0], msg.data[1:])
 
     async def write_in(self, data: bytes) -> None:
         await self._init()

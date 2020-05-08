@@ -25,6 +25,7 @@
 		* [neuro job top](#neuro-job-top)
 		* [neuro job save](#neuro-job-save)
 		* [neuro job browse](#neuro-job-browse)
+		* [neuro job attach](#neuro-job-attach)
 	* [neuro project](#neuro-project)
 		* [neuro project init](#neuro-project-init)
 	* [neuro storage](#neuro-storage)
@@ -392,6 +393,7 @@ Name | Description|
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
 | _[neuro job save](#neuro-job-save)_| Save job's state to an image |
 | _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
+| _[neuro job attach](#neuro-job-attach)_| Print the logs for a container |
 
 
 
@@ -758,6 +760,25 @@ Opens a job's URL in a web browser.
 
 ```bash
 neuro job browse [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job attach
+
+Print the logs for a container.
+
+**Usage:**
+
+```bash
+neuro job attach [OPTIONS] JOB
 ```
 
 **Options:**
