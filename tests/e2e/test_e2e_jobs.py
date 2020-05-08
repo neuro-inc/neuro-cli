@@ -1115,12 +1115,26 @@ def test_e2e_job_top(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_attach(helper: Helper) -> None:
+def test_job_attach_stdout(helper: Helper) -> None:
     # Run a new job
-    command = 'bash -c "for count in {0..9}; do echo $count; sleep 0.5; done"'
+    command = 'bash -c "sleep 5; for count in {0..3}; do echo $count; sleep 0.2; done"'
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command,)
 
     captured = helper.run_cli(["job", "attach", job_id])
 
     assert captured.err == ""
-    assert captured.out == "\n".join(f"{i}" for i in range(10))
+    assert captured.out == "\n".join(f"{i}" for i in range(4))
+
+
+@pytest.mark.e2e
+def test_job_attach_exitcode(helper: Helper) -> None:
+    # Run a new job
+    command = 'bash -c "exit 1"'
+    job_id = helper.run_job_and_wait_state(
+        UBUNTU_IMAGE_NAME, command, wait_state=JobStatus.FAILED
+    )
+
+    try:
+        helper.run_cli(["job", "attach", job_id])
+    except subprocess.CalledProcessError as exc:
+        assert exc.returncode == 1

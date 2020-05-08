@@ -533,10 +533,11 @@ async def _attach(root: Root, job: str) -> None:
             if chunk is None:
                 break
             if chunk.stream == 2:
-                err = True
+                f = sys.stderr
             else:
-                err = False
-            click.echo(chunk.data.decode(errors="ignore"), nl=False, err=err)
+                f = sys.stdout
+            f.buffer.raw.write(chunk.data)
+            f.buffer.raw.flush()
         status = await root.client.jobs.status(job)
         sys.exit(status.history.exit_code)
 
