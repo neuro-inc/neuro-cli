@@ -43,6 +43,7 @@ class Root:
     command_path: str
     command_params: List[Dict[str, Optional[str]]]
     skip_gmp_stats: bool
+    show_traceback: bool
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None

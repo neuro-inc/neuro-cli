@@ -137,7 +137,8 @@ class MainGroup(Group):
                     kwargs[param.name] = param.get_default(ctx)
 
         global LOG_ERROR
-        if kwargs["show_traceback"]:
+        show_traceback = kwargs.get("show_traceback", False)
+        if show_traceback:
             LOG_ERROR = log.exception
         tty = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
         COLORS = {"yes": True, "no": False, "auto": None}
@@ -168,6 +169,7 @@ class MainGroup(Group):
             command_path="",
             command_params=[],
             skip_gmp_stats=kwargs["skip_stats"],
+            show_traceback=show_traceback,
         )
         ctx.obj = root
         ctx.call_on_close(root.close)

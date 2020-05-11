@@ -416,8 +416,15 @@ class Jobs(metaclass=NoPublicConstructor):
 
     def attach(
         self, id: str, *, stdin=False, stdout=False, stderr=False, logs=False
-    ) -> "Stream":
-        return Stream(self._core, self._config, id, stdin, stdout, stderr, logs)
+    ) -> "StdStream":
+        return StdStream(self._core, self._config, id, stdin, stdout, stderr, logs)
+
+    async def resize(self, id: str, *, w: int, h: int) -> None:
+        url = self._config.monitoring_url / id / "resize"
+        url = url.with_query(w=w, h=h)
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, auth=auth) as resp:
+            pass
 
 
 @dataclass(frozen=True)
@@ -426,7 +433,7 @@ class Message:
     data: bytes
 
 
-class Stream:
+class StdStream:
     def __init__(
         self,
         core: _Core,

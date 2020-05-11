@@ -47,6 +47,7 @@ from .jobs import (
     JobStatusHistory,
     JobTelemetry,
     Resources,
+    StdStream,
     Volume,
 )
 from .parser import Parser
@@ -68,6 +69,7 @@ __all__ = (
     "JobStatusHistory",
     "JobTelemetry",
     "Resources",
+    "StdStream",
     "Volume",
     "HTTPPort",
     "Users",

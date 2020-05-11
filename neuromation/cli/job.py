@@ -14,6 +14,7 @@ from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 import async_timeout
 import click
 from dateutil.parser import isoparse
+from prompt_toolkit.input import create_input
 from yarl import URL
 
 from neuromation.api import (
@@ -25,6 +26,7 @@ from neuromation.api import (
     JobStatus,
     RemoteImage,
     Resources,
+    StdStream,
     Volume,
 )
 from neuromation.cli.formatters import DockerImageProgress
@@ -521,10 +523,79 @@ async def attach(root: Root, job: str) -> None:
             JobStatus.FAILED,
         },
     )
-    await _attach(root, id)
+    await _attach(root, id, tty=None)
 
 
-async def _attach(root: Root, job: str) -> None:
+async def _attach(root: Root, job: str, tty: Optional[bool]) -> None:
+    if tty is None:
+        status = await root.client.jobs.status(job)
+        tty = status.container.tty
+    if tty:
+        await _attach_tty(root, job)
+    else:
+        await _attach_non_tty(root, job)
+    status = await root.client.jobs.status(job)
+    sys.exit(status.history.exit_code)
+
+
+async def _attach_tty(root: Root, job: str):
+    loop = asyncio.get_event_loop()
+    w, h = root.terminal_size
+    async with root.client.jobs.attach(
+        job, stdin=True, stdout=True, stderr=True, logs=True
+    ) as stream:
+        await root.client.jobs.resize(job, w=w, h=h)
+        tasks = []
+        tasks.append(loop.create_task(_process_stdin(stream)))
+        tasks.append(loop.create_task(_process_stdout(stream)))
+        await asyncio.wait(tasks)
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+                try:
+                    with contextlib.suppress(asyncio.CancelledError):
+                        await task
+                except Exception:
+                    if root.show_traceback:
+                        import traceback
+
+                        traceback.print_exc()
+
+
+async def _process_stdin(stream: StdStream) -> None:
+    ev = asyncio.Event()
+
+    def read_ready():
+        ev.set()
+
+    inp = create_input()
+    with inp.raw_mode():
+        with inp.attach(read_ready):
+            while True:
+                await ev.wait()
+                ev.clear()
+                keys = inp.read_keys()  # + inp.flush_keys()
+                buf = b"".join(key.data for key in keys)
+                await stream.write_out(key.data)
+
+
+async def _process_stdout(stream: StdStream) -> None:
+    try:
+        stdout = sys.stdout.buffer.raw
+        while True:
+            msg = await stream.read_out()
+            print("CHUNK", msg)
+            if msg is None:
+                return
+            stdout.write(msg.data)
+    except Exception:
+        import traceback
+
+        traceback.print_stack()
+        breakpoint()
+
+
+async def _attach_non_tty(root: Root, job: str):
     async with root.client.jobs.attach(
         job, stdout=True, stderr=True, logs=True
     ) as stream:
@@ -538,8 +609,6 @@ async def _attach(root: Root, job: str) -> None:
                 f = sys.stdout
             f.buffer.raw.write(chunk.data)
             f.buffer.raw.flush()
-        status = await root.client.jobs.status(job)
-        sys.exit(status.history.exit_code)
 
 
 @command()
@@ -1175,7 +1244,7 @@ async def run_job(
                 """
             )
             click.echo(click.style(msg, dim=True))
-        await _attach(root, job.id)
+        await _attach(root, job.id, tty)
         job = await root.client.jobs.status(job.id)
         while job.status in (JobStatus.PENDING, JobStatus.RUNNING):
             await asyncio.sleep(0.1)
