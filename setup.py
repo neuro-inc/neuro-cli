@@ -32,7 +32,7 @@ setup(
         "python-dateutil>=2.7.0",
         "yarl>=1.3.0",
         "multidict>=4.0",
-        "aiodocker>=0.16.0",
+        "aiodocker>=0.18.7",
         "click>=7.0",
         'colorama>=0.4; platform_system=="Windows"',
         "humanize>=0.5",
@@ -41,7 +41,7 @@ setup(
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead
         "certifi",
-        "cookiecutter==1.7.0",
+        "cookiecutter==1.7.2",
         "atomicwrites>=1.0",
         "wcwidth>=0.1.7",
         "toml>=0.10.0",

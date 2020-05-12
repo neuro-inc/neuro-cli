@@ -440,6 +440,7 @@ Name | Description|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
+|_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
@@ -498,6 +499,7 @@ Name | Description|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
+|_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
@@ -619,7 +621,7 @@ neuro exec --no-tty my-job ls -l
 Name | Description|
 |----|------------|
 |_\-t, --tty / -T, --no-tty_|Allocate virtual tty. Useful for interactive jobs.|
-|_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_\-i, --interactive / -I, --no-interactive_|Keep STDIN open even if not attached. On for tty by default, false otherwise.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
@@ -933,7 +935,7 @@ Name | Description|
 |_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing.|
 |_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
 |_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
-|_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_--help_|Show this message and exit.|
 
 
@@ -1854,6 +1856,7 @@ Name | Description|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
+|_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
@@ -1912,6 +1915,7 @@ Name | Description|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
+|_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
@@ -2014,7 +2018,7 @@ neuro exec --no-tty my-job ls -l
 Name | Description|
 |----|------------|
 |_\-t, --tty / -T, --no-tty_|Allocate virtual tty. Useful for interactive jobs.|
-|_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_\-i, --interactive / -I, --no-interactive_|Keep STDIN open even if not attached. On for tty by default, false otherwise.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
@@ -2236,7 +2240,7 @@ Name | Description|
 |_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing.|
 |_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
 |_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
-|_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_--help_|Show this message and exit.|
 
 

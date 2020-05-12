@@ -59,13 +59,19 @@ async def test_resolve_job_id__from_string__no_jobs_found(
         # Since `resolve_job` excepts any Exception, `assert` will be caught there
         name = request.query.get("name")
         if name != job_id:
-            raise web.HTTPBadRequest(text=(f"received: {name}"))
+            raise web.HTTPBadRequest(text=(f"received: name={name}"))
         owner = request.query.get("owner")
         if owner != "user":
-            raise web.HTTPBadRequest(text=(f"received: {owner}"))
+            raise web.HTTPBadRequest(text=(f"received: owner={owner}"))
+        reverse = request.query.get("reverse")
+        if reverse != "1":
+            raise web.HTTPBadRequest(text=(f"received: reverse={reverse}"))
+        limit = request.query.get("limit")
+        if limit != "1":
+            raise web.HTTPBadRequest(text=(f"received: limit={limit}"))
         status = request.query.getall("status")
         if status != ["running"]:
-            raise web.HTTPBadRequest(text=(f"received: {status}"))
+            raise web.HTTPBadRequest(text=(f"received: status={status}"))
         return web.json_response(JSON)
 
     app = web.Application()
@@ -94,6 +100,12 @@ async def test_resolve_job_id__from_uri_with_owner__no_jobs_found(
         owner = request.query.get("owner")
         if owner != job_owner:
             pytest.fail(f"received: {owner}")
+        reverse = request.query.get("reverse")
+        if reverse != "1":
+            pytest.fail(f"received: reverse={reverse}")
+        limit = request.query.get("limit")
+        if limit != "1":
+            pytest.fail(f"received: limit={limit}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -121,6 +133,12 @@ async def test_resolve_job_id__from_uri_without_owner__no_jobs_found(
         owner = request.query.get("owner")
         if owner != "user":
             pytest.fail(f"received: {owner}")
+        reverse = request.query.get("reverse")
+        if reverse != "1":
+            pytest.fail(f"received: reverse={reverse}")
+        limit = request.query.get("limit")
+        if limit != "1":
+            pytest.fail(f"received: limit={limit}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -148,6 +166,12 @@ async def test_resolve_job_id__from_string__single_job_found(
         owner = request.query.get("owner")
         if owner != "user":
             pytest.fail(f"received: {owner}")
+        reverse = request.query.get("reverse")
+        if reverse != "1":
+            pytest.fail(f"received: reverse={reverse}")
+        limit = request.query.get("limit")
+        if limit != "1":
+            pytest.fail(f"received: limit={limit}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -179,6 +203,12 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
         owner = request.query.get("owner")
         if owner != job_owner:
             pytest.fail(f"received: {owner}")
+        reverse = request.query.get("reverse")
+        if reverse != "1":
+            pytest.fail(f"received: reverse={reverse}")
+        limit = request.query.get("limit")
+        if limit != "1":
+            pytest.fail(f"received: limit={limit}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -207,6 +237,12 @@ async def test_resolve_job_id__from_uri_without_owner__single_job_found(
         owner = request.query.get("owner")
         if owner != "user":
             pytest.fail(f"received: {owner}")
+        reverse = request.query.get("reverse")
+        if reverse != "1":
+            pytest.fail(f"received: reverse={reverse}")
+        limit = request.query.get("limit")
+        if limit != "1":
+            pytest.fail(f"received: limit={limit}")
         return web.json_response(JSON)
 
     app = web.Application()
@@ -217,95 +253,6 @@ async def test_resolve_job_id__from_uri_without_owner__single_job_found(
     async with make_client(srv.make_url("/")) as client:
         resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id
-
-
-async def test_resolve_job_id__from_string__multiple_jobs_found(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
-) -> None:
-    job_name = "job-name-123-000"
-    job_id_1 = "job-id-1"
-    job_id_2 = "job-id-2"
-    JSON = {"jobs": [_job_entry(job_id_1), _job_entry(job_id_2)]}
-
-    async def handler(request: web.Request) -> web.Response:
-        # Since `resolve_job` excepts any Exception, `assert` will be caught there
-        name = request.query.get("name")
-        if name != job_name:
-            pytest.fail(f"received: {name}")
-        owner = request.query.get("owner")
-        if owner != "user":
-            pytest.fail(f"received: {owner}")
-        return web.json_response(JSON)
-
-    app = web.Application()
-    app.router.add_get("/jobs", handler)
-
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(
-            job_name, client=client, status={JobStatus.RUNNING}
-        )
-        assert resolved == job_id_2
-
-
-async def test_resolve_job_id__from_uri_with_owner__multiple_jobs_found(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
-) -> None:
-    job_owner = "job-owner"
-    job_name = "job-name"
-    uri = f"job://default/{job_owner}/{job_name}"
-    job_id_1 = "job-id-1"
-    job_id_2 = "job-id-2"
-    JSON = {"jobs": [_job_entry(job_id_1), _job_entry(job_id_2)]}
-
-    async def handler(request: web.Request) -> web.Response:
-        # Since `resolve_job` excepts any Exception, `assert` will be caught there
-        name = request.query.get("name")
-        if name != job_name:
-            pytest.fail(f"received: {name}")
-        owner = request.query.get("owner")
-        if owner != job_owner:
-            pytest.fail(f"received: {owner}")
-        return web.json_response(JSON)
-
-    app = web.Application()
-    app.router.add_get("/jobs", handler)
-
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
-        assert resolved == job_id_2
-
-
-async def test_resolve_job_id__from_uri_without_owner__multiple_jobs_found(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
-) -> None:
-    job_name = "job-name"
-    uri = f"job:{job_name}"
-    job_id_1 = "job-id-1"
-    job_id_2 = "job-id-2"
-    JSON = {"jobs": [_job_entry(job_id_1), _job_entry(job_id_2)]}
-
-    async def handler(request: web.Request) -> web.Response:
-        # Since `resolve_job` excepts any Exception, `assert` will be caught there
-        name = request.query.get("name")
-        if name != job_name:
-            pytest.fail(f"received: {name}")
-        owner = request.query.get("owner")
-        if owner != "user":
-            pytest.fail(f"received: {owner}")
-        return web.json_response(JSON)
-
-    app = web.Application()
-    app.router.add_get("/jobs", handler)
-
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
-        assert resolved == job_id_2
 
 
 async def test_resolve_job_id__server_error(
@@ -322,6 +269,12 @@ async def test_resolve_job_id__server_error(
         owner = request.query.get("owner")
         if owner != "user":
             pytest.fail(f"received: {owner}")
+        reverse = request.query.get("reverse")
+        if reverse != "1":
+            pytest.fail(f"received: reverse={reverse}")
+        limit = request.query.get("limit")
+        if limit != "1":
+            pytest.fail(f"received: limit={limit}")
         raise web.HTTPError()
 
     app = web.Application()
@@ -351,6 +304,12 @@ async def test_resolve_job_id__from_uri_with_owner__with_owner__server_error(
         owner = request.query.get("owner")
         if owner != job_owner:
             pytest.fail(f"received: {owner}")
+        reverse = request.query.get("reverse")
+        if reverse != "1":
+            pytest.fail(f"received: reverse={reverse}")
+        limit = request.query.get("limit")
+        if limit != "1":
+            pytest.fail(f"received: limit={limit}")
         raise web.HTTPError()
 
     app = web.Application()
@@ -377,6 +336,12 @@ async def test_resolve_job_id__from_uri_without_owner__server_error(
         owner = request.query.get("owner")
         if owner != "user":
             pytest.fail(f"received: {owner}")
+        reverse = request.query.get("reverse")
+        if reverse != "1":
+            pytest.fail(f"received: reverse={reverse}")
+        limit = request.query.get("limit")
+        if limit != "1":
+            pytest.fail(f"received: limit={limit}")
         raise web.HTTPError()
 
     app = web.Application()

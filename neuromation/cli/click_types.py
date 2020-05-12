@@ -1,5 +1,6 @@
 import abc
 import re
+from datetime import datetime, timedelta
 from typing import Generic, List, Optional, Sequence, Tuple, TypeVar, Union, cast
 
 import click
@@ -193,3 +194,41 @@ class PresetType(AsyncType[str]):
 
 
 PRESET = PresetType()
+
+
+class JobType(AsyncType[str]):
+    name = "job"
+
+    async def async_convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> str:
+        return value
+
+    async def async_complete(
+        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
+    ) -> List[Tuple[str, Optional[str]]]:
+        async with await root.init_client() as client:
+            ret: List[Tuple[str, Optional[str]]] = []
+            now = datetime.now()
+            async for job in client.jobs.list(
+                since=now - timedelta(days=7), reverse=True, limit=100
+            ):
+                job_name = job.name or ""
+                for test in (
+                    job.id,
+                    job_name,
+                    f"job:{job.id}",
+                    f"job:/{job.owner}/{job.id}",
+                    f"job://{job.cluster_name}/{job.owner}/{job.id}",
+                ):
+                    if test.startswith(incomplete):
+                        ret.append((test, job_name))
+
+            return ret
+
+
+JOB = JobType()

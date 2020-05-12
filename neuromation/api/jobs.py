@@ -9,11 +9,10 @@ from datetime import datetime, timezone
 from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
 
 import aiohttp
-import async_timeout
 import attr
 import psutil
 from aiodocker.exceptions import DockerError
-from aiohttp import WSServerHandshakeError
+from aiohttp import WSMsgType, WSServerHandshakeError
 from dateutil.parser import isoparse
 from multidict import MultiDict
 from yarl import URL
@@ -100,6 +99,18 @@ class JobStatusHistory:
     exit_code: Optional[int] = None
 
 
+class JobRestartPolicy(str, enum.Enum):
+    NEVER = "never"
+    ON_FAILURE = "on-failure"
+    ALWAYS = "always"
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return repr(self.value)
+
+
 @dataclass(frozen=True)
 class JobDescription:
     id: str
@@ -116,6 +127,7 @@ class JobDescription:
     http_url: URL = URL()
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
+    restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER
     life_span: Optional[float] = None
 
 
@@ -143,6 +155,7 @@ class Jobs(metaclass=NoPublicConstructor):
         description: Optional[str] = None,
         is_preemptible: bool = False,
         schedule_timeout: Optional[float] = None,
+        restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
         life_span: Optional[float] = None,
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
@@ -158,6 +171,8 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["description"] = description
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
+        if restart_policy != JobRestartPolicy.NEVER:
+            payload["restart_policy"] = str(restart_policy)
         if life_span is not None:
             payload["max_run_time_minutes"] = int(life_span // 60)
         payload["cluster_name"] = self._config.cluster_name
@@ -175,8 +190,11 @@ class Jobs(metaclass=NoPublicConstructor):
         owners: Iterable[str] = (),
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
-    ) -> List[JobDescription]:
+        reverse: bool = False,
+        limit: Optional[int] = None,
+    ) -> AsyncIterator[JobDescription]:
         url = self._config.api_url / "jobs"
+        headers = {"Accept": "application/x-ndjson"}
         params: MultiDict[str] = MultiDict()
         for status in statuses:
             params.add("status", status.value)
@@ -188,19 +206,30 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("tag", tag)
         if since:
             if since.tzinfo is None:
-                # XXX (serhiy 09-Apr-2020) Should we use local time zone or
-                # raise an error?  "neuro ps" outputs date in UTC timezone.
-                since = since.replace(tzinfo=timezone.utc)
+                # Interpret naive datetime object as local time.
+                since = since.astimezone(timezone.utc)
             params.add("since", since.isoformat())
         if until:
             if until.tzinfo is None:
-                until = until.replace(tzinfo=timezone.utc)
+                until = until.astimezone(timezone.utc)
             params.add("until", until.isoformat())
         params["cluster_name"] = self._config.cluster_name
+        if reverse:
+            params.add("reverse", "1")
+        if limit is not None:
+            params.add("limit", str(limit))
         auth = await self._config._api_auth()
-        async with self._core.request("GET", url, params=params, auth=auth) as resp:
-            ret = await resp.json()
-            return [_job_description_from_api(j, self._parse) for j in ret["jobs"]]
+        async with self._core.request(
+            "GET", url, headers=headers, params=params, auth=auth
+        ) as resp:
+            if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
+                async for line in resp.content:
+                    j = json.loads(line)
+                    yield _job_description_from_api(j, self._parse)
+            else:
+                ret = await resp.json()
+                for j in ret["jobs"]:
+                    yield _job_description_from_api(j, self._parse)
 
     async def kill(self, id: str) -> None:
         url = self._config.api_url / "jobs" / id
@@ -301,7 +330,6 @@ class Jobs(metaclass=NoPublicConstructor):
         *,
         tty: bool = False,
         no_key_check: bool = False,
-        timeout: Optional[float] = None,
     ) -> int:
         try:
             job_status = await self.status(id)
@@ -333,8 +361,7 @@ class Jobs(metaclass=NoPublicConstructor):
         command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
         proc = await asyncio.create_subprocess_exec(*command)
         try:
-            async with async_timeout.timeout(timeout):
-                return await proc.wait()
+            return await proc.wait()
         finally:
             await _kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
@@ -417,7 +444,16 @@ class Jobs(metaclass=NoPublicConstructor):
     def attach(
         self, id: str, *, stdin=False, stdout=False, stderr=False, logs=False
     ) -> "StdStream":
-        return StdStream(self._core, self._config, id, stdin, stdout, stderr, logs)
+        return StdStream(
+            self._core,
+            self._config,
+            id,
+            stdin,
+            stdout,
+            stderr,
+            logs,
+            self._core.timeout,
+        )
 
     async def resize(self, id: str, *, w: int, h: int) -> None:
         url = self._config.monitoring_url / id / "resize"
@@ -443,6 +479,7 @@ class StdStream:
         stdout: bool,
         stderr: bool,
         logs: bool,
+        timeout: aiohttp.ClientTimeout,
     ) -> None:
         self._core = core
         self._config = config
@@ -452,6 +489,8 @@ class StdStream:
         self._stderr = stderr
         self._logs = logs
         self._ws = None
+        self._timeout = timeout
+        self._closing = False
 
     async def __aenter__(self):
         await self._init()
@@ -460,6 +499,7 @@ class StdStream:
     async def _init(self):
         if self._ws is not None:
             return
+        timeout = attr.evolve(self._timeout, sock_read=None)
         url = self._config.monitoring_url / self._id / "attach"
         url = url.with_query(
             stdin=str(int(self._stdin)),
@@ -469,7 +509,11 @@ class StdStream:
         )
         auth = await self._config._api_auth()
         self._ws = await self._core._session.ws_connect(
-            url, headers={"Authorization": auth}
+            url,
+            headers={"Authorization": auth},
+            timeout=timeout,
+            receive_timeout=None,
+            heartbeat=30,
         )
 
     async def __aexit__(self, *args):
@@ -477,21 +521,21 @@ class StdStream:
 
     async def close(self):
         if self._ws is not None:
+            self._closing = True
             await self._ws.close()
 
     async def read_out(self) -> Optional[Message]:
         await self._init()
         msg = await self._ws.receive()
-        if msg.type in (
-            aiohttp.WSMsgType.CLOSE,
-            aiohttp.WSMsgType.CLOSING,
-            aiohttp.WSMsgType.CLOSED,
-        ):
+        if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSING, WSMsgType.CLOSED,):
+            self._closing = True
             return None
         return Message(msg.data[0], msg.data[1:])
 
     async def write_in(self, data: bytes) -> None:
         await self._init()
+        if self._closing:
+            return
         await self._ws.send_bytes(data)
 
 
@@ -637,6 +681,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
     http_url_named = URL(res.get("http_url_named", ""))
     ssh_server = URL(res.get("ssh_server", ""))
     internal_hostname = res.get("internal_hostname", None)
+    restart_policy = JobRestartPolicy(res.get("restart_policy", JobRestartPolicy.NEVER))
     max_run_time_minutes = res.get("max_run_time_minutes")
     life_span = (
         max_run_time_minutes * 60.0 if max_run_time_minutes is not None else None
@@ -656,6 +701,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         ssh_server=ssh_server,
         internal_hostname=internal_hostname,
         uri=URL(res["uri"]),
+        restart_policy=restart_policy,
         life_span=life_span,
     )
 

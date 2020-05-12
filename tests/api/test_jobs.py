@@ -11,6 +11,7 @@ from neuromation.api import (
     Client,
     Container,
     HTTPPort,
+    JobRestartPolicy,
     JobStatus,
     JobTelemetry,
     RemoteImage,
@@ -1367,7 +1368,7 @@ async def test_list_no_filter(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list()
+        ret = [job async for job in client.jobs.list()]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1405,7 +1406,7 @@ async def test_list_filter_by_name(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(name=name_1)
+        ret = [job async for job in client.jobs.list(name=name_1)]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1444,7 +1445,7 @@ async def test_list_filter_by_statuses(
 
     statuses = {JobStatus.FAILED, JobStatus.SUCCEEDED}
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(statuses=statuses)
+        ret = [job async for job in client.jobs.list(statuses=statuses)]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1476,7 +1477,7 @@ async def test_list_incorrect_image(
 
     statuses = {JobStatus.FAILED, JobStatus.SUCCEEDED}
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(statuses=statuses)
+        ret = [job async for job in client.jobs.list(statuses=statuses)]
     for job in ret:
         if job.status == JobStatus.FAILED:
             assert job.container.image.name == INVALID_IMAGE_NAME
@@ -1601,7 +1602,7 @@ async def test_list_filter_by_name_and_statuses(
     statuses = {JobStatus.PENDING, JobStatus.SUCCEEDED}
     name = "job-name-1"
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(statuses=statuses, name=name)
+        ret = [job async for job in client.jobs.list(statuses=statuses, name=name)]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1638,7 +1639,7 @@ async def test_list_filter_by_tags(
 
     tags = {"t1", "t2"}
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(tags=tags)
+        ret = [job async for job in client.jobs.list(tags=tags)]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1685,7 +1686,12 @@ async def test_list_filter_by_name_and_statuses_and_owners(
     name = name_1
     owners = {owner_1, owner_2}
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(statuses=statuses, name=name, owners=owners)
+        ret = [
+            job
+            async for job in client.jobs.list(
+                statuses=statuses, name=name, owners=owners
+            )
+        ]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1708,7 +1714,7 @@ async def test_list_filter_by_date_range(
     t1 = isoparse(jobs[0]["history"]["created_at"])
     t2 = isoparse(jobs[1]["history"]["created_at"])
     t3 = isoparse(jobs[2]["history"]["created_at"])
-    t2naive = t2.replace(tzinfo=None)
+    t2naive = t2.astimezone(None).replace(tzinfo=None)
 
     async def handler(request: web.Request) -> web.Response:
         since = isoparse(request.query.get("since", "0001-01-01T00:00:00+00:00"))
@@ -1725,25 +1731,25 @@ async def test_list_filter_by_date_range(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list()
+        ret = [job async for job in client.jobs.list()]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2", "job-id-3"}
 
-        ret = await client.jobs.list(since=t2)
+        ret = [job async for job in client.jobs.list(since=t2)]
         assert {job.id for job in ret} == {"job-id-2", "job-id-3"}
 
-        ret = await client.jobs.list(until=t2)
+        ret = [job async for job in client.jobs.list(until=t2)]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
 
-        ret = await client.jobs.list(since=t1, until=t2)
+        ret = [job async for job in client.jobs.list(since=t1, until=t2)]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
 
-        ret = await client.jobs.list(since=t1, until=t3)
+        ret = [job async for job in client.jobs.list(since=t1, until=t3)]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2", "job-id-3"}
 
-        ret = await client.jobs.list(since=t2naive)
+        ret = [job async for job in client.jobs.list(since=t2naive)]
         assert {job.id for job in ret} == {"job-id-2", "job-id-3"}
 
-        ret = await client.jobs.list(until=t2naive)
+        ret = [job async for job in client.jobs.list(until=t2naive)]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
 
 
@@ -1777,3 +1783,37 @@ async def test_job_run_life_span(
             resources=resources,
         )
         await client.jobs.run(container=container, life_span=10 * 60)
+
+
+async def test_job_run_restart_policy(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+                "command": "submit-command",
+            },
+            "is_preemptible": False,
+            "restart_policy": "always",
+            "cluster_name": "default",
+        }
+        return web.json_response(create_job_response("job-id-1", "running"))
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16, 0.5)
+        container = Container(
+            image=RemoteImage("submit-image-name"),
+            command="submit-command",
+            resources=resources,
+        )
+        await client.jobs.run(
+            container=container, restart_policy=JobRestartPolicy.ALWAYS
+        )

@@ -9,7 +9,13 @@ from typing import Iterable, Iterator, List
 import humanize
 from click import style, unstyle
 
-from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
+from neuromation.api import (
+    JobDescription,
+    JobRestartPolicy,
+    JobStatus,
+    JobTelemetry,
+    Resources,
+)
 from neuromation.cli.parse_utils import JobColumnInfo
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
@@ -124,6 +130,8 @@ class JobStatusFormatter:
         resource_formatter = ResourcesFormatter()
         result += resource_formatter(job_status.container.resources) + "\n"
         result += f"Preemptible: {job_status.is_preemptible}\n"
+        if job_status.restart_policy != JobRestartPolicy.NEVER:
+            result += f"Restart policy: {job_status.restart_policy}\n"
         if job_status.life_span is not None:
             limit = (
                 "no limit"
@@ -269,7 +277,7 @@ class TabularJobRow:
         if delta < datetime.timedelta(days=1):
             when_humanized = humanize.naturaltime(delta)
         else:
-            when_humanized = humanize.naturaldate(when)
+            when_humanized = humanize.naturaldate(when.astimezone())
         return cls(
             id=job.id,
             name=job.name if job.name else "",

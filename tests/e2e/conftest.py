@@ -3,6 +3,7 @@ import hashlib
 import logging
 import os
 import re
+import shlex
 import subprocess
 import sys
 from collections import namedtuple
@@ -31,6 +32,7 @@ import pytest
 from yarl import URL
 
 from neuromation.api import (
+    AuthorizationError,
     Config,
     Container,
     FileStatusType,
@@ -96,14 +98,11 @@ def run_async(coro: Any) -> Callable[..., Any]:
 
 
 class Helper:
-    def __init__(
-        self, nmrc_path: Optional[Path], tmp_path: Path, tmpbucketname: str
-    ) -> None:
+    def __init__(self, nmrc_path: Optional[Path], tmp_path: Path) -> None:
         self._nmrc_path = nmrc_path
         self._tmp = tmp_path
         self.tmpstoragename = f"test_e2e/{uuid()}"
         self._tmpstorage = f"storage:{self.tmpstoragename}/"
-        self._tmpbucketname = tmpbucketname
         self._closed = False
         self._executed_jobs: List[str] = []
 
@@ -111,7 +110,6 @@ class Helper:
         if not self._closed:
             with suppress(Exception):
                 self.rm("", recursive=True)
-            self.cleanup_bucket(self._tmpbucketname)
             self._closed = True
         if self._executed_jobs:
             for job in self._executed_jobs:
@@ -145,10 +143,6 @@ class Helper:
     @property
     def tmpstorage(self) -> str:
         return self._tmpstorage
-
-    @property
-    def tmpbucketname(self) -> str:
-        return self._tmpbucketname
 
     def make_uri(self, path: str, *, fromhome: bool = False) -> URL:
         if fromhome:
@@ -469,6 +463,42 @@ class Helper:
             print(f"nero stderr: {err}")
         return SysCap(out, err)
 
+    def autocomplete(
+        self, arguments: List[str], *, network_timeout: float = NETWORK_TIMEOUT,
+    ) -> str:
+        __tracebackhide__ = True
+
+        log.info("Run 'neuro %s'", " ".join(arguments))
+
+        args = [
+            "neuro",
+            "--show-traceback",
+            "--disable-pypi-version-check",
+            "--color=no",
+            f"--network-timeout={network_timeout}",
+            "--skip-stats",
+        ]
+
+        if self._nmrc_path:
+            args.append(f"--neuromation-config={self._nmrc_path}")
+
+        env = dict(os.environ)
+        env["_NEURO_COMPLETE"] = "complete_zsh"
+        env["COMP_WORDS"] = " ".join(shlex.quote(arg) for arg in args + arguments)
+        env["COMP_CWORD"] = str(len(args + arguments) - 1)
+
+        proc = subprocess.run(
+            "neuro",
+            timeout=300,
+            encoding="utf8",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env,
+        )
+        assert proc.returncode == 1
+        assert not proc.stderr
+        return proc.stdout
+
     @run_async
     async def run_job_and_wait_state(
         self,
@@ -636,8 +666,8 @@ def _get_nmrc_path(tmp_path_factory: Any, require_admin: bool) -> Optional[Path]
 
 
 @pytest.fixture
-def helper(tmp_path: Path, nmrc_path: Path, tmp_bucket: str) -> Iterator[Helper]:
-    ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path, tmpbucketname=tmp_bucket)
+def helper(tmp_path: Path, nmrc_path: Path) -> Iterator[Helper]:
+    ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path)
     yield ret
     with suppress(Exception):
         # ignore exceptions in helper closing
@@ -689,15 +719,28 @@ def nested_data(static_path: Path) -> Tuple[str, str, str]:
 
 
 @pytest.fixture(scope="session")
-def tmp_bucket(tmp_path_factory: Any, request: Any) -> Iterator[str]:
-    tmp_path = tmp_path_factory.mktemp("tmp_bucket")
+def _tmp_bucket_create(
+    tmp_path_factory: Any, request: Any
+) -> Iterator[Tuple[str, Helper]]:
+    tmp_path = tmp_path_factory.mktemp("tmp_bucket" + str(uuid()))
     tmpbucketname = f"neuro_test_e2e_{uuid()}"
-    nmrc_path = _get_nmrc_path(tmp_path_factory, require_admin=False)
+    nmrc_path = _get_nmrc_path(tmp_path_factory, require_admin=True)
 
-    helper = Helper(nmrc_path, tmp_path, tmpbucketname)
-    helper.create_bucket(helper.tmpbucketname)
-    yield helper.tmpbucketname
-    helper.delete_bucket(helper.tmpbucketname)
+    helper = Helper(nmrc_path, tmp_path)
+    try:
+        helper.create_bucket(tmpbucketname)
+    except AuthorizationError:
+        pytest.skip("No permission to create bucket for user E2E_TOKEN")
+    yield tmpbucketname, helper
+    helper.delete_bucket(tmpbucketname)
+    helper.close()
+
+
+@pytest.fixture
+def tmp_bucket(_tmp_bucket_create: Tuple[str, Helper]) -> Iterator[str]:
+    tmpbucketname, helper = _tmp_bucket_create
+    yield tmpbucketname
+    helper.cleanup_bucket(tmpbucketname)
 
 
 @pytest.fixture

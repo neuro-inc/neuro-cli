@@ -44,10 +44,13 @@ Jobs
       :param str id: job :attr:`~JobDescription.id` to kill.
 
    .. comethod:: list(*, statuses: Iterable[JobStatus] = (), \
-                      name: str = "" \
+                      name: Optional[str] = None, \
                       tags: Sequence[str] = (), \
-                      owners: Iterable[str] = (),
-                 ) -> List[JobDescription]
+                      owners: Iterable[str] = (), \
+                      since: Optional[datetime] = None, \
+                      until: Optional[datetime] = None, \
+                      reverse: bool = False, \
+                 ) -> AsyncIterator[JobDescription]
 
       List user jobs, all scheduled, running and finished jobs by default.
 
@@ -68,12 +71,13 @@ Jobs
 
       :param str name: Filter jobs by :attr:`~JobDescription.name` (exact match).
 
-                       Empty string means that no filter is applied (default).
+                       Empty string or ``None`` means that no filter is applied (default).
 
-      :param str name: Filter jobs by :attr:`~JobDescription.tags`. Retrieves all
-                       jobs submitted with at least one tag from the specified list.
+      :param ~typing.Sequence[str] tags: filter jobs by :attr:`~JobDescription.tags`.
 
-                       Empty list means that no filter is applied (default).
+                                         Retrieves only jobs submitted with all tags from the specified list.
+
+                                         Empty list means that no filter is applied (default).
 
       :param ~typing.Iterable[str] owners: filter jobs by their owners.
 
@@ -84,7 +88,34 @@ Jobs
                                            No owners filter is applied if the iterable
                                            is empty.
 
-      :return: a :class:`list` of :class:`JobDescription` objects.
+      :param ~datetime.datetime since: filter jobs by their creation date.
+
+                                       Retrieves only jobs submitted after the specified date
+                                       (including) if it is not ``None``.  If the parameter
+                                       is a naive datetime object, it represents local time.
+
+                                       ``None`` means that no filter is applied (default).
+
+      :param ~datetime.datetime until: filter jobs by their creation date.
+
+                                       Retrieves only jobs submitted before the specified date
+                                       (including) if it is not ``None``.  If the parameter
+                                       is a naive datetime object, it represents local time.
+
+                                       ``None`` means that no filter is applied (default).
+
+      :param bool reverse: iterate jobs in the reverse order.
+
+                           If *reverse* is false (default) the jobs are iterated in
+                           the order of their creation date, from earlier to later.
+                           If *reverse* is true, they are iterated in the reverse order,
+                           from later to earlier.
+
+      :param int limit: limit the number of jobs.
+
+                        ``None`` means no limit (default).
+
+      :return: asynchronous iterator which emits :class:`JobDescription` objects.
 
 
    .. comethod:: monitor(id: str) -> AsyncIterator[bytes]

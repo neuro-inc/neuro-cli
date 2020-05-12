@@ -1,4 +1,5 @@
 import asyncio
+import codecs
 import contextlib
 import logging
 import os
@@ -15,6 +16,7 @@ import async_timeout
 import click
 from dateutil.parser import isoparse
 from prompt_toolkit.input import create_input
+from prompt_toolkit.output import create_output
 from yarl import URL
 
 from neuromation.api import (
@@ -23,6 +25,7 @@ from neuromation.api import (
     Container,
     HTTPPort,
     JobDescription,
+    JobRestartPolicy,
     JobStatus,
     RemoteImage,
     Resources,
@@ -37,6 +40,7 @@ from neuromation.cli.formatters.utils import (
 )
 
 from .click_types import (
+    JOB,
     JOB_COLUMNS,
     JOB_NAME,
     LOCAL_REMOTE_PORT,
@@ -268,6 +272,13 @@ def job() -> None:
     secure=True,
 )
 @option(
+    "--restart",
+    default="never",
+    show_default=True,
+    type=click.Choice(JobRestartPolicy),
+    help="Restart policy to apply when a job exits",
+)
+@option(
     "--life-span",
     type=str,
     metavar="TIMEDELTA",
@@ -313,6 +324,7 @@ async def submit(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    restart: str,
     life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
@@ -360,6 +372,7 @@ async def submit(
         volume=volume,
         env=env,
         env_file=env_file,
+        restart=restart,
         life_span=life_span,
         preemptible=preemptible,
         name=name,
@@ -374,7 +387,7 @@ async def submit(
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@argument("job")
+@argument("job", type=JOB)
 @argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
 @option(
     "-t/-T",
@@ -384,9 +397,20 @@ async def submit(
     help="Allocate virtual tty. Useful for interactive jobs.",
 )
 @option(
+    "-i/-I",
+    "--interactive/--no-interactive",
+    default=None,
+    is_flag=True,
+    help=(
+        "Keep STDIN open even if not attached. "
+        "On for tty by default, false otherwise."
+    ),
+)
+@option(
     "--no-key-check",
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
+    hidden=True,
 )
 @option(
     "--timeout",
@@ -399,6 +423,7 @@ async def exec(
     root: Root,
     job: str,
     tty: bool,
+    interactive: Optional[bool],
     no_key_check: bool,
     cmd: Sequence[str],
     timeout: float,
@@ -418,18 +443,17 @@ async def exec(
     id = await resolve_job(
         job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
     )
-    retcode = await root.client.jobs.exec(
-        id,
-        shlex.split(real_cmd),
-        tty=tty,
-        no_key_check=no_key_check,
-        timeout=timeout if timeout else None,
-    )
-    sys.exit(retcode)
+    if interactive is None:
+        interactive = tty
+    async with async_timeout.timeout(timeout if timeout else None,):
+        retcode = await root.client.jobs.exec(
+            id, shlex.split(real_cmd), tty=tty, no_key_check=no_key_check,
+        )
+        sys.exit(retcode)
 
 
 @command()
-@argument("job")
+@argument("job", type=JOB)
 @argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
 @option(
     "--no-key-check",
@@ -482,7 +506,7 @@ async def port_forward(
 
 
 @command()
-@argument("job")
+@argument("job", type=JOB)
 async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
@@ -534,6 +558,9 @@ async def _attach(root: Root, job: str, tty: Optional[bool]) -> None:
         await _attach_tty(root, job)
     else:
         await _attach_non_tty(root, job)
+    # this print doesn't help
+    # we need to find a way to get cmd prompt without pressing any button
+    sys.stdout.write("\x1b[?1h")
     status = await root.client.jobs.status(job)
     sys.exit(status.history.exit_code)
 
@@ -544,22 +571,25 @@ async def _attach_tty(root: Root, job: str):
     async with root.client.jobs.attach(
         job, stdin=True, stdout=True, stderr=True, logs=True
     ) as stream:
+        print("SCREEN SIZE", w, h)
         await root.client.jobs.resize(job, w=w, h=h)
         tasks = []
         tasks.append(loop.create_task(_process_stdin(stream)))
         tasks.append(loop.create_task(_process_stdout(stream)))
-        await asyncio.wait(tasks)
+        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        print("FINISH")
         for task in tasks:
             if not task.done():
                 task.cancel()
-                try:
-                    with contextlib.suppress(asyncio.CancelledError):
-                        await task
-                except Exception:
-                    if root.show_traceback:
-                        import traceback
-
-                        traceback.print_exc()
+            try:
+                with contextlib.suppress(asyncio.CancelledError):
+                    await task
+            except Exception as exc:
+                if root.show_traceback:
+                    logging.exception(str(exc))
+                else:
+                    logging.error(str(exc))
+    print("Finished, press ENTER")
 
 
 async def _process_stdin(stream: StdStream) -> None:
@@ -574,28 +604,31 @@ async def _process_stdin(stream: StdStream) -> None:
             while True:
                 await ev.wait()
                 ev.clear()
+                if inp.closed:
+                    return
                 keys = inp.read_keys()  # + inp.flush_keys()
-                buf = b"".join(key.data for key in keys)
-                await stream.write_out(key.data)
+                buf = b"".join(key.data.encode("utf8") for key in keys)
+                await stream.write_in(buf)
 
 
 async def _process_stdout(stream: StdStream) -> None:
-    try:
-        stdout = sys.stdout.buffer.raw
-        while True:
-            msg = await stream.read_out()
-            print("CHUNK", msg)
-            if msg is None:
-                return
-            stdout.write(msg.data)
-    except Exception:
-        import traceback
-
-        traceback.print_stack()
-        breakpoint()
+    codec_info = codecs.lookup("utf8")
+    decoder = codec_info.incrementaldecoder("replace")
+    stdout = create_output()
+    while True:
+        chunk = await stream.read_out()
+        if chunk is None:
+            print("DISCONNECT")
+            return
+        txt = decoder.decode(chunk.data)
+        if txt is not None:
+            stdout.write_raw(txt)
+            stdout.flush()
 
 
 async def _attach_non_tty(root: Root, job: str):
+    codec_info = codecs.lookup("utf8")
+    decoder = codec_info.incrementaldecoder("replace")
     async with root.client.jobs.attach(
         job, stdout=True, stderr=True, logs=True
     ) as stream:
@@ -607,8 +640,10 @@ async def _attach_non_tty(root: Root, job: str):
                 f = sys.stderr
             else:
                 f = sys.stdout
-            f.buffer.raw.write(chunk.data)
-            f.buffer.raw.flush()
+            txt = decoder.decode(chunk.data)
+            if txt is not None:
+                f.write(txt)
+                f.flush()
 
 
 @command()
@@ -712,7 +747,7 @@ async def ls(
     statuses = calc_statuses(status, all)
     owners = set(owner)
     tags = set(tag)
-    jobs = await root.client.jobs.list(
+    jobs = root.client.jobs.list(
         statuses=statuses,
         name=name,
         owners=owners,
@@ -723,7 +758,7 @@ async def ls(
 
     # client-side filtering
     if description:
-        jobs = [job for job in jobs if job.description == description]
+        jobs = (job async for job in jobs if job.description == description)
 
     uri_fmtr: URIFormatter
     if full_uri:
@@ -744,11 +779,11 @@ async def ls(
             width, root.client.username, format, image_formatter=image_fmtr
         )
 
-    pager_maybe(formatter(jobs), root.tty, root.terminal_size)
+    pager_maybe(formatter([job async for job in jobs]), root.tty, root.terminal_size)
 
 
 @command()
-@argument("job")
+@argument("job", type=JOB)
 @option("--full-uri", is_flag=True, help="Output full URI.")
 async def status(root: Root, job: str, full_uri: bool) -> None:
     """
@@ -785,7 +820,7 @@ async def tags(root: Root) -> None:
 
 
 @command()
-@click.argument("job")
+@click.argument("job", type=JOB)
 async def browse(root: Root, job: str) -> None:
     """
     Opens a job's URL in a web browser.
@@ -798,7 +833,7 @@ async def browse(root: Root, job: str) -> None:
 
 
 @command()
-@argument("job")
+@argument("job", type=JOB)
 @option(
     "--timeout",
     default=0,
@@ -825,7 +860,7 @@ async def top(root: Root, job: str, timeout: float) -> None:
 
 
 @command()
-@argument("job")
+@argument("job", type=JOB)
 @argument("image", type=ImageType())
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
@@ -853,7 +888,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
 
 
 @command()
-@argument("jobs", nargs=-1, required=True)
+@argument("jobs", nargs=-1, required=True, type=JOB)
 async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     Kill job(s).
@@ -988,6 +1023,13 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     secure=True,
 )
 @option(
+    "--restart",
+    default="never",
+    show_default=True,
+    type=click.Choice(JobRestartPolicy),
+    help="Restart policy to apply when a job exits",
+)
+@option(
     "--life-span",
     type=str,
     metavar="TIMEDELTA",
@@ -1029,6 +1071,7 @@ async def run(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    restart: str,
     life_span: Optional[str],
     preemptible: Optional[bool],
     name: Optional[str],
@@ -1084,6 +1127,7 @@ async def run(
         volume=volume,
         env=env,
         env_file=env_file,
+        restart=restart,
         life_span=life_span,
         preemptible=job_preset.is_preemptible,
         name=name,
@@ -1134,6 +1178,7 @@ async def run_job(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    restart: str,
     life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
@@ -1158,6 +1203,9 @@ async def run_job(
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
     if not wait_start:
         detach = True
+
+    job_restart_policy = JobRestartPolicy(restart)
+    log.debug(f"Job restart policy: {job_restart_policy}")
 
     job_life_span = await calc_life_span(root.client, life_span)
     log.debug(f"Job run-time limit: {job_life_span}")
@@ -1217,6 +1265,7 @@ async def run_job(
         name=name,
         tags=tags,
         description=description,
+        restart_policy=job_restart_policy,
         life_span=job_life_span,
     )
     click.echo(JobFormatter(root.quiet)(job))
@@ -1232,7 +1281,7 @@ async def run_job(
     # Even if we detached, but the job has failed to start
     # (most common reason - no resources), the command fails
     if job.status == JobStatus.FAILED:
-        sys.exit(EX_PLATFORMERROR)
+        sys.exit(job.history.exit_code or EX_PLATFORMERROR)
 
     if not detach:
         if not root.quiet:
@@ -1249,6 +1298,8 @@ async def run_job(
         while job.status in (JobStatus.PENDING, JobStatus.RUNNING):
             await asyncio.sleep(0.1)
             job = await root.client.jobs.status(job.id)
+        if job.status == JobStatus.FAILED:
+            sys.exit(job.history.exit_code or EX_PLATFORMERROR)
         sys.exit(job.history.exit_code)
 
     return job

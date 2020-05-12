@@ -2,10 +2,11 @@ import asyncio
 import os
 import re
 import subprocess
+import sys
 from contextlib import suppress
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
-from time import time
+from time import sleep, time
 from typing import Any, AsyncIterator, Callable, Dict, List, Tuple
 from uuid import uuid4
 
@@ -64,6 +65,8 @@ def test_job_submit(helper: Helper) -> None:
             "80",
             "--non-preemptible",
             "--no-wait-start",
+            "--restart",
+            "never",
             "--name",
             job_name,
             UBUNTU_IMAGE_NAME,
@@ -211,14 +214,25 @@ def test_job_filter_by_date_range(helper: Helper) -> None:
     match = re.match("Job ID: (.+) Status:", captured.out)
     assert match is not None
     job_id = match.group(1)
-    now = datetime.now(timezone.utc)
+    now = datetime.now()
+    delta = timedelta(minutes=10)
 
-    captured = helper.run_cli(["ps", "--since", (now - timedelta(days=1)).isoformat()])
+    captured = helper.run_cli(["ps", "--since", (now - delta).isoformat()])
     store_out_list = captured.out.split("\n")[1:]
     jobs = [x.split("  ")[0] for x in store_out_list]
     assert job_id in jobs
 
-    captured = helper.run_cli(["ps", "--until", (now + timedelta(days=1)).isoformat()])
+    captured = helper.run_cli(["ps", "--since", (now + delta).isoformat()])
+    store_out_list = captured.out.split("\n")[1:]
+    jobs = [x.split("  ")[0] for x in store_out_list]
+    assert job_id not in jobs
+
+    captured = helper.run_cli(["ps", "--until", (now - delta).isoformat()])
+    store_out_list = captured.out.split("\n")[1:]
+    jobs = [x.split("  ")[0] for x in store_out_list]
+    assert job_id not in jobs
+
+    captured = helper.run_cli(["ps", "--until", (now + delta).isoformat()])
     store_out_list = captured.out.split("\n")[1:]
     jobs = [x.split("  ")[0] for x in store_out_list]
     assert job_id in jobs
@@ -913,7 +927,7 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
             ]
         )
     assert captured is None
-    assert exc_info.value.returncode == 125
+    assert exc_info.value.returncode == 127
 
 
 @pytest.mark.e2e
@@ -956,7 +970,7 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
             ]
         )
 
-    assert cm.value.returncode == 125
+    assert cm.value.returncode == 1
 
     # then, run with --volume=HOME
     capture = helper.run_cli(
@@ -997,7 +1011,7 @@ def test_job_run_volume_all(helper: Helper) -> None:
         captured = helper.run_cli(
             ["--quiet", "run", "--detach", "-s", "cpu-micro", img, command]
         )
-    assert cm.value.returncode == 125
+    assert cm.value.returncode == 1
 
     # then, run with --volume=ALL
     captured = helper.run_cli(
@@ -1112,6 +1126,68 @@ def test_e2e_job_top(helper: Helper) -> None:
         ]
         for actual, (descr, pattern) in zip(line_parts, expected_parts):
             assert re.match(pattern, actual) is not None, f"error in matching {descr}"
+
+
+@pytest.mark.e2e
+def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
+    captured = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            "--restart",
+            "on-failure",
+            "-s",
+            JOB_TINY_CONTAINER_PRESET,
+            "--detach",
+            UBUNTU_IMAGE_NAME,
+            "false",
+        ]
+    )
+    job_id = captured.out
+    request.addfinalizer(lambda: helper.kill_job(job_id, wait=False))
+
+    captured = helper.run_cli(["job", "status", job_id])
+    assert "Restart policy: on-failure" in captured.out.splitlines()
+
+    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+    sleep(1)
+    helper.assert_job_state(job_id, JobStatus.RUNNING)
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Autocompletion is not supported on Windows"
+)
+@pytest.mark.e2e
+def test_job_autocomplete(helper: Helper) -> None:
+
+    job_name = f"test-job-{os.urandom(5).hex()}"
+    helper.kill_job(job_name)
+    job_id = helper.run_job_and_wait_state(ALPINE_IMAGE_NAME, "sleep 60", name=job_name)
+
+    out = helper.autocomplete(["kill", "test-job"])
+    assert job_name in out
+    assert job_id not in out
+
+    out = helper.autocomplete(["kill", "job-"])
+    assert job_name in out
+    assert job_id in out
+
+    out = helper.autocomplete(["kill", "job:job-"])
+    assert job_name in out
+    assert job_id in out
+
+    out = helper.autocomplete(["kill", f"job:/{helper.username}/job-"])
+    assert job_name in out
+    assert job_id in out
+
+    out = helper.autocomplete(
+        ["kill", f"job://{helper.cluster_name}/{helper.username}/job-"]
+    )
+    assert job_name in out
+    assert job_id in out
+
+    helper.kill_job(job_id)
 
 
 @pytest.mark.e2e

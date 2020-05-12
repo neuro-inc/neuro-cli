@@ -5,6 +5,23 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.4.15 (2020-04-15)
+================================
+
+Features
+--------
+
+
+- Added `--since` and `--until` options to `neuro ps`. ([#1461](https://github.com/neuromation/platform-api-clients/issues/1461))
+
+
+Bugfixes
+--------
+
+
+- Make exit code of `job run` command more reliable. ([#1470](https://github.com/neuromation/platform-api-clients/issues/1470))
+
+
 Neuromation 20.4.6 (2020-04-06)
 ===============================
 
