@@ -5,8 +5,10 @@ import logging
 import os
 import re
 import shlex
+import signal
 import sys
 import textwrap
+import threading
 import uuid
 import webbrowser
 from datetime import datetime, timedelta
@@ -16,7 +18,7 @@ import async_timeout
 import click
 from dateutil.parser import isoparse
 from prompt_toolkit.input import create_input
-from prompt_toolkit.output import create_output
+from prompt_toolkit.output import Output, create_output
 from yarl import URL
 
 from neuromation.api import (
@@ -560,24 +562,26 @@ async def _attach(root: Root, job: str, tty: Optional[bool]) -> None:
         await _attach_non_tty(root, job)
     # this print doesn't help
     # we need to find a way to get cmd prompt without pressing any button
-    sys.stdout.write("\x1b[?1h")
+    # sys.stdout.write("\x1b[?1h")
     status = await root.client.jobs.status(job)
     sys.exit(status.history.exit_code)
 
 
-async def _attach_tty(root: Root, job: str):
+async def _attach_tty(root: Root, job: str) -> None:
     loop = asyncio.get_event_loop()
-    w, h = root.terminal_size
+    stdout = create_output()
+    h, w = stdout.get_size()
+    print("SIZE", w, h)
     async with root.client.jobs.attach(
         job, stdin=True, stdout=True, stderr=True, logs=True
     ) as stream:
-        print("SCREEN SIZE", w, h)
         await root.client.jobs.resize(job, w=w, h=h)
         tasks = []
-        tasks.append(loop.create_task(_process_stdin(stream)))
-        tasks.append(loop.create_task(_process_stdout(stream)))
+        resize_event = asyncio.Event()
+        tasks.append(loop.create_task(_process_stdin(stream, resize_event)))
+        tasks.append(loop.create_task(_process_stdout(stream, stdout)))
+        tasks.append(loop.create_task(_resize(root, job, resize_event, stdout)))
         await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-        print("FINISH")
         for task in tasks:
             if not task.done():
                 task.cancel()
@@ -589,36 +593,66 @@ async def _attach_tty(root: Root, job: str):
                     logging.exception(str(exc))
                 else:
                     logging.error(str(exc))
-    print("Finished, press ENTER")
 
 
-async def _process_stdin(stream: StdStream) -> None:
+async def _resize(
+    root: Root, job: str, resize_event: asyncio.Event, stdout: Output
+) -> None:
+    while True:
+        await resize_event.wait()
+        resize_event.clear()
+        h, w = stdout.get_size()
+        await root.client.jobs.resize(job, w=w, h=h)
+
+
+async def _process_stdin(stream: StdStream, resize_event: asyncio.Event) -> None:
+    loop = asyncio.get_event_loop()
     ev = asyncio.Event()
 
-    def read_ready():
+    def read_ready() -> None:
         ev.set()
+
+    def resize() -> None:
+        resize_event.set()
 
     inp = create_input()
     with inp.raw_mode():
         with inp.attach(read_ready):
-            while True:
-                await ev.wait()
-                ev.clear()
-                if inp.closed:
-                    return
-                keys = inp.read_keys()  # + inp.flush_keys()
-                buf = b"".join(key.data.encode("utf8") for key in keys)
-                await stream.write_in(buf)
+
+            has_sigwinch = (
+                hasattr(signal, "SIGWINCH")
+                and threading.current_thread() is threading.main_thread()
+            )
+            if has_sigwinch:
+                previous_winch_handler = signal.getsignal(signal.SIGWINCH)
+                loop.add_signal_handler(signal.SIGWINCH, resize)
+                if previous_winch_handler is None:
+                    # In some situations we receive `None`. This is
+                    # however not a valid value for passing to
+                    # `signal.signal` at the end of this block.
+                    previous_winch_handler = signal.SIG_DFL
+
+            try:
+                while True:
+                    await ev.wait()
+                    ev.clear()
+                    if inp.closed:
+                        return
+                    keys = inp.read_keys()  # + inp.flush_keys()
+                    buf = b"".join(key.data.encode("utf8") for key in keys)
+                    await stream.write_in(buf)
+            finally:
+                if has_sigwinch:
+                    loop.remove_signal_handler(signal.SIGWINCH)
+                    signal.signal(signal.SIGWINCH, previous_winch_handler)
 
 
-async def _process_stdout(stream: StdStream) -> None:
+async def _process_stdout(stream: StdStream, stdout: Output) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
-    stdout = create_output()
     while True:
         chunk = await stream.read_out()
         if chunk is None:
-            print("DISCONNECT")
             return
         txt = decoder.decode(chunk.data)
         if txt is not None:
@@ -626,9 +660,10 @@ async def _process_stdout(stream: StdStream) -> None:
             stdout.flush()
 
 
-async def _attach_non_tty(root: Root, job: str):
+async def _attach_non_tty(root: Root, job: str) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
+    breakpoint()
     async with root.client.jobs.attach(
         job, stdout=True, stderr=True, logs=True
     ) as stream:
@@ -640,6 +675,7 @@ async def _attach_non_tty(root: Root, job: str):
                 f = sys.stderr
             else:
                 f = sys.stdout
+            print(chunk)
             txt = decoder.decode(chunk.data)
             if txt is not None:
                 f.write(txt)

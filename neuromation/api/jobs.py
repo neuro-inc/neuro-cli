@@ -441,25 +441,42 @@ class Jobs(metaclass=NoPublicConstructor):
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
-    def attach(
-        self, id: str, *, stdin=False, stdout=False, stderr=False, logs=False
-    ) -> "StdStream":
-        return StdStream(
-            self._core,
-            self._config,
-            id,
-            stdin,
-            stdout,
-            stderr,
-            logs,
-            self._core.timeout,
+    @asynccontextmanager
+    async def attach(
+        self,
+        id: str,
+        *,
+        stdin: bool = False,
+        stdout: bool = False,
+        stderr: bool = False,
+        logs: bool = False,
+    ) -> AsyncIterator["StdStream"]:
+        url = self._config.monitoring_url / id / "attach"
+        url = url.with_query(
+            stdin=str(int(stdin)),
+            stdout=str(int(stdout)),
+            stderr=str(int(stderr)),
+            logs=str(int(logs)),
         )
+        auth = await self._config._api_auth()
+        ws = await self._core._session.ws_connect(
+            url,
+            headers={"Authorization": auth},
+            timeout=None,  # type: ignore
+            receive_timeout=None,
+            heartbeat=30,
+        )
+
+        try:
+            yield StdStream(ws)
+        finally:
+            await ws.close()
 
     async def resize(self, id: str, *, w: int, h: int) -> None:
         url = self._config.monitoring_url / id / "resize"
         url = url.with_query(w=w, h=h)
         auth = await self._config._api_auth()
-        async with self._core.request("POST", url, auth=auth) as resp:
+        async with self._core.request("POST", url, auth=auth):
             pass
 
 
@@ -470,62 +487,15 @@ class Message:
 
 
 class StdStream:
-    def __init__(
-        self,
-        core: _Core,
-        config: Config,
-        id: str,
-        stdin: bool,
-        stdout: bool,
-        stderr: bool,
-        logs: bool,
-        timeout: aiohttp.ClientTimeout,
-    ) -> None:
-        self._core = core
-        self._config = config
-        self._id = id
-        self._stdin = stdin
-        self._stdout = stdout
-        self._stderr = stderr
-        self._logs = logs
-        self._ws = None
-        self._timeout = timeout
+    def __init__(self, ws: aiohttp.ClientWebSocketResponse) -> None:
+        self._ws = ws
         self._closing = False
 
-    async def __aenter__(self):
-        await self._init()
-        return self
-
-    async def _init(self):
-        if self._ws is not None:
-            return
-        timeout = attr.evolve(self._timeout, sock_read=None)
-        url = self._config.monitoring_url / self._id / "attach"
-        url = url.with_query(
-            stdin=str(int(self._stdin)),
-            stdout=str(int(self._stdout)),
-            stderr=str(int(self._stderr)),
-            logs=str(int(self._logs)),
-        )
-        auth = await self._config._api_auth()
-        self._ws = await self._core._session.ws_connect(
-            url,
-            headers={"Authorization": auth},
-            timeout=timeout,
-            receive_timeout=None,
-            heartbeat=30,
-        )
-
-    async def __aexit__(self, *args):
-        await self.close()
-
-    async def close(self):
-        if self._ws is not None:
-            self._closing = True
-            await self._ws.close()
+    async def close(self) -> None:
+        self._closing = True
+        await self._ws.close()
 
     async def read_out(self) -> Optional[Message]:
-        await self._init()
         msg = await self._ws.receive()
         if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSING, WSMsgType.CLOSED,):
             self._closing = True
@@ -533,7 +503,6 @@ class StdStream:
         return Message(msg.data[0], msg.data[1:])
 
     async def write_in(self, data: bytes) -> None:
-        await self._init()
         if self._closing:
             return
         await self._ws.send_bytes(data)
