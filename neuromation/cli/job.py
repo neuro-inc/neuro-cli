@@ -571,7 +571,6 @@ async def _attach_tty(root: Root, job: str) -> None:
     loop = asyncio.get_event_loop()
     stdout = create_output()
     h, w = stdout.get_size()
-    print("SIZE", w, h)
     async with root.client.jobs.attach(
         job, stdin=True, stdout=True, stderr=True, logs=True
     ) as stream:
