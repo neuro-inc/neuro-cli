@@ -6,7 +6,7 @@ import sys
 import warnings
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, List, Optional, Sequence, Tuple, Type, Union, cast
+from typing import IO, Any, List, Optional, Sequence, Tuple, Type, Union, cast
 
 import aiohttp
 import click
@@ -63,13 +63,13 @@ def setup_stdout(errors: str) -> None:
         encoding = sys.stdout.encoding
         line_buffering = sys.stdout.line_buffering
         sys.stdout = io.TextIOWrapper(
-            sys.stdout.detach(),  # type: ignore
+            cast(IO[bytes], sys.stdout.detach()),
             encoding=encoding,
             errors=errors,
             line_buffering=line_buffering,
         )
     else:
-        sys.stdout.reconfigure(errors=errors)
+        sys.stdout.reconfigure(errors=errors)  # type: ignore
 
 
 setup_stdout(errors="replace")
