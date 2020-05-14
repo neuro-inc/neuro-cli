@@ -1,4 +1,5 @@
 import asyncio
+import io
 import logging
 import shutil
 import sys
@@ -54,6 +55,24 @@ from .utils import (
     steal_config_maybe,
 )
 
+
+def setup_stdout(errors: str) -> None:
+    if not isinstance(sys.stdout, io.TextIOWrapper):
+        return
+    if sys.version_info < (3, 7):
+        encoding = sys.stdout.encoding
+        line_buffering = sys.stdout.line_buffering
+        sys.stdout = io.TextIOWrapper(
+            sys.stdout.detach(),  # type: ignore
+            encoding=encoding,
+            errors=errors,
+            line_buffering=line_buffering,
+        )
+    else:
+        sys.stdout.reconfigure(errors=errors)
+
+
+setup_stdout(errors="replace")
 
 if sys.platform == "win32":
     if sys.version_info < (3, 7):
