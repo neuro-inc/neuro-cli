@@ -8,7 +8,7 @@ yarl==1.4.2
 aiodocker==0.18.8
 click==7.1.2
 colorama==0.4.3; platform_system=="Windows"
-humanize==2.3.0
+humanize==2.4.0
 # upgrade setup.py after pinning certtifi to new version
 certifi==2020.4.5.1
 psutil==5.7.0
