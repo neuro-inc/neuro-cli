@@ -63,13 +63,15 @@ def setup_stdout(errors: str) -> None:
         encoding = sys.stdout.encoding
         line_buffering = sys.stdout.line_buffering
         sys.stdout = io.TextIOWrapper(
+            # cast() is a workaround for https://github.com/python/typeshed/issues/3993
             cast(IO[bytes], sys.stdout.detach()),
             encoding=encoding,
             errors=errors,
             line_buffering=line_buffering,
         )
     else:
-        sys.stdout.reconfigure(errors=errors)  # type: ignore
+        # cast() is a workaround for https://github.com/python/typeshed/issues/3049
+        cast(Any, sys.stdout).reconfigure(errors=errors)
 
 
 setup_stdout(errors="replace")
