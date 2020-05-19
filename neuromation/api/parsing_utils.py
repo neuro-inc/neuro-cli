@@ -199,14 +199,13 @@ class _ImageNameParser:
 
         registry = self._registry
         name, tag = self._split_image_name(url.path.lstrip("/"), default_tag)
-        if url.host:
-            cluster_name = url.host
+        cluster_name = url.host or self._default_cluster
+        if url.path.startswith("/"):
             owner, _, name = name.partition("/")
             if not name:
                 raise ValueError("no image name specified")
         else:
             owner = self._default_user
-            cluster_name = self._default_cluster
         return RemoteImage(
             name=name,
             tag=tag,
