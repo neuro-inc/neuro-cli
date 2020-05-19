@@ -497,7 +497,7 @@ class StdStream:
 
     async def read_out(self) -> Optional[Message]:
         msg = await self._ws.receive()
-        if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSING, WSMsgType.CLOSED,):
+        if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSING, WSMsgType.CLOSED):
             self._closing = True
             return None
         return Message(msg.data[0], msg.data[1:])

@@ -12,7 +12,7 @@ import threading
 import uuid
 import webbrowser
 from datetime import datetime, timedelta
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
+from typing import AsyncIterator, Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
@@ -34,6 +34,7 @@ from neuromation.api import (
     StdStream,
     Volume,
 )
+from neuromation.api.utils import asynccontextmanager
 from neuromation.cli.formatters import DockerImageProgress
 from neuromation.cli.formatters.utils import (
     URIFormatter,
@@ -549,49 +550,45 @@ async def attach(root: Root, job: str) -> None:
             JobStatus.FAILED,
         },
     )
-    await _attach(root, id, tty=None)
+    await _attach(root, id, tty=None, logs=False)
 
 
-async def _attach(root: Root, job: str, tty: Optional[bool]) -> None:
+async def _attach(root: Root, job: str, tty: Optional[bool], logs: bool) -> None:
     if tty is None:
         status = await root.client.jobs.status(job)
         tty = status.container.tty
     if tty:
-        await _attach_tty(root, job)
+        await _attach_tty(root, job, logs)
     else:
-        await _attach_non_tty(root, job)
+        await _attach_non_tty(root, job, logs)
     # this print doesn't help
     # we need to find a way to get cmd prompt without pressing any button
     # sys.stdout.write("\x1b[?1h")
+    # ESC c resets the terminal and clears screen
+    # sys.stdout.write("\x1bc")
+    # sys.stdout.flush()
     status = await root.client.jobs.status(job)
     sys.exit(status.history.exit_code)
 
 
-async def _attach_tty(root: Root, job: str) -> None:
+async def _attach_tty(root: Root, job: str, logs: bool) -> None:
     loop = asyncio.get_event_loop()
     stdout = create_output()
     h, w = stdout.get_size()
-    async with root.client.jobs.attach(
-        job, stdin=True, stdout=True, stderr=True, logs=True
-    ) as stream:
-        await root.client.jobs.resize(job, w=w, h=h)
-        tasks = []
-        resize_event = asyncio.Event()
-        tasks.append(loop.create_task(_process_stdin(stream, resize_event)))
-        tasks.append(loop.create_task(_process_stdout(stream, stdout)))
-        tasks.append(loop.create_task(_resize(root, job, resize_event, stdout)))
-        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-        for task in tasks:
-            if not task.done():
-                task.cancel()
-            try:
-                with contextlib.suppress(asyncio.CancelledError):
-                    await task
-            except Exception as exc:
-                if root.show_traceback:
-                    logging.exception(str(exc))
-                else:
-                    logging.error(str(exc))
+    async with _print_logs_until_attached(root, job, logs) as attach_ready:
+        async with root.client.jobs.attach(
+            job, stdin=True, stdout=True, stderr=True, logs=True
+        ) as stream:
+            attach_ready.set()
+            await root.client.jobs.resize(job, w=w, h=h)
+            tasks = []
+            resize_event = asyncio.Event()
+            tasks.append(loop.create_task(_process_stdin(stream, resize_event)))
+            tasks.append(loop.create_task(_process_stdout(stream, stdout)))
+            tasks.append(loop.create_task(_resize(root, job, resize_event, stdout)))
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            for task in tasks:
+                await root.cancel_with_logging(task)
 
 
 async def _resize(
@@ -659,26 +656,52 @@ async def _process_stdout(stream: StdStream, stdout: Output) -> None:
             stdout.flush()
 
 
-async def _attach_non_tty(root: Root, job: str) -> None:
+async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
-    breakpoint()
-    async with root.client.jobs.attach(
-        job, stdout=True, stderr=True, logs=True
-    ) as stream:
-        while True:
-            chunk = await stream.read_out()
-            if chunk is None:
-                break
-            if chunk.stream == 2:
-                f = sys.stderr
-            else:
-                f = sys.stdout
-            print(chunk)
-            txt = decoder.decode(chunk.data)
-            if txt is not None:
-                f.write(txt)
-                f.flush()
+    async with _print_logs_until_attached(root, job, logs) as attach_ready:
+        async with root.client.jobs.attach(
+            job, stdout=True, stderr=True, logs=True
+        ) as stream:
+            attach_ready.set()
+            while True:
+                chunk = await stream.read_out()
+                if chunk is None:
+                    break
+                if chunk.stream == 2:
+                    f = sys.stderr
+                else:
+                    f = sys.stdout
+                txt = decoder.decode(chunk.data)
+                if txt is not None:
+                    f.write(txt)
+                    f.flush()
+
+
+@asynccontextmanager
+async def _print_logs_until_attached(
+    root: Root, job: str, logs: bool
+) -> AsyncIterator[asyncio.Event]:
+    attach_ready = asyncio.Event()
+    if not logs:
+        yield attach_ready
+        return
+
+    loop = asyncio.get_event_loop()
+    reader = loop.create_task(_print_logs(root, job))
+
+    async def wait_attached() -> None:
+        await attach_ready.wait()
+        # Job is attached, stop logs reading
+        await root.cancel_with_logging(reader)
+
+    waiter = loop.create_task(wait_attached())
+
+    try:
+        yield attach_ready
+    finally:
+        await root.cancel_with_logging(reader)
+        await root.cancel_with_logging(waiter)
 
 
 @command()
@@ -1328,7 +1351,7 @@ async def run_job(
                 """
             )
             click.echo(click.style(msg, dim=True))
-        await _attach(root, job.id, tty)
+        await _attach(root, job.id, tty=tty, logs=True)
         job = await root.client.jobs.status(job.id)
         while job.status in (JobStatus.PENDING, JobStatus.RUNNING):
             await asyncio.sleep(0.1)
