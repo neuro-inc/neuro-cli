@@ -674,6 +674,7 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
                     f = sys.stdout
                 txt = decoder.decode(chunk.data)
                 if txt is not None:
+                    f.write("att: ")
                     f.write(txt)
                     f.flush()
 
@@ -692,6 +693,9 @@ async def _print_logs_until_attached(
 
     async def wait_attached() -> None:
         await attach_ready.wait()
+        print("wait")
+        # await asyncio.sleep(1.5)
+        print("wait2")
         # Job is attached, stop logs reading
         await root.cancel_with_logging(reader)
 
@@ -700,6 +704,9 @@ async def _print_logs_until_attached(
     try:
         yield attach_ready
     finally:
+        print("finally")
+        await asyncio.sleep(1.5)
+        print("finally2")
         await root.cancel_with_logging(reader)
         await root.cancel_with_logging(waiter)
 
