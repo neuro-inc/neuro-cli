@@ -19,7 +19,9 @@ from neuromation.cli.printer import CSI
 class TestDockerImageProgress:
     def test_quiet_pull(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
-        formatter.pull(ImageProgressPull(RemoteImage("input"), LocalImage("output")))
+        formatter.pull(
+            ImageProgressPull(RemoteImage.new_image(name="input"), LocalImage("output"))
+        )
         formatter.step(ImageProgressStep("message1", "layer1"))
         formatter.close()
         out, err = capfd.readouterr()
@@ -28,7 +30,9 @@ class TestDockerImageProgress:
 
     def test_quiet_push(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
-        formatter.push(ImageProgressPush(LocalImage("output"), RemoteImage("input")))
+        formatter.push(
+            ImageProgressPush(LocalImage("output"), RemoteImage.new_image(name="input"))
+        )
         formatter.step(ImageProgressStep("message1", "layer1"))
         formatter.close()
         out, err = capfd.readouterr()
@@ -37,7 +41,9 @@ class TestDockerImageProgress:
 
     def test_quiet_save(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
-        formatter.save(ImageProgressSave("job-id", RemoteImage("output")))
+        formatter.save(
+            ImageProgressSave("job-id", RemoteImage.new_image(name="output"))
+        )
         formatter.close()
         out, err = capfd.readouterr()
         assert err == ""
@@ -46,7 +52,9 @@ class TestDockerImageProgress:
     def test_quiet_commit_started(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
         formatter.commit_started(
-            ImageCommitStarted(job_id="job-id", target_image=RemoteImage("img"))
+            ImageCommitStarted(
+                job_id="job-id", target_image=RemoteImage.new_image("img")
+            )
         )
         formatter.close()
         out, err = capfd.readouterr()
@@ -65,11 +73,11 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(tty=False, quiet=False)
         formatter.pull(
             ImageProgressPull(
-                RemoteImage(
-                    "output",
-                    "stream",
-                    "bob",
-                    "https://registry-dev.neu.ro",
+                RemoteImage.new_neuro_image(
+                    name="output",
+                    tag="stream",
+                    owner="bob",
+                    registry="https://registry-dev.neu.ro",
                     cluster_name="test-cluster",
                 ),
                 LocalImage("input", "latest"),
@@ -92,11 +100,11 @@ class TestDockerImageProgress:
         formatter.push(
             ImageProgressPush(
                 LocalImage("input", "latest"),
-                RemoteImage(
-                    "output",
-                    "stream",
-                    "bob",
-                    "https://registry-dev.neu.ro",
+                RemoteImage.new_neuro_image(
+                    name="output",
+                    tag="stream",
+                    owner="bob",
+                    registry="https://registry-dev.neu.ro",
                     cluster_name="test-cluster",
                 ),
             )
@@ -118,11 +126,11 @@ class TestDockerImageProgress:
         formatter.save(
             ImageProgressSave(
                 "job-id",
-                RemoteImage(
-                    "output",
-                    "stream",
-                    "bob",
-                    "https://registry-dev.neu.ro",
+                RemoteImage.new_neuro_image(
+                    name="output",
+                    tag="stream",
+                    owner="bob",
+                    registry="https://registry-dev.neu.ro",
                     cluster_name="test-cluster",
                 ),
             )
@@ -140,11 +148,11 @@ class TestDockerImageProgress:
         formatter.commit_started(
             ImageCommitStarted(
                 job_id="job-id",
-                target_image=RemoteImage(
-                    "output",
-                    "stream",
-                    "bob",
-                    "https://registry-dev.neu.ro",
+                target_image=RemoteImage.new_neuro_image(
+                    name="output",
+                    tag="stream",
+                    owner="bob",
+                    registry="https://registry-dev.neu.ro",
                     cluster_name="test-cluster",
                 ),
             )
@@ -167,11 +175,11 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(tty=True, quiet=False)
         formatter.pull(
             ImageProgressPull(
-                RemoteImage(
-                    "output",
-                    "stream",
-                    "bob",
-                    "https://registry-dev.neu.ro",
+                RemoteImage.new_neuro_image(
+                    name="output",
+                    tag="stream",
+                    owner="bob",
+                    registry="https://registry-dev.neu.ro",
                     cluster_name="test-cluster",
                 ),
                 LocalImage("input", "latest"),
@@ -193,11 +201,11 @@ class TestDockerImageProgress:
         formatter.push(
             ImageProgressPush(
                 LocalImage("input", "latest"),
-                RemoteImage(
-                    "output",
-                    "stream",
-                    "bob",
-                    "https://registry-dev.neu.ro",
+                RemoteImage.new_neuro_image(
+                    name="output",
+                    tag="stream",
+                    owner="bob",
+                    registry="https://registry-dev.neu.ro",
                     cluster_name="test-cluster",
                 ),
             )
@@ -218,11 +226,11 @@ class TestDockerImageProgress:
         formatter.save(
             ImageProgressSave(
                 "job-id",
-                RemoteImage(
-                    "output",
-                    "stream",
-                    "bob",
-                    "https://registry-dev.neu.ro",
+                RemoteImage.new_neuro_image(
+                    name="output",
+                    tag="stream",
+                    owner="bob",
+                    registry="https://registry-dev.neu.ro",
                     cluster_name="test-cluster",
                 ),
             )
@@ -237,7 +245,9 @@ class TestDockerImageProgress:
     def test_tty_commit_started(self, capfd: Any, click_tty_emulation: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=False)
         formatter.commit_started(
-            ImageCommitStarted(job_id="job-id", target_image=RemoteImage("img"))
+            ImageCommitStarted(
+                job_id="job-id", target_image=RemoteImage.new_image(name="img")
+            )
         )
         formatter.close()
         out, err = capfd.readouterr()

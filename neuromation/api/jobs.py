@@ -530,7 +530,7 @@ def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
     try:
         image = parse.remote_image(data["image"])
     except ValueError:
-        image = RemoteImage(name=INVALID_IMAGE_NAME)
+        image = RemoteImage.new_image(name=INVALID_IMAGE_NAME)
 
     return Container(
         image=image,

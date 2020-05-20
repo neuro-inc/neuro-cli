@@ -28,9 +28,9 @@ async def test_parse_local(make_client: _MakeClient) -> None:
 async def test_parse_remote(make_client: _MakeClient) -> None:
     async with make_client("https://api.localhost.localdomain") as client:
         result = client.parse.remote_image("image://test-cluster/bob/bananas:latest")
-    assert result == RemoteImage(
-        "bananas",
-        "latest",
+    assert result == RemoteImage.new_neuro_image(
+        name="bananas",
+        tag="latest",
         owner="bob",
         registry="registry-dev.neu.ro",
         cluster_name="test-cluster",
@@ -42,9 +42,9 @@ async def test_parse_remote_registry_image(make_client: _MakeClient) -> None:
         "https://api.localhost.localdomain", registry_url="http://localhost:5000"
     ) as client:
         result = client.parse.remote_image("localhost:5000/bob/library/bananas:latest")
-    assert result == RemoteImage(
-        "library/bananas",
-        "latest",
+    assert result == RemoteImage.new_neuro_image(
+        name="library/bananas",
+        tag="latest",
         owner="bob",
         registry="localhost:5000",
         cluster_name="default",
@@ -56,7 +56,7 @@ async def test_parse_remote_public(make_client: _MakeClient) -> None:
         "https://api.localhost.localdomain", registry_url="http://localhost:5000"
     ) as client:
         result = client.parse.remote_image("ubuntu:latest")
-    assert result == RemoteImage("ubuntu", "latest", owner=None, registry=None)
+    assert result == RemoteImage.new_image(name="ubuntu", tag="latest")
 
 
 def test_get_url_authority_with_explicit_port() -> None:
