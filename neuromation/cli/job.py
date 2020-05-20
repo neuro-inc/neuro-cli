@@ -1,6 +1,7 @@
 import asyncio
 import codecs
 import contextlib
+import dataclasses
 import logging
 import os
 import re
@@ -97,6 +98,11 @@ RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
 DEFAULT_JOB_LIFE_SPAN = "1d"
 REGEX_JOB_LIFE_SPAN = re.compile(
     r"^((?P<d>\d+)d)?((?P<h>\d+)h)?((?P<m>\d+)m)?((?P<s>\d+)s)?$"
+)
+
+LOGS_STARTED = click.style("========= job logs ========\n", dim=True)
+ATTACH_STARTED = click.style(
+    "========= logs finished, live session is started =========\n", dim=True
 )
 
 
@@ -524,13 +530,18 @@ async def logs(root: Root, job: str) -> None:
             JobStatus.FAILED,
         },
     )
-    await _print_logs(root, id)
+    await _print_logs(root, id, asyncio.Event())
 
 
-async def _print_logs(root: Root, job: str) -> None:
+async def _print_logs(
+    root: Root, job: str, log_printed: Optional[asyncio.Event]
+) -> None:
     async for chunk in root.client.jobs.monitor(job):
         if not chunk:
             break
+        if log_printed:
+            click.echo(LOGS_STARTED, nl=False)
+            log_printed.set()
         click.echo(chunk.decode(errors="ignore"), nl=False)
 
 
@@ -567,28 +578,38 @@ async def _attach(root: Root, job: str, tty: Optional[bool], logs: bool) -> None
     # ESC c resets the terminal and clears screen
     # sys.stdout.write("\x1bc")
     # sys.stdout.flush()
+
     status = await root.client.jobs.status(job)
+    while status.status in (JobStatus.PENDING, JobStatus.RUNNING):
+        await asyncio.sleep(0.1)
+        status = await root.client.jobs.status(job)
+    if status.status == JobStatus.FAILED:
+        sys.exit(status.history.exit_code or EX_PLATFORMERROR)
     sys.exit(status.history.exit_code)
+
+
+@dataclasses.dataclass(frozen=True)
+class AttachHelper:
+    attach_ready: asyncio.Event
+    log_printed: asyncio.Event
 
 
 async def _attach_tty(root: Root, job: str, logs: bool) -> None:
     loop = asyncio.get_event_loop()
     stdout = create_output()
     h, w = stdout.get_size()
-    async with _print_logs_until_attached(root, job, logs) as attach_ready:
-        async with root.client.jobs.attach(
-            job, stdin=True, stdout=True, stderr=True, logs=True
-        ) as stream:
-            attach_ready.set()
-            await root.client.jobs.resize(job, w=w, h=h)
-            tasks = []
-            resize_event = asyncio.Event()
-            tasks.append(loop.create_task(_process_stdin(stream, resize_event)))
-            tasks.append(loop.create_task(_process_stdout(stream, stdout)))
-            tasks.append(loop.create_task(_resize(root, job, resize_event, stdout)))
-            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            for task in tasks:
-                await root.cancel_with_logging(task)
+    async with root.client.jobs.attach(
+        job, stdin=True, stdout=True, stderr=True, logs=True
+    ) as stream:
+        await root.client.jobs.resize(job, w=w, h=h)
+        tasks = []
+        resize_event = asyncio.Event()
+        tasks.append(loop.create_task(_process_stdin(stream, resize_event)))
+        tasks.append(loop.create_task(_process_stdout(stream, stdout)))
+        tasks.append(loop.create_task(_resize(root, job, resize_event, stdout)))
+        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        for task in tasks:
+            await root.cancel_with_logging(task)
 
 
 async def _resize(
@@ -659,11 +680,14 @@ async def _process_stdout(stream: StdStream, stdout: Output) -> None:
 async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
-    async with _print_logs_until_attached(root, job, logs) as attach_ready:
+    async with _print_logs_until_attached(root, job, logs) as helper:
         async with root.client.jobs.attach(
             job, stdout=True, stderr=True, logs=True
         ) as stream:
-            attach_ready.set()
+            status = await root.client.jobs.status(job)
+            if status.history.exit_code is not None:
+                raise sys.exit(status.history.exit_code)
+            helper.attach_ready.set()
             while True:
                 chunk = await stream.read_out()
                 if chunk is None:
@@ -674,7 +698,8 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
                     f = sys.stdout
                 txt = decoder.decode(chunk.data)
                 if txt is not None:
-                    f.write("att: ")
+                    if helper.log_printed.is_set():
+                        click.echo(ATTACH_STARTED, nl=False, file=f)
                     f.write(txt)
                     f.flush()
 
@@ -684,31 +709,32 @@ async def _print_logs_until_attached(
     root: Root, job: str, logs: bool
 ) -> AsyncIterator[asyncio.Event]:
     attach_ready = asyncio.Event()
+    logs_printed = asyncio.Event()
     if not logs:
         yield attach_ready
         return
 
     loop = asyncio.get_event_loop()
-    reader = loop.create_task(_print_logs(root, job))
+    reader = loop.create_task(_print_logs(root, job, logs_printed))
 
     async def wait_attached() -> None:
         await attach_ready.wait()
-        print("wait")
-        # await asyncio.sleep(1.5)
-        print("wait2")
         # Job is attached, stop logs reading
         await root.cancel_with_logging(reader)
 
     waiter = loop.create_task(wait_attached())
 
     try:
-        yield attach_ready
+        yield AttachHelper(attach_ready, logs_printed)
     finally:
-        print("finally")
-        await asyncio.sleep(1.5)
-        print("finally2")
-        await root.cancel_with_logging(reader)
         await root.cancel_with_logging(waiter)
+        if not attach_ready.is_set():
+            # Job is finished before actuall attaching,
+            # read all collected logs
+            await reader
+        else:
+            # Cancel logs reader just in case
+            await root.cancel_with_logging(reader)
 
 
 @command()
@@ -1359,13 +1385,6 @@ async def run_job(
             )
             click.echo(click.style(msg, dim=True))
         await _attach(root, job.id, tty=tty, logs=True)
-        job = await root.client.jobs.status(job.id)
-        while job.status in (JobStatus.PENDING, JobStatus.RUNNING):
-            await asyncio.sleep(0.1)
-            job = await root.client.jobs.status(job.id)
-        if job.status == JobStatus.FAILED:
-            sys.exit(job.history.exit_code or EX_PLATFORMERROR)
-        sys.exit(job.history.exit_code)
 
     return job
 
