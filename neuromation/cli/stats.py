@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import sqlite3
+import sys
 import time
 import uuid
 from typing import Dict, List, Optional
@@ -130,10 +131,15 @@ async def send(client: Client, uid: str, data: List[sqlite3.Row]) -> None:
         )
         + "\n"
     )
+    neuro_ver = neuromation.__version__
+    plat = sys.platform
+    py_version = ".".join(str(i) for i in sys.version_info[:3])
+    user_agent = f"NeuroCLI/{neuro_ver} ({plat}) Python/{py_version}"
     async with client._session.post(
         GA_URL,
         data=payload,
-        headers={"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"},
+        headers={"Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                 "User-Agent": user_agent},
     ) as resp:
         await resp.read()  # drain response body
 
