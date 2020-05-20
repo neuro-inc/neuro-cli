@@ -372,188 +372,196 @@ class TestImageParser:
             registry="reg.neu.ro",
         )
 
-    def test_parse_as_neuro_image_with_scheme_1_slash_no_user_no_tag(self) -> None:
+    def test_parse_as_neuro_image_with_scheme_1_slash_no_cluster_no_name_no_tag(
+        self,
+    ) -> None:
         image = "image:/ubuntu"
+        with pytest.raises(ValueError, match="no image name specified"):
+            self.parser.parse_as_neuro_image(image)
+
+    def test_parse_as_neuro_image_with_scheme_1_slash_no_cluster_no_tag(self) -> None:
+        image = "image:/bob/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="ubuntu",
             tag="latest",
-            owner="alice",
+            owner="bob",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
 
-    def test_parse_as_neuro_image_with_scheme_1_slash_no_user_no_tag_2(self) -> None:
-        image = "image:/library/ubuntu"
+    def test_parse_as_neuro_image_with_scheme_1_slash_no_cluster_no_tag_2(self) -> None:
+        image = "image:/bob/library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="library/ubuntu",
             tag="latest",
-            owner="alice",
+            owner="bob",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
 
-    def test_parse_as_neuro_image_with_scheme_1_slash_no_user_with_tag(self) -> None:
+    def test_parse_as_neuro_image_with_scheme_1_slash_no_cluster_no_name_with_tag(
+        self,
+    ) -> None:
         image = "image:/ubuntu:v10.04"
+        with pytest.raises(ValueError, match="no image name specified"):
+            self.parser.parse_as_neuro_image(image)
+
+    def test_parse_as_neuro_image_with_scheme_1_slash_no_cluster_with_tag(self) -> None:
+        image = "image:/bob/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="ubuntu",
             tag="v10.04",
-            owner="alice",
+            owner="bob",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
 
-    def test_parse_as_neuro_image_with_scheme_1_slash_no_user_with_tag_2(self) -> None:
-        image = "image:/library/ubuntu:v10.04"
+    def test_parse_as_neuro_image_with_scheme_1_slash_no_cluster_with_tag_2(
+        self,
+    ) -> None:
+        image = "image:/bob/library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="library/ubuntu",
             tag="v10.04",
-            owner="alice",
+            owner="bob",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
 
-    def test_parse_as_neuro_image_with_scheme_2_slash_user_no_tag_fail(self) -> None:
+    def test_parse_as_neuro_image_with_scheme_2_slash_cluster_user_no_name_no_tag_fail(
+        self,
+    ) -> None:
         image = "image://other-cluster/ubuntu"
         with pytest.raises(ValueError, match="no image name specified"):
             self.parser.parse_as_neuro_image(image)
 
-    def test_parse_as_neuro_image_with_scheme_2_slash_user_with_tag_fail(self) -> None:
+    def test_parse_as_neuro_image_with_scheme_2_slash_cluster_no_user_with_tag_fail(
+        self,
+    ) -> None:
         image = "image://ubuntu:v10.04"
         with pytest.raises(ValueError, match="port can't be converted to integer"):
             self.parser.parse_as_neuro_image(image)
 
-    def test_parse_as_neuro_image_with_scheme_3_slash_no_user_no_tag(self) -> None:
+    def test_parse_as_neuro_image_with_scheme_3_slash_no_cluster_no_name_no_tag(
+        self,
+    ) -> None:
         image = "image:///ubuntu"
+        with pytest.raises(ValueError, match="no image name specified"):
+            self.parser.parse_as_neuro_image(image)
+
+    def test_parse_as_neuro_image_with_scheme_3_slash_no_cluster_no_tag(self) -> None:
+        image = "image:///bob/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="ubuntu",
             tag="latest",
-            owner="alice",
+            owner="bob",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
 
-    def test_parse_as_neuro_image_with_scheme_3_slash_no_user_no_tag_2(self) -> None:
-        image = "image:///library/ubuntu"
+    def test_parse_as_neuro_image_with_scheme_3_slash_no_cluster_no_tag_2(self) -> None:
+        image = "image:///bob/library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="library/ubuntu",
             tag="latest",
-            owner="alice",
+            owner="bob",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
 
-    def test_parse_as_neuro_image_with_scheme_3_slash_no_user_with_tag(self) -> None:
+    def test_parse_as_neuro_image_with_scheme_3_slash_no_cluster_no_name_with_tag(
+        self,
+    ) -> None:
         image = "image:///ubuntu:v10.04"
+        with pytest.raises(ValueError, match="no image name specified"):
+            self.parser.parse_as_neuro_image(image)
+
+    def test_parse_as_neuro_image_with_scheme_3_slash_no_cluster_with_tag(self) -> None:
+        image = "image:///bob/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="ubuntu",
             tag="v10.04",
-            owner="alice",
+            owner="bob",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
 
-    def test_parse_as_neuro_image_with_scheme_3_slash_no_user_with_tag_2(self) -> None:
-        image = "image:///library/ubuntu:v10.04"
+    def test_parse_as_neuro_image_with_scheme_3_slash_no_cluster_with_tag_2(
+        self,
+    ) -> None:
+        image = "image:///bob/library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="library/ubuntu",
             tag="v10.04",
-            owner="alice",
+            owner="bob",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
 
-    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_with_tag(self) -> None:
+    def test_parse_as_neuro_image_with_scheme_4_slash_no_cluster_no_name_with_tag(
+        self,
+    ) -> None:
         image = "image:////ubuntu:v10.04"
+        with pytest.raises(ValueError, match="no image name specified"):
+            self.parser.parse_as_neuro_image(image)
+
+    def test_parse_as_neuro_image_with_scheme_4_slash_no_cluster_with_tag(self) -> None:
+        image = "image:////bob/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="ubuntu",
             tag="v10.04",
-            owner="alice",
+            owner="bob",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
 
-    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_with_tag_2(self) -> None:
-        image = "image:////library/ubuntu:v10.04"
+    def test_parse_as_neuro_image_with_scheme_4_slash_no_cluster_with_tag_2(
+        self,
+    ) -> None:
+        image = "image:////bob/library/ubuntu:v10.04"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="library/ubuntu",
             tag="v10.04",
-            owner="alice",
+            owner="bob",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
 
-    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_no_tag(self) -> None:
+    def test_parse_as_neuro_image_with_scheme_4_slash_no_cluster_no_name_no_tag(
+        self,
+    ) -> None:
         image = "image:////ubuntu"
+        with pytest.raises(ValueError, match="no image name specified"):
+            self.parser.parse_as_neuro_image(image)
+
+    def test_parse_as_neuro_image_with_scheme_4_slash_no_cluster_no_tag(self) -> None:
+        image = "image:////bob/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="ubuntu",
             tag="latest",
-            owner="alice",
+            owner="bob",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
 
-    def test_parse_as_neuro_image_with_scheme_4_slash_no_user_no_tag_2(self) -> None:
-        image = "image:////library/ubuntu"
+    def test_parse_as_neuro_image_with_scheme_4_slash_no_cluster_no_tag_2(self) -> None:
+        image = "image:////bob/library/ubuntu"
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage(
             name="library/ubuntu",
             tag="latest",
-            owner="alice",
-            cluster_name="test-cluster",
-            registry="reg.neu.ro",
-        )
-
-    def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag(self) -> None:
-        image = "image:ubuntu"
-        parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == RemoteImage(
-            name="ubuntu",
-            tag="latest",
-            owner="alice",
-            cluster_name="test-cluster",
-            registry="reg.neu.ro",
-        )
-
-    def test_parse_as_neuro_image_with_scheme_tilde_user_no_tag_2(self) -> None:
-        image = "image:library/ubuntu"
-        parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == RemoteImage(
-            name="library/ubuntu",
-            tag="latest",
-            owner="alice",
-            cluster_name="test-cluster",
-            registry="reg.neu.ro",
-        )
-
-    def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag(self) -> None:
-        image = "image:ubuntu:v10.04"
-        parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == RemoteImage(
-            name="ubuntu",
-            tag="v10.04",
-            owner="alice",
-            cluster_name="test-cluster",
-            registry="reg.neu.ro",
-        )
-
-    def test_parse_as_neuro_image_with_scheme_tilde_user_with_tag_2(self) -> None:
-        image = "image:library/ubuntu:v10.04"
-        parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == RemoteImage(
-            name="library/ubuntu",
-            tag="v10.04",
-            owner="alice",
+            owner="bob",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
