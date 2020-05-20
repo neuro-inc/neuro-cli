@@ -8,7 +8,6 @@ import re
 import shlex
 import signal
 import sys
-import textwrap
 import threading
 import uuid
 import webbrowser
@@ -24,6 +23,7 @@ from yarl import URL
 
 from neuromation.api import (
     AuthorizationError,
+    IllegalArgumentError,
     Client,
     Container,
     HTTPPort,
@@ -100,8 +100,15 @@ REGEX_JOB_LIFE_SPAN = re.compile(
     r"^((?P<d>\d+)d)?((?P<h>\d+)h)?((?P<m>\d+)m)?((?P<s>\d+)s)?$"
 )
 
-LOGS_STARTED = click.style("================= job's logs ===============\n", dim=True)
-ATTACH_STARTED = click.style("=============== job's output ===============\n", dim=True)
+LOGS_STARTED = click.style(
+    "==================== job's logs ====================\n", dim=True
+)
+ATTACH_STARTED = click.style(
+    "=================== job's output ===================\n", dim=True
+)
+ATTACH_STARTED_AFTER_LOGS = click.style(
+    "======== job's output, may overlap with logs =======\n", dim=True
+)
 
 
 def _get_neuro_mountpoint(username: str) -> str:
@@ -528,19 +535,26 @@ async def logs(root: Root, job: str) -> None:
             JobStatus.FAILED,
         },
     )
-    await _print_logs(root, id, asyncio.Event())
+    await _print_logs(root, id, None)
 
 
-async def _print_logs(
-    root: Root, job: str, log_printed: Optional[asyncio.Event]
-) -> None:
+@dataclasses.dataclass(frozen=True)
+class AttachHelper:
+    attach_ready: asyncio.Event
+    log_printed: asyncio.Event
+
+
+async def _print_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> None:
     async for chunk in root.client.jobs.monitor(job):
         if not chunk:
             break
-        if log_printed:
-            if not root.quiet:
+        if helper is not None:
+            if helper.attach_ready.is_set():
+                return
+            if not helper.log_printed.is_set() and not root.quiet:
                 click.echo(LOGS_STARTED, nl=False)
-            log_printed.set()
+            helper.log_printed.set()
+
         click.echo(chunk.decode(errors="ignore"), nl=False)
 
 
@@ -571,12 +585,6 @@ async def _attach(root: Root, job: str, tty: Optional[bool], logs: bool) -> None
         await _attach_tty(root, job, logs)
     else:
         await _attach_non_tty(root, job, logs)
-    # this print doesn't help
-    # we need to find a way to get cmd prompt without pressing any button
-    # sys.stdout.write("\x1b[?1h")
-    # ESC c resets the terminal and clears screen
-    # sys.stdout.write("\x1bc")
-    # sys.stdout.flush()
 
     status = await root.client.jobs.status(job)
     while status.status in (JobStatus.PENDING, JobStatus.RUNNING):
@@ -587,12 +595,6 @@ async def _attach(root: Root, job: str, tty: Optional[bool], logs: bool) -> None
     sys.exit(status.history.exit_code)
 
 
-@dataclasses.dataclass(frozen=True)
-class AttachHelper:
-    attach_ready: asyncio.Event
-    log_printed: asyncio.Event
-
-
 async def _attach_tty(root: Root, job: str, logs: bool) -> None:
     loop = asyncio.get_event_loop()
     stdout = create_output()
@@ -600,7 +602,14 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
     async with root.client.jobs.attach(
         job, stdin=True, stdout=True, stderr=True, logs=True
     ) as stream:
-        await root.client.jobs.resize(job, w=w, h=h)
+        try:
+            await root.client.jobs.resize(job, w=w, h=h)
+        except IllegalArgumentError:
+            status = await root.client.jobs.status(job)
+            if status.status is not JobStatus.RUNNING:
+                # Job is finished
+                return
+
         tasks = []
         resize_event = asyncio.Event()
         tasks.append(loop.create_task(_process_stdin(stream, resize_event)))
@@ -686,7 +695,6 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
             status = await root.client.jobs.status(job)
             if status.history.exit_code is not None:
                 raise sys.exit(status.history.exit_code)
-            helper.attach_ready.set()
             while True:
                 chunk = await stream.read_out()
                 if chunk is None:
@@ -697,8 +705,12 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
                     f = sys.stdout
                 txt = decoder.decode(chunk.data)
                 if txt is not None:
-                    if not root.quiet:
-                        click.echo(ATTACH_STARTED, nl=False, file=f)
+                    if not root.quiet and not helper.attach_ready.is_set():
+                        if helper.log_printed.is_set():
+                            click.echo(ATTACH_STARTED_AFTER_LOGS, nl=False)
+                        else:
+                            click.echo(ATTACH_STARTED, nl=False)
+                    helper.attach_ready.set()
                     f.write(txt)
                     f.flush()
 
@@ -706,15 +718,16 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
 @asynccontextmanager
 async def _print_logs_until_attached(
     root: Root, job: str, logs: bool
-) -> AsyncIterator[asyncio.Event]:
+) -> AsyncIterator[AttachHelper]:
     attach_ready = asyncio.Event()
     logs_printed = asyncio.Event()
+    helper = AttachHelper(attach_ready, logs_printed)
     if not logs:
-        yield attach_ready
+        yield helper
         return
 
     loop = asyncio.get_event_loop()
-    reader = loop.create_task(_print_logs(root, job, logs_printed))
+    reader = loop.create_task(_print_logs(root, job, helper))
 
     async def wait_attached() -> None:
         await attach_ready.wait()
@@ -724,7 +737,7 @@ async def _print_logs_until_attached(
     waiter = loop.create_task(wait_attached())
 
     try:
-        yield AttachHelper(attach_ready, logs_printed)
+        yield helper
     finally:
         await root.cancel_with_logging(waiter)
         if not attach_ready.is_set():

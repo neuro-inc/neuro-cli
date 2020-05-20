@@ -1196,21 +1196,19 @@ def test_job_attach_stdout(helper: Helper) -> None:
     command = 'bash -c "sleep 5; for count in {0..3}; do echo $count; sleep 0.2; done"'
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command,)
 
-    captured = helper.run_cli(["job", "attach", job_id])
+    captured = helper.run_cli(["-q", "job", "attach", job_id])
 
     assert captured.err == ""
     assert captured.out == "\n".join(f"{i}" for i in range(4))
 
 
 @pytest.mark.e2e
-def test_job_attach_exitcode(helper: Helper) -> None:
+def test_job_run_interactive(helper: Helper) -> None:
     # Run a new job
-    command = 'bash -c "exit 1"'
-    job_id = helper.run_job_and_wait_state(
-        UBUNTU_IMAGE_NAME, command, wait_state=JobStatus.FAILED
-    )
+    command = 'bash -c "sleep 5; for count in {0..3}; do echo $count; sleep 0.2; done"'
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command,)
 
-    try:
-        helper.run_cli(["job", "attach", job_id])
-    except subprocess.CalledProcessError as exc:
-        assert exc.returncode == 1
+    captured = helper.run_cli(["-q", "job", "attach", job_id])
+
+    assert captured.err == ""
+    assert captured.out == "\n".join(f"{i}" for i in range(4))
