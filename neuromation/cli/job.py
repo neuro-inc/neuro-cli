@@ -23,10 +23,10 @@ from yarl import URL
 
 from neuromation.api import (
     AuthorizationError,
-    IllegalArgumentError,
     Client,
     Container,
     HTTPPort,
+    IllegalArgumentError,
     JobDescription,
     JobRestartPolicy,
     JobStatus,

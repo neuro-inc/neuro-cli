@@ -405,17 +405,7 @@ class Helper:
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
         )
 
-    def run_cli(
-        self,
-        arguments: List[str],
-        *,
-        verbosity: int = 0,
-        network_timeout: float = NETWORK_TIMEOUT,
-    ) -> SysCap:
-        __tracebackhide__ = True
-
-        log.info("Run 'neuro %s'", " ".join(arguments))
-
+    def _default_args(self, verbosity: int, network_timeout: float) -> List[str]:
         args = [
             "neuro",
             "--show-traceback",
@@ -433,9 +423,22 @@ class Helper:
         if self._nmrc_path:
             args.append(f"--neuromation-config={self._nmrc_path}")
 
+        return args
+
+    def run_cli(
+        self,
+        arguments: List[str],
+        *,
+        verbosity: int = 0,
+        network_timeout: float = NETWORK_TIMEOUT,
+    ) -> SysCap:
+        __tracebackhide__ = True
+
+        log.info("Run 'neuro %s'", " ".join(arguments))
+
         # 5 min timeout is overkill
         proc = subprocess.run(
-            args + arguments,
+            self._default_args(verbosity, network_timeout) + arguments,
             timeout=300,
             encoding="utf8",
             stdout=subprocess.PIPE,
@@ -464,24 +467,17 @@ class Helper:
         return SysCap(out, err)
 
     def autocomplete(
-        self, arguments: List[str], *, network_timeout: float = NETWORK_TIMEOUT,
+        self,
+        arguments: List[str],
+        *,
+        verbosity: int = 0,
+        network_timeout: float = NETWORK_TIMEOUT,
     ) -> str:
         __tracebackhide__ = True
 
         log.info("Run 'neuro %s'", " ".join(arguments))
 
-        args = [
-            "neuro",
-            "--show-traceback",
-            "--disable-pypi-version-check",
-            "--color=no",
-            f"--network-timeout={network_timeout}",
-            "--skip-stats",
-        ]
-
-        if self._nmrc_path:
-            args.append(f"--neuromation-config={self._nmrc_path}")
-
+        args = self._default_args(verbosity, network_timeout)
         env = dict(os.environ)
         env["_NEURO_COMPLETE"] = "complete_zsh"
         env["COMP_WORDS"] = " ".join(shlex.quote(arg) for arg in args + arguments)
