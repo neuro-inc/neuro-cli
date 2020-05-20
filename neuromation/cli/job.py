@@ -100,10 +100,8 @@ REGEX_JOB_LIFE_SPAN = re.compile(
     r"^((?P<d>\d+)d)?((?P<h>\d+)h)?((?P<m>\d+)m)?((?P<s>\d+)s)?$"
 )
 
-LOGS_STARTED = click.style("========= job logs ========\n", dim=True)
-ATTACH_STARTED = click.style(
-    "========= logs finished, live session is started =========\n", dim=True
-)
+LOGS_STARTED = click.style("================= job's logs ===============\n", dim=True)
+ATTACH_STARTED = click.style("=============== job's output ===============\n", dim=True)
 
 
 def _get_neuro_mountpoint(username: str) -> str:
@@ -540,7 +538,8 @@ async def _print_logs(
         if not chunk:
             break
         if log_printed:
-            click.echo(LOGS_STARTED, nl=False)
+            if not root.quiet:
+                click.echo(LOGS_STARTED, nl=False)
             log_printed.set()
         click.echo(chunk.decode(errors="ignore"), nl=False)
 
@@ -698,7 +697,7 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
                     f = sys.stdout
                 txt = decoder.decode(chunk.data)
                 if txt is not None:
-                    if helper.log_printed.is_set():
+                    if not root.quiet:
                         click.echo(ATTACH_STARTED, nl=False, file=f)
                     f.write(txt)
                     f.flush()
@@ -1375,15 +1374,6 @@ async def run_job(
         sys.exit(job.history.exit_code or EX_PLATFORMERROR)
 
     if not detach:
-        if not root.quiet:
-            msg = textwrap.dedent(
-                """\
-                Terminal is attached to the remote job, so you receive the job's output.
-                Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the
-                job with `--detach` option.\
-                """
-            )
-            click.echo(click.style(msg, dim=True))
         await _attach(root, job.id, tty=tty, logs=True)
 
     return job
