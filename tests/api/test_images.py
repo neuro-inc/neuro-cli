@@ -82,6 +82,15 @@ class TestImageParser:
         with pytest.raises(ValueError, match="too many tags"):
             self.parser.has_tag(image)
 
+    def test_has_tag_lstrip(self) -> None:
+        image = "image:game:latest"
+        assert self.parser.has_tag(image)
+        image = "image:game:mega"
+        assert self.parser.has_tag(image)
+        image = "image:game:v2.0:latest"
+        with pytest.raises(ValueError, match="too many tags"):
+            assert self.parser.has_tag(image)
+
     @pytest.mark.parametrize(
         "registry_url",
         ["http://reg.neu.ro", "https://reg.neu.ro", "https://reg.neu.ro/bla/bla"],
@@ -633,6 +642,17 @@ class TestImageParser:
     def test_parse_as_neuro_image_allow_tag_false_no_scheme_with_tag(self) -> None:
         image = "ubuntu:latest"
         with pytest.raises(ValueError, match="tag is not allowed"):
+            self.parser.parse_as_neuro_image(image, tag_option=TagOption.DENY)
+
+    def test_parse_as_neuro_image_allow_tag_false_with_scheme_lstrip(self) -> None:
+        image = "image:game:latest"
+        with pytest.raises(ValueError, match="tag is not allowed"):
+            self.parser.parse_as_neuro_image(image, tag_option=TagOption.DENY)
+        image = "image:game:mega"
+        with pytest.raises(ValueError, match="tag is not allowed"):
+            self.parser.parse_as_neuro_image(image, tag_option=TagOption.DENY)
+        image = "image:game:v2.0:latest"
+        with pytest.raises(ValueError, match="too many tags"):
             self.parser.parse_as_neuro_image(image, tag_option=TagOption.DENY)
 
     def test_convert_to_local_image(self) -> None:
