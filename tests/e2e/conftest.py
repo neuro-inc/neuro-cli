@@ -462,9 +462,27 @@ class Helper:
         out = out.strip()
         err = err.strip()
         if verbosity > 0:
-            print(f"nero stdout: {out}")
-            print(f"nero stderr: {err}")
+            print(f"neuro stdout: {out}")
+            print(f"neuro stderr: {err}")
         return SysCap(out, err)
+
+    async def run_cli_async(
+        self,
+        arguments: List[str],
+        *,
+        verbosity: int = 0,
+        network_timeout: float = NETWORK_TIMEOUT,
+    ) -> "asyncio.Process":
+        __tracebackhide__ = True
+
+        log.info("Run 'neuro %s'", " ".join(arguments))
+
+        return await asyncio.create_subprocess_exec(
+            *self._default_args(verbosity, network_timeout) + arguments,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
 
     def autocomplete(
         self,
