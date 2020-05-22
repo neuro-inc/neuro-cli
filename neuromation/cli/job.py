@@ -52,7 +52,7 @@ from .click_types import (
     PRESET,
     ImageType,
 )
-from .const import EX_PLATFORMERROR
+from .const import EX_IOERR, EX_PLATFORMERROR
 from .defaults import (
     GPU_MODELS,
     JOB_CPU_NUMBER,
@@ -637,8 +637,18 @@ async def _attach(root: Root, job: str, tty: Optional[bool], logs: bool) -> None
     else:
         await _attach_non_tty(root, job, logs)
 
+    loop = asyncio.get_event_loop()
+    t0 = loop.time()
     status = await root.client.jobs.status(job)
     while status.status in (JobStatus.PENDING, JobStatus.RUNNING):
+        t1 = loop.time()
+        if t1 - t0 > 10:
+            click.secho("TTY session was dropped but the job is still alive.", fg="red")
+            click.secho("Reconnect to the job:", dim=True, fg="yellow")
+            click.secho(f"  neuro attach {job}", dim=True)
+            click.secho("Terminate the job:", dim=True, fg="yellow")
+            click.secho(f"  neuro kill {job}", dim=True)
+            sys.exit(EX_IOERR)
         await asyncio.sleep(0.1)
         status = await root.client.jobs.status(job)
     if status.status == JobStatus.FAILED:
@@ -666,7 +676,7 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
         tasks.append(loop.create_task(_process_stdin(stream, resize_event)))
         tasks.append(loop.create_task(_process_stdout(stream, stdout)))
         tasks.append(loop.create_task(_resize(root, job, resize_event, stdout)))
-        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in tasks:
             await root.cancel_with_logging(task)
 
