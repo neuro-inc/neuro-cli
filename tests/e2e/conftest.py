@@ -472,7 +472,7 @@ class Helper:
         *,
         verbosity: int = 0,
         network_timeout: float = NETWORK_TIMEOUT,
-    ) -> "asyncio.Process":
+    ) -> "asyncio.Process":  # type: ignore
         __tracebackhide__ = True
 
         log.info("Run 'neuro %s'", " ".join(arguments))

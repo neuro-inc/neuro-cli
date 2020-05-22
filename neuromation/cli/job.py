@@ -443,7 +443,7 @@ async def exec(
     neuro exec --no-tty my-job ls -l
     """
     real_cmd = _parse_cmd(cmd)
-    id = await resolve_job(
+    job = await resolve_job(
         job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
     )
     exec_id = await root.client.jobs.exec_create(job, real_cmd, tty=tty)
@@ -610,7 +610,7 @@ async def _print_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> N
 
 
 @command()
-@argument("job")
+@argument("job", type=JOB)
 async def attach(root: Root, job: str) -> None:
     """
     Print the logs for a container.
@@ -643,7 +643,13 @@ async def _attach(root: Root, job: str, tty: Optional[bool], logs: bool) -> None
     while status.status in (JobStatus.PENDING, JobStatus.RUNNING):
         t1 = loop.time()
         if t1 - t0 > 10:
-            click.secho("TTY session was dropped but the job is still alive.", fg="red")
+            click.echo()
+            click.secho("!!! Warning !!!", fg="red")
+            click.secho(
+                "TTY session was disconnected by server side "
+                "but the job is still alive.",
+                fg="red",
+            )
             click.secho("Reconnect to the job:", dim=True, fg="yellow")
             click.secho(f"  neuro attach {job}", dim=True)
             click.secho("Terminate the job:", dim=True, fg="yellow")
