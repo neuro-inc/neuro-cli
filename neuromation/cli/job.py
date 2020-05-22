@@ -411,16 +411,6 @@ async def submit(
     help="Allocate virtual tty. Useful for interactive jobs.",
 )
 @option(
-    "-i/-I",
-    "--interactive/--no-interactive",
-    default=None,
-    is_flag=True,
-    help=(
-        "Keep STDIN open even if not attached. "
-        "On for tty by default, false otherwise."
-    ),
-)
-@option(
     "--no-key-check",
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
@@ -437,7 +427,6 @@ async def exec(
     root: Root,
     job: str,
     tty: bool,
-    interactive: Optional[bool],
     no_key_check: bool,
     cmd: Sequence[str],
     timeout: float,
@@ -457,13 +446,75 @@ async def exec(
     id = await resolve_job(
         job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
     )
-    if interactive is None:
-        interactive = tty
-    async with async_timeout.timeout(timeout if timeout else None,):
-        retcode = await root.client.jobs.exec(
-            id, shlex.split(real_cmd), tty=tty, no_key_check=no_key_check,
+    exec_id = await root.client.jobs.exec_create(job, real_cmd, tty=tty)
+    if tty:
+        await _exec_tty(root, job, exec_id)
+    else:
+        await _exec_non_tty(root, job, exec_id)
+
+    info = await root.client.jobs.exec_inspect(job, exec_id)
+    while info.running:
+        await asyncio.sleep(0.1)
+        info = await root.client.jobs.exec_inspect(job, exec_id)
+    sys.exit(info.exit_code)
+
+
+async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
+    loop = asyncio.get_event_loop()
+    stdout = create_output()
+    h, w = stdout.get_size()
+    async with root.client.jobs.exec_start(job, exec_id) as stream:
+        try:
+            await root.client.jobs.exec_resize(job, exec_id, w=w, h=h)
+        except IllegalArgumentError:
+            info = await root.client.jobs.exec_inspect(job, exec_id)
+            if not info.running:
+                # Exec session is finished
+                return
+
+        tasks = []
+        resize_event = asyncio.Event()
+        tasks.append(loop.create_task(_process_stdin(stream, resize_event)))
+        tasks.append(loop.create_task(_process_stdout(stream, stdout)))
+        tasks.append(
+            loop.create_task(_exec_resize(root, job, exec_id, resize_event, stdout))
         )
-        sys.exit(retcode)
+        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        for task in tasks:
+            await root.cancel_with_logging(task)
+
+
+async def _exec_resize(
+    root: Root, job: str, exec_id: str, resize_event: asyncio.Event, stdout: Output
+) -> None:
+    while True:
+        await resize_event.wait()
+        resize_event.clear()
+        h, w = stdout.get_size()
+        await root.client.jobs.exec_resize(job, exec_id, w=w, h=h)
+
+
+async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
+    codec_info = codecs.lookup("utf8")
+    decoder = codec_info.incrementaldecoder("replace")
+    async with root.client.jobs.attach(
+        job, stdout=True, stderr=True, logs=True
+    ) as stream:
+        info = await root.client.jobs.exec_inspect(job, exec_id)
+        if not info.running:
+            raise sys.exit(info.exit_code)
+        while True:
+            chunk = await stream.read_out()
+            if chunk is None:
+                break
+            if chunk.stream == 2:
+                f = sys.stderr
+            else:
+                f = sys.stdout
+            txt = decoder.decode(chunk.data)
+            if txt is not None:
+                f.write(txt)
+                f.flush()
 
 
 @command()

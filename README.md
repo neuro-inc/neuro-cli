@@ -621,7 +621,6 @@ neuro exec --no-tty my-job ls -l
 Name | Description|
 |----|------------|
 |_\-t, --tty / -T, --no-tty_|Allocate virtual tty. Useful for interactive jobs.|
-|_\-i, --interactive / -I, --no-interactive_|Keep STDIN open even if not attached. On for tty by default, false otherwise.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
@@ -2018,7 +2017,6 @@ neuro exec --no-tty my-job ls -l
 Name | Description|
 |----|------------|
 |_\-t, --tty / -T, --no-tty_|Allocate virtual tty. Useful for interactive jobs.|
-|_\-i, --interactive / -I, --no-interactive_|Keep STDIN open even if not attached. On for tty by default, false otherwise.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
