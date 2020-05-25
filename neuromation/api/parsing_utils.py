@@ -23,8 +23,9 @@ class RemoteImage:
     def new_neuro_image(
         cls,
         name: str,
-        owner: str,
         registry: str,
+        *,
+        owner: str,
         cluster_name: str,
         tag: Optional[str] = None,
     ) -> "RemoteImage":
@@ -38,7 +39,7 @@ class RemoteImage:
 
     @classmethod
     def new_external_image(
-        cls, name: str, tag: Optional[str] = None, registry: Optional[str] = None
+        cls, name: str, registry: Optional[str] = None, *, tag: Optional[str] = None
     ) -> "RemoteImage":
         return RemoteImage(name=name, tag=tag, registry=registry)
 
