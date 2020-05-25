@@ -524,7 +524,7 @@ async def _print_logs(root: Root, job: str) -> None:
     async for chunk in root.client.jobs.monitor(job):
         if not chunk:
             break
-        click.echo(chunk.decode(errors="ignore"), nl=False)
+        click.echo(chunk.decode(errors="replace"), nl=False)
 
 
 @command()
