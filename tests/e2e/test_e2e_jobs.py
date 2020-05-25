@@ -966,7 +966,6 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
                 "-q",
                 "job",
                 "run",
-                "--detach",
                 "--preset=cpu-micro",
                 UBUNTU_IMAGE_NAME,
                 command,
@@ -981,7 +980,6 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
             "-q",
             "job",
             "run",
-            "--detach",
             "--preset=cpu-micro",
             "--volume",
             "HOME",
@@ -1012,13 +1010,13 @@ def test_job_run_volume_all(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
         # first, run without --volume=ALL
         captured = helper.run_cli(
-            ["--quiet", "run", "--detach", "-s", "cpu-micro", img, command]
+            ["--quiet", "run", "-s", "cpu-micro", img, command]
         )
     assert cm.value.returncode == 1
 
     # then, run with --volume=ALL
     captured = helper.run_cli(
-        ["run", "--detach", "-s", "cpu-micro", "--volume=ALL", img, command]
+        ["run", "-s", "cpu-micro", "--volume=ALL", img, command]
     )
     msg = (
         "Storage mountpoints will be available as the environment variables:\n"
