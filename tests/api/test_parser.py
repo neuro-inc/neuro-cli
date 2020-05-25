@@ -56,7 +56,7 @@ async def test_parse_remote_public(make_client: _MakeClient) -> None:
         "https://api.localhost.localdomain", registry_url="http://localhost:5000"
     ) as client:
         result = client.parse.remote_image("ubuntu:latest")
-    assert result == RemoteImage.new_image(name="ubuntu", tag="latest")
+    assert result == RemoteImage.new_external_image(name="ubuntu", tag="latest")
 
 
 def test_get_url_authority_with_explicit_port() -> None:

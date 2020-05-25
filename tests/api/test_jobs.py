@@ -212,7 +212,7 @@ async def test_kill_ok(
 
 async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> None:
     async with make_client("http://whatever") as client:
-        image = RemoteImage.new_image(name="ubuntu")
+        image = RemoteImage.new_external_image(name="ubuntu")
         with pytest.raises(ValueError, match="must be in the neuromation registry"):
             await client.jobs.save("job-id", image)
 
@@ -718,7 +718,7 @@ async def test_job_run(
             ),
         ]
         container = Container(
-            image=RemoteImage.new_image(name="submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
             volumes=volumes,
@@ -818,7 +818,7 @@ async def test_job_run_with_name_and_description(
             ),
         ]
         container = Container(
-            image=RemoteImage.new_image(name="submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
             volumes=volumes,
@@ -921,7 +921,7 @@ async def test_job_run_with_tags(
             ),
         ]
         container = Container(
-            image=RemoteImage.new_image(name="submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
             volumes=volumes,
@@ -1000,7 +1000,7 @@ async def test_job_run_no_volumes(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         container = Container(
-            image=RemoteImage.new_image(name="submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
             http=HTTPPort(8181),
@@ -1103,7 +1103,7 @@ async def test_job_run_preemptible(
             ),
         ]
         container = Container(
-            image=RemoteImage.new_image(name="submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
             volumes=volumes,
@@ -1183,7 +1183,7 @@ async def test_job_run_schedule_timeout(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         container = Container(
-            image=RemoteImage.new_image(name="submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
         )
@@ -1257,7 +1257,7 @@ async def test_job_run_tpu(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True, "v3-8", "1.14")
         container = Container(
-            image=RemoteImage.new_image(name="submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
         )
@@ -1297,7 +1297,7 @@ async def test_job_run_with_tty(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 0.5)
         container = Container(
-            image=RemoteImage.new_image(name="submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
             tty=True,
@@ -1778,7 +1778,7 @@ async def test_job_run_life_span(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16, 0.5)
         container = Container(
-            image=RemoteImage.new_image(name="submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
         )
@@ -1810,7 +1810,7 @@ async def test_job_run_restart_policy(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16, 0.5)
         container = Container(
-            image=RemoteImage.new_image(name="submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
         )

@@ -20,7 +20,9 @@ class TestDockerImageProgress:
     def test_quiet_pull(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
         formatter.pull(
-            ImageProgressPull(RemoteImage.new_image(name="input"), LocalImage("output"))
+            ImageProgressPull(
+                RemoteImage.new_external_image(name="input"), LocalImage("output")
+            )
         )
         formatter.step(ImageProgressStep("message1", "layer1"))
         formatter.close()
@@ -31,7 +33,9 @@ class TestDockerImageProgress:
     def test_quiet_push(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
         formatter.push(
-            ImageProgressPush(LocalImage("output"), RemoteImage.new_image(name="input"))
+            ImageProgressPush(
+                LocalImage("output"), RemoteImage.new_external_image(name="input")
+            )
         )
         formatter.step(ImageProgressStep("message1", "layer1"))
         formatter.close()
@@ -42,7 +46,7 @@ class TestDockerImageProgress:
     def test_quiet_save(self, capfd: Any) -> None:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
         formatter.save(
-            ImageProgressSave("job-id", RemoteImage.new_image(name="output"))
+            ImageProgressSave("job-id", RemoteImage.new_external_image(name="output"))
         )
         formatter.close()
         out, err = capfd.readouterr()
@@ -53,7 +57,7 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(tty=True, quiet=True)
         formatter.commit_started(
             ImageCommitStarted(
-                job_id="job-id", target_image=RemoteImage.new_image("img")
+                job_id="job-id", target_image=RemoteImage.new_external_image("img")
             )
         )
         formatter.close()
@@ -246,7 +250,7 @@ class TestDockerImageProgress:
         formatter = DockerImageProgress.create(tty=True, quiet=False)
         formatter.commit_started(
             ImageCommitStarted(
-                job_id="job-id", target_image=RemoteImage.new_image(name="img")
+                job_id="job-id", target_image=RemoteImage.new_external_image(name="img")
             )
         )
         formatter.close()

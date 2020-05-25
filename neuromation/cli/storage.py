@@ -566,7 +566,7 @@ minio server /mnt/{minio_dir}
         storage_uri=storage_uri.with_path(""), container_path="/mnt", read_only=False
     )
     server_container = Container(
-        image=RemoteImage.new_image(MINIO_IMAGE_NAME, MINIO_IMAGE_TAG),
+        image=RemoteImage.new_external_image(MINIO_IMAGE_NAME, MINIO_IMAGE_TAG),
         entrypoint="sh",
         command=f"-c {shlex.quote(minio_script)}",
         http=HTTPPort(port=9000, requires_auth=False),

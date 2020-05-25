@@ -59,7 +59,7 @@ def job_descr_no_name() -> JobDescription:
             finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
         ),
         container=Container(
-            image=RemoteImage.new_image(name="ubuntu", tag="latest"),
+            image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
             resources=Resources(16, 0.1, 0, None, False, None, None),
         ),
         ssh_server=URL("ssh-auth"),
@@ -85,7 +85,7 @@ def job_descr() -> JobDescription:
             finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
         ),
         container=Container(
-            image=RemoteImage.new_image(name="ubuntu", tag="latest"),
+            image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
             resources=Resources(16, 0.1, 0, None, False, None, None),
         ),
         ssh_server=URL("ssh-auth"),
@@ -192,7 +192,7 @@ class TestJobStartProgress:
             ),
             container=Container(
                 command="test-command",
-                image=RemoteImage.new_image(name="test-image"),
+                image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
@@ -262,7 +262,7 @@ class TestJobOutputFormatter:
             ),
             container=Container(
                 command="test-command",
-                image=RemoteImage.new_image(name="test-image"),
+                image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
@@ -315,7 +315,7 @@ class TestJobOutputFormatter:
             ),
             container=Container(
                 command="test-command",
-                image=RemoteImage.new_image(name="test-image"),
+                image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
@@ -367,7 +367,7 @@ class TestJobOutputFormatter:
             ),
             container=Container(
                 command="test-command",
-                image=RemoteImage.new_image(name="test-image"),
+                image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
@@ -420,7 +420,7 @@ class TestJobOutputFormatter:
             ),
             container=Container(
                 command="test-command",
-                image=RemoteImage.new_image(name="test-image"),
+                image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
@@ -473,7 +473,7 @@ class TestJobOutputFormatter:
             ),
             container=Container(
                 command="test-command",
-                image=RemoteImage.new_image(name="test-image"),
+                image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
@@ -526,7 +526,7 @@ class TestJobOutputFormatter:
             ),
             container=Container(
                 command="test-command",
-                image=RemoteImage.new_image(name="test-image"),
+                image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
@@ -572,7 +572,7 @@ class TestJobOutputFormatter:
             ),
             container=Container(
                 command="test-command",
-                image=RemoteImage.new_image(name="test-image"),
+                image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
@@ -612,7 +612,7 @@ class TestJobOutputFormatter:
                 finished_at=None,
             ),
             container=Container(
-                image=RemoteImage.new_image(name="test-image"),
+                image=RemoteImage.new_external_image(name="test-image"),
                 command="test-command",
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
@@ -653,7 +653,7 @@ class TestJobOutputFormatter:
                 finished_at=None,
             ),
             container=Container(
-                image=RemoteImage.new_image(name="test-image"),
+                image=RemoteImage.new_external_image(name="test-image"),
                 command="test-command",
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
@@ -698,7 +698,7 @@ class TestJobOutputFormatter:
             http_url=URL("http://local.host.test/"),
             container=Container(
                 command="test-command",
-                image=RemoteImage.new_image(name="test-image"),
+                image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
@@ -745,7 +745,7 @@ class TestJobOutputFormatter:
             container=Container(
                 entrypoint="/usr/bin/make",
                 command="test",
-                image=RemoteImage.new_image(name="test-image"),
+                image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             ssh_server=URL("ssh-auth"),
@@ -1043,7 +1043,7 @@ class TestSimpleJobsFormatter:
                     finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 ),
                 container=Container(
-                    image=RemoteImage.new_image(name="ubuntu", tag="latest"),
+                    image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                 ),
                 ssh_server=URL("ssh-auth"),
@@ -1065,7 +1065,7 @@ class TestSimpleJobsFormatter:
                     finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 ),
                 container=Container(
-                    image=RemoteImage.new_image(name="ubuntu", tag="latest"),
+                    image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                 ),
                 ssh_server=URL("ssh-auth"),
@@ -1222,7 +1222,7 @@ class TestTabularJobsFormatter:
                 finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
             ),
             container=Container(
-                image=RemoteImage.new_image(name="i", tag="l"),
+                image=RemoteImage.new_external_image(name="i", tag="l"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 command="c",
             ),
@@ -1273,7 +1273,7 @@ class TestTabularJobsFormatter:
                     finished_at=isoparse("2017-09-25T12:28:59.759433+00:00"),
                 ),
                 container=Container(
-                    image=RemoteImage.new_image(
+                    image=RemoteImage.new_external_image(
                         name="some-image-name", tag="with-long-tag"
                     ),
                     resources=Resources(16, 0.1, 0, None, False, None, None),
@@ -1345,7 +1345,7 @@ class TestTabularJobsFormatter:
                 finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
             ),
             container=Container(
-                image=RemoteImage.new_image(name="i", tag="l"),
+                image=RemoteImage.new_external_image(name="i", tag="l"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 command="c",
             ),

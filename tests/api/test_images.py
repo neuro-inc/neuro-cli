@@ -814,7 +814,7 @@ class TestImageParser:
         image = "example.com:9999/bob/library/ubuntu:v10.04"
         parsed = my_parser.parse_remote(image)
         # NOTE: "owner" is parsed only for images in neuromation registry
-        assert parsed == RemoteImage.new_image(
+        assert parsed == RemoteImage.new_external_image(
             name="bob/library/ubuntu", tag="v10.04", registry="example.com:9999",
         )
 
@@ -843,12 +843,12 @@ class TestRemoteImage:
         assert _as_repo_str(image) == "registry.io/me/ubuntu:v10.04"
 
     def test_as_str_not_in_neuro_registry_tag_none(self) -> None:
-        image = RemoteImage.new_image(name="ubuntu")
+        image = RemoteImage.new_external_image(name="ubuntu")
         assert str(image) == "ubuntu"
         assert _as_repo_str(image) == "ubuntu"
 
     def test_as_str_not_in_neuro_registry_tag_yes(self) -> None:
-        image = RemoteImage.new_image(name="ubuntu", tag="v10.04")
+        image = RemoteImage.new_external_image(name="ubuntu", tag="v10.04")
         assert str(image) == "ubuntu:v10.04"
         assert _as_repo_str(image) == "ubuntu:v10.04"
 

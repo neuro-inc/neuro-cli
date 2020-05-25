@@ -37,7 +37,7 @@ class RemoteImage:
         )
 
     @classmethod
-    def new_image(
+    def new_external_image(
         cls, name: str, tag: Optional[str] = None, registry: Optional[str] = None
     ) -> "RemoteImage":
         return RemoteImage(name=name, tag=tag, registry=registry)
@@ -55,14 +55,14 @@ class RemoteImage:
                 raise ValueError("required registry")
 
     def as_docker_url(self) -> str:
-        if _is_in_neuro_registry(self):
-            name = f"{self.registry}/{self.owner}/{self.name}"
-            tag = f":{self.tag}" if self.tag else ""
-            return name + tag
-        else:
-            name = self.name
-            tag = f":{self.tag}" if self.tag else ""
-            return name + tag
+        name = self.name
+        name = (
+            f"{self.registry}/{self.owner}/{name}"
+            if _is_in_neuro_registry(self)
+            else name
+        )
+        tag = f":{self.tag}" if self.tag else ""
+        return name + tag
 
     def __str__(self) -> str:
         pre = (
@@ -142,7 +142,9 @@ class _ImageNameParser:
                 assert "/" in name, msg
                 registry, name = name.split("/", 1)
 
-            return RemoteImage.new_image(name=name, tag=img.tag, registry=registry)
+            return RemoteImage.new_external_image(
+                name=name, tag=img.tag, registry=registry
+            )
 
     def is_in_neuro_registry(self, image: str) -> bool:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
