@@ -951,6 +951,9 @@ def test_job_run_with_tty(helper: Helper) -> None:
     # Wait until the job is running
     helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
 
+    captured = helper.run_cli(["job", "status", job_id])
+    assert "TTY: True" in captured.out
+
 
 @pytest.mark.e2e
 def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
