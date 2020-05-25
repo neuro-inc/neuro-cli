@@ -1305,6 +1305,7 @@ async def test_job_run_with_tty(
         ret = await client.jobs.run(container=container)
 
         assert ret == _job_description_from_api(JSON, client.parse)
+        assert ret.container.tty is True
 
 
 def create_job_response(
