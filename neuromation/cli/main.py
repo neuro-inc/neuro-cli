@@ -30,6 +30,7 @@ from . import (
     storage,
 )
 from .alias import find_alias
+from .asyncio_utils import setup_child_watcher
 from .const import (
     EX_DATAERR,
     EX_IOERR,
@@ -79,25 +80,7 @@ def setup_stdout(errors: str) -> None:
 
 
 setup_stdout(errors="replace")
-
-if sys.platform == "win32":
-    if sys.version_info < (3, 7):
-        # Python 3.6 has no WindowsProactorEventLoopPolicy class
-        from asyncio import events
-
-        class WindowsProactorEventLoopPolicy(events.BaseDefaultEventLoopPolicy):
-            _loop_factory = asyncio.ProactorEventLoop
-
-    else:
-        WindowsProactorEventLoopPolicy = asyncio.WindowsProactorEventLoopPolicy
-
-    asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
-else:
-    if sys.version_info < (3, 8):
-        from .asyncio_utils import ThreadedChildWatcher
-
-        asyncio.set_child_watcher(ThreadedChildWatcher())
-
+setup_child_watcher()
 
 log = logging.getLogger(__name__)
 

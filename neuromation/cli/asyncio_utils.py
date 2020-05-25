@@ -282,3 +282,23 @@ if sys.platform != "win32":
             # This shouldn't happen, but if it does, let's just
             # return that status; perhaps that helps debug it.
             return status
+
+
+def setup_child_watcher() -> None:
+    if sys.platform == "win32":
+        if sys.version_info < (3, 7):
+            # Python 3.6 has no WindowsProactorEventLoopPolicy class
+            from asyncio import events
+
+            class WindowsProactorEventLoopPolicy(events.BaseDefaultEventLoopPolicy):
+                _loop_factory = asyncio.ProactorEventLoop
+
+        else:
+            WindowsProactorEventLoopPolicy = asyncio.WindowsProactorEventLoopPolicy
+
+        asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
+    else:
+        if sys.version_info < (3, 8):
+            from .asyncio_utils import ThreadedChildWatcher
+
+            asyncio.set_child_watcher(ThreadedChildWatcher())

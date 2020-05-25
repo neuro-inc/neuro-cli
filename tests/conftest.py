@@ -1,8 +1,10 @@
+import asyncio
 from dataclasses import replace
 from pathlib import Path
 from typing import Callable, Dict, Optional
 
 import aiohttp
+import aiohttp.pytest_plugin
 import pytest
 from jose import jwt
 from yarl import URL
@@ -11,6 +13,19 @@ import neuromation
 from neuromation.api import Client, Cluster, Preset
 from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData, _save
 from neuromation.api.tracing import _make_trace_config
+from neuromation.cli.asyncio_utils import setup_child_watcher
+
+
+setup_child_watcher()
+
+
+def setup_test_loop(
+    loop_factory: Callable[[], asyncio.AbstractEventLoop] = asyncio.new_event_loop
+) -> asyncio.AbstractEventLoop:
+    return loop_factory()
+
+
+aiohttp.pytest_plugin.setup_test_loop = setup_test_loop
 
 
 @pytest.fixture

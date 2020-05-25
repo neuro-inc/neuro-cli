@@ -36,17 +36,22 @@ EXEC_TIMEOUT = 180
 
 async def expect_prompt(inp: asyncio.StreamReader) -> Optional[bytes]:
     _ansi_re = re.compile(br"\033\[[;?0-9]*[a-zA-Z]")
+    _osc_re = re.compile(br"\x1b]0;.+\x07")
     try:
         ret: bytes = b""
         async with async_timeout.timeout(15):
             while not ret.strip().endswith(b"#"):
-                data = await inp.read()
+                data = await inp.readuntil(b"\n")
                 if not data:
                     break
-                ret += _ansi_re.sub(b"", data)
+                data = _ansi_re.sub(b"", data)
+                data = _osc_re.sub(b"", data)
+                data = data.replace(b"\x1b[K", b"")
+                ret += data
             return ret
     except asyncio.TimeoutError:
-        raise AssertionError(f"[Timeout] {ret!r}")
+        return ret
+        # raise AssertionError(f"[Timeout] {ret!r}")
 
 
 @pytest.mark.e2e
@@ -436,10 +441,11 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
             # use unrolled notation to check shlex.join()
             "bash",
             "-c",
-            "echo ok; true",
+            "true",
         ]
     )
-    assert captured.out == "ok"
+    assert captured.err == ""
+    assert captured.out == ""
     helper.kill_job(job_id, wait=False)
 
 
@@ -500,10 +506,11 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
             "--timeout",
             str(EXEC_TIMEOUT),
             job_id,
-            "echo 1",
+            'bash -c "sleep 5; echo ok"',
         ]
     )
-    assert captured.out == "1"
+    assert captured.err == ""
+    assert captured.out == "ok"
     helper.kill_job(job_id, wait=False)
 
 
@@ -564,7 +571,7 @@ def test_e2e_ssh_exec_no_job(helper: Helper) -> None:
                 "true",
             ]
         )
-    assert cm.value.returncode == 127
+    assert cm.value.returncode == 65
 
 
 @pytest.mark.e2e
@@ -587,7 +594,7 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
                 "true",
             ]
         )
-    assert cm.value.returncode == 127
+    assert cm.value.returncode == 65
 
 
 @pytest.mark.e2e
@@ -1212,8 +1219,8 @@ def test_job_autocomplete(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_job_attach_stdout(helper: Helper) -> None:
     # Run a new job
-    command = 'bash -c "sleep 5; for count in {0..3}; do echo $count; sleep 0.2; done"'
-    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command,)
+    command = 'bash -c "sleep 5; for count in {0..3}; do echo $count; sleep 1; done"'
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     captured = helper.run_cli(["-q", "job", "attach", job_id])
 
@@ -1224,19 +1231,16 @@ def test_job_attach_stdout(helper: Helper) -> None:
 @pytest.mark.e2e
 async def test_job_run_interactive(helper: Helper) -> None:
     # Run a new job
-    job_id = await helper.arun_job_and_wait_state(UBUNTU_IMAGE_NAME, "bash", tty=True)
+    job_id = await helper.arun_job_and_wait_state(UBUNTU_IMAGE_NAME, "sh", tty=True)
 
     status = await helper.ajob_info(job_id)
     assert status.container.tty
 
     proc = await helper.arun_cli(["job", "attach", job_id])
-    proc.stdin.write(b"\n")
+
+    proc.stdin.write(b"\necho abc\n")
 
     lines = await expect_prompt(proc.stdout)
-    assert lines == b""
-
-    proc.stdin.write(b"echo abc\n")
-    lines = await expect_prompt(proc.stdout)
-    assert lines == b""
+    assert lines == b"\r\necho abc\r\n# abc\r\n"
 
     await helper.akill_job(job_id)

@@ -497,8 +497,8 @@ async def _exec_resize(
 async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
-    async with root.client.jobs.attach(
-        job, stdout=True, stderr=True, logs=True
+    async with root.client.jobs.exec_start(
+        job, exec_id
     ) as stream:
         info = await root.client.jobs.exec_inspect(job, exec_id)
         if not info.running:
