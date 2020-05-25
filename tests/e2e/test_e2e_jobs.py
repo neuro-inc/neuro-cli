@@ -1,5 +1,6 @@
 import asyncio
 import os
+import async_timeout
 import re
 import subprocess
 import sys
@@ -7,7 +8,7 @@ from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep, time
-from typing import Any, AsyncIterator, Callable, Dict, List, Tuple
+from typing import Any, AsyncIterator, Callable, Dict, List, Tuple, Optional
 from uuid import uuid4
 
 import aiodocker
@@ -31,6 +32,22 @@ TEST_IMAGE_NAME = "neuro-cli-test"
 MIN_PORT = 49152
 MAX_PORT = 65535
 EXEC_TIMEOUT = 180
+
+
+async def expect_prompt(inp: asyncio.StreamReader) -> Optional[bytes]:
+    _ansi_re = re.compile(br"\033\[[;?0-9]*[a-zA-Z]")
+    try:
+        ret: bytes = b""
+        async with async_timeout.timeout(15):
+            while not ret.strip().endswith(b"#"):
+                data = await inp.read()
+                if not data:
+                    break
+                ret += _ansi_re.sub(b"", data)
+            return ret
+    except asyncio.TimeoutError:
+        raise AssertionError(f"[Timeout] {ret!r}")
+
 
 
 @pytest.mark.e2e
@@ -1203,12 +1220,21 @@ def test_job_attach_stdout(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_run_interactive(helper: Helper) -> None:
+async def test_job_run_interactive(helper: Helper) -> None:
     # Run a new job
-    command = 'bash -c "sleep 5; for count in {0..3}; do echo $count; sleep 0.2; done"'
-    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command,)
+    job_id = await helper.arun_job_and_wait_state(UBUNTU_IMAGE_NAME, "bash", tty=True)
 
-    captured = helper.run_cli(["-q", "job", "attach", job_id])
+    status = await helper.ajob_info(job_id)
+    assert status.container.tty
 
-    assert captured.err == ""
-    assert captured.out == "\n".join(f"{i}" for i in range(4))
+    proc = await helper.arun_cli(["job", "attach", job_id])
+    proc.stdin.write(b"\n")
+
+    lines = await expect_prompt(proc.stdout)
+    assert lines == b''
+
+    proc.stdin.write(b"echo abc\n")
+    lines = await expect_prompt(proc.stdout)
+    assert lines == b''
+
+    await helper.akill_job(job_id)

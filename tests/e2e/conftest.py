@@ -358,8 +358,7 @@ class Helper:
             job = await client.jobs.status(job_id)
             assert job.status == state
 
-    @run_async
-    async def job_info(self, job_id: str, wait_start: bool = False) -> JobDescription:
+    async def ajob_info(self, job_id: str, wait_start: bool = False) -> JobDescription:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
@@ -373,6 +372,8 @@ class Helper:
             if int(time() - start_time) > JOB_TIMEOUT:
                 raise AssertionError(f"timeout exceeded, last output: '{job.status}'")
             return job
+
+    job_info = run_async(ajob_info)
 
     @run_async
     async def check_job_output(
@@ -466,7 +467,7 @@ class Helper:
             print(f"neuro stderr: {err}")
         return SysCap(out, err)
 
-    async def run_cli_async(
+    async def arun_cli(
         self,
         arguments: List[str],
         *,
@@ -513,14 +514,14 @@ class Helper:
         assert not proc.stderr
         return proc.stdout
 
-    @run_async
-    async def run_job_and_wait_state(
+    async def arun_job_and_wait_state(
         self,
         image: str,
         command: str = "",
         *,
         description: Optional[str] = None,
         name: Optional[str] = None,
+        tty: bool = False,
         wait_state: JobStatus = JobStatus.RUNNING,
         stop_state: JobStatus = JobStatus.FAILED,
     ) -> str:
@@ -532,6 +533,7 @@ class Helper:
                 image=client.parse.remote_image(image),
                 command=command,
                 resources=resources,
+                tty=tty,
             )
             job = await client.jobs.run(
                 container,
@@ -555,6 +557,8 @@ class Helper:
 
             return job.id
 
+    run_job_and_wait_state = run_async(arun_job_and_wait_state)
+
     @run_async
     async def check_http_get(self, url: Union[URL, str]) -> str:
         """
@@ -575,8 +579,7 @@ class Helper:
                     request_info=resp.request_info,
                 )
 
-    @run_async
-    async def kill_job(self, id_or_name: str, *, wait: bool = True) -> None:
+    async def akill_job(self, id_or_name: str, *, wait: bool = True) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             id = await resolve_job(
@@ -589,6 +592,8 @@ class Helper:
                         stat = await client.jobs.status(id)
                         if stat.status not in (JobStatus.PENDING, JobStatus.RUNNING):
                             break
+
+    kill_job = run_async(akill_job)
 
     @run_async
     async def create_bucket(self, name: str) -> None:
