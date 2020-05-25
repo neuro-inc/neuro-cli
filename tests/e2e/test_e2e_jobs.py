@@ -1,6 +1,5 @@
 import asyncio
 import os
-import async_timeout
 import re
 import subprocess
 import sys
@@ -8,11 +7,12 @@ from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep, time
-from typing import Any, AsyncIterator, Callable, Dict, List, Tuple, Optional
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple
 from uuid import uuid4
 
 import aiodocker
 import aiohttp
+import async_timeout
 import pytest
 from aiohttp.test_utils import unused_port
 from yarl import URL
@@ -47,7 +47,6 @@ async def expect_prompt(inp: asyncio.StreamReader) -> Optional[bytes]:
             return ret
     except asyncio.TimeoutError:
         raise AssertionError(f"[Timeout] {ret!r}")
-
 
 
 @pytest.mark.e2e
@@ -968,6 +967,9 @@ def test_job_run_with_tty(helper: Helper) -> None:
     # Wait until the job is running
     helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
 
+    captured = helper.run_cli(["job", "status", job_id])
+    assert "TTY: True" in captured.out
+
 
 @pytest.mark.e2e
 def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
@@ -1231,10 +1233,10 @@ async def test_job_run_interactive(helper: Helper) -> None:
     proc.stdin.write(b"\n")
 
     lines = await expect_prompt(proc.stdout)
-    assert lines == b''
+    assert lines == b""
 
     proc.stdin.write(b"echo abc\n")
     lines = await expect_prompt(proc.stdout)
-    assert lines == b''
+    assert lines == b""
 
     await helper.akill_job(job_id)

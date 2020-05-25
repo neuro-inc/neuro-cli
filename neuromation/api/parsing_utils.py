@@ -150,8 +150,8 @@ class _ImageNameParser:
     def has_tag(self, image: str) -> bool:
         prefix = "image:"
         if image.startswith(prefix):
-            image = image.lstrip(prefix).lstrip("/")
-        name, tag = self._split_image_name(image, default_tag=None)
+            image = image[len(prefix) :]
+        _, tag = self._split_image_name(image)
         return bool(tag)
 
     def _validate_image_name(self, image: str) -> None:

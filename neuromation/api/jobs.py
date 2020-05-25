@@ -672,6 +672,7 @@ def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
         http=_http_port_from_api(data["http"]) if "http" in data else None,
         env=data.get("env", dict()),
         volumes=[_volume_from_api(v) for v in data.get("volumes", [])],
+        tty=data.get("tty", False),
     )
 
 

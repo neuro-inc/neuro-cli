@@ -606,7 +606,7 @@ async def _print_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> N
                 click.echo(LOGS_STARTED, nl=False)
             helper.log_printed.set()
 
-        click.echo(chunk.decode(errors="ignore"), nl=False)
+        click.echo(chunk.decode(errors="replace"), nl=False)
 
 
 @command()
