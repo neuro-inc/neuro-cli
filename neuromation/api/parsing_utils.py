@@ -55,14 +55,9 @@ class RemoteImage:
                 raise ValueError("required registry")
 
     def as_docker_url(self) -> str:
-        name = self.name
-        name = (
-            f"{self.registry}/{self.owner}/{name}"
-            if _is_in_neuro_registry(self)
-            else name
-        )
-        tag = f":{self.tag}" if self.tag else ""
-        return name + tag
+        prefix = f"{self.registry}/{self.owner}/" if _is_in_neuro_registry(self) else ""
+        suffix = f":{self.tag}" if self.tag else ""
+        return f"{prefix}{self.name}{suffix}"
 
     def __str__(self) -> str:
         pre = (
