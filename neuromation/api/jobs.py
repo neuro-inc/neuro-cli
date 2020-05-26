@@ -6,7 +6,17 @@ import signal
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
 import aiohttp
 import attr
@@ -571,6 +581,13 @@ class Jobs(metaclass=NoPublicConstructor):
             yield StdStream(ws)
         finally:
             await ws.close()
+
+    async def send_signal(self, id: str, signal: Union[str, int]) -> None:
+        url = self._config.monitoring_url / id / "kill"
+        url = url.with_query(signal=signal)
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, auth=auth):
+            pass
 
 
 #  ############## Internal helpers ###################

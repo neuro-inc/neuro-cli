@@ -12,7 +12,17 @@ import threading
 import uuid
 import webbrowser
 from datetime import datetime, timedelta
-from typing import AsyncIterator, Dict, Iterator, List, Optional, Sequence, Set, Tuple
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Set,
+    Tuple,
+)
 
 import async_timeout
 import click
@@ -108,6 +118,15 @@ ATTACH_STARTED = click.style(
 )
 ATTACH_STARTED_AFTER_LOGS = click.style(
     "======== job's output, may overlap with logs =======\n", dim=True
+)
+
+
+SIG_PROXY = option(
+    "--sig_proxy/--no-sig-proxy",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Proxy all received signals to the process",
 )
 
 
@@ -321,6 +340,7 @@ def job() -> None:
     help="Don't attach to job logs and don't wait for exit code",
 )
 @option("-t", "--tty", is_flag=True, help="Allocate a TTY")
+@SIG_PROXY
 async def submit(
     root: Root,
     image: RemoteImage,
@@ -349,6 +369,7 @@ async def submit(
     browse: bool,
     detach: bool,
     tty: bool,
+    sig_proxy: bool,
 ) -> None:
     """
     Submit an image to run on the cluster.
@@ -397,6 +418,7 @@ async def submit(
         browse=browse,
         detach=detach,
         tty=tty,
+        sig_proxy=sig_proxy,
     )
 
 
@@ -609,7 +631,8 @@ async def _print_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> N
 
 @command()
 @argument("job", type=JOB)
-async def attach(root: Root, job: str) -> None:
+@SIG_PROXY
+async def attach(root: Root, job: str, sig_proxy: bool) -> None:
     """
     Print the logs for a container.
     """
@@ -623,17 +646,20 @@ async def attach(root: Root, job: str) -> None:
             JobStatus.FAILED,
         },
     )
-    await _attach(root, id, tty=None, logs=False)
+    await _attach(root, id, tty=None, logs=False, sig_proxy=sig_proxy)
 
 
-async def _attach(root: Root, job: str, tty: Optional[bool], logs: bool) -> None:
+async def _attach(
+    root: Root, job: str, tty: Optional[bool], logs: bool, sig_proxy: bool
+) -> None:
     if tty is None:
         status = await root.client.jobs.status(job)
         tty = status.container.tty
     if tty:
+        # docker doesn't proxy signals for non-tty
         await _attach_tty(root, job, logs)
     else:
-        await _attach_non_tty(root, job, logs)
+        await _attach_non_tty(root, job, logs, sig_proxy)
 
     loop = asyncio.get_event_loop()
     t0 = loop.time()
@@ -750,34 +776,35 @@ async def _process_stdout(stream: StdStream, stdout: Output) -> None:
             stdout.flush()
 
 
-async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
+async def _attach_non_tty(root: Root, job: str, logs: bool, sig_proxy: bool) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
-    async with _print_logs_until_attached(root, job, logs) as helper:
-        async with root.client.jobs.attach(
-            job, stdout=True, stderr=True, logs=True
-        ) as stream:
-            status = await root.client.jobs.status(job)
-            if status.history.exit_code is not None:
-                raise sys.exit(status.history.exit_code)
-            while True:
-                chunk = await stream.read_out()
-                if chunk is None:
-                    break
-                if chunk.stream == 2:
-                    f = sys.stderr
-                else:
-                    f = sys.stdout
-                txt = decoder.decode(chunk.data)
-                if txt is not None:
-                    if not root.quiet and not helper.attach_ready.is_set():
-                        if helper.log_printed.is_set():
-                            click.echo(ATTACH_STARTED_AFTER_LOGS, nl=False)
-                        else:
-                            click.echo(ATTACH_STARTED, nl=False)
-                    helper.attach_ready.set()
-                    f.write(txt)
-                    f.flush()
+    async with _forward_all_signals(root, job, sig_proxy):
+        async with _print_logs_until_attached(root, job, logs) as helper:
+            async with root.client.jobs.attach(
+                job, stdout=True, stderr=True, logs=True
+            ) as stream:
+                status = await root.client.jobs.status(job)
+                if status.history.exit_code is not None:
+                    raise sys.exit(status.history.exit_code)
+                while True:
+                    chunk = await stream.read_out()
+                    if chunk is None:
+                        break
+                    if chunk.stream == 2:
+                        f = sys.stderr
+                    else:
+                        f = sys.stdout
+                    txt = decoder.decode(chunk.data)
+                    if txt is not None:
+                        if not root.quiet and not helper.attach_ready.is_set():
+                            if helper.log_printed.is_set():
+                                click.echo(ATTACH_STARTED_AFTER_LOGS, nl=False)
+                            else:
+                                click.echo(ATTACH_STARTED, nl=False)
+                        helper.attach_ready.set()
+                        f.write(txt)
+                        f.flush()
 
 
 @asynccontextmanager
@@ -812,6 +839,91 @@ async def _print_logs_until_attached(
         else:
             # Cancel logs reader just in case
             await root.cancel_with_logging(reader)
+
+
+if sys.platform != "win32":
+    @asynccontextmanager
+    async def _forward_all_signals(
+        root: Root, job: str, sig_proxy: bool
+    ) -> AsyncIterator[None]:
+        breakpoint()
+        if not sig_proxy:
+            yield
+            return
+
+        queue: asyncio.Queue[Optional[int]] = asyncio.Queue()
+        loop = asyncio.get_event_loop()
+
+        def on_signal(signum: int) -> None:
+            breakpoint()
+            queue.put_nowait(signum)
+
+        handled = set()
+        for signum in range(1, signal.NSIG):
+            try:
+                loop.add_signal_handler(signum, on_signal, signum)
+                handled.add(signum)
+            except (ValueError, OSError, RuntimeError):
+                print("Cannot subscribe", signum)
+                pass
+
+        async def pass_sigs() -> None:
+            while True:
+                signum = await queue.get()
+                breakpoint()
+                if signum is None:
+                    return
+                await root.client.jobs.send_signal(job, signum)
+
+        task = loop.create_task(pass_sigs())
+        yield
+
+        for signum in handled:
+            loop.remove_signal_handler(signum)
+
+        await queue.put(None)
+        await task
+
+
+else:
+
+    @asynccontextmanager
+    async def _forward_all_signals(
+        root: Root, job: str, sig_proxy: bool
+    ) -> AsyncIterator[None]:
+        breakpoint()
+        if not sig_proxy:
+            yield
+            return
+
+        queue: asyncio.Queue[Optional[int]] = asyncio.Queue()
+        loop = asyncio.get_event_loop()
+
+        def on_signal(signum: int, frame: Any) -> None:
+            queue.put_nowait(signum)
+
+        handled = {}
+        for signum in {signal.CTRL_C_EVENT, signal.CTRL_BREAK_EVENT}:
+            try:
+                handled[signum] = signal.signal(signum, on_signal)
+            except (ValueError, OSError, RuntimeError):
+                pass
+
+        async def pass_sigs() -> None:
+            while True:
+                signum = await queue.get()
+                if signum is None:
+                    return
+                await root.client.jobs.send_signal(job, signum)
+
+        task = loop.create_task(pass_sigs())
+        yield
+
+        for signum, handler in handled.items():
+            signal.signal(signum, handler)
+
+        await queue.put(None)
+        await task
 
 
 @command()
@@ -1227,6 +1339,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Don't attach to job logs and don't wait for exit code",
 )
 @option("-t", "--tty", is_flag=True, help="Allocate a TTY")
+@SIG_PROXY
 async def run(
     root: Root,
     image: RemoteImage,
@@ -1250,6 +1363,7 @@ async def run(
     browse: bool,
     detach: bool,
     tty: bool,
+    sig_proxy: bool,
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -1306,6 +1420,7 @@ async def run(
         browse=browse,
         detach=detach,
         tty=tty,
+        sig_proxy=sig_proxy,
     )
 
 
@@ -1357,6 +1472,7 @@ async def run_job(
     browse: bool,
     detach: bool,
     tty: bool,
+    sig_proxy: bool,
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -1452,7 +1568,7 @@ async def run_job(
         sys.exit(job.history.exit_code or EX_PLATFORMERROR)
 
     if not detach:
-        await _attach(root, job.id, tty=tty, logs=True)
+        await _attach(root, job.id, tty=tty, logs=True, sig_proxy=sig_proxy)
 
     return job
 
