@@ -191,7 +191,7 @@ RemoteImage
 
     .. py:classmethod:: new_neuro_image(name: str, registry: str, *, owner: str, cluster_name: str, tag: Optional[str] = None) -> RemoteImage
 
-        Create a new instance referring to an image hosted on Neuro Platform
+        Create a new instance referring to an image hosted on Neuro Platform.
 
       :param str name: name of the image
 
