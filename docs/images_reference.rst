@@ -205,7 +205,7 @@ RemoteImage
 
     .. py:classmethod:: new_external_image(name: str, registry: Optional[str] = None, *, tag: Optional[str] = None) -> RemoteImage
 
-        Create a new instance referring to an image hosted on an external registry (e.g. DockerHub)
+        Create a new instance referring to an image hosted on an external registry (e.g. DockerHub_).
 
       :param str name: name of the image
 
