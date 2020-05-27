@@ -185,9 +185,11 @@ RemoteImage
       Host name for images hosted on Neuro Registry (:class:`str`), ``None`` for
       other registries like DockerHub_.
 
-    .. method:: as_docker_url()
+    .. method:: as_docker_url(with_scheme: bool = False) -> str
 
       URL that can be used to reference this image with Docker.
+
+      :param bool with_scheme: if set to True, returned URL includes scheme (`https://`), otherwise (default behavior) - scheme is omitted.
 
     .. py:classmethod:: new_neuro_image(name: str, registry: str, *, owner: str, cluster_name: str, tag: Optional[str] = None) -> RemoteImage
 
