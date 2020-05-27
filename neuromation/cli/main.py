@@ -577,6 +577,10 @@ def main(args: Optional[List[str]] = None) -> None:
         LOG_ERROR(f"I/O Error ({error})")
         sys.exit(EX_IOERR)
 
+    except asyncio.CancelledError:
+        LOG_ERROR("Cancelled")
+        sys.exit(130)
+
     except KeyboardInterrupt:
         LOG_ERROR("Aborting.")
         sys.exit(130)

@@ -302,3 +302,12 @@ def setup_child_watcher() -> None:
             from .asyncio_utils import ThreadedChildWatcher
 
             asyncio.set_child_watcher(ThreadedChildWatcher())
+
+
+def current_task(
+    loop: Optional[asyncio.AbstractEventLoop] = None,
+) -> "asyncio.Task[Any]":
+    if sys.version_info >= (3, 7):
+        return asyncio.current_task(loop=loop)  # type: ignore
+    else:
+        return asyncio.Task.current_task(loop=loop)

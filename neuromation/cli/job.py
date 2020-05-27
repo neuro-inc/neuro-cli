@@ -2,6 +2,7 @@ import asyncio
 import codecs
 import contextlib
 import dataclasses
+import enum
 import logging
 import os
 import re
@@ -27,8 +28,13 @@ from typing import (
 import async_timeout
 import click
 from dateutil.parser import isoparse
+from prompt_toolkit.formatted_text import HTML, merge_formatted_text
 from prompt_toolkit.input import create_input
+from prompt_toolkit.key_binding.key_bindings import KeyBindings
+from prompt_toolkit.key_binding.key_processor import KeyPressEvent
+from prompt_toolkit.keys import Keys
 from prompt_toolkit.output import Output, create_output
+from prompt_toolkit.shortcuts import PromptSession
 from yarl import URL
 
 from neuromation.api import (
@@ -53,6 +59,7 @@ from neuromation.cli.formatters.utils import (
     uri_formatter,
 )
 
+from .asyncio_utils import current_task
 from .click_types import (
     JOB,
     JOB_COLUMNS,
@@ -118,15 +125,6 @@ ATTACH_STARTED = click.style(
 )
 ATTACH_STARTED_AFTER_LOGS = click.style(
     "======== job's output, may overlap with logs =======\n", dim=True
-)
-
-
-SIG_PROXY = option(
-    "--sig_proxy/--no-sig-proxy",
-    is_flag=True,
-    default=True,
-    show_default=True,
-    help="Proxy all received signals to the process",
 )
 
 
@@ -340,7 +338,6 @@ def job() -> None:
     help="Don't attach to job logs and don't wait for exit code",
 )
 @option("-t", "--tty", is_flag=True, help="Allocate a TTY")
-@SIG_PROXY
 async def submit(
     root: Root,
     image: RemoteImage,
@@ -369,7 +366,6 @@ async def submit(
     browse: bool,
     detach: bool,
     tty: bool,
-    sig_proxy: bool,
 ) -> None:
     """
     Submit an image to run on the cluster.
@@ -418,7 +414,6 @@ async def submit(
         browse=browse,
         detach=detach,
         tty=tty,
-        sig_proxy=sig_proxy,
     )
 
 
@@ -496,8 +491,8 @@ async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
 
         tasks = []
         resize_event = asyncio.Event()
-        tasks.append(loop.create_task(_process_stdin(stream, resize_event)))
-        tasks.append(loop.create_task(_process_stdout(stream, stdout)))
+        tasks.append(loop.create_task(_process_stdin_tty(stream, resize_event)))
+        tasks.append(loop.create_task(_process_stdout_tty(stream, stdout)))
         tasks.append(
             loop.create_task(_exec_resize(root, job, exec_id, resize_event, stdout))
         )
@@ -613,26 +608,31 @@ async def logs(root: Root, job: str) -> None:
 class AttachHelper:
     attach_ready: asyncio.Event
     log_printed: asyncio.Event
+    write_sem: asyncio.Semaphore
 
 
 async def _print_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> None:
+    codec_info = codecs.lookup("utf8")
+    decoder = codec_info.incrementaldecoder("replace")
     async for chunk in root.client.jobs.monitor(job):
         if not chunk:
             break
+        txt = decoder.decode(chunk)
         if helper is not None:
             if helper.attach_ready.is_set():
                 return
-            if not helper.log_printed.is_set() and not root.quiet:
-                click.echo(LOGS_STARTED, nl=False)
-            helper.log_printed.set()
-
-        click.echo(chunk.decode(errors="replace"), nl=False)
+            async with helper.write_sem:
+                if not helper.log_printed.is_set() and not root.quiet:
+                    click.echo(LOGS_STARTED, nl=False)
+                helper.log_printed.set()
+                click.echo(txt, nl=False)
+        else:
+            click.echo(txt, nl=False)
 
 
 @command()
 @argument("job", type=JOB)
-@SIG_PROXY
-async def attach(root: Root, job: str, sig_proxy: bool) -> None:
+async def attach(root: Root, job: str) -> None:
     """
     Print the logs for a container.
     """
@@ -646,44 +646,47 @@ async def attach(root: Root, job: str, sig_proxy: bool) -> None:
             JobStatus.FAILED,
         },
     )
-    await _attach(root, id, tty=None, logs=False, sig_proxy=sig_proxy)
+    await _attach(root, id, tty=None, logs=False)
 
 
-async def _attach(
-    root: Root, job: str, tty: Optional[bool], logs: bool, sig_proxy: bool
-) -> None:
-    if tty is None:
+async def _attach(root: Root, job: str, tty: Optional[bool], logs: bool) -> None:
+    try:
+        if tty is None:
+            status = await root.client.jobs.status(job)
+            tty = status.container.tty
+        if tty:
+            # docker doesn't proxy signals for non-tty
+            await _attach_tty(root, job, logs)
+        else:
+            await _attach_non_tty(root, job, logs)
+
+        loop = asyncio.get_event_loop()
+        t0 = loop.time()
         status = await root.client.jobs.status(job)
-        tty = status.container.tty
-    if tty:
-        # docker doesn't proxy signals for non-tty
-        await _attach_tty(root, job, logs)
-    else:
-        await _attach_non_tty(root, job, logs, sig_proxy)
-
-    loop = asyncio.get_event_loop()
-    t0 = loop.time()
-    status = await root.client.jobs.status(job)
-    while status.status in (JobStatus.PENDING, JobStatus.RUNNING):
-        t1 = loop.time()
-        if t1 - t0 > 10:
-            click.echo()
-            click.secho("!!! Warning !!!", fg="red")
-            click.secho(
-                "TTY session was disconnected by server side "
-                "but the job is still alive.",
-                fg="red",
-            )
-            click.secho("Reconnect to the job:", dim=True, fg="yellow")
-            click.secho(f"  neuro attach {job}", dim=True)
-            click.secho("Terminate the job:", dim=True, fg="yellow")
-            click.secho(f"  neuro kill {job}", dim=True)
-            sys.exit(EX_IOERR)
-        await asyncio.sleep(0.1)
-        status = await root.client.jobs.status(job)
-    if status.status == JobStatus.FAILED:
-        sys.exit(status.history.exit_code or EX_PLATFORMERROR)
-    sys.exit(status.history.exit_code)
+        while status.status in (JobStatus.PENDING, JobStatus.RUNNING):
+            t1 = loop.time()
+            if t1 - t0 > 10:
+                click.echo()
+                click.secho("!!! Warning !!!", fg="red")
+                click.secho(
+                    "The attached session was disconnected "
+                    "but the job is still alive.",
+                    fg="red",
+                )
+                click.secho("Reconnect to the job:", dim=True, fg="yellow")
+                click.secho(f"  neuro attach {job}", dim=True)
+                click.secho("Terminate the job:", dim=True, fg="yellow")
+                click.secho(f"  neuro kill {job}", dim=True)
+                sys.exit(EX_IOERR)
+            await asyncio.sleep(0.1)
+            status = await root.client.jobs.status(job)
+        if status.status == JobStatus.FAILED:
+            sys.exit(status.history.exit_code or EX_PLATFORMERROR)
+        sys.exit(status.history.exit_code)
+    except asyncio.CancelledError:
+        # Note: Cancellation is a normal shutdown,
+        # there is no need to report user about this fact
+        sys.exit(1)
 
 
 async def _attach_tty(root: Root, job: str, logs: bool) -> None:
@@ -703,8 +706,8 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
 
         tasks = []
         resize_event = asyncio.Event()
-        tasks.append(loop.create_task(_process_stdin(stream, resize_event)))
-        tasks.append(loop.create_task(_process_stdout(stream, stdout)))
+        tasks.append(loop.create_task(_process_stdin_tty(stream, resize_event)))
+        tasks.append(loop.create_task(_process_stdout_tty(stream, stdout)))
         tasks.append(loop.create_task(_resize(root, job, resize_event, stdout)))
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in tasks:
@@ -721,7 +724,7 @@ async def _resize(
         await root.client.jobs.resize(job, w=w, h=h)
 
 
-async def _process_stdin(stream: StdStream, resize_event: asyncio.Event) -> None:
+async def _process_stdin_tty(stream: StdStream, resize_event: asyncio.Event) -> None:
     loop = asyncio.get_event_loop()
     ev = asyncio.Event()
 
@@ -763,7 +766,7 @@ async def _process_stdin(stream: StdStream, resize_event: asyncio.Event) -> None
                     signal.signal(signal.SIGWINCH, previous_winch_handler)
 
 
-async def _process_stdout(stream: StdStream, stdout: Output) -> None:
+async def _process_stdout_tty(stream: StdStream, stdout: Output) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
     while True:
@@ -776,13 +779,15 @@ async def _process_stdout(stream: StdStream, stdout: Output) -> None:
             stdout.flush()
 
 
-async def _attach_non_tty(root: Root, job: str, logs: bool, sig_proxy: bool) -> None:
+async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
+    if not root.quiet:
+        click.secho("Job is running, press Ctrl-C to detach/kill.", dim=True)
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
-    async with _forward_all_signals(root, job, sig_proxy):
-        async with _print_logs_until_attached(root, job, logs) as helper:
+    async with _handle_ctrl_c(root, job) as write_sem:
+        async with _print_logs_until_attached(root, job, logs, write_sem) as helper:
             async with root.client.jobs.attach(
-                job, stdout=True, stderr=True, logs=True
+                job, stdin=False, stdout=True, stderr=True, logs=True
             ) as stream:
                 status = await root.client.jobs.status(job)
                 if status.history.exit_code is not None:
@@ -796,24 +801,25 @@ async def _attach_non_tty(root: Root, job: str, logs: bool, sig_proxy: bool) -> 
                     else:
                         f = sys.stdout
                     txt = decoder.decode(chunk.data)
-                    if txt is not None:
-                        if not root.quiet and not helper.attach_ready.is_set():
-                            if helper.log_printed.is_set():
-                                click.echo(ATTACH_STARTED_AFTER_LOGS, nl=False)
-                            else:
-                                click.echo(ATTACH_STARTED, nl=False)
-                        helper.attach_ready.set()
-                        f.write(txt)
-                        f.flush()
+                    async with write_sem:
+                        if txt is not None:
+                            if not root.quiet and not helper.attach_ready.is_set():
+                                if helper.log_printed.is_set():
+                                    click.echo(ATTACH_STARTED_AFTER_LOGS, nl=False)
+                                else:
+                                    click.echo(ATTACH_STARTED, nl=False)
+                            helper.attach_ready.set()
+                            f.write(txt)
+                            f.flush()
 
 
 @asynccontextmanager
 async def _print_logs_until_attached(
-    root: Root, job: str, logs: bool
+    root: Root, job: str, logs: bool, write_sem: asyncio.Semaphore
 ) -> AsyncIterator[AttachHelper]:
     attach_ready = asyncio.Event()
     logs_printed = asyncio.Event()
-    helper = AttachHelper(attach_ready, logs_printed)
+    helper = AttachHelper(attach_ready, logs_printed, write_sem)
     if not logs:
         yield helper
         return
@@ -841,45 +847,100 @@ async def _print_logs_until_attached(
             await root.cancel_with_logging(reader)
 
 
-if sys.platform != "win32":
-    @asynccontextmanager
-    async def _forward_all_signals(
-        root: Root, job: str, sig_proxy: bool
-    ) -> AsyncIterator[None]:
-        breakpoint()
-        if not sig_proxy:
-            yield
-            return
+class InterruptAction(enum.Enum):
+    nothing = enum.auto()
+    detach = enum.auto()
+    kill = enum.auto()
 
+
+def _create_interruption_dialog() -> PromptSession[InterruptAction]:
+    bindings = KeyBindings()
+
+    @bindings.add(Keys.Enter)
+    def nothing(event: KeyPressEvent) -> None:
+        event.app.exit(result=InterruptAction.nothing)
+
+    @bindings.add("c-c")
+    @bindings.add("C")
+    @bindings.add("c")
+    def kill(event: KeyPressEvent) -> None:
+        event.app.exit(result=InterruptAction.kill)
+
+    @bindings.add("c-d")
+    @bindings.add("D")
+    @bindings.add("d")
+    def detach(event: KeyPressEvent) -> None:
+        event.app.exit(result=InterruptAction.detach)
+
+    @bindings.add(Keys.Any)
+    def _(event: KeyPressEvent) -> None:
+        # Disallow inserting other text.
+        pass
+
+    message = HTML("<b>Interrupted</b>. Please choose the action:\n")
+    suffix = HTML(
+        "<b>Ctrl-C</b> or <b>C</b> (kill), "
+        "<b>Ctrl-D</b> or <b>D</b> (detach), "
+        "<b>Enter</b> (continue the attached mode)"
+    )
+    complete_message = merge_formatted_text([message, suffix])
+    session: PromptSession[InterruptAction] = PromptSession(
+        complete_message, key_bindings=bindings
+    )
+    return session
+
+
+async def _handle_signals(
+    root: Root,
+    job: str,
+    queue: "asyncio.Queue[Optional[int]]",
+    write_sem: asyncio.Semaphore,
+    main_task: "asyncio.Task[None]",
+) -> None:
+    try:
+        while True:
+            signum = await queue.get()
+            if signum is None:
+                return
+            async with write_sem:
+                session = _create_interruption_dialog()
+                answer = await session.prompt_async()
+                if answer == InterruptAction.detach:
+                    click.secho("Detach terminal", dim=True, fg="green")
+                    main_task.cancel()
+                elif answer == InterruptAction.kill:
+                    click.secho("Kill job", fg="red")
+                    await root.client.jobs.kill(job)
+                    main_task.cancel()
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:
+        if root.show_traceback:
+            log.exception(str(exc), stack_info=True)
+        else:
+            log.error(str(exc))
+        main_task.cancel()
+
+
+if sys.platform != "win32":
+
+    @asynccontextmanager
+    async def _handle_ctrl_c(root: Root, job: str) -> AsyncIterator[asyncio.Semaphore]:
         queue: asyncio.Queue[Optional[int]] = asyncio.Queue()
         loop = asyncio.get_event_loop()
+        write_sem = asyncio.Semaphore()
 
         def on_signal(signum: int) -> None:
-            breakpoint()
             queue.put_nowait(signum)
 
-        handled = set()
-        for signum in range(1, signal.NSIG):
-            try:
-                loop.add_signal_handler(signum, on_signal, signum)
-                handled.add(signum)
-            except (ValueError, OSError, RuntimeError):
-                print("Cannot subscribe", signum)
-                pass
+        loop.add_signal_handler(signal.SIGINT, on_signal, signal.SIGINT)
 
-        async def pass_sigs() -> None:
-            while True:
-                signum = await queue.get()
-                breakpoint()
-                if signum is None:
-                    return
-                await root.client.jobs.send_signal(job, signum)
+        task = loop.create_task(
+            _handle_signals(root, job, queue, write_sem, current_task())
+        )
+        yield write_sem
 
-        task = loop.create_task(pass_sigs())
-        yield
-
-        for signum in handled:
-            loop.remove_signal_handler(signum)
+        loop.remove_signal_handler(signal.SIGINT)
 
         await queue.put(None)
         await task
@@ -888,39 +949,22 @@ if sys.platform != "win32":
 else:
 
     @asynccontextmanager
-    async def _forward_all_signals(
-        root: Root, job: str, sig_proxy: bool
-    ) -> AsyncIterator[None]:
-        breakpoint()
-        if not sig_proxy:
-            yield
-            return
-
+    async def _handle_ctrl_c(root: Root, job: str) -> AsyncIterator[asyncio.Semaphore]:
         queue: asyncio.Queue[Optional[int]] = asyncio.Queue()
         loop = asyncio.get_event_loop()
+        write_sem = asyncio.Semaphore()
 
         def on_signal(signum: int, frame: Any) -> None:
             queue.put_nowait(signum)
 
-        handled = {}
-        for signum in {signal.CTRL_C_EVENT, signal.CTRL_BREAK_EVENT}:
-            try:
-                handled[signum] = signal.signal(signum, on_signal)
-            except (ValueError, OSError, RuntimeError):
-                pass
+        signal.signal(signal.CTRL_C_EVENT, on_signal)
 
-        async def pass_sigs() -> None:
-            while True:
-                signum = await queue.get()
-                if signum is None:
-                    return
-                await root.client.jobs.send_signal(job, signum)
-
-        task = loop.create_task(pass_sigs())
+        task = loop.create_task(
+            _handle_signals(root, job, queue, write_sem, current_task())
+        )
         yield
 
-        for signum, handler in handled.items():
-            signal.signal(signum, handler)
+        signal.signal(signal.CTRL_C_EVENT, signal.default_int_handler)
 
         await queue.put(None)
         await task
@@ -1339,7 +1383,6 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Don't attach to job logs and don't wait for exit code",
 )
 @option("-t", "--tty", is_flag=True, help="Allocate a TTY")
-@SIG_PROXY
 async def run(
     root: Root,
     image: RemoteImage,
@@ -1363,7 +1406,6 @@ async def run(
     browse: bool,
     detach: bool,
     tty: bool,
-    sig_proxy: bool,
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -1420,7 +1462,6 @@ async def run(
         browse=browse,
         detach=detach,
         tty=tty,
-        sig_proxy=sig_proxy,
     )
 
 
@@ -1472,7 +1513,6 @@ async def run_job(
     browse: bool,
     detach: bool,
     tty: bool,
-    sig_proxy: bool,
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -1568,7 +1608,7 @@ async def run_job(
         sys.exit(job.history.exit_code or EX_PLATFORMERROR)
 
     if not detach:
-        await _attach(root, job.id, tty=tty, logs=True, sig_proxy=sig_proxy)
+        await _attach(root, job.id, tty=tty, logs=True)
 
     return job
 

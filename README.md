@@ -447,7 +447,6 @@ Name | Description|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_\-t, --tty_|Allocate a TTY|
-|_\--sig_proxy / --no-sig-proxy_|Proxy all received signals to the process  \[default: True]|
 |_--help_|Show this message and exit.|
 
 
@@ -507,7 +506,6 @@ Name | Description|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_\-t, --tty_|Allocate a TTY|
-|_\--sig_proxy / --no-sig-proxy_|Proxy all received signals to the process  \[default: True]|
 |_--help_|Show this message and exit.|
 
 
@@ -788,7 +786,6 @@ neuro job attach [OPTIONS] JOB
 
 Name | Description|
 |----|------------|
-|_\--sig_proxy / --no-sig-proxy_|Proxy all received signals to the process  \[default: True]|
 |_--help_|Show this message and exit.|
 
 
@@ -1865,7 +1862,6 @@ Name | Description|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_\-t, --tty_|Allocate a TTY|
-|_\--sig_proxy / --no-sig-proxy_|Proxy all received signals to the process  \[default: True]|
 |_--help_|Show this message and exit.|
 
 
@@ -1925,7 +1921,6 @@ Name | Description|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_\-t, --tty_|Allocate a TTY|
-|_\--sig_proxy / --no-sig-proxy_|Proxy all received signals to the process  \[default: True]|
 |_--help_|Show this message and exit.|
 
 

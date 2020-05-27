@@ -586,8 +586,8 @@ class Jobs(metaclass=NoPublicConstructor):
         url = self._config.monitoring_url / id / "kill"
         url = url.with_query(signal=signal)
         auth = await self._config._api_auth()
-        async with self._core.request("POST", url, auth=auth):
-            pass
+        async with self._core.request("POST", url, auth=auth) as resp:
+            resp
 
 
 #  ############## Internal helpers ###################
