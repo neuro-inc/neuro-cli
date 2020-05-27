@@ -189,5 +189,29 @@ RemoteImage
 
       URL that can be used to reference this image with Docker.
 
+    .. py:classmethod:: new_neuro_image(name: str, registry: str, *, owner: str, cluster_name: str, tag: Optional[str] = None) -> RemoteImage
+
+        Create a new instance referring to an image hosted on Neuro Platform.
+
+      :param str name: name of the image
+
+      :param str registry: registry where the image is located
+
+      :param str owner: image owner name
+
+      :param str cluster_name: name of the cluster
+
+      :param str tag: image tag
+
+    .. py:classmethod:: new_external_image(name: str, registry: Optional[str] = None, *, tag: Optional[str] = None) -> RemoteImage
+
+        Create a new instance referring to an image hosted on an external registry (e.g. DockerHub_).
+
+      :param str name: name of the image
+
+      :param str registry: registry where the image is located
+
+      :param str tag: image tag
+
 
 .. _DockerHub: https://hub.docker.com

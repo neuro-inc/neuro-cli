@@ -19,6 +19,30 @@ class RemoteImage:
     registry: Optional[str] = None
     cluster_name: Optional[str] = None
 
+    @classmethod
+    def new_neuro_image(
+        cls,
+        name: str,
+        registry: str,
+        *,
+        owner: str,
+        cluster_name: str,
+        tag: Optional[str] = None,
+    ) -> "RemoteImage":
+        return RemoteImage(
+            name=name,
+            tag=tag,
+            owner=owner,
+            registry=registry,
+            cluster_name=cluster_name,
+        )
+
+    @classmethod
+    def new_external_image(
+        cls, name: str, registry: Optional[str] = None, *, tag: Optional[str] = None
+    ) -> "RemoteImage":
+        return RemoteImage(name=name, tag=tag, registry=registry)
+
     def __post_init__(self) -> None:
         if self.registry:
             if self.owner:
@@ -32,12 +56,9 @@ class RemoteImage:
                 raise ValueError("required registry")
 
     def as_docker_url(self) -> str:
-        if _is_in_neuro_registry(self):
-            name = f"https://{self.registry}/{self.owner}/{self.name}"
-            tag = f":{self.tag}" if self.tag else ""
-            return name + tag
-        else:
-            return str(self)
+        prefix = f"{self.registry}/{self.owner}/" if _is_in_neuro_registry(self) else ""
+        suffix = f":{self.tag}" if self.tag else ""
+        return f"{prefix}{self.name}{suffix}"
 
     def __str__(self) -> str:
         pre = (
@@ -117,14 +138,17 @@ class _ImageNameParser:
                 assert "/" in name, msg
                 registry, name = name.split("/", 1)
 
-            return RemoteImage(name=name, tag=img.tag, registry=registry)
+            return RemoteImage.new_external_image(
+                name=name, tag=img.tag, registry=registry
+            )
 
     def is_in_neuro_registry(self, image: str) -> bool:
         # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
         return image.startswith("image:") or image.startswith(f"{self._registry}/")
 
     def convert_to_neuro_image(self, image: LocalImage) -> RemoteImage:
-        return RemoteImage(
+        assert self._registry is not None
+        return RemoteImage.new_neuro_image(
             name=image.name,
             tag=image.tag,
             owner=self._default_user,
@@ -197,6 +221,7 @@ class _ImageNameParser:
 
         self._check_allowed_uri_elements(url)
 
+        assert self._registry is not None
         registry = self._registry
         name, tag = self._split_image_name(url.path.lstrip("/"), default_tag)
         cluster_name = url.host or self._default_cluster
@@ -206,7 +231,7 @@ class _ImageNameParser:
                 raise ValueError("no image name specified")
         else:
             owner = self._default_user
-        return RemoteImage(
+        return RemoteImage.new_neuro_image(
             name=name,
             tag=tag,
             registry=registry,
