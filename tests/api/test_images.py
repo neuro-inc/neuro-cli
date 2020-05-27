@@ -872,6 +872,20 @@ class TestRemoteImage:
         assert str(image) == "ubuntu:v10.04"
         assert _as_repo_str(image) == "ubuntu:v10.04"
 
+    def test_as_docker_url_in_neuro_registry(self) -> None:
+        image = RemoteImage(
+            name="ubuntu",
+            tag="v10.04",
+            owner="me",
+            cluster_name="test-cluster",
+            registry="registry.io",
+        )
+        assert image.as_docker_url() == "registry.io/me/ubuntu:v10.04"
+
+    def test_as_docker_url_not_in_neuro_registry(self) -> None:
+        image = RemoteImage(name="ubuntu", tag="v10.04", owner=None, registry=None)
+        assert image.as_docker_url() == "ubuntu:v10.04"
+
 
 @pytest.mark.usefixtures("patch_docker_host")
 class TestImages:
