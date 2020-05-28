@@ -271,7 +271,7 @@ def job() -> None:
     "--restart",
     default="never",
     show_default=True,
-    type=click.Choice(JobRestartPolicy),
+    type=click.Choice([str(i) for i in JobRestartPolicy]),
     help="Restart policy to apply when a job exits",
 )
 @option(
@@ -907,7 +907,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "--restart",
     default="never",
     show_default=True,
-    type=click.Choice(JobRestartPolicy),
+    type=click.Choice([str(i) for i in JobRestartPolicy]),
     help="Restart policy to apply when a job exits",
 )
 @option(
