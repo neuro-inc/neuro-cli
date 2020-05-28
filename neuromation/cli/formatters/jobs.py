@@ -6,9 +6,8 @@ import time
 from dataclasses import dataclass
 from typing import Iterable, Iterator, List
 
-import click
 import humanize
-from click import style, unstyle
+from click import style, unstyle, secho
 
 from neuromation.api import (
     JobDescription,
@@ -488,16 +487,16 @@ class DetailedJobStopProgress(JobStopProgress):
         )
 
     def timeout(self, job: JobDescription) -> None:
-        click.secho()
-        click.secho("!!! Warning !!!", fg="red")
-        click.secho(
+        secho()
+        secho("!!! Warning !!!", fg="red")
+        secho(
             "The attached session was disconnected " "but the job is still alive.",
             fg="red",
         )
-        click.secho("Reconnect to the job:", dim=True, fg="yellow")
-        click.secho(f"  neuro attach {job}", dim=True)
-        click.secho("Terminate the job:", dim=True, fg="yellow")
-        click.secho(f"  neuro kill {job}", dim=True)
+        secho("Reconnect to the job:", dim=True, fg="yellow")
+        secho(f"  neuro attach {job}", dim=True)
+        secho("Terminate the job:", dim=True, fg="yellow")
+        secho(f"  neuro kill {job}", dim=True)
 
 
 class StreamJobStopProgress(JobStopProgress):
@@ -564,9 +563,9 @@ class DetailedExecStopProgress(ExecStopProgress):
         )
 
     def timeout(self) -> None:
-        click.secho()
-        click.secho("!!! Warning !!!", fg="red")
-        click.secho(
+        secho()
+        secho("!!! Warning !!!", fg="red")
+        secho(
             "The attached session was disconnected "
             "but the exec process is still alive.",
             fg="red",
