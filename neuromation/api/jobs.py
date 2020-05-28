@@ -372,50 +372,6 @@ class Jobs(metaclass=NoPublicConstructor):
                 if push_step:
                     progress.step(push_step)
 
-    async def exec(
-        self,
-        id: str,
-        cmd: Iterable[str],
-        *,
-        tty: bool = False,
-        no_key_check: bool = False,
-    ) -> int:
-        try:
-            job_status = await self.status(id)
-        except IllegalArgumentError as e:
-            raise ValueError(f"Job not found. Job Id = {id}") from e
-        if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {job_status.id}")
-        payload = json.dumps(
-            {
-                "method": "job_exec",
-                "token": await self._config.token(),
-                "params": {"job": job_status.id, "command": list(cmd)},
-            }
-        )
-        command = ["ssh"]
-        if tty:
-            command += ["-tt"]
-        else:
-            command += ["-T"]
-        if no_key_check:  # pragma: no branch
-            command += [
-                "-o",
-                "StrictHostKeyChecking=no",
-                "-o",
-                "UserKnownHostsFile=/dev/null",
-            ]
-        server_url = job_status.ssh_server
-        port = server_url.port if server_url.port else 22
-        command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
-        proc = await asyncio.create_subprocess_exec(*command)
-        try:
-            return await proc.wait()
-        finally:
-            await _kill_proc_tree(proc.pid, timeout=10)
-            # add a sleep to get process watcher a chance to execute all callbacks
-            await asyncio.sleep(0.1)
-
     @asynccontextmanager
     async def port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False

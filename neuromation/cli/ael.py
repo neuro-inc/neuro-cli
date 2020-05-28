@@ -395,6 +395,12 @@ async def _process_interruption(
             signum = await queue.get()
             if signum is None:
                 return
+            if not root.tty:
+                # Ask nothing but just kill a job
+                # if executed not from terminal
+                await root.client.jobs.kill(job)
+                main_task.cancel()
+                return
             async with write_sem:
                 session = _create_interruption_dialog()
                 answer = await session.prompt_async()
