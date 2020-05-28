@@ -497,7 +497,7 @@ async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
         tasks.append(loop.create_task(_process_stdout_tty(stream, stdout)))
         tasks.append(
             loop.create_task(
-                _resize(
+                _process_resizing(
                     functools.partial(root.client.jobs.exec_resize, job, exec_id),
                     stdout,
                 )
@@ -706,7 +706,9 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
         tasks.append(loop.create_task(_process_stdout_tty(stream, stdout)))
         tasks.append(
             loop.create_task(
-                _resize(functools.partial(root.client.jobs.resize, job), stdout)
+                _process_resizing(
+                    functools.partial(root.client.jobs.resize, job), stdout
+                )
             )
         )
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
@@ -714,7 +716,9 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
             await root.cancel_with_logging(task)
 
 
-async def _resize(resizer: Callable[..., Awaitable[None]], stdout: Output) -> None:
+async def _process_resizing(
+    resizer: Callable[..., Awaitable[None]], stdout: Output
+) -> None:
     loop = asyncio.get_event_loop()
     resize_event = asyncio.Event()
 
@@ -901,7 +905,7 @@ def _create_interruption_dialog() -> PromptSession[InterruptAction]:
     return session
 
 
-async def _handle_signals(
+async def _process_interruption(
     root: Root,
     job: str,
     queue: "asyncio.Queue[Optional[int]]",
@@ -947,7 +951,7 @@ if sys.platform != "win32":
         loop.add_signal_handler(signal.SIGINT, on_signal, signal.SIGINT)
 
         task = loop.create_task(
-            _handle_signals(root, job, queue, write_sem, current_task())
+            _process_interruption(root, job, queue, write_sem, current_task())
         )
         yield write_sem
 
@@ -971,7 +975,7 @@ else:
         signal.signal(signal.SIGINT, on_signal)
 
         task = loop.create_task(
-            _handle_signals(root, job, queue, write_sem, current_task())
+            _process_interruption(root, job, queue, write_sem, current_task())
         )
 
         async def busy_loop():
