@@ -520,8 +520,13 @@ async def attach(root: Root, job: str) -> None:
         },
     )
     status = await root.client.jobs.status(id)
+    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
     while status.status == JobStatus.PENDING:
+        await asyncio.sleep(0.2)
         status = await root.client.jobs.status(id)
+        progress(status)
+    progress.close()
+
     await process_attach(root, id, tty=status.container.tty, logs=False)
 
 

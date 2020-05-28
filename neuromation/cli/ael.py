@@ -27,6 +27,7 @@ from neuromation.api.utils import asynccontextmanager
 
 from .asyncio_utils import current_task
 from .const import EX_IOERR, EX_PLATFORMERROR
+from .formatters.jobs import JobStopProgress
 from .root import Root
 
 
@@ -135,32 +136,23 @@ async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
 
 async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> None:
     try:
+        # Note, the job should be in running/finished state for this call,
+        # passing pending job is forbidden
         if tty:
             # docker doesn't proxy signals for non-tty
             await _attach_tty(root, job, logs)
         else:
             await _attach_non_tty(root, job, logs)
 
-        loop = asyncio.get_event_loop()
-        t0 = loop.time()
         status = await root.client.jobs.status(job)
-        while status.status in (JobStatus.PENDING, JobStatus.RUNNING):
-            t1 = loop.time()
-            if t1 - t0 > 10:
-                click.echo()
-                click.secho("!!! Warning !!!", fg="red")
-                click.secho(
-                    "The attached session was disconnected "
-                    "but the job is still alive.",
-                    fg="red",
-                )
-                click.secho("Reconnect to the job:", dim=True, fg="yellow")
-                click.secho(f"  neuro attach {job}", dim=True)
-                click.secho("Terminate the job:", dim=True, fg="yellow")
-                click.secho(f"  neuro kill {job}", dim=True)
-                sys.exit(EX_IOERR)
-            await asyncio.sleep(0.1)
+        progress = JobStopProgress.create(
+            tty=root.tty, color=root.color, quiet=root.quiet
+        )
+        while status.status == JobStatus.RUNNING:
+            await asyncio.sleep(0.2)
             status = await root.client.jobs.status(job)
+            if not progress(status):
+                sys.exit(EX_IOERR)
         if status.status == JobStatus.FAILED:
             sys.exit(status.history.exit_code or EX_PLATFORMERROR)
         sys.exit(status.history.exit_code)
@@ -457,4 +449,4 @@ async def _handle_ctrl_c(root: Root, job: str) -> AsyncIterator[asyncio.Semaphor
     await queue.put(None)
     await task
 
-    root.cancel_with_logging(busy_task)
+    await root.cancel_with_logging(busy_task)
