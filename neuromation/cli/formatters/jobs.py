@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Iterable, Iterator, List
 
 import humanize
-from click import style, unstyle, secho
+from click import secho, style, unstyle
 
 from neuromation.api import (
     JobDescription,
