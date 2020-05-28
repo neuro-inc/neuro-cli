@@ -188,7 +188,7 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
                 )
             )
         )
-        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in tasks:
             await root.cancel_with_logging(task)
 
