@@ -519,7 +519,10 @@ async def attach(root: Root, job: str) -> None:
             JobStatus.FAILED,
         },
     )
-    await process_attach(root, id, tty=None, logs=False)
+    status = await root.client.jobs.status(id)
+    while status.status == JobStatus.PENDING:
+        status = await root.client.jobs.status(id)
+    await process_attach(root, id, tty=status.container.tty, logs=False)
 
 
 @command()

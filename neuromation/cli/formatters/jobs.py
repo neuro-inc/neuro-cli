@@ -33,6 +33,12 @@ COLORS = {
 }
 
 
+if sys.platform == "win32":
+    SPINNER = itertools.cycle("-\\|/")
+else:
+    SPINNER = itertools.cycle("◢◣◤◥")
+
+
 def format_job_status(status: JobStatus) -> str:
     return style(status.value, fg=COLORS.get(status, "reset"))
 
@@ -382,10 +388,7 @@ class DetailedJobStartProgress(JobStartProgress):
         self._time = time.time()
         self._color = color
         self._prev = ""
-        if sys.platform == "win32":
-            self._spinner = itertools.cycle("-\\|/")
-        else:
-            self._spinner = itertools.cycle("◢◣◤◥")
+        self._spinner = SPINNER
         self._printer = TTYPrinter()
         self._lineno = 0
 

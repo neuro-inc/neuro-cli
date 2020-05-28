@@ -133,11 +133,8 @@ async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
                 f.flush()
 
 
-async def process_attach(root: Root, job: str, tty: Optional[bool], logs: bool) -> None:
+async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> None:
     try:
-        if tty is None:
-            status = await root.client.jobs.status(job)
-            tty = status.container.tty
         if tty:
             # docker doesn't proxy signals for non-tty
             await _attach_tty(root, job, logs)
@@ -439,12 +436,15 @@ async def _handle_ctrl_c(root: Root, job: str) -> AsyncIterator[asyncio.Semaphor
         _process_interruption(root, job, queue, write_sem, current_task())
     )
 
-    async def busy_loop():
+    async def busy_loop() -> None:
         # On Python < 3.8 the interruption handling
         # responses not smoothly because the loop is blocked
         # in proactor for relative long time period.
         # Simple busy loop interrupts the proactor every 100 ms,
         # giving a chance to process other tasks
+        # UNIX doesn't need this hack.
+        if sys.platform != "win32":
+            return
         while True:
             await asyncio.sleep(0.1)
 
