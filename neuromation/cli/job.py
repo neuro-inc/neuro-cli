@@ -306,7 +306,7 @@ def job() -> None:
     "--restart",
     default="never",
     show_default=True,
-    type=click.Choice(JobRestartPolicy),
+    type=click.Choice([str(i) for i in JobRestartPolicy]),
     help="Restart policy to apply when a job exits",
 )
 @option(
@@ -955,19 +955,33 @@ else:
         write_sem = asyncio.Semaphore()
 
         def on_signal(signum: int, frame: Any) -> None:
-            queue.put_nowait(signum)
+            loop.call_soon_threadsafe(queue.put_nowait, signum)
 
-        signal.signal(signal.CTRL_C_EVENT, on_signal)
+        signal.signal(signal.SIGINT, on_signal)
 
         task = loop.create_task(
             _handle_signals(root, job, queue, write_sem, current_task())
         )
-        yield
 
-        signal.signal(signal.CTRL_C_EVENT, signal.default_int_handler)
+        async def busy_loop():
+            # On Python < 3.8 the interruption handling
+            # responses not smoothly because the loop is blocked
+            # in proactor for relative long time period.
+            # Simple busy loop interrupts the proactor every 100 ms,
+            # giving a chance to process other tasks
+            while True:
+                await asyncio.sleep(0.1)
+
+        busy_task = loop.create_task(busy_loop())
+
+        yield write_sem
+
+        signal.signal(signal.SIGINT, signal.default_int_handler)
 
         await queue.put(None)
         await task
+
+        root.cancel_with_logging(busy_task)
 
 
 @command()
