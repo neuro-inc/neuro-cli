@@ -31,14 +31,18 @@ from .root import Root
 
 log = logging.getLogger(__name__)
 
+
+JOB_STARTED = click.style(
+    "==== Job is running, press Ctrl-C to detach/kill ===", dim=True)
+
 LOGS_STARTED = click.style(
-    "==================== job's logs ====================\n", dim=True
+    "==================== Job's logs ====================", dim=True
 )
 ATTACH_STARTED = click.style(
-    "=================== job's output ===================\n", dim=True
+    "=================== Job's output ===================", dim=True
 )
 ATTACH_STARTED_AFTER_LOGS = click.style(
-    "======== job's output, may overlap with logs =======\n", dim=True
+    "======== Job's output, may overlap with logs =======", dim=True
 )
 
 
@@ -61,11 +65,13 @@ async def process_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> 
                 return
             async with helper.write_sem:
                 if not helper.log_printed.is_set() and not root.quiet:
-                    click.echo(LOGS_STARTED, nl=False)
+                    click.echo(LOGS_STARTED)
                 helper.log_printed.set()
-                click.echo(txt, nl=False)
+                sys.stdout.write(txt)
+                sys.stdout.flush()
         else:
-            click.echo(txt, nl=False)
+            sys.stdout.write(txt)
+            sys.stdout.flush()
 
 
 async def process_exec(root: Root, job: str, cmd: str, tty: bool) -> None:
@@ -274,7 +280,7 @@ async def _process_stdout_tty(stream: StdStream, stdout: Output) -> None:
 
 async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
     if not root.quiet:
-        click.secho("Job is running, press Ctrl-C to detach/kill.", dim=True)
+        click.echo(JOB_STARTED)
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
     async with _handle_ctrl_c(root, job) as write_sem:
@@ -298,9 +304,9 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
                         if txt is not None:
                             if not root.quiet and not helper.attach_ready.is_set():
                                 if helper.log_printed.is_set():
-                                    click.echo(ATTACH_STARTED_AFTER_LOGS, nl=False)
+                                    click.echo(ATTACH_STARTED_AFTER_LOGS)
                                 else:
-                                    click.echo(ATTACH_STARTED, nl=False)
+                                    click.echo(ATTACH_STARTED)
                             helper.attach_ready.set()
                             f.write(txt)
                             f.flush()
