@@ -3,6 +3,7 @@ import codecs
 import contextlib
 import dataclasses
 import enum
+import functools
 import logging
 import os
 import re
@@ -16,6 +17,8 @@ from datetime import datetime, timedelta
 from typing import (
     Any,
     AsyncIterator,
+    Awaitable,
+    Callable,
     Dict,
     Iterator,
     List,
@@ -490,25 +493,19 @@ async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
                 return
 
         tasks = []
-        resize_event = asyncio.Event()
-        tasks.append(loop.create_task(_process_stdin_tty(stream, resize_event)))
+        tasks.append(loop.create_task(_process_stdin_tty(stream)))
         tasks.append(loop.create_task(_process_stdout_tty(stream, stdout)))
         tasks.append(
-            loop.create_task(_exec_resize(root, job, exec_id, resize_event, stdout))
+            loop.create_task(
+                _resize(
+                    functools.partial(root.client.jobs.exec_resize, job, exec_id),
+                    stdout,
+                )
+            )
         )
         await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in tasks:
             await root.cancel_with_logging(task)
-
-
-async def _exec_resize(
-    root: Root, job: str, exec_id: str, resize_event: asyncio.Event, stdout: Output
-) -> None:
-    while True:
-        await resize_event.wait()
-        resize_event.clear()
-        h, w = stdout.get_size()
-        await root.client.jobs.exec_resize(job, exec_id, w=w, h=h)
 
 
 async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
@@ -705,65 +702,79 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
                 return
 
         tasks = []
-        resize_event = asyncio.Event()
-        tasks.append(loop.create_task(_process_stdin_tty(stream, resize_event)))
+        tasks.append(loop.create_task(_process_stdin_tty(stream)))
         tasks.append(loop.create_task(_process_stdout_tty(stream, stdout)))
-        tasks.append(loop.create_task(_resize(root, job, resize_event, stdout)))
+        tasks.append(
+            loop.create_task(
+                _resize(functools.partial(root.client.jobs.resize, job), stdout)
+            )
+        )
         done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in tasks:
             await root.cancel_with_logging(task)
 
 
-async def _resize(
-    root: Root, job: str, resize_event: asyncio.Event, stdout: Output
-) -> None:
-    while True:
-        await resize_event.wait()
-        resize_event.clear()
-        h, w = stdout.get_size()
-        await root.client.jobs.resize(job, w=w, h=h)
-
-
-async def _process_stdin_tty(stream: StdStream, resize_event: asyncio.Event) -> None:
+async def _resize(resizer: Callable[..., Awaitable[None]], stdout: Output) -> None:
     loop = asyncio.get_event_loop()
+    resize_event = asyncio.Event()
+
+    def resize() -> None:
+        resize_event.set()
+
+    has_sigwinch = (
+        hasattr(signal, "SIGWINCH")
+        and threading.current_thread() is threading.main_thread()
+    )
+    if has_sigwinch:
+        previous_winch_handler = signal.getsignal(signal.SIGWINCH)
+        loop.add_signal_handler(signal.SIGWINCH, resize)
+        if previous_winch_handler is None:
+            # Borrowed from the Prompt Toolkit.
+            # In some situations we receive `None`. This is
+            # however not a valid value for passing to
+            # `signal.signal` at the end of this block.
+            previous_winch_handler = signal.SIG_DFL
+
+    prevh = prevw = None
+    try:
+        # Windows has no SIGWINCH signal, we use polling for both Windows and Unix
+        # for the sake of code uniformness.
+        while True:
+            with contextlib.suppress(asyncio.TimeoutError):
+                # Wait for 500 ms
+                # If there is no resize event -- check the size anyway on timeout.
+                # It makes resizing to work on Windows.
+                async with async_timeout.timeout(0.5):
+                    await resize_event.wait()
+            resize_event.clear()
+            h, w = stdout.get_size()
+            if prevh != h or prevw != w:
+                prevh = h
+                prevw = w
+                await resizer(w=w, h=h)
+    finally:
+        if has_sigwinch:
+            loop.remove_signal_handler(signal.SIGWINCH)
+            signal.signal(signal.SIGWINCH, previous_winch_handler)
+
+
+async def _process_stdin_tty(stream: StdStream) -> None:
     ev = asyncio.Event()
 
     def read_ready() -> None:
         ev.set()
 
-    def resize() -> None:
-        resize_event.set()
-
     inp = create_input()
     with inp.raw_mode():
         with inp.attach(read_ready):
-
-            has_sigwinch = (
-                hasattr(signal, "SIGWINCH")
-                and threading.current_thread() is threading.main_thread()
-            )
-            if has_sigwinch:
-                previous_winch_handler = signal.getsignal(signal.SIGWINCH)
-                loop.add_signal_handler(signal.SIGWINCH, resize)
-                if previous_winch_handler is None:
-                    # In some situations we receive `None`. This is
-                    # however not a valid value for passing to
-                    # `signal.signal` at the end of this block.
-                    previous_winch_handler = signal.SIG_DFL
-
-            try:
-                while True:
-                    await ev.wait()
-                    ev.clear()
-                    if inp.closed:
-                        return
-                    keys = inp.read_keys()  # + inp.flush_keys()
-                    buf = b"".join(key.data.encode("utf8") for key in keys)
-                    await stream.write_in(buf)
-            finally:
-                if has_sigwinch:
-                    loop.remove_signal_handler(signal.SIGWINCH)
-                    signal.signal(signal.SIGWINCH, previous_winch_handler)
+            while True:
+                await ev.wait()
+                ev.clear()
+                if inp.closed:
+                    return
+                keys = inp.read_keys()  # + inp.flush_keys()
+                buf = b"".join(key.data.encode("utf8") for key in keys)
+                await stream.write_in(buf)
 
 
 async def _process_stdout_tty(stream: StdStream, stdout: Output) -> None:
