@@ -379,7 +379,7 @@ def _create_interruption_dialog() -> PromptSession[InterruptAction]:
         # Disallow inserting other text.
         pass
 
-    message = HTML("<b>Interrupted</b>. Please choose the action:\n")
+    message = HTML("  <b>Interrupted</b>. Please choose the action:\n")
     suffix = HTML(
         "<b>Ctrl-C</b> or <b>C</b> (kill), "
         "<b>Ctrl-D</b> or <b>D</b> (detach), "
@@ -424,63 +424,37 @@ async def _process_interruption(
         main_task.cancel()
 
 
-if sys.platform != "win32":
+@asynccontextmanager
+async def _handle_ctrl_c(root: Root, job: str) -> AsyncIterator[asyncio.Semaphore]:
+    queue: asyncio.Queue[Optional[int]] = asyncio.Queue()
+    loop = asyncio.get_event_loop()
+    write_sem = asyncio.Semaphore()
 
-    @asynccontextmanager
-    async def _handle_ctrl_c(root: Root, job: str) -> AsyncIterator[asyncio.Semaphore]:
-        queue: asyncio.Queue[Optional[int]] = asyncio.Queue()
-        loop = asyncio.get_event_loop()
-        write_sem = asyncio.Semaphore()
+    def on_signal(signum: int, frame: Any) -> None:
+        loop.call_soon_threadsafe(queue.put_nowait, signum)
 
-        def on_signal(signum: int) -> None:
-            queue.put_nowait(signum)
+    signal.signal(signal.SIGINT, on_signal)
 
-        loop.add_signal_handler(signal.SIGINT, on_signal, signal.SIGINT)
+    task = loop.create_task(
+        _process_interruption(root, job, queue, write_sem, current_task())
+    )
 
-        task = loop.create_task(
-            _process_interruption(root, job, queue, write_sem, current_task())
-        )
-        yield write_sem
+    async def busy_loop():
+        # On Python < 3.8 the interruption handling
+        # responses not smoothly because the loop is blocked
+        # in proactor for relative long time period.
+        # Simple busy loop interrupts the proactor every 100 ms,
+        # giving a chance to process other tasks
+        while True:
+            await asyncio.sleep(0.1)
 
-        loop.remove_signal_handler(signal.SIGINT)
+    busy_task = loop.create_task(busy_loop())
 
-        await queue.put(None)
-        await task
+    yield write_sem
 
+    signal.signal(signal.SIGINT, signal.default_int_handler)
 
-else:
+    await queue.put(None)
+    await task
 
-    @asynccontextmanager
-    async def _handle_ctrl_c(root: Root, job: str) -> AsyncIterator[asyncio.Semaphore]:
-        queue: asyncio.Queue[Optional[int]] = asyncio.Queue()
-        loop = asyncio.get_event_loop()
-        write_sem = asyncio.Semaphore()
-
-        def on_signal(signum: int, frame: Any) -> None:
-            loop.call_soon_threadsafe(queue.put_nowait, signum)
-
-        signal.signal(signal.SIGINT, on_signal)
-
-        task = loop.create_task(
-            _process_interruption(root, job, queue, write_sem, current_task())
-        )
-
-        async def busy_loop():
-            # On Python < 3.8 the interruption handling
-            # responses not smoothly because the loop is blocked
-            # in proactor for relative long time period.
-            # Simple busy loop interrupts the proactor every 100 ms,
-            # giving a chance to process other tasks
-            while True:
-                await asyncio.sleep(0.1)
-
-        busy_task = loop.create_task(busy_loop())
-
-        yield write_sem
-
-        signal.signal(signal.SIGINT, signal.default_int_handler)
-
-        await queue.put(None)
-        await task
-
-        root.cancel_with_logging(busy_task)
+    root.cancel_with_logging(busy_task)
