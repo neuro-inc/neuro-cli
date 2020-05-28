@@ -217,16 +217,17 @@ async def _process_resizing(
 
     prevh = prevw = None
     try:
-        # Windows has no SIGWINCH signal, we use polling for both Windows and Unix
-        # for the sake of code uniformness.
         while True:
-            with contextlib.suppress(asyncio.TimeoutError):
-                # Wait for 500 ms
+            if has_sigwinch:
+                await resize_event.wait()
+                resize_event.clear()
+            else:
+                # Windows or non-main thread
+                # The logic is borrowed from docker CLI.
+                # Wait for 250 ms
                 # If there is no resize event -- check the size anyway on timeout.
                 # It makes resizing to work on Windows.
-                async with async_timeout.timeout(0.5):
-                    await resize_event.wait()
-            resize_event.clear()
+                await asyncio.sleep(0.25)
             h, w = stdout.get_size()
             if prevh != h or prevw != w:
                 prevh = h

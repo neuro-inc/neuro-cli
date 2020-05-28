@@ -526,8 +526,11 @@ async def attach(root: Root, job: str) -> None:
         status = await root.client.jobs.status(id)
         progress(status)
     progress.close()
+    tty = status.container.tty
+    if tty:
+        _check_tty(root, tty)
 
-    await process_attach(root, id, tty=status.container.tty, logs=False)
+    await process_attach(root, id, tty=tty, logs=False)
 
 
 @command()
@@ -1087,6 +1090,8 @@ async def run_job(
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
     if not wait_start:
         detach = True
+    if not detach:
+        _check_tty(root, tty)
 
     job_restart_policy = JobRestartPolicy(restart)
     log.debug(f"Job restart policy: {job_restart_policy}")
@@ -1379,3 +1384,11 @@ def _parse_date(value: str) -> Optional[datetime]:
             raise ValueError("Date should be in ISO-8601 format")
     else:
         return None
+
+
+def _check_tty(root: Root, tty: bool) -> None:
+    if tty and not root.tty:
+        raise RuntimeError(
+            "The operation should be executed from a terminal, "
+            "the input device is not a TTY"
+        )
