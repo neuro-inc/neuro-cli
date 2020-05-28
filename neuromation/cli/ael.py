@@ -413,12 +413,11 @@ async def _process_interruption(
                     main_task.cancel()
     except asyncio.CancelledError:
         raise
-    except Exception as exc:
-        if root.show_traceback:
-            log.exception(str(exc), stack_info=True)
-        else:
-            log.error(str(exc))
+    except Exception:
+        # Cancel main task, finalizer from _handle_ctrl_c will print the expection
+        # in uniformed format
         main_task.cancel()
+        raise
 
 
 @asynccontextmanager
@@ -450,11 +449,12 @@ async def _handle_ctrl_c(root: Root, job: str) -> AsyncIterator[asyncio.Semaphor
 
     busy_task = loop.create_task(busy_loop())
 
-    yield write_sem
+    try:
+        yield write_sem
+    finally:
+        signal.signal(signal.SIGINT, signal.default_int_handler)
 
-    signal.signal(signal.SIGINT, signal.default_int_handler)
+        await queue.put(None)
+        await task
 
-    await queue.put(None)
-    await task
-
-    await root.cancel_with_logging(busy_task)
+        await root.cancel_with_logging(busy_task)
