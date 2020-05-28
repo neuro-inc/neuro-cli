@@ -428,7 +428,9 @@ async def exec(
     job = await resolve_job(
         job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
     )
-    await process_exec(root, job, real_cmd, tty)
+    _check_tty(root, tty)
+    async with async_timeout.timeout(timeout):
+        await process_exec(root, job, real_cmd, tty)
 
 
 @command()

@@ -457,7 +457,7 @@ class JobStopProgress:
         # return False if timeout, True otherwise
         new_time = time.time()
         if new_time - self._time > self.TIMEOUT:
-            self.timeout()
+            self.timeout(job)
             return False
         else:
             self.tick()
@@ -512,4 +512,80 @@ class StreamJobStopProgress(JobStopProgress):
     def timeout(self, job: JobDescription) -> None:
         print()
         print("!!! Warning !!!")
-        print("The attached session was disconnected " "but the job is still alive.",)
+        print("The attached session was disconnected but the job is still alive.")
+
+
+class ExecStopProgress:
+    TIMEOUT = 15
+
+    @classmethod
+    def create(cls, tty: bool, color: bool, quiet: bool) -> "ExecStopProgress":
+        if quiet:
+            return ExecStopProgress()
+        elif tty:
+            return DetailedExecStopProgress(color)
+        return StreamExecStopProgress()
+
+    def __init__(self) -> None:
+        self._time = time.time()
+
+    def __call__(self) -> bool:
+        # return False if timeout, True otherwise
+        new_time = time.time()
+        if new_time - self._time > self.TIMEOUT:
+            self.timeout()
+            return False
+        else:
+            self.tick()
+            return True
+
+    def tick(self) -> None:
+        pass
+
+    def timeout(self) -> None:
+        pass
+
+
+class DetailedExecStopProgress(ExecStopProgress):
+    def __init__(self, color: bool):
+        super().__init__()
+        self._color = color
+        self._spinner = SPINNER
+        self._printer = TTYPrinter()
+        self._lineno = 0
+
+    def tick(self) -> None:
+        new_time = time.time()
+        dt = new_time - self._time
+
+        self._printer.print(
+            f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]",
+            lineno=self._lineno,
+        )
+
+    def timeout(self) -> None:
+        click.secho()
+        click.secho("!!! Warning !!!", fg="red")
+        click.secho(
+            "The attached session was disconnected "
+            "but the exec process is still alive.",
+            fg="red",
+        )
+
+
+class StreamExecStopProgress(ExecStopProgress):
+    def __init__(self) -> None:
+        super().__init__()
+        self._printer = StreamPrinter()
+
+    def tick(self) -> None:
+        self._printer.print("Wait for stopping")
+        self._printer.tick()
+
+    def timeout(self) -> None:
+        print()
+        print("!!! Warning !!!")
+        print(
+            "The attached session was disconnected "
+            "but the exec process is still alive."
+        )

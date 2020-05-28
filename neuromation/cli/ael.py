@@ -2,7 +2,6 @@
 
 import asyncio
 import codecs
-import contextlib
 import dataclasses
 import enum
 import functools
@@ -12,7 +11,6 @@ import sys
 import threading
 from typing import Any, AsyncIterator, Awaitable, Callable, Optional
 
-import async_timeout
 import click
 from prompt_toolkit.formatted_text import HTML, merge_formatted_text
 from prompt_toolkit.input import create_input
@@ -27,7 +25,7 @@ from neuromation.api.utils import asynccontextmanager
 
 from .asyncio_utils import current_task
 from .const import EX_IOERR, EX_PLATFORMERROR
-from .formatters.jobs import JobStopProgress
+from .formatters.jobs import ExecStopProgress, JobStopProgress
 from .root import Root
 
 
@@ -78,9 +76,12 @@ async def process_exec(root: Root, job: str, cmd: str, tty: bool) -> None:
         await _exec_non_tty(root, job, exec_id)
 
     info = await root.client.jobs.exec_inspect(job, exec_id)
+    progress = ExecStopProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
     while info.running:
         await asyncio.sleep(0.1)
         info = await root.client.jobs.exec_inspect(job, exec_id)
+        if not progress():
+            sys.exit(EX_IOERR)
     sys.exit(info.exit_code)
 
 
