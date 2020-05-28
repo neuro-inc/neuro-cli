@@ -640,7 +640,7 @@ async def nginx_job_async(
             f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
         )
         container = Container(
-            image=RemoteImage("nginx", "latest"),
+            image=RemoteImage.new_external_image(name="nginx", tag="latest"),
             command=command,
             resources=Resources(20, 0.1, None, None, True, None, None),
         )

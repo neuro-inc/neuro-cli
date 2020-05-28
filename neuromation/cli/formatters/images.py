@@ -164,7 +164,7 @@ class LongImagesFormatter(BaseImagesFormatter):
         rows = [
             [
                 click.style(self._format_image(image), underline=True),
-                click.style(image.as_docker_url(), underline=True),
+                click.style(image.as_docker_url(with_scheme=True), underline=True),
             ]
             for image in images
         ]
