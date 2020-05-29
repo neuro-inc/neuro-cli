@@ -177,6 +177,8 @@ class StdStream:
         await self._ws.close()
 
     async def read_out(self) -> Optional[Message]:
+        if self._closing:
+            return None
         msg = await self._ws.receive()
         if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSING, WSMsgType.CLOSED):
             self._closing = True

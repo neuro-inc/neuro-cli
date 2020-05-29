@@ -151,9 +151,8 @@ async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
                 f = sys.stderr
             else:
                 f = sys.stdout
-            if txt is not None:
-                f.write(txt)
-                f.flush()
+            f.write(txt)
+            f.flush()
 
 
 async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> None:
@@ -297,9 +296,8 @@ async def _process_stdout_tty(stream: StdStream, stdout: Output) -> None:
         if chunk is None:
             return
         txt = decoder.decode(chunk.data)
-        if txt is not None:
-            stdout.write_raw(txt)
-            stdout.flush()
+        stdout.write_raw(txt)
+        stdout.flush()
 
 
 async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
@@ -330,15 +328,14 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
                     else:
                         f = sys.stdout
                     async with write_sem:
-                        if txt is not None:
-                            if not root.quiet and not helper.attach_ready.is_set():
-                                if helper.log_printed.is_set():
-                                    click.echo(ATTACH_STARTED_AFTER_LOGS)
-                                else:
-                                    click.echo(ATTACH_STARTED)
-                            helper.attach_ready.set()
-                            f.write(txt)
-                            f.flush()
+                        if not root.quiet and not helper.attach_ready.is_set():
+                            if helper.log_printed.is_set():
+                                click.echo(ATTACH_STARTED_AFTER_LOGS)
+                            else:
+                                click.echo(ATTACH_STARTED)
+                        helper.attach_ready.set()
+                        f.write(txt)
+                        f.flush()
 
 
 @asynccontextmanager
