@@ -163,7 +163,7 @@ class ExecInspect:
 
 @dataclass(frozen=True)
 class Message:
-    stream: int
+    fileno: int
     data: bytes
 
 

@@ -33,7 +33,8 @@ log = logging.getLogger(__name__)
 
 
 JOB_STARTED = click.style(
-    "==== Job is running, press Ctrl-C to detach/kill ===", dim=True)
+    "==== Job is running, press Ctrl-C to detach/kill ===", dim=True
+)
 
 LOGS_STARTED = click.style(
     "==================== Job's logs ====================", dim=True
@@ -134,25 +135,32 @@ async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
 
 async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
     codec_info = codecs.lookup("utf8")
-    decoder = codec_info.incrementaldecoder("replace")
+    decoders = {
+        1: codec_info.incrementaldecoder("replace"),
+        2: codec_info.incrementaldecoder("replace"),
+    }
+    streams = {1: sys.stdout, 2: sys.stderr}
+
+    def _write(fileno: int, txt: str) -> None:
+        f = streams[fileno]
+        f.write(txt)
+        f.flush()
+
     async with root.client.jobs.exec_start(job, exec_id) as stream:
         info = await root.client.jobs.exec_inspect(job, exec_id)
         if not info.running:
             raise sys.exit(info.exit_code)
         while True:
             chunk = await stream.read_out()
-            if not chunk:
-                txt = decoder.decode(b"", final=True)
-                if not txt:
-                    break
+            if chunk is None:
+                for fileno in (1, 2):
+                    txt = decoders[fileno].decode(b"", final=True)
+                    if txt:
+                        _write(fileno, txt)
+                break
             else:
-                txt = decoder.decode(chunk.data)
-            if chunk.stream == 2:
-                f = sys.stderr
-            else:
-                f = sys.stdout
-            f.write(txt)
-            f.flush()
+                txt = decoders[chunk.fileno].decode(chunk.data)
+                _write(chunk.fileno, txt)
 
 
 async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> None:
@@ -304,9 +312,32 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
     if not root.quiet:
         click.echo(JOB_STARTED)
     codec_info = codecs.lookup("utf8")
-    decoder = codec_info.incrementaldecoder("replace")
+    decoders = {
+        1: codec_info.incrementaldecoder("replace"),
+        2: codec_info.incrementaldecoder("replace"),
+    }
+    streams = {1: sys.stdout, 2: sys.stderr}
+
     async with _handle_ctrl_c(root, job) as write_sem:
         async with _print_logs_until_attached(root, job, logs, write_sem) as helper:
+
+            async def _write(fileno: int, txt: str) -> None:
+                f = streams[fileno]
+                async with write_sem:
+                    if not root.quiet and not helper.attach_ready.is_set():
+                        # Print header to stdout only,
+                        # logs are printed to stdout and never to
+                        # stderr (but logs printing is stopped by
+                        # helper.attach_ready.set() regardless
+                        # what stream had receive text in attached mode.
+                        if helper.log_printed.is_set():
+                            click.echo(ATTACH_STARTED_AFTER_LOGS)
+                        else:
+                            click.echo(ATTACH_STARTED)
+                    helper.attach_ready.set()
+                    f.write(txt)
+                    f.flush()
+
             async with root.client.jobs.attach(
                 job, stdin=False, stdout=True, stderr=True, logs=True
             ) as stream:
@@ -315,27 +346,15 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
                     raise sys.exit(status.history.exit_code)
                 while True:
                     chunk = await stream.read_out()
-                    if not chunk:
-                        txt = decoder.decode(b"", final=True)
-                        if not txt:
-                            break
-                    else:
-                        txt = decoder.decode(chunk.data)
                     if chunk is None:
+                        for fileno in (1, 2):
+                            txt = decoders[fileno].decode(b"", final=True)
+                            if txt:
+                                await _write(fileno, txt)
                         break
-                    if chunk.stream == 2:
-                        f = sys.stderr
                     else:
-                        f = sys.stdout
-                    async with write_sem:
-                        if not root.quiet and not helper.attach_ready.is_set():
-                            if helper.log_printed.is_set():
-                                click.echo(ATTACH_STARTED_AFTER_LOGS)
-                            else:
-                                click.echo(ATTACH_STARTED)
-                        helper.attach_ready.set()
-                        f.write(txt)
-                        f.flush()
+                        txt = decoders[chunk.fileno].decode(chunk.data)
+                        await _write(chunk.fileno, txt)
 
 
 @asynccontextmanager
