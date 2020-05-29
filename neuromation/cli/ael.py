@@ -76,10 +76,19 @@ async def process_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> 
 
 async def process_exec(root: Root, job: str, cmd: str, tty: bool) -> None:
     exec_id = await root.client.jobs.exec_create(job, cmd, tty=tty)
-    if tty:
-        await _exec_tty(root, job, exec_id)
-    else:
-        await _exec_non_tty(root, job, exec_id)
+    try:
+        if tty:
+            await _exec_tty(root, job, exec_id)
+        else:
+            await _exec_non_tty(root, job, exec_id)
+    finally:
+        if root.tty:
+            # Soft reset the terminal.
+            # For example, Midnight Commander often leaves
+            # scrolling margins (DECSTBM) aligned only
+            # to a part of the screen size
+            sys.stdout.write("\x1b[!p")
+            sys.stdout.flush()
 
     info = await root.client.jobs.exec_inspect(job, exec_id)
     progress = ExecStopProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
@@ -145,11 +154,20 @@ async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> None:
     try:
         # Note, the job should be in running/finished state for this call,
         # passing pending job is forbidden
-        if tty:
-            # docker doesn't proxy signals for non-tty
-            await _attach_tty(root, job, logs)
-        else:
-            await _attach_non_tty(root, job, logs)
+        try:
+            if tty:
+                # docker doesn't proxy signals for non-tty
+                await _attach_tty(root, job, logs)
+            else:
+                await _attach_non_tty(root, job, logs)
+        finally:
+            if root.tty:
+                # Soft reset the terminal.
+                # For example, Midnight Commander often leaves
+                # scrolling margins (DECSTBM) aligned only
+                # to a part of the screen size
+                sys.stdout.write("\x1b[!p")
+                sys.stdout.flush()
 
         status = await root.client.jobs.status(job)
         progress = JobStopProgress.create(
