@@ -58,8 +58,11 @@ async def process_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> 
     decoder = codec_info.incrementaldecoder("replace")
     async for chunk in root.client.jobs.monitor(job):
         if not chunk:
-            break
-        txt = decoder.decode(chunk)
+            txt = decoder.decode(b"", final=True)
+            if not txt:
+                break
+        else:
+            txt = decoder.decode(chunk)
         if helper is not None:
             if helper.attach_ready.is_set():
                 return
