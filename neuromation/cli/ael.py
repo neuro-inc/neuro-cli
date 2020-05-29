@@ -141,13 +141,16 @@ async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
             raise sys.exit(info.exit_code)
         while True:
             chunk = await stream.read_out()
-            if chunk is None:
-                break
+            if not chunk:
+                txt = decoder.decode(b"", final=True)
+                if not txt:
+                    break
+            else:
+                txt = decoder.decode(chunk.data)
             if chunk.stream == 2:
                 f = sys.stderr
             else:
                 f = sys.stdout
-            txt = decoder.decode(chunk.data)
             if txt is not None:
                 f.write(txt)
                 f.flush()
@@ -177,7 +180,7 @@ async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> None:
             tty=root.tty, color=root.color, quiet=root.quiet
         )
         while status.status == JobStatus.RUNNING:
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.1)
             status = await root.client.jobs.status(job)
             if not progress(status):
                 sys.exit(EX_IOERR)
@@ -314,13 +317,18 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
                     raise sys.exit(status.history.exit_code)
                 while True:
                     chunk = await stream.read_out()
+                    if not chunk:
+                        txt = decoder.decode(b"", final=True)
+                        if not txt:
+                            break
+                    else:
+                        txt = decoder.decode(chunk.data)
                     if chunk is None:
                         break
                     if chunk.stream == 2:
                         f = sys.stderr
                     else:
                         f = sys.stdout
-                    txt = decoder.decode(chunk.data)
                     async with write_sem:
                         if txt is not None:
                             if not root.quiet and not helper.attach_ready.is_set():
