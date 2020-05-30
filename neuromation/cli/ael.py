@@ -133,9 +133,11 @@ async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
                 )
             )
         )
-        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-        for task in tasks:
-            await root.cancel_with_logging(task)
+        try:
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            for task in tasks:
+                await root.cancel_with_logging(task)
 
 
 async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
@@ -151,9 +153,11 @@ async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
         tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
         tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
 
-        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-        for task in tasks:
-            await root.cancel_with_logging(task)
+        try:
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            for task in tasks:
+                await root.cancel_with_logging(task)
 
 
 async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> None:
@@ -218,9 +222,11 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
                 )
             )
         )
-        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-        for task in tasks:
-            await root.cancel_with_logging(task)
+        try:
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            for task in tasks:
+                await root.cancel_with_logging(task)
 
 
 async def _process_resizing(
@@ -331,11 +337,13 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
             tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
             tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
 
-            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            for task in tasks:
-                await root.cancel_with_logging(task)
+            try:
+                await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            finally:
+                for task in tasks:
+                    await root.cancel_with_logging(task)
 
-            await root.cancel_with_logging(logs_printer)
+                await root.cancel_with_logging(logs_printer)
 
 
 async def _process_stdin_non_tty(root: Root, stream: StdStream) -> None:
