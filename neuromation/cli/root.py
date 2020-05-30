@@ -222,12 +222,6 @@ class Root:
             with contextlib.suppress(asyncio.CancelledError):
                 await task
         except Exception as exc:
-            if (
-                type(exc) == RuntimeError
-                and str(exc) == "generator didn't stop after throw()"
-            ):
-                # Suppress this output, fresh Python has this bug fixed
-                return
             if self.show_traceback:
                 log.exception(str(exc), stack_info=True)
             else:

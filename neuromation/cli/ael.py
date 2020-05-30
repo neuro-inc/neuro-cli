@@ -310,27 +310,27 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
         # Placeholder, prints nothing
         logs_printer = loop.create_task(asyncio.sleep(0))
 
-    async with _handle_ctrl_c(root, job, helper):
-        async with root.client.jobs.attach(
-            job, stdin=True, stdout=True, stderr=True, logs=True
-        ) as stream:
-            status = await root.client.jobs.status(job)
-            if status.history.exit_code is not None:
-                # Wait for logs printing finish before exit
-                await logs_printer
-                sys.exit(status.history.exit_code)
+    async with root.client.jobs.attach(
+        job, stdin=True, stdout=True, stderr=True, logs=True
+    ) as stream:
+        status = await root.client.jobs.status(job)
+        if status.history.exit_code is not None:
+            # Wait for logs printing finish before exit
+            await logs_printer
+            sys.exit(status.history.exit_code)
 
-            tasks = []
-            tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
-            tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
+        tasks = []
+        tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
+        tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
+        tasks.append(loop.create_task(_process_ctrl_c(root, job, helper)))
 
-            try:
-                await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            finally:
-                for task in tasks:
-                    await root.cancel_with_logging(task)
+        try:
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            for task in tasks:
+                await root.cancel_with_logging(task)
 
-                await root.cancel_with_logging(logs_printer)
+            await root.cancel_with_logging(logs_printer)
 
 
 async def _process_stdin_non_tty(root: Root, stream: StdStream) -> None:
@@ -435,79 +435,49 @@ def _create_interruption_dialog() -> PromptSession[InterruptAction]:
     return session
 
 
-async def _process_interruption(
-    root: Root,
-    job: str,
-    queue: "asyncio.Queue[Optional[int]]",
-    write_sem: asyncio.Semaphore,
-    main_task: "asyncio.Task[None]",
-) -> None:
-    try:
-        while True:
-            signum = await queue.get()
-            if signum is None:
-                return
-            if not root.tty:
-                # Ask nothing but just kill a job
-                # if executed from non-terminal
-                await root.client.jobs.kill(job)
-                main_task.cancel()
-                return
-            async with write_sem:
-                session = _create_interruption_dialog()
-                answer = await session.prompt_async()
-                if answer == InterruptAction.detach:
-                    click.secho("Detach terminal", dim=True, fg="green")
-                    main_task.cancel()
-                elif answer == InterruptAction.kill:
-                    click.secho("Kill job", fg="red")
-                    await root.client.jobs.kill(job)
-                    main_task.cancel()
-    except asyncio.CancelledError:
-        raise
-    except Exception:
-        # Cancel main task, finalizer from _handle_ctrl_c will print the expection
-        # in uniformed format
-        main_task.cancel()
-        raise
-
-
-@asynccontextmanager
-async def _handle_ctrl_c(
+async def _process_ctrl_c(
     root: Root, job: str, helper: AttachHelper
-) -> AsyncIterator[None]:
+) -> None:
+    # Exit from _process_ctrl_c() task finishes the outer _attach_non_tty() task
     queue: asyncio.Queue[Optional[int]] = asyncio.Queue()
     loop = asyncio.get_event_loop()
 
     def on_signal(signum: int, frame: Any) -> None:
         loop.call_soon_threadsafe(queue.put_nowait, signum)
 
+    # Windows even loop has no add_signal_handler() method
     prev_signal = signal.signal(signal.SIGINT, on_signal)
 
-    task = loop.create_task(
-        _process_interruption(root, job, queue, helper.write_sem, current_task())
-    )
-
-    async def busy_loop() -> None:
-        # On Python < 3.8 the interruption handling
-        # responds not smoothly because the loop is blocked
-        # in proactor for relative long time period.
-        # Simple busy loop interrupts the proactor every 100 ms,
-        # giving a chance to process other tasks
-        # UNIX doesn't need this hack.
-        if sys.platform != "win32":
-            return
-        while True:
-            await asyncio.sleep(0.1)
-
-    busy_task = loop.create_task(busy_loop())
-
     try:
-        yield
+        while True:
+            getter = queue.get()
+            if sys.platform == 'win32':
+                # On Python < 3.8 the interruption handling
+                # responds not smoothly because the loop is blocked
+                # in proactor for relative long time period.
+                # Simple busy loop interrupts the proactor every 100 ms,
+                # giving a chance to process other tasks
+                getter = asyncio.wait_for(getter, 0.1)
+            try:
+                signum = await getter
+            except asyncio.TimeoutError:
+                continue
+            if signum is None:
+                return
+            if not root.tty:
+                # Ask nothing but just kill a job
+                # if executed from non-terminal
+                await root.client.jobs.kill(job)
+                return
+            async with helper.write_sem:
+                session = _create_interruption_dialog()
+                answer = await session.prompt_async(set_exception_handler=False)
+                if answer == InterruptAction.detach:
+                    click.secho("Detach terminal", dim=True, fg="green")
+                    return
+                elif answer == InterruptAction.kill:
+                    click.secho("Kill job", fg="red")
+                    await root.client.jobs.kill(job)
+                    return
     finally:
         signal.signal(signal.SIGINT, prev_signal)
-
-        await queue.put(None)
-        await task
-
-        await root.cancel_with_logging(busy_task)
