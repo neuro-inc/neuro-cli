@@ -145,7 +145,7 @@ async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
     async with root.client.jobs.exec_start(job, exec_id) as stream:
         info = await root.client.jobs.exec_inspect(job, exec_id)
         if not info.running:
-            raise sys.exit(info.exit_code)
+            sys.exit(info.exit_code)
 
         tasks = []
         tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
@@ -311,22 +311,31 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
     loop = asyncio.get_event_loop()
     helper = AttachHelper(quiet=root.quiet)
 
+    if logs:
+        logs_printer = loop.create_task(process_logs(root, job, helper))
+    else:
+        # Placeholder, prints nothing
+        logs_printer = loop.create_task(asyncio.sleep(0))
+
     async with _handle_ctrl_c(root, job, helper):
-        async with _print_logs_until_attached(root, job, logs, helper):
-            async with root.client.jobs.attach(
-                job, stdin=True, stdout=True, stderr=True, logs=True
-            ) as stream:
-                status = await root.client.jobs.status(job)
-                if status.history.exit_code is not None:
-                    raise sys.exit(status.history.exit_code)
+        async with root.client.jobs.attach(
+            job, stdin=True, stdout=True, stderr=True, logs=True
+        ) as stream:
+            status = await root.client.jobs.status(job)
+            if status.history.exit_code is not None:
+                # Wait for logs printing finish before exit
+                await logs_printer
+                sys.exit(status.history.exit_code)
 
-                tasks = []
-                tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
-                tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
+            tasks = []
+            tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
+            tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
 
-                await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-                for task in tasks:
-                    await root.cancel_with_logging(task)
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            for task in tasks:
+                await root.cancel_with_logging(task)
+
+            await root.cancel_with_logging(logs_printer)
 
 
 async def _process_stdin_non_tty(root: Root, stream: StdStream) -> None:
@@ -386,37 +395,6 @@ async def _process_stdout_non_tty(stream: StdStream, helper: AttachHelper) -> No
         else:
             txt = decoders[chunk.fileno].decode(chunk.data)
             await _write(chunk.fileno, txt)
-
-
-@asynccontextmanager
-async def _print_logs_until_attached(
-    root: Root, job: str, logs: bool, helper: AttachHelper
-) -> AsyncIterator[None]:
-    if not logs:
-        yield
-        return
-
-    loop = asyncio.get_event_loop()
-    reader = loop.create_task(process_logs(root, job, helper))
-
-    async def wait_attached() -> None:
-        await helper.attach_ready.wait()
-        # Job is attached, stop logs reading
-        await root.cancel_with_logging(reader)
-
-    waiter = loop.create_task(wait_attached())
-
-    try:
-        yield
-    finally:
-        await root.cancel_with_logging(waiter)
-        if not helper.attach_ready.is_set():
-            # Job is finished before actuall attaching,
-            # read all collected logs
-            await reader
-        else:
-            # Cancel logs reader just in case
-            await root.cancel_with_logging(reader)
 
 
 class InterruptAction(enum.Enum):
@@ -509,7 +487,7 @@ async def _handle_ctrl_c(
     def on_signal(signum: int, frame: Any) -> None:
         loop.call_soon_threadsafe(queue.put_nowait, signum)
 
-    signal.signal(signal.SIGINT, on_signal)
+    prev_signal = signal.signal(signal.SIGINT, on_signal)
 
     task = loop.create_task(
         _process_interruption(root, job, queue, helper.write_sem, current_task())
@@ -532,7 +510,7 @@ async def _handle_ctrl_c(
     try:
         yield
     finally:
-        signal.signal(signal.SIGINT, signal.default_int_handler)
+        signal.signal(signal.SIGINT, prev_signal)
 
         await queue.put(None)
         await task
