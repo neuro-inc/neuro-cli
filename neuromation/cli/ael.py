@@ -47,14 +47,14 @@ ATTACH_STARTED_AFTER_LOGS = click.style(
 
 
 class AttachHelper:
-    attach_ready: asyncio.Event
-    log_printed: asyncio.Event
+    attach_ready: bool
+    log_printed: bool
     write_sem: asyncio.Semaphore
     quiet: bool
 
     def __init__(self, *, quiet: bool) -> None:
-        self.attach_ready = asyncio.Event()
-        self.log_printed = asyncio.Event()
+        self.attach_ready = False
+        self.log_printed = False
         self.write_sem = asyncio.Semaphore()
         self.quiet = quiet
 
@@ -70,12 +70,12 @@ async def process_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> 
         else:
             txt = decoder.decode(chunk)
         if helper is not None:
-            if helper.attach_ready.is_set():
+            if helper.attach_ready:
                 return
             async with helper.write_sem:
-                if not helper.log_printed.is_set() and not helper.quiet:
+                if not helper.log_printed and not helper.quiet:
                     click.echo(LOGS_STARTED)
-                helper.log_printed.set()
+                helper.log_printed = True
                 sys.stdout.write(txt)
                 sys.stdout.flush()
         else:
@@ -91,13 +91,7 @@ async def process_exec(root: Root, job: str, cmd: str, tty: bool) -> None:
         else:
             await _exec_non_tty(root, job, exec_id)
     finally:
-        if root.tty:
-            # Soft reset the terminal.
-            # For example, Midnight Commander often leaves
-            # scrolling margins (DECSTBM) aligned only
-            # to a part of the screen size
-            sys.stdout.write("\x1b[!p")
-            sys.stdout.flush()
+        root.soft_reset_tty()
 
     info = await root.client.jobs.exec_inspect(job, exec_id)
     progress = ExecStopProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
@@ -166,18 +160,11 @@ async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> None:
         # passing pending job is forbidden
         try:
             if tty:
-                # docker doesn't proxy signals for non-tty
                 await _attach_tty(root, job, logs)
             else:
                 await _attach_non_tty(root, job, logs)
         finally:
-            if root.tty:
-                # Soft reset the terminal.
-                # For example, Midnight Commander often leaves
-                # scrolling margins (DECSTBM) aligned only
-                # to a part of the screen size
-                sys.stdout.write("\x1b[!p")
-                sys.stdout.flush()
+            root.soft_reset_tty()
 
         status = await root.client.jobs.status(job)
         progress = JobStopProgress.create(
@@ -378,17 +365,17 @@ async def _process_stdout_non_tty(stream: StdStream, helper: AttachHelper) -> No
     async def _write(fileno: int, txt: str) -> None:
         f = streams[fileno]
         async with helper.write_sem:
-            if not helper.quiet and not helper.attach_ready.is_set():
+            if not helper.quiet and not helper.attach_ready:
                 # Print header to stdout only,
                 # logs are printed to stdout and never to
                 # stderr (but logs printing is stopped by
-                # helper.attach_ready.set() regardless
+                # helper.attach_ready = True regardless
                 # what stream had receive text in attached mode.
-                if helper.log_printed.is_set():
+                if helper.log_printed:
                     click.echo(ATTACH_STARTED_AFTER_LOGS)
                 else:
                     click.echo(ATTACH_STARTED)
-            helper.attach_ready.set()
+            helper.attach_ready = True
             f.write(txt)
             f.flush()
 
@@ -462,7 +449,7 @@ async def _process_interruption(
                 return
             if not root.tty:
                 # Ask nothing but just kill a job
-                # if executed not from terminal
+                # if executed from non-terminal
                 await root.client.jobs.kill(job)
                 main_task.cancel()
                 return

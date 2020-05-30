@@ -232,3 +232,12 @@ class Root:
                 log.exception(str(exc), stack_info=True)
             else:
                 log.error(str(exc))
+
+    def soft_reset_tty(self) -> None:
+        if self.tty:
+            # Soft reset the terminal.
+            # For example, Midnight Commander often leaves
+            # scrolling margins (DECSTBM) aligned only
+            # to a part of the screen size
+            sys.stdout.write("\x1b[!p")
+            sys.stdout.flush()
