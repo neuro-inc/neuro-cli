@@ -494,9 +494,9 @@ class DetailedJobStopProgress(JobStopProgress):
             fg="red",
         )
         secho("Reconnect to the job:", dim=True, fg="yellow")
-        secho(f"  neuro attach {job}", dim=True)
+        secho(f"  neuro attach {job.id}", dim=True)
         secho("Terminate the job:", dim=True, fg="yellow")
-        secho(f"  neuro kill {job}", dim=True)
+        secho(f"  neuro kill {job.id}", dim=True)
 
 
 class StreamJobStopProgress(JobStopProgress):
