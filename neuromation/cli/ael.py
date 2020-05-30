@@ -2,7 +2,6 @@
 
 import asyncio
 import codecs
-import dataclasses
 import enum
 import functools
 import logging
@@ -13,7 +12,7 @@ from typing import Any, AsyncIterator, Awaitable, Callable, Optional
 
 import click
 from prompt_toolkit.formatted_text import HTML, merge_formatted_text
-from prompt_toolkit.input import create_input
+from prompt_toolkit.input import create_input, create_pipe_input
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.keys import Keys
@@ -47,11 +46,17 @@ ATTACH_STARTED_AFTER_LOGS = click.style(
 )
 
 
-@dataclasses.dataclass(frozen=True)
 class AttachHelper:
     attach_ready: asyncio.Event
     log_printed: asyncio.Event
     write_sem: asyncio.Semaphore
+    quiet: bool
+
+    def __init__(self, *, quiet: bool) -> None:
+        self.attach_ready = asyncio.Event()
+        self.log_printed = asyncio.Event()
+        self.write_sem = asyncio.Semaphore()
+        self.quiet = quiet
 
 
 async def process_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> None:
@@ -68,7 +73,7 @@ async def process_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> 
             if helper.attach_ready.is_set():
                 return
             async with helper.write_sem:
-                if not helper.log_printed.is_set() and not root.quiet:
+                if not helper.log_printed.is_set() and not helper.quiet:
                     click.echo(LOGS_STARTED)
                 helper.log_printed.set()
                 sys.stdout.write(txt)
@@ -97,7 +102,7 @@ async def process_exec(root: Root, job: str, cmd: str, tty: bool) -> None:
     info = await root.client.jobs.exec_inspect(job, exec_id)
     progress = ExecStopProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
     while info.running:
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0.2)
         info = await root.client.jobs.exec_inspect(job, exec_id)
         if not progress():
             sys.exit(EX_IOERR)
@@ -134,33 +139,21 @@ async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
 
 
 async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
-    codec_info = codecs.lookup("utf8")
-    decoders = {
-        1: codec_info.incrementaldecoder("replace"),
-        2: codec_info.incrementaldecoder("replace"),
-    }
-    streams = {1: sys.stdout, 2: sys.stderr}
-
-    def _write(fileno: int, txt: str) -> None:
-        f = streams[fileno]
-        f.write(txt)
-        f.flush()
+    loop = asyncio.get_event_loop()
+    helper = AttachHelper(quiet=True)
 
     async with root.client.jobs.exec_start(job, exec_id) as stream:
         info = await root.client.jobs.exec_inspect(job, exec_id)
         if not info.running:
             raise sys.exit(info.exit_code)
-        while True:
-            chunk = await stream.read_out()
-            if chunk is None:
-                for fileno in (1, 2):
-                    txt = decoders[fileno].decode(b"", final=True)
-                    if txt:
-                        _write(fileno, txt)
-                break
-            else:
-                txt = decoders[chunk.fileno].decode(chunk.data)
-                _write(chunk.fileno, txt)
+
+        tasks = []
+        tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
+        tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
+
+        await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        for task in tasks:
+            await root.cancel_with_logging(task)
 
 
 async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> None:
@@ -187,7 +180,7 @@ async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> None:
             tty=root.tty, color=root.color, quiet=root.quiet
         )
         while status.status == JobStatus.RUNNING:
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.2)
             status = await root.client.jobs.status(job)
             if not progress(status):
                 sys.exit(EX_IOERR)
@@ -302,8 +295,11 @@ async def _process_stdout_tty(stream: StdStream, stdout: Output) -> None:
     while True:
         chunk = await stream.read_out()
         if chunk is None:
-            return
-        txt = decoder.decode(chunk.data)
+            txt = decoder.decode(b"", final=True)
+            if not txt:
+                return
+        else:
+            txt = decoder.decode(chunk.data)
         stdout.write_raw(txt)
         stdout.flush()
 
@@ -311,6 +307,50 @@ async def _process_stdout_tty(stream: StdStream, stdout: Output) -> None:
 async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
     if not root.quiet:
         click.echo(JOB_STARTED)
+
+    loop = asyncio.get_event_loop()
+    helper = AttachHelper(quiet=root.quiet)
+
+    async with _handle_ctrl_c(root, job, helper):
+        async with _print_logs_until_attached(root, job, logs, helper):
+            async with root.client.jobs.attach(
+                job, stdin=True, stdout=True, stderr=True, logs=True
+            ) as stream:
+                status = await root.client.jobs.status(job)
+                if status.history.exit_code is not None:
+                    raise sys.exit(status.history.exit_code)
+
+                tasks = []
+                tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
+                tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
+
+                await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                for task in tasks:
+                    await root.cancel_with_logging(task)
+
+
+async def _process_stdin_non_tty(root: Root, stream: StdStream) -> None:
+    ev = asyncio.Event()
+
+    def read_ready() -> None:
+        ev.set()
+
+    if root.tty:
+        inp = create_input()
+    else:
+        inp = create_pipe_input()
+    with inp.attach(read_ready):
+        while True:
+            await ev.wait()
+            ev.clear()
+            if inp.closed:
+                return
+            keys = inp.read_keys()  # + inp.flush_keys()
+            buf = b"".join(key.data.encode("utf8") for key in keys)
+            await stream.write_in(buf)
+
+
+async def _process_stdout_non_tty(stream: StdStream, helper: AttachHelper) -> None:
     codec_info = codecs.lookup("utf8")
     decoders = {
         1: codec_info.incrementaldecoder("replace"),
@@ -318,71 +358,59 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
     }
     streams = {1: sys.stdout, 2: sys.stderr}
 
-    async with _handle_ctrl_c(root, job) as write_sem:
-        async with _print_logs_until_attached(root, job, logs, write_sem) as helper:
+    async def _write(fileno: int, txt: str) -> None:
+        f = streams[fileno]
+        async with helper.write_sem:
+            if not helper.quiet and not helper.attach_ready.is_set():
+                # Print header to stdout only,
+                # logs are printed to stdout and never to
+                # stderr (but logs printing is stopped by
+                # helper.attach_ready.set() regardless
+                # what stream had receive text in attached mode.
+                if helper.log_printed.is_set():
+                    click.echo(ATTACH_STARTED_AFTER_LOGS)
+                else:
+                    click.echo(ATTACH_STARTED)
+            helper.attach_ready.set()
+            f.write(txt)
+            f.flush()
 
-            async def _write(fileno: int, txt: str) -> None:
-                f = streams[fileno]
-                async with write_sem:
-                    if not root.quiet and not helper.attach_ready.is_set():
-                        # Print header to stdout only,
-                        # logs are printed to stdout and never to
-                        # stderr (but logs printing is stopped by
-                        # helper.attach_ready.set() regardless
-                        # what stream had receive text in attached mode.
-                        if helper.log_printed.is_set():
-                            click.echo(ATTACH_STARTED_AFTER_LOGS)
-                        else:
-                            click.echo(ATTACH_STARTED)
-                    helper.attach_ready.set()
-                    f.write(txt)
-                    f.flush()
-
-            async with root.client.jobs.attach(
-                job, stdin=False, stdout=True, stderr=True, logs=True
-            ) as stream:
-                status = await root.client.jobs.status(job)
-                if status.history.exit_code is not None:
-                    raise sys.exit(status.history.exit_code)
-                while True:
-                    chunk = await stream.read_out()
-                    if chunk is None:
-                        for fileno in (1, 2):
-                            txt = decoders[fileno].decode(b"", final=True)
-                            if txt:
-                                await _write(fileno, txt)
-                        break
-                    else:
-                        txt = decoders[chunk.fileno].decode(chunk.data)
-                        await _write(chunk.fileno, txt)
+    while True:
+        chunk = await stream.read_out()
+        if chunk is None:
+            for fileno in (1, 2):
+                txt = decoders[fileno].decode(b"", final=True)
+                if txt:
+                    await _write(fileno, txt)
+            break
+        else:
+            txt = decoders[chunk.fileno].decode(chunk.data)
+            await _write(chunk.fileno, txt)
 
 
 @asynccontextmanager
 async def _print_logs_until_attached(
-    root: Root, job: str, logs: bool, write_sem: asyncio.Semaphore
-) -> AsyncIterator[AttachHelper]:
-    attach_ready = asyncio.Event()
-    logs_printed = asyncio.Event()
-    helper = AttachHelper(attach_ready, logs_printed, write_sem)
+    root: Root, job: str, logs: bool, helper: AttachHelper
+) -> AsyncIterator[None]:
     if not logs:
-        yield helper
+        yield
         return
 
     loop = asyncio.get_event_loop()
     reader = loop.create_task(process_logs(root, job, helper))
 
     async def wait_attached() -> None:
-        await attach_ready.wait()
+        await helper.attach_ready.wait()
         # Job is attached, stop logs reading
         await root.cancel_with_logging(reader)
 
     waiter = loop.create_task(wait_attached())
 
     try:
-        yield helper
+        yield
     finally:
         await root.cancel_with_logging(waiter)
-        if not attach_ready.is_set():
+        if not helper.attach_ready.is_set():
             # Job is finished before actuall attaching,
             # read all collected logs
             await reader
@@ -472,10 +500,11 @@ async def _process_interruption(
 
 
 @asynccontextmanager
-async def _handle_ctrl_c(root: Root, job: str) -> AsyncIterator[asyncio.Semaphore]:
+async def _handle_ctrl_c(
+    root: Root, job: str, helper: AttachHelper
+) -> AsyncIterator[None]:
     queue: asyncio.Queue[Optional[int]] = asyncio.Queue()
     loop = asyncio.get_event_loop()
-    write_sem = asyncio.Semaphore()
 
     def on_signal(signum: int, frame: Any) -> None:
         loop.call_soon_threadsafe(queue.put_nowait, signum)
@@ -483,12 +512,12 @@ async def _handle_ctrl_c(root: Root, job: str) -> AsyncIterator[asyncio.Semaphor
     signal.signal(signal.SIGINT, on_signal)
 
     task = loop.create_task(
-        _process_interruption(root, job, queue, write_sem, current_task())
+        _process_interruption(root, job, queue, helper.write_sem, current_task())
     )
 
     async def busy_loop() -> None:
         # On Python < 3.8 the interruption handling
-        # responses not smoothly because the loop is blocked
+        # responds not smoothly because the loop is blocked
         # in proactor for relative long time period.
         # Simple busy loop interrupts the proactor every 100 ms,
         # giving a chance to process other tasks
@@ -501,7 +530,7 @@ async def _handle_ctrl_c(root: Root, job: str) -> AsyncIterator[asyncio.Semaphor
     busy_task = loop.create_task(busy_loop())
 
     try:
-        yield write_sem
+        yield
     finally:
         signal.signal(signal.SIGINT, signal.default_int_handler)
 
