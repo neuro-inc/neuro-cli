@@ -171,9 +171,10 @@ class _Core:
                 try:
                     yield resp
                 except GeneratorExit:
-                    # There is a bug in CPython,
+                    # There is a bug in CPython and/or aiohttp,
                     # if GeneratorExit is reraised @asynccontextmanager
                     # reports this as an error
+                    # Need to investigate and fix.
                     raise asyncio.CancelledError
 
     async def ws_connect(
