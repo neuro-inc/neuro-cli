@@ -491,11 +491,12 @@ class Helper:
         *,
         verbosity: int = 0,
         network_timeout: float = NETWORK_TIMEOUT,
-        encoding:str="utf8",
-            echo:bool = True,
+        encoding: str = "utf8",
+        echo: bool = True,
     ) -> pexpect.spawn:
         return pexpect.spawn(
-            "neuro", self._default_args(verbosity, network_timeout) + arguments,
+            "neuro",
+            self._default_args(verbosity, network_timeout) + arguments,
             encoding=encoding,
             echo=echo,
         )
