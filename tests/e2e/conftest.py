@@ -493,7 +493,9 @@ class Helper:
         network_timeout: float = NETWORK_TIMEOUT,
         encoding: str = "utf8",
         echo: bool = True,
-    ) -> pexpect.spawn:
+    ) -> "pexpect.spawn":
+        if not hasattr(pexpect, "spawn"):
+            pytest.skip("TTY tests are not supported on Windows")
         return pexpect.spawn(
             "neuro",
             self._default_args(verbosity, network_timeout) + arguments,
