@@ -493,7 +493,7 @@ class DetailedJobStopProgress(JobStopProgress):
         secho()
         secho("!!! Warning !!!", fg="red")
         secho(
-            "The attached session was disconnected " "but the job is still alive.",
+            "The attached session was disconnected but the job is still alive.",
             fg="red",
         )
         secho("Reconnect to the job:", dim=True, fg="yellow")
