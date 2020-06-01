@@ -7,12 +7,12 @@ from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep, time
-from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple
+from typing import Any, AsyncIterator, Callable, Dict, List, Tuple
 from uuid import uuid4
 
 import aiodocker
 import aiohttp
-import async_timeout
+import pexpect
 import pytest
 from aiohttp.test_utils import unused_port
 from yarl import URL
@@ -33,25 +33,16 @@ MIN_PORT = 49152
 MAX_PORT = 65535
 EXEC_TIMEOUT = 180
 
+ANSI_RE = re.compile(r"\033\[[;?0-9]*[a-zA-Z]")
+OSC_RE = re.compile(r"\x1b]0;.+\x07")
 
-async def expect_prompt(inp: asyncio.StreamReader) -> Optional[bytes]:
-    _ansi_re = re.compile(br"\033\[[;?0-9]*[a-zA-Z]")
-    _osc_re = re.compile(br"\x1b]0;.+\x07")
-    try:
-        ret: bytes = b""
-        async with async_timeout.timeout(15):
-            while not ret.strip().endswith(b"#"):
-                data = await inp.readuntil(b"\n")
-                if not data:
-                    break
-                data = _ansi_re.sub(b"", data)
-                data = _osc_re.sub(b"", data)
-                data = data.replace(b"\x1b[K", b"")
-                ret += data
-            return ret
-    except asyncio.TimeoutError:
-        return ret
-        # raise AssertionError(f"[Timeout] {ret!r}")
+
+def strip_ansi(s: str) -> str:
+    s1 = ANSI_RE.sub("", s)
+    s2 = OSC_RE.sub("", s1)
+    s3 = s2.replace("\x1b[K", "")
+    s4 = s3.replace("\x1b[!p", "")
+    return s4
 
 
 @pytest.mark.e2e
@@ -499,6 +490,7 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
 
     captured = helper.run_cli(
         [
+            "--quiet",
             "job",
             "exec",
             "--no-tty",
@@ -541,8 +533,9 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
-    captured = helper.run_cli(
+    expect = helper.pexpect(
         [
+            "--quiet",
             "job",
             "exec",
             "--no-key-check",
@@ -552,7 +545,7 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
             "[ -t 1 ]",
         ]
     )
-    assert captured.out == ""
+    assert expect.wait() == 0
     helper.kill_job(job_id, wait=False)
 
 
@@ -957,7 +950,7 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
 def test_job_run_with_tty(helper: Helper) -> None:
     # Run a new job
     command = "test -t 0"
-    captured = helper.run_cli(
+    expect = helper.pexpect(
         [
             "-q",
             "job",
@@ -969,7 +962,8 @@ def test_job_run_with_tty(helper: Helper) -> None:
             command,
         ]
     )
-    job_id = captured.out
+    txt = expect.read()
+    job_id = strip_ansi(txt).strip()
 
     # Wait until the job is running
     helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
@@ -1216,18 +1210,17 @@ def test_job_attach_stdout(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-async def test_job_run_interactive(helper: Helper) -> None:
+def test_job_run_interactive(helper: Helper) -> None:
     # Run a new job
-    job_id = await helper.arun_job_and_wait_state(UBUNTU_IMAGE_NAME, "sh", tty=True)
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, "sh", tty=True)
 
-    status = await helper.ajob_info(job_id)
+    status = helper.job_info(job_id)
     assert status.container.tty
 
-    proc = await helper.arun_cli(["job", "attach", job_id])
+    expect = helper.pexpect(["job", "attach", job_id])
+    expect.waitnoecho()
+    expect.sendline("echo abc\n")
+    expect.expect("# ")
+    assert strip_ansi(expect.before).strip() == "echo abc\r\r\n\r\r\nabc"
 
-    proc.stdin.write(b"\necho abc\n")
-
-    lines = await expect_prompt(proc.stdout)
-    assert lines == b"\r\necho abc\r\n# abc\r\n"
-
-    await helper.akill_job(job_id)
+    helper.kill_job(job_id)

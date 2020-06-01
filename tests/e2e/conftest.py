@@ -28,6 +28,7 @@ from uuid import uuid4 as uuid
 
 import aiodocker
 import aiohttp
+import pexpect
 import pytest
 from yarl import URL
 
@@ -408,7 +409,6 @@ class Helper:
 
     def _default_args(self, verbosity: int, network_timeout: float) -> List[str]:
         args = [
-            "neuro",
             "--show-traceback",
             "--disable-pypi-version-check",
             "--color=no",
@@ -439,7 +439,7 @@ class Helper:
 
         # 5 min timeout is overkill
         proc = subprocess.run(
-            self._default_args(verbosity, network_timeout) + arguments,
+            ["neuro"] + self._default_args(verbosity, network_timeout) + arguments,
             timeout=300,
             encoding="utf8",
             stdout=subprocess.PIPE,
@@ -479,10 +479,25 @@ class Helper:
         log.info("Run 'neuro %s'", " ".join(arguments))
 
         return await asyncio.create_subprocess_exec(
-            *self._default_args(verbosity, network_timeout) + arguments,
+            *(["neuro"] + self._default_args(verbosity, network_timeout) + arguments),
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+        )
+
+    def pexpect(
+        self,
+        arguments: List[str],
+        *,
+        verbosity: int = 0,
+        network_timeout: float = NETWORK_TIMEOUT,
+        encoding:str="utf8",
+            echo:bool = True,
+    ) -> pexpect.spawn:
+        return pexpect.spawn(
+            "neuro", self._default_args(verbosity, network_timeout) + arguments,
+            encoding=encoding,
+            echo=echo,
         )
 
     def autocomplete(
