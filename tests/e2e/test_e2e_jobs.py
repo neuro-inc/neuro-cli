@@ -12,7 +12,6 @@ from uuid import uuid4
 
 import aiodocker
 import aiohttp
-import pexpect
 import pytest
 from aiohttp.test_utils import unused_port
 from yarl import URL
