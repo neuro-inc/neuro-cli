@@ -97,6 +97,7 @@ def _wrap_async_callback(
     callback: Callable[..., Awaitable[_T]], init_client: bool = True,
 ) -> Callable[..., _T]:
     assert inspect.iscoroutinefunction(callback)
+
     # N.B. the decorator implies @click.pass_obj
     @click.pass_obj
     @functools.wraps(callback)
