@@ -1219,8 +1219,8 @@ def test_job_run_interactive(helper: Helper) -> None:
 
     expect = helper.pexpect(["job", "attach", job_id])
     expect.waitnoecho()
-    expect.sendline("echo abc\n")
+    expect.sendline("echo abc")
     expect.expect("# ")
-    assert strip_ansi(expect.before).strip() == "echo abc\r\r\n\r\r\nabc"
+    assert strip_ansi(expect.before).strip() == "echo abc\r\r\nabc"
 
     helper.kill_job(job_id)
