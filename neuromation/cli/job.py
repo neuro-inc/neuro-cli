@@ -529,8 +529,7 @@ async def attach(root: Root, job: str) -> None:
         progress(status)
     progress.close()
     tty = status.container.tty
-    if tty:
-        _check_tty(root, tty)
+    _check_tty(root, tty)
 
     await process_attach(root, id, tty=tty, logs=False)
 
