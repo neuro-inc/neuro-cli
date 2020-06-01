@@ -1209,7 +1209,7 @@ def test_job_attach_stdout(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_run_interactive(helper: Helper) -> None:
+def test_job_attach_tty(helper: Helper) -> None:
     # Run a new job
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, "sh", tty=True)
 
