@@ -49,12 +49,14 @@ class AttachHelper:
     log_printed: bool
     write_sem: asyncio.Semaphore
     quiet: bool
+    skip_stopper: bool
 
     def __init__(self, *, quiet: bool) -> None:
         self.attach_ready = False
         self.log_printed = False
         self.write_sem = asyncio.Semaphore()
         self.quiet = quiet
+        self.skip_stopper = False
 
 
 async def process_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> None:
@@ -96,7 +98,7 @@ async def process_exec(root: Root, job: str, cmd: str, tty: bool) -> None:
     while info.running:
         await asyncio.sleep(0.2)
         info = await root.client.jobs.exec_inspect(job, exec_id)
-        if not progress():
+        if not progress(info.running):
             sys.exit(EX_IOERR)
     sys.exit(info.exit_code)
 
@@ -153,33 +155,28 @@ async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
 
 
 async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> None:
+    # Note, the job should be in running/finished state for this call,
+    # passing pending job is forbidden
     try:
-        # Note, the job should be in running/finished state for this call,
-        # passing pending job is forbidden
-        try:
-            if tty:
-                await _attach_tty(root, job, logs)
-            else:
-                await _attach_non_tty(root, job, logs)
-        finally:
-            root.soft_reset_tty()
+        if tty:
+            await _attach_tty(root, job, logs)
+        else:
+            skip_stopper = await _attach_non_tty(root, job, logs)
+            if skip_stopper:
+                sys.exit(128 + signal.SIGINT)
+    finally:
+        root.soft_reset_tty()
 
+    status = await root.client.jobs.status(job)
+    progress = JobStopProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
+    while status.status == JobStatus.RUNNING:
+        await asyncio.sleep(0.2)
         status = await root.client.jobs.status(job)
-        progress = JobStopProgress.create(
-            tty=root.tty, color=root.color, quiet=root.quiet
-        )
-        while status.status == JobStatus.RUNNING:
-            await asyncio.sleep(0.2)
-            status = await root.client.jobs.status(job)
-            if not progress(status):
-                sys.exit(EX_IOERR)
-        if status.status == JobStatus.FAILED:
-            sys.exit(status.history.exit_code or EX_PLATFORMERROR)
-        sys.exit(status.history.exit_code)
-    except asyncio.CancelledError:
-        # Note: Cancellation is a normal shutdown,
-        # there is no need to report user about this fact
-        sys.exit(1)
+        if not progress(status):
+            sys.exit(EX_IOERR)
+    if status.status == JobStatus.FAILED:
+        sys.exit(status.history.exit_code or EX_PLATFORMERROR)
+    sys.exit(status.history.exit_code)
 
 
 async def _attach_tty(root: Root, job: str, logs: bool) -> None:
@@ -295,7 +292,7 @@ async def _process_stdout_tty(stream: StdStream, stdout: Output) -> None:
         stdout.flush()
 
 
-async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
+async def _attach_non_tty(root: Root, job: str, logs: bool) -> bool:
     if not root.quiet:
         click.echo(JOB_STARTED)
 
@@ -324,6 +321,7 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> None:
 
         try:
             await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            return helper.skip_stopper
         finally:
             for task in tasks:
                 await root.cancel_with_logging(task)
@@ -435,6 +433,8 @@ def _create_interruption_dialog() -> PromptSession[InterruptAction]:
 
 async def _process_ctrl_c(root: Root, job: str, helper: AttachHelper) -> None:
     # Exit from _process_ctrl_c() task finishes the outer _attach_non_tty() task
+    # Return True if kill/detach was asked.
+    # The returned value can be used for skipping the job termination
     queue: asyncio.Queue[Optional[int]] = asyncio.Queue()
     loop = asyncio.get_event_loop()
 
@@ -464,16 +464,19 @@ async def _process_ctrl_c(root: Root, job: str, helper: AttachHelper) -> None:
                 # Ask nothing but just kill a job
                 # if executed from non-terminal
                 await root.client.jobs.kill(job)
+                helper.skip_stopper = True
                 return
             async with helper.write_sem:
                 session = _create_interruption_dialog()
                 answer = await session.prompt_async(set_exception_handler=False)
                 if answer == InterruptAction.detach:
                     click.secho("Detach terminal", dim=True, fg="green")
+                    helper.skip_stopper = True
                     return
                 elif answer == InterruptAction.kill:
                     click.secho("Kill job", fg="red")
                     await root.client.jobs.kill(job)
+                    helper.skip_stopper = True
                     return
     finally:
         signal.signal(signal.SIGINT, prev_signal)

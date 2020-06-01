@@ -459,10 +459,10 @@ class JobStopProgress:
             self.timeout(job)
             return False
         else:
-            self.tick()
+            self.tick(job)
             return True
 
-    def tick(self) -> None:
+    def tick(self, job: JobDescription) -> None:
         pass
 
     def timeout(self, job: JobDescription) -> None:
@@ -477,13 +477,16 @@ class DetailedJobStopProgress(JobStopProgress):
         self._printer = TTYPrinter()
         self._lineno = 0
 
-    def tick(self) -> None:
+    def tick(self, job: JobDescription) -> None:
         new_time = time.time()
         dt = new_time - self._time
 
+        if job.status == JobStatus.RUNNING:
+            msg = f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
+        else:
+            msg = "Stopped"
         self._printer.print(
-            f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]",
-            lineno=self._lineno,
+            msg, lineno=self._lineno,
         )
 
     def timeout(self, job: JobDescription) -> None:
@@ -503,9 +506,9 @@ class StreamJobStopProgress(JobStopProgress):
     def __init__(self) -> None:
         super().__init__()
         self._printer = StreamPrinter()
-
-    def tick(self) -> None:
         self._printer.print("Wait for stopping")
+
+    def tick(self, job: JobDescription) -> None:
         self._printer.tick()
 
     def timeout(self, job: JobDescription) -> None:
@@ -528,17 +531,17 @@ class ExecStopProgress:
     def __init__(self) -> None:
         self._time = time.time()
 
-    def __call__(self) -> bool:
+    def __call__(self, running: bool) -> bool:
         # return False if timeout, True otherwise
         new_time = time.time()
         if new_time - self._time > self.TIMEOUT:
             self.timeout()
             return False
         else:
-            self.tick()
+            self.tick(running)
             return True
 
-    def tick(self) -> None:
+    def tick(self, running: bool) -> None:
         pass
 
     def timeout(self) -> None:
@@ -553,13 +556,17 @@ class DetailedExecStopProgress(ExecStopProgress):
         self._printer = TTYPrinter()
         self._lineno = 0
 
-    def tick(self) -> None:
+    def tick(self, running: bool) -> None:
         new_time = time.time()
         dt = new_time - self._time
 
+        if running:
+            msg = f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
+        else:
+            msg = "Stopped"
+
         self._printer.print(
-            f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]",
-            lineno=self._lineno,
+            msg, lineno=self._lineno,
         )
 
     def timeout(self) -> None:
@@ -576,9 +583,9 @@ class StreamExecStopProgress(ExecStopProgress):
     def __init__(self) -> None:
         super().__init__()
         self._printer = StreamPrinter()
-
-    def tick(self) -> None:
         self._printer.print("Wait for stopping")
+
+    def tick(self, running: bool) -> None:
         self._printer.tick()
 
     def timeout(self) -> None:
