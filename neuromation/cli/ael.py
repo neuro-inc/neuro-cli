@@ -8,7 +8,7 @@ import logging
 import signal
 import sys
 import threading
-from typing import Any, AsyncIterator, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, Optional
 
 import click
 from prompt_toolkit.formatted_text import HTML, merge_formatted_text
@@ -20,9 +20,7 @@ from prompt_toolkit.output import Output, create_output
 from prompt_toolkit.shortcuts import PromptSession
 
 from neuromation.api import IllegalArgumentError, JobStatus, StdStream
-from neuromation.api.utils import asynccontextmanager
 
-from .asyncio_utils import current_task
 from .const import EX_IOERR, EX_PLATFORMERROR
 from .formatters.jobs import ExecStopProgress, JobStopProgress
 from .root import Root
@@ -435,9 +433,7 @@ def _create_interruption_dialog() -> PromptSession[InterruptAction]:
     return session
 
 
-async def _process_ctrl_c(
-    root: Root, job: str, helper: AttachHelper
-) -> None:
+async def _process_ctrl_c(root: Root, job: str, helper: AttachHelper) -> None:
     # Exit from _process_ctrl_c() task finishes the outer _attach_non_tty() task
     queue: asyncio.Queue[Optional[int]] = asyncio.Queue()
     loop = asyncio.get_event_loop()
@@ -451,7 +447,7 @@ async def _process_ctrl_c(
     try:
         while True:
             getter = queue.get()
-            if sys.platform == 'win32':
+            if sys.platform == "win32":
                 # On Python < 3.8 the interruption handling
                 # responds not smoothly because the loop is blocked
                 # in proactor for relative long time period.
