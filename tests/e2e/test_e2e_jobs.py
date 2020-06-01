@@ -421,6 +421,7 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
 
     captured = helper.run_cli(
         [
+            "--quite",
             "job",
             "exec",
             "--no-tty",
@@ -1199,7 +1200,7 @@ def test_job_autocomplete(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_job_attach_stdout(helper: Helper) -> None:
     # Run a new job
-    command = 'bash -c "sleep 5; for count in {0..3}; do echo $count; sleep 1; done"'
+    command = 'bash -c "sleep 15; for count in {0..3}; do echo $count; sleep 1; done"'
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
     captured = helper.run_cli(["-q", "job", "attach", job_id])
