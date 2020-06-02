@@ -574,7 +574,9 @@ class BlobStorage(metaclass=NoPublicConstructor):
 
         for child in folder:
             name = child.name
-            child_rel_path = f"{rel_path}/{name}" if rel_path else name
+            child_rel_path = f"{rel_path}{name}"
+            if child.is_dir():
+                child_rel_path += "/"
             if not await filter(child_rel_path):
                 log.debug(f"Skip {child_rel_path}")
                 continue
@@ -702,6 +704,8 @@ class BlobStorage(metaclass=NoPublicConstructor):
             name = child.name
             assert child.path.startswith(prefix_path)
             child_rel_path = child.path[len(prefix_path) :]
+            if child.is_dir():
+                child_rel_path += "/"
             if not await filter(child_rel_path):
                 log.debug(f"Skip {child_rel_path}")
                 continue

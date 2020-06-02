@@ -9,6 +9,8 @@ class FileFilter:
     def append(self, exclude: bool, pattern: str) -> None:
         if "/" not in pattern.rstrip("/"):
             pattern = "**/" + pattern
+        else:
+            pattern = pattern.lstrip("/")
         re_pattern = translate(pattern)
         matcher = cast(
             Callable[[str], Any], re.compile(re_pattern, re.DOTALL).fullmatch
@@ -49,8 +51,8 @@ def translate(pat: str) -> str:
                 # ** between slashes or ends of the pattern
                 if i + 1 == n:
                     res += ".*"
-                else:
-                    res += "(?:.+/)?"
+                    return res
+                res += "(?:.+/)?"
                 i += 2
             else:
                 # Any other *
@@ -99,4 +101,6 @@ def translate(pat: str) -> str:
                 res = "%s[%s](?<!/)" % (res, stuff)
         else:
             res += re.escape(c)
+    if pat[-1:] != "/":
+        res += "/?"
     return res

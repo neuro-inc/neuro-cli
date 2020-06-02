@@ -458,7 +458,9 @@ class Storage(metaclass=NoPublicConstructor):
             folder = await loop.run_in_executor(None, lambda: list(src_path.iterdir()))
         for child in folder:
             name = child.name
-            child_rel_path = f"{rel_path}/{name}" if rel_path else name
+            child_rel_path = f"{rel_path}{name}"
+            if child.is_dir():
+                child_rel_path += "/"
             if not await filter(child_rel_path):
                 log.debug(f"Skip {child_rel_path}")
                 continue
@@ -607,7 +609,9 @@ class Storage(metaclass=NoPublicConstructor):
 
         for child in folder:
             name = child.name
-            child_rel_path = f"{rel_path}/{name}" if rel_path else name
+            child_rel_path = f"{rel_path}{name}"
+            if child.is_dir():
+                child_rel_path += "/"
             if not await filter(child_rel_path):
                 log.debug(f"Skip {child_rel_path}")
                 continue
