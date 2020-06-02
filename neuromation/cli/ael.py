@@ -316,7 +316,8 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> bool:
             sys.exit(status.history.exit_code)
 
         tasks = []
-        tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
+        if root.tty:
+            tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
         tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
         tasks.append(loop.create_task(_process_ctrl_c(root, job, helper)))
 
