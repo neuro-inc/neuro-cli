@@ -4,6 +4,7 @@ import enum
 import errno
 import fnmatch
 import json
+import logging
 import os
 import re
 import time
@@ -47,6 +48,8 @@ from .url_utils import (
 from .users import Action
 from .utils import NoPublicConstructor, retries
 
+
+log = logging.getLogger(__name__)
 
 MAX_OPEN_FILES = 20
 READ_SIZE = 2 ** 20  # 1 MiB
@@ -457,6 +460,7 @@ class Storage(metaclass=NoPublicConstructor):
             name = child.name
             child_rel_path = f"{rel_path}/{name}" if rel_path else name
             if not await filter(child_rel_path):
+                log.debug(f"Skip {child_rel_path}")
                 continue
             if child.is_file():
                 if (
@@ -605,6 +609,7 @@ class Storage(metaclass=NoPublicConstructor):
             name = child.name
             child_rel_path = f"{rel_path}/{name}" if rel_path else name
             if not await filter(child_rel_path):
+                log.debug(f"Skip {child_rel_path}")
                 continue
             if child.is_file():
                 if (

@@ -384,6 +384,7 @@ async def cp(
 
     file_filter = FileFilter()
     for exclude, pattern in filters:
+        log.debug("%s %s", "Exclude" if exclude else "Include", pattern)
         file_filter.append(exclude, pattern)
 
     show_progress = root.tty and progress
