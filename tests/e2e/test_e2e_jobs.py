@@ -421,7 +421,7 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
 
     captured = helper.run_cli(
         [
-            "--quite",
+            "-q",
             "job",
             "exec",
             "--no-tty",
