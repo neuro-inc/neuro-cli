@@ -5,12 +5,14 @@
 
 [comment]: # (towncrier release notes start)
 
+
 Neuromation 20.6.2 (2020-06-02)
 ===============================
 
 Features
 --------
 
+- API: `Storage.ls()` is an asynchronous generator now. ([#1457](https://github.com/neuromation/platform-api-clients/issues/1457))
 
 - Added the `--restart` option to `neuro run` and `neuro submit` and API. ([#1459](https://github.com/neuromation/platform-api-clients/issues/1459))
 
@@ -26,6 +28,8 @@ Features
 Bugfixes
 --------
 
+
+- Fixed downloading a file when it is restarted for some reasons.  The newly downloaded data no longer appended to a previously downloaded data, but overwrites it. ([#1521](https://github.com/neuromation/platform-api-clients/issues/1521))
 
 - Fixed parsing image URIs with the single slash after scheme, like `image:/otheruser/imagename`. ([#1505](https://github.com/neuromation/platform-api-clients/issues/1505))
 
