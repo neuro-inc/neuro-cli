@@ -629,10 +629,10 @@ class BlobStorage(metaclass=NoPublicConstructor):
     ) -> None:
         loop = asyncio.get_event_loop()
         async with self._file_sem:
-            with dst_path.open("wb") as stream:
-                await progress.start(StorageProgressStart(src, dst, size))
-                for retry in retries(f"Fail to download {src}"):
-                    async with retry:
+            await progress.start(StorageProgressStart(src, dst, size))
+            for retry in retries(f"Fail to download {src}"):
+                async with retry:
+                    with dst_path.open("wb") as stream:
                         pos = 0
                         bucket_name, key = self._extract_bucket_and_key(src)
                         async for chunk in self.fetch_blob(
@@ -643,7 +643,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
                                 StorageProgressStep(src, dst, pos, size)
                             )
                             await loop.run_in_executor(None, stream.write, chunk)
-                await progress.complete(StorageProgressComplete(src, dst, size))
+            await progress.complete(StorageProgressComplete(src, dst, size))
 
     async def download_dir(
         self,
