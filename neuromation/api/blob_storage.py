@@ -3,6 +3,7 @@ import base64
 import errno
 import hashlib
 import itertools
+import logging
 import re
 import time
 from dataclasses import dataclass
@@ -52,6 +53,8 @@ from .url_utils import _extract_path, normalize_blob_path_uri, normalize_local_p
 from .users import Action
 from .utils import NoPublicConstructor, asynccontextmanager, retries
 
+
+log = logging.getLogger(__name__)
 
 MAX_OPEN_FILES = 20
 READ_SIZE = 2 ** 20  # 1 MiB
@@ -573,6 +576,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
             name = child.name
             child_rel_path = f"{rel_path}/{name}" if rel_path else name
             if not await filter(child_rel_path):
+                log.debug(f"Skip {child_rel_path}")
                 continue
             if child.is_file():
                 tasks.append(
@@ -699,6 +703,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
             assert child.path.startswith(prefix_path)
             child_rel_path = child.path[len(prefix_path) :]
             if not await filter(child_rel_path):
+                log.debug(f"Skip {child_rel_path}")
                 continue
             if child.is_file():
                 # Only BlobListing can be a file, so it's safe to just cast
