@@ -12,12 +12,13 @@ from typing import Any, Awaitable, Callable, Optional
 
 import click
 from prompt_toolkit.formatted_text import HTML, merge_formatted_text
-from prompt_toolkit.input import create_input, create_pipe_input
+from prompt_toolkit.input import create_input
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.output import Output, create_output
 from prompt_toolkit.shortcuts import PromptSession
+from typing_extensions import NoReturn
 
 from neuromation.api import IllegalArgumentError, JobStatus, StdStream
 
@@ -83,7 +84,7 @@ async def process_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> 
             sys.stdout.flush()
 
 
-async def process_exec(root: Root, job: str, cmd: str, tty: bool) -> None:
+async def process_exec(root: Root, job: str, cmd: str, tty: bool) -> NoReturn:
     exec_id = await root.client.jobs.exec_create(job, cmd, tty=tty)
     try:
         if tty:
@@ -154,7 +155,7 @@ async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
                 await root.cancel_with_logging(task)
 
 
-async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> None:
+async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> NoReturn:
     # Note, the job should be in running/finished state for this call,
     # passing pending job is forbidden
     try:
