@@ -1,1 +1,0 @@
-Fixed parsing image URIs with the single slash after scheme, like `image:/otheruser/imagename`.

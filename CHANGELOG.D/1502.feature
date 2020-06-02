@@ -1,1 +1,0 @@
-Unencodable characters are now replaced with `?` or `U+FFFE` when output to the stdout.
