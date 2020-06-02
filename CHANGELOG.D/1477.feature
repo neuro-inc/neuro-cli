@@ -1,1 +1,0 @@
-`neuro ps` now outputs local date instead of UTC and interprets `--since` and `--until` options as local time if the timezone is not specified.

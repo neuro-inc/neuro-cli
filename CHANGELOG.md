@@ -5,6 +5,31 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.6.2 (2020-06-02)
+===============================
+
+Features
+--------
+
+
+- Added the `--restart` option to `neuro run` and `neuro submit` and API. ([#1459](https://github.com/neuromation/platform-api-clients/issues/1459))
+
+- API: `Jobs.list()` is an asynchronous generator now. ([#1473](https://github.com/neuromation/platform-api-clients/issues/1473))
+
+- `neuro ps` now outputs local date instead of UTC and interprets `--since` and `--until` options as local time if the timezone is not specified. ([#1477](https://github.com/neuromation/platform-api-clients/issues/1477))
+
+- autocomplete job name/id ([#1485](https://github.com/neuromation/platform-api-clients/issues/1485))
+
+- Unencodable characters are now replaced with `?` or `U+FFFE` when output to the stdout. ([#1502](https://github.com/neuromation/platform-api-clients/issues/1502))
+
+
+Bugfixes
+--------
+
+
+- Fixed parsing image URIs with the single slash after scheme, like `image:/otheruser/imagename`. ([#1505](https://github.com/neuromation/platform-api-clients/issues/1505))
+
+
 Neuromation 20.4.15 (2020-04-15)
 ================================
 
