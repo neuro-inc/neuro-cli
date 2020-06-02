@@ -418,9 +418,9 @@ def _create_interruption_dialog() -> PromptSession[InterruptAction]:
 
     message = HTML("  <b>Interrupted</b>. Please choose the action:\n")
     suffix = HTML(
-        "<b>Ctrl-C</b> or <b>C</b> (kill), "
-        "<b>Ctrl-D</b> or <b>D</b> (detach), "
-        "<b>Enter</b> (continue the attached mode)"
+        "<b>Ctrl-C</b> or <b>C</b> -- Kill\n"
+        "<b>Ctrl-D</b> or <b>D</b> -- Detach \n"
+        "<b>Enter</b> or <b>ESC</b> -- Continue the attached mode"
     )
     complete_message = merge_formatted_text([message, suffix])
     session: PromptSession[InterruptAction] = PromptSession(
