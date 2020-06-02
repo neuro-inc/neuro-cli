@@ -385,7 +385,7 @@ class JobStartProgress:
 
 class DetailedJobStartProgress(JobStartProgress):
     def __init__(self, color: bool):
-        self._time = time.time()
+        self._time = time.monotonic()
         self._color = color
         self._prev = ""
         self._spinner = SPINNER
@@ -393,7 +393,7 @@ class DetailedJobStartProgress(JobStartProgress):
         self._lineno = 0
 
     def __call__(self, job: JobDescription) -> None:
-        new_time = time.time()
+        new_time = time.monotonic()
         dt = new_time - self._time
         msg = "Status: " + format_job_status(job.status)
         reason = self._get_status_reason_message(job)
@@ -453,11 +453,11 @@ class JobStopProgress:
         return StreamJobStopProgress()
 
     def __init__(self) -> None:
-        self._time = time.time()
+        self._time = time.monotonic()
 
     def __call__(self, job: JobDescription) -> bool:
         # return False if timeout, True otherwise
-        new_time = time.time()
+        new_time = time.monotonic()
         if new_time - self._time > self.TIMEOUT:
             self.timeout(job)
             return False
@@ -481,7 +481,7 @@ class DetailedJobStopProgress(JobStopProgress):
         self._lineno = 0
 
     def tick(self, job: JobDescription) -> None:
-        new_time = time.time()
+        new_time = time.monotonic()
         dt = new_time - self._time
 
         if job.status == JobStatus.RUNNING:
@@ -532,11 +532,11 @@ class ExecStopProgress:
         return StreamExecStopProgress()
 
     def __init__(self) -> None:
-        self._time = time.time()
+        self._time = time.monotonic()
 
     def __call__(self, running: bool) -> bool:
         # return False if timeout, True otherwise
-        new_time = time.time()
+        new_time = time.monotonic()
         if new_time - self._time > self.TIMEOUT:
             self.timeout()
             return False
@@ -560,7 +560,7 @@ class DetailedExecStopProgress(ExecStopProgress):
         self._lineno = 0
 
     def tick(self, running: bool) -> None:
-        new_time = time.time()
+        new_time = time.monotonic()
         dt = new_time - self._time
 
         if running:
