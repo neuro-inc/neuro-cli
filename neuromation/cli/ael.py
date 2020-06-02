@@ -395,6 +395,7 @@ def _create_interruption_dialog() -> PromptSession[InterruptAction]:
     bindings = KeyBindings()
 
     @bindings.add(Keys.Enter)
+    @bindings.add(Keys.Escape)
     def nothing(event: KeyPressEvent) -> None:
         event.app.exit(result=InterruptAction.nothing)
 
