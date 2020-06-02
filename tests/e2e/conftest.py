@@ -432,6 +432,7 @@ class Helper:
         *,
         verbosity: int = 0,
         network_timeout: float = NETWORK_TIMEOUT,
+        input: Optional[str] = None,
     ) -> SysCap:
         __tracebackhide__ = True
 
@@ -444,6 +445,7 @@ class Helper:
             encoding="utf8",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            input=input,
         )
         try:
             proc.check_returncode()
@@ -466,24 +468,6 @@ class Helper:
             print(f"neuro stdout: {out}")
             print(f"neuro stderr: {err}")
         return SysCap(out, err)
-
-    async def arun_cli(
-        self,
-        arguments: List[str],
-        *,
-        verbosity: int = 0,
-        network_timeout: float = NETWORK_TIMEOUT,
-    ) -> "asyncio.Process":  # type: ignore
-        __tracebackhide__ = True
-
-        log.info("Run 'neuro %s'", " ".join(arguments))
-
-        return await asyncio.create_subprocess_exec(
-            *(["neuro"] + self._default_args(verbosity, network_timeout) + arguments),
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
 
     def pexpect(
         self,

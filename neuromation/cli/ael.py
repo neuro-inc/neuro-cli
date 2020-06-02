@@ -335,10 +335,7 @@ async def _process_stdin_non_tty(root: Root, stream: StdStream) -> None:
     def read_ready() -> None:
         ev.set()
 
-    if root.tty:
-        inp = create_input()
-    else:
-        inp = create_pipe_input()
+    inp = create_input()
     with inp.attach(read_ready):
         while True:
             await ev.wait()

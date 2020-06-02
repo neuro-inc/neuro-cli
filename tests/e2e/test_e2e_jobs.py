@@ -1199,7 +1199,6 @@ def test_job_autocomplete(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_job_attach_stdout(helper: Helper) -> None:
-    # Run a new job
     command = 'bash -c "sleep 15; for count in {0..3}; do echo $count; sleep 1; done"'
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
@@ -1211,7 +1210,6 @@ def test_job_attach_stdout(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_job_attach_tty(helper: Helper) -> None:
-    # Run a new job
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, "sh", tty=True)
 
     status = helper.job_info(job_id)
@@ -1224,3 +1222,15 @@ def test_job_attach_tty(helper: Helper) -> None:
     assert strip_ansi(expect.before).strip() == "echo abc\r\r\nabc"
 
     helper.kill_job(job_id)
+
+
+# The test doesn't work yet
+# @pytest.mark.e2e
+# def test_job_run_non_tty_stdin(helper: Helper) -> None:
+#     command = "wc --chars"
+#     captured = helper.run_cli(
+#         ["-q", "job", "run", UBUNTU_IMAGE_NAME, command], input="abcdef"
+#     )
+
+#     assert captured.err == ""
+#     assert captured.out == "6"

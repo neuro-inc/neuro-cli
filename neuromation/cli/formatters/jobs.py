@@ -431,6 +431,9 @@ class StreamJobStartProgress(JobStartProgress):
         if description:
             msg += " " + description
 
+        if job.status != JobStatus.PENDING:
+            msg += "\n"
+
         if msg != self._prev:
             self._printer.print(msg)
             self._prev = msg
