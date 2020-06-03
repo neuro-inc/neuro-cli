@@ -93,6 +93,19 @@ REGEX_JOB_LIFE_SPAN = re.compile(
 )
 
 
+TTY_OPT = option(
+    "-t/-T",
+    "--tty/--no-tty",
+    is_flag=True,
+    default=None,
+    help=(
+        "Allocate a TTY, can be useful for interactive jobs. "
+        "By default is on if the command is executed from a terminal, "
+        "non-tty mode is used if executed from a script."
+    ),
+)
+
+
 def _get_neuro_mountpoint(username: str) -> str:
     return f"{ROOT_MOUNTPOINT}/{username}"
 
@@ -302,7 +315,7 @@ def job() -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
-@option("-t/-T", "--tty/--no-tty", is_flag=True, default=None, help="Allocate a TTY")
+@TTY_OPT
 async def submit(
     root: Root,
     image: RemoteImage,
@@ -387,13 +400,7 @@ async def submit(
 @command(context_settings=dict(allow_interspersed_args=False))
 @argument("job", type=JOB)
 @argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
-@option(
-    "-t/-T",
-    "--tty/--no-tty",
-    default=None,
-    is_flag=True,
-    help="Allocate virtual tty. Useful for interactive jobs.",
-)
+@TTY_OPT
 @option(
     "--no-key-check",
     is_flag=True,
@@ -950,7 +957,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
-@option("-t/-T", "--tty/--no-tty", is_flag=True, default=None, help="Allocate a TTY")
+@TTY_OPT
 async def run(
     root: Root,
     image: RemoteImage,
