@@ -67,6 +67,7 @@ def make_root() -> Iterator[_MakeRoot]:
             command_path="",
             command_params=[],
             skip_gmp_stats=True,
+            show_traceback=False,
         )
         return root
 

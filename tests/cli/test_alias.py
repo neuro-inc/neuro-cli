@@ -1092,5 +1092,6 @@ async def test_find_alias_without_config(tmp_path: Path) -> None:
         command_path="",
         command_params=[],
         skip_gmp_stats=True,
+        show_traceback=True,
     )
     assert await find_alias(root, "unknown-cmd") is None

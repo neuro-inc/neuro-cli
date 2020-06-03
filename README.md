@@ -25,6 +25,7 @@
 		* [neuro job top](#neuro-job-top)
 		* [neuro job save](#neuro-job-save)
 		* [neuro job browse](#neuro-job-browse)
+		* [neuro job attach](#neuro-job-attach)
 	* [neuro project](#neuro-project)
 		* [neuro project init](#neuro-project-init)
 	* [neuro storage](#neuro-storage)
@@ -392,6 +393,7 @@ Name | Description|
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
 | _[neuro job save](#neuro-job-save)_| Save job's state to an image |
 | _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
+| _[neuro job attach](#neuro-job-attach)_| Print the logs for a container |
 
 
 
@@ -444,7 +446,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
-|_\-t, --tty_|Allocate a TTY|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--help_|Show this message and exit.|
 
 
@@ -503,7 +505,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
-|_\-t, --tty_|Allocate a TTY|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--help_|Show this message and exit.|
 
 
@@ -618,8 +620,7 @@ neuro exec --no-tty my-job ls -l
 
 Name | Description|
 |----|------------|
-|_\-t, --tty / -T, --no-tty_|Allocate virtual tty. Useful for interactive jobs.|
-|_\-i, --interactive / -I, --no-interactive_|Keep STDIN open even if not attached. On for tty by default, false otherwise.|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
@@ -760,6 +761,25 @@ Opens a job's URL in a web browser.
 
 ```bash
 neuro job browse [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job attach
+
+Print the logs for a container.
+
+**Usage:**
+
+```bash
+neuro job attach [OPTIONS] JOB
 ```
 
 **Options:**
@@ -1841,7 +1861,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
-|_\-t, --tty_|Allocate a TTY|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--help_|Show this message and exit.|
 
 
@@ -1900,7 +1920,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
-|_\-t, --tty_|Allocate a TTY|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--help_|Show this message and exit.|
 
 
@@ -1996,8 +2016,7 @@ neuro exec --no-tty my-job ls -l
 
 Name | Description|
 |----|------------|
-|_\-t, --tty / -T, --no-tty_|Allocate virtual tty. Useful for interactive jobs.|
-|_\-i, --interactive / -I, --no-interactive_|Keep STDIN open even if not attached. On for tty by default, false otherwise.|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 

@@ -28,6 +28,7 @@ from uuid import uuid4 as uuid
 
 import aiodocker
 import aiohttp
+import pexpect
 import pytest
 from yarl import URL
 
@@ -358,8 +359,7 @@ class Helper:
             job = await client.jobs.status(job_id)
             assert job.status == state
 
-    @run_async
-    async def job_info(self, job_id: str, wait_start: bool = False) -> JobDescription:
+    async def ajob_info(self, job_id: str, wait_start: bool = False) -> JobDescription:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             job = await client.jobs.status(job_id)
@@ -373,6 +373,8 @@ class Helper:
             if int(time() - start_time) > JOB_TIMEOUT:
                 raise AssertionError(f"timeout exceeded, last output: '{job.status}'")
             return job
+
+    job_info = run_async(ajob_info)
 
     @run_async
     async def check_job_output(
@@ -405,19 +407,8 @@ class Helper:
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
         )
 
-    def run_cli(
-        self,
-        arguments: List[str],
-        *,
-        verbosity: int = 0,
-        network_timeout: float = NETWORK_TIMEOUT,
-    ) -> SysCap:
-        __tracebackhide__ = True
-
-        log.info("Run 'neuro %s'", " ".join(arguments))
-
+    def _default_args(self, verbosity: int, network_timeout: float) -> List[str]:
         args = [
-            "neuro",
             "--show-traceback",
             "--disable-pypi-version-check",
             "--color=no",
@@ -433,13 +424,28 @@ class Helper:
         if self._nmrc_path:
             args.append(f"--neuromation-config={self._nmrc_path}")
 
+        return args
+
+    def run_cli(
+        self,
+        arguments: List[str],
+        *,
+        verbosity: int = 0,
+        network_timeout: float = NETWORK_TIMEOUT,
+        input: Optional[str] = None,
+    ) -> SysCap:
+        __tracebackhide__ = True
+
+        log.info("Run 'neuro %s'", " ".join(arguments))
+
         # 5 min timeout is overkill
         proc = subprocess.run(
-            args + arguments,
+            ["neuro"] + self._default_args(verbosity, network_timeout) + arguments,
             timeout=300,
             encoding="utf8",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
+            input=input,
         )
         try:
             proc.check_returncode()
@@ -459,29 +465,40 @@ class Helper:
         out = out.strip()
         err = err.strip()
         if verbosity > 0:
-            print(f"nero stdout: {out}")
-            print(f"nero stderr: {err}")
+            print(f"neuro stdout: {out}")
+            print(f"neuro stderr: {err}")
         return SysCap(out, err)
 
+    def pexpect(
+        self,
+        arguments: List[str],
+        *,
+        verbosity: int = 0,
+        network_timeout: float = NETWORK_TIMEOUT,
+        encoding: str = "utf8",
+        echo: bool = True,
+    ) -> "pexpect.spawn":
+        if not hasattr(pexpect, "spawn"):
+            pytest.skip("TTY tests are not supported on Windows")
+        return pexpect.spawn(
+            "neuro",
+            self._default_args(verbosity, network_timeout) + arguments,
+            encoding=encoding,
+            echo=echo,
+        )
+
     def autocomplete(
-        self, arguments: List[str], *, network_timeout: float = NETWORK_TIMEOUT,
+        self,
+        arguments: List[str],
+        *,
+        verbosity: int = 0,
+        network_timeout: float = NETWORK_TIMEOUT,
     ) -> str:
         __tracebackhide__ = True
 
         log.info("Run 'neuro %s'", " ".join(arguments))
 
-        args = [
-            "neuro",
-            "--show-traceback",
-            "--disable-pypi-version-check",
-            "--color=no",
-            f"--network-timeout={network_timeout}",
-            "--skip-stats",
-        ]
-
-        if self._nmrc_path:
-            args.append(f"--neuromation-config={self._nmrc_path}")
-
+        args = self._default_args(verbosity, network_timeout)
         env = dict(os.environ)
         env["_NEURO_COMPLETE"] = "complete_zsh"
         env["COMP_WORDS"] = " ".join(shlex.quote(arg) for arg in args + arguments)
@@ -499,14 +516,14 @@ class Helper:
         assert not proc.stderr
         return proc.stdout
 
-    @run_async
-    async def run_job_and_wait_state(
+    async def arun_job_and_wait_state(
         self,
         image: str,
         command: str = "",
         *,
         description: Optional[str] = None,
         name: Optional[str] = None,
+        tty: bool = False,
         wait_state: JobStatus = JobStatus.RUNNING,
         stop_state: JobStatus = JobStatus.FAILED,
     ) -> str:
@@ -518,6 +535,7 @@ class Helper:
                 image=client.parse.remote_image(image),
                 command=command,
                 resources=resources,
+                tty=tty,
             )
             job = await client.jobs.run(
                 container,
@@ -541,6 +559,8 @@ class Helper:
 
             return job.id
 
+    run_job_and_wait_state = run_async(arun_job_and_wait_state)
+
     @run_async
     async def check_http_get(self, url: Union[URL, str]) -> str:
         """
@@ -561,8 +581,7 @@ class Helper:
                     request_info=resp.request_info,
                 )
 
-    @run_async
-    async def kill_job(self, id_or_name: str, *, wait: bool = True) -> None:
+    async def akill_job(self, id_or_name: str, *, wait: bool = True) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             id = await resolve_job(
@@ -575,6 +594,8 @@ class Helper:
                         stat = await client.jobs.status(id)
                         if stat.status not in (JobStatus.PENDING, JobStatus.RUNNING):
                             break
+
+    kill_job = run_async(akill_job)
 
     @run_async
     async def create_bucket(self, name: str) -> None:

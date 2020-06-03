@@ -5,7 +5,6 @@ import os
 import re
 import shlex
 import sys
-import textwrap
 import uuid
 import webbrowser
 from datetime import datetime, timedelta
@@ -35,6 +34,7 @@ from neuromation.cli.formatters.utils import (
     uri_formatter,
 )
 
+from .ael import process_attach, process_exec, process_logs
 from .click_types import (
     JOB,
     JOB_COLUMNS,
@@ -90,6 +90,19 @@ RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
 DEFAULT_JOB_LIFE_SPAN = "1d"
 REGEX_JOB_LIFE_SPAN = re.compile(
     r"^((?P<d>\d+)d)?((?P<h>\d+)h)?((?P<m>\d+)m)?((?P<s>\d+)s)?$"
+)
+
+
+TTY_OPT = option(
+    "-t/-T",
+    "--tty/--no-tty",
+    is_flag=True,
+    default=None,
+    help=(
+        "Allocate a TTY, can be useful for interactive jobs. "
+        "By default is on if the command is executed from a terminal, "
+        "non-tty mode is used if executed from a script."
+    ),
 )
 
 
@@ -302,7 +315,7 @@ def job() -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
-@option("-t", "--tty", is_flag=True, help="Allocate a TTY")
+@TTY_OPT
 async def submit(
     root: Root,
     image: RemoteImage,
@@ -330,7 +343,7 @@ async def submit(
     pass_config: bool,
     browse: bool,
     detach: bool,
-    tty: bool,
+    tty: Optional[bool],
 ) -> None:
     """
     Submit an image to run on the cluster.
@@ -351,6 +364,8 @@ async def submit(
     # registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
     neuro submit image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
     """
+    if tty is None:
+        tty = root.tty
     await run_job(
         root,
         image=image,
@@ -385,23 +400,7 @@ async def submit(
 @command(context_settings=dict(allow_interspersed_args=False))
 @argument("job", type=JOB)
 @argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
-@option(
-    "-t/-T",
-    "--tty/--no-tty",
-    default=True,
-    is_flag=True,
-    help="Allocate virtual tty. Useful for interactive jobs.",
-)
-@option(
-    "-i/-I",
-    "--interactive/--no-interactive",
-    default=None,
-    is_flag=True,
-    help=(
-        "Keep STDIN open even if not attached. "
-        "On for tty by default, false otherwise."
-    ),
-)
+@TTY_OPT
 @option(
     "--no-key-check",
     is_flag=True,
@@ -418,8 +417,7 @@ async def submit(
 async def exec(
     root: Root,
     job: str,
-    tty: bool,
-    interactive: Optional[bool],
+    tty: Optional[bool],
     no_key_check: bool,
     cmd: Sequence[str],
     timeout: float,
@@ -436,16 +434,14 @@ async def exec(
     neuro exec --no-tty my-job ls -l
     """
     real_cmd = _parse_cmd(cmd)
-    id = await resolve_job(
+    job = await resolve_job(
         job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
     )
-    if interactive is None:
-        interactive = tty
-    async with async_timeout.timeout(timeout if timeout else None,):
-        retcode = await root.client.jobs.exec(
-            id, shlex.split(real_cmd), tty=tty, no_key_check=no_key_check,
-        )
-        sys.exit(retcode)
+    if tty is None:
+        tty = root.tty
+    _check_tty(root, tty)
+    async with async_timeout.timeout(timeout):
+        await process_exec(root, job, real_cmd, tty)
 
 
 @command()
@@ -517,14 +513,36 @@ async def logs(root: Root, job: str) -> None:
             JobStatus.FAILED,
         },
     )
-    await _print_logs(root, id)
+    await process_logs(root, id, None)
 
 
-async def _print_logs(root: Root, job: str) -> None:
-    async for chunk in root.client.jobs.monitor(job):
-        if not chunk:
-            break
-        click.echo(chunk.decode(errors="replace"), nl=False)
+@command()
+@argument("job", type=JOB)
+async def attach(root: Root, job: str) -> None:
+    """
+    Print the logs for a container.
+    """
+    id = await resolve_job(
+        job,
+        client=root.client,
+        status={
+            JobStatus.PENDING,
+            JobStatus.RUNNING,
+            JobStatus.SUCCEEDED,
+            JobStatus.FAILED,
+        },
+    )
+    status = await root.client.jobs.status(id)
+    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
+    while status.status == JobStatus.PENDING:
+        await asyncio.sleep(0.2)
+        status = await root.client.jobs.status(id)
+        progress(status)
+    progress.close()
+    tty = status.container.tty
+    _check_tty(root, tty)
+
+    await process_attach(root, id, tty=tty, logs=False)
 
 
 @command()
@@ -939,7 +957,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
-@option("-t", "--tty", is_flag=True, help="Allocate a TTY")
+@TTY_OPT
 async def run(
     root: Root,
     image: RemoteImage,
@@ -962,7 +980,7 @@ async def run(
     pass_config: bool,
     browse: bool,
     detach: bool,
-    tty: bool,
+    tty: Optional[bool],
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -991,6 +1009,8 @@ async def run(
             "-p/-P option is deprecated and ignored. Use corresponding presets instead."
         )
     log.info(f"Using preset '{preset}': {job_preset}")
+    if tty is None:
+        tty = root.tty
     await run_job(
         root,
         image=image,
@@ -1034,6 +1054,7 @@ job.add_command(kill)
 job.add_command(top)
 job.add_command(save)
 job.add_command(browse)
+job.add_command(attach)
 
 
 job.add_command(alias(ls, "list", hidden=True))
@@ -1083,6 +1104,8 @@ async def run_job(
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
     if not wait_start:
         detach = True
+    if not detach:
+        _check_tty(root, tty)
 
     job_restart_policy = JobRestartPolicy(restart)
     log.debug(f"Job restart policy: {job_restart_policy}")
@@ -1164,23 +1187,7 @@ async def run_job(
         sys.exit(job.history.exit_code or EX_PLATFORMERROR)
 
     if not detach:
-        if not root.quiet:
-            msg = textwrap.dedent(
-                """\
-                Terminal is attached to the remote job, so you receive the job's output.
-                Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the
-                job with `--detach` option.\
-                """
-            )
-            click.echo(click.style(msg, dim=True))
-        await _print_logs(root, job.id)
-        job = await root.client.jobs.status(job.id)
-        while job.status in (JobStatus.PENDING, JobStatus.RUNNING):
-            await asyncio.sleep(0.1)
-            job = await root.client.jobs.status(job.id)
-        if job.status == JobStatus.FAILED:
-            sys.exit(job.history.exit_code or EX_PLATFORMERROR)
-        sys.exit(job.history.exit_code)
+        await process_attach(root, job.id, tty=tty, logs=True)
 
     return job
 
@@ -1391,3 +1398,11 @@ def _parse_date(value: str) -> Optional[datetime]:
             raise ValueError("Date should be in ISO-8601 format")
     else:
         return None
+
+
+def _check_tty(root: Root, tty: bool) -> None:
+    if tty and not root.tty:
+        raise RuntimeError(
+            "The operation should be executed from a terminal, "
+            "the input device is not a TTY"
+        )

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import Iterable, Iterator, List
 
 import humanize
-from click import style, unstyle
+from click import secho, style, unstyle
 
 from neuromation.api import (
     JobDescription,
@@ -31,6 +31,12 @@ COLORS = {
     JobStatus.FAILED: "red",
     JobStatus.UNKNOWN: "yellow",
 }
+
+
+if sys.platform == "win32":
+    SPINNER = itertools.cycle(r"-\|/")
+else:
+    SPINNER = itertools.cycle("◢◣◤◥")
 
 
 def format_job_status(status: JobStatus) -> str:
@@ -349,6 +355,8 @@ class ResourcesFormatter:
 
 
 class JobStartProgress:
+    time_factory = staticmethod(time.monotonic)
+
     @classmethod
     def create(cls, tty: bool, color: bool, quiet: bool) -> "JobStartProgress":
         if quiet:
@@ -379,18 +387,15 @@ class JobStartProgress:
 
 class DetailedJobStartProgress(JobStartProgress):
     def __init__(self, color: bool):
-        self._time = time.time()
+        self._time = self.time_factory()
         self._color = color
         self._prev = ""
-        if sys.platform == "win32":
-            self._spinner = itertools.cycle("-\\|/")
-        else:
-            self._spinner = itertools.cycle("◢◣◤◥")
+        self._spinner = SPINNER
         self._printer = TTYPrinter()
         self._lineno = 0
 
     def __call__(self, job: JobDescription) -> None:
-        new_time = time.time()
+        new_time = self.time_factory()
         dt = new_time - self._time
         msg = "Status: " + format_job_status(job.status)
         reason = self._get_status_reason_message(job)
@@ -428,8 +433,172 @@ class StreamJobStartProgress(JobStartProgress):
         if description:
             msg += " " + description
 
+        if job.status != JobStatus.PENDING:
+            msg += "\n"
+
         if msg != self._prev:
             self._printer.print(msg)
             self._prev = msg
         else:
             self._printer.tick()
+
+
+class JobStopProgress:
+    TIMEOUT = 15
+    time_factory = staticmethod(time.monotonic)
+
+    @classmethod
+    def create(cls, tty: bool, color: bool, quiet: bool) -> "JobStopProgress":
+        if quiet:
+            return JobStopProgress()
+        elif tty:
+            return DetailedJobStopProgress(color)
+        return StreamJobStopProgress()
+
+    def __init__(self) -> None:
+        self._time = self.time_factory()
+
+    def __call__(self, job: JobDescription) -> bool:
+        # return False if timeout, True otherwise
+        new_time = self.time_factory()
+        if new_time - self._time > self.TIMEOUT:
+            self.timeout(job)
+            return False
+        else:
+            self.tick(job)
+            return True
+
+    def tick(self, job: JobDescription) -> None:
+        pass
+
+    def timeout(self, job: JobDescription) -> None:
+        pass
+
+
+class DetailedJobStopProgress(JobStopProgress):
+    def __init__(self, color: bool):
+        super().__init__()
+        self._color = color
+        self._spinner = SPINNER
+        self._printer = TTYPrinter()
+        self._lineno = 0
+
+    def tick(self, job: JobDescription) -> None:
+        new_time = self.time_factory()
+        dt = new_time - self._time
+
+        if job.status == JobStatus.RUNNING:
+            msg = f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
+        else:
+            msg = "Stopped"
+        self._printer.print(
+            msg, lineno=self._lineno,
+        )
+
+    def timeout(self, job: JobDescription) -> None:
+        secho()
+        secho("!!! Warning !!!", fg="red")
+        secho(
+            "The attached session was disconnected but the job is still alive.",
+            fg="red",
+        )
+        secho("Reconnect to the job:", dim=True, fg="yellow")
+        secho(f"  neuro attach {job.id}", dim=True)
+        secho("Terminate the job:", dim=True, fg="yellow")
+        secho(f"  neuro kill {job.id}", dim=True)
+
+
+class StreamJobStopProgress(JobStopProgress):
+    def __init__(self) -> None:
+        super().__init__()
+        self._printer = StreamPrinter()
+        self._printer.print("Wait for stopping")
+
+    def tick(self, job: JobDescription) -> None:
+        self._printer.tick()
+
+    def timeout(self, job: JobDescription) -> None:
+        print()
+        print("!!! Warning !!!")
+        print("The attached session was disconnected but the job is still alive.")
+
+
+class ExecStopProgress:
+    TIMEOUT = 15
+    time_factory = staticmethod(time.monotonic)
+
+    @classmethod
+    def create(cls, tty: bool, color: bool, quiet: bool) -> "ExecStopProgress":
+        if quiet:
+            return ExecStopProgress()
+        elif tty:
+            return DetailedExecStopProgress(color)
+        return StreamExecStopProgress()
+
+    def __init__(self) -> None:
+        self._time = self.time_factory()
+
+    def __call__(self, running: bool) -> bool:
+        # return False if timeout, True otherwise
+        new_time = self.time_factory()
+        if new_time - self._time > self.TIMEOUT:
+            self.timeout()
+            return False
+        else:
+            self.tick(running)
+            return True
+
+    def tick(self, running: bool) -> None:
+        pass
+
+    def timeout(self) -> None:
+        pass
+
+
+class DetailedExecStopProgress(ExecStopProgress):
+    def __init__(self, color: bool):
+        super().__init__()
+        self._color = color
+        self._spinner = SPINNER
+        self._printer = TTYPrinter()
+        self._lineno = 0
+
+    def tick(self, running: bool) -> None:
+        new_time = self.time_factory()
+        dt = new_time - self._time
+
+        if running:
+            msg = f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
+        else:
+            msg = "Stopped"
+
+        self._printer.print(
+            msg, lineno=self._lineno,
+        )
+
+    def timeout(self) -> None:
+        secho()
+        secho("!!! Warning !!!", fg="red")
+        secho(
+            "The attached session was disconnected "
+            "but the exec process is still alive.",
+            fg="red",
+        )
+
+
+class StreamExecStopProgress(ExecStopProgress):
+    def __init__(self) -> None:
+        super().__init__()
+        self._printer = StreamPrinter()
+        self._printer.print("Wait for stopping")
+
+    def tick(self, running: bool) -> None:
+        self._printer.tick()
+
+    def timeout(self) -> None:
+        print()
+        print("!!! Warning !!!")
+        print(
+            "The attached session was disconnected "
+            "but the exec process is still alive."
+        )

@@ -32,6 +32,17 @@ MIN_PORT = 49152
 MAX_PORT = 65535
 EXEC_TIMEOUT = 180
 
+ANSI_RE = re.compile(r"\033\[[;?0-9]*[a-zA-Z]")
+OSC_RE = re.compile(r"\x1b]0;.+\x07")
+
+
+def strip_ansi(s: str) -> str:
+    s1 = ANSI_RE.sub("", s)
+    s2 = OSC_RE.sub("", s1)
+    s3 = s2.replace("\x1b[K", "")
+    s4 = s3.replace("\x1b[!p", "")
+    return s4
+
 
 @pytest.mark.e2e
 def test_job_submit(helper: Helper) -> None:
@@ -410,6 +421,7 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
 
     captured = helper.run_cli(
         [
+            "--quiet",
             "job",
             "exec",
             "--no-tty",
@@ -420,10 +432,11 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
             # use unrolled notation to check shlex.join()
             "bash",
             "-c",
-            "echo ok; true",
+            "true",
         ]
     )
-    assert captured.out == "ok"
+    assert captured.err == ""
+    assert captured.out == ""
     helper.kill_job(job_id, wait=False)
 
 
@@ -477,6 +490,7 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
 
     captured = helper.run_cli(
         [
+            "--quiet",
             "job",
             "exec",
             "--no-tty",
@@ -484,10 +498,11 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
             "--timeout",
             str(EXEC_TIMEOUT),
             job_id,
-            "echo 1",
+            'bash -c "sleep 5; echo ok"',
         ]
     )
-    assert captured.out == "1"
+    assert captured.err == ""
+    assert captured.out == "ok"
     helper.kill_job(job_id, wait=False)
 
 
@@ -518,8 +533,9 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
-    captured = helper.run_cli(
+    expect = helper.pexpect(
         [
+            "--quiet",
             "job",
             "exec",
             "--no-key-check",
@@ -529,7 +545,7 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
             "[ -t 1 ]",
         ]
     )
-    assert captured.out == ""
+    assert expect.wait() == 0
     helper.kill_job(job_id, wait=False)
 
 
@@ -548,7 +564,7 @@ def test_e2e_ssh_exec_no_job(helper: Helper) -> None:
                 "true",
             ]
         )
-    assert cm.value.returncode == 127
+    assert cm.value.returncode == 65
 
 
 @pytest.mark.e2e
@@ -571,7 +587,7 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
                 "true",
             ]
         )
-    assert cm.value.returncode == 127
+    assert cm.value.returncode == 65
 
 
 @pytest.mark.e2e
@@ -932,24 +948,10 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_job_run_with_tty(helper: Helper) -> None:
-    # Run a new job
     command = "test -t 0"
-    captured = helper.run_cli(
-        [
-            "-q",
-            "job",
-            "run",
-            "-t",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
+    job_id = helper.run_job_and_wait_state(
+        UBUNTU_IMAGE_NAME, command, wait_state=JobStatus.SUCCEEDED, tty=True
     )
-    job_id = captured.out
-
-    # Wait until the job is running
-    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
 
     captured = helper.run_cli(["job", "status", job_id])
     assert "TTY: True" in captured.out
@@ -1178,3 +1180,53 @@ def test_job_autocomplete(helper: Helper) -> None:
     assert job_id in out
 
     helper.kill_job(job_id)
+
+
+@pytest.mark.e2e
+def test_job_run_stdout(helper: Helper) -> None:
+    command = 'bash -c "sleep 30; for count in {0..3}; do echo $count; sleep 1; done"'
+
+    try:
+        captured = helper.run_cli(
+            ["-q", "job", "run", "--no-tty", UBUNTU_IMAGE_NAME, command]
+        )
+    except subprocess.CalledProcessError as exc:
+        # EX_IOERR is returned if the process is not finished in 10 secs after
+        # disconnecting the attached session
+        assert exc.returncode == 74
+        err = exc.stderr
+        out = exc.stdout
+    else:
+        err = captured.err
+        out = captured.out
+
+    assert err == ""
+    assert "\n".join(f"{i}" for i in range(4)) in out
+
+
+@pytest.mark.e2e
+def test_job_attach_tty(helper: Helper) -> None:
+    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, "sh", tty=True)
+
+    status = helper.job_info(job_id)
+    assert status.container.tty
+
+    expect = helper.pexpect(["job", "attach", job_id])
+    expect.waitnoecho()
+    expect.sendline("echo abc")
+    expect.expect("# ")
+    assert strip_ansi(expect.before).strip() == "echo abc\r\r\nabc"
+
+    helper.kill_job(job_id)
+
+
+# The test doesn't work yet
+# @pytest.mark.e2e
+# def test_job_run_non_tty_stdin(helper: Helper) -> None:
+#     command = "wc --chars"
+#     captured = helper.run_cli(
+#         ["-q", "job", "run", UBUNTU_IMAGE_NAME, command], input="abcdef"
+#     )
+
+#     assert captured.err == ""
+#     assert captured.out == "6"

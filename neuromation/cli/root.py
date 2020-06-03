@@ -1,3 +1,5 @@
+import asyncio
+import contextlib
 import logging
 import re
 import sys
@@ -5,7 +7,7 @@ from dataclasses import dataclass, field
 from http.cookies import Morsel  # noqa
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Awaitable, Dict, Iterator, List, Optional, Tuple, TypeVar
+from typing import Any, Awaitable, Dict, Iterator, List, Optional, Tuple, TypeVar
 
 import aiohttp
 import click
@@ -43,6 +45,7 @@ class Root:
     command_path: str
     command_params: List[Dict[str, Optional[str]]]
     skip_gmp_stats: bool
+    show_traceback: bool
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None
@@ -211,3 +214,24 @@ class Root:
     def _find_all_tokens(self, text: str) -> Iterator[str]:
         for match in HEADER_TOKEN_PATTERN.finditer(text):
             yield match.group("token")
+
+    async def cancel_with_logging(self, task: "asyncio.Task[Any]") -> None:
+        if not task.done():
+            task.cancel()
+        try:
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+        except Exception as exc:
+            if self.show_traceback:
+                log.exception(str(exc), stack_info=True)
+            else:
+                log.error(str(exc))
+
+    def soft_reset_tty(self) -> None:
+        if self.tty:
+            # Soft reset the terminal.
+            # For example, Midnight Commander often leaves
+            # scrolling margins (DECSTBM) aligned only
+            # to a part of the screen size
+            sys.stdout.write("\x1b[!p")
+            sys.stdout.flush()

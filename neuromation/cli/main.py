@@ -30,6 +30,7 @@ from . import (
     storage,
 )
 from .alias import find_alias
+from .asyncio_utils import setup_child_watcher
 from .const import (
     EX_DATAERR,
     EX_IOERR,
@@ -79,25 +80,7 @@ def setup_stdout(errors: str) -> None:
 
 
 setup_stdout(errors="replace")
-
-if sys.platform == "win32":
-    if sys.version_info < (3, 7):
-        # Python 3.6 has no WindowsProactorEventLoopPolicy class
-        from asyncio import events
-
-        class WindowsProactorEventLoopPolicy(events.BaseDefaultEventLoopPolicy):
-            _loop_factory = asyncio.ProactorEventLoop
-
-    else:
-        WindowsProactorEventLoopPolicy = asyncio.WindowsProactorEventLoopPolicy
-
-    asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
-else:
-    if sys.version_info < (3, 8):
-        from .asyncio_utils import ThreadedChildWatcher
-
-        asyncio.set_child_watcher(ThreadedChildWatcher())
-
+setup_child_watcher()
 
 log = logging.getLogger(__name__)
 
@@ -162,7 +145,8 @@ class MainGroup(Group):
                     kwargs[param.name] = param.get_default(ctx)
 
         global LOG_ERROR
-        if kwargs["show_traceback"]:
+        show_traceback = kwargs.get("show_traceback", False)
+        if show_traceback:
             LOG_ERROR = log.exception
         tty = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
         COLORS = {"yes": True, "no": False, "auto": None}
@@ -193,6 +177,7 @@ class MainGroup(Group):
             command_path="",
             command_params=[],
             skip_gmp_stats=kwargs["skip_stats"],
+            show_traceback=show_traceback,
         )
         ctx.obj = root
         ctx.call_on_close(root.close)
@@ -591,6 +576,10 @@ def main(args: Optional[List[str]] = None) -> None:
     except OSError as error:
         LOG_ERROR(f"I/O Error ({error})")
         sys.exit(EX_IOERR)
+
+    except asyncio.CancelledError:
+        LOG_ERROR("Cancelled")
+        sys.exit(130)
 
     except KeyboardInterrupt:
         LOG_ERROR("Aborting.")

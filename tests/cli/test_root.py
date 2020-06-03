@@ -21,6 +21,7 @@ def root_uninitialized() -> Root:
         command_path="",
         command_params=[],
         skip_gmp_stats=True,
+        show_traceback=False,
     )
 
 

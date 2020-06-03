@@ -6,12 +6,23 @@ import signal
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
+import aiohttp
 import attr
 import psutil
 from aiodocker.exceptions import DockerError
-from aiohttp import WSServerHandshakeError
+from aiohttp import WSMsgType, WSServerHandshakeError
 from dateutil.parser import isoparse
 from multidict import MultiDict
 from yarl import URL
@@ -137,6 +148,47 @@ class JobTelemetry:
     timestamp: float
     gpu_duty_cycle: Optional[int] = None
     gpu_memory: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class ExecInspect:
+    id: str
+    running: bool
+    exit_code: int
+    job_id: str
+    tty: bool
+    entrypoint: str
+    command: str
+
+
+@dataclass(frozen=True)
+class Message:
+    fileno: int
+    data: bytes
+
+
+class StdStream:
+    def __init__(self, ws: aiohttp.ClientWebSocketResponse) -> None:
+        self._ws = ws
+        self._closing = False
+
+    async def close(self) -> None:
+        self._closing = True
+        await self._ws.close()
+
+    async def read_out(self) -> Optional[Message]:
+        if self._closing:
+            return None
+        msg = await self._ws.receive()
+        if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSING, WSMsgType.CLOSED):
+            self._closing = True
+            return None
+        return Message(msg.data[0], msg.data[1:])
+
+    async def write_in(self, data: bytes) -> None:
+        if self._closing:
+            return
+        await self._ws.send_bytes(data)
 
 
 class Jobs(metaclass=NoPublicConstructor):
@@ -322,50 +374,6 @@ class Jobs(metaclass=NoPublicConstructor):
                 if push_step:
                     progress.step(push_step)
 
-    async def exec(
-        self,
-        id: str,
-        cmd: Iterable[str],
-        *,
-        tty: bool = False,
-        no_key_check: bool = False,
-    ) -> int:
-        try:
-            job_status = await self.status(id)
-        except IllegalArgumentError as e:
-            raise ValueError(f"Job not found. Job Id = {id}") from e
-        if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {job_status.id}")
-        payload = json.dumps(
-            {
-                "method": "job_exec",
-                "token": await self._config.token(),
-                "params": {"job": job_status.id, "command": list(cmd)},
-            }
-        )
-        command = ["ssh"]
-        if tty:
-            command += ["-tt"]
-        else:
-            command += ["-T"]
-        if no_key_check:  # pragma: no branch
-            command += [
-                "-o",
-                "StrictHostKeyChecking=no",
-                "-o",
-                "UserKnownHostsFile=/dev/null",
-            ]
-        server_url = job_status.ssh_server
-        port = server_url.port if server_url.port else 22
-        command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
-        proc = await asyncio.create_subprocess_exec(*command)
-        try:
-            return await proc.wait()
-        finally:
-            await _kill_proc_tree(proc.pid, timeout=10)
-            # add a sleep to get process watcher a chance to execute all callbacks
-            await asyncio.sleep(0.1)
-
     @asynccontextmanager
     async def port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
@@ -439,6 +447,105 @@ class Jobs(metaclass=NoPublicConstructor):
             await _kill_proc_tree(proc.pid, timeout=10)
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
+
+    @asynccontextmanager
+    async def attach(
+        self,
+        id: str,
+        *,
+        stdin: bool = False,
+        stdout: bool = False,
+        stderr: bool = False,
+        logs: bool = False,
+    ) -> AsyncIterator[StdStream]:
+        url = self._config.monitoring_url / id / "attach"
+        url = url.with_query(
+            stdin=str(int(stdin)),
+            stdout=str(int(stdout)),
+            stderr=str(int(stderr)),
+            logs=str(int(logs)),
+        )
+        auth = await self._config._api_auth()
+        ws = await self._core._session.ws_connect(
+            url,
+            headers={"Authorization": auth},
+            timeout=None,  # type: ignore
+            receive_timeout=None,
+            heartbeat=30,
+        )
+
+        try:
+            yield StdStream(ws)
+        finally:
+            await ws.close()
+
+    async def resize(self, id: str, *, w: int, h: int) -> None:
+        url = self._config.monitoring_url / id / "resize"
+        url = url.with_query(w=w, h=h)
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, auth=auth):
+            pass
+
+    async def exec_create(self, id: str, cmd: str, *, tty: bool = False) -> str:
+        payload = {
+            "command": cmd,
+            "stdin": True,
+            "stdout": True,
+            "stderr": True,
+            "tty": tty,
+        }
+        url = self._config.monitoring_url / id / "exec_create"
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, json=payload, auth=auth) as resp:
+            ret = await resp.json()
+            return ret["exec_id"]
+
+    async def exec_resize(self, id: str, exec_id: str, *, w: int, h: int) -> None:
+        url = self._config.monitoring_url / id / exec_id / "exec_resize"
+        url = url.with_query(w=w, h=h)
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, auth=auth) as resp:
+            resp
+
+    async def exec_inspect(self, id: str, exec_id: str) -> ExecInspect:
+        url = self._config.monitoring_url / id / exec_id / "exec_inspect"
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            data = await resp.json()
+            return ExecInspect(
+                id=data["id"],
+                running=data["running"],
+                exit_code=data["exit_code"],
+                job_id=data["job_id"],
+                tty=data["tty"],
+                entrypoint=data["entrypoint"],
+                command=data["command"],
+            )
+
+    @asynccontextmanager
+    async def exec_start(self, id: str, exec_id: str) -> AsyncIterator[StdStream]:
+        url = self._config.monitoring_url / id / exec_id / "exec_start"
+        auth = await self._config._api_auth()
+
+        ws = await self._core._session.ws_connect(
+            url,
+            headers={"Authorization": auth},
+            timeout=None,  # type: ignore
+            receive_timeout=None,
+            heartbeat=30,
+        )
+
+        try:
+            yield StdStream(ws)
+        finally:
+            await ws.close()
+
+    async def send_signal(self, id: str, signal: Union[str, int]) -> None:
+        url = self._config.monitoring_url / id / "kill"
+        url = url.with_query(signal=signal)
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, auth=auth) as resp:
+            resp
 
 
 #  ############## Internal helpers ###################

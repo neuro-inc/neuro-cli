@@ -66,6 +66,7 @@ async def root(nmrc_path: Path, loop: asyncio.AbstractEventLoop) -> AsyncIterato
         command_path="",
         command_params=[],
         skip_gmp_stats=True,
+        show_traceback=False,
     )
 
     await root.init_client()
