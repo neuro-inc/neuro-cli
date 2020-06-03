@@ -302,7 +302,7 @@ def job() -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
-@option("-t", "--tty", is_flag=True, help="Allocate a TTY")
+@option("-t/-T", "--tty/--no-tty", is_flag=True, default=None, help="Allocate a TTY")
 async def submit(
     root: Root,
     image: RemoteImage,
@@ -330,7 +330,7 @@ async def submit(
     pass_config: bool,
     browse: bool,
     detach: bool,
-    tty: bool,
+    tty: Optional[bool],
 ) -> None:
     """
     Submit an image to run on the cluster.
@@ -351,6 +351,8 @@ async def submit(
     # registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
     neuro submit image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
     """
+    if tty is None:
+        tty = root.tty
     await run_job(
         root,
         image=image,
@@ -388,7 +390,7 @@ async def submit(
 @option(
     "-t/-T",
     "--tty/--no-tty",
-    default=True,
+    default=None,
     is_flag=True,
     help="Allocate virtual tty. Useful for interactive jobs.",
 )
@@ -408,7 +410,7 @@ async def submit(
 async def exec(
     root: Root,
     job: str,
-    tty: bool,
+    tty: Optional[bool],
     no_key_check: bool,
     cmd: Sequence[str],
     timeout: float,
@@ -428,6 +430,8 @@ async def exec(
     job = await resolve_job(
         job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
     )
+    if tty is None:
+        tty = root.tty
     _check_tty(root, tty)
     async with async_timeout.timeout(timeout):
         await process_exec(root, job, real_cmd, tty)
@@ -946,7 +950,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
-@option("-t", "--tty", is_flag=True, help="Allocate a TTY")
+@option("-t/-T", "--tty/--no-tty", is_flag=True, default=None, help="Allocate a TTY")
 async def run(
     root: Root,
     image: RemoteImage,
@@ -969,7 +973,7 @@ async def run(
     pass_config: bool,
     browse: bool,
     detach: bool,
-    tty: bool,
+    tty: Optional[bool],
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -998,6 +1002,8 @@ async def run(
             "-p/-P option is deprecated and ignored. Use corresponding presets instead."
         )
     log.info(f"Using preset '{preset}': {job_preset}")
+    if tty is None:
+        tty = root.tty
     await run_job(
         root,
         image=image,
