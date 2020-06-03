@@ -948,25 +948,10 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_job_run_with_tty(helper: Helper) -> None:
-    # Run a new job
     command = "test -t 0"
-    expect = helper.pexpect(
-        [
-            "-q",
-            "job",
-            "run",
-            "-t",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
+    job_id = helper.run_job_and_wait_state(
+        UBUNTU_IMAGE_NAME, command, wait_state=JobStatus.SUCCEEDED, tty=True
     )
-    txt = expect.read()
-    job_id = strip_ansi(txt).strip()
-
-    # Wait until the job is running
-    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED)
 
     captured = helper.run_cli(["job", "status", job_id])
     assert "TTY: True" in captured.out
