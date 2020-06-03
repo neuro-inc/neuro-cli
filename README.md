@@ -446,7 +446,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
-|_\-t, --tty / -T, --no-tty_|Allocate a TTY|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--help_|Show this message and exit.|
 
 
@@ -505,7 +505,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
-|_\-t, --tty / -T, --no-tty_|Allocate a TTY|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--help_|Show this message and exit.|
 
 
@@ -620,7 +620,7 @@ neuro exec --no-tty my-job ls -l
 
 Name | Description|
 |----|------------|
-|_\-t, --tty / -T, --no-tty_|Allocate virtual tty. Useful for interactive jobs.|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
@@ -1861,7 +1861,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
-|_\-t, --tty / -T, --no-tty_|Allocate a TTY|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--help_|Show this message and exit.|
 
 
@@ -1920,7 +1920,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
-|_\-t, --tty / -T, --no-tty_|Allocate a TTY|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--help_|Show this message and exit.|
 
 
@@ -2016,7 +2016,7 @@ neuro exec --no-tty my-job ls -l
 
 Name | Description|
 |----|------------|
-|_\-t, --tty / -T, --no-tty_|Allocate virtual tty. Useful for interactive jobs.|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 

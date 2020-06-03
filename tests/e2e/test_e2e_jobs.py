@@ -1183,14 +1183,15 @@ def test_job_autocomplete(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_attach_stdout(helper: Helper) -> None:
-    command = 'bash -c "sleep 15; for count in {0..3}; do echo $count; sleep 1; done"'
-    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
+def test_job_run_stdout(helper: Helper) -> None:
+    command = 'bash -c "sleep 30; for count in {0..3}; do echo $count; sleep 1; done"'
 
-    captured = helper.run_cli(["-q", "job", "attach", job_id])
+    captured = helper.run_cli(
+        ["-q", "job", "run", "--no-tty", UBUNTU_IMAGE_NAME, command]
+    )
 
     assert captured.err == ""
-    assert captured.out == "\n".join(f"{i}" for i in range(4))
+    assert "\n".join(f"{i}" for i in range(4)) in captured.out
 
 
 @pytest.mark.e2e
