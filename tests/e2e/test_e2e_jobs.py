@@ -1186,12 +1186,22 @@ def test_job_autocomplete(helper: Helper) -> None:
 def test_job_run_stdout(helper: Helper) -> None:
     command = 'bash -c "sleep 30; for count in {0..3}; do echo $count; sleep 1; done"'
 
-    captured = helper.run_cli(
-        ["-q", "job", "run", "--no-tty", UBUNTU_IMAGE_NAME, command]
-    )
+    try:
+        captured = helper.run_cli(
+            ["-q", "job", "run", "--no-tty", UBUNTU_IMAGE_NAME, command]
+        )
+    except subprocess.CalledProcessError as exc:
+        # EX_IOERR is returned if the process is not finished in 10 secs after
+        # disconnecting the attached session
+        assert exc.returncode == 74
+        err = exc.stderr
+        out = exc.stdout
+    else:
+        err = captured.err
+        out = captured.out
 
-    assert captured.err == ""
-    assert "\n".join(f"{i}" for i in range(4)) in captured.out
+    assert err == ""
+    assert "\n".join(f"{i}" for i in range(4)) in out
 
 
 @pytest.mark.e2e
