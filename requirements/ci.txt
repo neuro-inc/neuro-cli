@@ -1,7 +1,7 @@
 -r base.txt
 
 mypy==0.770
-pytest==5.4.2
+pytest==5.4.3
 pytest-cov==2.9.0
 pytest-aiohttp==0.3.0
 pytest-xdist==1.32.0
