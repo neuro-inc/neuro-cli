@@ -119,6 +119,6 @@ jobs:
         make ${{ matrix.test-target }}
     - name: Upload coverage
       env:
-        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }]
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       run: |
         python -m codecov -f coverage.xml -X gcov
