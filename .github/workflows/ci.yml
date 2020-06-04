@@ -59,6 +59,7 @@ jobs:
       id: pip-cache
       run: |
         echo "::set-output name=dir::$(pip cache dir)"    # - name: Cache
+    - name: Cache PyPI
       uses: actions/cache@v2
       with:
         key: pip-unit-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt') }}
