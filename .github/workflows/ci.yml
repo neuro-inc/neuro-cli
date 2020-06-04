@@ -62,10 +62,10 @@ jobs:
     - name: Cache PyPI
       uses: actions/cache@v2
       with:
-        key: pip-unit-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt') }}
+        key: pip-ci-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt') }}
         path: ${{ steps.pip-cache.outputs.dir }}
         restore-keys: |
-            pip-unit-${{ runner.os }}-${{ matrix.python-version }}-
+            pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
     - name: Install dependencies
       run: |
         pip install -U pip wheel codecov
@@ -74,5 +74,51 @@ jobs:
       run: |
         make test
     - name: Upload coverage
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      run: |
+        python -m codecov -f coverage.xml -X gcov
+
+  e2e:
+    name: E2E
+    needs: unit
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        test-target: [jobs, sumo]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Setup Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Get pip cache dir
+      id: pip-cache
+      run: |
+        echo "::set-output name=dir::$(pip cache dir)"    # - name: Cache
+    - name: Cache PyPI
+      uses: actions/cache@v2
+      with:
+        key: pip-ci-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt') }}
+        path: ${{ steps.pip-cache.outputs.dir }}
+        restore-keys: |
+            pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
+    - name: Install dependencies
+      run: |
+        pip install -U pip wheel codecov
+        pip install -r requirements/ci.txt
+    - name: Run E2E tests
+      env:
+        E2E_TOKEN: ${{ secrets.E2E_TOKEN }}
+        E2E_USER_TOKEN: ${{ secrets.E2E_USER_TOKEN }}
+        PYTEST_XDIST_NUM_THREADS: 8
+      run: |
+        make ${{ matrix.test-target }}
+    - name: Upload coverage
+      env:
+        CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }]
       run: |
         python -m codecov -f coverage.xml -X gcov
