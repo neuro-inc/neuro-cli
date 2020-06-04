@@ -18,6 +18,13 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: 3.7
+    - name: Cache PyPI
+      uses: actions/cache@v2
+      with:
+        key: pip-lint-${{ hashFiles('requirements/*.txt') }}
+        path: ~/.cache/pip
+        restore-keys: |
+            pip-lint-
     - name: Install dependencies
       run: |
         pip install -U pip wheel
@@ -48,13 +55,16 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    # - name: Cache
-    #   uses: actions/cache@v2
-    #   env:
-    #     cache-name: cache-pypi
-    #   with:
-    #     key: pip-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt') }}
-    #     path: ${{ github.workspace}}/.pip
+    - name: Get pip cache dir
+      id: pip-cache
+      run: |
+        echo "::set-output name=dir::$(pip cache dir)"    # - name: Cache
+      uses: actions/cache@v2
+      with:
+        key: pip-unit-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt') }}
+        path: ${{ steps.pip-cache.outputs.dir }}
+        restore-keys: |
+            pip-unit-${{ runner.os }}-${{ matrix.python-version }}-
     - name: Install dependencies
       run: |
         pip install -U pip wheel codecov
