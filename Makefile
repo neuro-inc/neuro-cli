@@ -67,8 +67,8 @@ e2e: .update-deps
 		$(PYTEST_ARGS) \
 		tests
 
-.PHONY: e2e-jobs
-e2e-jobs: .update-deps
+.PHONY: .e2e-jobs
+.e2e-jobs:
 	pytest \
 	    -n ${PYTEST_XDIST_NUM_THREADS} \
 		-m "e2e and e2e_job" \
@@ -80,8 +80,11 @@ e2e-jobs: .update-deps
 		$(PYTEST_ARGS) \
 		tests
 
+.PHONY: e2e-jobs
+e2e-jobs: .update-deps .e2e-jobs
+
 .PHONY: e2e-sumo
-e2e-sumo: .update-deps
+.e2e-sumo:
 	pytest \
 	    -n ${PYTEST_XDIST_NUM_THREADS} \
 		-m "e2e and not e2e_job" \
@@ -93,6 +96,8 @@ e2e-sumo: .update-deps
 		$(PYTEST_ARGS) \
 		tests
 
+.PHONY: e2e-sumo
+e2e-sumo: .update-deps .e2e-sumo
 
 .PHONY: test
 test: .update-deps
