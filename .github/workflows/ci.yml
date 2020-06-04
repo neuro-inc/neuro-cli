@@ -53,15 +53,15 @@ jobs:
     #   env:
     #     cache-name: cache-pypi
     #   with:
-    #     key: pip-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt'( }}
+    #     key: pip-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt') }}
     #     path: ${{ github.workspace}}/.pip
-    # - name: Install dependencies
-    #   run: |
-    #     pip install -U pip wheel codecov
-    #     pip install -r requirements/ci.txt
-    # - name: Run unittests
-    #   run: |
-    #     make test
-    # - name: Upload coverage
-    #   run: |
-    #     python -m codecov -f coverage.xml -X gcov
+    - name: Install dependencies
+      run: |
+        pip install -U pip wheel codecov
+        pip install -r requirements/ci.txt
+    - name: Run unittests
+      run: |
+        make test
+    - name: Upload coverage
+      run: |
+        python -m codecov -f coverage.xml -X gcov
