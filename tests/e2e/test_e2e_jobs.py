@@ -19,7 +19,7 @@ from yarl import URL
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
 from neuromation.cli.asyncio_utils import run
 from tests.e2e.conftest import CLIENT_TIMEOUT, Helper
-from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS, JOB_TINY_CONTAINER_PRESET
+from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS
 
 
 pytestmark = pytest.mark.e2e_job
@@ -183,16 +183,7 @@ def test_job_tags(helper: Helper) -> None:
 
     command = "sleep 10m"
     captured = helper.run_cli(
-        [
-            "job",
-            "run",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
-            *tag_options,
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
+        ["job", "run", *tag_options, "--no-wait-start", UBUNTU_IMAGE_NAME, command]
     )
     match = re.match("Job ID: (.+) Status:", captured.out)
     assert match is not None
@@ -211,15 +202,7 @@ def test_job_tags(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_job_filter_by_date_range(helper: Helper) -> None:
     captured = helper.run_cli(
-        [
-            "job",
-            "run",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            "sleep 300",
-        ]
+        ["job", "run", "--no-wait-start", UBUNTU_IMAGE_NAME, "sleep 300"]
     )
     match = re.match("Job ID: (.+) Status:", captured.out)
     assert match is not None
@@ -749,16 +732,7 @@ def test_job_run(helper: Helper) -> None:
     # Run a new job
     command = 'bash -c "exit 101"'
     captured = helper.run_cli(
-        [
-            "-q",
-            "job",
-            "run",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
+        ["-q", "job", "run", "--no-wait-start", UBUNTU_IMAGE_NAME, command]
     )
     job_id = captured.out
 
@@ -778,8 +752,6 @@ def test_pass_config(helper: Helper) -> None:
             "-q",
             "job",
             "run",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
             "--no-wait-start",
             "--pass-config",
             UBUNTU_IMAGE_NAME,
@@ -822,16 +794,7 @@ def fakebrowser(monkeypatch: Any) -> None:
 def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
     captured = helper.run_cli(
-        [
-            "-q",
-            "job",
-            "run",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
-            "--detach",
-            UBUNTU_IMAGE_NAME,
-            "true",
-        ]
+        ["-q", "job", "run", "--detach", UBUNTU_IMAGE_NAME, "true"]
     )
     job_id = captured.out
 
@@ -844,17 +807,7 @@ def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
 def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
     captured = helper.run_cli(
-        [
-            "-v",
-            "job",
-            "run",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
-            "--detach",
-            "--browse",
-            UBUNTU_IMAGE_NAME,
-            "true",
-        ]
+        ["-v", "job", "run", "--detach", "--browse", UBUNTU_IMAGE_NAME, "true"]
     )
     assert "Browsing https://job-" in captured.out
     assert "Open job URL: https://job-" in captured.err
@@ -864,17 +817,7 @@ def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
 def test_job_run_no_detach(helper: Helper) -> None:
     token = uuid4()
     # Run a new job
-    captured = helper.run_cli(
-        [
-            "-v",
-            "job",
-            "run",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
-            UBUNTU_IMAGE_NAME,
-            f"echo {token}",
-        ]
-    )
+    captured = helper.run_cli(["-v", "job", "run", UBUNTU_IMAGE_NAME, f"echo {token}"])
     assert str(token) in captured.out
     detach_notification = """\
 Terminal is attached to the remote job, so you receive the job's output.
@@ -888,17 +831,7 @@ with `--detach` option.\
 def test_job_run_no_detach_quiet_mode(helper: Helper) -> None:
     token = str(uuid4())
     # Run a new job
-    captured = helper.run_cli(
-        [
-            "-q",
-            "job",
-            "run",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
-            UBUNTU_IMAGE_NAME,
-            f"echo {token}",
-        ]
-    )
+    captured = helper.run_cli(["-q", "job", "run", UBUNTU_IMAGE_NAME, f"echo {token}"])
     out = captured.out.strip()
     assert "Use 'Ctrl-C' to detach (it will NOT terminate the job)" not in out
     assert out.endswith(token)
@@ -933,8 +866,6 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
                 "-v",
                 "job",
                 "run",
-                "-s",
-                JOB_TINY_CONTAINER_PRESET,
                 "--detach",
                 "--browse",
                 UBUNTU_IMAGE_NAME,
@@ -962,24 +893,13 @@ def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> Non
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         # first, run without --volume=HOME
-        helper.run_cli(
-            ["-q", "job", "run", "--preset=cpu-micro", UBUNTU_IMAGE_NAME, command]
-        )
+        helper.run_cli(["-q", "job", "run", UBUNTU_IMAGE_NAME, command])
 
     assert cm.value.returncode == 1
 
     # then, run with --volume=HOME
     capture = helper.run_cli(
-        [
-            "-q",
-            "job",
-            "run",
-            "--preset=cpu-micro",
-            "--volume",
-            "HOME",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
+        ["-q", "job", "run", "--volume", "HOME", UBUNTU_IMAGE_NAME, command]
     )
 
     job_id_2 = capture.out
@@ -1002,15 +922,11 @@ def test_job_run_volume_all(helper: Helper) -> None:
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         # first, run without --volume=ALL
-        captured = helper.run_cli(
-            ["--quiet", "run", "-T", "-s", "cpu-micro", img, command]
-        )
+        captured = helper.run_cli(["--quiet", "run", "-T", img, command])
     assert cm.value.returncode == 1
 
     # then, run with --volume=ALL
-    captured = helper.run_cli(
-        ["run", "-T", "-s", "cpu-micro", "--volume=ALL", img, command]
-    )
+    captured = helper.run_cli(["run", "-T", "--volume=ALL", img, command])
     msg = (
         "Storage mountpoints will be available as the environment variables:\n"
         f"  NEUROMATION_ROOT={root_mountpoint}\n"
@@ -1131,8 +1047,6 @@ def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
             "run",
             "--restart",
             "on-failure",
-            "-s",
-            JOB_TINY_CONTAINER_PRESET,
             "--detach",
             UBUNTU_IMAGE_NAME,
             "false",
