@@ -161,7 +161,7 @@ async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
 async def _exec_watcher(root: Root, job: str, exec_id: str) -> None:
     while True:
         try:
-            info = await root.jobs.exec_inspect(job, exec_id)
+            info = await root.client.jobs.exec_inspect(job, exec_id)
         except Exception:
             pass
         else:
@@ -253,7 +253,7 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
 async def _attach_watcher(root: Root, job: str) -> None:
     while True:
         try:
-            status = await root.jobs.status(job)
+            status = await root.client.jobs.status(job)
         except Exception:
             pass
         else:
