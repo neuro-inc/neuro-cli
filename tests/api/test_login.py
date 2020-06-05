@@ -19,7 +19,6 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from neuromation.api import Cluster, Preset
 from neuromation.api.login import (
     AuthCode,
     AuthException,
@@ -32,7 +31,6 @@ from neuromation.api.login import (
     create_app_server_once,
     create_auth_code_app,
 )
-from neuromation.api.server_cfg import _is_cluster_config_initialized
 from tests import _TestServerFactory
 
 
@@ -387,74 +385,6 @@ class TestTokenClient:
                         refresh_token="test_refresh_token",
                     )
                     await client.refresh(token)
-
-
-class TestClusterConfig:
-    def test_is_initialized(self) -> None:
-        cluster_config = Cluster(
-            registry_url=URL("value"),
-            storage_url=URL("value"),
-            users_url=URL("value"),
-            monitoring_url=URL("value"),
-            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-            name="",
-        )
-        assert _is_cluster_config_initialized(cluster_config)
-
-    def test_is_initialized__no_registry_url(self) -> None:
-        cluster_config = Cluster(
-            registry_url=URL(),
-            storage_url=URL("value"),
-            users_url=URL("value"),
-            monitoring_url=URL("value"),
-            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-            name="",
-        )
-        assert not _is_cluster_config_initialized(cluster_config)
-
-    def test_is_initialized__no_storage_url(self) -> None:
-        cluster_config = Cluster(
-            registry_url=URL("value"),
-            storage_url=URL(),
-            users_url=URL("value"),
-            monitoring_url=URL("value"),
-            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-            name="",
-        )
-        assert not _is_cluster_config_initialized(cluster_config)
-
-    def test_is_initialized__no_users_url(self) -> None:
-        cluster_config = Cluster(
-            registry_url=URL("value"),
-            storage_url=URL("value"),
-            users_url=URL(),
-            monitoring_url=URL("value"),
-            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-            name="",
-        )
-        assert not _is_cluster_config_initialized(cluster_config)
-
-    def test_is_initialized__no_monitoring_url(self) -> None:
-        cluster_config = Cluster(
-            registry_url=URL("value"),
-            storage_url=URL("value"),
-            users_url=URL("value"),
-            monitoring_url=URL(),
-            presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-            name="",
-        )
-        assert not _is_cluster_config_initialized(cluster_config)
-
-    def test_is_initialized__no_resource_presets(self) -> None:
-        cluster_config = Cluster(
-            registry_url=URL("value"),
-            storage_url=URL("value"),
-            users_url=URL("value"),
-            monitoring_url=URL("value"),
-            presets={},
-            name="",
-        )
-        assert not _is_cluster_config_initialized(cluster_config)
 
 
 class TestAuthNegotiator:

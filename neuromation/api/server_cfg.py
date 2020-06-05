@@ -28,16 +28,6 @@ class Cluster:
     presets: Mapping[str, Preset]
 
 
-def _is_cluster_config_initialized(cfg: Cluster) -> bool:
-    return bool(
-        cfg.registry_url
-        and cfg.storage_url
-        and cfg.users_url
-        and cfg.monitoring_url
-        and cfg.presets
-    )
-
-
 @dataclass(frozen=True)
 class _ServerConfig:
     auth_config: _AuthConfig
@@ -78,15 +68,9 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
 
 def _parse_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
     ret: Dict[str, Cluster] = {}
-    if "clusters" in payload:
-        for item in payload["clusters"]:
-            cluster = _parse_cluster_config(item)
-            ret[cluster.name] = cluster
-    else:
-        # old server without multiple clusters support
-        cluster = _parse_cluster_config(payload)
-        if _is_cluster_config_initialized(cluster):
-            ret[cluster.name] = cluster
+    for item in payload["clusters"]:
+        cluster = _parse_cluster_config(item)
+        ret[cluster.name] = cluster
     return ret
 
 
