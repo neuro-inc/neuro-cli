@@ -12,7 +12,6 @@ dist
 .mypy_cache
 .tmontmp
 .testmondata
-tests/e2e/assets/neuro-cli.tar
 docs/_build
 .update-deps
 .dmypy.json

@@ -27,7 +27,6 @@ pytestmark = pytest.mark.e2e_job
 ALPINE_IMAGE_NAME = "alpine:latest"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 NGINX_IMAGE_NAME = "nginx:latest"
-TEST_IMAGE_NAME = "neuro-cli-test"
 MIN_PORT = 49152
 MAX_PORT = 65535
 EXEC_TIMEOUT = 180
