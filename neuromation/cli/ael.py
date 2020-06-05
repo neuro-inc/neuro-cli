@@ -307,7 +307,9 @@ async def _process_stdin_tty(stream: StdStream) -> None:
                 await stream.write_in(buf)
 
 
-async def _process_stdout_tty(stream: StdStream, stdout: Output, helper: AttachHelper) -> None:
+async def _process_stdout_tty(
+    stream: StdStream, stdout: Output, helper: AttachHelper
+) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
     while True:
@@ -326,9 +328,9 @@ async def _process_stdout_tty(stream: StdStream, stdout: Output, helper: AttachH
                 # helper.attach_ready = True regardless
                 # what stream had receive text in attached mode.
                 if helper.log_printed:
-                    stdout.write_raw(ATTACH_STARTED_AFTER_LOGS + '\n')
+                    stdout.write_raw(ATTACH_STARTED_AFTER_LOGS + "\n")
                 else:
-                    stdout.write_raw(ATTACH_STARTED + '\n')
+                    stdout.write_raw(ATTACH_STARTED + "\n")
             helper.attach_ready = True
             stdout.write_raw(txt)
             stdout.flush()
