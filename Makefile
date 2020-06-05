@@ -103,8 +103,8 @@ e2e-jobs: .update-deps .e2e-jobs
 .PHONY: e2e-sumo
 e2e-sumo: .update-deps .e2e-sumo
 
-.PHONY: test
-test: .update-deps
+.PHONY: .test
+test:
 	pytest \
 		-m "not e2e" \
 		--cov=neuromation \
@@ -113,6 +113,9 @@ test: .update-deps
 		--color=$(COLOR) \
 		$(PYTEST_ARGS) \
 		tests
+
+.PHONY: .test
+test: .update-deps .test
 
 .PHONY: test-all
 test-all: .update-deps

@@ -79,7 +79,7 @@ jobs:
       env:
         COLOR: yes
       run: |
-        make test
+        make .test
     - name: Upload coverage
       uses: codecov/codecov-action@v1
       with:
