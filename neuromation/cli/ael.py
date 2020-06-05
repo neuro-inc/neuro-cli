@@ -257,7 +257,7 @@ async def _attach_watcher(root: Root, job: str) -> None:
         except Exception:
             pass
         else:
-            if not status.status != JobStatus.RUNNING:
+            if status.status != JobStatus.RUNNING:
                 return
         await asyncio.sleep(5)
 
