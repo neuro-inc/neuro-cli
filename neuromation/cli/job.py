@@ -1297,7 +1297,7 @@ async def browse_job(root: Root, job: JobDescription) -> None:
     url = job.http_url
     if url.scheme not in ("http", "https"):
         raise RuntimeError(f"Cannot open job URL: {url}")
-    log.info(f"Open job URL: {url}")
+    click.echo(f"Open job URL: {url}")
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, webbrowser.open, str(url))
 
