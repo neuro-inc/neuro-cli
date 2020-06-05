@@ -994,7 +994,6 @@ def test_job_run_volume_all(helper: Helper) -> None:
         [
             f"[ -d {root_mountpoint}/{helper.username} ]",
             f"[ -d {root_mountpoint}/neuromation ]",  # must be public
-            f"[ -d {root_mountpoint}/test2/public ]",  # must be public
             f"[ $NEUROMATION_ROOT == {root_mountpoint} ]",
             f"[ $NEUROMATION_HOME == {root_mountpoint}/{helper.username} ]",
         ]
@@ -1004,11 +1003,15 @@ def test_job_run_volume_all(helper: Helper) -> None:
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         # first, run without --volume=ALL
-        captured = helper.run_cli(["--quiet", "run", "-s", "cpu-micro", img, command])
+        captured = helper.run_cli(
+            ["--quiet", "run", "-T", "-s", "cpu-micro", img, command]
+        )
     assert cm.value.returncode == 1
 
     # then, run with --volume=ALL
-    captured = helper.run_cli(["run", "-s", "cpu-micro", "--volume=ALL", img, command])
+    captured = helper.run_cli(
+        ["run", "-T", "-s", "cpu-micro", "--volume=ALL", img, command]
+    )
     msg = (
         "Storage mountpoints will be available as the environment variables:\n"
         f"  NEUROMATION_ROOT={root_mountpoint}\n"
