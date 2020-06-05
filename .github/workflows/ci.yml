@@ -76,6 +76,8 @@ jobs:
         pip install -U pip wheel
         pip install -r requirements/ci.txt
     - name: Run unittests
+      env:
+        COLOR: yes
       run: |
         make test
     - name: Upload coverage
@@ -125,6 +127,7 @@ jobs:
         E2E_TOKEN: ${{ secrets.E2E_TOKEN }}
         E2E_USER_TOKEN: ${{ secrets.E2E_USER_TOKEN }}
         PYTEST_XDIST_NUM_THREADS: 8
+        COLOR: yes
       run: |
         make .e2e-${{ matrix.test-target }}
     - name: Upload coverage

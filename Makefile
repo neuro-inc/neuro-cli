@@ -7,6 +7,7 @@ FLAKE8_DIRS := $(ISORT_DIRS)
 PYTEST_ARGS=
 
 PYTEST_XDIST_NUM_THREADS ?= auto
+COLOR ?= auto
 
 .PHONY: help
 .SILENT: help
@@ -63,6 +64,7 @@ e2e: .update-deps
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--verbose \
+		--color=$(COLOR) \
 		--durations 10 \
 		$(PYTEST_ARGS) \
 		tests
@@ -76,6 +78,7 @@ e2e: .update-deps
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--verbose \
+		--color=$(COLOR) \
 		--durations 10 \
 		$(PYTEST_ARGS) \
 		tests
@@ -92,6 +95,7 @@ e2e-jobs: .update-deps .e2e-jobs
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--verbose \
+		--color=$(COLOR) \
 		--durations 10 \
 		$(PYTEST_ARGS) \
 		tests
@@ -106,6 +110,7 @@ test: .update-deps
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
+		--color=$(COLOR) \
 		$(PYTEST_ARGS) \
 		tests
 
@@ -115,6 +120,7 @@ test-all: .update-deps
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
+		--color=$(COLOR) \
 		tests
 
 .PHONY: lint
