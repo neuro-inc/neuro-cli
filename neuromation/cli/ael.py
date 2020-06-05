@@ -110,8 +110,11 @@ async def process_exec(root: Root, job: str, cmd: str, tty: bool) -> NoReturn:
 
 async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
     loop = asyncio.get_event_loop()
+    helper = AttachHelper(quiet=True)
+
     stdout = create_output()
     h, w = stdout.get_size()
+
     async with root.client.jobs.exec_start(job, exec_id) as stream:
         try:
             await root.client.jobs.exec_resize(job, exec_id, w=w, h=h)
@@ -123,7 +126,7 @@ async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
 
         tasks = []
         tasks.append(loop.create_task(_process_stdin_tty(stream)))
-        tasks.append(loop.create_task(_process_stdout_tty(stream, stdout)))
+        tasks.append(loop.create_task(_process_stdout_tty(stream, stdout, helper)))
         tasks.append(
             loop.create_task(
                 _process_resizing(
