@@ -38,12 +38,6 @@ JOB_STARTED_TTY = click.style(
     "========== Job is running in terminal mode =========", dim=True
 )
 
-LOGS_STARTED = click.style(
-    "==================== Job's logs ====================", dim=True
-)
-ATTACH_STARTED = click.style(
-    "=================== Job's output ===================", dim=True
-)
 ATTACH_STARTED_AFTER_LOGS = click.style(
     "======== Job's output, may overlap with logs =======", dim=True
 )
@@ -78,8 +72,6 @@ async def process_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> 
             if helper.attach_ready:
                 return
             async with helper.write_sem:
-                if not helper.log_printed and not helper.quiet:
-                    click.echo(LOGS_STARTED)
                 helper.log_printed = True
                 sys.stdout.write(txt)
                 sys.stdout.flush()
@@ -119,10 +111,11 @@ async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
         try:
             await root.client.jobs.exec_resize(job, exec_id, w=w, h=h)
         except IllegalArgumentError:
-            info = await root.client.jobs.exec_inspect(job, exec_id)
-            if not info.running:
-                # Exec session is finished
-                return
+            pass
+        info = await root.client.jobs.exec_inspect(job, exec_id)
+        if not info.running:
+            # Exec session is finished
+            sys.exit(info.exit_code)
 
         tasks = []
         tasks.append(loop.create_task(_process_stdin_tty(stream)))
@@ -135,6 +128,7 @@ async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
                 )
             )
         )
+        tasks.append(loop.create_task(_exec_watcher(root, job, exec_id)))
         try:
             await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         finally:
@@ -155,12 +149,25 @@ async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
         if root.tty:
             tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
         tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
+        tasks.append(loop.create_task(_exec_watcher(root, job, exec_id)))
 
         try:
             await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         finally:
             for task in tasks:
                 await root.cancel_with_logging(task)
+
+
+async def _exec_watcher(root: Root, job: str, exec_id: str) -> None:
+    while True:
+        try:
+            info = await root.jobs.exec_inspect(job, exec_id)
+        except Exception:
+            pass
+        else:
+            if not info.running:
+                return
+        await asyncio.sleep(5)
 
 
 async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> NoReturn:
@@ -233,6 +240,7 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
                 )
             )
         )
+        tasks.append(loop.create_task(_attach_watcher(root, job)))
         try:
             await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         finally:
@@ -240,6 +248,18 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
                 await root.cancel_with_logging(task)
 
             await root.cancel_with_logging(logs_printer)
+
+
+async def _attach_watcher(root: Root, job: str) -> None:
+    while True:
+        try:
+            status = await root.jobs.status(job)
+        except Exception:
+            pass
+        else:
+            if not status.status != JobStatus.RUNNING:
+                return
+        await asyncio.sleep(5)
 
 
 async def _process_resizing(
@@ -330,8 +350,6 @@ async def _process_stdout_tty(
                 # what stream had receive text in attached mode.
                 if helper.log_printed:
                     stdout.write_raw(ATTACH_STARTED_AFTER_LOGS + "\n")
-                else:
-                    stdout.write_raw(ATTACH_STARTED + "\n")
             helper.attach_ready = True
             stdout.write_raw(txt)
             stdout.flush()
@@ -364,6 +382,7 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> bool:
             tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
         tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
         tasks.append(loop.create_task(_process_ctrl_c(root, job, helper)))
+        tasks.append(loop.create_task(_attach_watcher(root, job)))
 
         try:
             await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
@@ -412,8 +431,6 @@ async def _process_stdout_non_tty(stream: StdStream, helper: AttachHelper) -> No
                 # what stream had receive text in attached mode.
                 if helper.log_printed:
                     click.echo(ATTACH_STARTED_AFTER_LOGS)
-                else:
-                    click.echo(ATTACH_STARTED)
             helper.attach_ready = True
             f.write(txt)
             f.flush()
