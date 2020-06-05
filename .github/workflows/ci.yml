@@ -144,7 +144,7 @@ jobs:
   trigger-e2e:
     name: Trigger external E2E tests
     needs: e2e
-    runs-on: ubuntu-latest:
+    runs-on: ubuntu-latest
     if: github.event_name == 'push' && contains(github.ref, 'refs/heads/master')
     steps:
     - name: Trigger E2E CircleCI test suite
