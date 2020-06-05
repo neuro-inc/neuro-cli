@@ -110,33 +110,38 @@ async def test_get_server_config_with_token_legacy(
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neuromation.io"
     JSON = {
-        "registry_url": registry_url,
-        "storage_url": storage_url,
-        "users_url": users_url,
-        "monitoring_url": monitoring_url,
         "auth_url": auth_url,
         "token_url": token_url,
         "client_id": client_id,
         "audience": audience,
         "headless_callback_url": headless_callback_url,
         "success_redirect_url": success_redirect_url,
-        "resource_presets": [
+        "clusters": [
             {
-                "name": "gpu-small",
-                "cpu": 7,
-                "memory_mb": 30 * 1024,
-                "gpu": 1,
-                "gpu_model": "nvidia-tesla-k80",
-            },
-            {
-                "name": "gpu-large",
-                "cpu": 7,
-                "memory_mb": 60 * 1024,
-                "gpu": 1,
-                "gpu_model": "nvidia-tesla-v100",
-            },
-            {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
-            {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                "name": "default",
+                "monitoring_url": monitoring_url,
+                "storage_url": storage_url,
+                "registry_url": registry_url,
+                "users_url": users_url,
+                "resource_presets": [
+                    {
+                        "name": "gpu-small",
+                        "cpu": 7,
+                        "memory_mb": 30 * 1024,
+                        "gpu": 1,
+                        "gpu_model": "nvidia-tesla-k80",
+                    },
+                    {
+                        "name": "gpu-large",
+                        "cpu": 7,
+                        "memory_mb": 60 * 1024,
+                        "gpu": 1,
+                        "gpu_model": "nvidia-tesla-v100",
+                    },
+                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                    {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                ],
+            }
         ],
     }
 

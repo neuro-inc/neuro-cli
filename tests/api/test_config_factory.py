@@ -80,28 +80,33 @@ async def mock_for_login(
         ):
             config_json.update(
                 {
-                    "registry_url": "https://registry-dev.test.com",
-                    "storage_url": "https://storage-dev.test.com",
-                    "users_url": "https://users-dev.test.com",
-                    "monitoring_url": "https://monitoring-dev.test.com",
-                    "resource_presets": [
+                    "clusters": [
                         {
-                            "name": "gpu-small",
-                            "cpu": 7,
-                            "memory_mb": 30 * 1024,
-                            "gpu": 1,
-                            "gpu_model": "nvidia-tesla-k80",
-                        },
-                        {
-                            "name": "gpu-large",
-                            "cpu": 7,
-                            "memory_mb": 60 * 1024,
-                            "gpu": 1,
-                            "gpu_model": "nvidia-tesla-v100",
-                        },
-                        {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
-                        {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
-                    ],
+                            "name": "default",
+                            "registry_url": "https://registry-dev.test.com",
+                            "storage_url": "https://storage-dev.test.com",
+                            "users_url": "https://users-dev.test.com",
+                            "monitoring_url": "https://monitoring-dev.test.com",
+                            "resource_presets": [
+                                {
+                                    "name": "gpu-small",
+                                    "cpu": 7,
+                                    "memory_mb": 30 * 1024,
+                                    "gpu": 1,
+                                    "gpu_model": "nvidia-tesla-k80",
+                                },
+                                {
+                                    "name": "gpu-large",
+                                    "cpu": 7,
+                                    "memory_mb": 60 * 1024,
+                                    "gpu": 1,
+                                    "gpu_model": "nvidia-tesla-v100",
+                                },
+                                {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                                {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                            ],
+                        }
+                    ]
                 }
             )
         return web.json_response(config_json)

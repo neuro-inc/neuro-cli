@@ -40,10 +40,10 @@ class ConfigLoadException(Exception):
 
 def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
     presets: Dict[str, Preset] = {}
-    for data in payload.get("resource_presets", ()):
+    for data in payload["resource_presets"]:
         tpu_type = tpu_software_version = None
         if "tpu" in data:
-            tpu_payload = data.get("tpu")
+            tpu_payload = data["tpu"]
             tpu_type = tpu_payload["type"]
             tpu_software_version = tpu_payload["software_version"]
         presets[data["name"]] = Preset(
@@ -56,19 +56,19 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
             tpu_software_version=tpu_software_version,
         )
     cluster_config = Cluster(
-        registry_url=URL(payload.get("registry_url", "")),
-        storage_url=URL(payload.get("storage_url", "")),
-        users_url=URL(payload.get("users_url", "")),
-        monitoring_url=URL(payload.get("monitoring_url", "")),
+        name=payload["name"],
+        registry_url=URL(payload["registry_url"]),
+        storage_url=URL(payload["storage_url"]),
+        users_url=URL(payload["users_url"]),
+        monitoring_url=URL(payload["monitoring_url"]),
         presets=presets,
-        name=payload.get("name", "default"),
     )
     return cluster_config
 
 
 def _parse_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
     ret: Dict[str, Cluster] = {}
-    for item in payload["clusters"]:
+    for item in payload.get("clusters", {}):
         cluster = _parse_cluster_config(item)
         ret[cluster.name] = cluster
     return ret
