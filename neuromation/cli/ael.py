@@ -236,12 +236,10 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
         try:
             await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         finally:
-            print("FINALIZING")
             for task in tasks:
                 await root.cancel_with_logging(task)
 
             await root.cancel_with_logging(logs_printer)
-            print("FINALIZED")
 
 
 async def _process_resizing(
