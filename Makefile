@@ -7,6 +7,7 @@ FLAKE8_DIRS := $(ISORT_DIRS)
 PYTEST_ARGS=
 
 PYTEST_XDIST_NUM_THREADS ?= auto
+COLOR ?= auto
 
 .PHONY: help
 .SILENT: help
@@ -63,12 +64,13 @@ e2e: .update-deps
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--verbose \
+		--color=$(COLOR) \
 		--durations 10 \
 		$(PYTEST_ARGS) \
 		tests
 
-.PHONY: e2e-jobs
-e2e-jobs: .update-deps
+.PHONY: .e2e-jobs
+.e2e-jobs:
 	pytest \
 	    -n ${PYTEST_XDIST_NUM_THREADS} \
 		-m "e2e and e2e_job" \
@@ -76,12 +78,16 @@ e2e-jobs: .update-deps
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--verbose \
+		--color=$(COLOR) \
 		--durations 10 \
 		$(PYTEST_ARGS) \
 		tests
 
+.PHONY: e2e-jobs
+e2e-jobs: .update-deps .e2e-jobs
+
 .PHONY: e2e-sumo
-e2e-sumo: .update-deps
+.e2e-sumo:
 	pytest \
 	    -n ${PYTEST_XDIST_NUM_THREADS} \
 		-m "e2e and not e2e_job" \
@@ -89,20 +95,27 @@ e2e-sumo: .update-deps
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--verbose \
+		--color=$(COLOR) \
 		--durations 10 \
 		$(PYTEST_ARGS) \
 		tests
 
+.PHONY: e2e-sumo
+e2e-sumo: .update-deps .e2e-sumo
 
-.PHONY: test
-test: .update-deps
+.PHONY: .test
+.test:
 	pytest \
 		-m "not e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
+		--color=$(COLOR) \
 		$(PYTEST_ARGS) \
 		tests
+
+.PHONY: .test
+test: .update-deps .test
 
 .PHONY: test-all
 test-all: .update-deps
@@ -110,6 +123,7 @@ test-all: .update-deps
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
+		--color=$(COLOR) \
 		tests
 
 .PHONY: lint
