@@ -104,7 +104,7 @@ e2e-jobs: .update-deps .e2e-jobs
 e2e-sumo: .update-deps .e2e-sumo
 
 .PHONY: .test
-test:
+.test:
 	pytest \
 		-m "not e2e" \
 		--cov=neuromation \
