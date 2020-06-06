@@ -655,10 +655,24 @@ class Helper:
             assert self.hash_hex(tmp_path) == checksum, "checksum test failed for {url}"
 
 
+# Cache at the session level to reduce amount of relogins.
+# Frequent relogins returns 500 Internal Server Error too often.
+_nmrc_path_user = _nmrc_path_admin = None
+
+
 @pytest.fixture
 def nmrc_path(tmp_path_factory: Any, request: Any) -> Optional[Path]:
+    global _nmrc_path_user
+    global _nmrc_path_admin
     require_admin = request.keywords.get("require_admin", False)
-    return _get_nmrc_path(tmp_path_factory, require_admin)
+    if require_admin:
+        if _nmrc_path_admin is None:
+            _nmrc_path_admin = _get_nmrc_path(tmp_path_factory, True)
+        return _nmrc_path_admin
+    else:
+        if _nmrc_path_user is None:
+            _nmrc_path_user = _get_nmrc_path(tmp_path_factory, False)
+        return _nmrc_path_user
 
 
 def _get_nmrc_path(tmp_path_factory: Any, require_admin: bool) -> Optional[Path]:
