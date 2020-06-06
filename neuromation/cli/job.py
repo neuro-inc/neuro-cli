@@ -1296,8 +1296,8 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
 async def browse_job(root: Root, job: JobDescription) -> None:
     url = job.http_url
     if url.scheme not in ("http", "https"):
-        raise RuntimeError(f"Cannot open job URL: {url}")
-    click.echo(f"Open job URL: {url}")
+        raise RuntimeError(f"Cannot browse job URL: {url}")
+    click.echo(f"Browsing job, please open: {url}")
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, webbrowser.open, str(url))
 

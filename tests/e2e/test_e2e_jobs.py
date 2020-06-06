@@ -799,8 +799,7 @@ def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
     job_id = captured.out
 
     captured = helper.run_cli(["-v", "job", "browse", job_id])
-    assert "Browsing https://job-" in captured.out
-    assert "Open job URL: https://job-" in captured.err
+    assert "Browsing job, please open: https://job-" in captured.out
 
 
 @pytest.mark.e2e
@@ -809,8 +808,7 @@ def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
     captured = helper.run_cli(
         ["-v", "job", "run", "--detach", "--browse", UBUNTU_IMAGE_NAME, "true"]
     )
-    assert "Browsing https://job-" in captured.out
-    assert "Open job URL: https://job-" in captured.err
+    assert "Browsing job, please open: https://job-" in captured.out
 
 
 @pytest.mark.e2e
