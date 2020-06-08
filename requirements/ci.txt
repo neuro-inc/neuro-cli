@@ -1,6 +1,6 @@
 -r base.txt
 
-mypy==0.770
+mypy==0.780
 pytest==5.4.3
 pytest-cov==2.9.0
 pytest-aiohttp==0.3.0
