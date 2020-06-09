@@ -271,8 +271,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Name: test-job-name\n"
@@ -282,8 +283,8 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -324,8 +325,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Tags: tag1, tag2, tag3\n"
@@ -335,8 +337,8 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -377,8 +379,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -387,9 +390,9 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
             "Life span: 1d2h3m4s\n"
+            "TTY: False\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -430,8 +433,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -440,9 +444,9 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
             "Life span: no limit\n"
+            "TTY: False\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -483,8 +487,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -493,9 +498,9 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
             "Restart policy: always\n"
+            "TTY: False\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -535,8 +540,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -545,8 +551,8 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -583,8 +589,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
@@ -593,8 +600,9 @@ class TestJobOutputFormatter:
             "Status: pending\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
+            f"{resource}\n"
             "Preemptible: True\n"
+            "TTY: False\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -615,6 +623,7 @@ class TestJobOutputFormatter:
                 image=RemoteImage.new_external_image(name="test-image"),
                 command="test-command",
                 resources=Resources(16, 0.1, 0, None, False, None, None),
+                tty=True,
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -624,8 +633,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
@@ -634,8 +644,9 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
+            f"{resource}\n"
             "Preemptible: True\n"
+            "TTY: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -665,8 +676,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
@@ -674,8 +686,9 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
+            f"{resource}\n"
             "Preemptible: True\n"
+            "TTY: False\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -707,8 +720,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -717,8 +731,8 @@ class TestJobOutputFormatter:
             "Status: running\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Internal Hostname: host.local\n"
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -754,8 +768,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -765,8 +780,8 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Entrypoint: /usr/bin/make\n"
             "Command: test\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Internal Hostname: host.local\n"
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -826,8 +841,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Name: test-job-name\n"
@@ -837,8 +853,8 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: image:test-image:sometag\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Volumes:\n"
             "  /mnt/ro   storage:/otheruser/ro                READONLY\n"
             "  /mnt/rw   storage:rw                                   \n"
@@ -900,8 +916,9 @@ class TestJobOutputFormatter:
             is_preemptible=False,
         )
 
-        status = JobStatusFormatter(uri_formatter=str)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=str)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Name: test-job-name\n"
@@ -911,8 +928,8 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: image://test-cluster/test-user/test-image:sometag\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Volumes:\n"
             "  /mnt/ro  storage://test-cluster/otheruser/ro  READONLY\n"
             "  /mnt/rw  storage://test-cluster/test-user/rw          \n"
@@ -1372,10 +1389,8 @@ class TestResourcesFormatter:
             tpu_software_version=None,
         )
         resource_formatter = ResourcesFormatter()
-        assert (
-            resource_formatter(resources) == "Resources:\n"
-            "  Memory: 16.0M\n"
-            "  CPU: 0.1"
+        assert click.unstyle(resource_formatter(resources)) == (
+            "Resources:\n" "  Memory: 16.0M\n" "  CPU: 0.1"
         )
 
     def test_gpu_container(self) -> None:
@@ -1389,8 +1404,8 @@ class TestResourcesFormatter:
             tpu_software_version=None,
         )
         resource_formatter = ResourcesFormatter()
-        assert (
-            resource_formatter(resources) == "Resources:\n"
+        assert click.unstyle(resource_formatter(resources)) == (
+            "Resources:\n"
             "  Memory: 1.0G\n"
             "  CPU: 2.0\n"
             "  GPU: 1.0 x nvidia-tesla-p4"
@@ -1407,8 +1422,8 @@ class TestResourcesFormatter:
             tpu_software_version=None,
         )
         resource_formatter = ResourcesFormatter()
-        assert (
-            resource_formatter(resources) == "Resources:\n"
+        assert click.unstyle(resource_formatter(resources)) == (
+            "Resources:\n"
             "  Memory: 16.0M\n"
             "  CPU: 0.1\n"
             "  Additional: Extended SHM space"
@@ -1425,8 +1440,8 @@ class TestResourcesFormatter:
             tpu_software_version="1.14",
         )
         resource_formatter = ResourcesFormatter()
-        assert (
-            resource_formatter(resources=resources) == "Resources:\n"
+        assert click.unstyle(resource_formatter(resources=resources)) == (
+            "Resources:\n"
             "  Memory: 16.0M\n"
             "  CPU: 0.1\n"
             "  TPU: v2-8/1.14\n"

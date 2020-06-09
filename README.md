@@ -72,6 +72,7 @@
 	* [neuro status](#neuro-status)
 	* [neuro exec](#neuro-exec)
 	* [neuro port-forward](#neuro-port-forward)
+	* [neuro attach](#neuro-attach)
 	* [neuro logs](#neuro-logs)
 	* [neuro kill](#neuro-kill)
 	* [neuro top](#neuro-top)
@@ -151,6 +152,7 @@ Name | Description|
 | _[neuro status](#neuro-status)_| Display status of a job |
 | _[neuro exec](#neuro-exec)_| Execute command in a running job |
 | _[neuro port-forward](#neuro-port-forward)_| Forward port\(s) of a running job to local port\(s) |
+| _[neuro attach](#neuro-attach)_| Print the logs for a container |
 | _[neuro logs](#neuro-logs)_| Print the logs for a container |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
@@ -2057,6 +2059,25 @@ neuro job port-forward my-job- 2080:80 2222:22 2000:100
 Name | Description|
 |----|------------|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro attach
+
+Print the logs for a container.
+
+**Usage:**
+
+```bash
+neuro attach [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 
