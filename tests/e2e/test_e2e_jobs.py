@@ -1127,9 +1127,9 @@ def test_job_attach_tty(helper: Helper) -> None:
 
     expect = helper.pexpect(["job", "attach", job_id])
     expect.waitnoecho()
+    expect.expect("========== Job is running in terminal mode =========")
     expect.sendline("echo abc")
-    expect.expect("# ")
-    assert strip_ansi(expect.before).strip() == "echo abc\r\r\nabc"
+    expect.expect("echo abc\r\r\nabc\r\r\n# ")
 
     helper.kill_job(job_id)
 
