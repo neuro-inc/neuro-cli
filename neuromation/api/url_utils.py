@@ -155,7 +155,8 @@ def _extract_path(uri: URL) -> Path:
         # path.absolute() does not work with relative path with disk
         # See https://bugs.python.org/issue36305
         path = Path(path.anchor).resolve() / path
-    while str(path).startswith("//"):
+    while str(path).startswith("/"):
         path = Path(str(path)[1:])
+    path = Path("/") / path
 
     return path
