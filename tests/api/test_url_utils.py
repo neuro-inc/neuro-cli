@@ -383,7 +383,27 @@ async def test_normalize_local_path_uri__3_slashes__double(pwd: Path) -> None:
     assert str(url) == (pwd / "path/to/file.txt").as_uri()
 
 
+async def test_normalize_local_path_uri__with_query(pwd: Path) -> None:
+    pwd_noslash_str = str(pwd).lstrip("/")
+    url = URL(f"file:///{pwd_noslash_str}/path/to/file?name.txt")
+    url = normalize_local_path_uri(url)
+    assert url.scheme == "file"
+    assert url.host is None
+    assert _extract_path(url) == pwd / "path/to/file?name.txt"
+    assert str(url) == f"file:///{pwd_noslash_str}/path/to/file?name.txt"
+
+
+async def test_normalize_local_path_uri__with_fragment(pwd: Path) -> None:
+    pwd_noslash_str = str(pwd).lstrip("/")
+    url = URL(f"file:///{pwd_noslash_str}/path/to/file#name.txt")
+    url = normalize_local_path_uri(url)
+    assert url.scheme == "file"
+    assert url.host is None
+    assert _extract_path(url) == pwd / "path/to/file#name.txt"
+    assert str(url) == f"file:///{pwd_noslash_str}/path/to/file#name.txt"
+
+
 @pytest.mark.skipif(sys.platform != "win32", reason="Requires Windows")
 def test_normalized_path() -> None:
-    p = URL("file:///Z:/neuromation/platform-api-clients/python/setup.py")
+    p = URL("file:///Z:/neuromation/platform-api-clients/python/se?tu#p.py")
     assert normalize_local_path_uri(p) == p

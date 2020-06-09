@@ -3,6 +3,7 @@ import re
 import sys
 from pathlib import Path
 from typing import Sequence, Union
+from urllib.parse import unquote
 
 from yarl import URL
 
@@ -101,7 +102,13 @@ def _normalize_uri(resource: Union[URL, str], username: str, cluster_name: str) 
                 path = f"{username}/{path}" if path else username
         else:
             raise ValueError(f"Absolute URI is required for scheme {uri.scheme}")
-        uri = URL.build(scheme=uri.scheme, host=host, path="/" + path)
+        uri = URL.build(
+            scheme=uri.scheme,
+            host=host,
+            path="/" + path,
+            query_string=uri.query_string,
+            fragment=uri.fragment,
+        )
 
     return uri
 
@@ -117,19 +124,38 @@ def normalize_local_path_uri(uri: URL) -> URL:
     if uri.path.startswith("~"):
         raise ValueError(f"Cannot expand user for {uri}")
     path = _extract_path(uri)
-    # path.absolute() does not work with relative path with disk
-    # See https://bugs.python.org/issue36305
-    path = Path(path.anchor).resolve() / path
-    ret = URL(path.as_uri())
-    while ret.path.startswith("//"):
-        ret = ret.with_path(ret.path[1:])
-    return ret
+    return _local_path_to_uri(path)
+
+
+def _local_path_to_uri(path: Path) -> URL:
+    return URL(unquote(path.as_uri()))
+
+
+def _copy_with_path(uri: URL) -> URL:
+    return URL.build(
+        path=uri.path,
+        query_string=uri.query_string,
+        fragment=uri.fragment,
+        encoded=True,
+    )
 
 
 def _extract_path(uri: URL) -> Path:
-    path = Path(uri.path)
+    cwd = Path(Path(str(uri)).anchor).resolve()
+    abs_path = Path(cwd) / uri.path
+    uri2 = URL.build(
+        path=str(abs_path),
+        query_string=uri.query_string,
+        fragment=uri.fragment,
+        encoded=True,
+    )
+    path = Path(str(uri2))
+
     if sys.platform == "win32":
-        # result of previous normalization
-        if re.match(r"^[/\\][A-Za-z]:[/\\]", str(path)):
-            return Path(str(path)[1:])
+        # path.absolute() does not work with relative path with disk
+        # See https://bugs.python.org/issue36305
+        path = Path(path.anchor).resolve() / path
+    while str(path).startswith("//"):
+        path = Path(str(path)[1:])
+
     return path
