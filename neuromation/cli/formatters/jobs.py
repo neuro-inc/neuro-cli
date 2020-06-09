@@ -72,37 +72,37 @@ class JobFormatter:
         if self._quiet:
             return job_id
         out = []
-        out.append(
-            style("Job ID", bold=True)
-            + f": {job_id} "
-            + style("Status", bold=True)
-            + f": {format_job_status(job.status)}"
-        )
+        out.append(style("Job ID", bold=True) + f": {job_id} ")
         if job.name:
             out.append(style("Name", bold=True) + f": {job.name}")
             job_alias = job.name
         else:
             job_alias = job.id
-        http_url = job.http_url
-        if http_url:
-            out.append(style("Http URL", bold=True) + f": {http_url}")
-        out.append(style("Shortcuts", bold=True) + ":")
+        if job.status != JobStatus.FAILED:
+            http_url = job.http_url
+            if http_url:
+                out.append(style("Http URL", bold=True) + f": {http_url}")
+            out.append(style("Shortcuts", bold=True) + ":")
 
-        out.append(
-            f"  neuro status {job_alias}     " + style("# check job status", dim=True)
-        )
-        out.append(
-            f"  neuro logs {job_alias}       " + style("# monitor job stdout", dim=True)
-        )
-        out.append(
-            f"  neuro top {job_alias}        "
-            + style("# display real-time job telemetry", dim=True)
-        )
-        out.append(
-            f"  neuro exec {job_alias} bash  "
-            + style("# execute bash shell to the job", dim=True)
-        )
-        out.append(f"  neuro kill {job_alias}       " + style("# kill job", dim=True))
+            out.append(
+                f"  neuro status {job_alias}     "
+                + style("# check job status", dim=True)
+            )
+            out.append(
+                f"  neuro logs {job_alias}       "
+                + style("# monitor job stdout", dim=True)
+            )
+            out.append(
+                f"  neuro top {job_alias}        "
+                + style("# display real-time job telemetry", dim=True)
+            )
+            out.append(
+                f"  neuro exec {job_alias} bash  "
+                + style("# execute bash shell to the job", dim=True)
+            )
+            out.append(
+                f"  neuro kill {job_alias}       " + style("# kill job", dim=True)
+            )
         return "\n".join(out)
 
 
@@ -368,10 +368,14 @@ class JobStartProgress:
             return DetailedJobStartProgress(color)
         return StreamJobStartProgress()
 
-    def __call__(self, job: JobDescription) -> None:
+    def begin(self, job: JobDescription) -> None:
+        # Quiet mode
+        print(job.id)
+
+    def step(self, job: JobDescription) -> None:
         pass
 
-    def close(self) -> None:
+    def end(self, job: JobDescription) -> None:
         pass
 
     def _get_status_reason_message(self, job: JobDescription) -> str:
@@ -397,7 +401,12 @@ class DetailedJobStartProgress(JobStartProgress):
         self._printer = TTYPrinter()
         self._lineno = 0
 
-    def __call__(self, job: JobDescription) -> None:
+    def begin(self, job: JobDescription) -> None:
+        self._printer.print(style("Job ID", bold=True) + f": {job.id} ")
+        if job.name:
+            self._printer.print(style("Name", bold=True) + f": {job.name}")
+
+    def step(self, job: JobDescription) -> None:
         new_time = self.time_factory()
         dt = new_time - self._time
         msg = "Status: " + format_job_status(job.status)
@@ -421,13 +430,51 @@ class DetailedJobStartProgress(JobStartProgress):
                 f"{msg} {next(self._spinner)} [{dt:.1f} sec]", lineno=self._lineno
             )
 
+    def end(self, job: JobDescription) -> None:
+        out = []
+        if job.name:
+            job_alias = job.name
+        else:
+            job_alias = job.id
+
+        if job.status != JobStatus.FAILED:
+            http_url = job.http_url
+            if http_url:
+                out.append(style("Http URL", bold=True) + f": {http_url}")
+            out.append(style("Shortcuts", bold=True) + ":")
+
+            out.append(
+                f"  neuro status {job_alias}     "
+                + style("# check job status", dim=True)
+            )
+            out.append(
+                f"  neuro logs {job_alias}       "
+                + style("# monitor job stdout", dim=True)
+            )
+            out.append(
+                f"  neuro top {job_alias}        "
+                + style("# display real-time job telemetry", dim=True)
+            )
+            out.append(
+                f"  neuro exec {job_alias} bash  "
+                + style("# execute bash shell to the job", dim=True)
+            )
+            out.append(
+                f"  neuro kill {job_alias}       " + style("# kill job", dim=True)
+            )
+
 
 class StreamJobStartProgress(JobStartProgress):
     def __init__(self) -> None:
         self._printer = StreamPrinter()
         self._prev = ""
 
-    def __call__(self, job: JobDescription) -> None:
+    def begin(self, job: JobDescription) -> None:
+        self._printer.print(f"Job ID: {job.id}")
+        if job.name:
+            self._printer.print(f"Name: {job.name}")
+
+    def step(self, job: JobDescription) -> None:
         msg = f"Status: {job.status}"
         reason = self._get_status_reason_message(job)
         if reason:
@@ -444,6 +491,9 @@ class StreamJobStartProgress(JobStartProgress):
             self._prev = msg
         else:
             self._printer.tick()
+
+    def end(self, job: JobDescription) -> None:
+        pass
 
 
 class JobStopProgress:
