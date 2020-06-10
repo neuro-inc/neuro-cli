@@ -91,7 +91,12 @@ def job_descr() -> JobDescription:
 
 class TestJobStartProgress:
     def make_job(
-        self, status: JobStatus, reason: str, *, name: Optional[str] = None, life_span: Optional[float] = None,
+        self,
+        status: JobStatus,
+        reason: str,
+        *,
+        name: Optional[str] = None,
+        life_span: Optional[float] = None,
     ) -> JobDescription:
         return JobDescription(
             name=name,
@@ -215,7 +220,7 @@ class TestJobStartProgress:
 
     def test_tty_end_with_life_span(self, capfd: Any, click_tty_emulation: Any) -> None:
         progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress.end(self.make_job(JobStatus.RUNNING, "", life_span=24*3600))
+        progress.end(self.make_job(JobStatus.RUNNING, "", life_span=24 * 3600))
         out, err = capfd.readouterr()
         assert err == ""
         assert "Commands" in out
