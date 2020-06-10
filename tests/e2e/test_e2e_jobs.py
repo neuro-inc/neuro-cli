@@ -480,7 +480,7 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
             "--timeout",
             str(EXEC_TIMEOUT),
             job_id,
-            'bash -c "sleep 5; echo ok"',
+            'bash -c "sleep 15; echo ok"',
         ]
     )
     assert captured.err == ""
