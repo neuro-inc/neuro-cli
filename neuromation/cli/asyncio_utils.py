@@ -7,12 +7,83 @@ import ssl
 import sys
 import threading
 import warnings
+from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, TypeVar
+
+from typing_extensions import final
 
 
 _T = TypeVar("_T")
 logger = logging.getLogger(__name__)
+
+
+@final
+class Runner:
+    def __init__(self, *, debug: bool = False) -> None:
+        self._debug = debug
+        self._started = False
+        self._stopped = False
+        self._executor = ThreadPoolExecutor()
+        self._loop = asyncio.new_event_loop()
+        self._loop.set_default_executor(self._executor)
+        _setup_exception_handler(self._loop, self._debug)
+
+    def run(self, main: Awaitable[_T]) -> _T:
+        assert self._started
+        assert not self._stopped
+        if not asyncio.iscoroutine(main):
+            raise ValueError("a coroutine was expected, got {!r}".format(main))
+        main_task = self._loop.create_task(main)
+
+        if sys.version_info <= (3, 7):
+
+            def retrieve_exc(fut: "asyncio.Task[Any]") -> None:
+                # suppress exception printing
+                if not fut.cancelled():
+                    fut.exception()
+
+            main_task.add_done_callback(retrieve_exc)
+
+        return self._loop.run_until_complete(main_task)
+
+    def __enter__(self) -> "Runner":
+        assert not self._started
+        assert not self._stopped
+        self._started = True
+
+        try:
+            current_loop = asyncio.get_event_loop()
+            if current_loop.is_running():
+                raise RuntimeError(
+                    "asyncio.run() cannot be called from a running event loop"
+                )
+        except RuntimeError:
+            # there is no current loop
+            pass
+
+        asyncio.set_event_loop(self._loop)
+        self._loop.set_debug(self._debug)
+        return self
+
+    def __exit__(
+        self, exc_type: Type[BaseException], exc_val: Exception, exc_tb: TracebackType
+    ) -> None:
+        assert self._started
+        assert not self._stopped
+        try:
+            _cancel_all_tasks(self._loop)
+            self._loop.run_until_complete(self._loop.shutdown_asyncgens())
+        finally:
+            self._executor.shutdown(wait=True)
+            asyncio.set_event_loop(None)
+            # simple workaround for:
+            # http://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", ResourceWarning)
+                self._loop.close()
+                del self._loop
+                gc.collect()
 
 
 def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
@@ -41,39 +112,8 @@ def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
 
         asyncio.run(main())
     """
-    try:
-        current_loop = asyncio.get_event_loop()
-        if current_loop.is_running():
-            raise RuntimeError(
-                "asyncio.run() cannot be called from a running event loop"
-            )
-    except RuntimeError:
-        # there is no current loop
-        pass
-
-    if not asyncio.iscoroutine(main):
-        raise ValueError("a coroutine was expected, got {!r}".format(main))
-
-    loop = asyncio.new_event_loop()
-    _setup_exception_handler(loop, debug)
-    try:
-        asyncio.set_event_loop(loop)
-        loop.set_debug(debug)
-        main_task = loop.create_task(main)
-        return loop.run_until_complete(main_task)
-    finally:
-        try:
-            _cancel_all_tasks(loop, main_task)
-            loop.run_until_complete(loop.shutdown_asyncgens())
-        finally:
-            asyncio.set_event_loop(None)
-            # simple workaround for:
-            # http://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", ResourceWarning)
-                loop.close()
-                del loop
-                gc.collect()
+    with Runner(debug=debug) as runner:
+        return runner.run(main)
 
 
 def _exception_handler(
@@ -97,13 +137,11 @@ def _setup_exception_handler(loop: asyncio.AbstractEventLoop, debug: bool) -> No
     loop.set_exception_handler(_exception_handler)
 
 
-def _cancel_all_tasks(
-    loop: asyncio.AbstractEventLoop, main_task: "asyncio.Task[_T]"
-) -> None:
+def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
     if sys.version_info >= (3, 7):
         to_cancel = asyncio.all_tasks(loop)
     else:
-        to_cancel = asyncio.Task.all_tasks(loop)
+        to_cancel = [t for t in asyncio.Task.all_tasks(loop) if not t.done()]
     if not to_cancel:
         return
 
@@ -121,8 +159,6 @@ def _cancel_all_tasks(
         if task.cancelled():
             continue
         if task.exception() is not None:
-            if task is main_task:
-                continue
             loop.call_exception_handler(
                 {
                     "message": "unhandled exception during asyncio.run() shutdown",
@@ -133,7 +169,7 @@ def _cancel_all_tasks(
 
 
 if sys.platform != "win32":
-    from asyncio.unix_events import AbstractChildWatcher  # type: ignore
+    from asyncio.unix_events import AbstractChildWatcher
 
     _Callback = Callable[..., None]
 
@@ -192,13 +228,13 @@ if sys.platform != "win32":
             self._threads[pid] = thread
             thread.start()
 
-        def remove_child_handler(self, pid: int) -> bool:
+        def remove_child_handler(self, pid: int) -> bool:  # type: ignore
             # asyncio never calls remove_child_handler() !!!
             # The method is no-op but is implemented because
             # abstract base classe requires it
             return True
 
-        def attach_loop(self, loop: asyncio.AbstractEventLoop) -> None:
+        def attach_loop(self, loop: Optional[asyncio.AbstractEventLoop]) -> None:
             pass
 
         def _do_waitpid(
@@ -246,3 +282,30 @@ if sys.platform != "win32":
             # This shouldn't happen, but if it does, let's just
             # return that status; perhaps that helps debug it.
             return status
+
+
+def setup_child_watcher() -> None:
+    if sys.platform == "win32":
+        if sys.version_info < (3, 7):
+            # Python 3.6 has no WindowsProactorEventLoopPolicy class
+            from asyncio import events
+
+            class WindowsProactorEventLoopPolicy(events.BaseDefaultEventLoopPolicy):
+                _loop_factory = asyncio.ProactorEventLoop
+
+        else:
+            WindowsProactorEventLoopPolicy = asyncio.WindowsProactorEventLoopPolicy
+
+        asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
+    else:
+        if sys.version_info < (3, 8):
+            asyncio.set_child_watcher(ThreadedChildWatcher())
+
+
+def current_task(
+    loop: Optional[asyncio.AbstractEventLoop] = None,
+) -> "asyncio.Task[Any]":
+    if sys.version_info >= (3, 7):
+        return asyncio.current_task(loop=loop)  # type: ignore
+    else:
+        return asyncio.Task.current_task(loop=loop)

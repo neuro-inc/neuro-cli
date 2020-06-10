@@ -6,14 +6,26 @@ import click
 
 from neuromation.api import LocalImage, RemoteImage
 from neuromation.cli.formatters import DockerImageProgress
+from neuromation.cli.formatters.images import (
+    BaseImagesFormatter,
+    LongImagesFormatter,
+    ShortImagesFormatter,
+)
+from neuromation.cli.formatters.utils import (
+    ImageFormatter,
+    image_formatter,
+    uri_formatter,
+)
 
+from .click_types import RemoteTaglessImageType
 from .root import Root
 from .utils import (
-    RemoteTaglessImageType,
-    async_cmd,
+    argument,
     command,
     deprecated_quiet_option,
     group,
+    option,
+    pager_maybe,
 )
 
 
@@ -28,10 +40,9 @@ def image() -> None:
 
 
 @command()
-@click.argument("local_image")
-@click.argument("remote_image", required=False)
+@argument("local_image")
+@argument("remote_image", required=False)
 @deprecated_quiet_option
-@async_cmd()
 async def push(root: Root, local_image: str, remote_image: Optional[str]) -> None:
     """
     Push an image to platform registry.
@@ -62,10 +73,9 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
 
 
 @command()
-@click.argument("remote_image")
-@click.argument("local_image", required=False)
+@argument("remote_image")
+@argument("local_image", required=False)
 @deprecated_quiet_option
-@async_cmd()
 async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> None:
     """
     Pull an image from platform registry.
@@ -95,20 +105,33 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 
 
 @command()
-@async_cmd()
-async def ls(root: Root) -> None:
+@option("-l", "format_long", is_flag=True, help="List in long format.")
+@option("--full-uri", is_flag=True, help="Output full image URI.")
+async def ls(root: Root, format_long: bool, full_uri: bool) -> None:
     """
     List images.
     """
 
     images = await root.client.images.ls()
-    for image in images:
-        click.echo(image)
+
+    image_fmtr: ImageFormatter
+    if full_uri:
+        image_fmtr = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username, cluster_name=root.client.cluster_name
+        )
+        image_fmtr = image_formatter(uri_formatter=uri_fmtr)
+    formatter: BaseImagesFormatter
+    if format_long:
+        formatter = LongImagesFormatter(image_formatter=image_fmtr)
+    else:
+        formatter = ShortImagesFormatter(image_formatter=image_fmtr)
+    pager_maybe(formatter(images), root.tty, root.terminal_size)
 
 
 @command()
-@click.argument("image", type=RemoteTaglessImageType())
-@async_cmd()
+@argument("image", type=RemoteTaglessImageType())
 async def tags(root: Root, image: RemoteImage) -> None:
     """
     List tags for image in platform registry.
@@ -122,8 +145,7 @@ async def tags(root: Root, image: RemoteImage) -> None:
     """
 
     tags = await root.client.images.tags(image)
-    for tag in tags:
-        click.echo(tag)
+    pager_maybe((str(tag) for tag in tags), root.tty, root.terminal_size)
 
 
 image.add_command(ls)

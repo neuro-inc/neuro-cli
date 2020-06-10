@@ -4,12 +4,14 @@ from typing import Any, Callable, Dict, List, Optional
 import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
+from dateutil.parser import isoparse
 from yarl import URL
 
 from neuromation.api import (
     Client,
     Container,
     HTTPPort,
+    JobRestartPolicy,
     JobStatus,
     JobTelemetry,
     RemoteImage,
@@ -18,7 +20,6 @@ from neuromation.api import (
     Volume,
 )
 from neuromation.api.jobs import INVALID_IMAGE_NAME, _job_description_from_api
-from neuromation.api.parsing_utils import _ImageNameParser
 from tests import _TestServerFactory
 
 
@@ -211,7 +212,7 @@ async def test_kill_ok(
 
 async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> None:
     async with make_client("http://whatever") as client:
-        image = RemoteImage(name="ubuntu")
+        image = RemoteImage.new_external_image(name="ubuntu")
         with pytest.raises(ValueError, match="must be in the neuromation registry"):
             await client.jobs.save("job-id", image)
 
@@ -242,6 +243,7 @@ async def test_save_ok(
     ]
 
     async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
         encoding = "utf-8"
         response = web.StreamResponse(status=200)
         response.enable_compression(web.ContentCoding.identity)
@@ -259,7 +261,9 @@ async def test_save_ok(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        image = RemoteImage.new_neuro_image(
+            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+        )
         await client.jobs.save("job-id", image)
 
 
@@ -274,6 +278,7 @@ async def test_save_commit_started_invalid_status_fails(
     ]
 
     async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
         encoding = "utf-8"
         response = web.StreamResponse(status=200)
         response.enable_compression(web.ContentCoding.identity)
@@ -291,7 +296,9 @@ async def test_save_commit_started_invalid_status_fails(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        image = RemoteImage.new_neuro_image(
+            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+        )
         with pytest.raises(
             DockerError,
             match=f"Invalid commit status: '{invalid}', expecting: 'CommitStarted'",
@@ -309,6 +316,7 @@ async def test_save_commit_started_missing_image_details_fails(
     ]
 
     async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
         encoding = "utf-8"
         response = web.StreamResponse(status=200)
         response.enable_compression(web.ContentCoding.identity)
@@ -326,7 +334,9 @@ async def test_save_commit_started_missing_image_details_fails(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        image = RemoteImage.new_neuro_image(
+            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+        )
         with pytest.raises(DockerError, match="Missing required details: 'image'"):
             await client.jobs.save("job-id", image)
 
@@ -359,7 +369,9 @@ async def test_save_commit_finished_invalid_status_fails(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        image = RemoteImage.new_neuro_image(
+            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+        )
         with pytest.raises(
             DockerError,
             match=(f"Invalid commit status: '{invalid}', expecting: 'CommitFinished'"),
@@ -394,7 +406,9 @@ async def test_save_commit_started_missing_status_fails(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        image = RemoteImage.new_neuro_image(
+            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+        )
         with pytest.raises(DockerError, match='Missing required field: "status"'):
             await client.jobs.save("job-id", image)
 
@@ -426,7 +440,9 @@ async def test_save_commit_finished_missing_status_fails(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        image = RemoteImage(registry="gcr.io", owner="me", name="img")
+        image = RemoteImage.new_neuro_image(
+            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+        )
         with pytest.raises(DockerError, match='Missing required field: "status"'):
             await client.jobs.save("job-id", image)
 
@@ -451,6 +467,7 @@ async def test_status_failed(
         "is_preemptible": True,
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-id",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -488,10 +505,7 @@ async def test_status_failed(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.status("job-id")
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_status_with_ssh_and_http(
@@ -514,6 +528,7 @@ async def test_status_with_ssh_and_http(
         "is_preemptible": True,
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-id",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -551,10 +566,7 @@ async def test_status_with_ssh_and_http(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.status("job-id")
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_status_with_tpu(
@@ -577,6 +589,7 @@ async def test_status_with_tpu(
         "is_preemptible": True,
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-id",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -615,12 +628,9 @@ async def test_status_with_tpu(
     async with make_client(srv.make_url("/")) as client:
         ret = await client.jobs.status("job-id")
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
-    assert ret.container.resources.tpu_type == "v3-8"
-    assert ret.container.resources.tpu_software_version == "1.14"
+        assert ret == _job_description_from_api(JSON, client.parse)
+        assert ret.container.resources.tpu_type == "v3-8"
+        assert ret.container.resources.tpu_software_version == "1.14"
 
 
 async def test_job_run(
@@ -639,6 +649,7 @@ async def test_job_run(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -684,6 +695,7 @@ async def test_job_run(
                 ],
             },
             "is_preemptible": False,
+            "cluster_name": "default",
         }
 
         return web.json_response(JSON)
@@ -706,7 +718,7 @@ async def test_job_run(
             ),
         ]
         container = Container(
-            image=RemoteImage("submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
             volumes=volumes,
@@ -714,10 +726,7 @@ async def test_job_run(
         )
         ret = await client.jobs.run(container=container, is_preemptible=False)
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_job_run_with_name_and_description(
@@ -738,6 +747,7 @@ async def test_job_run_with_name_and_description(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -785,6 +795,7 @@ async def test_job_run_with_name_and_description(
             "is_preemptible": False,
             "name": "test-job-name",
             "description": "job description",
+            "cluster_name": "default",
         }
 
         return web.json_response(JSON)
@@ -807,7 +818,7 @@ async def test_job_run_with_name_and_description(
             ),
         ]
         container = Container(
-            image=RemoteImage("submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
             volumes=volumes,
@@ -820,10 +831,107 @@ async def test_job_run_with_name_and_description(
             description="job description",
         )
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
+
+
+async def test_job_run_with_tags(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "tags": ["t1", "t2", "t3"],
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "shm": False,
+                "gpu_model": "nvidia-tesla-p4",
+            },
+        },
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "ssh_auth_server": "ssh://my_host.ssh:22",
+        "is_preemptible": False,
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "http": {"port": 8181, "requires_auth": True},
+                "resources": {
+                    "memory_mb": 16384,
+                    "cpu": 7.0,
+                    "shm": True,
+                    "gpu": 1,
+                    "gpu_model": "test-gpu-model",
+                },
+                "volumes": [
+                    {
+                        "src_storage_uri": "storage://test-user/path_read_only",
+                        "dst_path": "/container/read_only",
+                        "read_only": True,
+                    },
+                    {
+                        "src_storage_uri": "storage://test-user/path_read_write",
+                        "dst_path": "/container/path_read_write",
+                        "read_only": False,
+                    },
+                ],
+            },
+            "is_preemptible": False,
+            "tags": ["t1", "t2", "t3"],
+            "cluster_name": "default",
+        }
+
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        volumes: List[Volume] = [
+            Volume(
+                URL("storage://test-user/path_read_only"), "/container/read_only", True
+            ),
+            Volume(
+                URL("storage://test-user/path_read_write"),
+                "/container/path_read_write",
+                False,
+            ),
+        ]
+        container = Container(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            command="submit-command",
+            resources=resources,
+            volumes=volumes,
+            http=HTTPPort(8181),
+        )
+        ret = await client.jobs.run(
+            container, is_preemptible=False, tags=["t1", "t2", "t3"],
+        )
+
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_job_run_no_volumes(
@@ -843,6 +951,7 @@ async def test_job_run_no_volumes(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -878,6 +987,7 @@ async def test_job_run_no_volumes(
             "is_preemptible": False,
             "name": "test-job-name",
             "description": "job description",
+            "cluster_name": "default",
         }
 
         return web.json_response(JSON)
@@ -890,7 +1000,7 @@ async def test_job_run_no_volumes(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         container = Container(
-            image=RemoteImage("submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
             http=HTTPPort(8181),
@@ -902,10 +1012,7 @@ async def test_job_run_no_volumes(
             description="job description",
         )
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_job_run_preemptible(
@@ -925,6 +1032,7 @@ async def test_job_run_preemptible(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -972,6 +1080,7 @@ async def test_job_run_preemptible(
             "is_preemptible": True,
             "name": "test-job-name",
             "description": "job description",
+            "cluster_name": "default",
         }
 
         return web.json_response(JSON)
@@ -994,7 +1103,7 @@ async def test_job_run_preemptible(
             ),
         ]
         container = Container(
-            image=RemoteImage("submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
             volumes=volumes,
@@ -1007,10 +1116,7 @@ async def test_job_run_preemptible(
             description="job description",
         )
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_job_run_schedule_timeout(
@@ -1029,6 +1135,7 @@ async def test_job_run_schedule_timeout(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1063,6 +1170,7 @@ async def test_job_run_schedule_timeout(
             },
             "is_preemptible": False,
             "schedule_timeout": 5,
+            "cluster_name": "default",
         }
 
         return web.json_response(JSON)
@@ -1075,16 +1183,13 @@ async def test_job_run_schedule_timeout(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         container = Container(
-            image=RemoteImage("submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
         )
         ret = await client.jobs.run(container=container, schedule_timeout=5)
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_job_run_tpu(
@@ -1103,6 +1208,7 @@ async def test_job_run_tpu(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1138,6 +1244,7 @@ async def test_job_run_tpu(
             },
             "is_preemptible": False,
             "schedule_timeout": 5,
+            "cluster_name": "default",
         }
 
         return web.json_response(JSON)
@@ -1150,18 +1257,55 @@ async def test_job_run_tpu(
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(16384, 7, 1, "test-gpu-model", True, "v3-8", "1.14")
         container = Container(
-            image=RemoteImage("submit-image-name"),
+            image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             resources=resources,
         )
         ret = await client.jobs.run(container=container, schedule_timeout=5)
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    assert ret == _job_description_from_api(JSON, parser)
-    assert ret.container.resources.tpu_type == "v3-8"
-    assert ret.container.resources.tpu_software_version == "1.14"
+        assert ret == _job_description_from_api(JSON, client.parse)
+        assert ret.container.resources.tpu_type == "v3-8"
+        assert ret.container.resources.tpu_software_version == "1.14"
+
+
+async def test_job_run_with_tty(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = create_job_response("job-id-1", "running")
+    JSON["container"]["tty"] = True
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "resources": {"memory_mb": 16384, "cpu": 0.5, "shm": True},
+                "tty": True,
+            },
+            "is_preemptible": False,
+            "cluster_name": "default",
+        }
+
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16384, 0.5)
+        container = Container(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            command="submit-command",
+            resources=resources,
+            tty=True,
+        )
+        ret = await client.jobs.run(container=container)
+
+        assert ret == _job_description_from_api(JSON, client.parse)
+        assert ret.container.tty is True
 
 
 def create_job_response(
@@ -1170,6 +1314,7 @@ def create_job_response(
     owner: str = "owner",
     name: Optional[str] = None,
     image: str = "submit-image-name",
+    tags: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     result = {
         "id": id,
@@ -1196,9 +1341,12 @@ def create_job_response(
         "is_preemptible": True,
         "owner": owner,
         "cluster_name": "default",
+        "uri": f"job://default/{owner}/{id}",
     }
     if name:
         result["name"] = name
+    if tags:
+        result["tags"] = tags
     return result
 
 
@@ -1221,13 +1369,12 @@ async def test_list_no_filter(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list()
+        ret = [job async for job in client.jobs.list()]
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
-    assert ret == job_descriptions
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        assert ret == job_descriptions
 
 
 async def test_list_filter_by_name(
@@ -1260,13 +1407,12 @@ async def test_list_filter_by_name(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(name=name_1)
+        ret = [job async for job in client.jobs.list(name=name_1)]
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
-    assert ret == job_descriptions[:3]
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        assert ret == job_descriptions[:3]
 
 
 async def test_list_filter_by_statuses(
@@ -1300,13 +1446,12 @@ async def test_list_filter_by_statuses(
 
     statuses = {JobStatus.FAILED, JobStatus.SUCCEEDED}
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(statuses=statuses)
+        ret = [job async for job in client.jobs.list(statuses=statuses)]
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
-    assert ret == [job for job in job_descriptions if job.status in statuses]
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        assert ret == [job for job in job_descriptions if job.status in statuses]
 
 
 async def test_list_incorrect_image(
@@ -1333,7 +1478,7 @@ async def test_list_incorrect_image(
 
     statuses = {JobStatus.FAILED, JobStatus.SUCCEEDED}
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(statuses=statuses)
+        ret = [job async for job in client.jobs.list(statuses=statuses)]
     for job in ret:
         if job.status == JobStatus.FAILED:
             assert job.container.image.name == INVALID_IMAGE_NAME
@@ -1366,41 +1511,25 @@ class TestVolumeParsing:
         "volume_param,volume",
         [
             (
-                "storage://user/dir:/var/www",
+                "storage://default/user/dir:/var/www",
                 Volume(
-                    storage_uri=URL("storage://user/dir"),
+                    storage_uri=URL("storage://default/user/dir"),
                     container_path="/var/www",
                     read_only=False,
                 ),
             ),
             (
-                "storage://user/dir:/var/www:rw",
+                "storage://default/user/dir:/var/www:rw",
                 Volume(
-                    storage_uri=URL("storage://user/dir"),
+                    storage_uri=URL("storage://default/user/dir"),
                     container_path="/var/www",
                     read_only=False,
                 ),
             ),
             (
-                "storage://user:/var/www:ro",
+                "storage://default/user:/var/www:ro",
                 Volume(
-                    storage_uri=URL("storage://user"),
-                    container_path="/var/www",
-                    read_only=True,
-                ),
-            ),
-            (
-                "storage://~/:/var/www:ro",
-                Volume(
-                    storage_uri=URL("storage://user"),
-                    container_path="/var/www",
-                    read_only=True,
-                ),
-            ),
-            (
-                "storage:dir:/var/www:ro",
-                Volume(
-                    storage_uri=URL("storage://user/dir"),
+                    storage_uri=URL("storage://default/user"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -1408,7 +1537,23 @@ class TestVolumeParsing:
             (
                 "storage::/var/www:ro",
                 Volume(
-                    storage_uri=URL("storage://user"),
+                    storage_uri=URL("storage://default/user"),
+                    container_path="/var/www",
+                    read_only=True,
+                ),
+            ),
+            (
+                "storage:dir:/var/www:ro",
+                Volume(
+                    storage_uri=URL("storage://default/user/dir"),
+                    container_path="/var/www",
+                    read_only=True,
+                ),
+            ),
+            (
+                "storage::/var/www:ro",
+                Volume(
+                    storage_uri=URL("storage://default/user"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -1458,13 +1603,49 @@ async def test_list_filter_by_name_and_statuses(
     statuses = {JobStatus.PENDING, JobStatus.SUCCEEDED}
     name = "job-name-1"
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(statuses=statuses, name=name)
+        ret = [job async for job in client.jobs.list(statuses=statuses, name=name)]
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
-    assert ret == job_descriptions[:2]
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        assert ret == job_descriptions[:2]
+
+
+async def test_list_filter_by_tags(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    jobs = [
+        # under filter:
+        create_job_response("job-id-1", "running", tags=["t1", "t2", "t3"]),
+        create_job_response("job-id-2", "running", tags=["t1"]),
+        create_job_response("job-id-3", "running", tags=["t2"]),
+        # out of filter:
+        create_job_response("job-id-4", "running", tags=["t4"]),
+        create_job_response("job-id-5", "running"),
+    ]
+
+    async def handler(request: web.Request) -> web.Response:
+        request_tags = set(request.query.getall("tag"))
+        filtered_jobs = []
+        for job in jobs:
+            tags = job.get("tags")
+            if tags and set(tags).intersection(request_tags):
+                filtered_jobs.append(job)
+        JSON = {"jobs": filtered_jobs}
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    tags = {"t1", "t2"}
+    async with make_client(srv.make_url("/")) as client:
+        ret = [job async for job in client.jobs.list(tags=tags)]
+
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        assert ret == job_descriptions[:3]
 
 
 async def test_list_filter_by_name_and_statuses_and_owners(
@@ -1506,10 +1687,134 @@ async def test_list_filter_by_name_and_statuses_and_owners(
     name = name_1
     owners = {owner_1, owner_2}
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.list(statuses=statuses, name=name, owners=owners)
+        ret = [
+            job
+            async for job in client.jobs.list(
+                statuses=statuses, name=name, owners=owners
+            )
+        ]
 
-    parser = _ImageNameParser(
-        client._config.auth_token.username, client._config.cluster_config.registry_url
-    )
-    job_descriptions = [_job_description_from_api(job, parser) for job in jobs]
-    assert ret == job_descriptions[:2]
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        assert ret == job_descriptions[:2]
+
+
+async def test_list_filter_by_date_range(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    jobs = [
+        create_job_response("job-id-1", "running"),
+        create_job_response("job-id-2", "running"),
+        create_job_response("job-id-3", "running"),
+    ]
+    jobs[0]["history"]["created_at"] = "2018-09-25T12:28:21.298672+00:00"
+    jobs[1]["history"]["created_at"] = "2018-09-25T12:28:26.698687+00:00"
+    jobs[2]["history"]["created_at"] = "2018-09-25T12:28:31.642202+00:00"
+
+    t1 = isoparse(jobs[0]["history"]["created_at"])
+    t2 = isoparse(jobs[1]["history"]["created_at"])
+    t3 = isoparse(jobs[2]["history"]["created_at"])
+    t2naive = t2.astimezone(None).replace(tzinfo=None)
+
+    async def handler(request: web.Request) -> web.Response:
+        since = isoparse(request.query.get("since", "0001-01-01T00:00:00+00:00"))
+        until = isoparse(request.query.get("until", "9999-12-31T23:59:59.999999+00:00"))
+        filtered_jobs = [
+            job
+            for job in jobs
+            if since <= isoparse(job["history"]["created_at"]) <= until
+        ]
+        return web.json_response({"jobs": filtered_jobs})
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        ret = [job async for job in client.jobs.list()]
+        assert {job.id for job in ret} == {"job-id-1", "job-id-2", "job-id-3"}
+
+        ret = [job async for job in client.jobs.list(since=t2)]
+        assert {job.id for job in ret} == {"job-id-2", "job-id-3"}
+
+        ret = [job async for job in client.jobs.list(until=t2)]
+        assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
+
+        ret = [job async for job in client.jobs.list(since=t1, until=t2)]
+        assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
+
+        ret = [job async for job in client.jobs.list(since=t1, until=t3)]
+        assert {job.id for job in ret} == {"job-id-1", "job-id-2", "job-id-3"}
+
+        ret = [job async for job in client.jobs.list(since=t2naive)]
+        assert {job.id for job in ret} == {"job-id-2", "job-id-3"}
+
+        ret = [job async for job in client.jobs.list(until=t2naive)]
+        assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
+
+
+async def test_job_run_life_span(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+                "command": "submit-command",
+            },
+            "is_preemptible": False,
+            "max_run_time_minutes": 10,
+            "cluster_name": "default",
+        }
+        return web.json_response(create_job_response("job-id-1", "running"))
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16, 0.5)
+        container = Container(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            command="submit-command",
+            resources=resources,
+        )
+        await client.jobs.run(container=container, life_span=10 * 60)
+
+
+async def test_job_run_restart_policy(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+                "command": "submit-command",
+            },
+            "is_preemptible": False,
+            "restart_policy": "always",
+            "cluster_name": "default",
+        }
+        return web.json_response(create_job_response("job-id-1", "running"))
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16, 0.5)
+        container = Container(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            command="submit-command",
+            resources=resources,
+        )
+        await client.jobs.run(
+            container=container, restart_policy=JobRestartPolicy.ALWAYS
+        )

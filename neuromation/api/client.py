@@ -1,54 +1,54 @@
-import time
-from http.cookies import Morsel  # noqa
-from http.cookies import SimpleCookie
-from types import MappingProxyType, TracebackType
+from pathlib import Path
+from types import TracebackType
 from typing import Mapping, Optional, Type
 
 import aiohttp
 
-from .config import _Config
+from neuromation.api.quota import _Quota
+
+from .admin import _Admin
+from .blob_storage import BlobStorage
+from .config import Config
 from .core import _Core
 from .images import Images
 from .jobs import Jobs
-from .login import Preset
 from .parser import Parser
+from .server_cfg import Preset
 from .storage import Storage
 from .users import Users
 from .utils import NoPublicConstructor
 
 
-SESSION_COOKIE_MAXAGE = 5 * 60  # 5 min
-
-
 class Client(metaclass=NoPublicConstructor):
-    def __init__(self, session: aiohttp.ClientSession, config: _Config) -> None:
+    def __init__(
+        self, session: aiohttp.ClientSession, path: Path, trace_id: Optional[str],
+    ) -> None:
         self._closed = False
-        config.check_initialized()
-        self._config = config
+        self._trace_id = trace_id
         self._session = session
-        if time.time() - config.cookie_session.timestamp > SESSION_COOKIE_MAXAGE:
-            # expired
-            cookie: Optional["Morsel[str]"] = None
-        else:
-            tmp = SimpleCookie()  # type: ignore
-            tmp["NEURO_SESSION"] = config.cookie_session.cookie
-            cookie = tmp["NEURO_SESSION"]
-            assert config.url.raw_host is not None
-            cookie["domain"] = config.url.raw_host
-            cookie["path"] = "/"
-        self._core = _Core(
-            session, self._config.url, self._config.auth_token.token, cookie
-        )
-        self._jobs = Jobs._create(self._core, self._config)
+        self._core = _Core(session, trace_id)
+        self._config = Config._create(self._core, path)
+
+        # Order does matter, need to check the main config before loading
+        # the storage cookie session
+        self._config._load()
+        with self._config._open_db() as db:
+            self._core._post_init(db, self._config.storage_url)
+        self._parser = Parser._create(self._config)
+        self._admin = _Admin._create(self._core, self._config)
+        self._jobs = Jobs._create(self._core, self._config, self._parser)
+        self._blob_storage = BlobStorage._create(self._core, self._config)
         self._storage = Storage._create(self._core, self._config)
-        self._users = Users._create(self._core)
-        self._parser = Parser._create(self._config, self.username)
+        self._users = Users._create(self._core, self._config)
+        self._quota = _Quota._create(self._core, self._config)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
         if self._closed:
             return
         self._closed = True
+        with self._config._open_db() as db:
+            self._core._save_cookie(db)
         await self._core.close()
         if self._images is not None:
             await self._images._close()
@@ -67,15 +67,29 @@ class Client(metaclass=NoPublicConstructor):
 
     @property
     def username(self) -> str:
-        return self._config.auth_token.username
+        return self._config.username
+
+    @property
+    def cluster_name(self) -> str:
+        return self._config.cluster_name
 
     @property
     def presets(self) -> Mapping[str, Preset]:
-        return MappingProxyType(self._config.cluster_config.resource_presets)
+        # TODO: add deprecation warning eventually.
+        # The preferred API is client.config now.
+        return self._config.presets
+
+    @property
+    def config(self) -> Config:
+        return self._config
 
     @property
     def jobs(self) -> Jobs:
         return self._jobs
+
+    @property
+    def blob_storage(self) -> BlobStorage:
+        return self._blob_storage
 
     @property
     def storage(self) -> Storage:
@@ -88,15 +102,9 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def images(self) -> Images:
         if self._images is None:
-            self._images = Images._create(self._core, self._config)
+            self._images = Images._create(self._core, self._config, self._parser)
         return self._images
 
     @property
     def parse(self) -> Parser:
         return self._parser
-
-    def _get_session_cookie(self) -> Optional["Morsel[str]"]:
-        for cookie in self._core._session.cookie_jar:
-            if cookie.key == "NEURO_SESSION":
-                return cookie
-        return None

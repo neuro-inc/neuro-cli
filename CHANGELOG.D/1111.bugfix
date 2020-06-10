@@ -1,1 +1,0 @@
-Process 502 Bad Gateway as a separate exception, don't miss it with 400 Bad Request.

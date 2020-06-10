@@ -1,9 +1,11 @@
+import os
 import sys
 from pathlib import Path
 
 import click
 
-from .utils import group
+from .root import Root
+from .utils import argument, group
 
 
 CFG_FILE = {"bash": Path("~/.bashrc"), "zsh": Path("~/.zshrc")}
@@ -20,8 +22,8 @@ def completion() -> None:
 
 
 @completion.command()
-@click.argument("shell", type=click.Choice(["bash", "zsh"]))
-def generate(shell: str) -> None:
+@argument("shell", type=click.Choice(["bash", "zsh"]))
+async def generate(root: Root, shell: str) -> None:
     """
     Provide an instruction for shell completion generation.
     """
@@ -30,14 +32,17 @@ def generate(shell: str) -> None:
 
 
 @completion.command()
-@click.argument("shell", type=click.Choice(["bash", "zsh"]))
-def patch(shell: str) -> None:
+@argument("shell", type=click.Choice(["bash", "zsh"]))
+async def patch(root: Root, shell: str) -> None:
     """
     Automatically patch shell configuration profile to enable completion
     """
     profile_file = CFG_FILE[shell].expanduser()
-    with profile_file.open("a+") as profile:
+    with profile_file.open("ab+") as profile:
         profile.write(
-            ACTIVATION_TEMPLATE.format(cmd=SOURCE_CMD[shell], exe=sys.argv[0])
+            b"\n"
+            + os.fsencode(
+                ACTIVATION_TEMPLATE.format(cmd=SOURCE_CMD[shell], exe=sys.argv[0])
+            )
+            + b"\n"
         )
-        profile.write("\n")

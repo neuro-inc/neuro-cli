@@ -1,23 +1,34 @@
+import asyncio
+import contextlib
 import logging
-from dataclasses import dataclass
+import re
+import sys
+from dataclasses import dataclass, field
 from http.cookies import Morsel  # noqa
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Awaitable, Dict, Iterator, List, Optional, Tuple, TypeVar
 
 import aiohttp
 import click
-from yarl import URL
 
-from neuromation.api import Client, Factory, Preset
-from neuromation.api.config import _Config
-from neuromation.api.config_factory import ConfigError
+from neuromation.api import Client, Factory, gen_trace_id
+from neuromation.api.config import _ConfigData
+
+from .asyncio_utils import Runner
 
 
 log = logging.getLogger(__name__)
 
 
-TEXT_TYPE = ("application/json", "text")
+TEXT_TYPE = ("application/json", "text", "application/x-www-form-urlencoded")
+
+HEADER_TOKEN_PATTERN = re.compile(
+    r"(Bearer|Basic|Digest|Mutual)\s+(?P<token>[^ ]+\.[^ ]+\.[^ ]+)"
+)
+
+
+_T = TypeVar("_T")
 
 
 @dataclass
@@ -30,24 +41,43 @@ class Root:
     config_path: Path
     trace: bool
     verbosity: int
+    trace_hide_token: bool
+    command_path: str
+    command_params: List[Dict[str, Optional[str]]]
+    skip_gmp_stats: bool
+    show_traceback: bool
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None
+    _runner: Runner = field(init=False)
+
+    def __post_init__(self) -> None:
+        self._runner = Runner(debug=self.verbosity >= 2)
+        self._runner.__enter__()
+
+    def close(self) -> None:
+        if self._client is not None:
+            self.run(self._client.close())
+
+        try:
+            # Suppress prints unhandled exceptions
+            # on event loop closing
+            sys.stderr = None  # type: ignore
+            self._runner.__exit__(*sys.exc_info())
+        finally:
+            sys.stderr = sys.__stderr__
+
+    def run(self, main: Awaitable[_T]) -> _T:
+        return self._runner.run(main)
 
     @property
-    def _config(self) -> _Config:
+    def _config(self) -> _ConfigData:
         assert self._client is not None
-        return self._client._config
+        return self._client.config._config_data
 
     @property
     def quiet(self) -> bool:
         return self.verbosity < 0
-
-    @property
-    def auth(self) -> Optional[str]:
-        if self._client is not None:
-            return self._config.auth_token.token
-        return None
 
     @property
     def timeout(self) -> aiohttp.ClientTimeout:
@@ -56,44 +86,32 @@ class Root:
         )
 
     @property
-    def username(self) -> str:
-        if self._client is None:
-            raise ConfigError("User is not registered, run 'neuro login'.")
-        return self._config.auth_token.username
-
-    @property
-    def url(self) -> URL:
-        if self._client is None:
-            raise ConfigError("User is not registered, run 'neuro login'.")
-        return self._config.url
-
-    @property
-    def registry_url(self) -> URL:
-        if self._client is None or not self._config.cluster_config.is_initialized():
-            raise ConfigError("User is not registered, run 'neuro login'.")
-        return self._config.cluster_config.registry_url
-
-    @property
-    def resource_presets(self) -> Dict[str, Preset]:
-        if self._client is None or not self._config.cluster_config.is_initialized():
-            raise ConfigError("User is not registered, run 'neuro login'.")
-        return self._config.cluster_config.resource_presets
-
-    @property
     def client(self) -> Client:
         assert self._client is not None
         return self._client
 
-    async def init_client(self) -> None:
-        trace_configs: Optional[List[aiohttp.TraceConfig]]
-        if self.trace:
-            trace_configs = [self._create_trace_config()]
-        else:
-            trace_configs = None
-        self._factory = Factory(path=self.config_path, trace_configs=trace_configs)
-        client = await self._factory.get(timeout=self.timeout)
+    @property
+    def factory(self) -> Factory:
+        if self._factory is None:
+            trace_configs: Optional[List[aiohttp.TraceConfig]]
+            if self.trace:
+                trace_configs = [self._create_trace_config()]
+            else:
+                trace_configs = None
+            self._factory = Factory(
+                path=self.config_path,
+                trace_configs=trace_configs,
+                trace_id=gen_trace_id(),
+            )
+        return self._factory
+
+    async def init_client(self) -> Client:
+        if self._client is not None:
+            return self._client
+        client = await self.factory.get(timeout=self.timeout)
 
         self._client = client
+        return self._client
 
     def _create_trace_config(self) -> aiohttp.TraceConfig:
         trace_config = aiohttp.TraceConfig()
@@ -106,15 +124,6 @@ class Root:
             self._on_response_chunk_received  # type: ignore
         )
         return trace_config
-
-    async def close(self) -> None:
-        if self._client is not None:
-            await self._client.close()
-
-    def get_session_cookie(self) -> Optional["Morsel[str]"]:
-        if self._client is None:
-            return None
-        return self._client._get_session_cookie()
 
     def _print_debug(self, lines: List[str]) -> None:
         txt = "\n".join(click.style(line, dim=True) for line in lines)
@@ -139,6 +148,8 @@ class Root:
             path += "?" + data.url.raw_query_string
         lines = [f"> {data.method} {path} HTTP/1.1"]
         for key, val in data.headers.items():
+            if self.trace_hide_token:
+                val = self._sanitize_header_value(val)
             lines.append(f"> {key}: {val}")
         lines.append("> ")
         self._print_debug(lines)
@@ -185,3 +196,42 @@ class Root:
             for line in self._process_chunk(chunk, context.response_printable)
         ]
         self._print_debug(lines)
+
+    def _sanitize_header_value(self, text: str) -> str:
+        for token in self._find_all_tokens(text):
+            token_safe = self._sanitize_token(token)
+            text = text.replace(token, token_safe)
+        return text
+
+    def _sanitize_token(self, token: str) -> str:
+        tail_len: int = 5
+        # at least a third part of the token should be hidden
+        if tail_len >= len(token) // 3:
+            return f"<hidden {len(token)} chars>"
+        hidden = f"<hidden {len(token) - tail_len * 2} chars>"
+        return token[:tail_len] + hidden + token[-tail_len:]
+
+    def _find_all_tokens(self, text: str) -> Iterator[str]:
+        for match in HEADER_TOKEN_PATTERN.finditer(text):
+            yield match.group("token")
+
+    async def cancel_with_logging(self, task: "asyncio.Task[Any]") -> None:
+        if not task.done():
+            task.cancel()
+        try:
+            with contextlib.suppress(asyncio.CancelledError):
+                await task
+        except Exception as exc:
+            if self.show_traceback:
+                log.exception(str(exc), stack_info=True)
+            else:
+                log.error(str(exc))
+
+    def soft_reset_tty(self) -> None:
+        if self.tty:
+            # Soft reset the terminal.
+            # For example, Midnight Commander often leaves
+            # scrolling margins (DECSTBM) aligned only
+            # to a part of the screen size
+            sys.stdout.write("\x1b[!p")
+            sys.stdout.flush()

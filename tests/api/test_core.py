@@ -1,8 +1,7 @@
 import ssl
 import sys
 from http.cookies import Morsel  # noqa
-from http.cookies import SimpleCookie
-from typing import AsyncIterator, Callable, Optional
+from typing import AsyncIterator, Callable
 
 import aiohttp
 import certifi
@@ -22,20 +21,18 @@ else:
     from async_generator import asynccontextmanager
 
 
-_ApiFactory = Callable[[URL, Optional["Morsel[str]"]], AsyncContextManager[_Core]]
+_ApiFactory = Callable[[URL], AsyncContextManager[_Core]]
 
 
 @pytest.fixture
 async def api_factory() -> AsyncIterator[_ApiFactory]:
     @asynccontextmanager
-    async def factory(
-        url: URL, cookie: Optional["Morsel[str]"] = None
-    ) -> AsyncIterator[_Core]:
+    async def factory(url: URL) -> AsyncIterator[_Core]:
         ssl_context = ssl.SSLContext()
         ssl_context.load_verify_locations(capath=certifi.where())
         connector = aiohttp.TCPConnector(ssl=ssl_context)
         session = aiohttp.ClientSession(connector=connector)
-        api = _Core(session, url, "token", cookie)
+        api = _Core(session, "bd7a977555f6b982")
         yield api
         await api.close()
         await session.close()
@@ -46,17 +43,23 @@ async def api_factory() -> AsyncIterator[_ApiFactory]:
 async def test_relative_url(
     aiohttp_server: _TestServerFactory, api_factory: _ApiFactory
 ) -> None:
+    called = False
+
     async def handler(request: web.Request) -> web.Response:
+        nonlocal called
+        called = True
         raise web.HTTPOk()
 
     app = web.Application()
     app.router.add_get("/test", handler)
     srv = await aiohttp_server(app)
 
-    async with api_factory(srv.make_url("/"), None) as api:
+    async with api_factory(srv.make_url("/")) as api:
         relative_url = URL("test")
-        async with api.request(method="GET", url=relative_url) as resp:
-            assert resp.status == 200
+        with pytest.raises(AssertionError):
+            async with api.request(method="GET", url=relative_url, auth="auth") as resp:
+                resp
+    assert not called
 
 
 async def test_absolute_url(
@@ -69,9 +72,9 @@ async def test_absolute_url(
     app.router.add_get("/test", handler)
     srv = await aiohttp_server(app)
 
-    async with api_factory(srv.make_url("/"), None) as api:
+    async with api_factory(srv.make_url("/")) as api:
         absolute_url = srv.make_url("test")
-        async with api.request(method="GET", url=absolute_url) as resp:
+        async with api.request(method="GET", url=absolute_url, auth="auth") as resp:
             assert resp.status == 200
 
 
@@ -85,9 +88,9 @@ async def test_raise_for_status_no_error_message(
     app.router.add_get("/test", handler)
     srv = await aiohttp_server(app)
 
-    async with api_factory(srv.make_url("/"), None) as api:
+    async with api_factory(srv.make_url("/")) as api:
         with pytest.raises(IllegalArgumentError, match="^400: Bad Request$"):
-            async with api.request(method="GET", url=URL("test")):
+            async with api.request(method="GET", url=srv.make_url("test"), auth="auth"):
                 pass
 
 
@@ -103,29 +106,10 @@ async def test_raise_for_status_contains_error_message(
     app.router.add_get("/test", handler)
     srv = await aiohttp_server(app)
 
-    async with api_factory(srv.make_url("/"), None) as api:
+    async with api_factory(srv.make_url("/")) as api:
         with pytest.raises(IllegalArgumentError, match=f"^{ERROR_MSG}$"):
-            async with api.request(method="GET", url=URL("test")):
+            async with api.request(method="GET", url=srv.make_url("test"), auth="auth"):
                 pass
-
-
-async def test_pass_cookie(
-    aiohttp_server: _TestServerFactory, api_factory: _ApiFactory
-) -> None:
-    async def handler(request: web.Request) -> web.Response:
-        assert request.cookies["NEURO_SESSION"] == "cookie_value"
-        return web.Response()
-
-    app = web.Application()
-    app.router.add_get("/test", handler)
-    srv = await aiohttp_server(app)
-
-    tmp = SimpleCookie()  # type: ignore
-    tmp["NEURO_SESSION"] = "cookie_value"
-    cookie = tmp["NEURO_SESSION"]
-    async with api_factory(srv.make_url("/"), cookie) as api:
-        async with api.request(method="GET", url=URL("/test")) as resp:
-            assert resp.status == 200
 
 
 async def test_server_bad_gateway(
@@ -138,8 +122,8 @@ async def test_server_bad_gateway(
     app.router.add_get("/test", handler)
     srv = await aiohttp_server(app)
 
-    async with api_factory(srv.make_url("/"), None) as api:
+    async with api_factory(srv.make_url("/")) as api:
         url = srv.make_url("test")
         with pytest.raises(ServerNotAvailable, match="^502: Bad Gateway$"):
-            async with api.request(method="GET", url=url) as resp:
+            async with api.request(method="GET", url=url, auth="auth") as resp:
                 assert resp.status == 200

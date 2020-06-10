@@ -44,9 +44,13 @@ Jobs
       :param str id: job :attr:`~JobDescription.id` to kill.
 
    .. comethod:: list(*, statuses: Iterable[JobStatus] = (), \
-                      name: str = "" \
-                      owners: Iterable[str] = (),
-                 ) -> List[JobDescription]
+                      name: Optional[str] = None, \
+                      tags: Sequence[str] = (), \
+                      owners: Iterable[str] = (), \
+                      since: Optional[datetime] = None, \
+                      until: Optional[datetime] = None, \
+                      reverse: bool = False, \
+                 ) -> AsyncIterator[JobDescription]
 
       List user jobs, all scheduled, running and finished jobs by default.
 
@@ -67,7 +71,13 @@ Jobs
 
       :param str name: Filter jobs by :attr:`~JobDescription.name` (exact match).
 
-                       Empty string means that no filter is applied (default).
+                       Empty string or ``None`` means that no filter is applied (default).
+
+      :param ~typing.Sequence[str] tags: filter jobs by :attr:`~JobDescription.tags`.
+
+                                         Retrieves only jobs submitted with all tags from the specified list.
+
+                                         Empty list means that no filter is applied (default).
 
       :param ~typing.Iterable[str] owners: filter jobs by their owners.
 
@@ -78,7 +88,34 @@ Jobs
                                            No owners filter is applied if the iterable
                                            is empty.
 
-      :return: a :class:`list` of :class:`JobDescription` objects.
+      :param ~datetime.datetime since: filter jobs by their creation date.
+
+                                       Retrieves only jobs submitted after the specified date
+                                       (including) if it is not ``None``.  If the parameter
+                                       is a naive datetime object, it represents local time.
+
+                                       ``None`` means that no filter is applied (default).
+
+      :param ~datetime.datetime until: filter jobs by their creation date.
+
+                                       Retrieves only jobs submitted before the specified date
+                                       (including) if it is not ``None``.  If the parameter
+                                       is a naive datetime object, it represents local time.
+
+                                       ``None`` means that no filter is applied (default).
+
+      :param bool reverse: iterate jobs in the reverse order.
+
+                           If *reverse* is false (default) the jobs are iterated in
+                           the order of their creation date, from earlier to later.
+                           If *reverse* is true, they are iterated in the reverse order,
+                           from later to earlier.
+
+      :param int limit: limit the number of jobs.
+
+                        ``None`` means no limit (default).
+
+      :return: asynchronous iterator which emits :class:`JobDescription` objects.
 
 
    .. comethod:: monitor(id: str) -> AsyncIterator[bytes]
@@ -113,9 +150,11 @@ Jobs
    .. comethod:: run(container: Container, \
                      *, \
                      name: Optional[str] = None, \
+                     tags: Sequence[str] = (), \
                      description: Optional[str] = None, \
                      is_preemptible: bool = False, \
                      schedule_timeout: Optional[float] = None, \
+                     life_span: Optional[float] = None, \
                  ) -> JobDescription
 
       Start a new job.
@@ -123,6 +162,8 @@ Jobs
       :param Container container: container description to start.
 
       :param str name: optional container name.
+
+      :param str name: optional job tags.
 
       :param str desciption: optional container description.
 
@@ -134,6 +175,8 @@ Jobs
                                      cannot be scheduled because the lack of computation
                                      cluster resources (memory, CPU/GPU etc).
 
+      :param float life_span: job run-time limit in seconds. Pass `None` to disable.
+
       :return: :class:`JobDescription` instance with information about started job.
 
    .. comethod:: status(id: str) -> JobDescription
@@ -143,6 +186,12 @@ Jobs
       :param str id: job :attr:`~JobDescription.id` to get its status.
 
       :return: :class:`JobDescription` instance with job status details.
+
+   .. comethod:: tags() -> List[str]
+
+      Get the list of all tags submitted by the user.
+
+      :return: :class:`List[str]` list of tags.
 
    .. comethod:: top(id: str) -> AsyncIterator[JobTelemetry]
       :async-for:
@@ -217,7 +266,7 @@ HTTPPort
 
    .. attribute:: requires_auth
 
-      Authentication in Neuromation platform is required for access to exposed HTTP
+      Authentication in Neuro Platform is required for access to exposed HTTP
       server if ``True``, the port is open publicly otherwise.
 
 
@@ -265,6 +314,11 @@ JobDescription
 
       Job name provided by user at creation time, :class:`str` or ``None`` if name is
       omitted.
+
+   .. attribute:: tags
+
+      List of job tags provided by user at creation time, :class:`Sequence[str]` or
+      ``()`` if tags omitted.
 
    .. attribute:: description
 

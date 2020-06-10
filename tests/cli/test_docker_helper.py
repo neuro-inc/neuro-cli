@@ -9,10 +9,10 @@ from typing import Any, Callable, List
 import pytest
 from yarl import URL
 
-from neuromation.api import CONFIG_ENV_NAME, Factory
-from neuromation.api.config import _Config
+from neuromation.api import CONFIG_ENV_NAME, Config
 from neuromation.cli.const import EX_OK
 from neuromation.cli.docker_credential_helper import main as dch
+from neuromation.cli.root import Root
 
 
 SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])
@@ -23,8 +23,8 @@ _RunCli = Callable[[List[str]], SysCapWithCode]
 
 
 @pytest.fixture()
-def config(nmrc_path: Path) -> _Config:
-    return Factory(path=nmrc_path)._read()
+def config(root: Root) -> Config:
+    return root.client.config
 
 
 _RunDch = Callable[[List[str]], SysCapWithCode]
@@ -66,7 +66,7 @@ class TestCli:
         assert captured.err
 
     def test_path_from_env(
-        self, run_cli: _RunCli, tmp_path: Path, monkeypatch: Any, config: _Config
+        self, run_cli: _RunCli, tmp_path: Path, monkeypatch: Any, config: Config
     ) -> None:
         json_path = tmp_path / "config.json"
         with json_path.open("w") as file:
@@ -75,65 +75,67 @@ class TestCli:
         capture = run_cli(["config", "docker"])
         assert not capture.err
         assert json_path.is_file()
-        with json_path.open() as fp:
+        with json_path.open("rb") as fp:
             payload = json.load(fp)
-        registry = URL(config.cluster_config.registry_url).host
+        registry = URL(config.clusters[config.cluster_name].registry_url).host
         assert payload["credHelpers"] == {registry: "neuro"}
 
-    def test_new_file(self, run_cli: _RunCli, tmp_path: Path, config: _Config) -> None:
+    def test_new_file(self, run_cli: _RunCli, tmp_path: Path, config: Config) -> None:
         path = tmp_path / ".docker"
         json_path = path / "config.json"
         capture = run_cli(["config", "docker", "--docker-config", str(path)])
         assert not capture.err
         assert json_path.is_file()
-        with json_path.open() as fp:
+        with json_path.open("rb") as fp:
             payload = json.load(fp)
-        registry = URL(config.cluster_config.registry_url).host
+        registry = URL(config.clusters[config.cluster_name].registry_url).host
         assert payload["credHelpers"] == {registry: "neuro"}
 
     def test_merge_file_without_helpers(
-        self, run_cli: _RunCli, tmp_path: Path, config: _Config
+        self, run_cli: _RunCli, tmp_path: Path, config: Config
     ) -> None:
         path = tmp_path / ".docker"
         path.mkdir()
         json_path = path / "config.json"
-        with json_path.open("w") as fp:
-            json.dump({"test": "value"}, fp)
+        with json_path.open("w", encoding="utf-8") as fp:
+            json.dump({"test": "value\u20ac"}, fp)
         capture = run_cli(["config", "docker", "--docker-config", str(path)])
         assert not capture.err
         assert json_path.is_file()
-        with json_path.open() as fp:
-            payload = json.load(fp)
-        registry = URL(config.cluster_config.registry_url).host
+        with json_path.open("rb") as fp2:
+            payload = json.load(fp2)
+        registry = URL(config.clusters[config.cluster_name].registry_url).host
         assert payload["credHelpers"] == {registry: "neuro"}
-        assert payload["test"] == "value"
+        assert payload["test"] == "value\u20ac"
 
     def test_merge_file_with_existing_helpers(
-        self, run_cli: _RunCli, tmp_path: Path, config: _Config
+        self, run_cli: _RunCli, tmp_path: Path, config: Config
     ) -> None:
         path = tmp_path / ".docker"
         path.mkdir()
         json_path = path / "config.json"
-        with json_path.open("w") as fp:
-            json.dump({"test": "value", "credHelpers": {"some.com": "handler"}}, fp)
+        with json_path.open("w", encoding="utf-8") as fp:
+            json.dump(
+                {"test": "value\u20ac", "credHelpers": {"some.com": "handler"}}, fp
+            )
         capture = run_cli(["config", "docker", "--docker-config", str(path)])
         assert not capture.err
         assert json_path.is_file()
-        with json_path.open() as fp:
-            payload = json.load(fp)
-        registry = URL(config.cluster_config.registry_url).host
+        with json_path.open("rb") as fp2:
+            payload = json.load(fp2)
+        registry = URL(config.clusters[config.cluster_name].registry_url).host
         assert payload["credHelpers"] == {registry: "neuro", "some.com": "handler"}
-        assert payload["test"] == "value"
+        assert payload["test"] == "value\u20ac"
 
     def test_success_output_message(
-        self, run_cli: _RunCli, tmp_path: Path, config: _Config
+        self, run_cli: _RunCli, tmp_path: Path, config: Config
     ) -> None:
         path = tmp_path / ".docker"
         json_path = path / "config.json"
         capture = run_cli(["config", "docker", "--docker-config", str(path)])
         assert not capture.err
         assert str(json_path) in capture.out
-        assert config.cluster_config.registry_url.host in capture.out
+        assert config.clusters[config.cluster_name].registry_url.host in capture.out
 
 
 class TestHelper:
@@ -154,9 +156,9 @@ class TestHelper:
         assert capture.code != EX_OK
 
     def test_get_operation(
-        self, run_dch: _RunDch, monkeypatch: Any, config: _Config, token: str
+        self, run_dch: _RunDch, monkeypatch: Any, config: Config, token: str
     ) -> None:
-        registry = config.cluster_config.registry_url.host
+        registry = config.clusters[config.cluster_name].registry_url.host
         assert registry is not None
         monkeypatch.setattr("sys.stdin", io.StringIO(registry))
         capture = run_dch(["get"])

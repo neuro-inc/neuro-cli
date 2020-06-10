@@ -3,11 +3,11 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-==========================
-Neuromation SDK for Python
-==========================
+====================
+Neuro SDK for Python
+====================
 
-A Python library for the Neuromation Platform API.
+A Python library for the Neuro Platform API.
 
 Installation
 ============
@@ -22,7 +22,7 @@ Getting Started
 ===============
 
 
-To start working with the Neuromation Platform you need to login first.  The easiest way
+To start working with the Neuro Platform you need to login first.  The easiest way
 to do it is the using of :term:`CLI` utility::
 
    $ neuro login
@@ -35,7 +35,7 @@ configuration file::
   from neuromation import api
 
   async with api.get() as client:
-      jobs = await client.jobs.list()
+      jobs = [job async for job in client.jobs.list()]
 
 
 The example above instantiates a ``client`` object in *async context manager* and

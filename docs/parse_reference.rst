@@ -46,7 +46,7 @@ Parser
 
       The string should fit to ``name[:tag]`` or ``image:name[tag]`` patterns,
       e.g. ``"ubuntu:latest"`` or ``image:my-image:latest``. The former is used for
-      public DockerHub_ images, the later is for Neuromation image registry.
+      public DockerHub_ images, the later is for Neuro image registry.
 
       :raise: :exc:`ValueError` if *image* has invalid format.
 

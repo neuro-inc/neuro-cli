@@ -3,11 +3,21 @@
 # Table of Contents
 * [Preface](#Preface)
 * [neuro](#neuro)
+	* [neuro admin](#neuro-admin)
+		* [neuro admin get-clusters](#neuro-admin-get-clusters)
+		* [neuro admin generate-cluster-config](#neuro-admin-generate-cluster-config)
+		* [neuro admin add-cluster](#neuro-admin-add-cluster)
+		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
+		* [neuro admin add-cluster-user](#neuro-admin-add-cluster-user)
+		* [neuro admin remove-cluster-user](#neuro-admin-remove-cluster-user)
+		* [neuro admin set-user-quota](#neuro-admin-set-user-quota)
+		* [neuro admin add-user-quota](#neuro-admin-add-user-quota)
 	* [neuro job](#neuro-job)
 		* [neuro job run](#neuro-job-run)
 		* [neuro job submit](#neuro-job-submit)
 		* [neuro job ls](#neuro-job-ls)
 		* [neuro job status](#neuro-job-status)
+		* [neuro job tags](#neuro-job-tags)
 		* [neuro job exec](#neuro-job-exec)
 		* [neuro job port-forward](#neuro-job-port-forward)
 		* [neuro job logs](#neuro-job-logs)
@@ -15,6 +25,7 @@
 		* [neuro job top](#neuro-job-top)
 		* [neuro job save](#neuro-job-save)
 		* [neuro job browse](#neuro-job-browse)
+		* [neuro job attach](#neuro-job-attach)
 	* [neuro project](#neuro-project)
 		* [neuro project init](#neuro-project-init)
 	* [neuro storage](#neuro-storage)
@@ -24,7 +35,7 @@
 		* [neuro storage rm](#neuro-storage-rm)
 		* [neuro storage mkdir](#neuro-storage-mkdir)
 		* [neuro storage mv](#neuro-storage-mv)
-		* [neuro storage load](#neuro-storage-load)
+		* [neuro storage tree](#neuro-storage-tree)
 	* [neuro image](#neuro-image)
 		* [neuro image ls](#neuro-image-ls)
 		* [neuro image push](#neuro-image-push)
@@ -36,6 +47,10 @@
 		* [neuro config login-headless](#neuro-config-login-headless)
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
+		* [neuro config show-quota](#neuro-config-show-quota)
+		* [neuro config aliases](#neuro-config-aliases)
+		* [neuro config get-clusters](#neuro-config-get-clusters)
+		* [neuro config switch-cluster](#neuro-config-switch-cluster)
 		* [neuro config docker](#neuro-config-docker)
 		* [neuro config logout](#neuro-config-logout)
 	* [neuro completion](#neuro-completion)
@@ -45,6 +60,10 @@
 		* [neuro acl grant](#neuro-acl-grant)
 		* [neuro acl revoke](#neuro-acl-revoke)
 		* [neuro acl list](#neuro-acl-list)
+	* [neuro blob](#neuro-blob)
+		* [neuro blob cp](#neuro-blob-cp)
+		* [neuro blob ls](#neuro-blob-ls)
+		* [neuro blob glob](#neuro-blob-glob)
 	* [neuro help](#neuro-help)
 	* [neuro run](#neuro-run)
 	* [neuro submit](#neuro-submit)
@@ -52,6 +71,7 @@
 	* [neuro status](#neuro-status)
 	* [neuro exec](#neuro-exec)
 	* [neuro port-forward](#neuro-port-forward)
+	* [neuro attach](#neuro-attach)
 	* [neuro logs](#neuro-logs)
 	* [neuro kill](#neuro-kill)
 	* [neuro top](#neuro-top)
@@ -93,13 +113,15 @@ Name | Description|
 |----|------------|
 |_\-v, --verbose_|Give more output. Option is additive, and can be used up to 2 times.|
 |_\-q, --quiet_|Give less output. Option is additive, and can be used up to 2 times.|
-|_\--neuromation-config PATH_|Path to config file.|
+|_\--neuromation-config PATH_|Path to config directory.|
 |_\--show-traceback_|Show python traceback on error, useful for debugging the tool.|
 |_--color \[yes &#124; no &#124; auto]_|Color mode.|
-|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuromation CLI is available for download.|
+|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuro Platform CLI is available for download.|
 |_\--network-timeout FLOAT_|Network read timeout, seconds.|
 |_--version_|Show the version and exit.|
 |_--trace_|Trace sent HTTP requests and received replies to stderr.|
+|_\--hide-token / --no-hide-token_|Prevent user's token sent in HTTP headers from being printed out to stderr during HTTP tracing. Can be used only together with option '--trace'. On by default.|
+|_\--skip-stats / --no-skip-stats_|Skip sending usage statistics to Neuro servers. Note: the statistics has no sensitive data, e.g. file, job, image, or user names, executed command lines, environment variables, etc.|
 |_--help_|Show this message and exit.|
 
 
@@ -107,6 +129,7 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
+| _[neuro admin](#neuro-admin)_| Cluster administration commands |
 | _[neuro job](#neuro-job)_| Job operations |
 | _[neuro project](#neuro-project)_| Project operations |
 | _[neuro storage](#neuro-storage)_| Storage operations |
@@ -114,6 +137,7 @@ Name | Description|
 | _[neuro config](#neuro-config)_| Client configuration |
 | _[neuro completion](#neuro-completion)_| Output shell completion code |
 | _[neuro acl](#neuro-acl)_| Access Control List management |
+| _[neuro blob](#neuro-blob)_| Blob storage operations |
 
 
 **Commands:**
@@ -127,11 +151,12 @@ Name | Description|
 | _[neuro status](#neuro-status)_| Display status of a job |
 | _[neuro exec](#neuro-exec)_| Execute command in a running job |
 | _[neuro port-forward](#neuro-port-forward)_| Forward port\(s) of a running job to local port\(s) |
+| _[neuro attach](#neuro-attach)_| Print the logs for a container |
 | _[neuro logs](#neuro-logs)_| Print the logs for a container |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
 | _[neuro save](#neuro-save)_| Save job's state to an image |
-| _[neuro login](#neuro-login)_| Log into Neuromation Platform |
+| _[neuro login](#neuro-login)_| Log into Neuro Platform |
 | _[neuro logout](#neuro-logout)_| Log out |
 | _[neuro cp](#neuro-cp)_| Copy files and directories |
 | _[neuro ls](#neuro-ls)_| List directory contents |
@@ -142,6 +167,196 @@ Name | Description|
 | _[neuro push](#neuro-push)_| Push an image to platform registry |
 | _[neuro pull](#neuro-pull)_| Pull an image from platform registry |
 | _[neuro share](#neuro-share)_| Shares resource with another user |
+
+
+
+
+## neuro admin
+
+Cluster administration commands.
+
+**Usage:**
+
+```bash
+neuro admin [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
+| _[neuro admin generate\-cluster-config](#neuro-admin-generate-cluster-config)_| Create a cluster configuration file |
+| _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster and start its provisioning |
+| _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
+| _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster |
+| _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
+| _[neuro admin set\-user-quota](#neuro-admin-set-user-quota)_| Set user quota to given values |
+| _[neuro admin add\-user-quota](#neuro-admin-add-user-quota)_| Add given values to user quota |
+
+
+
+
+### neuro admin get-clusters
+
+Print the list of available clusters.
+
+**Usage:**
+
+```bash
+neuro admin get-clusters [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin generate-cluster-config
+
+Create a cluster configuration file.
+
+**Usage:**
+
+```bash
+neuro admin generate-cluster-config [OPTIONS] [CONFIG]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--type \[aws &#124; gcp]_||
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin add-cluster
+
+Create a new cluster and start its provisioning.
+
+**Usage:**
+
+```bash
+neuro admin add-cluster [OPTIONS] CLUSTER_NAME CONFIG
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin get-cluster-users
+
+Print the list of all users in the cluster with their assigned role.
+
+**Usage:**
+
+```bash
+neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin add-cluster-user
+
+Add user access to specified cluster.<br/><br/>The command supports one of 3 user roles: admin, manager or user.
+
+**Usage:**
+
+```bash
+neuro admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin remove-cluster-user
+
+Remove user access from the cluster.
+
+**Usage:**
+
+```bash
+neuro admin remove-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin set-user-quota
+
+Set user quota to given values
+
+**Usage:**
+
+```bash
+neuro admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-g, --gpu AMOUNT_|GPU quota value in hours \(h) or minutes \(m).|
+|_\-n, --non-gpu AMOUNT_|Non-GPU quota value in hours \(h) or minutes \(m).|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin add-user-quota
+
+Add given values to user quota
+
+**Usage:**
+
+```bash
+neuro admin add-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-g, --gpu AMOUNT_|Additional GPU quota value in hours \(h) or minutes \(m).|
+|_\-n, --non-gpu AMOUNT_|Additional non-GPU quota value in hours \(h) or minutes \(m).|
+|_--help_|Show this message and exit.|
 
 
 
@@ -171,6 +386,7 @@ Name | Description|
 | _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
+| _[neuro job tags](#neuro-job-tags)_| List all tags submitted by the user |
 | _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
 | _[neuro job port-forward](#neuro-job-port-forward)_| Forward port\(s) of a running job to local port\(s) |
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
@@ -178,6 +394,7 @@ Name | Description|
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
 | _[neuro job save](#neuro-job-save)_| Save job's state to an image |
 | _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
+| _[neuro job attach](#neuro-job-attach)_| Print the logs for a container |
 
 
 
@@ -204,7 +421,7 @@ neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
 # registry, run /script.sh and pass arg1 and arg2 as its arguments:
-neuro run -s cpu-small image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
+neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
 
 ```
 
@@ -217,16 +434,20 @@ Name | Description|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-n, --name NAME_|Optional job name|
+|_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
+|_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
+|_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--help_|Show this message and exit.|
 
 
@@ -253,7 +474,7 @@ neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:l
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
 # registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
-neuro submit image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
+neuro submit image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
 
 ```
 
@@ -272,16 +493,20 @@ Name | Description|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
+|_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
+|_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
+|_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--help_|Show this message and exit.|
 
 
@@ -306,6 +531,7 @@ neuro ps -a --owner=user-1 --owner=user-2
 neuro ps --name my-experiments-v1 -s failed -s succeeded
 neuro ps --description=my favourite job
 neuro ps -s failed -s succeeded -q
+neuro ps -t tag1 -t tag2
 
 ```
 
@@ -315,11 +541,16 @@ Name | Description|
 |----|------------|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
-|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`)|
-|_\-n, --name NAME_|Filter out jobs by name|
-|_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
+|_\-n, --name NAME_|Filter out jobs by name.|
+|_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
+|_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
+|_--since DATE_|Show jobs created after a specific date \(including).|
+|_--until DATE_|Show jobs created before a specific date \(including).|
+|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-w, --wide_|Do not cut long lines for terminal width|
+|_\-w, --wide_|Do not cut long lines for terminal width.|
+|_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
+|_\--full-uri_|Output full image URI.|
 |_--help_|Show this message and exit.|
 
 
@@ -333,6 +564,26 @@ Display status of a job.
 
 ```bash
 neuro job status [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\--full-uri_|Output full URI.|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job tags
+
+List all tags submitted by the user.
+
+**Usage:**
+
+```bash
+neuro job tags [OPTIONS]
 ```
 
 **Options:**
@@ -370,8 +621,7 @@ neuro exec --no-tty my-job ls -l
 
 Name | Description|
 |----|------------|
-|_\-t, --tty / -T, --no-tty_|Allocate virtual tty. Useful for interactive jobs.|
-|_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
@@ -490,7 +740,7 @@ neuro job save [OPTIONS] JOB IMAGE
 ```bash
 
 neuro job save job-id image:ubuntu-patched
-neuro job save my-favourite-job image://~/ubuntu-patched:v1
+neuro job save my-favourite-job image:ubuntu-patched:v1
 neuro job save my-favourite-job image://bob/ubuntu-patched
 
 ```
@@ -512,6 +762,25 @@ Opens a job's URL in a web browser.
 
 ```bash
 neuro job browse [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro job attach
+
+Print the logs for a container.
+
+**Usage:**
+
+```bash
+neuro job attach [OPTIONS] JOB
 ```
 
 **Options:**
@@ -556,7 +825,7 @@ Initialize an empty project.<br/>
 **Usage:**
 
 ```bash
-neuro project init [OPTIONS]
+neuro project init [OPTIONS] [SLUG]
 ```
 
 **Examples:**
@@ -566,6 +835,10 @@ neuro project init [OPTIONS]
 # Initializes a scaffolding for the new project with the recommended project
 # structure (see http://github.com/neuromation/cookiecutter-neuro-project)
 neuro project init
+
+# Initializes a scaffolding for the new project with the recommended project
+# structure and sets default project folder name to "example"
+neuro project init my-project-id
 
 ```
 
@@ -605,7 +878,7 @@ Name | Description|
 | _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
-| _[neuro storage load](#neuro-storage-load)_| Copy files and directories using MinIO \(EXPERIMENTAL) |
+| _[neuro storage tree](#neuro-storage-tree)_| List contents of directories in a tree-like format |
 
 
 
@@ -655,11 +928,13 @@ neuro cp storage:results/*.out .
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
-|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
-|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
-|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing|
-|_\-p, --progress / -P, --no-progress_|Show progress, on by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY.|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
+|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing.|
+|_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_--help_|Show this message and exit.|
 
 
@@ -679,10 +954,11 @@ neuro storage ls [OPTIONS] [PATHS]...
 
 Name | Description|
 |----|------------|
-|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M)|
-|_-l_|use a long listing format|
-|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
-|_\-d, --directory_|list directories themselves, not their contents|
+|_\-a, --all_|do not ignore entries starting with .|
+|_\-d, --directory_|list directories themselves, not their contents.|
+|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
+|_-l_|use a long listing format.|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
 |_--help_|Show this message and exit.|
 
 
@@ -805,26 +1081,24 @@ Name | Description|
 
 
 
-### neuro storage load
+### neuro storage tree
 
-Copy files and directories using MinIO \(EXPERIMENTAL).<br/><br/>Same as "cp", but uses MinIO and the Amazon S3 protocol.<br/>\(DEPRECATED)
+List contents of directories in a tree-like format.<br/><br/>Tree is a recursive directory listing program that produces a depth indented<br/>listing of files, which is colorized ala dircolors if the LS_COLORS<br/>environment variable is set and output is to tty.  With no arguments, tree<br/>lists the files in the storage: directory.  When directory arguments are<br/>given, tree lists all the files and/or directories found in the given<br/>directories each in turn.  Upon completion of listing all files/directories<br/>found, tree returns the total number of files and/or directories listed.<br/><br/>By default PATH is equal user's home dir \(storage:)
 
 **Usage:**
 
 ```bash
-neuro storage load [OPTIONS] [SOURCES]... [DESTINATION]
+neuro storage tree [OPTIONS] [PATH]
 ```
 
 **Options:**
 
 Name | Description|
 |----|------------|
-|_\-r, --recursive_|Recursive copy, off by default|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
-|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
-|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
-|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing|
-|_\-p, --progress_|Show progress, off by default|
+|_\-a, --all_|do not ignore entries starting with .|
+|_\-h, --human-readable_|Print the size in a more human readable way.|
+|_\-s, --size_|Print the size in bytes of each file.|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
 |_--help_|Show this message and exit.|
 
 
@@ -873,6 +1147,8 @@ neuro image ls [OPTIONS]
 
 Name | Description|
 |----|------------|
+|_-l_|List in long format.|
+|_\--full-uri_|Output full image URI.|
 |_--help_|Show this message and exit.|
 
 
@@ -987,12 +1263,16 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro config login](#neuro-config-login)_| Log into Neuromation Platform |
-| _[neuro config login\-with-token](#neuro-config-login-with-token)_| Log into Neuromation Platform with token |
-| _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuromation Platform from non-GUI server environment |
+| _[neuro config login](#neuro-config-login)_| Log into Neuro Platform |
+| _[neuro config login\-with-token](#neuro-config-login-with-token)_| Log into Neuro Platform with token |
+| _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuro Platform from non-GUI server environment |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
-| _[neuro config docker](#neuro-config-docker)_| Configure docker client for working with platform registry |
+| _[neuro config show-quota](#neuro-config-show-quota)_| Print quota and remaining computation time for active cluster |
+| _[neuro config aliases](#neuro-config-aliases)_| List available command aliases |
+| _[neuro config get-clusters](#neuro-config-get-clusters)_| Fetch and display the list of available clusters |
+| _[neuro config switch-cluster](#neuro-config-switch-cluster)_| Switch the active cluster |
+| _[neuro config docker](#neuro-config-docker)_| Configure docker client to fit the Neuro Platform |
 | _[neuro config logout](#neuro-config-logout)_| Log out |
 
 
@@ -1000,7 +1280,7 @@ Name | Description|
 
 ### neuro config login
 
-Log into Neuromation Platform.<br/><br/>URL is a platform entrypoint URL.
+Log into Neuro Platform.<br/><br/>URL is a platform entrypoint URL.
 
 **Usage:**
 
@@ -1019,7 +1299,7 @@ Name | Description|
 
 ### neuro config login-with-token
 
-Log into Neuromation Platform with token.<br/><br/>TOKEN is authentication token provided by Neuromation administration team.<br/>URL is a platform entrypoint URL.
+Log into Neuro Platform with token.<br/><br/>TOKEN is authentication token provided by administration team. URL is a<br/>platform entrypoint URL.
 
 **Usage:**
 
@@ -1038,7 +1318,7 @@ Name | Description|
 
 ### neuro config login-headless
 
-Log into Neuromation Platform from non-GUI server environment.<br/><br/>URL is a platform entrypoint URL.<br/><br/>The command works similar to "neuro login" but instead of opening a browser<br/>for performing OAuth registration prints an URL that should be open on guest<br/>host.<br/><br/>Then user inputs a code displayed in a browser after successful login back<br/>in neuro command to finish the login process.
+Log into Neuro Platform from non-GUI server environment.<br/><br/>URL is a platform entrypoint URL.<br/><br/>The command works similar to "neuro login" but instead of opening a browser<br/>for performing OAuth registration prints an URL that should be open on guest<br/>host.<br/><br/>Then user inputs a code displayed in a browser after successful login back<br/>in neuro command to finish the login process.
 
 **Usage:**
 
@@ -1093,9 +1373,85 @@ Name | Description|
 
 
 
+### neuro config show-quota
+
+Print quota and remaining computation time for active cluster.
+
+**Usage:**
+
+```bash
+neuro config show-quota [OPTIONS] [USER]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config aliases
+
+List available command aliases.
+
+**Usage:**
+
+```bash
+neuro config aliases [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config get-clusters
+
+Fetch and display the list of available clusters.
+
+**Usage:**
+
+```bash
+neuro config get-clusters [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config switch-cluster
+
+Switch the active cluster.<br/><br/>CLUSTER_NAME is the cluster name to select.  The interactive prompt is used<br/>if the name is omitted \(default).
+
+**Usage:**
+
+```bash
+neuro config switch-cluster [OPTIONS] [CLUSTER_NAME]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ### neuro config docker
 
-Configure docker client for working with platform registry
+Configure docker client to fit the Neuro Platform.
 
 **Usage:**
 
@@ -1308,8 +1664,106 @@ neuro acl list --shared --scheme image
 
 Name | Description|
 |----|------------|
+|_-u TEXT_|Use specified user or role.|
 |_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user.|
 |_--shared_|Output the resources shared by the user.|
+|_\--full-uri_|Output full URI.|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro blob
+
+Blob storage operations.
+
+**Usage:**
+
+```bash
+neuro blob [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro blob cp](#neuro-blob-cp)_| Simple utility to copy files and directories into and from Blob Storage |
+| _[neuro blob ls](#neuro-blob-ls)_| List buckets or bucket contents |
+| _[neuro blob glob](#neuro-blob-glob)_| List resources that match PATTERNS |
+
+
+
+
+### neuro blob cp
+
+Simple utility to copy files and directories into and from Blob Storage.<br/>Either SOURCES or DESTINATION should have `blob://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy<br/>files between Blob Storage \(`blob://`) destination, nor with `storage://`<br/>scheme paths. Use `/dev/stdin` and `/dev/stdout` file names to upload a file<br/>from standard input or output to stdout. File permissions, modification<br/>times and other attributes will not be passed to Blob Storage metadata<br/>during upload.
+
+**Usage:**
+
+```bash
+neuro blob cp [OPTIONS] [SOURCES]... [DESTINATION]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-r, --recursive_|Recursive copy, off by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY.|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
+|_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro blob ls
+
+List buckets or bucket contents.
+
+**Usage:**
+
+```bash
+neuro blob ls [OPTIONS] [PATHS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
+|_-l_|use a long listing format.|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
+|_\-r, --recursive_|List all keys under the URL path provided, not just 1 level depths.|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro blob glob
+
+List resources that match PATTERNS.
+
+**Usage:**
+
+```bash
+neuro blob glob [OPTIONS] [PATTERNS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 
@@ -1356,7 +1810,7 @@ neuro run --preset=gpu-small --volume=HOME pytorch:latest
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
 # registry, run /script.sh and pass arg1 and arg2 as its arguments:
-neuro run -s cpu-small image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
+neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
 
 ```
 
@@ -1369,16 +1823,20 @@ Name | Description|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-n, --name NAME_|Optional job name|
+|_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
+|_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
+|_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--help_|Show this message and exit.|
 
 
@@ -1405,7 +1863,7 @@ neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:l
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
 # registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
-neuro submit image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
+neuro submit image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
 
 ```
 
@@ -1424,16 +1882,20 @@ Name | Description|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
+|_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-d, --description DESC_|Optional job description in free format|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage://~:/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
+|_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
+|_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--help_|Show this message and exit.|
 
 
@@ -1458,6 +1920,7 @@ neuro ps -a --owner=user-1 --owner=user-2
 neuro ps --name my-experiments-v1 -s failed -s succeeded
 neuro ps --description=my favourite job
 neuro ps -s failed -s succeeded -q
+neuro ps -t tag1 -t tag2
 
 ```
 
@@ -1467,11 +1930,16 @@ Name | Description|
 |----|------------|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
-|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`)|
-|_\-n, --name NAME_|Filter out jobs by name|
-|_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match)|
+|_\-n, --name NAME_|Filter out jobs by name.|
+|_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
+|_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
+|_--since DATE_|Show jobs created after a specific date \(including).|
+|_--until DATE_|Show jobs created before a specific date \(including).|
+|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\-w, --wide_|Do not cut long lines for terminal width|
+|_\-w, --wide_|Do not cut long lines for terminal width.|
+|_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
+|_\--full-uri_|Output full image URI.|
 |_--help_|Show this message and exit.|
 
 
@@ -1491,6 +1959,7 @@ neuro status [OPTIONS] JOB
 
 Name | Description|
 |----|------------|
+|_\--full-uri_|Output full URI.|
 |_--help_|Show this message and exit.|
 
 
@@ -1522,8 +1991,7 @@ neuro exec --no-tty my-job ls -l
 
 Name | Description|
 |----|------------|
-|_\-t, --tty / -T, --no-tty_|Allocate virtual tty. Useful for interactive jobs.|
-|_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
@@ -1564,6 +2032,25 @@ neuro job port-forward my-job- 2080:80 2222:22 2000:100
 Name | Description|
 |----|------------|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro attach
+
+Print the logs for a container.
+
+**Usage:**
+
+```bash
+neuro attach [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 
@@ -1642,7 +2129,7 @@ neuro save [OPTIONS] JOB IMAGE
 ```bash
 
 neuro job save job-id image:ubuntu-patched
-neuro job save my-favourite-job image://~/ubuntu-patched:v1
+neuro job save my-favourite-job image:ubuntu-patched:v1
 neuro job save my-favourite-job image://bob/ubuntu-patched
 
 ```
@@ -1658,7 +2145,7 @@ Name | Description|
 
 ## neuro login
 
-Log into Neuromation Platform.<br/><br/>URL is a platform entrypoint URL.
+Log into Neuro Platform.<br/><br/>URL is a platform entrypoint URL.
 
 **Usage:**
 
@@ -1739,11 +2226,13 @@ neuro cp storage:results/*.out .
 Name | Description|
 |----|------------|
 |_\-r, --recursive_|Recursive copy, off by default|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
-|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
-|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
-|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing|
-|_\-p, --progress / -P, --no-progress_|Show progress, on by default|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
+|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY.|
+|_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
+|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing.|
+|_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_--help_|Show this message and exit.|
 
 
@@ -1763,10 +2252,11 @@ neuro ls [OPTIONS] [PATHS]...
 
 Name | Description|
 |----|------------|
-|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M)|
-|_-l_|use a long listing format|
-|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
-|_\-d, --directory_|list directories themselves, not their contents|
+|_\-a, --all_|do not ignore entries starting with .|
+|_\-d, --directory_|list directories themselves, not their contents.|
+|_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
+|_-l_|use a long listing format.|
+|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
 |_--help_|Show this message and exit.|
 
 
@@ -1884,6 +2374,8 @@ neuro images [OPTIONS]
 
 Name | Description|
 |----|------------|
+|_-l_|List in long format.|
+|_\--full-uri_|Output full image URI.|
 |_--help_|Show this message and exit.|
 
 
@@ -1987,6 +2479,12 @@ Name | Description|
 ```shell
 git clone https://github.com/neuromation/platform-api-clients.git
 cd platform-api-clients/python
+```
+
+For OSX users install coreutils to properly interpret shell commands:
+
+```
+brew install coreutils
 ```
 
 Before you begin, it is recommended to have clean virtual environment installed:

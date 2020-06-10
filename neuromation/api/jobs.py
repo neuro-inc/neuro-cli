@@ -5,14 +5,24 @@ import shlex
 import signal
 from contextlib import suppress
 from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any, AsyncIterator, Dict, Iterable, List, Mapping, Optional, Sequence
+from datetime import datetime, timezone
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Union,
+)
 
-import async_timeout
+import aiohttp
 import attr
 import psutil
 from aiodocker.exceptions import DockerError
-from aiohttp import WSServerHandshakeError
+from aiohttp import WSMsgType, WSServerHandshakeError
 from dateutil.parser import isoparse
 from multidict import MultiDict
 from yarl import URL
@@ -25,21 +35,15 @@ from neuromation.api.abc import (
     ImageProgressSave,
 )
 
-from .config import _Config
+from .config import Config
 from .core import IllegalArgumentError, _Core
 from .images import (
     _DummyProgress,
     _raise_on_error_chunk,
     _try_parse_image_progress_step,
 )
-from .parser import Volume
-from .parsing_utils import (
-    LocalImage,
-    RemoteImage,
-    _as_repo_str,
-    _ImageNameParser,
-    _is_in_neuro_registry,
-)
+from .parser import Parser, Volume
+from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
 from .utils import NoPublicConstructor, asynccontextmanager
 
 
@@ -91,6 +95,7 @@ class Container:
     http: Optional[HTTPPort] = None
     env: Mapping[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
+    tty: bool = False
 
 
 @dataclass(frozen=True)
@@ -104,6 +109,18 @@ class JobStatusHistory:
     exit_code: Optional[int] = None
 
 
+class JobRestartPolicy(str, enum.Enum):
+    NEVER = "never"
+    ON_FAILURE = "on-failure"
+    ALWAYS = "always"
+
+    def __str__(self) -> str:
+        return self.value
+
+    def __repr__(self) -> str:
+        return repr(self.value)
+
+
 @dataclass(frozen=True)
 class JobDescription:
     id: str
@@ -113,11 +130,15 @@ class JobDescription:
     history: JobStatusHistory
     container: Container
     is_preemptible: bool
+    uri: URL
     name: Optional[str] = None
+    tags: Sequence[str] = ()
     description: Optional[str] = None
     http_url: URL = URL()
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
+    restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER
+    life_span: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -129,46 +150,102 @@ class JobTelemetry:
     gpu_memory: Optional[float] = None
 
 
+@dataclass(frozen=True)
+class ExecInspect:
+    id: str
+    running: bool
+    exit_code: int
+    job_id: str
+    tty: bool
+    entrypoint: str
+    command: str
+
+
+@dataclass(frozen=True)
+class Message:
+    fileno: int
+    data: bytes
+
+
+class StdStream:
+    def __init__(self, ws: aiohttp.ClientWebSocketResponse) -> None:
+        self._ws = ws
+        self._closing = False
+
+    async def close(self) -> None:
+        self._closing = True
+        await self._ws.close()
+
+    async def read_out(self) -> Optional[Message]:
+        if self._closing:
+            return None
+        msg = await self._ws.receive()
+        if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSING, WSMsgType.CLOSED):
+            self._closing = True
+            return None
+        return Message(msg.data[0], msg.data[1:])
+
+    async def write_in(self, data: bytes) -> None:
+        if self._closing:
+            return
+        await self._ws.send_bytes(data)
+
+
 class Jobs(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: _Config) -> None:
+    def __init__(self, core: _Core, config: Config, parse: Parser) -> None:
         self._core = core
         self._config = config
+        self._parse = parse
 
     async def run(
         self,
         container: Container,
         *,
         name: Optional[str] = None,
+        tags: Sequence[str] = (),
         description: Optional[str] = None,
         is_preemptible: bool = False,
         schedule_timeout: Optional[float] = None,
+        restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
+        life_span: Optional[float] = None,
     ) -> JobDescription:
-        url = URL("jobs")
+        url = self._config.api_url / "jobs"
         payload: Dict[str, Any] = {
             "container": _container_to_api(container),
             "is_preemptible": is_preemptible,
         }
         if name:
             payload["name"] = name
+        if tags:
+            payload["tags"] = tags
         if description:
             payload["description"] = description
         if schedule_timeout:
             payload["schedule_timeout"] = schedule_timeout
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-        async with self._core.request("POST", url, json=payload) as resp:
+        if restart_policy != JobRestartPolicy.NEVER:
+            payload["restart_policy"] = str(restart_policy)
+        if life_span is not None:
+            payload["max_run_time_minutes"] = int(life_span // 60)
+        payload["cluster_name"] = self._config.cluster_name
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, json=payload, auth=auth) as resp:
             res = await resp.json()
-            return _job_description_from_api(res, parser)
+            return _job_description_from_api(res, self._parse)
 
     async def list(
         self,
         *,
         statuses: Iterable[JobStatus] = (),
         name: str = "",
+        tags: Iterable[str] = (),
         owners: Iterable[str] = (),
-    ) -> List[JobDescription]:
-        url = URL(f"jobs")
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+        reverse: bool = False,
+        limit: Optional[int] = None,
+    ) -> AsyncIterator[JobDescription]:
+        url = self._config.api_url / "jobs"
+        headers = {"Accept": "application/x-ndjson"}
         params: MultiDict[str] = MultiDict()
         for status in statuses:
             params.add("status", status.value)
@@ -176,42 +253,76 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("name", name)
         for owner in owners:
             params.add("owner", owner)
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-        async with self._core.request("GET", url, params=params) as resp:
-            ret = await resp.json()
-            return [_job_description_from_api(j, parser) for j in ret["jobs"]]
+        for tag in tags:
+            params.add("tag", tag)
+        if since:
+            if since.tzinfo is None:
+                # Interpret naive datetime object as local time.
+                since = since.astimezone(timezone.utc)
+            params.add("since", since.isoformat())
+        if until:
+            if until.tzinfo is None:
+                until = until.astimezone(timezone.utc)
+            params.add("until", until.isoformat())
+        params["cluster_name"] = self._config.cluster_name
+        if reverse:
+            params.add("reverse", "1")
+        if limit is not None:
+            params.add("limit", str(limit))
+        auth = await self._config._api_auth()
+        async with self._core.request(
+            "GET", url, headers=headers, params=params, auth=auth
+        ) as resp:
+            if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
+                async for line in resp.content:
+                    j = json.loads(line)
+                    yield _job_description_from_api(j, self._parse)
+            else:
+                ret = await resp.json()
+                for j in ret["jobs"]:
+                    yield _job_description_from_api(j, self._parse)
 
     async def kill(self, id: str) -> None:
-        url = URL(f"jobs/{id}")
-        async with self._core.request("DELETE", url):
+        url = self._config.api_url / "jobs" / id
+        auth = await self._config._api_auth()
+        async with self._core.request("DELETE", url, auth=auth):
             # an error is raised for status >= 400
             return None  # 201 status code
 
     async def monitor(self, id: str) -> AsyncIterator[bytes]:
-        url = self._config.cluster_config.monitoring_url / f"{id}/log"
+        url = self._config.monitoring_url / id / "log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)
+        auth = await self._config._api_auth()
         async with self._core.request(
-            "GET", url, headers={"Accept-Encoding": "identity"}, timeout=timeout
+            "GET",
+            url,
+            headers={"Accept-Encoding": "identity"},
+            timeout=timeout,
+            auth=auth,
         ) as resp:
             async for data in resp.content.iter_any():
                 yield data
 
     async def status(self, id: str) -> JobDescription:
-        url = URL(f"jobs/{id}")
-        parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-        async with self._core.request("GET", url) as resp:
+        url = self._config.api_url / "jobs" / id
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
             ret = await resp.json()
-            return _job_description_from_api(ret, parser)
+            return _job_description_from_api(ret, self._parse)
+
+    async def tags(self) -> List[str]:
+        url = self._config.api_url / "tags"
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            ret = await resp.json()
+            return ret["tags"]
 
     async def top(self, id: str) -> AsyncIterator[JobTelemetry]:
-        url = self._config.cluster_config.monitoring_url / f"{id}/top"
+        url = self._config.monitoring_url / id / "top"
+        auth = await self._config._api_auth()
         try:
             received_any = False
-            async for resp in self._core.ws_connect(url):
+            async for resp in self._core.ws_connect(url, auth=auth):
                 yield _job_telemetry_from_api(resp.json())
                 received_any = True
             if not received_any:
@@ -233,24 +344,21 @@ class Jobs(metaclass=NoPublicConstructor):
         if progress is None:
             progress = _DummyProgress()
 
-        image_parser = _ImageNameParser(
-            self._config.auth_token.username, self._config.cluster_config.registry_url
-        )
-
         payload = {"container": {"image": _as_repo_str(image)}}
-        url = self._config.cluster_config.monitoring_url / f"{id}/save"
+        url = self._config.monitoring_url / id / "save"
 
+        auth = await self._config._api_auth()
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         # `self._code.request` implicitly sets `total=3 * 60`
         # unless `sock_read is None`
         async with self._core.request(
-            "POST", url, json=payload, timeout=timeout
+            "POST", url, json=payload, timeout=timeout, auth=auth
         ) as resp:
             # first, we expect exactly two docker-commit messages
             progress.save(ImageProgressSave(id, image))
 
             chunk_1 = await resp.content.readline()
-            data_1 = _parse_commit_started_chunk(id, _load_chunk(chunk_1), image_parser)
+            data_1 = _parse_commit_started_chunk(id, _load_chunk(chunk_1), self._parse)
             progress.commit_started(data_1)
 
             chunk_2 = await resp.content.readline()
@@ -265,52 +373,6 @@ class Jobs(metaclass=NoPublicConstructor):
                 push_step = _try_parse_image_progress_step(obj, image.tag)
                 if push_step:
                     progress.step(push_step)
-
-    async def exec(
-        self,
-        id: str,
-        cmd: Iterable[str],
-        *,
-        tty: bool = False,
-        no_key_check: bool = False,
-        timeout: Optional[float] = None,
-    ) -> int:
-        try:
-            job_status = await self.status(id)
-        except IllegalArgumentError as e:
-            raise ValueError(f"Job not found. Job Id = {id}") from e
-        if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {id}")
-        payload = json.dumps(
-            {
-                "method": "job_exec",
-                "token": self._config.auth_token.token,
-                "params": {"job": id, "command": list(cmd)},
-            }
-        )
-        command = ["ssh"]
-        if tty:
-            command += ["-tt"]
-        else:
-            command += ["-T"]
-        if no_key_check:  # pragma: no branch
-            command += [
-                "-o",
-                "StrictHostKeyChecking=no",
-                "-o",
-                "UserKnownHostsFile=/dev/null",
-            ]
-        server_url = job_status.ssh_server
-        port = server_url.port if server_url.port else 22
-        command += ["-p", str(port), f"{server_url.user}@{server_url.host}", payload]
-        proc = await asyncio.create_subprocess_exec(*command)
-        try:
-            async with async_timeout.timeout(timeout):
-                return await proc.wait()
-        finally:
-            await _kill_proc_tree(proc.pid, timeout=10)
-            # add a sleep to get process watcher a chance to execute all callbacks
-            await asyncio.sleep(0.1)
 
     @asynccontextmanager
     async def port_forward(
@@ -333,12 +395,12 @@ class Jobs(metaclass=NoPublicConstructor):
         except IllegalArgumentError as e:
             raise ValueError(f"Job not found. Job Id = {id}") from e
         if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {id}")
+            raise ValueError(f"Job is not running. Job Id = {job_status.id}")
         payload = json.dumps(
             {
                 "method": "job_port_forward",
-                "token": self._config.auth_token.token,
-                "params": {"job": id, "port": job_port},
+                "token": await self._config.token(),
+                "params": {"job": job_status.id, "port": job_port},
             }
         )
         proxy_command = ["ssh"]
@@ -386,6 +448,105 @@ class Jobs(metaclass=NoPublicConstructor):
             # add a sleep to get process watcher a chance to execute all callbacks
             await asyncio.sleep(0.1)
 
+    @asynccontextmanager
+    async def attach(
+        self,
+        id: str,
+        *,
+        stdin: bool = False,
+        stdout: bool = False,
+        stderr: bool = False,
+        logs: bool = False,
+    ) -> AsyncIterator[StdStream]:
+        url = self._config.monitoring_url / id / "attach"
+        url = url.with_query(
+            stdin=str(int(stdin)),
+            stdout=str(int(stdout)),
+            stderr=str(int(stderr)),
+            logs=str(int(logs)),
+        )
+        auth = await self._config._api_auth()
+        ws = await self._core._session.ws_connect(
+            url,
+            headers={"Authorization": auth},
+            timeout=None,  # type: ignore
+            receive_timeout=None,
+            heartbeat=30,
+        )
+
+        try:
+            yield StdStream(ws)
+        finally:
+            await ws.close()
+
+    async def resize(self, id: str, *, w: int, h: int) -> None:
+        url = self._config.monitoring_url / id / "resize"
+        url = url.with_query(w=w, h=h)
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, auth=auth):
+            pass
+
+    async def exec_create(self, id: str, cmd: str, *, tty: bool = False) -> str:
+        payload = {
+            "command": cmd,
+            "stdin": True,
+            "stdout": True,
+            "stderr": True,
+            "tty": tty,
+        }
+        url = self._config.monitoring_url / id / "exec_create"
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, json=payload, auth=auth) as resp:
+            ret = await resp.json()
+            return ret["exec_id"]
+
+    async def exec_resize(self, id: str, exec_id: str, *, w: int, h: int) -> None:
+        url = self._config.monitoring_url / id / exec_id / "exec_resize"
+        url = url.with_query(w=w, h=h)
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, auth=auth) as resp:
+            resp
+
+    async def exec_inspect(self, id: str, exec_id: str) -> ExecInspect:
+        url = self._config.monitoring_url / id / exec_id / "exec_inspect"
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            data = await resp.json()
+            return ExecInspect(
+                id=data["id"],
+                running=data["running"],
+                exit_code=data["exit_code"],
+                job_id=data["job_id"],
+                tty=data["tty"],
+                entrypoint=data["entrypoint"],
+                command=data["command"],
+            )
+
+    @asynccontextmanager
+    async def exec_start(self, id: str, exec_id: str) -> AsyncIterator[StdStream]:
+        url = self._config.monitoring_url / id / exec_id / "exec_start"
+        auth = await self._config._api_auth()
+
+        ws = await self._core._session.ws_connect(
+            url,
+            headers={"Authorization": auth},
+            timeout=None,  # type: ignore
+            receive_timeout=None,
+            heartbeat=30,
+        )
+
+        try:
+            yield StdStream(ws)
+        finally:
+            await ws.close()
+
+    async def send_signal(self, id: str, signal: Union[str, int]) -> None:
+        url = self._config.monitoring_url / id / "kill"
+        url = url.with_query(signal=signal)
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, auth=auth) as resp:
+            resp
+
 
 #  ############## Internal helpers ###################
 
@@ -395,7 +556,7 @@ def _load_chunk(chunk: bytes) -> Dict[str, Any]:
 
 
 def _parse_commit_started_chunk(
-    job_id: str, obj: Dict[str, Any], image_parser: _ImageNameParser
+    job_id: str, obj: Dict[str, Any], parse: Parser
 ) -> ImageCommitStarted:
     _raise_for_invalid_commit_chunk(obj, expect_started=True)
     details_json = obj.get("details", {})
@@ -403,7 +564,7 @@ def _parse_commit_started_chunk(
     if not image:
         error_details = {"message": "Missing required details: 'image'"}
         raise DockerError(400, error_details)
-    return ImageCommitStarted(job_id, image_parser.parse_remote(image))
+    return ImageCommitStarted(job_id, parse.remote_image(image))
 
 
 def _parse_commit_finished_chunk(
@@ -472,11 +633,11 @@ def _http_port_from_api(data: Dict[str, Any]) -> HTTPPort:
     )
 
 
-def _container_from_api(data: Dict[str, Any], parser: _ImageNameParser) -> Container:
+def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
     try:
-        image = parser.parse_remote(data["image"])
+        image = parse.remote_image(data["image"])
     except ValueError:
-        image = RemoteImage(name=INVALID_IMAGE_NAME)
+        image = RemoteImage.new_external_image(name=INVALID_IMAGE_NAME)
 
     return Container(
         image=image,
@@ -486,6 +647,7 @@ def _container_from_api(data: Dict[str, Any], parser: _ImageNameParser) -> Conta
         http=_http_port_from_api(data["http"]) if "http" in data else None,
         env=data.get("env", dict()),
         volumes=[_volume_from_api(v) for v in data.get("volumes", [])],
+        tty=data.get("tty", False),
     )
 
 
@@ -504,16 +666,17 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
         primitive["env"] = container.env
     if container.volumes:
         primitive["volumes"] = [_volume_to_api(v) for v in container.volumes]
+    if container.tty:
+        primitive["tty"] = True
     return primitive
 
 
-def _job_description_from_api(
-    res: Dict[str, Any], parser: _ImageNameParser
-) -> JobDescription:
-    container = _container_from_api(res["container"], parser)
+def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescription:
+    container = _container_from_api(res["container"], parse)
     owner = res["owner"]
     cluster_name = res["cluster_name"]
     name = res.get("name")
+    tags = res.get("tags", ())
     description = res.get("description")
     history = JobStatusHistory(
         status=JobStatus(res["history"].get("status", "unknown")),
@@ -528,6 +691,11 @@ def _job_description_from_api(
     http_url_named = URL(res.get("http_url_named", ""))
     ssh_server = URL(res.get("ssh_server", ""))
     internal_hostname = res.get("internal_hostname", None)
+    restart_policy = JobRestartPolicy(res.get("restart_policy", JobRestartPolicy.NEVER))
+    max_run_time_minutes = res.get("max_run_time_minutes")
+    life_span = (
+        max_run_time_minutes * 60.0 if max_run_time_minutes is not None else None
+    )
     return JobDescription(
         status=JobStatus(res["status"]),
         id=res["id"],
@@ -537,10 +705,14 @@ def _job_description_from_api(
         container=container,
         is_preemptible=res["is_preemptible"],
         name=name,
+        tags=tags,
         description=description,
         http_url=http_url_named or http_url,
         ssh_server=ssh_server,
         internal_hostname=internal_hostname,
+        uri=URL(res["uri"]),
+        restart_policy=restart_policy,
+        life_span=life_span,
     )
 
 

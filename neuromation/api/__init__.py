@@ -18,12 +18,13 @@ from .abc import (
     StorageProgressStart,
     StorageProgressStep,
 )
+from .blob_storage import Blob, BlobListing, BlobStorage, BucketListing, PrefixListing
 from .client import Client, Preset
+from .config import Config, ConfigError
 from .config_factory import (
     CONFIG_ENV_NAME,
     DEFAULT_API_URL,
     DEFAULT_CONFIG_PATH,
-    ConfigError,
     Factory,
 )
 from .core import (
@@ -36,19 +37,26 @@ from .core import (
     ResourceNotFound,
     ServerNotAvailable,
 )
+from .images import Images
 from .jobs import (
     Container,
     HTTPPort,
     JobDescription,
+    JobRestartPolicy,
+    Jobs,
     JobStatus,
     JobStatusHistory,
     JobTelemetry,
     Resources,
+    StdStream,
     Volume,
 )
-from .parsing_utils import LocalImage, RemoteImage
-from .storage import FileStatus, FileStatusType
-from .users import Action, Permission, Share
+from .parser import Parser
+from .parsing_utils import LocalImage, RemoteImage, TagOption
+from .server_cfg import Cluster
+from .storage import FileStatus, FileStatusType, Storage
+from .tracing import gen_trace_id
+from .users import Action, Permission, Share, Users
 from .utils import _ContextManager
 
 
@@ -56,18 +64,28 @@ __all__ = (
     "DEFAULT_API_URL",
     "DEFAULT_CONFIG_PATH",
     "CONFIG_ENV_NAME",
+    "Jobs",
     "JobDescription",
+    "JobRestartPolicy",
     "JobStatus",
     "JobStatusHistory",
     "JobTelemetry",
     "Resources",
+    "StdStream",
     "Volume",
     "HTTPPort",
+    "Users",
     "Action",
     "Permission",
     "Share",
     "Client",
     "Preset",
+    "BlobStorage",
+    "BucketListing",
+    "BlobListing",
+    "Blob",
+    "PrefixListing",
+    "Storage",
     "FileStatusType",
     "FileStatus",
     "Container",
@@ -90,6 +108,7 @@ __all__ = (
     "ImageProgressPull",
     "ImageProgressPush",
     "ImageProgressStep",
+    "TagOption",
     "RemoteImage",
     "LocalImage",
     "Factory",
@@ -97,7 +116,12 @@ __all__ = (
     "login",
     "login_with_token",
     "logout",
+    "Config",
     "ConfigError",
+    "gen_trace_id",
+    "Cluster",
+    "Images",
+    "Parser",
 )
 
 

@@ -4,15 +4,24 @@ import itertools
 import sys
 import time
 from dataclasses import dataclass
-from math import floor
-from typing import Iterable, Iterator, List, Mapping
+from typing import Iterable, Iterator, List
 
 import humanize
-from click import style, unstyle
+from click import secho, style, unstyle
 
-from neuromation.api import JobDescription, JobStatus, JobTelemetry, Resources
+from neuromation.api import (
+    JobDescription,
+    JobRestartPolicy,
+    JobStatus,
+    JobTelemetry,
+    Resources,
+)
+from neuromation.cli.parse_utils import JobColumnInfo
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
+
+from .ftable import table
+from .utils import ImageFormatter, URIFormatter, image_formatter
 
 
 COLORS = {
@@ -24,8 +33,34 @@ COLORS = {
 }
 
 
+if sys.platform == "win32":
+    SPINNER = itertools.cycle(r"-\|/")
+else:
+    SPINNER = itertools.cycle("◢◣◤◥")
+
+
 def format_job_status(status: JobStatus) -> str:
     return style(status.value, fg=COLORS.get(status, "reset"))
+
+
+def format_timedelta(delta: datetime.timedelta) -> str:
+    s = int(delta.total_seconds())
+    if s < 0:
+        raise ValueError(f"Invalid delta {delta}: expect non-negative total value")
+    _sec_in_minute = 60
+    _sec_in_hour = _sec_in_minute * 60
+    _sec_in_day = _sec_in_hour * 24
+    d, s = divmod(s, _sec_in_day)
+    h, s = divmod(s, _sec_in_hour)
+    m, s = divmod(s, _sec_in_minute)
+    return "".join(
+        [
+            f"{d}d" if d else "",
+            f"{h}h" if h else "",
+            f"{m}m" if m else "",
+            f"{s}s" if s else "",
+        ]
+    )
 
 
 class JobFormatter:
@@ -54,24 +89,34 @@ class JobFormatter:
         out.append(style("Shortcuts", bold=True) + ":")
 
         out.append(
-            f"  neuro status {job_alias}  " + style("# check job status", dim=True)
+            f"  neuro status {job_alias}     " + style("# check job status", dim=True)
         )
         out.append(
-            f"  neuro logs {job_alias}    " + style("# monitor job stdout", dim=True)
+            f"  neuro logs {job_alias}       " + style("# monitor job stdout", dim=True)
         )
         out.append(
-            f"  neuro top {job_alias}     "
+            f"  neuro top {job_alias}        "
             + style("# display real-time job telemetry", dim=True)
         )
-        out.append(f"  neuro kill {job_alias}    " + style("# kill job", dim=True))
+        out.append(
+            f"  neuro exec {job_alias} bash  "
+            + style("# execute bash shell to the job", dim=True)
+        )
+        out.append(f"  neuro kill {job_alias}       " + style("# kill job", dim=True))
         return "\n".join(out)
 
 
 class JobStatusFormatter:
+    def __init__(self, uri_formatter: URIFormatter) -> None:
+        self._format_uri = uri_formatter
+        self._format_image = image_formatter(uri_formatter=uri_formatter)
+
     def __call__(self, job_status: JobDescription) -> str:
         result: str = f"Job: {job_status.id}\n"
         if job_status.name:
             result += f"Name: {job_status.name}\n"
+        if job_status.tags:
+            result += f"Tags: {', '.join(job_status.tags)}\n"
         result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
         result += f"Cluster: {job_status.cluster_name}\n"
         if job_status.description:
@@ -83,12 +128,39 @@ class JobStatusFormatter:
             and job_status.status in [JobStatus.FAILED, JobStatus.PENDING]
         ):
             result += f" ({job_status.history.reason})"
-        result += f"\nImage: {job_status.container.image}\n"
+        result += f"\nImage: {self._format_image(job_status.container.image)}\n"
 
+        if job_status.container.entrypoint:
+            result += f"Entrypoint: {job_status.container.entrypoint}\n"
         result += f"Command: {job_status.container.command}\n"
         resource_formatter = ResourcesFormatter()
         result += resource_formatter(job_status.container.resources) + "\n"
         result += f"Preemptible: {job_status.is_preemptible}\n"
+        if job_status.restart_policy != JobRestartPolicy.NEVER:
+            result += f"Restart policy: {job_status.restart_policy}\n"
+        if job_status.life_span is not None:
+            limit = (
+                "no limit"
+                if job_status.life_span == 0
+                else format_timedelta(datetime.timedelta(seconds=job_status.life_span))
+            )
+            result += f"Life span: {limit}\n"
+
+        if job_status.container.tty:
+            result += "TTY: True\n"
+
+        if job_status.container.volumes:
+            rows = [
+                (
+                    volume.container_path,
+                    f"{self._format_uri(volume.storage_uri)}",
+                    "READONLY" if volume.read_only else " ",
+                )
+                for volume in job_status.container.volumes
+            ]
+            result += "Volumes:" + "\n  "
+            result += "\n  ".join(table(rows)) + "\n"
+
         if job_status.internal_hostname:
             result += f"Internal Hostname: {job_status.internal_hostname}\n"
         if job_status.http_url:
@@ -186,6 +258,7 @@ class SimpleJobsFormatter(BaseJobsFormatter):
 class TabularJobRow:
     id: str
     name: str
+    tags: str
     status: str
     when: str
     image: str
@@ -195,7 +268,9 @@ class TabularJobRow:
     command: str
 
     @classmethod
-    def from_job(cls, job: JobDescription, username: str) -> "TabularJobRow":
+    def from_job(
+        cls, job: JobDescription, username: str, image_formatter: ImageFormatter
+    ) -> "TabularJobRow":
         if job.status == JobStatus.PENDING:
             when = job.history.created_at
         elif job.status == JobStatus.RUNNING:
@@ -208,86 +283,52 @@ class TabularJobRow:
         if delta < datetime.timedelta(days=1):
             when_humanized = humanize.naturaltime(delta)
         else:
-            when_humanized = humanize.naturaldate(when)
+            when_humanized = humanize.naturaldate(when.astimezone())
         return cls(
             id=job.id,
             name=job.name if job.name else "",
+            tags=",".join(job.tags),
             status=job.status,
             when=when_humanized,
-            image=str(job.container.image),
+            image=image_formatter(job.container.image),
             owner=("<you>" if job.owner == username else job.owner),
             description=job.description if job.description else "",
             cluster_name=job.cluster_name,
             command=job.container.command if job.container.command else "",
         )
 
+    def to_list(self, columns: List[JobColumnInfo]) -> List[str]:
+        return [getattr(self, column.id) for column in columns]
+
 
 class TabularJobsFormatter(BaseJobsFormatter):
-    def __init__(self, width: int, username: str):
+    def __init__(
+        self,
+        width: int,
+        username: str,
+        columns: List[JobColumnInfo],
+        image_formatter: ImageFormatter,
+    ) -> None:
         self.width = width
         self._username = username
-        self.column_length: Mapping[str, List[int]] = {
-            "id": [2, 40],
-            "name": [4, 40],
-            "status": [6, 10],
-            "when": [4, 15],
-            "image": [5, 40],
-            "owner": [5, 25],
-            "cluster_name": [7, 15],
-            "description": [11, 50],
-            "command": [7, 0],
-        }
-
-    def _positions(self, rows: Iterable[TabularJobRow]) -> Mapping[str, int]:
-        positions = {}
-        position = 0
-        for name in self.column_length:
-            if rows:
-                sorted_length = sorted(
-                    [len(getattr(row, name)) for row in rows], reverse=True
-                )
-                n90 = floor(len(sorted_length) / 10)
-                length = sorted_length[n90]
-                if self.column_length[name][0]:
-                    length = max(length, self.column_length[name][0])
-                if self.column_length[name][1]:
-                    length = min(length, self.column_length[name][1])
-            else:
-                length = self.column_length[name][0]
-            positions[name] = position
-            position += 2 + length
-        return positions
+        self._columns = columns
+        self._image_formatter = image_formatter
 
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
-        rows: List[TabularJobRow] = []
+        rows: List[List[str]] = []
+        rows.append([column.title for column in self._columns])
         for job in jobs:
-            rows.append(TabularJobRow.from_job(job, self._username))
-        header = TabularJobRow(
-            id="ID",
-            name="NAME",
-            status="STATUS",
-            when="WHEN",
-            image="IMAGE",
-            owner="OWNER",
-            cluster_name="CLUSTER",
-            description="DESCRIPTION",
-            command="COMMAND",
-        )
-        positions = self._positions(rows)
-        for row in [header] + rows:
-            line = ""
-            for name in positions.keys():
-                value = getattr(row, name)
-                if line:
-                    position = positions[name]
-                    if len(line) > position - 2:
-                        line += "  " + value
-                    else:
-                        line = line.ljust(position) + value
-                else:
-                    line = value
-            if self.width:
-                line = line[: self.width]
+            rows.append(
+                TabularJobRow.from_job(
+                    job, self._username, image_formatter=self._image_formatter
+                ).to_list(self._columns)
+            )
+        for line in table(
+            rows,
+            widths=[column.width for column in self._columns],
+            aligns=[column.align for column in self._columns],
+            max_width=self.width if self.width else None,
+        ):
             yield line
 
 
@@ -314,6 +355,8 @@ class ResourcesFormatter:
 
 
 class JobStartProgress:
+    time_factory = staticmethod(time.monotonic)
+
     @classmethod
     def create(cls, tty: bool, color: bool, quiet: bool) -> "JobStartProgress":
         if quiet:
@@ -344,18 +387,15 @@ class JobStartProgress:
 
 class DetailedJobStartProgress(JobStartProgress):
     def __init__(self, color: bool):
-        self._time = time.time()
+        self._time = self.time_factory()
         self._color = color
         self._prev = ""
-        if sys.platform == "win32":
-            self._spinner = itertools.cycle("-\\|/")
-        else:
-            self._spinner = itertools.cycle("◢◣◤◥")
+        self._spinner = SPINNER
         self._printer = TTYPrinter()
         self._lineno = 0
 
     def __call__(self, job: JobDescription) -> None:
-        new_time = time.time()
+        new_time = self.time_factory()
         dt = new_time - self._time
         msg = "Status: " + format_job_status(job.status)
         reason = self._get_status_reason_message(job)
@@ -393,8 +433,172 @@ class StreamJobStartProgress(JobStartProgress):
         if description:
             msg += " " + description
 
+        if job.status != JobStatus.PENDING:
+            msg += "\n"
+
         if msg != self._prev:
             self._printer.print(msg)
             self._prev = msg
         else:
             self._printer.tick()
+
+
+class JobStopProgress:
+    TIMEOUT = 15
+    time_factory = staticmethod(time.monotonic)
+
+    @classmethod
+    def create(cls, tty: bool, color: bool, quiet: bool) -> "JobStopProgress":
+        if quiet:
+            return JobStopProgress()
+        elif tty:
+            return DetailedJobStopProgress(color)
+        return StreamJobStopProgress()
+
+    def __init__(self) -> None:
+        self._time = self.time_factory()
+
+    def __call__(self, job: JobDescription) -> bool:
+        # return False if timeout, True otherwise
+        new_time = self.time_factory()
+        if new_time - self._time > self.TIMEOUT:
+            self.timeout(job)
+            return False
+        else:
+            self.tick(job)
+            return True
+
+    def tick(self, job: JobDescription) -> None:
+        pass
+
+    def timeout(self, job: JobDescription) -> None:
+        pass
+
+
+class DetailedJobStopProgress(JobStopProgress):
+    def __init__(self, color: bool):
+        super().__init__()
+        self._color = color
+        self._spinner = SPINNER
+        self._printer = TTYPrinter()
+        self._lineno = 0
+
+    def tick(self, job: JobDescription) -> None:
+        new_time = self.time_factory()
+        dt = new_time - self._time
+
+        if job.status == JobStatus.RUNNING:
+            msg = f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
+        else:
+            msg = "Stopped"
+        self._printer.print(
+            msg, lineno=self._lineno,
+        )
+
+    def timeout(self, job: JobDescription) -> None:
+        secho()
+        secho("!!! Warning !!!", fg="red")
+        secho(
+            "The attached session was disconnected but the job is still alive.",
+            fg="red",
+        )
+        secho("Reconnect to the job:", dim=True, fg="yellow")
+        secho(f"  neuro attach {job.id}", dim=True)
+        secho("Terminate the job:", dim=True, fg="yellow")
+        secho(f"  neuro kill {job.id}", dim=True)
+
+
+class StreamJobStopProgress(JobStopProgress):
+    def __init__(self) -> None:
+        super().__init__()
+        self._printer = StreamPrinter()
+        self._printer.print("Wait for stopping")
+
+    def tick(self, job: JobDescription) -> None:
+        self._printer.tick()
+
+    def timeout(self, job: JobDescription) -> None:
+        print()
+        print("!!! Warning !!!")
+        print("The attached session was disconnected but the job is still alive.")
+
+
+class ExecStopProgress:
+    TIMEOUT = 15
+    time_factory = staticmethod(time.monotonic)
+
+    @classmethod
+    def create(cls, tty: bool, color: bool, quiet: bool) -> "ExecStopProgress":
+        if quiet:
+            return ExecStopProgress()
+        elif tty:
+            return DetailedExecStopProgress(color)
+        return StreamExecStopProgress()
+
+    def __init__(self) -> None:
+        self._time = self.time_factory()
+
+    def __call__(self, running: bool) -> bool:
+        # return False if timeout, True otherwise
+        new_time = self.time_factory()
+        if new_time - self._time > self.TIMEOUT:
+            self.timeout()
+            return False
+        else:
+            self.tick(running)
+            return True
+
+    def tick(self, running: bool) -> None:
+        pass
+
+    def timeout(self) -> None:
+        pass
+
+
+class DetailedExecStopProgress(ExecStopProgress):
+    def __init__(self, color: bool):
+        super().__init__()
+        self._color = color
+        self._spinner = SPINNER
+        self._printer = TTYPrinter()
+        self._lineno = 0
+
+    def tick(self, running: bool) -> None:
+        new_time = self.time_factory()
+        dt = new_time - self._time
+
+        if running:
+            msg = f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
+        else:
+            msg = "Stopped"
+
+        self._printer.print(
+            msg, lineno=self._lineno,
+        )
+
+    def timeout(self) -> None:
+        secho()
+        secho("!!! Warning !!!", fg="red")
+        secho(
+            "The attached session was disconnected "
+            "but the exec process is still alive.",
+            fg="red",
+        )
+
+
+class StreamExecStopProgress(ExecStopProgress):
+    def __init__(self) -> None:
+        super().__init__()
+        self._printer = StreamPrinter()
+        self._printer.print("Wait for stopping")
+
+    def tick(self, running: bool) -> None:
+        self._printer.tick()
+
+    def timeout(self) -> None:
+        print()
+        print("!!! Warning !!!")
+        print(
+            "The attached session was disconnected "
+            "but the exec process is still alive."
+        )

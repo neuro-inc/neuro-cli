@@ -6,6 +6,263 @@
 [comment]: # (towncrier release notes start)
 
 
+Neuromation 20.6.2 (2020-06-02)
+===============================
+
+Features
+--------
+
+- API: `Storage.ls()` is an asynchronous generator now. ([#1457](https://github.com/neuromation/platform-api-clients/issues/1457))
+
+- Added the `--restart` option to `neuro run` and `neuro submit` and API. ([#1459](https://github.com/neuromation/platform-api-clients/issues/1459))
+
+- API: `Jobs.list()` is an asynchronous generator now. ([#1473](https://github.com/neuromation/platform-api-clients/issues/1473))
+
+- `neuro ps` now outputs local date instead of UTC and interprets `--since` and `--until` options as local time if the timezone is not specified. ([#1477](https://github.com/neuromation/platform-api-clients/issues/1477))
+
+- autocomplete job name/id ([#1485](https://github.com/neuromation/platform-api-clients/issues/1485))
+
+- Unencodable characters are now replaced with `?` or `U+FFFE` when output to the stdout. ([#1502](https://github.com/neuromation/platform-api-clients/issues/1502))
+
+
+Bugfixes
+--------
+
+
+- Fixed downloading a file when it is restarted for some reasons.  The newly downloaded data no longer appended to a previously downloaded data, but overwrites it. ([#1521](https://github.com/neuromation/platform-api-clients/issues/1521))
+
+- Fixed parsing image URIs with the single slash after scheme, like `image:/otheruser/imagename`. ([#1505](https://github.com/neuromation/platform-api-clients/issues/1505))
+
+
+Neuromation 20.4.15 (2020-04-15)
+================================
+
+Features
+--------
+
+
+- Added `--since` and `--until` options to `neuro ps`. ([#1461](https://github.com/neuromation/platform-api-clients/issues/1461))
+
+
+Bugfixes
+--------
+
+
+- Make exit code of `job run` command more reliable. ([#1470](https://github.com/neuromation/platform-api-clients/issues/1470))
+
+
+Neuromation 20.4.6 (2020-04-06)
+===============================
+
+Features
+--------
+
+
+- Commands `neuro ps`, `neuro job status`, `nauro image list` and `neuro acl list` output now URIs in the short form if possible. Use the new `--full-uri` option to get full qualified URIs. ([#1330](https://github.com/neuromation/platform-api-clients/issues/1330))
+
+- Changed interpretatation of cluster related URIs (with schemes `storage:`, `image:` and `job:`) with missed host and path started with `/`. `storage:/user/path` is expanded now to `storage://{defaultcluster}/user/path`, so you do not need to specify the cluster name when refer to other user's resources on the same cluster. ([#1424](https://github.com/neuromation/platform-api-clients/issues/1424))
+
+- Implement `neuro storage tree` command for displaying the directory tree on storage. ([#1435](https://github.com/neuromation/platform-api-clients/issues/1435))
+
+- Filter patterns are now more compatible with `.gitignore`. Added support of `**` which matches zero or more path components. `?` and `*` no longer match `/`. Patterns which does not contain `/` at the beginning or middle matches now files in subdirectories. ([#1444](https://github.com/neuromation/platform-api-clients/issues/1444))
+
+
+Neuromation 20.3.23 (2020-03-23)
+================================
+
+Bugfixes
+--------
+
+
+- Bump `typing_extensions` dependency version to satisfy CLI requirements. ([#1421](https://github.com/neuromation/platform-api-clients/issues/1421))
+
+
+Neuromation 20.3.20 (2020-03-20)
+================================
+
+Bugfixes
+--------
+
+
+- Fix `--pass-config` error: File exists: '/root/.neuro'. ([#1415](https://github.com/neuromation/platform-api-clients/issues/1415))
+
+
+Neuromation 20.3.18 (2020-03-18)
+================================
+
+Features
+--------
+
+
+- Support job run-time limit: `neuro run --life-span "1d2h3m"`. ([#1325](https://github.com/neuromation/platform-api-clients/issues/1325))
+
+- For cluster-specific resources (with schemes `storage`, `image` and `job`) client now use URIs containing the cluster name, e.g. `storage://{clustername}/{username}/{path}` instead of `storage://{username}/{path}`. Relative URI `storage:{path}` will be expanded to absolute URI containing the current cluster name and the user name: `storage://{clustername}/{username}/{path}`. Same for `image` and `job` schemes. ([#1341](https://github.com/neuromation/platform-api-clients/issues/1341))
+
+- Added 'neuro image ls -l' option, which also prints Docker URL-s ([#1354](https://github.com/neuromation/platform-api-clients/issues/1354))
+
+- Added the `-u` option in `neuro acl list` to specify a role or user to which resources are available and for which they are shared. ([#1355](https://github.com/neuromation/platform-api-clients/issues/1355))
+
+- Sort `neuro admin get-cluster-users` by name. ([#1359](https://github.com/neuromation/platform-api-clients/issues/1359))
+
+- Steal config files on `neuro job --pass-config`. ([#1361](https://github.com/neuromation/platform-api-clients/issues/1361))
+
+- Support hidden files on the storage. Hide names started with a dot by default, provide ``neuro ls --all`` option to show all files. ([#1362](https://github.com/neuromation/platform-api-clients/issues/1362))
+
+- Add HTTP tracing of neuro login commands. ([#1387](https://github.com/neuromation/platform-api-clients/issues/1387))
+
+- Support job tags: `neuro run --tag=experiment-1`, `neuro ps --tag=experiment-1`. ([#1393](https://github.com/neuromation/platform-api-clients/issues/1393))
+
+- Support job tags listing: `neuro job tags`. ([#1396](https://github.com/neuromation/platform-api-clients/issues/1396))
+
+- Optionally display job's tags in `neuro ps` (the feature needs to be explicitly enabled in `.neuro.toml` config file). ([#1406](https://github.com/neuromation/platform-api-clients/issues/1406))
+
+
+Bugfixes
+--------
+
+
+- Fix the alias finding routine when user is not logged in. ([#1360](https://github.com/neuromation/platform-api-clients/issues/1360))
+
+- `neuro kill` exits now non-zero code if it failed to kill any job in the list. ([#1272](https://github.com/neuromation/platform-api-clients/issues/1272))
+
+- Support un-quoted commands for neuro-exec: `neuro exec bash -c "ls && pwd"` is now a valid syntax. ([#1321](https://github.com/neuromation/platform-api-clients/issues/1321))
+
+
+Neuromation 20.2.24 (2020-02-24)
+=================================
+
+Features
+--------
+
+
+- Support custom columns format for ``neuro ps`` command. ([#1288](https://github.com/neuromation/platform-api-clients/issues/1288))
+
+- Support custom aliases. ([#1320](https://github.com/neuromation/platform-api-clients/issues/1320))
+
+- Removed support of `~` in URIs (like `storage://~/path/to`). Relative URIs can be used instead (like `storage:path/to`). Support of tilde in local file paths (like `~/path/to`) has been preserved. ([#1329](https://github.com/neuromation/platform-api-clients/issues/1329))
+
+
+Neuromation 20.01.22 (2020-01-22)
+=================================
+
+Features
+--------
+
+
+- `--env-file` now allows blank lines and comments (lines starting with "#") in the file. ([#1208](https://github.com/neuromation/platform-api-clients/issues/1208))
+
+- Send the usage statistics to Google Analytics ([#1286](https://github.com/neuromation/platform-api-clients/issues/1286))
+
+- Use Sqlite for saving the ``~/.neuro/db`` configuration file. ([#1298](https://github.com/neuromation/platform-api-clients/issues/1298))
+
+
+Bugfixes
+--------
+
+
+- Fix columns width and aligning for ``neurp ps --format=<>`` command. ([#1302](https://github.com/neuromation/platform-api-clients/issues/1302))
+
+- Fix ps-format documentation issues. ([#1303](https://github.com/neuromation/platform-api-clients/issues/1303))
+
+- Parameters specified in ps-format now always override default values. `width` takes priority over `min` and `max`, `max` takes priority over `min`. ([#1310](https://github.com/neuromation/platform-api-clients/issues/1310))
+
+
+Neuromation 20.01.15 (2020-01-15)
+=================================
+
+Features
+--------
+
+
+- Add `neuro admin add-user-quota` and `neuro admin set-user-quota` commands to control user quotas ([#1142](https://github.com/neuromation/platform-api-clients/issues/1142))
+
+- Added options `--exclude` and `--include` in `neuro storage cp`. ([#1182](https://github.com/neuromation/platform-api-clients/issues/1182))
+
+- Adjust NAME column of `neuro ps` so that grep by name works. ([#1189](https://github.com/neuromation/platform-api-clients/issues/1189))
+
+- Read ``neuro ps --format`` spec from config files if present. ([#1294](https://github.com/neuromation/platform-api-clients/issues/1294))
+
+- Read ``neuro cp`` filters from user configuration file. ([#1295](https://github.com/neuromation/platform-api-clients/issues/1295))
+
+
+Neuromation 19.12.19 (2019-12-19)
+=================================
+
+Features
+--------
+
+
+- Now `neuro images` do not require the installed Docker. ([#1071](https://github.com/neuromation/platform-api-clients/issues/1071))
+
+- Implement `neuro config get-clusters` command. ([#1177](https://github.com/neuromation/platform-api-clients/issues/1177))
+
+- Convert configuration file into configuration directory, now it is `~/.neuro` folder. ([#1183](https://github.com/neuromation/platform-api-clients/issues/1183))
+
+- Implement `neuro config switch-cluster` for switching between available clusters. ([#1217](https://github.com/neuromation/platform-api-clients/issues/1217))
+
+- Implement `neuro admin get-clusters` command. ([#1223](https://github.com/neuromation/platform-api-clients/issues/1223))
+
+- Implement `neuro admin add-cluster` command. ([#1224](https://github.com/neuromation/platform-api-clients/issues/1224))
+
+- Add ``neuro admin generate-cluster-config`` command. ([#1227](https://github.com/neuromation/platform-api-clients/issues/1227))
+
+- `neuro project init` now supports argument to set default value for generated project directory ([#1230](https://github.com/neuromation/platform-api-clients/issues/1230))
+
+
+Bugfixes
+--------
+
+
+- Correctly process both quoted command arguments (`neuro run python:latest "python3 -c 'import os'") as well as unquoted version (`neuro run python:latest python3 -c 'import os'`). ([#1229](https://github.com/neuromation/platform-api-clients/issues/1229))
+
+
+Neuromation 19.11.20 (2019-11-20)
+=================================
+
+Features
+--------
+
+
+- Trace sent HTTP requests and received replies to stderr if `--trace` flag is passed. ([#467](https://github.com/neuromation/platform-api-clients/issues/467))
+
+- Display `Cluster` field for job status and listing commands. ([#874](https://github.com/neuromation/platform-api-clients/issues/874))
+
+- Display `Entrypoint` field for job status command. ([#924](https://github.com/neuromation/platform-api-clients/issues/924))
+
+- Display volumes information for `neuro status` command. ([#1003](https://github.com/neuromation/platform-api-clients/issues/1003))
+
+- Option `--volume=HOME` deprecated. ([#1009](https://github.com/neuromation/platform-api-clients/issues/1009))
+
+- Provide client.presets property, update docs. ([#1078](https://github.com/neuromation/platform-api-clients/issues/1078))
+
+- Retry storage operations in case of some errors. ([#1107](https://github.com/neuromation/platform-api-clients/issues/1107))
+
+- `neuro kill` will continue work if multiple jobs specified but you haven't required permissions for some of them. ([#1122](https://github.com/neuromation/platform-api-clients/issues/1122))
+
+- Introduce `neuro config show-quota`. ([#1141](https://github.com/neuromation/platform-api-clients/issues/1141))
+
+- Use pager for long lists. ([#1152](https://github.com/neuromation/platform-api-clients/issues/1152))
+
+- Add global option '--hide-token/--no-hide-token' to be used together with '--trace' for preventing the user's token from being printed to stderr for safety reasons. ([#1158](https://github.com/neuromation/platform-api-clients/issues/1158))
+
+- Suppress security checks for config files if NEUROMATION_TRUSTED_CONFIG_PATH environment variable is on. ([#1173](https://github.com/neuromation/platform-api-clients/issues/1173))
+
+
+Bugfixes
+--------
+
+
+- When running a job with `--detach` option `neuro` now returns an error status if job fails to start at all (e.g., when cluster scale up fails). If job starts successfully (regardless of its run result) `neuro run` with `--detach` returns 0 like before. ([#1059](https://github.com/neuromation/platform-api-clients/issues/1059))
+
+- Provide default arguments for api.Resources constructor to keep broken backward compatibility. ([#1070](https://github.com/neuromation/platform-api-clients/issues/1070))
+
+- Fix help message for `neuro project init`: in fact, the command does not accept an argument. ([#1080](https://github.com/neuromation/platform-api-clients/issues/1080))
+
+- Process 502 Bad Gateway as a separate exception, don't miss it with 400 Bad Request. ([#1111](https://github.com/neuromation/platform-api-clients/issues/1111))
+
+- Wait for `ThreadPoolExecutor` finish befor exit from the program. ([#1144](https://github.com/neuromation/platform-api-clients/issues/1144))
+
+
 Neuromation 19.9.23 (2019-09-23)
 ================================
 

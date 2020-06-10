@@ -1,1 +1,0 @@
-Provide client.presets property, update docs.

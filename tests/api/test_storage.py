@@ -60,7 +60,8 @@ async def storage_server(
     PREFIX = "/storage/user"
     PREFIX_LEN = len(PREFIX)
 
-    async def handler(request: web.Request) -> web.Response:
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
         op = request.query["op"]
         path = request.path
         assert path.startswith(PREFIX)
@@ -113,14 +114,14 @@ async def storage_server(
                         "permission": "write",
                     }
                 )
-            return web.json_response({"FileStatuses": {"FileStatus": ret}})
+            return await make_listiter_response(request, ret)
         else:
             raise web.HTTPInternalServerError(text=f"Unsupported operation {op}")
 
     return await aiohttp_raw_server(handler)
 
 
-async def test_storage_ls(
+async def test_storage_ls_legacy(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
@@ -145,6 +146,7 @@ async def test_storage_ls(
     }
 
     async def handler(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "LISTSTATUS"}
         return web.json_response(JSON)
@@ -155,7 +157,72 @@ async def test_storage_ls(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.storage.ls(URL("storage://~/folder"))
+        ret = [file async for file in client.storage.ls(URL("storage:folder"))]
+
+    assert ret == [
+        FileStatus(
+            path="foo",
+            size=1024,
+            type=FileStatusType.FILE,
+            modification_time=0,
+            permission=Action.READ,
+        ),
+        FileStatus(
+            path="bar",
+            size=4 * 1024,
+            type=FileStatusType.DIRECTORY,
+            modification_time=0,
+            permission=Action.READ,
+        ),
+    ]
+
+
+async def make_listiter_response(
+    request: web.Request, file_statuses: List[Any]
+) -> web.StreamResponse:
+    assert request.query == {"op": "LISTSTATUS"}
+    assert request.headers["Accept"] == "application/x-ndjson"
+    resp = web.StreamResponse()
+    resp.headers["Content-Type"] = "application/x-ndjson"
+    await resp.prepare(request)
+    for item in file_statuses:
+        await resp.write(json.dumps({"FileStatus": item}).encode() + b"\n")
+    return resp
+
+
+async def test_storage_ls(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    file_statuses = [
+        {
+            "path": "foo",
+            "length": 1024,
+            "type": "FILE",
+            "modificationTime": 0,
+            "permission": "read",
+        },
+        {
+            "path": "bar",
+            "length": 4 * 1024,
+            "type": "DIRECTORY",
+            "modificationTime": 0,
+            "permission": "read",
+        },
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.path == "/storage/user/folder"
+        assert request.query == {"op": "LISTSTATUS"}
+        return await make_listiter_response(request, file_statuses)
+
+    app = web.Application()
+    app.router.add_get("/storage/user/folder", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        ret = [file async for file in client.storage.ls(URL("storage:folder"))]
 
     assert ret == [
         FileStatus(
@@ -178,26 +245,25 @@ async def test_storage_ls(
 async def test_storage_glob(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    async def handler_home(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/"
+    async def handler_home(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.path == "/storage/user"
         assert request.query == {"op": "LISTSTATUS"}
-        return web.json_response(
-            {
-                "FileStatuses": {
-                    "FileStatus": [
-                        {
-                            "path": "folder",
-                            "length": 0,
-                            "type": "DIRECTORY",
-                            "modificationTime": 0,
-                            "permission": "read",
-                        }
-                    ]
+        return await make_listiter_response(
+            request,
+            [
+                {
+                    "path": "folder",
+                    "length": 0,
+                    "type": "DIRECTORY",
+                    "modificationTime": 0,
+                    "permission": "read",
                 }
-            }
+            ],
         )
 
-    async def handler_folder(request: web.Request) -> web.Response:
+    async def handler_folder(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
         assert request.path.rstrip("/") == "/storage/user/folder"
         assert request.query["op"] in ("GETFILESTATUS", "LISTSTATUS")
         if request.query["op"] == "GETFILESTATUS":
@@ -213,34 +279,31 @@ async def test_storage_glob(
                 }
             )
         elif request.query["op"] == "LISTSTATUS":
-            return web.json_response(
-                {
-                    "FileStatuses": {
-                        "FileStatus": [
-                            {
-                                "path": "foo",
-                                "length": 1024,
-                                "type": "FILE",
-                                "modificationTime": 0,
-                                "permission": "read",
-                            },
-                            {
-                                "path": "bar",
-                                "length": 0,
-                                "type": "DIRECTORY",
-                                "modificationTime": 0,
-                                "permission": "read",
-                            },
-                        ]
-                    }
-                }
+            return await make_listiter_response(
+                request,
+                [
+                    {
+                        "path": "foo",
+                        "length": 1024,
+                        "type": "FILE",
+                        "modificationTime": 0,
+                        "permission": "read",
+                    },
+                    {
+                        "path": "bar",
+                        "length": 0,
+                        "type": "DIRECTORY",
+                        "modificationTime": 0,
+                        "permission": "read",
+                    },
+                ],
             )
         else:
             raise web.HTTPInternalServerError
 
     async def handler_foo(request: web.Request) -> web.Response:
+        assert "b3" in request.headers
         assert request.path == "/storage/user/folder/foo"
-        assert request.query["op"] in ("GETFILESTATUS", "LISTSTATUS")
         assert request.query == {"op": "GETFILESTATUS"}
         return web.json_response(
             {
@@ -254,7 +317,7 @@ async def test_storage_glob(
             }
         )
 
-    async def handler_bar(request: web.Request) -> web.Response:
+    async def handler_bar(request: web.Request) -> web.StreamResponse:
         assert request.path.rstrip("/") == "/storage/user/folder/bar"
         if request.query["op"] == "GETFILESTATUS":
             return web.json_response(
@@ -269,20 +332,17 @@ async def test_storage_glob(
                 }
             )
         elif request.query["op"] == "LISTSTATUS":
-            return web.json_response(
-                {
-                    "FileStatuses": {
-                        "FileStatus": [
-                            {
-                                "path": "baz",
-                                "length": 0,
-                                "type": "FILE",
-                                "modificationTime": 0,
-                                "permission": "read",
-                            }
-                        ]
+            return await make_listiter_response(
+                request,
+                [
+                    {
+                        "path": "baz",
+                        "length": 0,
+                        "type": "FILE",
+                        "modificationTime": 0,
+                        "permission": "read",
                     }
-                }
+                ],
             )
         else:
             raise web.HTTPInternalServerError
@@ -366,7 +426,7 @@ async def test_storage_rm_file(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.rm(URL("storage://~/file"))
+        await client.storage.rm(URL("storage:file"))
 
 
 async def test_storage_rm_directory(
@@ -400,7 +460,7 @@ async def test_storage_rm_directory(
 
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(IsADirectoryError, match="Is a directory") as cm:
-            await client.storage.rm(URL("storage://~/folder"))
+            await client.storage.rm(URL("storage:folder"))
         assert cm.value.errno == errno.EISDIR
 
 
@@ -418,7 +478,7 @@ async def test_storage_rm_recursive(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.rm(URL("storage://~/folder"), recursive=True)
+        await client.storage.rm(URL("storage:folder"), recursive=True)
 
 
 async def test_storage_mv(
@@ -435,7 +495,7 @@ async def test_storage_mv(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mv(URL("storage://~/folder"), URL("storage://~/other"))
+        await client.storage.mv(URL("storage:folder"), URL("storage:other"))
 
 
 async def test_storage_mkdir_parents_exist_ok(
@@ -453,7 +513,7 @@ async def test_storage_mkdir_parents_exist_ok(
 
     async with make_client(srv.make_url("/")) as client:
         await client.storage.mkdir(
-            URL("storage://~/folder/sub"), parents=True, exist_ok=True
+            URL("storage:folder/sub"), parents=True, exist_ok=True
         )
 
 
@@ -477,7 +537,7 @@ async def test_storage_mkdir_parents(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdir(URL("storage://~/folder/sub"), parents=True)
+        await client.storage.mkdir(URL("storage:folder/sub"), parents=True)
 
 
 async def test_storage_mkdir_exist_ok(
@@ -510,7 +570,7 @@ async def test_storage_mkdir_exist_ok(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdir(URL("storage://~/folder/sub"), exist_ok=True)
+        await client.storage.mkdir(URL("storage:folder/sub"), exist_ok=True)
 
 
 async def test_storage_mkdir(
@@ -549,7 +609,7 @@ async def test_storage_mkdir(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.mkdir(URL("storage://~/folder/sub"))
+        await client.storage.mkdir(URL("storage:folder/sub"))
 
 
 async def test_storage_create(
@@ -572,7 +632,7 @@ async def test_storage_create(
             yield str(i).encode("ascii")
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.create(URL("storage://~/file"), gen())
+        await client.storage.create(URL("storage:file"), gen())
 
 
 async def test_storage_stats(
@@ -599,7 +659,7 @@ async def test_storage_stats(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        stats = await client.storage.stat(URL("storage://~/folder"))
+        stats = await client.storage.stat(URL("storage:folder"))
         assert stats == FileStatus(
             path="/user/folder",
             type=FileStatusType.DIRECTORY,
@@ -642,7 +702,7 @@ async def test_storage_open(
 
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
-        async for chunk in client.storage.open(URL("storage://~/file")):
+        async for chunk in client.storage.open(URL("storage:file")):
             buf.extend(chunk)
         assert buf == b"01234"
 
@@ -673,7 +733,7 @@ async def test_storage_open_directory(
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
         with pytest.raises((IsADirectoryError, IllegalArgumentError)):
-            async for chunk in client.storage.open(URL("storage://~/folder")):
+            async for chunk in client.storage.open(URL("storage:folder")):
                 buf.extend(chunk)
         assert not buf
 
@@ -716,7 +776,7 @@ async def test_storage_upload_not_a_file(
     assert uploaded == b""
 
     src = URL(file_path.as_uri())
-    dst = URL("storage://user/file.txt")
+    dst = URL("storage://default/user/file.txt")
     progress.start.assert_called_with(StorageProgressStart(src, dst, 0))
     progress.step.assert_not_called()
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, 0))
@@ -740,7 +800,7 @@ async def test_storage_upload_regular_file_to_existing_file_target(
     assert uploaded == expected
 
     src = URL(file_path.as_uri())
-    dst = URL("storage://user/file.txt")
+    dst = URL("storage://default/user/file.txt")
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
     progress.step.assert_called_with(
         StorageProgressStep(src, dst, file_size, file_size)
@@ -822,7 +882,7 @@ async def test_storage_upload_regular_file_to_not_existing(
 
 
 async def test_storage_upload_recursive_src_doesnt_exist(
-    make_client: _MakeClient
+    make_client: _MakeClient,
 ) -> None:
     async with make_client("https://example.com") as client:
         with pytest.raises(FileNotFoundError):
@@ -917,7 +977,7 @@ async def test_storage_download_regular_file_to_absent_file(
     downloaded = local_file.read_bytes()
     assert downloaded == expected
 
-    src = URL("storage://user/file.txt")
+    src = URL("storage://default/user/file.txt")
     dst = URL(local_file.as_uri())
     file_size = src_file.stat().st_size
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))

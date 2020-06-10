@@ -1,27 +1,19 @@
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Callable, Dict
 from unittest import mock
 
 import aiohttp
 import pytest
-import yaml
 from aiohttp import web
 from aiohttp.test_utils import TestServer as _TestServer
-from jose import jwt
 from yarl import URL
 
 import neuromation
 import neuromation.api.config_factory
-from neuromation.api import ConfigError, Factory
-from neuromation.api.config import (
-    _AuthConfig,
-    _AuthToken,
-    _Config,
-    _CookieSession,
-    _PyPIVersion,
-)
-from neuromation.api.login import AuthException, _ClusterConfig
+from neuromation.api import Cluster, ConfigError, Factory
+from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData
+from neuromation.api.login import AuthException
 from tests import _TestServerFactory
 
 
@@ -34,16 +26,43 @@ def tmp_home(tmp_path: Path, monkeypatch: Any) -> Path:
 
 
 @pytest.fixture
-def config_file(
-    tmp_home: Path, token: str, auth_config: _AuthConfig, cluster_config: _ClusterConfig
+def config_dir(
+    tmp_home: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster
 ) -> Path:
-    config_path = tmp_home / ".nmrc"
+    config_path = tmp_home / ".neuro"
     _create_config(config_path, token, auth_config, cluster_config)
     return config_path
 
 
+def _create_config(
+    nmrc_path: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster
+) -> str:
+    config = _ConfigData(
+        auth_config=auth_config,
+        auth_token=_AuthToken.create_non_expiring(token),
+        url=URL("https://dev.neu.ro/api/v1"),
+        version=neuromation.__version__,
+        cluster_name=cluster_config.name,
+        clusters={cluster_config.name: cluster_config},
+    )
+    Factory(nmrc_path)._save(config)
+    assert nmrc_path.exists()
+    return token
+
+
 @pytest.fixture
-async def mock_for_login(aiohttp_server: _TestServerFactory, token: str) -> _TestServer:
+async def mock_for_login(
+    aiohttp_server: _TestServerFactory,
+    token: str,
+    aiohttp_unused_port: Callable[[], int],
+) -> _TestServer:
+
+    callback_urls = [
+        f"http://127.0.0.1:{aiohttp_unused_port()}",
+        f"http://127.0.0.1:{aiohttp_unused_port()}",
+        f"http://127.0.0.1:{aiohttp_unused_port()}",
+    ]
+
     async def config_handler(request: web.Request) -> web.Response:
         config_json: Dict[str, Any] = {
             "auth_url": str(srv.make_url("/authorize")),
@@ -51,11 +70,7 @@ async def mock_for_login(aiohttp_server: _TestServerFactory, token: str) -> _Tes
             "client_id": "banana",
             "audience": "https://test.dev.neuromation.io",
             "headless_callback_url": str(srv.make_url("/oauth/show-code")),
-            "callback_urls": [
-                "http://127.0.0.2:54540",
-                "http://127.0.0.2:54541",
-                "http://127.0.0.2:54542",
-            ],
+            "callback_urls": callback_urls,
             "success_redirect_url": "https://neu.ro/#test",
         }
 
@@ -65,28 +80,33 @@ async def mock_for_login(aiohttp_server: _TestServerFactory, token: str) -> _Tes
         ):
             config_json.update(
                 {
-                    "registry_url": "https://registry-dev.test.com",
-                    "storage_url": "https://storage-dev.test.com",
-                    "users_url": "https://users-dev.test.com",
-                    "monitoring_url": "https://monitoring-dev.test.com",
-                    "resource_presets": [
+                    "clusters": [
                         {
-                            "name": "gpu-small",
-                            "cpu": 7,
-                            "memory_mb": 30 * 1024,
-                            "gpu": 1,
-                            "gpu_model": "nvidia-tesla-k80",
-                        },
-                        {
-                            "name": "gpu-large",
-                            "cpu": 7,
-                            "memory_mb": 60 * 1024,
-                            "gpu": 1,
-                            "gpu_model": "nvidia-tesla-v100",
-                        },
-                        {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
-                        {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
-                    ],
+                            "name": "default",
+                            "registry_url": "https://registry-dev.test.com",
+                            "storage_url": "https://storage-dev.test.com",
+                            "users_url": "https://users-dev.test.com",
+                            "monitoring_url": "https://monitoring-dev.test.com",
+                            "resource_presets": [
+                                {
+                                    "name": "gpu-small",
+                                    "cpu": 7,
+                                    "memory_mb": 30 * 1024,
+                                    "gpu": 1,
+                                    "gpu_model": "nvidia-tesla-k80",
+                                },
+                                {
+                                    "name": "gpu-large",
+                                    "cpu": 7,
+                                    "memory_mb": 60 * 1024,
+                                    "gpu": 1,
+                                    "gpu_model": "nvidia-tesla-v100",
+                                },
+                                {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
+                                {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                            ],
+                        }
+                    ]
                 }
             )
         return web.json_response(config_json)
@@ -112,33 +132,20 @@ async def mock_for_login(aiohttp_server: _TestServerFactory, token: str) -> _Tes
     return srv
 
 
-def _create_config(
-    nmrc_path: Path,
-    token: str,
-    auth_config: _AuthConfig,
-    cluster_config: _ClusterConfig,
-) -> str:
-    config = _Config(
-        auth_config=auth_config,
-        auth_token=_AuthToken.create_non_expiring(token),
-        cluster_config=cluster_config,
-        pypi=_PyPIVersion.create_uninitialized(),
-        url=URL("https://dev.neu.ro/api/v1"),
-        cookie_session=_CookieSession.create_uninitialized(),
-        version=neuromation.__version__,
-    )
-    Factory(nmrc_path)._save(config)
-    assert nmrc_path.exists()
-    return token
-
-
 class TestConfigFileInteraction:
     async def test_config_file_absent(self, tmp_home: Path) -> None:
         with pytest.raises(ConfigError, match=r"file.+not exists"):
             await Factory().get()
 
+    async def test_config_dir_is_file(self, tmp_home: Path) -> None:
+        Path(tmp_home / ".neuro").write_text("something")
+        with pytest.raises(ConfigError, match=r"not a directory"):
+            await Factory().get()
+
     async def test_config_file_is_dir(self, tmp_home: Path) -> None:
-        Path(tmp_home / ".nmrc").mkdir()
+        path = Path(tmp_home / ".neuro")
+        path.mkdir()
+        (path / "db").mkdir()
         with pytest.raises(ConfigError, match=r"not a regular file"):
             await Factory().get()
 
@@ -147,21 +154,21 @@ class TestConfigFileInteraction:
         tmp_home: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: Cluster,
     ) -> None:
-        token = _create_config(tmp_home / ".nmrc", token, auth_config, cluster_config)
+        token = _create_config(tmp_home / ".neuro", token, auth_config, cluster_config)
         client = await Factory().get()
         await client.close()
-        assert client._config.auth_token.token == token
+        assert await client.config.token() == token
 
     async def test_preset_serialization(
         self,
         tmp_home: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: Cluster,
     ) -> None:
-        _create_config(tmp_home / ".nmrc", token, auth_config, cluster_config)
+        _create_config(tmp_home / ".neuro", token, auth_config, cluster_config)
         client = await Factory().get()
         await client.close()
         assert len(client.presets) > 0
@@ -173,130 +180,36 @@ class TestConfigFileInteraction:
         tmp_home: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: Cluster,
     ) -> None:
         token = _create_config(
             tmp_home / "test.nmrc", token, auth_config, cluster_config
         )
         client = await Factory(Path("~/test.nmrc")).get()
         await client.close()
-        assert client._config.auth_token.token == token
+        assert await client.config.token() == token
 
     async def test_full_path(
         self,
         tmp_home: Path,
         token: str,
         auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
+        cluster_config: Cluster,
     ) -> None:
         config_path = tmp_home / "test.nmrc"
         token = _create_config(config_path, token, auth_config, cluster_config)
         client = await Factory(config_path).get()
         await client.close()
-        assert client._config.auth_token.token == token
-
-    async def test_token_autorefreshing(
-        self, config_file: Path, monkeypatch: Any
-    ) -> None:
-        new_token = jwt.encode({"identity": "new_user"}, "secret", algorithm="HS256")
-
-        async def _refresh_token_mock(
-            connector: aiohttp.ClientSession, config: _AuthConfig, token: _AuthToken
-        ) -> _AuthToken:
-            return _AuthToken.create_non_expiring(new_token)
-
-        monkeypatch.setattr(
-            neuromation.api.config_factory, "refresh_token", _refresh_token_mock
-        )
-        file_stat_before = config_file.stat()
-        client = await Factory().get()
-        await client.close()
-        file_stat_after = config_file.stat()
-        assert client._config.auth_token.token == new_token
-        assert (
-            file_stat_before != file_stat_after
-        ), "Config file not rewritten while token refreshed"
+        assert await client.config.token() == token
 
     @pytest.mark.skipif(
         sys.platform == "win32",
         reason="Windows does not supports UNIX-like permissions",
     )
-    async def test_file_permissions(self, config_file: Path) -> None:
-        Path(config_file).chmod(0o777)
+    async def test_file_permissions(self, config_dir: Path) -> None:
+        Path(config_dir).chmod(0o777)
         with pytest.raises(ConfigError, match=r"permission"):
             await Factory().get()
-
-    @pytest.mark.skipif(
-        sys.platform == "win32",
-        reason="Windows does not supports UNIX-like permissions",
-    )
-    async def test_file_permissions_not_in_home_folder(
-        self,
-        tmpdir: Path,
-        token: str,
-        auth_config: _AuthConfig,
-        cluster_config: _ClusterConfig,
-    ) -> None:
-        config_path = Path(tmpdir) / "test.nmrc"
-        _create_config(config_path, token, auth_config, cluster_config)
-        config_path.chmod(0o644)
-        client = await Factory(config_path).get()
-        await client.close()
-        assert client
-
-    async def test_mailformed_config(self, config_file: Path) -> None:
-        # await Factory().login(url=mock_for_login)
-        # config_file = tmp_home / ".nmrc"
-        with config_file.open("r") as f:
-            original = yaml.safe_load(f)
-
-        for key in ["auth_config", "auth_token", "pypi", "cluster_config", "url"]:
-            modified = original.copy()
-            del modified[key]
-            with config_file.open("w") as f:
-                yaml.safe_dump(modified, f, default_flow_style=False)
-            with pytest.raises(ConfigError, match=r"Malformed"):
-                await Factory().get()
-
-    async def test_silent_update(
-        self, config_file: Path, mock_for_login: _TestServer
-    ) -> None:
-        # make config
-        async def show_dummy_browser(url: URL) -> None:
-            async with aiohttp.ClientSession() as client:
-                await client.get(url, allow_redirects=True)
-
-        config_file.unlink()
-
-        await Factory(config_file).login(
-            show_dummy_browser, url=mock_for_login.make_url("/")
-        )
-        with config_file.open("r") as f:
-            config = yaml.safe_load(f)
-        config["version"] = "10.1.1"  # config belongs old version
-        config["url"] = str(mock_for_login.make_url("/"))
-        with config_file.open("w") as f:
-            yaml.safe_dump(config, f)
-        client = await Factory(config_file).get()
-        await client.close()
-
-        with config_file.open("r") as f:
-            config = yaml.safe_load(f)
-        assert config["version"] == neuromation.__version__
-
-    async def test_explicit_update(
-        self, config_file: Path, mock_for_login: _TestServer
-    ) -> None:
-        # await Factory().login(url=mock_for_login)
-        # config_file = tmp_home / ".nmrc"
-        with config_file.open("r") as f:
-            config = yaml.safe_load(f)
-        config["version"] = "10.1.1"  # config belongs old version
-        config["url"] = str(mock_for_login.make_url("/"))
-        with config_file.open("w") as f:
-            yaml.safe_dump(config, f)
-        with pytest.raises(ConfigError, match="Neuro CLI updated"):
-            await Factory(config_file).get()
 
 
 class TestLogin:
@@ -304,7 +217,7 @@ class TestLogin:
         async with aiohttp.ClientSession() as client:
             await client.get(url, allow_redirects=True)
 
-    async def test_login_already_logged(self, config_file: Path) -> None:
+    async def test_login_already_logged(self, config_dir: Path) -> None:
         with pytest.raises(ConfigError, match=r"already exists"):
             await Factory().login(self.show_dummy_browser)
 
@@ -312,15 +225,12 @@ class TestLogin:
         self, tmp_home: Path, mock_for_login: _TestServer
     ) -> None:
         await Factory().login(self.show_dummy_browser, url=mock_for_login.make_url("/"))
-        nmrc_path = tmp_home / ".nmrc"
+        nmrc_path = tmp_home / ".neuro"
         assert Path(nmrc_path).exists(), "Config file not written after login "
-        saved_config = Factory(nmrc_path)._read()
-        assert saved_config.auth_config.is_initialized()
-        assert saved_config.cluster_config.is_initialized()
 
 
 class TestLoginWithToken:
-    async def test_login_with_token_already_logged(self, config_file: Path) -> None:
+    async def test_login_with_token_already_logged(self, config_dir: Path) -> None:
         with pytest.raises(ConfigError, match=r"already exists"):
             await Factory().login_with_token(token="tokenstr")
 
@@ -330,11 +240,8 @@ class TestLoginWithToken:
         await Factory().login_with_token(
             token="tokenstr", url=mock_for_login.make_url("/")
         )
-        nmrc_path = tmp_home / ".nmrc"
+        nmrc_path = tmp_home / ".neuro"
         assert Path(nmrc_path).exists(), "Config file not written after login "
-        saved_config = Factory(nmrc_path)._read()
-        assert saved_config.auth_config.is_initialized()
-        assert saved_config.cluster_config.is_initialized()
 
     async def test_incorrect_token(
         self, tmp_home: Path, mock_for_login: _TestServer
@@ -343,12 +250,12 @@ class TestLoginWithToken:
             await Factory().login_with_token(
                 token="incorrect", url=mock_for_login.make_url("/")
             )
-        nmrc_path = tmp_home / ".nmrc"
+        nmrc_path = tmp_home / ".neuro"
         assert not Path(nmrc_path).exists(), "Config file not written after login "
 
 
 class TestHeadlessLogin:
-    async def test_login_headless_already_logged(self, config_file: Path) -> None:
+    async def test_login_headless_already_logged(self, config_dir: Path) -> None:
         async def get_auth_code_cb(url: URL) -> str:
             return ""
 
@@ -375,14 +282,13 @@ class TestHeadlessLogin:
         await Factory().login_headless(
             get_auth_code_cb, url=mock_for_login.make_url("/")
         )
-        nmrc_path = tmp_home / ".nmrc"
+        nmrc_path = tmp_home / ".neuro"
         assert Path(nmrc_path).exists(), "Config file not written after login "
-        saved_config = Factory(nmrc_path)._read()
-        assert saved_config.auth_config.is_initialized()
-        assert saved_config.cluster_config.is_initialized()
 
 
 class TestLogout:
-    async def test_logout(self, config_file: Path) -> None:
+    async def test_logout(self, config_dir: Path) -> None:
         await Factory().logout()
-        assert not config_file.exists(), "Config not removed after logout"
+        assert not config_dir.exists(), "Config not removed after logout\n" + "\n".join(
+            [p.name for p in config_dir.iterdir()]
+        )

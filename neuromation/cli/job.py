@@ -2,29 +2,48 @@ import asyncio
 import contextlib
 import logging
 import os
+import re
 import shlex
 import sys
-import textwrap
 import uuid
 import webbrowser
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from datetime import datetime, timedelta
+from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
+from dateutil.parser import isoparse
 from yarl import URL
 
 from neuromation.api import (
-    CONFIG_ENV_NAME,
+    AuthorizationError,
+    Client,
     Container,
     HTTPPort,
     JobDescription,
+    JobRestartPolicy,
     JobStatus,
     RemoteImage,
     Resources,
     Volume,
 )
 from neuromation.cli.formatters import DockerImageProgress
+from neuromation.cli.formatters.utils import (
+    URIFormatter,
+    image_formatter,
+    uri_formatter,
+)
 
+from .ael import process_attach, process_exec, process_logs
+from .click_types import (
+    JOB,
+    JOB_COLUMNS,
+    JOB_NAME,
+    LOCAL_REMOTE_PORT,
+    MEGABYTE,
+    PRESET,
+    ImageType,
+)
 from .const import EX_PLATFORMERROR
 from .defaults import (
     GPU_MODELS,
@@ -33,7 +52,7 @@ from .defaults import (
     JOB_GPU_NUMBER,
     JOB_MEMORY_AMOUNT,
 )
-from .formatters import (
+from .formatters.jobs import (
     BaseJobsFormatter,
     JobFormatter,
     JobStartProgress,
@@ -42,18 +61,18 @@ from .formatters import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
+from .parse_utils import JobColumnInfo, get_default_columns, parse_columns
 from .root import Root
 from .utils import (
-    JOB_NAME,
-    LOCAL_REMOTE_PORT,
-    MEGABYTE,
+    NEURO_STEAL_CONFIG,
     AsyncExitStack,
-    ImageType,
     alias,
-    async_cmd,
+    argument,
     command,
     deprecated_quiet_option,
     group,
+    option,
+    pager_maybe,
     resolve_job,
     volume_to_verbose_str,
 )
@@ -68,15 +87,41 @@ NEUROMATION_ROOT_ENV_VAR = "NEUROMATION_ROOT"
 NEUROMATION_HOME_ENV_VAR = "NEUROMATION_HOME"
 RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
 
+DEFAULT_JOB_LIFE_SPAN = "1d"
+REGEX_JOB_LIFE_SPAN = re.compile(
+    r"^((?P<d>\d+)d)?((?P<h>\d+)h)?((?P<m>\d+)m)?((?P<s>\d+)s)?$"
+)
+
+
+TTY_OPT = option(
+    "-t/-T",
+    "--tty/--no-tty",
+    is_flag=True,
+    default=None,
+    help=(
+        "Allocate a TTY, can be useful for interactive jobs. "
+        "By default is on if the command is executed from a terminal, "
+        "non-tty mode is used if executed from a script."
+    ),
+)
+
 
 def _get_neuro_mountpoint(username: str) -> str:
     return f"{ROOT_MOUNTPOINT}/{username}"
 
 
+def _read_lines(env_file: str) -> Iterator[str]:
+    with open(env_file, encoding="utf-8-sig") as ef:
+        lines = ef.read().splitlines()
+    for line in lines:
+        line = line.lstrip()
+        if line and not line.startswith("#"):
+            yield line
+
+
 def build_env(env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
     if env_file:
-        with open(env_file, "r") as ef:
-            env = ef.read().splitlines() + list(env)
+        env = [*_read_lines(env_file), *env]
 
     env_dict = {}
     for line in env:
@@ -102,9 +147,9 @@ def job() -> None:
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("image", type=ImageType())
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
-@click.option(
+@argument("image", type=ImageType())
+@argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@option(
     "-g",
     "--gpu",
     metavar="NUMBER",
@@ -113,7 +158,7 @@ def job() -> None:
     default=JOB_GPU_NUMBER,
     show_default=True,
 )
-@click.option(
+@option(
     "--gpu-model",
     metavar="MODEL",
     type=click.Choice(GPU_MODELS),
@@ -121,15 +166,15 @@ def job() -> None:
     default=JOB_GPU_MODEL,
     show_default=True,
 )
-@click.option("--tpu-type", metavar="TYPE", type=str, help="TPU type to use")
-@click.option(
+@option("--tpu-type", metavar="TYPE", type=str, help="TPU type to use")
+@option(
     "tpu_software_version",
     "--tpu-sw-version",
     metavar="VERSION",
     type=str,
     help="Requested TPU software version",
 )
-@click.option(
+@option(
     "-c",
     "--cpu",
     metavar="NUMBER",
@@ -138,7 +183,7 @@ def job() -> None:
     default=JOB_CPU_NUMBER,
     show_default=True,
 )
-@click.option(
+@option(
     "-m",
     "--memory",
     metavar="AMOUNT",
@@ -147,7 +192,7 @@ def job() -> None:
     default=JOB_MEMORY_AMOUNT,
     show_default=True,
 )
-@click.option(
+@option(
     "-x/-X",
     "--extshm/--no-extshm",
     is_flag=True,
@@ -155,48 +200,60 @@ def job() -> None:
     show_default=True,
     help="Request extended '/dev/shm' space",
 )
-@click.option(
+@option(
     "--http", type=int, metavar="PORT", help="Enable HTTP port forwarding to container"
 )
-@click.option(
+@option(
     "--http-auth/--no-http-auth",
     is_flag=True,
     help="Enable HTTP authentication for forwarded HTTP port  [default: True]",
     default=None,
 )
-@click.option(
+@option(
     "--preemptible/--non-preemptible",
     "-p/-P",
     help="Run job on a lower-cost preemptible instance",
     default=False,
     show_default=True,
 )
-@click.option(
+@option(
     "-n",
     "--name",
     metavar="NAME",
     type=JOB_NAME,
     help="Optional job name",
     default=None,
+    secure=True,
 )
-@click.option(
+@option(
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Optional job tag, multiple values allowed",
+    multiple=True,
+)
+@option(
     "-d",
     "--description",
     metavar="DESC",
     help="Optional job description in free format",
+    secure=True,
 )
 @deprecated_quiet_option
-@click.option(
+@option(
     "-v",
     "--volume",
     metavar="MOUNT",
     multiple=True,
-    help="Mounts directory from vault into container. "
-    "Use multiple options to mount more than one volume. "
-    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
-    "storage://neuromation/public:/var/storage/neuromation:ro",
+    help=(
+        "Mounts directory from vault into container. "
+        "Use multiple options to mount more than one volume. "
+        "--volume=HOME is an alias for storage::/var/storage/home:rw and "
+        "storage://neuromation/public:/var/storage/neuromation:ro"
+    ),
+    secure=True,
 )
-@click.option(
+@option(
     "--entrypoint",
     type=str,
     help=(
@@ -204,39 +261,61 @@ def job() -> None:
         "(note that it overwrites `ENTRYPOINT` and `CMD` "
         "instructions of the docker image)"
     ),
+    secure=True,
 )
-@click.option(
+@option(
     "-e",
     "--env",
     metavar="VAR=VAL",
     multiple=True,
-    help="Set environment variable in container "
-    "Use multiple options to define more than one variable",
+    help=(
+        "Set environment variable in container "
+        "Use multiple options to define more than one variable"
+    ),
+    secure=True,
 )
-@click.option(
+@option(
     "--env-file",
     type=click.Path(exists=True),
     help="File with environment variables to pass",
+    secure=True,
 )
-@click.option(
+@option(
+    "--restart",
+    default="never",
+    show_default=True,
+    type=click.Choice([str(i) for i in JobRestartPolicy]),
+    help="Restart policy to apply when a job exits",
+)
+@option(
+    "--life-span",
+    type=str,
+    metavar="TIMEDELTA",
+    help=(
+        "Optional job run-time limit in the format '1d2h3m4s' "
+        "(some parts may be missing). Set '0' to disable. "
+        "Default value '1d' can be changed in the user config."
+    ),
+)
+@option(
     "--wait-start/--no-wait-start",
     default=True,
     show_default=True,
     help="Wait for a job start or failure",
 )
-@click.option(
+@option(
     "--pass-config/--no-pass-config",
     default=False,
     show_default=True,
     help="Upload neuro config to the job",
 )
-@click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
-@click.option(
+@option("--browse", is_flag=True, help="Open a job's URL in a web browser")
+@option(
     "--detach",
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
-@async_cmd()
+@TTY_OPT
 async def submit(
     root: Root,
     image: RemoteImage,
@@ -254,13 +333,17 @@ async def submit(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    restart: str,
+    life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
+    tag: Sequence[str],
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
     browse: bool,
     detach: bool,
+    tty: Optional[bool],
 ) -> None:
     """
     Submit an image to run on the cluster.
@@ -279,8 +362,10 @@ async def submit(
 
     # Starts a container using the custom image my-ubuntu:latest stored in neuromation
     # registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
-    neuro submit image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
+    neuro submit image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
     """
+    if tty is None:
+        tty = root.tty
     await run_job(
         root,
         image=image,
@@ -298,43 +383,41 @@ async def submit(
         volume=volume,
         env=env,
         env_file=env_file,
+        restart=restart,
+        life_span=life_span,
         preemptible=preemptible,
         name=name,
+        tags=tag,
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
         browse=browse,
         detach=detach,
+        tty=tty,
     )
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("job")
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
-@click.option(
-    "-t/-T",
-    "--tty/--no-tty",
-    default=True,
-    is_flag=True,
-    help="Allocate virtual tty. Useful for interactive jobs.",
-)
-@click.option(
+@argument("job", type=JOB)
+@argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
+@TTY_OPT
+@option(
     "--no-key-check",
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
+    hidden=True,
 )
-@click.option(
+@option(
     "--timeout",
     default=0,
     type=float,
     show_default=True,
     help="Maximum allowed time for executing the command, 0 for no timeout",
 )
-@async_cmd()
 async def exec(
     root: Root,
     job: str,
-    tty: bool,
+    tty: Optional[bool],
     no_key_check: bool,
     cmd: Sequence[str],
     timeout: float,
@@ -350,27 +433,25 @@ async def exec(
     # Executes a single command in the container and returns the control:
     neuro exec --no-tty my-job ls -l
     """
-    cmd = shlex.split(" ".join(cmd))
-    id = await resolve_job(job, client=root.client)
-    retcode = await root.client.jobs.exec(
-        id,
-        cmd,
-        tty=tty,
-        no_key_check=no_key_check,
-        timeout=timeout if timeout else None,
+    real_cmd = _parse_cmd(cmd)
+    job = await resolve_job(
+        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
     )
-    sys.exit(retcode)
+    if tty is None:
+        tty = root.tty
+    _check_tty(root, tty)
+    async with async_timeout.timeout(timeout):
+        await process_exec(root, job, real_cmd, tty)
 
 
 @command()
-@click.argument("job")
-@click.argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
-@click.option(
+@argument("job", type=JOB)
+@argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
+@option(
     "--no-key-check",
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
 )
-@async_cmd()
 async def port_forward(
     root: Root, job: str, no_key_check: bool, local_remote_port: List[Tuple[int, int]]
 ) -> None:
@@ -393,7 +474,9 @@ async def port_forward(
     neuro job port-forward my-job- 2080:80 2222:22 2000:100
 
     """
-    job_id = await resolve_job(job, client=root.client)
+    job_id = await resolve_job(
+        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
+    )
     async with AsyncExitStack() as stack:
         for local_port, job_port in local_remote_port:
             click.echo(
@@ -415,25 +498,55 @@ async def port_forward(
 
 
 @command()
-@click.argument("job")
-@async_cmd()
+@argument("job", type=JOB)
 async def logs(root: Root, job: str) -> None:
     """
     Print the logs for a container.
     """
-    id = await resolve_job(job, client=root.client)
-    await _print_logs(root, id)
-
-
-async def _print_logs(root: Root, job: str) -> None:
-    async for chunk in root.client.jobs.monitor(job):
-        if not chunk:
-            break
-        click.echo(chunk.decode(errors="ignore"), nl=False)
+    id = await resolve_job(
+        job,
+        client=root.client,
+        status={
+            JobStatus.PENDING,
+            JobStatus.RUNNING,
+            JobStatus.SUCCEEDED,
+            JobStatus.FAILED,
+        },
+    )
+    await process_logs(root, id, None)
 
 
 @command()
-@click.option(
+@argument("job", type=JOB)
+async def attach(root: Root, job: str) -> None:
+    """
+    Print the logs for a container.
+    """
+    id = await resolve_job(
+        job,
+        client=root.client,
+        status={
+            JobStatus.PENDING,
+            JobStatus.RUNNING,
+            JobStatus.SUCCEEDED,
+            JobStatus.FAILED,
+        },
+    )
+    status = await root.client.jobs.status(id)
+    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
+    while status.status == JobStatus.PENDING:
+        await asyncio.sleep(0.2)
+        status = await root.client.jobs.status(id)
+        progress(status)
+    progress.close()
+    tty = status.container.tty
+    _check_tty(root, tty)
+
+    await process_attach(root, id, tty=tty, logs=False)
+
+
+@command()
+@option(
     "-s",
     "--status",
     multiple=True,
@@ -443,40 +556,77 @@ async def _print_logs(root: Root, job: str) -> None:
         " Note: option `all` is deprecated, use `neuro ps -a` instead."
     ),
 )
-@click.option(
-    "-o", "--owner", multiple=True, help="Filter out jobs by owner (multiple option)."
+@option(
+    "-o",
+    "--owner",
+    multiple=True,
+    help="Filter out jobs by owner (multiple option).",
+    secure=True,
 )
-@click.option(
+@option("-n", "--name", metavar="NAME", help="Filter out jobs by name.", secure=True)
+@option(
+    "-t",
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Filter out jobs by tag (multiple option)",
+    multiple=True,
+)
+@option(
+    "-d",
+    "--description",
+    metavar="DESCRIPTION",
+    default="",
+    help="Filter out jobs by description (exact match).",
+    secure=True,
+)
+@option(
+    "--since",
+    metavar="DATE",
+    help="Show jobs created after a specific date (including).",
+)
+@option(
+    "--until",
+    metavar="DATE",
+    help="Show jobs created before a specific date (including).",
+)
+@option(
     "-a",
     "--all",
     is_flag=True,
     default=False,
     help=(
         "Show all jobs regardless the status (equivalent to "
-        "`-s pending -s running -s succeeded -s failed`)"
+        "`-s pending -s running -s succeeded -s failed`)."
     ),
 )
-@click.option("-n", "--name", metavar="NAME", help="Filter out jobs by name")
-@click.option(
-    "-d",
-    "--description",
-    metavar="DESCRIPTION",
-    default="",
-    help="Filter out jobs by description (exact match)",
-)
 @deprecated_quiet_option
-@click.option(
-    "-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width"
+@option("-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width.")
+@option(
+    "--format",
+    type=JOB_COLUMNS,
+    help=(
+        'Output table format, see "neuro help ps-format" '
+        "for more info about the format specification. "
+        "The default can be changed using the job.ps-format "
+        'configuration variable documented in "neuro help user-config"'
+    ),
+    default=None,
 )
-@async_cmd()
+@option("--full-uri", is_flag=True, help="Output full image URI.")
 async def ls(
     root: Root,
     status: Sequence[str],
     all: bool,
     name: str,
+    tag: Sequence[str],
     owner: Sequence[str],
+    since: str,
+    until: str,
     description: str,
     wide: bool,
+    format: Optional[List[JobColumnInfo]],
+    full_uri: bool,
 ) -> None:
     """
     List all jobs.
@@ -488,18 +638,34 @@ async def ls(
     neuro ps --name my-experiments-v1 -s failed -s succeeded
     neuro ps --description="my favourite job"
     neuro ps -s failed -s succeeded -q
+    neuro ps -t tag1 -t tag2
     """
+
+    format = await calc_columns(root.client, format)
 
     statuses = calc_statuses(status, all)
     owners = set(owner)
-    jobs = await root.client.jobs.list(statuses=statuses, name=name, owners=owners)
+    tags = set(tag)
+    jobs = root.client.jobs.list(
+        statuses=statuses,
+        name=name,
+        owners=owners,
+        tags=tags,
+        since=_parse_date(since),
+        until=_parse_date(until),
+    )
 
     # client-side filtering
     if description:
-        jobs = [job for job in jobs if job.description == description]
+        jobs = (job async for job in jobs if job.description == description)
 
-    jobs.sort(key=lambda job: job.history.created_at)
-
+    uri_fmtr: URIFormatter
+    if full_uri:
+        uri_fmtr = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username, cluster_name=root.client.cluster_name
+        )
     if root.quiet:
         formatter: BaseJobsFormatter = SimpleJobsFormatter()
     else:
@@ -507,52 +673,81 @@ async def ls(
             width = 0
         else:
             width = root.terminal_size[0]
-        formatter = TabularJobsFormatter(width, root.username)
+        image_fmtr = image_formatter(uri_formatter=uri_fmtr)
+        formatter = TabularJobsFormatter(
+            width, root.client.username, format, image_formatter=image_fmtr
+        )
 
-    for line in formatter(jobs):
-        click.echo(line)
+    pager_maybe(formatter([job async for job in jobs]), root.tty, root.terminal_size)
 
 
 @command()
-@click.argument("job")
-@async_cmd()
-async def status(root: Root, job: str) -> None:
+@argument("job", type=JOB)
+@option("--full-uri", is_flag=True, help="Output full URI.")
+async def status(root: Root, job: str, full_uri: bool) -> None:
     """
     Display status of a job.
     """
-    id = await resolve_job(job, client=root.client)
+    id = await resolve_job(
+        job,
+        client=root.client,
+        status={
+            JobStatus.PENDING,
+            JobStatus.RUNNING,
+            JobStatus.SUCCEEDED,
+            JobStatus.FAILED,
+        },
+    )
     res = await root.client.jobs.status(id)
-    click.echo(JobStatusFormatter()(res))
+    uri_fmtr: URIFormatter
+    if full_uri:
+        uri_fmtr = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username, cluster_name=root.client.cluster_name
+        )
+    click.echo(JobStatusFormatter(uri_formatter=uri_fmtr)(res))
 
 
 @command()
-@click.argument("job")
-@async_cmd()
+async def tags(root: Root) -> None:
+    """
+    List all tags submitted by the user.
+    """
+    res = await root.client.jobs.tags()
+    pager_maybe(res, root.tty, root.terminal_size)
+
+
+@command()
+@click.argument("job", type=JOB)
 async def browse(root: Root, job: str) -> None:
     """
     Opens a job's URL in a web browser.
     """
-    id = await resolve_job(job, client=root.client)
+    id = await resolve_job(
+        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
+    )
     res = await root.client.jobs.status(id)
     await browse_job(root, res)
 
 
 @command()
-@click.argument("job")
-@click.option(
+@argument("job", type=JOB)
+@option(
     "--timeout",
     default=0,
     type=float,
     show_default=True,
     help="Maximum allowed time for executing the command, 0 for no timeout",
 )
-@async_cmd()
 async def top(root: Root, job: str, timeout: float) -> None:
     """
     Display GPU/CPU/Memory usage.
     """
     formatter = JobTelemetryFormatter()
-    id = await resolve_job(job, client=root.client)
+    id = await resolve_job(
+        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
+    )
     print_header = True
     async with async_timeout.timeout(timeout if timeout else None):
         async for res in root.client.jobs.top(id):
@@ -564,19 +759,27 @@ async def top(root: Root, job: str, timeout: float) -> None:
 
 
 @command()
-@click.argument("job")
-@click.argument("image", type=ImageType())
-@async_cmd()
+@argument("job", type=JOB)
+@argument("image", type=ImageType())
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
     Save job's state to an image.
 
     Examples:
     neuro job save job-id image:ubuntu-patched
-    neuro job save my-favourite-job image://~/ubuntu-patched:v1
+    neuro job save my-favourite-job image:ubuntu-patched:v1
     neuro job save my-favourite-job image://bob/ubuntu-patched
     """
-    id = await resolve_job(job, client=root.client)
+    id = await resolve_job(
+        job,
+        client=root.client,
+        status={
+            JobStatus.PENDING,
+            JobStatus.RUNNING,
+            JobStatus.SUCCEEDED,
+            JobStatus.FAILED,
+        },
+    )
     progress = DockerImageProgress.create(tty=root.tty, quiet=root.quiet)
     with contextlib.closing(progress):
         await root.client.jobs.save(id, image, progress=progress)
@@ -584,42 +787,48 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
 
 
 @command()
-@click.argument("jobs", nargs=-1, required=True)
-@async_cmd()
+@argument("jobs", nargs=-1, required=True, type=JOB)
 async def kill(root: Root, jobs: Sequence[str]) -> None:
     """
     Kill job(s).
     """
     errors = []
     for job in jobs:
-        job_resolved = await resolve_job(job, client=root.client)
+        job_resolved = await resolve_job(
+            job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
+        )
         try:
             await root.client.jobs.kill(job_resolved)
             # TODO (ajuszkowski) printing should be on the cli level
             click.echo(job_resolved)
         except ValueError as e:
             errors.append((job, e))
+        except AuthorizationError:
+            errors.append((job, ValueError(f"Not enough permissions")))
 
     def format_fail(job: str, reason: Exception) -> str:
         return click.style(f"Cannot kill job {job}: {reason}", fg="red")
 
     for job, error in errors:
-        click.echo(format_fail(job, error))
+        click.echo(format_fail(job, error), err=True)
+    if errors:
+        sys.exit(1)
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@click.argument("image", type=ImageType())
-@click.argument("cmd", nargs=-1, type=click.UNPROCESSED)
-@click.option(
+@argument("image", type=ImageType())
+@argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@option(
     "-s",
     "--preset",
+    type=PRESET,
     metavar="PRESET",
     help=(
         "Predefined resource configuration (to see available values, "
         "run `neuro config show`)"
     ),
 )
-@click.option(
+@option(
     "-x/-X",
     "--extshm/--no-extshm",
     is_flag=True,
@@ -627,7 +836,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
     help="Request extended '/dev/shm' space",
 )
-@click.option(
+@option(
     "--http",
     type=int,
     metavar="PORT",
@@ -635,46 +844,57 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
     help="Enable HTTP port forwarding to container",
 )
-@click.option(
+@option(
     "--http-auth/--no-http-auth",
     is_flag=True,
     help="Enable HTTP authentication for forwarded HTTP port  [default: True]",
     default=None,
 )
-@click.option(
+@option(
     "--preemptible/--non-preemptible",
     "-p/-P",
     help="Run job on a lower-cost preemptible instance (DEPRECATED AND IGNORED)",
     default=None,
     hidden=True,
 )
-@click.option(
+@option(
     "-n",
     "--name",
     metavar="NAME",
     type=JOB_NAME,
     help="Optional job name",
     default=None,
-    show_default=True,
+    secure=True,
 )
-@click.option(
+@option(
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Optional job tag, multiple values allowed",
+    multiple=True,
+)
+@option(
     "-d",
     "--description",
     metavar="DESC",
     help="Optional job description in free format",
+    secure=True,
 )
 @deprecated_quiet_option
-@click.option(
+@option(
     "-v",
     "--volume",
     metavar="MOUNT",
     multiple=True,
-    help="Mounts directory from vault into container. "
-    "Use multiple options to mount more than one volume. "
-    "--volume=HOME is an alias for storage://~:/var/storage/home:rw and "
-    "storage://neuromation/public:/var/storage/neuromation:ro",
+    help=(
+        "Mounts directory from vault into container. "
+        "Use multiple options to mount more than one volume. "
+        "--volume=HOME is an alias for storage::/var/storage/home:rw and "
+        "storage://neuromation/public:/var/storage/neuromation:ro"
+    ),
+    secure=True,
 )
-@click.option(
+@option(
     "--entrypoint",
     type=str,
     help=(
@@ -682,39 +902,62 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         "(note that it overwrites `ENTRYPOINT` and `CMD` "
         "instructions of the docker image)"
     ),
+    secure=True,
 )
-@click.option(
+@option(
     "-e",
     "--env",
     metavar="VAR=VAL",
     multiple=True,
-    help="Set environment variable in container "
-    "Use multiple options to define more than one variable",
+    help=(
+        "Set environment variable in container "
+        "Use multiple options to define more than one variable"
+    ),
+    secure=True,
 )
-@click.option(
+@option(
     "--env-file",
     type=click.Path(exists=True),
     help="File with environment variables to pass",
+    secure=True,
 )
-@click.option(
+@option(
+    "--restart",
+    default="never",
+    show_default=True,
+    type=click.Choice([str(i) for i in JobRestartPolicy]),
+    help="Restart policy to apply when a job exits",
+)
+@option(
+    "--life-span",
+    type=str,
+    metavar="TIMEDELTA",
+    help=(
+        "Optional job run-time limit in the format '1d2h3m4s' "
+        "(some parts may be missing). Set '0' to disable. "
+        "Default value '1d' can be changed in the user config."
+    ),
+    show_default=True,
+)
+@option(
     "--wait-start/--no-wait-start",
     default=True,
     show_default=True,
     help="Wait for a job start or failure",
 )
-@click.option(
+@option(
     "--pass-config/--no-pass-config",
     default=False,
     show_default=True,
     help="Upload neuro config to the job",
 )
-@click.option("--browse", is_flag=True, help="Open a job's URL in a web browser")
-@click.option(
+@option("--browse", is_flag=True, help="Open a job's URL in a web browser")
+@option(
     "--detach",
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
-@async_cmd()
+@TTY_OPT
 async def run(
     root: Root,
     image: RemoteImage,
@@ -727,13 +970,17 @@ async def run(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    restart: str,
+    life_span: Optional[str],
     preemptible: Optional[bool],
     name: Optional[str],
+    tag: Sequence[str],
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
     browse: bool,
     detach: bool,
+    tty: Optional[bool],
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -752,17 +999,18 @@ async def run(
 
     # Starts a container using the custom image my-ubuntu:latest stored in neuromation
     # registry, run /script.sh and pass arg1 and arg2 as its arguments:
-    neuro run -s cpu-small image://~/my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
+    neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
     """
     if not preset:
-        preset = next(iter(root.resource_presets.keys()))
-    job_preset = root.resource_presets[preset]
+        preset = next(iter(root.client.config.presets.keys()))
+    job_preset = root.client.config.presets[preset]
     if preemptible is not None:
         click.echo(
             "-p/-P option is deprecated and ignored. Use corresponding presets instead."
         )
     log.info(f"Using preset '{preset}': {job_preset}")
-
+    if tty is None:
+        tty = root.tty
     await run_job(
         root,
         image=image,
@@ -780,13 +1028,17 @@ async def run(
         volume=volume,
         env=env,
         env_file=env_file,
+        restart=restart,
+        life_span=life_span,
         preemptible=job_preset.is_preemptible,
         name=name,
+        tags=tag,
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
         browse=browse,
         detach=detach,
+        tty=tty,
     )
 
 
@@ -794,6 +1046,7 @@ job.add_command(run)
 job.add_command(submit)
 job.add_command(ls)
 job.add_command(status)
+job.add_command(tags)
 job.add_command(exec)
 job.add_command(port_forward)
 job.add_command(logs)
@@ -801,6 +1054,7 @@ job.add_command(kill)
 job.add_command(top)
 job.add_command(save)
 job.add_command(browse)
+job.add_command(attach)
 
 
 job.add_command(alias(ls, "list", hidden=True))
@@ -825,13 +1079,17 @@ async def run_job(
     volume: Sequence[str],
     env: Sequence[str],
     env_file: Optional[str],
+    restart: str,
+    life_span: Optional[str],
     preemptible: bool,
     name: Optional[str],
+    tags: Sequence[str],
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
     browse: bool,
     detach: bool,
+    tty: bool,
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -846,12 +1104,20 @@ async def run_job(
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
     if not wait_start:
         detach = True
+    if not detach:
+        _check_tty(root, tty)
+
+    job_restart_policy = JobRestartPolicy(restart)
+    log.debug(f"Job restart policy: {job_restart_policy}")
+
+    job_life_span = await calc_life_span(root.client, life_span)
+    log.debug(f"Job run-time limit: {job_life_span}")
 
     env_dict = build_env(env, env_file)
+    real_cmd = _parse_cmd(cmd)
 
-    cmd = " ".join(cmd) if cmd is not None else None
     log.debug(f'entrypoint="{entrypoint}"')
-    log.debug(f'cmd="{cmd}"')
+    log.debug(f'cmd="{real_cmd}"')
 
     log.info(f"Using image '{image}'")
 
@@ -872,12 +1138,11 @@ async def run_job(
     volumes = await _build_volumes(root, volume, env_dict)
 
     if pass_config:
-        if CONFIG_ENV_NAME in env_dict:
-            raise ValueError(
-                f"{CONFIG_ENV_NAME} is already set to {env_dict[CONFIG_ENV_NAME]}"
-            )
+        env_name = NEURO_STEAL_CONFIG
+        if env_name in env_dict:
+            raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
         env_var, secret_volume = await upload_and_map_config(root)
-        env_dict[CONFIG_ENV_NAME] = env_var
+        env_dict[NEURO_STEAL_CONFIG] = env_var
         volumes.add(secret_volume)
 
     if volumes:
@@ -889,15 +1154,22 @@ async def run_job(
     container = Container(
         image=image,
         entrypoint=entrypoint,
-        command=cmd,
+        command=real_cmd,
         http=HTTPPort(http, http_auth) if http else None,
         resources=resources,
         env=env_dict,
         volumes=list(volumes),
+        tty=tty,
     )
 
     job = await root.client.jobs.run(
-        container, is_preemptible=preemptible, name=name, description=description
+        container,
+        is_preemptible=preemptible,
+        name=name,
+        tags=tags,
+        description=description,
+        restart_policy=job_restart_policy,
+        life_span=job_life_span,
     )
     click.echo(JobFormatter(root.quiet)(job))
     progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
@@ -909,34 +1181,29 @@ async def run_job(
     if browse and job.status != JobStatus.FAILED:
         await browse_job(root, job)
 
-    exit_code = None
-    if not detach:
-        msg = textwrap.dedent(
-            """\
-            Terminal is attached to the remote job, so you receive the job's output.
-            Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the job
-            with `--detach` option.
-        """
-        )
-        click.echo(click.style(msg, dim=True))
-        await _print_logs(root, job.id)
-        job = await root.client.jobs.status(job.id)
-        exit_code = job.history.exit_code
-    else:
-        # Even if we detached, but the job has failed to start
-        # (most common reason - no resources), the command fails
-        if job.status == JobStatus.FAILED:
-            exit_code = EX_PLATFORMERROR
+    # Even if we detached, but the job has failed to start
+    # (most common reason - no resources), the command fails
+    if job.status == JobStatus.FAILED:
+        sys.exit(job.history.exit_code or EX_PLATFORMERROR)
 
-    if exit_code is not None:
-        sys.exit(exit_code)
+    if not detach:
+        await process_attach(root, job.id, tty=tty, logs=True)
 
     return job
+
+
+def _parse_cmd(cmd: Sequence[str]) -> str:
+    if len(cmd) == 1:
+        real_cmd = cmd[0]
+    else:
+        real_cmd = " ".join(shlex.quote(arg) for arg in cmd)
+    return real_cmd
 
 
 async def _build_volumes(
     root: Root, input_volumes: Sequence[str], env_dict: Dict[str, str]
 ) -> Set[Volume]:
+    cluster_name = root.client.cluster_name
     input_volumes_set = set(input_volumes)
     volumes: Set[Volume] = set()
 
@@ -945,16 +1212,21 @@ async def _build_volumes(
             raise click.UsageError(
                 f"Cannot use `--volume=ALL` together with other `--volume` options"
             )
-        available = await root.client.users.get_acl(root.username, scheme="storage")
-        volumes.update(
-            Volume(
-                storage_uri=perm.uri,
-                container_path=f"{ROOT_MOUNTPOINT}/{perm.uri.host}{perm.uri.path}",
-                read_only=perm.action not in ("write", "manage"),
-            )
-            for perm in available
+        available = await root.client.users.get_acl(
+            root.client.username, scheme="storage"
         )
-        neuro_mountpoint = _get_neuro_mountpoint(root.username)
+        for perm in available:
+            if perm.uri.host == cluster_name:
+                path = perm.uri.path
+                assert path[0] == "/"
+                volumes.add(
+                    Volume(
+                        storage_uri=perm.uri,
+                        container_path=f"{ROOT_MOUNTPOINT}{path}",
+                        read_only=perm.action not in ("write", "manage"),
+                    )
+                )
+        neuro_mountpoint = _get_neuro_mountpoint(root.client.username)
         env_dict[NEUROMATION_HOME_ENV_VAR] = neuro_mountpoint
         env_dict[NEUROMATION_ROOT_ENV_VAR] = ROOT_MOUNTPOINT
         if not root.quiet:
@@ -967,17 +1239,23 @@ async def _build_volumes(
         for vol in input_volumes_set:
             if vol == "HOME":
                 volumes.add(
-                    root.client.parse.volume(
-                        f"storage://~:{STORAGE_MOUNTPOINT}/home:rw"
-                    )
+                    root.client.parse.volume(f"storage::{STORAGE_MOUNTPOINT}/home:rw")
                 )
                 volumes.add(
                     root.client.parse.volume(
-                        f"storage://neuromation/public:"
+                        f"storage://{cluster_name}/neuromation/public:"
                         f"{STORAGE_MOUNTPOINT}/neuromation:ro"
                     )
                 )
-                # TODO (artem) print deprecation warning (issue #1009)
+                click.echo(
+                    click.style(
+                        "DeprecationWarning: Option `--volume=HOME` is deprecated. "
+                        "Use `--volume=ALL`.  Mountpoint will be available in "
+                        "container via variable NEUROMATION_HOME",
+                        fg="red",
+                    ),
+                    err=True,
+                )
             else:
                 volumes.add(root.client.parse.volume(vol))
     return volumes
@@ -987,16 +1265,22 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
 
     # store the Neuro CLI config on the storage under some random path
     nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
-    random_nmrc_filename = f"{uuid.uuid4()}-nmrc"
-    storage_nmrc_folder = URL(f"storage://{root.username}/nmrc/")
+    random_nmrc_filename = f"{uuid.uuid4()}-cfg"
+    storage_nmrc_folder = URL(
+        f"storage://{root.client.cluster_name}/{root.client.username}/.neuro/"
+    )
     storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
-    local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/nmrc/"
+    local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/.neuro/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
     if not root.quiet:
         click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
         click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
     await root.client.storage.mkdir(storage_nmrc_folder, parents=True, exist_ok=True)
-    await root.client.storage.upload_file(nmrc_path, storage_nmrc_path)
+
+    async def skip_tmp(fname: str) -> bool:
+        return not fname.endswith(("-shm", "-wal", "-journal"))
+
+    await root.client.storage.upload_dir(nmrc_path, storage_nmrc_path, filter=skip_tmp)
     # specify a container volume and mount the storage path
     # into specific container path
     return (
@@ -1012,8 +1296,8 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
 async def browse_job(root: Root, job: JobDescription) -> None:
     url = job.http_url
     if url.scheme not in ("http", "https"):
-        raise RuntimeError(f"Cannot open job URL: {url}")
-    log.info(f"Open job URL: {url}")
+        raise RuntimeError(f"Cannot browse job URL: {url}")
+    click.echo(f"Browsing job, please open: {url}")
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, webbrowser.open, str(url))
 
@@ -1047,3 +1331,78 @@ def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
             statuses = defaults
 
     return set(JobStatus(s) for s in statuses)
+
+
+async def calc_columns(
+    client: Client, format: Optional[List[JobColumnInfo]]
+) -> List[JobColumnInfo]:
+    if format is None:
+        config = await client.config.get_user_config()
+        section = config.get("job")
+        if section is not None:
+            format_str = section.get("ps-format")
+            if format_str is not None:
+                return parse_columns(format_str)
+        return get_default_columns()
+    return format
+
+
+async def calc_life_span(client: Client, value: Optional[str]) -> Optional[float]:
+    async def _calc_default_life_span(client: Client) -> timedelta:
+        config = await client.config.get_user_config()
+        section = config.get("job")
+        life_span = DEFAULT_JOB_LIFE_SPAN
+        if section is not None:
+            value = section.get("life-span")
+            if value is not None:
+                life_span = value
+        return _parse_timedelta(life_span)
+
+    delta = (
+        _parse_timedelta(value)
+        if value is not None
+        else await _calc_default_life_span(client)
+    )
+    seconds = delta.total_seconds()
+    if seconds == 0:
+        return None
+    assert seconds > 0
+    return seconds
+
+
+def _parse_timedelta(value: str) -> timedelta:
+    value = value.strip()
+    err = f"Could not parse job timeout '{value}'"
+    if value == "":
+        raise click.UsageError(f"{err}: Empty string not allowed")
+    if value == "0":
+        return timedelta(0)
+    match = REGEX_JOB_LIFE_SPAN.search(value)
+    if match is None:
+        raise click.UsageError(
+            f"{err}: Should be like '1d2h3m4s' (some parts may be missing)."
+        )
+    return timedelta(
+        days=int(match.group("d") or 0),
+        hours=int(match.group("h") or 0),
+        minutes=int(match.group("m") or 0),
+        seconds=int(match.group("s") or 0),
+    )
+
+
+def _parse_date(value: str) -> Optional[datetime]:
+    if value:
+        try:
+            return isoparse(value)
+        except ValueError:
+            raise ValueError("Date should be in ISO-8601 format")
+    else:
+        return None
+
+
+def _check_tty(root: Root, tty: bool) -> None:
+    if tty and not root.tty:
+        raise RuntimeError(
+            "The operation should be executed from a terminal, "
+            "the input device is not a TTY"
+        )

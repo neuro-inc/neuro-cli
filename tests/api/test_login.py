@@ -19,7 +19,6 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from neuromation.api import Preset
 from neuromation.api.login import (
     AuthCode,
     AuthException,
@@ -28,7 +27,6 @@ from neuromation.api.login import (
     HeadlessNegotiator,
     _AuthConfig,
     _AuthToken,
-    _ClusterConfig,
     create_app_server,
     create_app_server_once,
     create_auth_code_app,
@@ -67,11 +65,11 @@ class TestAuthToken:
             token="test_token",
             expires_in=100,
             refresh_token="test_refresh_token",
-            time_factory=lambda: 2000.0,
+            now=2000.0,
         )
         assert token.token == "test_token"
         assert token.expiration_time == 2075
-        assert not token.is_expired
+        assert not token.is_expired(now=2000)
         assert token.refresh_token == "test_refresh_token"
 
     def test_is_expired(self) -> None:
@@ -79,11 +77,11 @@ class TestAuthToken:
             token="test_token",
             expires_in=0,
             refresh_token="test_refresh_token",
-            time_factory=lambda: 2000.0,
+            now=2000.0,
         )
         assert token.token == "test_token"
         assert token.expiration_time == 2000
-        assert token.is_expired
+        assert token.is_expired(now=2000)
         assert token.refresh_token == "test_refresh_token"
 
 
@@ -335,7 +333,7 @@ class TestTokenClient:
                 token = await client.request(code)
                 assert token.token == "test_access_token"
                 assert token.refresh_token == "test_refresh_token"
-                assert not token.is_expired
+                assert not token.is_expired()
 
     async def test_refresh(self, auth_client_id: str, auth_config: _AuthConfig) -> None:
         token = _AuthToken.create(
@@ -351,7 +349,7 @@ class TestTokenClient:
                 new_token = await client.refresh(token)
                 assert new_token.token == "test_access_token_refreshed"
                 assert new_token.refresh_token == "test_refresh_token"
-                assert not token.is_expired
+                assert not token.is_expired()
 
     async def test_forbidden(
         self, aiohttp_server: _TestServerFactory, auth_config: _AuthConfig
@@ -389,154 +387,6 @@ class TestTokenClient:
                     await client.refresh(token)
 
 
-class TestAuthConfig:
-    def test_is_initialized__no_auth_url(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL(),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is False
-
-    def test_is_initialized__no_token_url(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL(),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is False
-
-    def test_is_initialized__no_client_id(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is False
-
-    def test_is_initialized__no_audience(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is False
-
-    def test_is_initialized__no_callback_urls(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=[],
-            success_redirect_url=URL("url"),
-        )
-        assert auth_config.is_initialized() is True
-
-    def test_is_initialized__no_success_redirect_url(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=None,
-        )
-        assert auth_config.is_initialized() is True
-
-    def test_is_initialized__no_headless_callback_url(self) -> None:
-        auth_config = _AuthConfig(
-            auth_url=URL("url"),
-            token_url=URL("url"),
-            client_id="client_id",
-            audience="audience",
-            headless_callback_url=URL(),
-            callback_urls=(URL("url1"), URL("url2")),
-            success_redirect_url=None,
-        )
-        assert auth_config.is_initialized() is False
-
-
-class TestClusterConfig:
-    def test_is_initialized(self) -> None:
-        cluster_config = _ClusterConfig.create(
-            registry_url=URL("value"),
-            storage_url=URL("value"),
-            users_url=URL("value"),
-            monitoring_url=URL("value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-        )
-        assert cluster_config.is_initialized() is True
-
-    def test_is_initialized__no_registry_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
-            registry_url=URL(),
-            storage_url=URL("value"),
-            users_url=URL("value"),
-            monitoring_url=URL("value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-        )
-        assert cluster_config.is_initialized() is False
-
-    def test_is_initialized__no_storage_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
-            registry_url=URL("value"),
-            storage_url=URL(),
-            users_url=URL("value"),
-            monitoring_url=URL("value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-        )
-        assert cluster_config.is_initialized() is False
-
-    def test_is_initialized__no_users_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
-            registry_url=URL("value"),
-            storage_url=URL("value"),
-            users_url=URL(),
-            monitoring_url=URL("value"),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-        )
-        assert cluster_config.is_initialized() is False
-
-    def test_is_initialized__no_monitoring_url(self) -> None:
-        cluster_config = _ClusterConfig.create(
-            registry_url=URL("value"),
-            storage_url=URL("value"),
-            users_url=URL("value"),
-            monitoring_url=URL(),
-            resource_presets={"default": Preset(cpu=1, memory_mb=2 * 1024)},
-        )
-        assert cluster_config.is_initialized() is False
-
-    def test_is_initialized__no_resource_presets(self) -> None:
-        cluster_config = _ClusterConfig.create(
-            registry_url=URL("value"),
-            storage_url=URL("value"),
-            users_url=URL("value"),
-            monitoring_url=URL("value"),
-            resource_presets={},
-        )
-        assert cluster_config.is_initialized() is False
-
-
 class TestAuthNegotiator:
     async def show_dummy_browser(self, url: URL) -> None:
         async with ClientSession() as client:
@@ -556,39 +406,8 @@ class TestAuthNegotiator:
             negotiator = AuthNegotiator(
                 session, config=auth_config, show_browser_cb=self.show_dummy_browser
             )
-            token = await negotiator.refresh_token(token=None)
+            token = await negotiator.get_token()
             assert token.token == "test_access_token"
-            assert token.refresh_token == "test_refresh_token"
-
-    async def test_refresh_token_noop(self, auth_config: _AuthConfig) -> None:
-        async with aiohttp.ClientSession() as session:
-            negotiator = AuthNegotiator(
-                session, config=auth_config, show_browser_cb=self.show_dummy_browser
-            )
-            token = await negotiator.refresh_token(token=None)
-            assert token.token == "test_access_token"
-            assert token.refresh_token == "test_refresh_token"
-            assert not token.is_expired
-
-            token = await negotiator.refresh_token(token=token)
-            assert token.token == "test_access_token"
-            assert token.refresh_token == "test_refresh_token"
-
-    async def test_refresh_token(self, auth_config: _AuthConfig) -> None:
-        async with aiohttp.ClientSession() as session:
-            negotiator = AuthNegotiator(
-                session, config=auth_config, show_browser_cb=self.show_dummy_browser
-            )
-            token = await negotiator.refresh_token(token=None)
-            assert token.token == "test_access_token"
-            assert token.refresh_token == "test_refresh_token"
-            assert not token.is_expired
-
-            token = _AuthToken.create(
-                token=token.token, expires_in=0, refresh_token=token.refresh_token
-            )
-            token = await negotiator.refresh_token(token=token)
-            assert token.token == "test_access_token_refreshed"
             assert token.refresh_token == "test_refresh_token"
 
 

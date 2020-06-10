@@ -1,10 +1,14 @@
 import abc
+import contextlib
 import enum
 import operator
 import os
+import sys
 import time
+from dataclasses import dataclass
 from fnmatch import fnmatch
 from math import ceil
+from time import monotonic
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
 
 import click
@@ -568,6 +572,9 @@ class BaseStorageProgress(AbstractRecursiveFileProgress):
     def begin(self, src: URL, dst: URL) -> None:  # pragma: no cover
         pass
 
+    def end(self) -> None:  # pragma: no cover
+        pass
+
 
 def create_storage_progress(root: Root, show_progress: bool) -> BaseStorageProgress:
     if show_progress:
@@ -632,7 +639,9 @@ class StreamProgress(BaseStorageProgress):
 
 
 class TTYProgress(BaseStorageProgress):
-    HEIGHT = 10
+    HEIGHT = 25
+    FLUSH_INTERVAL = 0.2
+    time_factory = staticmethod(monotonic)
 
     def __init__(self, root: Root) -> None:
         self.painter = get_painter(root.color, quote=True)
@@ -642,6 +651,8 @@ class TTYProgress(BaseStorageProgress):
         self.lines: List[Tuple[URL, bool, str]] = []
         self.cur_dir: Optional[URL] = None
         self.verbose = root.verbosity > 0
+        self.first_line = self.last_line = 0
+        self.last_update_time = self.time_factory()
 
     def fmt_url(self, url: URL, type: FileStatusType, *, half: bool) -> str:
         label = str(url)
@@ -701,6 +712,9 @@ class TTYProgress(BaseStorageProgress):
             dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY, half=True)
             click.echo(f"Copy {src_label} => {dst_label}")
 
+    def end(self) -> None:
+        self.flush()
+
     def enter(self, data: StorageProgressEnterDir) -> None:
         self._enter_dir(data.src)
 
@@ -714,6 +728,7 @@ class TTYProgress(BaseStorageProgress):
         if self.lines and self.lines[-1][0] == data.src:
             self.lines.pop()
         self.append(data.src, f"{src} DONE", is_dir=True)
+        self.flush()
         self.cur_dir = None
 
     def start(self, data: StorageProgressStart) -> None:
@@ -736,6 +751,7 @@ class TTYProgress(BaseStorageProgress):
         self.replace(data.src, f"{src} [{progress:.2f}%] {current} of {total}")
 
     def fail(self, data: StorageProgressFail) -> None:
+        self.flush()
         src = self.fmt_str(str(data.src), FileStatusType.FILE)
         dst = self.fmt_str(str(data.dst), FileStatusType.FILE)
         click.echo(
@@ -744,6 +760,7 @@ class TTYProgress(BaseStorageProgress):
         )
         # clear lines to sync with writing to stderr
         self.lines = []
+        self.last_line = 0
 
     def _append_file(self, key: URL, msg: str) -> None:
         parent = key.parent
@@ -763,15 +780,126 @@ class TTYProgress(BaseStorageProgress):
             else:
                 # there is a file line under a dir line, drop the file line.
                 del self.lines[1]
-        for lineno, line in enumerate(self.lines):
-            self.printer.print(line[2], lineno)
+            self.first_line = 0
+        self.last_line = len(self.lines)
+        self.maybe_flush()
 
     def replace(self, key: URL, msg: str) -> None:
         for i in range(len(self.lines))[::-1]:
             line = self.lines[i]
             if line[0] == key:
                 self.lines[i] = (key, False, msg)
-                self.printer.print(self.lines[i][2], i)
+                self.first_line = min(self.first_line, i)
+                self.last_line = max(self.last_line, i + 1)
+                self.maybe_flush()
                 break
         else:
             self._append_file(key, msg)
+
+    def maybe_flush(self) -> None:
+        if (
+            len(self.lines) < self.HEIGHT
+            or self.time_factory() >= self.last_update_time + self.FLUSH_INTERVAL
+        ):
+            self.flush()
+
+    def flush(self) -> None:
+        text = "\n".join(
+            msg for _, _, msg in self.lines[self.first_line : self.last_line]
+        )
+        self.printer.print(text, self.first_line)
+        self.first_line = len(self.lines)
+        self.last_line = 0
+        self.last_update_time = self.time_factory()
+
+
+@dataclass(frozen=True)
+class Tree:
+    name: str
+    size: int
+    folders: Sequence["Tree"]
+    files: Sequence[FileStatus]
+
+
+class TreeFormatter:
+    ANSI_DELIMS = ["├", "└", "─", "│"]
+    SIMPLE_DELIMS = ["+", "+", "-", "|"]
+
+    def __init__(
+        self, *, color: bool, size: bool, human_readable: bool, sort: str
+    ) -> None:
+        self._ident: List[bool] = []
+        self._numdirs = 0
+        self._numfiles = 0
+        self._painter = get_painter(color, quote=True)
+        if sys.platform != "win32":
+            self._delims = self.ANSI_DELIMS
+        else:
+            self._delims = self.SIMPLE_DELIMS
+        if human_readable:
+            self._size_func = self._human_readable
+        elif size:
+            self._size_func = self._size
+        else:
+            self._size_func = self._none
+        self._key = FilesSorter(sort).key()
+
+    def __call__(self, tree: Tree) -> List[str]:
+        ret = self.listdir(tree)
+        ret.append("")
+        ret.append(f"{self._numdirs} directories, {self._numfiles} files")
+        return ret
+
+    def listdir(self, tree: Tree) -> List[str]:
+        ret = []
+        items = sorted(tree.folders + tree.files, key=self._key)  # type: ignore
+        ret.append(
+            self.pre()
+            + self._size_func(tree.size)
+            + self._painter.paint(tree.name, FileStatusType.DIRECTORY)
+        )
+        for num, item in enumerate(items):
+            if isinstance(item, Tree):
+                self._numdirs += 1
+                with self.ident(num == len(items) - 1):
+                    ret.extend(self.listdir(item))
+            else:
+                self._numfiles += 1
+                with self.ident(num == len(items) - 1):
+                    ret.append(
+                        self.pre()
+                        + self._size_func(item.size)
+                        + self._painter.paint(item.name, FileStatusType.FILE)
+                    )
+        return ret
+
+    def pre(self) -> str:
+        ret = []
+        for last in self._ident[:-1]:
+            if last:
+                ret.append(" " * 4)
+            else:
+                ret.append(self._delims[3] + " " * 3)
+        if self._ident:
+            last = self._ident[-1]
+            ret.append(self._delims[1] if last else self._delims[0])
+            ret.append(self._delims[2] * 2)
+            ret.append(" ")
+        return "".join(ret)
+
+    @contextlib.contextmanager
+    def ident(self, last: bool) -> Iterator[None]:
+        self._ident.append(last)
+        try:
+            yield
+        finally:
+            self._ident.pop()
+
+    def _size(self, size: int) -> str:
+        return f"[{size:>11}]  "
+
+    def _human_readable(self, size: int) -> str:
+        return f"[{format_size(size):>7}]  "
+
+    def _none(self, size: int) -> str:
+        return ""

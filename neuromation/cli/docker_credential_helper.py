@@ -19,24 +19,25 @@ async def async_main(action: str) -> None:
         print("Please use `neuro logout` instead `docker logout ...`", EX_UNAVAILABLE)
     else:
         async with get() as client:
-            config = client._config
-            config.check_initialized()
+            config = client.config
             registry = sys.stdin.readline().strip()
-            neuro_registry = config.cluster_config.registry_url.host
+            neuro_registry = config.registry_url.host
             if registry != neuro_registry:
                 error(
                     f"Unknown registry {registry}. "
                     "neuro configured with {neuro_registry}.",
                     EX_DATAERR,
                 )
-            payload = {"Username": "token", "Secret": config.auth_token.token}
+            token = await config.token()
+            payload = {"Username": "token", "Secret": token}
             print(dumps(payload))
 
 
 def main() -> None:
     if len(sys.argv) == 1 or sys.argv[1] not in ["store", "get", "erase"]:
         error(
-            "Neuromation docker credential helper.\nService tool, not for use", EX_USAGE
+            "Neuro Platform docker credential helper.\n:Service tool, not for use",
+            EX_USAGE,
         )
     action = sys.argv[1]
     run(async_main(action))

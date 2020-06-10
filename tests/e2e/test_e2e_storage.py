@@ -1,6 +1,8 @@
 import errno
 import os
 import subprocess
+import sys
+import textwrap
 from pathlib import Path, PurePath
 from typing import Tuple
 
@@ -8,6 +10,7 @@ import pytest
 from yarl import URL
 
 from neuromation.cli.const import EX_OSFILE
+from neuromation.cli.formatters.storage import TreeFormatter
 from tests.e2e import Helper
 from tests.e2e.utils import FILE_SIZE_B
 
@@ -65,7 +68,8 @@ def test_empty_directory_ls_output(helper: Helper) -> None:
 def test_ls_directory_itself(helper: Helper) -> None:
     helper.mkdir("")
     captured = helper.run_cli(["storage", "ls", "--directory", helper.tmpstorage])
-    assert captured.out.splitlines() == [helper.tmpstoragename]
+    _, _, name = helper.tmpstoragename.rpartition("/")
+    assert captured.out.splitlines() == [name]
 
 
 @pytest.mark.e2e
@@ -517,7 +521,10 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
 
     # Test subcommand "glob"
     captured = helper.run_cli(["storage", "glob", helper.tmpstorage + "/**"])
-    prefix = f"storage://{helper.username}/{URL(helper.tmpstorage).path}"
+    prefix = (
+        f"storage://{helper.cluster_name}/{helper.username}/"
+        f"{URL(helper.tmpstorage).path}"
+    )
     assert sorted(captured.out.splitlines()) == [
         prefix,
         prefix + "folder",
@@ -564,3 +571,129 @@ def test_e2e_no_glob(tmp_path: Path, helper: Helper) -> None:
     helper.run_cli(["storage", "rm", "--no-glob", helper.tmpstorage + "/[df]"])
     captured = helper.run_cli(["storage", "ls", helper.tmpstorage])
     assert sorted(captured.out.splitlines()) == ["d"]
+
+
+@pytest.mark.e2e
+def test_e2e_cp_filter(tmp_path: Path, helper: Helper) -> None:
+    # Create files and directories and copy them to storage
+    helper.mkdir("")
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "subfolder").mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / "bar").write_bytes(b"bar")
+    (folder / "baz").write_bytes(b"baz")
+
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            "--exclude",
+            "*",
+            "--include",
+            "b??",
+            "--exclude",
+            "*z",
+            tmp_path.as_uri() + "/folder",
+            helper.tmpstorage + "/filtered",
+        ]
+    )
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/filtered"])
+    assert captured.out.splitlines() == ["bar"]
+
+    # Copy all files to storage
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            tmp_path.as_uri() + "/folder",
+            helper.tmpstorage + "/folder",
+        ]
+    )
+
+    # Copy filtered files from storage
+    helper.run_cli(
+        [
+            "storage",
+            "cp",
+            "-r",
+            "--exclude",
+            "*",
+            "--include",
+            "b??",
+            "--exclude",
+            "*z",
+            helper.tmpstorage + "/folder",
+            tmp_path.as_uri() + "/filtered",
+        ]
+    )
+    assert os.listdir(tmp_path / "filtered") == ["bar"]
+
+
+@pytest.mark.e2e
+def test_e2e_ls_skip_hidden(tmp_path: Path, helper: Helper) -> None:
+    # Create files and directories and copy them to storage
+    helper.mkdir("")
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / ".bar").write_bytes(b"bar")
+
+    helper.run_cli(
+        ["storage", "cp", "-r", tmp_path.as_uri() + "/folder", helper.tmpstorage]
+    )
+
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/folder"])
+    assert captured.out.splitlines() == ["foo"]
+
+
+@pytest.mark.e2e
+def test_e2e_ls_show_hidden(tmp_path: Path, helper: Helper) -> None:
+    # Create files and directories and copy them to storage
+    helper.mkdir("")
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / ".bar").write_bytes(b"bar")
+
+    helper.run_cli(
+        ["storage", "cp", "-r", tmp_path.as_uri() + "/folder", helper.tmpstorage]
+    )
+
+    captured = helper.run_cli(["storage", "ls", "--all", helper.tmpstorage + "/folder"])
+    assert captured.out.splitlines() == [".bar", "foo"]
+
+
+@pytest.mark.e2e
+def test_tree(helper: Helper, data: _Data, tmp_path: Path) -> None:
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / "bar").write_bytes(b"bar")
+    subfolder = folder / "folder"
+    subfolder.mkdir()
+    (subfolder / "baz").write_bytes(b"baz")
+
+    helper.run_cli(["storage", "cp", "-r", folder.as_uri(), helper.tmpstorage])
+
+    capture = helper.run_cli(["storage", "tree", helper.tmpstorage])
+    assert capture.err == ""
+
+    expected = textwrap.dedent(
+        f"""\
+         '{helper.tmpstorage}'
+         ├── 'bar'
+         ├── 'folder'
+         │   └── 'baz'
+         └── 'foo'
+
+         1 directories, 3 files"""
+    )
+    if sys.platform == "win32":
+        trans = str.maketrans(
+            "".join(TreeFormatter.ANSI_DELIMS), "".join(TreeFormatter.SIMPLE_DELIMS)
+        )
+        expected = expected.translate(trans)
+    assert capture.out == expected

@@ -1,15 +1,18 @@
 import logging
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 import click
 
 from neuromation.api import Permission, Share
 
+from .formatters.utils import URIFormatter, uri_formatter
 from .root import Root
 from .utils import (
-    async_cmd,
+    argument,
     command,
     group,
+    option,
+    pager_maybe,
     parse_permission_action,
     parse_resource_for_sharing,
 )
@@ -26,10 +29,9 @@ def acl() -> None:
 
 
 @command()
-@click.argument("uri")
-@click.argument("user")
-@click.argument("permission", type=click.Choice(["read", "write", "manage"]))
-@async_cmd()
+@argument("uri")
+@argument("user")
+@argument("permission", type=click.Choice(["read", "write", "manage"]))
 async def grant(root: Root, uri: str, user: str, permission: str) -> None:
     """
         Shares resource with another user.
@@ -58,9 +60,8 @@ async def grant(root: Root, uri: str, user: str, permission: str) -> None:
 
 
 @command()
-@click.argument("uri")
-@click.argument("user")
-@async_cmd()
+@argument("uri")
+@argument("user")
 async def revoke(root: Root, uri: str, user: str) -> None:
     """
         Revoke user access from another user.
@@ -85,20 +86,29 @@ async def revoke(root: Root, uri: str, user: str) -> None:
 
 
 @command()
-@click.option(
+@option(
+    "-u", "username", default=None, help="Use specified user or role.",
+)
+@option(
     "-s",
     "--scheme",
     default=None,
     help="Filter resources by scheme, e.g. job, storage, image or user.",
 )
-@click.option(
+@option(
     "--shared",
     is_flag=True,
     default=False,
     help="Output the resources shared by the user.",
 )
-@async_cmd()
-async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
+@option("--full-uri", is_flag=True, help="Output full URI.")
+async def list(
+    root: Root,
+    username: Optional[str],
+    scheme: Optional[str],
+    shared: bool,
+    full_uri: bool,
+) -> None:
     """
         List shared resources.
 
@@ -112,33 +122,46 @@ async def list(root: Root, scheme: Optional[str], shared: bool) -> None:
         neuro acl list --shared
         neuro acl list --shared --scheme image
     """
+    if username is None:
+        username = root.client.username
+
+    uri_fmtr: URIFormatter
+    if full_uri:
+        uri_fmtr = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username, cluster_name=root.client.cluster_name
+        )
+
+    out: List[str] = []
     if not shared:
 
         def permission_key(p: Permission) -> Any:
             return p.uri, p.action
 
         for p in sorted(
-            await root.client.users.get_acl(root.username, scheme), key=permission_key
+            await root.client.users.get_acl(username, scheme), key=permission_key,
         ):
-            click.echo(f"{p.uri} {p.action.value}")
+            out.append(f"{uri_fmtr(p.uri)} {p.action.value}")
     else:
 
         def shared_permission_key(share: Share) -> Any:
             return share.permission.uri, share.permission.action.value, share.user
 
         for share in sorted(
-            await root.client.users.get_shares(root.username, scheme),
+            await root.client.users.get_shares(username, scheme),
             key=shared_permission_key,
         ):
-            click.echo(
+            out.append(
                 " ".join(
                     [
-                        str(share.permission.uri),
+                        uri_fmtr(share.permission.uri),
                         share.permission.action.value,
                         share.user,
                     ]
                 )
             )
+    pager_maybe(out, root.tty, root.terminal_size)
 
 
 acl.add_command(grant)

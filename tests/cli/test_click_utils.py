@@ -1,9 +1,10 @@
 from textwrap import dedent
 
-import pytest
 from click.testing import CliRunner
 
-from neuromation.cli.utils import JOB_NAME, DeprecatedGroup, MainGroup, command, group
+from neuromation.cli.main import MainGroup
+from neuromation.cli.root import Root
+from neuromation.cli.utils import DeprecatedGroup, command, group
 
 
 def test_print() -> None:
@@ -12,7 +13,7 @@ def test_print() -> None:
         pass
 
     @command()
-    def plain_cmd() -> None:
+    async def plain_cmd(root: Root) -> None:
         pass
 
     @group(cls=MainGroup)
@@ -21,6 +22,7 @@ def test_print() -> None:
 
     main.add_command(sub_command)
     main.add_command(plain_cmd)
+    main.skip_init = True
 
     runner = CliRunner()
     result = runner.invoke(main, [])
@@ -35,8 +37,8 @@ def test_print() -> None:
         Command Shortcuts:
           plain-cmd
 
-        Use "neuro <command> --help" for more information about a given command.
-        Use "neuro --options" for a list of global command-line options (applies to all
+        Use "main help <command>" for more information about a given command or topic.
+        Use "main --options" for a list of global command-line options (applies to all
         commands).
     """
     )
@@ -52,9 +54,10 @@ def test_print_use_group_helpers() -> None:
         pass
 
     @main.command()
-    def plain_cmd() -> None:
+    async def plain_cmd(root: Root) -> None:
         pass
 
+    main.skip_init = True
     runner = CliRunner()
     result = runner.invoke(main, [])
     assert result.exit_code == 0
@@ -68,8 +71,8 @@ def test_print_use_group_helpers() -> None:
         Command Shortcuts:
           plain-cmd
 
-        Use "neuro <command> --help" for more information about a given command.
-        Use "neuro --options" for a list of global command-line options (applies to all
+        Use "main help <command>" for more information about a given command or topic.
+        Use "main --options" for a list of global command-line options (applies to all
         commands).
     """
     )
@@ -81,7 +84,7 @@ def test_print_hidden() -> None:
         pass
 
     @command(hidden=True)
-    def plain_cmd() -> None:
+    async def plain_cmd(root: Root) -> None:
         pass
 
     @group()
@@ -140,7 +143,7 @@ def test_print_deprecated_group_content() -> None:
         """
 
     @sub_command.command()
-    def cmd() -> None:
+    async def cmd(root: Root) -> None:
         """Command.
 
         Detailed description is here.
@@ -152,6 +155,7 @@ def test_print_deprecated_group_content() -> None:
 
     main.add_command(sub_command)
     main.add_command(DeprecatedGroup(sub_command, name="alias"))
+    main.skip_init = True
 
     runner = CliRunner()
     result = runner.invoke(main, ["alias"])
@@ -170,7 +174,7 @@ def test_print_deprecated_group_content() -> None:
 
 def test_print_deprecated_no_help() -> None:
     @command(deprecated=True)
-    def main() -> None:
+    async def main(root: Root) -> None:
         pass
 
     runner = CliRunner()
@@ -190,7 +194,7 @@ def test_print_deprecated_no_help() -> None:
 
 def test_print_deprecated_with_help() -> None:
     @command(deprecated=True)
-    def main() -> None:
+    async def main(root: Root) -> None:
         """Main help."""
 
     runner = CliRunner()
@@ -210,7 +214,7 @@ def test_print_deprecated_with_help() -> None:
 
 def test_print_help_with_examples() -> None:
     @command()
-    def main() -> None:
+    async def main(root: Root) -> None:
         """
         Main help.
 
@@ -238,31 +242,3 @@ def test_print_help_with_examples() -> None:
           --help  Show this message and exit.
     """
     )
-
-
-class TestJobNameType:
-    def test_ok(self) -> None:
-        name = "a-bc-def"
-        assert name == JOB_NAME.convert(name, param=None, ctx=None)
-
-    def test_too_short(self) -> None:
-        with pytest.raises(ValueError, match="Invalid job name"):
-            JOB_NAME.convert("a" * 2, param=None, ctx=None)
-
-    def test_too_long(self) -> None:
-        with pytest.raises(ValueError, match="Invalid job name"):
-            JOB_NAME.convert("a" * 41, param=None, ctx=None)
-
-    @pytest.mark.parametrize(
-        "name",
-        [
-            "abc@",  # invalid character
-            "abc-DEF",  # capital letters
-            "abc--def",  # two consequent hyphens
-            "-abc-def",  # hyphen as the first symbol
-            "abc-def-",  # hyphen as the last symbol
-        ],
-    )
-    def test_invalid_pattern(self, name: str) -> None:
-        with pytest.raises(ValueError, match="Invalid job name"):
-            JOB_NAME.convert(name, param=None, ctx=None)

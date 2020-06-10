@@ -1,3 +1,4 @@
+import os
 import re
 import sys
 from pathlib import Path
@@ -6,12 +7,22 @@ from typing import Sequence, Union
 from yarl import URL
 
 
+CLUSTER_SCHEMES = ("storage", "image", "job")
+
+
 def uri_from_cli(
     path_or_uri: str,
     username: str,
+    cluster_name: str,
     *,
     allowed_schemes: Sequence[str] = ("file", "storage"),
 ) -> URL:
+    if "file" in allowed_schemes and path_or_uri.startswith("~"):
+        path_or_uri = os.path.expanduser(path_or_uri)
+        if path_or_uri.startswith("~"):
+            raise ValueError(f"Cannot expand user for {path_or_uri}")
+        path_or_uri = Path(path_or_uri).as_uri()
+
     uri = URL(path_or_uri)
     # len(uri.scheme) == 1 is a workaround for Windows path like C:/path/to.txt
     if not uri.scheme or len(uri.scheme) == 1:
@@ -31,48 +42,66 @@ def uri_from_cli(
         )
     if uri.scheme not in allowed_schemes:
         raise ValueError(
-            f"Unsupported URI scheme: {uri.scheme or 'Empty'}. "
+            f"Unsupported URI scheme: {uri.scheme}. "
             f"Please specify one of {', '.join(allowed_schemes)}."
         )
     if uri.scheme == "file":
         uri = normalize_local_path_uri(uri)
+    elif uri.scheme == "blob":
+        uri = normalize_blob_path_uri(uri, cluster_name)
     else:
-        uri = _normalize_uri(uri, username)
+        uri = _normalize_uri(uri, username, cluster_name)
     return uri
 
 
-def normalize_storage_path_uri(uri: URL, username: str) -> URL:
+def normalize_storage_path_uri(uri: URL, username: str, cluster_name: str) -> URL:
     """Normalize storage url."""
     if uri.scheme != "storage":
         raise ValueError(
-            f"Invalid storage scheme '{uri.scheme}://' "
-            "(only 'storage://' is allowed)"
+            f"Invalid storage scheme '{uri.scheme}:' (only 'storage:' is allowed)"
         )
-    return _normalize_uri(uri, username)
+    return _normalize_uri(uri, username, cluster_name)
 
 
-def _normalize_uri(resource: Union[URL, str], username: str) -> URL:
+def normalize_blob_path_uri(uri: URL, cluster_name: str) -> URL:
+    """Normalize Blob Storage url."""
+    if uri.scheme != "blob":
+        raise ValueError(
+            f"Invalid storage scheme '{uri.scheme}:' (only 'blob:' is allowed)"
+        )
+
+    stripped_path = uri.path.lstrip("/")
+    # We treat all those as same URL's:
+    #   blob:my_bucket/object_name
+    #   blob:/my_bucket/object_name
+    #   blob:///my_bucket/object_name
+    # For full URL we require it to have cluster name as host:
+    #   blob://my_cluster/my_bucket/object_name
+
+    if not uri.host:
+        if not stripped_path:
+            raise ValueError(f"Bucket name is missing '{str(uri)}'")
+        uri = URL.build(scheme=uri.scheme, host=cluster_name, path="/" + stripped_path)
+    return uri
+
+
+def _normalize_uri(resource: Union[URL, str], username: str, cluster_name: str) -> URL:
+    """ Normalize all other user-bound URI's like jobs, storage, images, etc.
+    """
     uri = resource if isinstance(resource, URL) else URL(resource)
     path = uri.path
-    if not uri.host:
-        if path.startswith("~"):
-            raise ValueError(f"Cannot expand user for {uri}")
-        if not path.startswith("/"):
-            uri = URL(f"{uri.scheme}://{username}/{path}")
-        else:
-            path = uri.path.lstrip("/")
-            if path:
-                uri = URL(f"{uri.scheme}://{path}")
-    if uri.host == "~":
-        uri = uri.with_host(username)
-    elif uri.host and uri.host.startswith("~"):
+    if (uri.host or path.lstrip("/")).startswith("~"):
         raise ValueError(f"Cannot expand user for {uri}")
-
-    path = uri.path
-    if path.startswith("/"):
-        path = uri.path.lstrip("/")
-        if path or uri.host:
-            uri = uri.with_path(path)
+    if not uri.host:
+        if uri.scheme in CLUSTER_SCHEMES:
+            host = cluster_name
+            if path.startswith("/"):
+                path = path.lstrip("/")
+            else:
+                path = f"{username}/{path}" if path else username
+        else:
+            raise ValueError(f"Absolute URI is required for scheme {uri.scheme}")
+        uri = URL.build(scheme=uri.scheme, host=host, path="/" + path)
 
     return uri
 
@@ -81,15 +110,13 @@ def normalize_local_path_uri(uri: URL) -> URL:
     """Normalize local file url."""
     if uri.scheme != "file":
         raise ValueError(
-            f"Invalid local file scheme '{uri.scheme}://' "
-            "(only 'file://' is allowed)"
+            f"Invalid local file scheme '{uri.scheme}:' (only 'file:' is allowed)"
         )
     if uri.host:
         raise ValueError(f"Host part is not allowed, found '{uri.host}'")
-    path = _extract_path(uri)
-    path = path.expanduser()
-    if path.parents and str(path.parents[0]).startswith("~"):
+    if uri.path.startswith("~"):
         raise ValueError(f"Cannot expand user for {uri}")
+    path = _extract_path(uri)
     # path.absolute() does not work with relative path with disk
     # See https://bugs.python.org/issue36305
     path = Path(path.anchor).resolve() / path

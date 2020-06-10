@@ -1,5 +1,4 @@
 import abc
-from os import linesep
 from time import time
 
 import click
@@ -24,9 +23,6 @@ class AbstractPrinter(abc.ABC):
     def print(self, text: str) -> str:  # pragma: no cover
         pass
 
-    def _escape(self, text: str) -> str:
-        return text.translate({10: " ", 13: " "})
-
 
 class TTYPrinter(AbstractPrinter):
     """
@@ -50,28 +46,30 @@ class TTYPrinter(AbstractPrinter):
         if lineno < 0:
             lineno = self._total_lines
 
+        lines = text.split("\n")
         commands = []
         diff = self._total_lines - lineno
-        clear_tail = False
 
         if diff > 0:
             commands.append(CURSOR_UP.format(diff))
-            clear_tail = True
-        elif diff < 0:
-            commands.append(linesep * (-1 * diff))
-            commands.append(CURSOR_UP.format(1))
+            for i, line in enumerate(lines):
+                commands.append(line)
+                if i < diff:
+                    commands.append(CLEAR_LINE_TAIL)
+                commands.append("\n")
+        else:
+            if diff < 0:
+                commands.append("\n" * (-diff))
+                commands.append(CURSOR_UP.format(1))
+            commands.append(text)
+            commands.append("\n")
 
-        commands.append(self._escape(text))
-
-        if clear_tail:
-            commands.append(CLEAR_LINE_TAIL)
-        commands.append(linesep)
-
-        if diff > 1:
-            commands.append(CURSOR_DOWN.format(diff - 1))
+        diff -= len(lines)
+        if diff > 0:
+            commands.append(CURSOR_DOWN.format(diff))
         message = "".join(commands)
 
-        self._total_lines = max(self._total_lines, lineno + 1)
+        self._total_lines = max(self._total_lines, lineno + len(lines))
         self._print(message)
         return message
 
@@ -95,7 +93,7 @@ class StreamPrinter(AbstractPrinter):
         if self._first:
             self._first = False
         else:
-            message += linesep
+            message += "\n"
         message += text
         self._last_usage_time = time()
         self._print(message)
@@ -115,6 +113,6 @@ class StreamPrinter(AbstractPrinter):
 
     def close(self) -> str:
         if not self._first:
-            self._print(linesep)
-            return linesep
+            self._print("\n")
+            return "\n"
         return ""
