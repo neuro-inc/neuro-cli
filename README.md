@@ -36,7 +36,6 @@
 		* [neuro storage mkdir](#neuro-storage-mkdir)
 		* [neuro storage mv](#neuro-storage-mv)
 		* [neuro storage tree](#neuro-storage-tree)
-		* [neuro storage load](#neuro-storage-load)
 	* [neuro image](#neuro-image)
 		* [neuro image ls](#neuro-image-ls)
 		* [neuro image push](#neuro-image-push)
@@ -72,6 +71,7 @@
 	* [neuro status](#neuro-status)
 	* [neuro exec](#neuro-exec)
 	* [neuro port-forward](#neuro-port-forward)
+	* [neuro attach](#neuro-attach)
 	* [neuro logs](#neuro-logs)
 	* [neuro kill](#neuro-kill)
 	* [neuro top](#neuro-top)
@@ -151,6 +151,7 @@ Name | Description|
 | _[neuro status](#neuro-status)_| Display status of a job |
 | _[neuro exec](#neuro-exec)_| Execute command in a running job |
 | _[neuro port-forward](#neuro-port-forward)_| Forward port\(s) of a running job to local port\(s) |
+| _[neuro attach](#neuro-attach)_| Print the logs for a container |
 | _[neuro logs](#neuro-logs)_| Print the logs for a container |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
@@ -878,7 +879,6 @@ Name | Description|
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
 | _[neuro storage tree](#neuro-storage-tree)_| List contents of directories in a tree-like format |
-| _[neuro storage load](#neuro-storage-load)_| Copy files and directories using MinIO \(EXPERIMENTAL) |
 
 
 
@@ -1099,31 +1099,6 @@ Name | Description|
 |_\-h, --human-readable_|Print the size in a more human readable way.|
 |_\-s, --size_|Print the size in bytes of each file.|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro storage load
-
-Copy files and directories using MinIO \(EXPERIMENTAL).<br/><br/>Same as "cp", but uses MinIO and the Amazon S3 protocol.<br/>\(DEPRECATED)
-
-**Usage:**
-
-```bash
-neuro storage load [OPTIONS] [SOURCES]... [DESTINATION]
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_\-r, --recursive_|Recursive copy, off by default|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme  \[default: True]|
-|_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
-|_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
-|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing|
-|_\-p, --progress_|Show progress, off by default|
 |_--help_|Show this message and exit.|
 
 
@@ -2057,6 +2032,25 @@ neuro job port-forward my-job- 2080:80 2222:22 2000:100
 Name | Description|
 |----|------------|
 |_\--no-key-check_|Disable host key checks. Should be used with caution.|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro attach
+
+Print the logs for a container.
+
+**Usage:**
+
+```bash
+neuro attach [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 
