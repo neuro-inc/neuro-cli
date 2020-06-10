@@ -5,6 +5,15 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.6.10 (2020-06-10)
+================================
+
+Bugfixes
+--------
+
+
+- Suppress annoying message about improperly handled GeneratorExit exception. ([#1525](https://github.com/neuromation/platform-api-clients/issues/1525))
+
 
 Neuromation 20.6.2 (2020-06-02)
 ===============================
