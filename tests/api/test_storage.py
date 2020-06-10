@@ -939,8 +939,8 @@ async def test_storage_upload_recursive_ok(
         await client.storage.upload_dir(
             URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder")
         )
-    diff = dircmp(DATA_FOLDER / "nested", target_dir)  # type: ignore
-    assert not calc_diff(diff)  # type: ignore
+    diff = dircmp(DATA_FOLDER / "nested", target_dir)
+    assert not calc_diff(diff)
 
 
 async def test_storage_upload_recursive_slash_ending(
@@ -953,8 +953,8 @@ async def test_storage_upload_recursive_slash_ending(
         await client.storage.upload_dir(
             URL(DATA_FOLDER.as_uri()) / "nested", URL("storage:folder/")
         )
-    diff = dircmp(DATA_FOLDER / "nested", target_dir)  # type: ignore
-    assert not calc_diff(diff)  # type: ignore
+    diff = dircmp(DATA_FOLDER / "nested", target_dir)
+    assert not calc_diff(diff)
 
 
 async def test_storage_download_regular_file_to_absent_file(
@@ -1084,8 +1084,8 @@ async def test_storage_download_dir(
             URL("storage:folder"), URL(target_dir.as_uri())
         )
 
-    diff = dircmp(DATA_FOLDER / "nested", target_dir)  # type: ignore
-    assert not calc_diff(diff)  # type: ignore
+    diff = dircmp(DATA_FOLDER / "nested", target_dir)
+    assert not calc_diff(diff)
 
 
 async def test_storage_download_dir_slash_ending(
@@ -1101,8 +1101,8 @@ async def test_storage_download_dir_slash_ending(
             URL("storage:folder"), URL(local_dir.as_uri() + "/")
         )
 
-    diff = dircmp(DATA_FOLDER / "nested", local_dir / "nested")  # type: ignore
-    assert not calc_diff(diff)  # type: ignore
+    diff = dircmp(DATA_FOLDER / "nested", local_dir / "nested")
+    assert not calc_diff(diff)
 
 
 @pytest.fixture
