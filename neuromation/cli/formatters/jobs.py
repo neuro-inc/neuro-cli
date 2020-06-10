@@ -398,6 +398,9 @@ class DetailedJobStartProgress(JobStartProgress):
             http_url = job.http_url
             if http_url:
                 out.append(style("Http URL", bold=True) + f": {http_url}")
+            if job.life_span:
+                limit = humanize.naturaldelta(datetime.timedelta(seconds=job.life_span))
+                out.append(style(f"The job will die in {limit}.", fg="red", dim=True))
             out.append(style("Commands", bold=True) + ":")
 
             out.append(

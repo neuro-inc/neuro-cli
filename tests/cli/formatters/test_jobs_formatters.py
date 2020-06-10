@@ -91,7 +91,7 @@ def job_descr() -> JobDescription:
 
 class TestJobStartProgress:
     def make_job(
-        self, status: JobStatus, reason: str, *, name: Optional[str] = None
+        self, status: JobStatus, reason: str, *, name: Optional[str] = None, life_span: Optional[float] = None,
     ) -> JobDescription:
         return JobDescription(
             name=name,
@@ -117,6 +117,7 @@ class TestJobStartProgress:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            life_span=life_span,
         )
 
     def strip(self, text: str) -> str:
@@ -210,6 +211,16 @@ class TestJobStartProgress:
         assert err == ""
         assert "Commands" in out
         assert "http://local.host.test/" in out
+        assert CSI in out
+
+    def test_tty_end_with_life_span(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
+        progress.end(self.make_job(JobStatus.RUNNING, "", life_span=24*3600))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "Commands" in out
+        assert "http://local.host.test/" in out
+        assert "The job will die in a day." in out
         assert CSI in out
 
 
