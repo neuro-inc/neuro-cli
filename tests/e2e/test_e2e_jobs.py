@@ -86,13 +86,12 @@ def test_job_submit(helper: Helper) -> None:
             "sleep 10m; false",
         ]
     )
-    match = re.match("Job ID: (.+) Status:", captured.out)
+    match = re.match("Job ID: (.+)", captured.out)
     assert match is not None
     job_id = match.group(1)
     assert job_id.startswith("job-")
     assert job_id not in jobs_orig
     assert f"Name: {job_name}" in captured.out
-    assert re.search("Http URL: http", captured.out), captured.out
 
     # Check it is in a running,pending job list now
     captured = helper.run_cli(
@@ -140,7 +139,7 @@ def test_job_description(helper: Helper) -> None:
             command,
         ]
     )
-    match = re.match("Job ID: (.+) Status:", captured.out)
+    match = re.match("Job ID: (.+)", captured.out)
     assert match is not None
     job_id = match.group(1)
 
@@ -185,7 +184,7 @@ def test_job_tags(helper: Helper) -> None:
     captured = helper.run_cli(
         ["job", "run", *tag_options, "--no-wait-start", UBUNTU_IMAGE_NAME, command]
     )
-    match = re.match("Job ID: (.+) Status:", captured.out)
+    match = re.match("Job ID: (.+)", captured.out)
     assert match is not None
     job_id = match.group(1)
 
@@ -204,7 +203,7 @@ def test_job_filter_by_date_range(helper: Helper) -> None:
     captured = helper.run_cli(
         ["job", "run", "--no-wait-start", UBUNTU_IMAGE_NAME, "sleep 300"]
     )
-    match = re.match("Job ID: (.+) Status:", captured.out)
+    match = re.match("Job ID: (.+)", captured.out)
     assert match is not None
     job_id = match.group(1)
     now = datetime.now()
@@ -262,7 +261,7 @@ def test_e2e_no_env(helper: Helper) -> None:
     )
 
     out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
+    match = re.match("Job ID: (.+)", out)
     assert match is not None
     job_id = match.group(1)
 
@@ -291,7 +290,7 @@ def test_e2e_env(helper: Helper) -> None:
     )
 
     out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
+    match = re.match("Job ID: (.+)", out)
     assert match is not None
     job_id = match.group(1)
 
@@ -321,7 +320,7 @@ def test_e2e_env_from_local(helper: Helper) -> None:
     )
 
     out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
+    match = re.match("Job ID: (.+)", out)
     assert match is not None
     job_id = match.group(1)
 
@@ -352,7 +351,7 @@ def test_e2e_multiple_env(helper: Helper) -> None:
     )
 
     out = captured.out
-    match = re.match("Job ID: (.+) Status:", out)
+    match = re.match("Job ID: (.+)", out)
     assert match is not None
     job_id = match.group(1)
 
@@ -931,7 +930,7 @@ def test_job_run_volume_all(helper: Helper) -> None:
         f"  NEUROMATION_HOME={root_mountpoint}/{helper.username}"
     )
     assert msg in captured.out
-    found_job_ids = re.findall("Job ID: (job-.+) Status:", captured.out)
+    found_job_ids = re.findall("Job ID: (job-.+)", captured.out)
     assert len(found_job_ids) == 1
     job_id = found_job_ids[0]
     helper.wait_job_change_state_to(

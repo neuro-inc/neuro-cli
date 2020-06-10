@@ -1,4 +1,3 @@
-from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -20,17 +19,14 @@ from neuromation.api import (
     Volume,
 )
 from neuromation.api.parsing_utils import _ImageNameParser
-from neuromation.cli.formatters import (
-    JobFormatter,
+from neuromation.cli.formatters.jobs import (
     JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
-    SimpleJobsFormatter,
-    TabularJobsFormatter,
-)
-from neuromation.cli.formatters.jobs import (
     ResourcesFormatter,
+    SimpleJobsFormatter,
     TabularJobRow,
+    TabularJobsFormatter,
     format_timedelta,
 )
 from neuromation.cli.formatters.utils import image_formatter, uri_formatter
@@ -93,88 +89,12 @@ def job_descr() -> JobDescription:
     )
 
 
-class TestJobFormatter:
-    def test_quiet_no_name(self, job_descr_no_name: JobDescription) -> None:
-        assert JobFormatter(quiet=True)(job_descr_no_name) == TEST_JOB_ID
-
-    def test_quiet(self, job_descr: JobDescription) -> None:
-        assert JobFormatter(quiet=True)(job_descr) == TEST_JOB_ID
-
-    def test_non_quiet_no_name(self, job_descr_no_name: JobDescription) -> None:
-        expected = (
-            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            f"Shortcuts:\n"
-            f"  neuro status {TEST_JOB_ID}     # check job status\n"
-            f"  neuro logs {TEST_JOB_ID}       # monitor job stdout\n"
-            f"  neuro top {TEST_JOB_ID}        # display real-time job telemetry\n"
-            f"  neuro exec {TEST_JOB_ID} bash  # execute bash shell to the job\n"
-            f"  neuro kill {TEST_JOB_ID}       # kill job"
-        )
-        assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
-
-    def test_non_quiet(self, job_descr: JobDescription) -> None:
-        expected = (
-            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            f"Name: {TEST_JOB_NAME}\n"
-            f"Shortcuts:\n"
-            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
-            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
-            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
-            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
-            f"  neuro kill {TEST_JOB_NAME}       # kill job"
-        )
-        assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
-
-    def test_non_quiet_http_url_no_name(
-        self, job_descr_no_name: JobDescription
-    ) -> None:
-        job_descr_no_name = replace(job_descr_no_name, http_url=URL("https://job.dev"))
-        expected = (
-            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            f"Http URL: https://job.dev\n"
-            f"Shortcuts:\n"
-            f"  neuro status {TEST_JOB_ID}     # check job status\n"
-            f"  neuro logs {TEST_JOB_ID}       # monitor job stdout\n"
-            f"  neuro top {TEST_JOB_ID}        # display real-time job telemetry\n"
-            f"  neuro exec {TEST_JOB_ID} bash  # execute bash shell to the job\n"
-            f"  neuro kill {TEST_JOB_ID}       # kill job"
-        )
-        assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
-
-    def test_non_quiet_http_url(self, job_descr: JobDescription) -> None:
-        job_descr = replace(job_descr, http_url=URL("https://job.dev"))
-        expected = (
-            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            f"Name: {TEST_JOB_NAME}\n"
-            f"Http URL: https://job.dev\n"
-            f"Shortcuts:\n"
-            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
-            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
-            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
-            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
-            f"  neuro kill {TEST_JOB_NAME}       # kill job"
-        )
-        assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
-
-    def test_non_quiet_http_url_named(self, job_descr: JobDescription) -> None:
-        job_descr = replace(job_descr, http_url=URL("https://job-named.dev"))
-        expected = (
-            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            f"Name: {TEST_JOB_NAME}\n"
-            f"Http URL: https://job-named.dev\n"
-            f"Shortcuts:\n"
-            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
-            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
-            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
-            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
-            f"  neuro kill {TEST_JOB_NAME}       # kill job"
-        )
-        assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
-
-
 class TestJobStartProgress:
-    def make_job(self, status: JobStatus, reason: str) -> JobDescription:
+    def make_job(
+        self, status: JobStatus, reason: str, *, name: Optional[str] = None
+    ) -> JobDescription:
         return JobDescription(
+            name=name,
             status=status,
             owner="test-user",
             cluster_name="default",
@@ -203,40 +123,93 @@ class TestJobStartProgress:
         return click.unstyle(text).strip()
 
     def test_quiet(self, capfd: Any) -> None:
+        job = self.make_job(JobStatus.PENDING, "")
         progress = JobStartProgress.create(tty=True, color=True, quiet=True)
-        progress(self.make_job(JobStatus.PENDING, ""))
-        progress.close()
+        progress.begin(job)
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == "test-job\n"
+        progress.step(job)
+        progress.end(job)
         out, err = capfd.readouterr()
         assert err == ""
         assert out == ""
 
-    def test_no_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
+    def test_no_tty_begin(self, capfd: Any, click_tty_emulation: Any) -> None:
         progress = JobStartProgress.create(tty=False, color=True, quiet=False)
-        progress(self.make_job(JobStatus.PENDING, ""))
-        progress(self.make_job(JobStatus.PENDING, ""))
-        progress(self.make_job(JobStatus.RUNNING, "reason"))
-        progress.close()
+        progress.begin(self.make_job(JobStatus.PENDING, ""))
         out, err = capfd.readouterr()
         assert err == ""
-        assert f"{JobStatus.PENDING}" in out
-        assert f"{JobStatus.RUNNING}" in out
-        assert "reason (ErrorDesc)" in out
-        assert out.count(f"{JobStatus.PENDING}") == 1
+        assert "test-job" in out
         assert CSI not in out
 
-    def test_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress(self.make_job(JobStatus.PENDING, ""))
-        progress(self.make_job(JobStatus.PENDING, ""))
-        progress(self.make_job(JobStatus.RUNNING, "reason"))
-        progress.close()
+    def test_no_tty_begin_with_name(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
+        progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
         out, err = capfd.readouterr()
         assert err == ""
-        assert f"{JobStatus.PENDING}" in out
-        assert f"{JobStatus.RUNNING}" in out
+        assert "test-job" in out
+        assert "job-name" in out
+        assert CSI not in out
+
+    def test_no_tty_step(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
+        progress.step(self.make_job(JobStatus.PENDING, ""))
+        progress.step(self.make_job(JobStatus.PENDING, ""))
+        progress.step(self.make_job(JobStatus.RUNNING, "reason"))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "pending" in out
+        assert "running" in out
+        assert "reason (ErrorDesc)" in out
+        assert out.count("pending") == 1
+        assert CSI not in out
+
+    def test_no_tty_end(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
+        progress.end(self.make_job(JobStatus.RUNNING, ""))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
+    def test_tty_begin(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
+        progress.begin(self.make_job(JobStatus.PENDING, ""))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "test-job" in out
+        assert CSI in out
+
+    def test_tty_begin_with_name(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
+        progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "test-job" in out
+        assert "job-name" in out
+        assert CSI in out
+
+    def test_tty_step(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
+        progress.step(self.make_job(JobStatus.PENDING, ""))
+        progress.step(self.make_job(JobStatus.PENDING, ""))
+        progress.step(self.make_job(JobStatus.RUNNING, "reason"))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "pending" in out
+        assert "running" in out
         assert "reason" in out
         assert "(ErrorDesc)" in out
-        assert out.count(f"{JobStatus.PENDING}") != 1
+        assert out.count("pending") != 1
+        assert CSI in out
+
+    def test_tty_end(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
+        progress.end(self.make_job(JobStatus.RUNNING, ""))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "Commands" in out
+        assert "http://local.host.test/" in out
         assert CSI in out
 
 

@@ -5,9 +5,9 @@ from typing import Optional
 import click
 
 from neuromation.api import LocalImage, RemoteImage
-from neuromation.cli.formatters import DockerImageProgress
 from neuromation.cli.formatters.images import (
     BaseImagesFormatter,
+    DockerImageProgress,
     LongImagesFormatter,
     ShortImagesFormatter,
 )

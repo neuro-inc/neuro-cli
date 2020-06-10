@@ -63,49 +63,6 @@ def format_timedelta(delta: datetime.timedelta) -> str:
     )
 
 
-class JobFormatter:
-    def __init__(self, quiet: bool = True) -> None:
-        self._quiet = quiet
-
-    def __call__(self, job: JobDescription) -> str:
-        job_id = job.id
-        if self._quiet:
-            return job_id
-        out = []
-        out.append(style("Job ID", bold=True) + f": {job_id} ")
-        if job.name:
-            out.append(style("Name", bold=True) + f": {job.name}")
-            job_alias = job.name
-        else:
-            job_alias = job.id
-        if job.status != JobStatus.FAILED:
-            http_url = job.http_url
-            if http_url:
-                out.append(style("Http URL", bold=True) + f": {http_url}")
-            out.append(style("Shortcuts", bold=True) + ":")
-
-            out.append(
-                f"  neuro status {job_alias}     "
-                + style("# check job status", dim=True)
-            )
-            out.append(
-                f"  neuro logs {job_alias}       "
-                + style("# monitor job stdout", dim=True)
-            )
-            out.append(
-                f"  neuro top {job_alias}        "
-                + style("# display real-time job telemetry", dim=True)
-            )
-            out.append(
-                f"  neuro exec {job_alias} bash  "
-                + style("# execute bash shell to the job", dim=True)
-            )
-            out.append(
-                f"  neuro kill {job_alias}       " + style("# kill job", dim=True)
-            )
-        return "\n".join(out)
-
-
 class JobStatusFormatter:
     def __init__(self, uri_formatter: URIFormatter) -> None:
         self._format_uri = uri_formatter
@@ -192,7 +149,7 @@ class JobStatusFormatter:
             finished_at = job_status.history.finished_at.isoformat()
             lines.append(f"**Finished**: {finished_at}")
             lines.append(f"**Exit code**: {job_status.history.exit_code}")
-        if job_status.status == JobStatus.FAILED:
+        if job_status.status == JobStatus.FAILED and job_status.history.description:
             lines.append("**===Description===**")
             lines.append(job_status.history.description)
             lines.append("=================")
@@ -441,7 +398,7 @@ class DetailedJobStartProgress(JobStartProgress):
             http_url = job.http_url
             if http_url:
                 out.append(style("Http URL", bold=True) + f": {http_url}")
-            out.append(style("Shortcuts", bold=True) + ":")
+            out.append(style("Commands", bold=True) + ":")
 
             out.append(
                 f"  neuro status {job_alias}     "
@@ -462,6 +419,7 @@ class DetailedJobStartProgress(JobStartProgress):
             out.append(
                 f"  neuro kill {job_alias}       " + style("# kill job", dim=True)
             )
+            self._printer.print("\n".join(out))
 
 
 class StreamJobStartProgress(JobStartProgress):

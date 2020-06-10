@@ -27,7 +27,7 @@ from neuromation.api import (
     Resources,
     Volume,
 )
-from neuromation.cli.formatters import DockerImageProgress
+from neuromation.cli.formatters.images import DockerImageProgress
 from neuromation.cli.formatters.utils import (
     URIFormatter,
     image_formatter,
@@ -536,8 +536,7 @@ async def attach(root: Root, job: str) -> None:
     while status.status == JobStatus.PENDING:
         await asyncio.sleep(0.2)
         status = await root.client.jobs.status(id)
-        progress(status)
-    progress.close()
+        progress.step(status)
     tty = status.container.tty
     _check_tty(root, tty)
 

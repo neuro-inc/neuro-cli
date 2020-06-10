@@ -12,7 +12,7 @@ from neuromation.api.abc import (
     ImageCommitStarted,
     ImageProgressSave,
 )
-from neuromation.cli.formatters import DockerImageProgress
+from neuromation.cli.formatters.images import DockerImageProgress
 from neuromation.cli.printer import CSI
 
 

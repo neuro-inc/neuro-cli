@@ -5,8 +5,8 @@ import click
 import pytest
 
 from neuromation.api import Action, FileStatus, FileStatusType
-from neuromation.cli.formatters import BaseFilesFormatter
 from neuromation.cli.formatters.storage import (
+    BaseFilesFormatter,
     BSDAttributes,
     BSDPainter,
     FilesSorter,

@@ -9,7 +9,7 @@ import yaml
 
 from neuromation.api.admin import _ClusterUserRoleType
 
-from .formatters import ClustersFormatter, ClusterUserFormatter
+from .formatters.admin import ClustersFormatter, ClusterUserFormatter
 from .formatters.config import QuotaFormatter
 from .root import Root
 from .utils import argument, command, group, option, pager_maybe
