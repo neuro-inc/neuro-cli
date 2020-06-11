@@ -228,7 +228,7 @@ if sys.platform != "win32":
             self._threads[pid] = thread
             thread.start()
 
-        def remove_child_handler(self, pid: int) -> bool:  # type: ignore
+        def remove_child_handler(self, pid: int) -> bool:
             # asyncio never calls remove_child_handler() !!!
             # The method is no-op but is implemented because
             # abstract base classe requires it
