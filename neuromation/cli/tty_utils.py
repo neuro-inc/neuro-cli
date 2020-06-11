@@ -15,6 +15,8 @@ ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004
 
 
 def enable_ansi() -> None:
+    if not sys.stdout.isatty():
+        return
     if sys.platform == "win32":
         from ctypes import windll
         from ctypes.wintypes import DWORD, HANDLE
