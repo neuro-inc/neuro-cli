@@ -489,28 +489,6 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_e2e_ssh_exec_no_tty(helper: Helper) -> None:
-    command = 'bash -c "sleep 15m; false"'
-    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
-
-    with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(
-            [
-                "job",
-                "exec",
-                "--no-tty",
-                "--no-key-check",
-                "--timeout",
-                str(EXEC_TIMEOUT),
-                job_id,
-                "[ -t 1 ]",
-            ]
-        )
-    assert cm.value.returncode == 1
-    helper.kill_job(job_id, wait=False)
-
-
-@pytest.mark.e2e
 def test_e2e_ssh_exec_tty(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
@@ -809,30 +787,6 @@ def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
         ["-v", "job", "run", "--detach", "--browse", UBUNTU_IMAGE_NAME, "true"]
     )
     assert "Browsing job, please open: https://job-" in captured.out
-
-
-@pytest.mark.e2e
-def test_job_run_no_detach(helper: Helper) -> None:
-    token = uuid4()
-    # Run a new job
-    captured = helper.run_cli(["-v", "job", "run", UBUNTU_IMAGE_NAME, f"echo {token}"])
-    assert str(token) in captured.out
-    detach_notification = """\
-Terminal is attached to the remote job, so you receive the job's output.
-Use 'Ctrl-C' to detach (it will NOT terminate the job), or restart the job
-with `--detach` option.\
-"""
-    assert detach_notification
-
-
-@pytest.mark.e2e
-def test_job_run_no_detach_quiet_mode(helper: Helper) -> None:
-    token = str(uuid4())
-    # Run a new job
-    captured = helper.run_cli(["-q", "job", "run", UBUNTU_IMAGE_NAME, f"echo {token}"])
-    out = captured.out.strip()
-    assert "Use 'Ctrl-C' to detach (it will NOT terminate the job)" not in out
-    assert out.endswith(token)
 
 
 @pytest.mark.e2e
