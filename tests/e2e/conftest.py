@@ -493,6 +493,7 @@ class Helper:
         *,
         verbosity: int = 0,
         network_timeout: float = NETWORK_TIMEOUT,
+        timeout: float = 30,
     ) -> str:
         __tracebackhide__ = True
 
@@ -506,11 +507,11 @@ class Helper:
 
         proc = subprocess.run(
             "neuro",
-            timeout=300,
             encoding="utf8",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             env=env,
+            timeout=timeout,
         )
         assert proc.returncode == 1
         assert not proc.stderr
