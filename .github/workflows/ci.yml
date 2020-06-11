@@ -105,7 +105,7 @@ jobs:
       fail-fast:
         false
     runs-on: ${{ matrix.os }}-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -129,6 +129,7 @@ jobs:
         pip install -U pip wheel
         pip install -r requirements/ci.txt
     - name: Run E2E tests
+      timeout-minutes: 10
       env:
         E2E_TOKEN: ${{ secrets.E2E_TOKEN }}
         E2E_USER_TOKEN: ${{ secrets.E2E_USER_TOKEN }}
