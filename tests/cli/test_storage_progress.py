@@ -16,11 +16,11 @@ from neuromation.api import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from neuromation.cli.formatters import create_storage_progress
 from neuromation.cli.formatters.storage import (
     BaseStorageProgress,
     StreamProgress,
     TTYProgress,
+    create_storage_progress,
     format_url,
 )
 from neuromation.cli.root import Root

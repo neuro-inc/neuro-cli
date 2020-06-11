@@ -1,4 +1,3 @@
-from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -20,17 +19,14 @@ from neuromation.api import (
     Volume,
 )
 from neuromation.api.parsing_utils import _ImageNameParser
-from neuromation.cli.formatters import (
-    JobFormatter,
+from neuromation.cli.formatters.jobs import (
     JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
-    SimpleJobsFormatter,
-    TabularJobsFormatter,
-)
-from neuromation.cli.formatters.jobs import (
     ResourcesFormatter,
+    SimpleJobsFormatter,
     TabularJobRow,
+    TabularJobsFormatter,
     format_timedelta,
 )
 from neuromation.cli.formatters.utils import image_formatter, uri_formatter
@@ -93,88 +89,17 @@ def job_descr() -> JobDescription:
     )
 
 
-class TestJobFormatter:
-    def test_quiet_no_name(self, job_descr_no_name: JobDescription) -> None:
-        assert JobFormatter(quiet=True)(job_descr_no_name) == TEST_JOB_ID
-
-    def test_quiet(self, job_descr: JobDescription) -> None:
-        assert JobFormatter(quiet=True)(job_descr) == TEST_JOB_ID
-
-    def test_non_quiet_no_name(self, job_descr_no_name: JobDescription) -> None:
-        expected = (
-            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            f"Shortcuts:\n"
-            f"  neuro status {TEST_JOB_ID}     # check job status\n"
-            f"  neuro logs {TEST_JOB_ID}       # monitor job stdout\n"
-            f"  neuro top {TEST_JOB_ID}        # display real-time job telemetry\n"
-            f"  neuro exec {TEST_JOB_ID} bash  # execute bash shell to the job\n"
-            f"  neuro kill {TEST_JOB_ID}       # kill job"
-        )
-        assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
-
-    def test_non_quiet(self, job_descr: JobDescription) -> None:
-        expected = (
-            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            f"Name: {TEST_JOB_NAME}\n"
-            f"Shortcuts:\n"
-            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
-            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
-            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
-            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
-            f"  neuro kill {TEST_JOB_NAME}       # kill job"
-        )
-        assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
-
-    def test_non_quiet_http_url_no_name(
-        self, job_descr_no_name: JobDescription
-    ) -> None:
-        job_descr_no_name = replace(job_descr_no_name, http_url=URL("https://job.dev"))
-        expected = (
-            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            f"Http URL: https://job.dev\n"
-            f"Shortcuts:\n"
-            f"  neuro status {TEST_JOB_ID}     # check job status\n"
-            f"  neuro logs {TEST_JOB_ID}       # monitor job stdout\n"
-            f"  neuro top {TEST_JOB_ID}        # display real-time job telemetry\n"
-            f"  neuro exec {TEST_JOB_ID} bash  # execute bash shell to the job\n"
-            f"  neuro kill {TEST_JOB_ID}       # kill job"
-        )
-        assert click.unstyle(JobFormatter(quiet=False)(job_descr_no_name)) == expected
-
-    def test_non_quiet_http_url(self, job_descr: JobDescription) -> None:
-        job_descr = replace(job_descr, http_url=URL("https://job.dev"))
-        expected = (
-            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            f"Name: {TEST_JOB_NAME}\n"
-            f"Http URL: https://job.dev\n"
-            f"Shortcuts:\n"
-            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
-            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
-            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
-            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
-            f"  neuro kill {TEST_JOB_NAME}       # kill job"
-        )
-        assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
-
-    def test_non_quiet_http_url_named(self, job_descr: JobDescription) -> None:
-        job_descr = replace(job_descr, http_url=URL("https://job-named.dev"))
-        expected = (
-            f"Job ID: {TEST_JOB_ID} Status: {JobStatus.PENDING}\n"
-            f"Name: {TEST_JOB_NAME}\n"
-            f"Http URL: https://job-named.dev\n"
-            f"Shortcuts:\n"
-            f"  neuro status {TEST_JOB_NAME}     # check job status\n"
-            f"  neuro logs {TEST_JOB_NAME}       # monitor job stdout\n"
-            f"  neuro top {TEST_JOB_NAME}        # display real-time job telemetry\n"
-            f"  neuro exec {TEST_JOB_NAME} bash  # execute bash shell to the job\n"
-            f"  neuro kill {TEST_JOB_NAME}       # kill job"
-        )
-        assert click.unstyle(JobFormatter(quiet=False)(job_descr)) == expected
-
-
 class TestJobStartProgress:
-    def make_job(self, status: JobStatus, reason: str) -> JobDescription:
+    def make_job(
+        self,
+        status: JobStatus,
+        reason: str,
+        *,
+        name: Optional[str] = None,
+        life_span: Optional[float] = None,
+    ) -> JobDescription:
         return JobDescription(
+            name=name,
             status=status,
             owner="test-user",
             cluster_name="default",
@@ -197,46 +122,110 @@ class TestJobStartProgress:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            life_span=life_span,
         )
 
     def strip(self, text: str) -> str:
         return click.unstyle(text).strip()
 
     def test_quiet(self, capfd: Any) -> None:
+        job = self.make_job(JobStatus.PENDING, "")
         progress = JobStartProgress.create(tty=True, color=True, quiet=True)
-        progress(self.make_job(JobStatus.PENDING, ""))
-        progress.close()
+        progress.begin(job)
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == "test-job\n"
+        progress.step(job)
+        progress.end(job)
         out, err = capfd.readouterr()
         assert err == ""
         assert out == ""
 
-    def test_no_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
+    def test_no_tty_begin(self, capfd: Any, click_tty_emulation: Any) -> None:
         progress = JobStartProgress.create(tty=False, color=True, quiet=False)
-        progress(self.make_job(JobStatus.PENDING, ""))
-        progress(self.make_job(JobStatus.PENDING, ""))
-        progress(self.make_job(JobStatus.RUNNING, "reason"))
-        progress.close()
+        progress.begin(self.make_job(JobStatus.PENDING, ""))
         out, err = capfd.readouterr()
         assert err == ""
-        assert f"{JobStatus.PENDING}" in out
-        assert f"{JobStatus.RUNNING}" in out
-        assert "reason (ErrorDesc)" in out
-        assert out.count(f"{JobStatus.PENDING}") == 1
+        assert "test-job" in out
         assert CSI not in out
 
-    def test_tty(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress(self.make_job(JobStatus.PENDING, ""))
-        progress(self.make_job(JobStatus.PENDING, ""))
-        progress(self.make_job(JobStatus.RUNNING, "reason"))
-        progress.close()
+    def test_no_tty_begin_with_name(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
+        progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
         out, err = capfd.readouterr()
         assert err == ""
-        assert f"{JobStatus.PENDING}" in out
-        assert f"{JobStatus.RUNNING}" in out
+        assert "test-job" in out
+        assert "job-name" in out
+        assert CSI not in out
+
+    def test_no_tty_step(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
+        progress.step(self.make_job(JobStatus.PENDING, ""))
+        progress.step(self.make_job(JobStatus.PENDING, ""))
+        progress.step(self.make_job(JobStatus.RUNNING, "reason"))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "pending" in out
+        assert "running" in out
+        assert "reason (ErrorDesc)" in out
+        assert out.count("pending") == 1
+        assert CSI not in out
+
+    def test_no_tty_end(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
+        progress.end(self.make_job(JobStatus.RUNNING, ""))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert out == ""
+
+    def test_tty_begin(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
+        progress.begin(self.make_job(JobStatus.PENDING, ""))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "test-job" in out
+        assert CSI in out
+
+    def test_tty_begin_with_name(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
+        progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "test-job" in out
+        assert "job-name" in out
+        assert CSI in out
+
+    def test_tty_step(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
+        progress.step(self.make_job(JobStatus.PENDING, ""))
+        progress.step(self.make_job(JobStatus.PENDING, ""))
+        progress.step(self.make_job(JobStatus.RUNNING, "reason"))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "pending" in out
+        assert "running" in out
         assert "reason" in out
         assert "(ErrorDesc)" in out
-        assert out.count(f"{JobStatus.PENDING}") != 1
+        assert out.count("pending") != 1
+        assert CSI in out
+
+    def test_tty_end(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
+        progress.end(self.make_job(JobStatus.RUNNING, ""))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "Commands" in out
+        assert "http://local.host.test/" in out
+        assert CSI in out
+
+    def test_tty_end_with_life_span(self, capfd: Any, click_tty_emulation: Any) -> None:
+        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
+        progress.end(self.make_job(JobStatus.RUNNING, "", life_span=24 * 3600))
+        out, err = capfd.readouterr()
+        assert err == ""
+        assert "Commands" in out
+        assert "http://local.host.test/" in out
+        assert "The job will die in a day." in out
         assert CSI in out
 
 
@@ -271,8 +260,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Name: test-job-name\n"
@@ -282,8 +272,8 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -324,8 +314,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Tags: tag1, tag2, tag3\n"
@@ -335,8 +326,8 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -377,8 +368,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -387,9 +379,9 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
             "Life span: 1d2h3m4s\n"
+            "TTY: False\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -430,8 +422,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -440,9 +433,9 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
             "Life span: no limit\n"
+            "TTY: False\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -483,8 +476,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -493,9 +487,9 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
             "Restart policy: always\n"
+            "TTY: False\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -535,8 +529,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -545,8 +540,8 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -583,8 +578,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
@@ -593,8 +589,9 @@ class TestJobOutputFormatter:
             "Status: pending\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
+            f"{resource}\n"
             "Preemptible: True\n"
+            "TTY: False\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -615,6 +612,7 @@ class TestJobOutputFormatter:
                 image=RemoteImage.new_external_image(name="test-image"),
                 command="test-command",
                 resources=Resources(16, 0.1, 0, None, False, None, None),
+                tty=True,
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
@@ -624,8 +622,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
@@ -634,8 +633,9 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
+            f"{resource}\n"
             "Preemptible: True\n"
+            "TTY: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -665,8 +665,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: owner\n"
@@ -674,8 +675,9 @@ class TestJobOutputFormatter:
             "Status: pending (ContainerCreating)\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
+            f"{resource}\n"
             "Preemptible: True\n"
+            "TTY: False\n"
             "Created: 2018-09-25T12:28:21.298672+00:00"
         )
 
@@ -707,8 +709,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -717,8 +720,8 @@ class TestJobOutputFormatter:
             "Status: running\n"
             "Image: test-image\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Internal Hostname: host.local\n"
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -754,8 +757,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Owner: test-user\n"
@@ -765,8 +769,8 @@ class TestJobOutputFormatter:
             "Image: test-image\n"
             "Entrypoint: /usr/bin/make\n"
             "Command: test\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Internal Hostname: host.local\n"
             "Http URL: http://local.host.test/\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
@@ -826,8 +830,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = JobStatusFormatter(uri_formatter=uri_fmtr)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Name: test-job-name\n"
@@ -837,8 +842,8 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: image:test-image:sometag\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Volumes:\n"
             "  /mnt/ro   storage:/otheruser/ro                READONLY\n"
             "  /mnt/rw   storage:rw                                   \n"
@@ -900,8 +905,9 @@ class TestJobOutputFormatter:
             is_preemptible=False,
         )
 
-        status = JobStatusFormatter(uri_formatter=str)(description)
+        status = click.unstyle(JobStatusFormatter(uri_formatter=str)(description))
         resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
         assert (
             status == "Job: test-job\n"
             "Name: test-job-name\n"
@@ -911,8 +917,8 @@ class TestJobOutputFormatter:
             "Status: failed (ErrorReason)\n"
             "Image: image://test-cluster/test-user/test-image:sometag\n"
             "Command: test-command\n"
-            f"{resource_formatter(description.container.resources)}\n"
-            "Preemptible: False\n"
+            f"{resource}\n"
+            "TTY: False\n"
             "Volumes:\n"
             "  /mnt/ro  storage://test-cluster/otheruser/ro  READONLY\n"
             "  /mnt/rw  storage://test-cluster/test-user/rw          \n"
@@ -1372,10 +1378,8 @@ class TestResourcesFormatter:
             tpu_software_version=None,
         )
         resource_formatter = ResourcesFormatter()
-        assert (
-            resource_formatter(resources) == "Resources:\n"
-            "  Memory: 16.0M\n"
-            "  CPU: 0.1"
+        assert click.unstyle(resource_formatter(resources)) == (
+            "Resources:\n" "  Memory: 16.0M\n" "  CPU: 0.1"
         )
 
     def test_gpu_container(self) -> None:
@@ -1389,8 +1393,8 @@ class TestResourcesFormatter:
             tpu_software_version=None,
         )
         resource_formatter = ResourcesFormatter()
-        assert (
-            resource_formatter(resources) == "Resources:\n"
+        assert click.unstyle(resource_formatter(resources)) == (
+            "Resources:\n"
             "  Memory: 1.0G\n"
             "  CPU: 2.0\n"
             "  GPU: 1.0 x nvidia-tesla-p4"
@@ -1407,8 +1411,8 @@ class TestResourcesFormatter:
             tpu_software_version=None,
         )
         resource_formatter = ResourcesFormatter()
-        assert (
-            resource_formatter(resources) == "Resources:\n"
+        assert click.unstyle(resource_formatter(resources)) == (
+            "Resources:\n"
             "  Memory: 16.0M\n"
             "  CPU: 0.1\n"
             "  Additional: Extended SHM space"
@@ -1425,8 +1429,8 @@ class TestResourcesFormatter:
             tpu_software_version="1.14",
         )
         resource_formatter = ResourcesFormatter()
-        assert (
-            resource_formatter(resources=resources) == "Resources:\n"
+        assert click.unstyle(resource_formatter(resources=resources)) == (
+            "Resources:\n"
             "  Memory: 16.0M\n"
             "  CPU: 0.1\n"
             "  TPU: v2-8/1.14\n"

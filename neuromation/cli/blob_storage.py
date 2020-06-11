@@ -13,14 +13,12 @@ from neuromation.api.file_filter import FileFilter
 from neuromation.api.url_utils import _extract_path
 
 from .const import EX_OSFILE
-from .formatters import (
+from .formatters.blob_storage import (
     BaseBlobFormatter,
-    FilesSorter,
     LongBlobFormatter,
     SimpleBlobFormatter,
-    create_storage_progress,
-    get_painter,
 )
+from .formatters.storage import FilesSorter, create_storage_progress, get_painter
 from .root import Root
 from .storage import calc_filters, filter_option
 from .utils import (

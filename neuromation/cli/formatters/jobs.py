@@ -21,7 +21,7 @@ from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
 
 from .ftable import table
-from .utils import ImageFormatter, URIFormatter, image_formatter
+from .utils import ImageFormatter, URIFormatter, apply_styling, image_formatter
 
 
 COLORS = {
@@ -63,122 +63,79 @@ def format_timedelta(delta: datetime.timedelta) -> str:
     )
 
 
-class JobFormatter:
-    def __init__(self, quiet: bool = True) -> None:
-        self._quiet = quiet
-
-    def __call__(self, job: JobDescription) -> str:
-        job_id = job.id
-        if self._quiet:
-            return job_id
-        out = []
-        out.append(
-            style("Job ID", bold=True)
-            + f": {job_id} "
-            + style("Status", bold=True)
-            + f": {format_job_status(job.status)}"
-        )
-        if job.name:
-            out.append(style("Name", bold=True) + f": {job.name}")
-            job_alias = job.name
-        else:
-            job_alias = job.id
-        http_url = job.http_url
-        if http_url:
-            out.append(style("Http URL", bold=True) + f": {http_url}")
-        out.append(style("Shortcuts", bold=True) + ":")
-
-        out.append(
-            f"  neuro status {job_alias}     " + style("# check job status", dim=True)
-        )
-        out.append(
-            f"  neuro logs {job_alias}       " + style("# monitor job stdout", dim=True)
-        )
-        out.append(
-            f"  neuro top {job_alias}        "
-            + style("# display real-time job telemetry", dim=True)
-        )
-        out.append(
-            f"  neuro exec {job_alias} bash  "
-            + style("# execute bash shell to the job", dim=True)
-        )
-        out.append(f"  neuro kill {job_alias}       " + style("# kill job", dim=True))
-        return "\n".join(out)
-
-
 class JobStatusFormatter:
     def __init__(self, uri_formatter: URIFormatter) -> None:
         self._format_uri = uri_formatter
         self._format_image = image_formatter(uri_formatter=uri_formatter)
 
     def __call__(self, job_status: JobDescription) -> str:
-        result: str = f"Job: {job_status.id}\n"
+        assert job_status.history is not None
+        lines = []
+        lines.append(f"**Job**: {job_status.id}")
         if job_status.name:
-            result += f"Name: {job_status.name}\n"
+            lines.append(f"**Name**: {job_status.name}")
         if job_status.tags:
-            result += f"Tags: {', '.join(job_status.tags)}\n"
-        result += f"Owner: {job_status.owner if job_status.owner else ''}\n"
-        result += f"Cluster: {job_status.cluster_name}\n"
+            lines.append(f"**Tags**: {', '.join(job_status.tags)}")
+        lines.append(f"**Owner**: {job_status.owner if job_status.owner else ''}")
+        lines.append(f"**Cluster**: {job_status.cluster_name}")
         if job_status.description:
-            result += f"Description: {job_status.description}\n"
-        result += f"Status: {job_status.status}"
-        if (
-            job_status.history
-            and job_status.history.reason
-            and job_status.status in [JobStatus.FAILED, JobStatus.PENDING]
-        ):
-            result += f" ({job_status.history.reason})"
-        result += f"\nImage: {self._format_image(job_status.container.image)}\n"
+            lines.append(f"**Description**: {job_status.description}")
+        line = f"**Status**: {format_job_status(job_status.status)}"
+        if job_status.history.reason and job_status.status in [
+            JobStatus.FAILED,
+            JobStatus.PENDING,
+        ]:
+            line += f" ({job_status.history.reason})"
+        lines.append(line)
+        lines.append(f"**Image**: {self._format_image(job_status.container.image)}")
 
         if job_status.container.entrypoint:
-            result += f"Entrypoint: {job_status.container.entrypoint}\n"
-        result += f"Command: {job_status.container.command}\n"
+            lines.append(f"**Entrypoint**: {job_status.container.entrypoint}")
+        lines.append(f"**Command**: {job_status.container.command}")
         resource_formatter = ResourcesFormatter()
-        result += resource_formatter(job_status.container.resources) + "\n"
-        result += f"Preemptible: {job_status.is_preemptible}\n"
+        lines.append(resource_formatter(job_status.container.resources))
+        if job_status.is_preemptible:
+            lines.append(f"**Preemptible**: True")
         if job_status.restart_policy != JobRestartPolicy.NEVER:
-            result += f"Restart policy: {job_status.restart_policy}\n"
+            lines.append(f"**Restart policy**: {job_status.restart_policy}")
         if job_status.life_span is not None:
             limit = (
                 "no limit"
                 if job_status.life_span == 0
                 else format_timedelta(datetime.timedelta(seconds=job_status.life_span))
             )
-            result += f"Life span: {limit}\n"
+            lines.append(f"**Life span**: {limit}")
 
-        if job_status.container.tty:
-            result += "TTY: True\n"
+        lines.append(f"**TTY**: {job_status.container.tty}")
 
         if job_status.container.volumes:
             rows = [
                 (
                     volume.container_path,
-                    f"{self._format_uri(volume.storage_uri)}",
+                    self._format_uri(volume.storage_uri),
                     "READONLY" if volume.read_only else " ",
                 )
                 for volume in job_status.container.volumes
             ]
-            result += "Volumes:" + "\n  "
-            result += "\n  ".join(table(rows)) + "\n"
+            lines.append("**Volumes**:")
+            lines.extend(f"  {i}" for i in table(rows))
 
         if job_status.internal_hostname:
-            result += f"Internal Hostname: {job_status.internal_hostname}\n"
+            lines.append(f"**Internal Hostname**: {job_status.internal_hostname}")
         if job_status.http_url:
-            result = f"{result}Http URL: {job_status.http_url}\n"
+            lines.append(f"**Http URL**: {job_status.http_url}")
         if job_status.container.http:
-            result = (
-                f"{result}Http authentication: "
-                f"{job_status.container.http.requires_auth}\n"
+            lines.append(
+                f"**Http authentication**: {job_status.container.http.requires_auth}"
             )
         if job_status.container.env:
-            result += f"Environment:\n"
+            lines.append(f"**Environment**:")
             for key, value in job_status.container.env.items():
-                result += f"{key}={value}\n"
+                lines.append(f"  {key}={value}")
 
-        assert job_status.history is not None
         assert job_status.history.created_at is not None
         created_at = job_status.history.created_at.isoformat()
-        result = f"{result}Created: {created_at}"
+        lines.append(f"**Created**: {created_at}")
         if job_status.status in [
             JobStatus.RUNNING,
             JobStatus.FAILED,
@@ -186,16 +143,17 @@ class JobStatusFormatter:
         ]:
             assert job_status.history.started_at is not None
             started_at = job_status.history.started_at.isoformat()
-            result += "\n" f"Started: {started_at}"
+            lines.append(f"**Started**: {started_at}")
         if job_status.status in [JobStatus.FAILED, JobStatus.SUCCEEDED]:
             assert job_status.history.finished_at is not None
             finished_at = job_status.history.finished_at.isoformat()
-            result += "\n" f"Finished: {finished_at}"
-            result += "\n" f"Exit code: {job_status.history.exit_code}"
-        if job_status.status == JobStatus.FAILED:
-            result += "\n===Description===\n"
-            result += f"{job_status.history.description}\n================="
-        return result
+            lines.append(f"**Finished**: {finished_at}")
+            lines.append(f"**Exit code**: {job_status.history.exit_code}")
+        if job_status.status == JobStatus.FAILED and job_status.history.description:
+            lines.append("**===Description===**")
+            lines.append(job_status.history.description)
+            lines.append("=================")
+        return apply_styling("\n".join(lines))
 
 
 class JobTelemetryFormatter:
@@ -334,24 +292,26 @@ class TabularJobsFormatter(BaseJobsFormatter):
 
 class ResourcesFormatter:
     def __call__(self, resources: Resources) -> str:
-        lines = list()
-        lines.append("Memory: " + format_size(resources.memory_mb * 1024 ** 2))
-        lines.append(f"CPU: {resources.cpu:0.1f}")
+        lines = []
+        lines.append("**Memory**: " + format_size(resources.memory_mb * 1024 ** 2))
+        lines.append(f"**CPU**: {resources.cpu:0.1f}")
         if resources.gpu:
-            lines.append(f"GPU: {resources.gpu:0.1f} x {resources.gpu_model}")
+            lines.append(f"**GPU**: {resources.gpu:0.1f} x {resources.gpu_model}")
 
         if resources.tpu_type:
-            lines.append(f"TPU: {resources.tpu_type}/{resources.tpu_software_version}")
+            lines.append(
+                f"**TPU**: {resources.tpu_type}/{resources.tpu_software_version}"
+            )
 
-        additional = list()
+        additional = []
         if resources.shm:
             additional.append("Extended SHM space")
 
         if additional:
-            lines.append(f'Additional: {",".join(additional)}')
+            lines.append(f'**Additional**: {",".join(additional)}')
 
         indent = "  "
-        return "Resources:\n" + indent + f"\n{indent}".join(lines)
+        return apply_styling("**Resources**:\n" + indent + f"\n{indent}".join(lines))
 
 
 class JobStartProgress:
@@ -365,10 +325,14 @@ class JobStartProgress:
             return DetailedJobStartProgress(color)
         return StreamJobStartProgress()
 
-    def __call__(self, job: JobDescription) -> None:
+    def begin(self, job: JobDescription) -> None:
+        # Quiet mode
+        print(job.id)
+
+    def step(self, job: JobDescription) -> None:
         pass
 
-    def close(self) -> None:
+    def end(self, job: JobDescription) -> None:
         pass
 
     def _get_status_reason_message(self, job: JobDescription) -> str:
@@ -394,7 +358,12 @@ class DetailedJobStartProgress(JobStartProgress):
         self._printer = TTYPrinter()
         self._lineno = 0
 
-    def __call__(self, job: JobDescription) -> None:
+    def begin(self, job: JobDescription) -> None:
+        self._printer.print(style("Job ID", bold=True) + f": {job.id} ")
+        if job.name:
+            self._printer.print(style("Name", bold=True) + f": {job.name}")
+
+    def step(self, job: JobDescription) -> None:
         new_time = self.time_factory()
         dt = new_time - self._time
         msg = "Status: " + format_job_status(job.status)
@@ -418,13 +387,55 @@ class DetailedJobStartProgress(JobStartProgress):
                 f"{msg} {next(self._spinner)} [{dt:.1f} sec]", lineno=self._lineno
             )
 
+    def end(self, job: JobDescription) -> None:
+        out = []
+        if job.name:
+            job_alias = job.name
+        else:
+            job_alias = job.id
+
+        if job.status != JobStatus.FAILED:
+            http_url = job.http_url
+            if http_url:
+                out.append(style("Http URL", bold=True) + f": {http_url}")
+            if job.life_span:
+                limit = humanize.naturaldelta(datetime.timedelta(seconds=job.life_span))
+                out.append(style(f"The job will die in {limit}.", fg="red", dim=True))
+            out.append(style("Commands", bold=True) + ":")
+
+            out.append(
+                f"  neuro status {job_alias}     "
+                + style("# check job status", dim=True)
+            )
+            out.append(
+                f"  neuro logs {job_alias}       "
+                + style("# monitor job stdout", dim=True)
+            )
+            out.append(
+                f"  neuro top {job_alias}        "
+                + style("# display real-time job telemetry", dim=True)
+            )
+            out.append(
+                f"  neuro exec {job_alias} bash  "
+                + style("# execute bash shell to the job", dim=True)
+            )
+            out.append(
+                f"  neuro kill {job_alias}       " + style("# kill job", dim=True)
+            )
+            self._printer.print("\n".join(out))
+
 
 class StreamJobStartProgress(JobStartProgress):
     def __init__(self) -> None:
         self._printer = StreamPrinter()
         self._prev = ""
 
-    def __call__(self, job: JobDescription) -> None:
+    def begin(self, job: JobDescription) -> None:
+        self._printer.print(f"Job ID: {job.id}")
+        if job.name:
+            self._printer.print(f"Name: {job.name}")
+
+    def step(self, job: JobDescription) -> None:
         msg = f"Status: {job.status}"
         reason = self._get_status_reason_message(job)
         if reason:
@@ -441,6 +452,9 @@ class StreamJobStartProgress(JobStartProgress):
             self._prev = msg
         else:
             self._printer.tick()
+
+    def end(self, job: JobDescription) -> None:
+        pass
 
 
 class JobStopProgress:

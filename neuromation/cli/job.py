@@ -27,7 +27,7 @@ from neuromation.api import (
     Resources,
     Volume,
 )
-from neuromation.cli.formatters import DockerImageProgress
+from neuromation.cli.formatters.images import DockerImageProgress
 from neuromation.cli.formatters.utils import (
     URIFormatter,
     image_formatter,
@@ -54,7 +54,6 @@ from .defaults import (
 )
 from .formatters.jobs import (
     BaseJobsFormatter,
-    JobFormatter,
     JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
@@ -537,8 +536,7 @@ async def attach(root: Root, job: str) -> None:
     while status.status == JobStatus.PENDING:
         await asyncio.sleep(0.2)
         status = await root.client.jobs.status(id)
-        progress(status)
-    progress.close()
+        progress.step(status)
     tty = status.container.tty
     _check_tty(root, tty)
 
@@ -1171,20 +1169,20 @@ async def run_job(
         restart_policy=job_restart_policy,
         life_span=job_life_span,
     )
-    click.echo(JobFormatter(root.quiet)(job))
     progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
+    progress.begin(job)
     while wait_start and job.status == JobStatus.PENDING:
         await asyncio.sleep(0.2)
         job = await root.client.jobs.status(job.id)
-        progress(job)
-    progress.close()
-    if browse and job.status != JobStatus.FAILED:
-        await browse_job(root, job)
-
+        progress.step(job)
+    progress.end(job)
     # Even if we detached, but the job has failed to start
     # (most common reason - no resources), the command fails
     if job.status == JobStatus.FAILED:
         sys.exit(job.history.exit_code or EX_PLATFORMERROR)
+
+    if browse:
+        await browse_job(root, job)
 
     if not detach:
         await process_attach(root, job.id, tty=tty, logs=True)
