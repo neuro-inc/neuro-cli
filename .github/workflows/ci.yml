@@ -99,6 +99,9 @@ jobs:
         python-version: [3.6, 3.7]
         os: [ubuntu, macos, windows]
         test-target: [jobs, sumo]
+        exclude:
+          os: macos
+          python-version: [3.6]
       fail-fast:
         false
     runs-on: ${{ matrix.os }}-latest
