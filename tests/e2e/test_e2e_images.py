@@ -127,12 +127,21 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
     assert captured.out.endswith(image_full_str)
 
-    # Give a chance to sync remote registries
-    time.sleep(10)
-
-    # check the tag is present now
     image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
-    captured = helper.run_cli(["image", "tags", image_full_str_no_tag])
+
+    delay = 1
+    t0 = time.time()
+
+    while time.time() - t0 < 60:
+        # check the tag is present now
+        captured = helper.run_cli(["image", "tags", image_full_str_no_tag])
+        if tag in captured.out:
+            break
+        # Give a chance to sync remote registries
+        time.sleep(delay)
+        delay = min(delay * 2, 10)
+
+    # Check again
     assert tag in captured.out
 
     cmd = f"neuro image tags {image_full_str}"
