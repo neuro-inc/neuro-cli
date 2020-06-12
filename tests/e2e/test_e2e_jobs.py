@@ -15,6 +15,7 @@ import aiohttp
 import pytest
 from aiohttp.test_utils import unused_port
 from yarl import URL
+from pexpect.replwrap import REPLWrapper
 
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
 from neuromation.cli.asyncio_utils import run
@@ -1079,10 +1080,11 @@ def test_job_attach_tty(helper: Helper) -> None:
     assert status.container.tty
 
     expect = helper.pexpect(["job", "attach", job_id])
-    expect.waitnoecho()
     expect.expect("========== Job is running in terminal mode =========")
-    expect.sendline("echo abc")
-    expect.expect("echo abc\r\r\nabc\r\r\n# ")
+    expect.sendline("")  # prompt may be missing after the connection.
+    repl = REPLWrapper(expect, "# ", None)
+    ret = repl.run_command("echo abc")
+    assert ret.strip() == "echo abc\r\r\nabc"
 
     helper.kill_job(job_id)
 
