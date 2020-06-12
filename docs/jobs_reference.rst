@@ -332,6 +332,7 @@ ExecInspect
    .. attribute:: job_id
 
       Job id which is used for creating the exec session, :class:`str`.
+
    .. attribute:: id
 
       The exec session id, :class:`str`.
