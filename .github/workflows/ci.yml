@@ -32,6 +32,7 @@ jobs:
             pip-lint-
     - name: Install dependencies
       uses: py-actions/py-dependency-install@v2
+      with:
         path: requirements/ci.txt
     - name: Run linters
       run: |
@@ -75,6 +76,7 @@ jobs:
             pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
     - name: Install dependencies
       uses: py-actions/py-dependency-install@v2
+      with:
         path: requirements/ci.txt
     - name: Run unittests
       env:
@@ -123,9 +125,9 @@ jobs:
         restore-keys: |
             pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
     - name: Install dependencies
-      run: |
-        pip install -U pip wheel
-        pip install -r requirements/ci.txt
+      uses: py-actions/py-dependency-install@v2
+      with:
+        path: requirements/ci.txt
     - name: Run E2E tests
       timeout-minutes: 10
       env:
