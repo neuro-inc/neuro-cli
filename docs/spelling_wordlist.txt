@@ -1,5 +1,6 @@
 config
 dataclass
+entrypoint
 filesystem
 globbing
 grpc
@@ -11,5 +12,8 @@ neuromation
 namespace
 preemptible
 startup
+stderr
+stdin
+stdout
 usernames
 timestamp

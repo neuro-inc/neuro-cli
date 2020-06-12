@@ -456,14 +456,12 @@ class Jobs(metaclass=NoPublicConstructor):
         stdin: bool = False,
         stdout: bool = False,
         stderr: bool = False,
-        logs: bool = False,
     ) -> AsyncIterator[StdStream]:
         url = self._config.monitoring_url / id / "attach"
         url = url.with_query(
             stdin=str(int(stdin)),
             stdout=str(int(stdout)),
             stderr=str(int(stderr)),
-            logs=str(int(logs)),
         )
         auth = await self._config._api_auth()
         ws = await self._core._session.ws_connect(
