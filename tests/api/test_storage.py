@@ -1244,3 +1244,50 @@ async def test_storage_download_dir_update(
             URL("storage:folder"), URL(local_dir.as_uri()), update=True
         )
     assert local_file.read_bytes() == b"xxx"
+
+
+async def test_storage_upload_dir_with_neuroignore(
+    storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
+) -> None:
+    local_dir = tmp_path / "folder"
+    local_dir2 = local_dir / "nested"
+    local_dir2.mkdir(parents=True)
+    for name in "one", "two", "three":
+        (local_dir / name).write_bytes(b"")
+        (local_dir2 / name).write_bytes(b"")
+    (local_dir / ".neuroignore").write_text("one")
+    (local_dir2 / ".neuroignore").write_text("two")
+
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_dir(URL(local_dir.as_uri()), URL("storage:folder"))
+
+    names = set(os.listdir(storage_path / "folder"))
+    assert names == {"nested", ".neuroignore", "two", "three"}
+    names = set(os.listdir(storage_path / "folder" / "nested"))
+    assert names == {".neuroignore", "three"}
+
+
+async def test_storage_upload_dir_with_ignore_file_names(
+    storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
+) -> None:
+    local_dir = tmp_path / "folder"
+    local_dir2 = local_dir / "nested"
+    local_dir2.mkdir(parents=True)
+    for name in "one", "two", "three":
+        (local_dir / name).write_bytes(b"")
+        (local_dir2 / name).write_bytes(b"")
+    (local_dir / ".gitignore").write_text("one")
+    (local_dir2 / ".hgignore").write_text("two")
+    (local_dir / ".neuroignore").write_text("three")
+
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_dir(
+            URL(local_dir.as_uri()),
+            URL("storage:folder"),
+            ignore_file_names={".gitignore", ".hgignore"},
+        )
+
+    names = set(os.listdir(storage_path / "folder"))
+    assert names == {"nested", ".neuroignore", ".gitignore", "two", "three"}
+    names = set(os.listdir(storage_path / "folder" / "nested"))
+    assert names == {".hgignore", "three"}
