@@ -14,8 +14,8 @@ import aiodocker
 import aiohttp
 import pytest
 from aiohttp.test_utils import unused_port
-from yarl import URL
 from pexpect.replwrap import REPLWrapper
+from yarl import URL
 
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
 from neuromation.cli.asyncio_utils import run
