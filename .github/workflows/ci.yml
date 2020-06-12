@@ -31,9 +31,8 @@ jobs:
         restore-keys: |
             pip-lint-
     - name: Install dependencies
-      run: |
-        pip install -U pip wheel
-        pip install -r requirements/ci.txt
+      uses: py-actions/py-dependency-install@v2
+        path: requirements/ci.txt
     - name: Run linters
       run: |
         make lint
@@ -75,9 +74,8 @@ jobs:
         restore-keys: |
             pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
     - name: Install dependencies
-      run: |
-        pip install -U pip wheel
-        pip install -r requirements/ci.txt
+      uses: py-actions/py-dependency-install@v2
+        path: requirements/ci.txt
     - name: Run unittests
       env:
         COLOR: 'yes'
