@@ -246,7 +246,7 @@ Jobs
 
       :param str id: job :attr:`~JobDescription.id`.
 
-      :param signal: The signal number or literal name, e.g. `9` or `SIGKILL`. See
+      :param signal: The signal number or literal name, e.g. ``9`` or ``"SIGKILL"``. See
                      https://www.man7.org/linux/man-pages/man7/signal.7.html for more
                      details about signal types.
 
