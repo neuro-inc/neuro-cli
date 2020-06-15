@@ -129,7 +129,7 @@ jobs:
       with:
         path: requirements/ci.txt
     - name: Run E2E tests
-      timeout-minutes: 10
+      timeout-minutes: 15
       env:
         E2E_TOKEN: ${{ secrets.E2E_TOKEN }}
         E2E_USER_TOKEN: ${{ secrets.E2E_USER_TOKEN }}
