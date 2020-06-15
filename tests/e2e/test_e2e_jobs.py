@@ -25,6 +25,10 @@ from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS
 
 pytestmark = pytest.mark.e2e_job
 
+SKIP_NON_LINUX = pytest.mark.skipif(
+    sys.platform != "linux", reason="PTY tests require Linux box"
+)
+
 ALPINE_IMAGE_NAME = "alpine:latest"
 UBUNTU_IMAGE_NAME = "ubuntu:latest"
 NGINX_IMAGE_NAME = "nginx:latest"
@@ -489,6 +493,7 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
+@SKIP_NON_LINUX
 def test_e2e_ssh_exec_tty(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
