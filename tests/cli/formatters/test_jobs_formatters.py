@@ -214,7 +214,6 @@ class TestJobStartProgress:
         progress.end(self.make_job(JobStatus.RUNNING, ""))
         out, err = capfd.readouterr()
         assert err == ""
-        assert "Commands" in out
         assert "http://local.host.test/" in out
         assert CSI in out
 
@@ -223,7 +222,6 @@ class TestJobStartProgress:
         progress.end(self.make_job(JobStatus.RUNNING, "", life_span=24 * 3600))
         out, err = capfd.readouterr()
         assert err == ""
-        assert "Commands" in out
         assert "http://local.host.test/" in out
         assert "The job will die in a day." in out
         assert CSI in out

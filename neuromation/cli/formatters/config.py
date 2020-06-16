@@ -1,5 +1,4 @@
 import operator
-import sys
 from typing import Iterable, Iterator, List, Mapping, Optional
 
 import click
@@ -110,10 +109,6 @@ class ClustersFormatter:
 
 
 def _format_presets(presets: Mapping[str, Preset], prefix: str) -> Iterator[str]:
-    if sys.platform == "win32":
-        yes, no = "Yes", "No"
-    else:
-        yes, no = "✔︎", "✖︎"
     has_tpu = False
     for preset in presets.values():
         if preset.tpu_type:
@@ -136,7 +131,7 @@ def _format_presets(presets: Mapping[str, Preset], prefix: str) -> Iterator[str]
             name,
             str(preset.cpu),
             format_size(preset.memory_mb * 1024 ** 2),
-            yes if preset.is_preemptible else no,
+            "√" if preset.is_preemptible else "×",
             gpu,
         ]
         if has_tpu:

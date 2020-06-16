@@ -759,7 +759,7 @@ def _tmp_bucket_create(
     tmp_path_factory: Any, request: Any
 ) -> Iterator[Tuple[str, Helper]]:
     tmp_path = tmp_path_factory.mktemp("tmp_bucket" + str(uuid()))
-    tmpbucketname = f"neuro_test_e2e_{uuid()}"
+    tmpbucketname = f"neuro-e2e-{uuid()}"
     nmrc_path = _get_nmrc_path(tmp_path_factory, require_admin=True)
 
     helper = Helper(nmrc_path, tmp_path)
