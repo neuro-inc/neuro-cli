@@ -23,10 +23,6 @@ from neuromation.cli.root import Root
 class TestConfigFormatter:
     async def test_output(self, root: Root) -> None:
         out = ConfigFormatter()(root.client)
-        if platform == "win32":
-            no = "No"
-        else:
-            no = "✖︎"
         assert "\n".join(
             line.rstrip() for line in click.unstyle(out).splitlines()
         ) == textwrap.dedent(
@@ -38,10 +34,10 @@ class TestConfigFormatter:
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
                 Name       #CPU  Memory  Preemptible  GPU
-                gpu-small     7   30.0G       {no}      1 x nvidia-tesla-k80
-                gpu-large     7   60.0G       {no}      1 x nvidia-tesla-v100
-                cpu-small     7    2.0G       {no}
-                cpu-large     7   14.0G       {no}"""
+                gpu-small     7   30.0G       ×       1 x nvidia-tesla-k80
+                gpu-large     7   60.0G       ×       1 x nvidia-tesla-v100
+                cpu-small     7    2.0G       ×
+                cpu-large     7   14.0G       ×"""
         )
 
     async def test_output_for_tpu_presets(
@@ -71,12 +67,6 @@ class TestConfigFormatter:
             "https://dev.neu.ro/api/v1", clusters={new_config.name: new_config}
         )
         out = ConfigFormatter()(client)
-        if platform == "win32":
-            yes = "Yes"
-            no = "No"
-        else:
-            yes = " ✔︎"
-            no = "✖︎"
 
         assert "\n".join(
             line.rstrip() for line in click.unstyle(out).splitlines()
@@ -89,13 +79,13 @@ class TestConfigFormatter:
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
                 Name         #CPU  Memory  Preemptible  GPU                    TPU
-                gpu-small       7   30.0G       {no}      1 x nvidia-tesla-k80
-                gpu-large       7   60.0G       {no}      1 x nvidia-tesla-v100
-                cpu-small       7    2.0G       {no}
-                cpu-large       7   14.0G       {no}
-                cpu-large-p     7   14.0G      {yes}
-                tpu-small       2    2.0G       {no}                             v3-8/1.14
-                hybrid          4   30.0G       {no}      2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
+                gpu-small       7   30.0G       ×       1 x nvidia-tesla-k80
+                gpu-large       7   60.0G       ×       1 x nvidia-tesla-v100
+                cpu-small       7    2.0G       ×
+                cpu-large       7   14.0G       ×
+                cpu-large-p     7   14.0G       √
+                tpu-small       2    2.0G       ×                              v3-8/1.14
+                hybrid          4   30.0G       ×       2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
         )
 
 

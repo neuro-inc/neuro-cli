@@ -91,10 +91,10 @@ def _format_node_pools(node_pools: Iterable[_NodePool], prefix: str) -> Iterator
             format_size(node_pool.available_memory_mb * 1024 ** 2),
         ]
         if has_preemptible:
-            row.append(_yes() if node_pool.is_preemptible else _no())
+            row.append("√" if node_pool.is_preemptible else "×")
         row.append(_gpu(node_pool))
         if has_tpu:
-            row.append(_yes() if node_pool.is_tpu_enabled else _no())
+            row.append("√" if node_pool.is_tpu_enabled else "×")
         if is_scalable:
             row.append(str(node_pool.min_size))
         row.append(str(node_pool.max_size))
@@ -116,14 +116,6 @@ def _format_node_pools(node_pools: Iterable[_NodePool], prefix: str) -> Iterator
 
     for line in table(rows=rows, aligns=aligns):
         yield prefix + line
-
-
-def _yes() -> str:
-    return "Yes" if sys.platform == "win32" else "✔︎"
-
-
-def _no() -> str:
-    return "No" if sys.platform == "win32" else "✖︎"
 
 
 def _is_scalable(node_pools: Iterable[_NodePool]) -> bool:
