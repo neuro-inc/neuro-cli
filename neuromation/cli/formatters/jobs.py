@@ -359,9 +359,13 @@ class DetailedJobStartProgress(JobStartProgress):
         self._lineno = 0
 
     def begin(self, job: JobDescription) -> None:
-        self._printer.print(style("Job ID", bold=True) + f": {job.id} ")
+        self._printer.print(
+            style("√ ", fg="green") + style("Job ID", bold=True) + f": {job.id} "
+        )
         if job.name:
-            self._printer.print(style("Name", bold=True) + f": {job.name}")
+            self._printer.print(
+                style("√ ", fg="green") + style("Name", bold=True) + f": {job.name}"
+            )
 
     def step(self, job: JobDescription) -> None:
         new_time = self.time_factory()
@@ -373,6 +377,14 @@ class DetailedJobStartProgress(JobStartProgress):
         description = self._get_status_description_message(job)
         if description:
             msg += " " + description
+
+        if job.status == JobStatus.PENDING:
+            msg = style("- ", fg="yellow") + msg
+        elif job.status == JobStatus.FAILED:
+            msg = style("× ", fg="red") + msg
+        else:
+            # RUNNING or SUCCEDED
+            msg = style("√ ", fg="green") + msg
 
         if not self._color:
             msg = unstyle(msg)
@@ -389,46 +401,22 @@ class DetailedJobStartProgress(JobStartProgress):
 
     def end(self, job: JobDescription) -> None:
         out = []
-        if job.name:
-            job_alias = job.name
-        else:
-            job_alias = job.id
 
         if job.status != JobStatus.FAILED:
             http_url = job.http_url
             if http_url:
-                out.append(style("Http URL", bold=True) + f": {http_url}")
+                out.append(
+                    style("√ ", fg="green")
+                    + style("Http URL", bold=True)
+                    + f": {http_url}"
+                )
             if job.life_span:
                 limit = humanize.naturaldelta(datetime.timedelta(seconds=job.life_span))
                 out.append(
-                    style(
-                        f"The job will die in {limit}. "
-                        f"See --life-span option documentation for details.",
-                        fg="red",
-                        dim=True,
-                    )
+                    style("√ ", fg="green")
+                    + style(f"The job will die in {limit}. ", fg="yellow",)
+                    + "See --life-span option documentation for details.",
                 )
-            out.append(style("Commands", bold=True) + ":")
-
-            out.append(
-                f"  neuro status {job_alias}     "
-                + style("# check job status", dim=True)
-            )
-            out.append(
-                f"  neuro logs {job_alias}       "
-                + style("# monitor job stdout", dim=True)
-            )
-            out.append(
-                f"  neuro top {job_alias}        "
-                + style("# display real-time job telemetry", dim=True)
-            )
-            out.append(
-                f"  neuro exec {job_alias} bash  "
-                + style("# execute bash shell to the job", dim=True)
-            )
-            out.append(
-                f"  neuro kill {job_alias}       " + style("# kill job", dim=True)
-            )
             self._printer.print("\n".join(out))
 
 
@@ -509,18 +497,24 @@ class DetailedJobStopProgress(JobStopProgress):
         dt = new_time - self._time
 
         if job.status == JobStatus.RUNNING:
-            msg = f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
+            msg = (
+                style("-", fg="yellow")
+                + f" Wait for stop {next(self._spinner)} [{dt:.1f} sec]"
+            )
         else:
-            msg = "Stopped"
+            msg = style("√", fg="green") + " Stopped"
+
+        if not self._color:
+            msg = unstyle(msg)
         self._printer.print(
             msg, lineno=self._lineno,
         )
 
     def timeout(self, job: JobDescription) -> None:
         secho()
-        secho("!!! Warning !!!", fg="red")
+        secho("× Warning !!!", fg="red")
         secho(
-            "The attached session was disconnected but the job is still alive.",
+            "× The attached session was disconnected but the job is still alive.",
             fg="red",
         )
         secho("Reconnect to the job:", dim=True, fg="yellow")
@@ -540,7 +534,7 @@ class StreamJobStopProgress(JobStopProgress):
 
     def timeout(self, job: JobDescription) -> None:
         print()
-        print("!!! Warning !!!")
+        print("Warning !!!")
         print("The attached session was disconnected but the job is still alive.")
 
 
@@ -589,9 +583,12 @@ class DetailedExecStopProgress(ExecStopProgress):
         dt = new_time - self._time
 
         if running:
-            msg = f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
+            msg = (
+                style("-", fg="yellow")
+                + f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
+            )
         else:
-            msg = "Stopped"
+            msg = style("√", fg="green") + " Stopped"
 
         self._printer.print(
             msg, lineno=self._lineno,
@@ -599,9 +596,9 @@ class DetailedExecStopProgress(ExecStopProgress):
 
     def timeout(self) -> None:
         secho()
-        secho("!!! Warning !!!", fg="red")
+        secho("× Warning !!!", fg="red")
         secho(
-            "The attached session was disconnected "
+            "× The attached session was disconnected "
             "but the exec process is still alive.",
             fg="red",
         )
@@ -618,7 +615,7 @@ class StreamExecStopProgress(ExecStopProgress):
 
     def timeout(self) -> None:
         print()
-        print("!!! Warning !!!")
+        print("Warning !!!")
         print(
             "The attached session was disconnected "
             "but the exec process is still alive."
