@@ -550,7 +550,7 @@ class StreamJobStopProgress(JobStopProgress):
 
     def timeout(self, job: JobDescription) -> None:
         print()
-        print("!!! Warning !!!")
+        print("Warning !!!")
         print("The attached session was disconnected but the job is still alive.")
 
 
@@ -599,9 +599,12 @@ class DetailedExecStopProgress(ExecStopProgress):
         dt = new_time - self._time
 
         if running:
-            msg = f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
+            msg = (
+                style("-", fg="yellow")
+                + f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
+            )
         else:
-            msg = "Stopped"
+            msg = style("√", fg="green") + " Stopped"
 
         self._printer.print(
             msg, lineno=self._lineno,
@@ -609,9 +612,9 @@ class DetailedExecStopProgress(ExecStopProgress):
 
     def timeout(self) -> None:
         secho()
-        secho("!!! Warning !!!", fg="red")
+        secho("× Warning !!!", fg="red")
         secho(
-            "The attached session was disconnected "
+            "× The attached session was disconnected "
             "but the exec process is still alive.",
             fg="red",
         )
@@ -628,7 +631,7 @@ class StreamExecStopProgress(ExecStopProgress):
 
     def timeout(self) -> None:
         print()
-        print("!!! Warning !!!")
+        print("Warning !!!")
         print(
             "The attached session was disconnected "
             "but the exec process is still alive."
