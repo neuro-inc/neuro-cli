@@ -13,7 +13,6 @@ from email.utils import parsedate
 from pathlib import Path
 from stat import S_ISREG
 from typing import (
-    AbstractSet,
     Any,
     AsyncIterator,
     Awaitable,
@@ -403,7 +402,6 @@ class Storage(metaclass=NoPublicConstructor):
         *,
         update: bool = False,
         filter: Optional[Callable[[str], Awaitable[bool]]] = None,
-        ignore_file_names: AbstractSet[str] = {NEUROIGNORE_FILENAME},
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if filter is None:
@@ -421,14 +419,7 @@ class Storage(metaclass=NoPublicConstructor):
         await run_progress(
             queued,
             self._upload_dir(
-                src,
-                path,
-                dst,
-                "",
-                update=update,
-                filter=filter,
-                ignore_file_names=ignore_file_names,
-                progress=queued,
+                src, path, dst, "", update=update, filter=filter, progress=queued,
             ),
         )
 
@@ -441,7 +432,6 @@ class Storage(metaclass=NoPublicConstructor):
         *,
         update: bool,
         filter: Callable[[str], Awaitable[bool]],
-        ignore_file_names: AbstractSet[str],
         progress: "QueuedProgress",
     ) -> None:
         tasks = []
@@ -471,12 +461,12 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._file_sem:
             folder = await loop.run_in_executor(None, lambda: list(src_path.iterdir()))
 
-        if ignore_file_names:
-            for child in folder:
-                if child.name in ignore_file_names and child.is_file():
-                    file_filter = FileFilter(filter)
-                    file_filter.read_from_file(child, prefix=rel_path)
-                    filter = file_filter.match
+        for child in folder:
+            if child.name == NEUROIGNORE_FILENAME and child.is_file():
+                file_filter = FileFilter(filter)
+                file_filter.read_from_file(child, prefix=rel_path)
+                filter = file_filter.match
+                break
 
         for child in folder:
             name = child.name
@@ -505,7 +495,6 @@ class Storage(metaclass=NoPublicConstructor):
                         child_rel_path,
                         update=update,
                         filter=filter,
-                        ignore_file_names=ignore_file_names,
                         progress=progress,
                     )
                 )
