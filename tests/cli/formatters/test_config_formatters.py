@@ -1,7 +1,6 @@
 import textwrap
 from dataclasses import replace
 from pathlib import Path
-from sys import platform
 from typing import Callable
 
 import click

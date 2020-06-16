@@ -1,5 +1,4 @@
 import textwrap
-from sys import platform
 
 from neuromation.api.admin import (
     _CloudProvider,

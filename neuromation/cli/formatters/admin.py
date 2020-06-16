@@ -1,5 +1,4 @@
 import operator
-import sys
 from typing import Iterable, Iterator, List
 
 import click
