@@ -1,11 +1,10 @@
 import asyncio
 import enum
 import json
-import shlex
-import signal
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from functools import partial
 from typing import (
     Any,
     AsyncIterator,
@@ -20,7 +19,6 @@ from typing import (
 
 import aiohttp
 import attr
-import psutil
 from aiodocker.exceptions import DockerError
 from aiohttp import WSMsgType, WSServerHandshakeError
 from dateutil.parser import isoparse
@@ -36,7 +34,7 @@ from neuromation.api.abc import (
 )
 
 from .config import Config
-from .core import IllegalArgumentError, _Core
+from .core import _Core
 from .images import (
     _DummyProgress,
     _raise_on_error_chunk,
@@ -378,75 +376,66 @@ class Jobs(metaclass=NoPublicConstructor):
     async def port_forward(
         self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
     ) -> AsyncIterator[None]:
-        loop = asyncio.get_event_loop()
-        task = loop.create_task(
-            self._port_forward(id, local_port, job_port, no_key_check=no_key_check)
+        srv = await asyncio.start_server(
+            partial(self._port_forward, id=id, job_port=job_port),
+            "localhost",
+            local_port,
         )
-        yield
-        task.cancel()
-        with suppress(asyncio.CancelledError):
-            await task
+        try:
+            yield
+        finally:
+            srv.close()
+            await srv.wait_closed()
 
     async def _port_forward(
-        self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
+        self,
+        reader: asyncio.StreamReader,
+        writer: asyncio.StreamWriter,
+        id: str,
+        job_port: int,
     ) -> None:
-        try:
-            job_status = await self.status(id)
-        except IllegalArgumentError as e:
-            raise ValueError(f"Job not found. Job Id = {id}") from e
-        if job_status.status != "running":
-            raise ValueError(f"Job is not running. Job Id = {job_status.id}")
-        payload = json.dumps(
-            {
-                "method": "job_port_forward",
-                "token": await self._config.token(),
-                "params": {"job": job_status.id, "port": job_port},
-            }
+        loop = asyncio.get_event_loop()
+        url = self._config.monitoring_url / id / "port_forward" / str(job_port)
+        auth = await self._config._api_auth()
+        ws = await self._core._session.ws_connect(
+            url,
+            headers={"Authorization": auth},
+            timeout=None,  # type: ignore
+            receive_timeout=None,
+            heartbeat=30,
         )
-        proxy_command = ["ssh"]
-        if no_key_check:  # pragma: no branch
-            proxy_command += [
-                "-o",
-                "StrictHostKeyChecking=no",
-                "-o",
-                "UserKnownHostsFile=/dev/null",
-            ]
-        server_url = job_status.ssh_server
-        port = server_url.port if server_url.port else 22
-        proxy_command += [
-            "-p",
-            str(port),
-            f"{server_url.user}@{server_url.host}",
-            payload,
-        ]
-        proxy_command_str = " ".join(shlex.quote(s) for s in proxy_command)
-        command = [
-            "ssh",
-            "-NL",
-            f"{local_port}:{job_status.internal_hostname}:{job_port}",
-            "-o",
-            f"ProxyCommand={proxy_command_str}",
-            "-o",
-            "ExitOnForwardFailure=yes",
-        ]
-        if no_key_check:  # pragma: no branch
-            command += [
-                "-o",
-                "StrictHostKeyChecking=no",
-                "-o",
-                "UserKnownHostsFile=/dev/null",
-            ]
-        command += [f"{server_url.user}@{server_url.host}"]
-        proc = await asyncio.create_subprocess_exec(*command)
+        tasks = []
+        tasks.append(loop.create_task(self._port_reader(ws, writer)))
+        tasks.append(loop.create_task(self._port_writer(ws, reader)))
         try:
-            result = await proc.wait()
-            if result != 0:
-                raise ValueError(f"error code {result}")
-            return
+            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         finally:
-            await _kill_proc_tree(proc.pid, timeout=10)
-            # add a sleep to get process watcher a chance to execute all callbacks
-            await asyncio.sleep(0.1)
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+                    with suppress(asyncio.CancelledError):
+                        await task
+            await ws.close()
+
+    async def _port_reader(
+        self, ws: aiohttp.ClientWebSocketResponse, writer: asyncio.StreamWriter
+    ) -> None:
+        async for msg in ws:
+            assert msg.type == aiohttp.WSMsgType.BINARY
+            writer.write(msg.data)
+            await writer.drain()
+        writer.close()
+        await writer.wait_closed()
+
+    async def _port_writer(
+        self, ws: aiohttp.ClientWebSocketResponse, reader: asyncio.StreamReader
+    ) -> None:
+        while True:
+            data = await reader.read(4 * 1024 * 1024)
+            if not data:
+                # EOF
+                break
+            await ws.send_bytes(data)
 
     @asynccontextmanager
     async def attach(
@@ -748,50 +737,3 @@ def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:
     if dt is None:
         return None
     return isoparse(dt)
-
-
-async def _kill_proc_tree(
-    pid: int,
-    sig: int = signal.SIGTERM,
-    include_parent: bool = True,
-    timeout: int = None,
-) -> None:
-    """Kill a process tree (including grandchildren) with signal
-    "sig".
-    """
-
-    def inner() -> None:
-        try:
-            parent = psutil.Process(pid)
-            children = parent.children(recursive=True)
-            zombies: List[psutil.Process] = []
-            # Try to kill all children first
-            for p in children:
-                try:
-                    p.send_signal(sig)
-                except psutil.NoSuchProcess:
-                    pass
-            _, children_alive = psutil.wait_procs(children, timeout=timeout)
-            # then kill parent
-            if include_parent:
-                parent.send_signal(sig)
-                try:
-                    parent.wait(timeout=timeout)
-                    # and try to kill again left childrent
-                    _, children_alive = psutil.wait_procs(
-                        children_alive, timeout=timeout
-                    )
-                    zombies.extend(children_alive)
-                except psutil.TimeoutExpired:
-                    zombies.append(parent)
-            else:
-                zombies.extend(children_alive)
-
-            if zombies:
-                raise RuntimeWarning(f"Possible zombie subprocesses: {zombies}")
-
-        except psutil.NoSuchProcess:
-            pass
-
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, inner)
