@@ -31,15 +31,17 @@ log = logging.getLogger(__name__)
 
 
 JOB_STARTED = click.style(
-    "==== Job is running, press Ctrl-C to detach/kill ===", dim=True
+    "========= Job is running, press Ctrl-C to detach/kill =======", dim=True
 )
 
 JOB_STARTED_TTY = click.style(
-    "========== Job is running in terminal mode =========", dim=True
+    "=============== Job is running in terminal mode =============\n"
+    "=== If you don't see a command prompt, try pressing enter ===",
+    dim=True,
 )
 
 ATTACH_STARTED_AFTER_LOGS = click.style(
-    "======== Job's output, may overlap with logs =======", dim=True
+    "============= Job's output, may overlap with logs ===========", dim=True
 )
 
 

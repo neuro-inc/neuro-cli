@@ -374,6 +374,14 @@ class DetailedJobStartProgress(JobStartProgress):
         if description:
             msg += " " + description
 
+        if job.status == JobStatus.PENDING:
+            msg = style("- ", fg="yellow") + msg
+        elif job.status == JobStatus.FAILED:
+            msg = style("× ", fg="red") + msg
+        else:
+            # RUNNING or SUCCEDED
+            msg = style("√ ", fg="green") + msg
+
         if not self._color:
             msg = unstyle(msg)
         if msg != self._prev:
@@ -401,12 +409,8 @@ class DetailedJobStartProgress(JobStartProgress):
             if job.life_span:
                 limit = humanize.naturaldelta(datetime.timedelta(seconds=job.life_span))
                 out.append(
-                    style(
-                        f"The job will die in {limit}. "
-                        f"See --life-span option documentation for details.",
-                        fg="red",
-                        dim=True,
-                    )
+                    style(f"The job will die in {limit}. ", fg="yellow",)
+                    + "See --life-span option documentation for details.",
                 )
             out.append(style("Commands", bold=True) + ":")
 
@@ -509,18 +513,24 @@ class DetailedJobStopProgress(JobStopProgress):
         dt = new_time - self._time
 
         if job.status == JobStatus.RUNNING:
-            msg = f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
+            msg = (
+                style("-", fg="yellow")
+                + f" Wait for stop {next(self._spinner)} [{dt:.1f} sec]"
+            )
         else:
-            msg = "Stopped"
+            msg = style("√", fg="green") + " Stopped"
+
+        if not self._color:
+            msg = unstyle(msg)
         self._printer.print(
             msg, lineno=self._lineno,
         )
 
     def timeout(self, job: JobDescription) -> None:
         secho()
-        secho("!!! Warning !!!", fg="red")
+        secho("× Warning !!!", fg="red")
         secho(
-            "The attached session was disconnected but the job is still alive.",
+            "× The attached session was disconnected but the job is still alive.",
             fg="red",
         )
         secho("Reconnect to the job:", dim=True, fg="yellow")
