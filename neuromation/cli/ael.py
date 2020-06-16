@@ -31,17 +31,18 @@ log = logging.getLogger(__name__)
 
 
 JOB_STARTED = click.style(
-    "========= Job is running, press Ctrl-C to detach/kill =======", dim=True
+    "===== Job is running, press Ctrl-C to detach/kill =====", dim=True
 )
 
-JOB_STARTED_TTY = click.style(
-    "=============== Job is running in terminal mode =============\n"
-    "=== If you don't see a command prompt, try pressing enter ===",
-    dim=True,
+JOB_STARTED_TTY = (
+    click.style("√ ", fg="green")
+    + click.style("=========== Job is running in terminal mode ===========\n", dim=True)
+    + click.style("√ ", fg="green")
+    + click.style("(If you don't see a command prompt, try pressing enter)", dim=True)
 )
 
 ATTACH_STARTED_AFTER_LOGS = click.style(
-    "============= Job's output, may overlap with logs ===========", dim=True
+    "========= Job's output, may overlap with logs =========", dim=True
 )
 
 
@@ -121,7 +122,9 @@ async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
 
         tasks = []
         tasks.append(loop.create_task(_process_stdin_tty(stream)))
-        tasks.append(loop.create_task(_process_stdout_tty(stream, stdout, helper)))
+        tasks.append(
+            loop.create_task(_process_stdout_tty(root, stream, stdout, helper))
+        )
         tasks.append(
             loop.create_task(
                 _process_resizing(
@@ -150,7 +153,7 @@ async def _exec_non_tty(root: Root, job: str, exec_id: str) -> None:
         tasks = []
         if root.tty:
             tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
-        tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
+        tasks.append(loop.create_task(_process_stdout_non_tty(root, stream, helper)))
         tasks.append(loop.create_task(_exec_watcher(root, job, exec_id)))
 
         try:
@@ -234,7 +237,9 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
 
         tasks = []
         tasks.append(loop.create_task(_process_stdin_tty(stream)))
-        tasks.append(loop.create_task(_process_stdout_tty(stream, stdout, helper)))
+        tasks.append(
+            loop.create_task(_process_stdout_tty(root, stream, stdout, helper))
+        )
         tasks.append(
             loop.create_task(
                 _process_resizing(
@@ -331,7 +336,7 @@ async def _process_stdin_tty(stream: StdStream) -> None:
 
 
 async def _process_stdout_tty(
-    stream: StdStream, stdout: Output, helper: AttachHelper
+    root: Root, stream: StdStream, stdout: Output, helper: AttachHelper
 ) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
@@ -351,7 +356,10 @@ async def _process_stdout_tty(
                 # helper.attach_ready = True regardless
                 # what stream had receive text in attached mode.
                 if helper.log_printed:
-                    stdout.write_raw(ATTACH_STARTED_AFTER_LOGS + "\n")
+                    s = ATTACH_STARTED_AFTER_LOGS
+                    if root.tty:
+                        s = click.style("√ ", fg="green") + s
+                    stdout.write_raw(s + "\n")
             helper.attach_ready = True
             stdout.write_raw(txt)
             stdout.flush()
@@ -359,7 +367,10 @@ async def _process_stdout_tty(
 
 async def _attach_non_tty(root: Root, job: str, logs: bool) -> bool:
     if not root.quiet:
-        click.echo(JOB_STARTED)
+        s = JOB_STARTED
+        if root.tty:
+            s = click.style("√ ", fg="green") + s
+        click.echo(s)
 
     loop = asyncio.get_event_loop()
     helper = AttachHelper(quiet=root.quiet)
@@ -382,7 +393,7 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> bool:
         tasks = []
         if root.tty:
             tasks.append(loop.create_task(_process_stdin_non_tty(root, stream)))
-        tasks.append(loop.create_task(_process_stdout_non_tty(stream, helper)))
+        tasks.append(loop.create_task(_process_stdout_non_tty(root, stream, helper)))
         tasks.append(loop.create_task(_process_ctrl_c(root, job, helper)))
         tasks.append(loop.create_task(_attach_watcher(root, job)))
 
@@ -414,7 +425,9 @@ async def _process_stdin_non_tty(root: Root, stream: StdStream) -> None:
             await stream.write_in(buf)
 
 
-async def _process_stdout_non_tty(stream: StdStream, helper: AttachHelper) -> None:
+async def _process_stdout_non_tty(
+    root: Root, stream: StdStream, helper: AttachHelper
+) -> None:
     codec_info = codecs.lookup("utf8")
     decoders = {
         1: codec_info.incrementaldecoder("replace"),
@@ -432,7 +445,10 @@ async def _process_stdout_non_tty(stream: StdStream, helper: AttachHelper) -> No
                 # helper.attach_ready = True regardless
                 # what stream had receive text in attached mode.
                 if helper.log_printed:
-                    click.echo(ATTACH_STARTED_AFTER_LOGS)
+                    s = ATTACH_STARTED_AFTER_LOGS
+                    if root.tty:
+                        s = click.style("√ ", fg="green") + s
+                    click.echo(s)
             helper.attach_ready = True
             f.write(txt)
             f.flush()

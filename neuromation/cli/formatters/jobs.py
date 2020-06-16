@@ -359,9 +359,13 @@ class DetailedJobStartProgress(JobStartProgress):
         self._lineno = 0
 
     def begin(self, job: JobDescription) -> None:
-        self._printer.print(style("Job ID", bold=True) + f": {job.id} ")
+        self._printer.print(
+            style("√ ", fg="green") + style("Job ID", bold=True) + f": {job.id} "
+        )
         if job.name:
-            self._printer.print(style("Name", bold=True) + f": {job.name}")
+            self._printer.print(
+                style("√ ", fg="green") + style("Name", bold=True) + f": {job.name}"
+            )
 
     def step(self, job: JobDescription) -> None:
         new_time = self.time_factory()
@@ -397,42 +401,22 @@ class DetailedJobStartProgress(JobStartProgress):
 
     def end(self, job: JobDescription) -> None:
         out = []
-        if job.name:
-            job_alias = job.name
-        else:
-            job_alias = job.id
 
         if job.status != JobStatus.FAILED:
             http_url = job.http_url
             if http_url:
-                out.append(style("Http URL", bold=True) + f": {http_url}")
+                out.append(
+                    style("√ ", fg="green")
+                    + style("Http URL", bold=True)
+                    + f": {http_url}"
+                )
             if job.life_span:
                 limit = humanize.naturaldelta(datetime.timedelta(seconds=job.life_span))
                 out.append(
-                    style(f"The job will die in {limit}. ", fg="yellow",)
+                    style("√ ", fg="green")
+                    + style(f"The job will die in {limit}. ", fg="yellow",)
                     + "See --life-span option documentation for details.",
                 )
-            out.append(style("Commands", bold=True) + ":")
-
-            out.append(
-                f"  neuro status {job_alias}     "
-                + style("# check job status", dim=True)
-            )
-            out.append(
-                f"  neuro logs {job_alias}       "
-                + style("# monitor job stdout", dim=True)
-            )
-            out.append(
-                f"  neuro top {job_alias}        "
-                + style("# display real-time job telemetry", dim=True)
-            )
-            out.append(
-                f"  neuro exec {job_alias} bash  "
-                + style("# execute bash shell to the job", dim=True)
-            )
-            out.append(
-                f"  neuro kill {job_alias}       " + style("# kill job", dim=True)
-            )
             self._printer.print("\n".join(out))
 
 
