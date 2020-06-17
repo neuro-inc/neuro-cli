@@ -33,7 +33,12 @@ class Client(metaclass=NoPublicConstructor):
         # the storage cookie session
         self._config._load()
         with self._config._open_db() as db:
-            self._core._post_init(db, self._config.storage_url)
+            self._core._post_init(
+                db,
+                self._config.storage_url,
+                self._config.registry_url,
+                self._config.blob_storage_url,
+            )
         self._parser = Parser._create(self._config)
         self._admin = _Admin._create(self._core, self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)

@@ -23,7 +23,10 @@ log = logging.getLogger(__name__)
 SESSION_COOKIE_MAXAGE = 5 * 60  # 5 min
 
 SCHEMA = {
-    "cookie_session": "CREATE TABLE cookie_session (cookie TEXT, timestamp REAL)",
+    "cookie_session": (
+        "CREATE TABLE cookie_session "
+        "(domain TEXT, path TEXT, cookie TEXT, timestamp REAL)"
+    ),
 }
 DROP = {"cookie_session": "DROP TABLE IF EXISTS cookie_session"}
 
@@ -80,14 +83,28 @@ class _Core:
         }
         self._prev_cookie: Optional[Morsel[str]] = None
 
-    def _post_init(self, db: sqlite3.Connection, storage_url: URL) -> None:
-        cookie_val = load_cookie(db)
+    def _post_init(
+        self,
+        db: sqlite3.Connection,
+        storage_url: URL,
+        registry_url: URL,
+        blob_storage_url: URL,
+    ) -> None:
+        for url in (storage_url, registry_url, blob_storage_url):
+            if url is not None:
+                domain = url.host
+                path = url.path
+                if domain is not None:
+                    self._load_cookie(db, domain, path)
+
+    def _load_cookie(self, db: sqlite3.Connection, domain: str, path: str) -> None:
+        cookie_val = load_cookie(db, domain, path)
         if cookie_val is not None:
             tmp = SimpleCookie()  # type: ignore
             tmp["NEURO_SESSION"] = cookie_val
             cookie = tmp["NEURO_SESSION"]
-            cookie["domain"] = storage_url.host
-            cookie["path"] = "/"
+            cookie["domain"] = domain
+            cookie["path"] = path
             self._session.cookie_jar.update_cookies(
                 {"NEURO_SESSION": cookie}  # type: ignore
                 # TODO: pass cookie["domain"]
@@ -96,10 +113,7 @@ class _Core:
     def _save_cookie(self, db: sqlite3.Connection) -> None:
         for cookie in self._session.cookie_jar:
             if cookie.key == "NEURO_SESSION":
-                break
-        else:
-            return
-        save_cookie(db, cookie.value)
+                save_cookie(db, cookie["domain"], cookie["path"], cookie.value)
 
     @property
     def timeout(self) -> aiohttp.ClientTimeout:
@@ -224,14 +238,22 @@ def ensure_schema(db: sqlite3.Connection, *, update: bool) -> bool:
 
 
 def save_cookie(
-    db: sqlite3.Connection, cookie: Optional[str], *, now: Optional[float] = None
+    db: sqlite3.Connection,
+    domain: str,
+    path: str,
+    cookie: str,
+    *,
+    now: Optional[float] = None,
 ) -> None:
     if now is None:
         now = time.time()
     ensure_schema(db, update=True)
     cur = db.cursor()
     cur.execute(
-        "INSERT INTO cookie_session (cookie, timestamp) VALUES (?, ?)", (cookie, now),
+        """INSERT INTO cookie_session
+           (domain, path, cookie, timestamp)
+           VALUES (?, ?, ?, ?)""",
+        (domain, path, cookie, now),
     )
     cur.execute(
         "DELETE FROM cookie_session WHERE timestamp < ?", (now - SESSION_COOKIE_MAXAGE,)
@@ -241,19 +263,22 @@ def save_cookie(
 
 
 def load_cookie(
-    db: sqlite3.Connection, *, now: Optional[float] = None
+    db: sqlite3.Connection, domain: str, path: str, *, now: Optional[float] = None
 ) -> Optional[str]:
     if now is None:
         now = time.time()
-    if not ensure_schema(db, update=False):
+    if ensure_schema(db, update=False):
         return None
     cur = db.execute(
         """
-                     SELECT cookie FROM cookie_session
-                     WHERE timestamp > ?
+                     SELECT domain, path, cookie FROM cookie_session
+                     WHERE timestamp > ? AND domain = ?
                      ORDER BY timestamp DESC
                      LIMIT 1""",
-        (now - SESSION_COOKIE_MAXAGE,),
+        (now - SESSION_COOKIE_MAXAGE, domain),
     )
-    cookie = cur.fetchone()
+    row = cur.fetchone()
+    if row is None:
+        return None
+    _, _, cookie = row
     return cookie
