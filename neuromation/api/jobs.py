@@ -1,6 +1,7 @@
 import asyncio
 import enum
 import json
+import logging
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -44,6 +45,8 @@ from .parser import Parser, Volume
 from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
 from .utils import NoPublicConstructor, asynccontextmanager
 
+
+log = logging.getLogger(__name__)
 
 INVALID_IMAGE_NAME = "INVALID-IMAGE-NAME"
 
@@ -394,28 +397,33 @@ class Jobs(metaclass=NoPublicConstructor):
         id: str,
         job_port: int,
     ) -> None:
-        loop = asyncio.get_event_loop()
-        url = self._config.monitoring_url / id / "port_forward" / str(job_port)
-        auth = await self._config._api_auth()
-        ws = await self._core._session.ws_connect(
-            url,
-            headers={"Authorization": auth},
-            timeout=None,  # type: ignore
-            receive_timeout=None,
-            heartbeat=30,
-        )
-        tasks = []
-        tasks.append(loop.create_task(self._port_reader(ws, writer)))
-        tasks.append(loop.create_task(self._port_writer(ws, reader)))
         try:
-            await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-        finally:
-            for task in tasks:
-                if not task.done():
-                    task.cancel()
-                    with suppress(asyncio.CancelledError):
-                        await task
-            await ws.close()
+            loop = asyncio.get_event_loop()
+            url = self._config.monitoring_url / id / "port_forward" / str(job_port)
+            auth = await self._config._api_auth()
+            ws = await self._core._session.ws_connect(
+                url,
+                headers={"Authorization": auth},
+                timeout=None,  # type: ignore
+                receive_timeout=None,
+                heartbeat=30,
+            )
+            tasks = []
+            tasks.append(loop.create_task(self._port_reader(ws, writer)))
+            tasks.append(loop.create_task(self._port_writer(ws, reader)))
+            try:
+                await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            finally:
+                for task in tasks:
+                    if not task.done():
+                        task.cancel()
+                        with suppress(asyncio.CancelledError):
+                            await task
+                await ws.close()
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            log.exception("Unhandled exception during port-forwarding")
 
     async def _port_reader(
         self, ws: aiohttp.ClientWebSocketResponse, writer: asyncio.StreamWriter

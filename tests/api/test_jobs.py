@@ -1,3 +1,4 @@
+import asyncio
 import json
 from typing import Any, Callable, Dict, List, Optional
 
@@ -1818,3 +1819,32 @@ async def test_job_run_restart_policy(
         await client.jobs.run(
             container=container, restart_policy=JobRestartPolicy.ALWAYS
         )
+
+
+async def test_port_forward(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    aiohttp_unused_port: int,
+) -> None:
+
+    port = aiohttp_unused_port()
+
+    async def handler(request: web.Request) -> web.Response:
+        resp = web.WebSocketResponse()
+        await resp.prepare(request)
+        async for msg in resp:
+            await resp.send_bytes(b"rep-" + msg.data)
+        return resp
+
+    app = web.Application()
+    app.router.add_get("/jobs/job-id/port_forward/12345", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        async with client.jobs.port_forward("job-id", port, 12345):
+            reader, writer = await asyncio.open_connection("127.0.0.1", port)
+            for i in range(5):
+                writer.write(str(i).encode("ascii"))
+                ret = await reader.read(1024)
+                assert ret == b"rep-" + str(i).encode("ascii")
