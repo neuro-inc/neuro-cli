@@ -2,7 +2,7 @@
 
 # Preface
 
-Welcome to Neuromation API Python client.
+Welcome to Neuromation API Python client for https://neu.ro/.
 Package ship command line tool called `neuro`. With it you can:
 * Execute and debug jobs
 * Manipulate Data
