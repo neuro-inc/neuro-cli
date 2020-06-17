@@ -3,9 +3,9 @@
 # Preface
 
 Welcome to Neuromation API Python client.
-Package ship command line tool called [_neuro_](#neuro). With [_neuro_](#neuro) you can:
-* [Execute and debug jobs](#neuro-job)
-* [Manipulate Data](#neuro-storage)
+Package ship command line tool called `neuro`. With it you can:
+* Execute and debug jobs
+* Manipulate Data
 * Make some fun
 
 # Api
@@ -13,11 +13,6 @@ Package ship command line tool called [_neuro_](#neuro). With [_neuro_](#neuro) 
 https://neuromation-sdk.readthedocs.io/en/latest/
 
 # Contributing
-
-```shell
-git clone https://github.com/neuromation/platform-api-clients.git
-cd platform-api-clients/python
-```
 
 For OSX users install coreutils to properly interpret shell commands:
 
@@ -35,5 +30,7 @@ source .env/bin/activate
 Development flow:
 
 * Install dependencies: `make init`
-* Run tests: `make test`
+* Reformat code: `make fmt`
 * Lint: `make lint`
+* Run tests: `make test`
+* Run end-to-end tests: `make e2e`
