@@ -443,6 +443,7 @@ class Helper:
             ["neuro"] + self._default_args(verbosity, network_timeout) + arguments,
             timeout=300,
             encoding="utf8",
+            errors="replace",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             input=input,
