@@ -40,11 +40,11 @@ help:
     "
 
 .PHONY: init
-init: _init-readme update-deps
+init: _init-cli-help update-deps
 	rm -rf .mypy_cache
 
-_init-readme:
-	cp -n README.in.md README.md
+_init-cli-help:
+	cp -n CLI.in.md CLI.md
 
 .PHONY: update-deps
 update-deps:
@@ -153,20 +153,20 @@ format fmt:
 clean:
 	find . -name '*.egg-info' -exec rm -rf {} +
 	find . -name '__pycache__' -exec rm -rf {} +
-	rm README.md
+	rm CLI.md
 
 .PHONY: docs
 docs:
-	build-tools/cli-help-generator.py README.in.md README.md
-	markdown-toc -t github -h 6 README.md
+	build-tools/cli-help-generator.py CLI.in.md CLI.md
+	markdown-toc -t github -h 6 CLI.md
 
 
 .PHONY: lint-docs
-lint-docs: TMP:=$(shell mktemp -d)/README.md
+lint-docs: TMP:=$(shell mktemp -d)/CLI.md
 lint-docs:
-	build-tools/cli-help-generator.py README.in.md ${TMP}
+	build-tools/cli-help-generator.py CLI.in.md ${TMP}
 	markdown-toc -t github -h 6 ${TMP}
-	diff -q ${TMP} README.md
+	diff -q ${TMP} CLI.md
 
 .PHONY: api-doc
 api-doc:

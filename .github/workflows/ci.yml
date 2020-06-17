@@ -132,7 +132,7 @@ jobs:
       env:
         E2E_TOKEN: ${{ secrets.E2E_TOKEN }}
         E2E_USER_TOKEN: ${{ secrets.E2E_USER_TOKEN }}
-        PYTEST_XDIST_NUM_THREADS: 8
+        PYTEST_XDIST_NUM_THREADS: 16
         COLOR: 'yes'
       run: |
         make .e2e
