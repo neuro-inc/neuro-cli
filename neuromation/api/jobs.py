@@ -419,6 +419,8 @@ class Jobs(metaclass=NoPublicConstructor):
                         task.cancel()
                         with suppress(asyncio.CancelledError):
                             await task
+                writer.close()
+                await writer.wait_closed()
                 await ws.close()
         except asyncio.CancelledError:
             raise
