@@ -41,6 +41,8 @@ from .utils import (
 )
 
 
+NEUROIGNORE_FILENAME = ".neuroignore"
+
 log = logging.getLogger(__name__)
 
 
@@ -278,6 +280,16 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     ),
 )
 @option(
+    "--exclude-from-files",
+    metavar="FILES",
+    default=NEUROIGNORE_FILENAME,
+    show_default=True,
+    help=(
+        "A list of names of files that contain patterns for exclusion files "
+        "and directories. Used only when upload."
+    ),
+)
+@option(
     "-p/-P",
     "--progress/--no-progress",
     is_flag=True,
@@ -294,6 +306,7 @@ async def cp(
     no_target_directory: bool,
     update: bool,
     filters: Optional[Tuple[Tuple[bool, str], ...]],
+    exclude_from_files: str,
     progress: bool,
 ) -> None:
     """
@@ -371,6 +384,7 @@ async def cp(
         log.debug("%s %s", "Exclude" if exclude else "Include", pattern)
         file_filter.append(exclude, pattern)
 
+    ignore_file_names = exclude_from_files.split()
     show_progress = root.tty and progress
 
     errors = False
@@ -390,6 +404,7 @@ async def cp(
                         dst,
                         update=update,
                         filter=file_filter.match,
+                        ignore_file_names=ignore_file_names,
                         progress=progress_obj,
                     )
                 else:

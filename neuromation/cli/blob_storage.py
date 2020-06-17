@@ -20,7 +20,7 @@ from .formatters.blob_storage import (
 )
 from .formatters.storage import FilesSorter, create_storage_progress, get_painter
 from .root import Root
-from .storage import calc_filters, filter_option
+from .storage import NEUROIGNORE_FILENAME, calc_filters, filter_option
 from .utils import (
     command,
     group,
@@ -191,6 +191,16 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     ),
 )
 @option(
+    "--exclude-from-files",
+    metavar="FILES",
+    default=NEUROIGNORE_FILENAME,
+    show_default=True,
+    help=(
+        "A list of names of files that contain patterns for exclusion files "
+        "and directories. Used only when upload."
+    ),
+)
+@option(
     "-p/-P",
     "--progress/--no-progress",
     is_flag=True,
@@ -206,6 +216,7 @@ async def cp(
     target_directory: Optional[str],
     no_target_directory: bool,
     filters: Optional[Tuple[Tuple[bool, str], ...]],
+    exclude_from_files: str,
     progress: bool,
 ) -> None:
     """
@@ -271,6 +282,7 @@ async def cp(
         log.debug("%s %s", "Exclude" if exclude else "Include", pattern)
         file_filter.append(exclude, pattern)
 
+    ignore_file_names = exclude_from_files.split()
     show_progress = root.tty and progress
 
     errors = False
@@ -291,7 +303,11 @@ async def cp(
             if src.scheme == "file" and dst.scheme == "blob":
                 if recursive and await _is_dir(root, src):
                     await root.client.blob_storage.upload_dir(
-                        src, dst, filter=file_filter.match, progress=progress_blob,
+                        src,
+                        dst,
+                        filter=file_filter.match,
+                        ignore_file_names=ignore_file_names,
+                        progress=progress_blob,
                     )
                 else:
                     await root.client.blob_storage.upload_file(
@@ -300,7 +316,7 @@ async def cp(
             elif src.scheme == "blob" and dst.scheme == "file":
                 if recursive and await _is_dir(root, src):
                     await root.client.blob_storage.download_dir(
-                        src, dst, filter=file_filter.match, progress=progress_blob,
+                        src, dst, filter=file_filter.match, progress=progress_blob
                     )
                 else:
                     await root.client.blob_storage.download_file(

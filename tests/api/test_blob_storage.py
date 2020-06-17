@@ -1228,7 +1228,7 @@ async def test_blob_storage_glob_blobs(
         assert ret == expected_keys
 
 
-async def test_storage_upload_dir_with_neuroignore(
+async def test_storage_upload_dir_with_ignore_file_names(
     blob_storage_server: Any,
     make_client: _MakeClient,
     tmp_path: Path,
@@ -1241,11 +1241,13 @@ async def test_storage_upload_dir_with_neuroignore(
         (local_dir / name).write_bytes(b"")
         (local_dir2 / name).write_bytes(b"")
     (local_dir / ".neuroignore").write_text("one")
-    (local_dir2 / ".neuroignore").write_text("two")
+    (local_dir2 / ".gitignore").write_text("two")
 
     async with make_client(blob_storage_server.make_url("/")) as client:
         await client.blob_storage.upload_dir(
-            URL(local_dir.as_uri()), URL("blob:foo/folder")
+            URL(local_dir.as_uri()),
+            URL("blob:foo/folder"),
+            ignore_file_names={".neuroignore", ".gitignore"},
         )
 
     keys = sorted(k for k in blob_storage_contents if k.startswith("folder/"))
@@ -1253,7 +1255,7 @@ async def test_storage_upload_dir_with_neuroignore(
         "folder/",
         "folder/.neuroignore",
         "folder/nested/",
-        "folder/nested/.neuroignore",
+        "folder/nested/.gitignore",
         "folder/nested/three",
         "folder/three",
         "folder/two",

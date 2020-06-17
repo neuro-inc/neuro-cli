@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from email.utils import parsedate
 from pathlib import Path, PurePath
 from typing import (
+    AbstractSet,
     Any,
     AsyncIterator,
     Awaitable,
@@ -42,7 +43,6 @@ from .config import Config
 from .core import ResourceNotFound, _Core
 from .file_filter import FileFilter, translate
 from .storage import (
-    NEUROIGNORE_FILENAME,
     QueuedProgress,
     _always,
     _has_magic,
@@ -522,6 +522,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         dst: URL,
         *,
         filter: Optional[Callable[[str], Awaitable[bool]]] = None,
+        ignore_file_names: Union[Sequence[str], AbstractSet[str]] = (),
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if filter is None:
@@ -536,7 +537,15 @@ class BlobStorage(metaclass=NoPublicConstructor):
         queued = QueuedProgress(progress)
         await run_progress(
             queued,
-            self._upload_dir(src, path, dst, "", filter=filter, progress=queued,),
+            self._upload_dir(
+                src,
+                path,
+                dst,
+                "",
+                filter=filter,
+                ignore_file_names=ignore_file_names,
+                progress=queued,
+            ),
         )
 
     async def _upload_dir(
@@ -547,6 +556,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         rel_path: str,
         *,
         filter: Callable[[str], Awaitable[bool]],
+        ignore_file_names: Union[Sequence[str], AbstractSet[str]],
         progress: QueuedProgress,
     ) -> None:
         tasks = []
@@ -573,12 +583,13 @@ class BlobStorage(metaclass=NoPublicConstructor):
         async with self._file_sem:
             folder = await loop.run_in_executor(None, lambda: list(src_path.iterdir()))
 
-        for child in folder:
-            if child.name == NEUROIGNORE_FILENAME and child.is_file():
-                file_filter = FileFilter(filter)
-                file_filter.read_from_file(child, prefix=rel_path)
-                filter = file_filter.match
-                break
+        if ignore_file_names:
+            for child in folder:
+                if child.name in ignore_file_names and child.is_file():
+                    log.debug(f"Load ignore file {rel_path}{child.name}")
+                    file_filter = FileFilter(filter)
+                    file_filter.read_from_file(child, prefix=rel_path)
+                    filter = file_filter.match
 
         for child in folder:
             name = child.name
@@ -600,6 +611,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
                         dst / name,
                         child_rel_path,
                         filter=filter,
+                        ignore_file_names=ignore_file_names,
                         progress=progress,
                     )
                 )
