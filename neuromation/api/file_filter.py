@@ -1,12 +1,40 @@
 import re
-from typing import Any, Callable, List, Tuple, cast
+from pathlib import Path
+from typing import Any, Awaitable, Callable, List, Tuple, cast
+
+
+async def _always_match(path: str) -> bool:
+    return True
 
 
 class FileFilter:
-    def __init__(self) -> None:
-        self.filters: List[Tuple[bool, Callable[[str], Any]]] = []
+    def __init__(
+        self, default: Callable[[str], Awaitable[bool]] = _always_match
+    ) -> None:
+        self.filters: List[Tuple[bool, str, Callable[[str], Any]]] = []
+        self.default = default
 
-    def append(self, exclude: bool, pattern: str) -> None:
+    def read_from_buffer(self, data: bytes, prefix: str = "") -> None:
+        lines = data.decode("utf-8-sig").split("\n")
+        for line in lines:
+            if line and line[-1] == "\r":
+                line = line[:-1]
+            if not line or line.startswith("#"):
+                continue
+            line = _strip_trailing_spaces(line)
+            if line.startswith("!"):
+                print(f"include {line!r}")
+                self.include(line[1:], prefix=prefix)
+            else:
+                print(f"exclude {line!r}")
+                self.exclude(line, prefix=prefix)
+
+    def read_from_file(self, path: Path, prefix: str = "") -> None:
+        with open(path, "rb") as f:
+            self.read_from_buffer(f.read(), prefix)
+
+    def append(self, exclude: bool, pattern: str, prefix: str = "") -> None:
+        assert not prefix or prefix[-1] == "/"
         if "/" not in pattern.rstrip("/"):
             pattern = "**/" + pattern
         else:
@@ -15,20 +43,19 @@ class FileFilter:
         matcher = cast(
             Callable[[str], Any], re.compile(re_pattern, re.DOTALL).fullmatch
         )
-        self.filters.append((exclude, matcher))
+        self.filters.append((exclude, prefix, matcher))
 
-    def exclude(self, pattern: str) -> None:
-        self.append(True, pattern)
+    def exclude(self, pattern: str, prefix: str = "") -> None:
+        self.append(True, pattern, prefix=prefix)
 
-    def include(self, pattern: str) -> None:
-        self.append(False, pattern)
+    def include(self, pattern: str, prefix: str = "") -> None:
+        self.append(False, pattern, prefix=prefix)
 
     async def match(self, path: str) -> bool:
-        result = True
-        for exclude, matcher in self.filters:
-            if result == exclude and matcher(path):
-                result = not result
-        return result
+        for exclude, prefix, matcher in reversed(self.filters):
+            if path.startswith(prefix) and matcher(path[len(prefix) :]):
+                return not exclude
+        return await self.default(path)
 
 
 def translate(pat: str) -> str:
@@ -100,7 +127,33 @@ def translate(pat: str) -> str:
                     stuff = "\\" + stuff
                 res = "%s[%s](?<!/)" % (res, stuff)
         else:
+            if c == "\\" and i < n:
+                c = pat[i]
+                i += 1
             res += re.escape(c)
     if pat[-1:] != "/":
         res += "/?"
     return res
+
+
+def _strip_trailing_spaces(s: str) -> str:
+    last_space = None
+    escaped = False
+    for i, c in enumerate(s):
+        if escaped:
+            escaped = False
+        else:
+            escaped = c == "\\"
+            if c != " ":
+                last_space = None
+            elif last_space is None:
+                last_space = i
+    if last_space is not None:
+        s = s[:last_space]
+    return s
+
+
+def escape(pathname: str) -> str:
+    """Escape all special characters.
+    """
+    return re.sub(r"([*?[\\])", r"[\1]", pathname)

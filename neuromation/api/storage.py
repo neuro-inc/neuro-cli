@@ -40,6 +40,7 @@ from .abc import (
 )
 from .config import Config
 from .core import ResourceNotFound, _Core
+from .file_filter import FileFilter
 from .url_utils import (
     _extract_path,
     normalize_local_path_uri,
@@ -54,6 +55,8 @@ log = logging.getLogger(__name__)
 MAX_OPEN_FILES = 20
 READ_SIZE = 2 ** 20  # 1 MiB
 TIME_THRESHOLD = 1.0
+
+NEUROIGNORE_FILENAME = ".neuroignore"
 
 Printer = Callable[[str], None]
 
@@ -452,10 +455,19 @@ class Storage(metaclass=NoPublicConstructor):
                         await self.mkdir(dst, exist_ok=True)
         except FileExistsError:
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
+
         await progress.enter(StorageProgressEnterDir(src, dst))
         loop = asyncio.get_event_loop()
         async with self._file_sem:
             folder = await loop.run_in_executor(None, lambda: list(src_path.iterdir()))
+
+        for child in folder:
+            if child.name == NEUROIGNORE_FILENAME and child.is_file():
+                file_filter = FileFilter(filter)
+                file_filter.read_from_file(child, prefix=rel_path)
+                filter = file_filter.match
+                break
+
         for child in folder:
             name = child.name
             child_rel_path = f"{rel_path}{name}"

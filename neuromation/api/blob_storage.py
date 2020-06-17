@@ -40,8 +40,9 @@ from .abc import (
 )
 from .config import Config
 from .core import ResourceNotFound, _Core
-from .file_filter import translate
+from .file_filter import FileFilter, translate
 from .storage import (
+    NEUROIGNORE_FILENAME,
     QueuedProgress,
     _always,
     _has_magic,
@@ -535,7 +536,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         queued = QueuedProgress(progress)
         await run_progress(
             queued,
-            self._upload_dir(src, path, dst, "", filter=filter, progress=queued),
+            self._upload_dir(src, path, dst, "", filter=filter, progress=queued,),
         )
 
     async def _upload_dir(
@@ -571,6 +572,13 @@ class BlobStorage(metaclass=NoPublicConstructor):
         loop = asyncio.get_event_loop()
         async with self._file_sem:
             folder = await loop.run_in_executor(None, lambda: list(src_path.iterdir()))
+
+        for child in folder:
+            if child.name == NEUROIGNORE_FILENAME and child.is_file():
+                file_filter = FileFilter(filter)
+                file_filter.read_from_file(child, prefix=rel_path)
+                filter = file_filter.match
+                break
 
         for child in folder:
             name = child.name
