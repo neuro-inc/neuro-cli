@@ -55,8 +55,8 @@ update-deps:
 	pip install -r requirements/dev.txt
 	touch .update-deps
 
-.PHONY: e2e
-e2e: .update-deps
+.PHONY: .e2e
+.e2e:
 	pytest \
 	    -n ${PYTEST_XDIST_NUM_THREADS} \
 		-m "e2e" \
@@ -68,6 +68,9 @@ e2e: .update-deps
 		--durations 10 \
 		$(PYTEST_ARGS) \
 		tests
+
+.PHONY: e2e
+e2e: .update-deps .e2e
 
 .PHONY: .e2e-jobs
 .e2e-jobs:
@@ -102,6 +105,7 @@ e2e-jobs: .update-deps .e2e-jobs
 
 .PHONY: e2e-sumo
 e2e-sumo: .update-deps .e2e-sumo
+
 
 .PHONY: .test
 .test:
