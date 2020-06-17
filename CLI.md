@@ -641,7 +641,7 @@ neuro job port-forward my-job-with-ssh-server 2222:22
 rsync -avxzhe ssh -p 2222 root@localhost:/data .
 
 # Forward few ports at once
-neuro job port-forward my-job- 2080:80 2222:22 2000:100
+neuro job port-forward my-job 2080:80 2222:22 2000:100
 
 ```
 
@@ -2011,7 +2011,7 @@ neuro job port-forward my-job-with-ssh-server 2222:22
 rsync -avxzhe ssh -p 2222 root@localhost:/data .
 
 # Forward few ports at once
-neuro job port-forward my-job- 2080:80 2222:22 2000:100
+neuro job port-forward my-job 2080:80 2222:22 2000:100
 
 ```
 
