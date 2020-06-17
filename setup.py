@@ -35,7 +35,6 @@ setup(
         "aiodocker>=0.18.7",
         "click>=7.0",
         "humanize>=0.5",
-        "psutil>=5.5.0",
         "typing_extensions>=3.7.4",
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead
