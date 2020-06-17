@@ -1824,12 +1824,12 @@ async def test_job_run_restart_policy(
 async def test_port_forward(
     aiohttp_server: _TestServerFactory,
     make_client: _MakeClient,
-    aiohttp_unused_port: int,
+    aiohttp_unused_port: Callable[[], int],
 ) -> None:
 
     port = aiohttp_unused_port()
 
-    async def handler(request: web.Request) -> web.Response:
+    async def handler(request: web.Request) -> web.WebSocketResponse:
         resp = web.WebSocketResponse()
         await resp.prepare(request)
         async for msg in resp:
