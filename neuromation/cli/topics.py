@@ -184,7 +184,7 @@ async def user_config() -> None:
       Default value for `neuro cp --exclude-from-files=XXX` option.
 
       The value is a list of filenames that contain patterns for exclusion files
-      and directories from uploading. For every proceeded folder 
+      and directories from uploading. For every proceeded folder
       patterns from matched exclusion files (e.g. ".neuroignore")
       are read and recursively applied to the directory content.
       Default is `[".neuroignore"]`.
