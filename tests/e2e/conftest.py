@@ -33,6 +33,7 @@ import pytest
 from yarl import URL
 
 from neuromation.api import (
+    Action,
     AuthorizationError,
     Config,
     Container,
@@ -599,20 +600,21 @@ class Helper:
 
     kill_job = run_async(akill_job)
 
-    @run_async
-    async def create_bucket(self, name: str) -> None:
+    async def acreate_bucket(self, name: str) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.blob_storage.create_bucket(name)
 
-    @run_async
-    async def delete_bucket(self, name: str) -> None:
+    create_bucket = run_async(acreate_bucket)
+
+    async def adelete_bucket(self, name: str) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.blob_storage.delete_bucket(name)
 
-    @run_async
-    async def cleanup_bucket(self, bucket_name: str) -> None:
+    delete_bucket = run_async(adelete_bucket)
+
+    async def acleanup_bucket(self, bucket_name: str) -> None:
         __tracebackhide__ = True
         # Each test needs a clean bucket state and we can't delete bucket until it's
         # cleaned
@@ -628,6 +630,22 @@ class Helper:
                 log.info("Removing %s %s", bucket_name, blob.key)
                 tasks.append(client.blob_storage.delete_blob(bucket_name, key=blob.key))
             await asyncio.gather(*tasks)
+
+    cleanup_bucket = run_async(acleanup_bucket)
+
+    @run_async
+    async def drop_stale_buckets(self, bucket_prefix: str) -> None:
+        __tracebackhide__ = True
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            buckets = await client.blob_storage.list_buckets()
+            for bucket in buckets:
+                if (
+                    bucket.name.startswith(bucket_prefix)
+                    and bucket.creation_time < time() - 3600 * 4
+                    and bucket.permission in (Action.WRITE, Action.MANAGE)
+                ):
+                    await self.acleanup_bucket(bucket.name)
+                    await self.adelete_bucket(bucket.name)
 
     @run_async
     async def upload_blob(self, bucket_name: str, key: str, file: Path) -> None:
@@ -764,7 +782,9 @@ def _tmp_bucket_create(
     nmrc_path = _get_nmrc_path(tmp_path_factory, require_admin=True)
 
     helper = Helper(nmrc_path, tmp_path)
+
     try:
+        helper.drop_stale_buckets("neuro-e2e-")
         helper.create_bucket(tmpbucketname)
     except AuthorizationError:
         pytest.skip("No permission to create bucket for user E2E_TOKEN")
