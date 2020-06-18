@@ -196,7 +196,7 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     default=None,
     help=(
         "A list of file names that contain patterns for exclusion files "
-        "and directories. Used only when upload. "
+        "and directories. Used only for uploading. "
         "The default can be changed using the storage.cp-exclude-from-files "
         'configuration variable documented in "neuro help user-config"'
     ),

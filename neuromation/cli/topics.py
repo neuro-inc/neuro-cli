@@ -183,10 +183,10 @@ async def user_config() -> None:
 
       Default value for `neuro cp --exclude-from-files=XXX` option.
 
-      The value is a list of file names that contain patterns for exclusion files
-      and directories from uploading. For every proceeded directory files with
-      specified names are read and patterns contained in them are applied to
-      files and directories in that directory and its subdirectories.
+      The value is a list of filenames that contain patterns for exclusion files
+      and directories from uploading. For every proceeded folder 
+      patterns from matched exclusion files (e.g. ".neuroignore")
+      are read and recursively applied to the directory content.
       Default is `[".neuroignore"]`.
 
       The format of files is the same as the format of `.gitignore` files:

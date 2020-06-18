@@ -284,7 +284,7 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     metavar="FILES",
     help=(
         "A list of file names that contain patterns for exclusion files "
-        "and directories. Used only when upload. "
+        "and directories. Used only for uploading. "
         "The default can be changed using the storage.cp-exclude-from-files "
         'configuration variable documented in "neuro help user-config"'
     ),
