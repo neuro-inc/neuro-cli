@@ -20,7 +20,7 @@ from .formatters.blob_storage import (
 )
 from .formatters.storage import FilesSorter, create_storage_progress, get_painter
 from .root import Root
-from .storage import NEUROIGNORE_FILENAME, calc_filters, filter_option
+from .storage import calc_filters, calc_ignore_file_names, filter_option
 from .utils import (
     command,
     group,
@@ -193,11 +193,12 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
 @option(
     "--exclude-from-files",
     metavar="FILES",
-    default=NEUROIGNORE_FILENAME,
-    show_default=True,
+    default=None,
     help=(
-        "A list of names of files that contain patterns for exclusion files "
-        "and directories. Used only when upload."
+        "A list of file names that contain patterns for exclusion files "
+        "and directories. Used only when upload. "
+        "The default can be changed using the storage.cp-exclude-from-files "
+        'configuration variable documented in "neuro help user-config"'
     ),
 )
 @option(
@@ -272,6 +273,7 @@ async def cp(
             target_dir = dst
             dst = None
 
+    ignore_file_names = await calc_ignore_file_names(root.client, exclude_from_files)
     filters = await calc_filters(root.client, filters)
     srcs = await _expand(sources, root, glob, allow_file=True)
     if no_target_directory and len(srcs) > 1:
@@ -282,7 +284,6 @@ async def cp(
         log.debug("%s %s", "Exclude" if exclude else "Include", pattern)
         file_filter.append(exclude, pattern)
 
-    ignore_file_names = exclude_from_files.split()
     show_progress = root.tty and progress
 
     errors = False

@@ -576,7 +576,12 @@ def _validate_user_config(
     _check_section(
         config, "job", {"ps-format": str, "life-span": str}, filename,
     )
-    _check_section(config, "storage", {"cp-exclude": (list, str)}, filename)
+    _check_section(
+        config,
+        "storage",
+        {"cp-exclude": (list, str), "cp-exclude-from-files": (list, str)},
+        filename,
+    )
     aliases = config.get("alias", {})
     for key, value in aliases.items():
         # check keys and values

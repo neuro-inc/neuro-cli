@@ -282,11 +282,11 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
 @option(
     "--exclude-from-files",
     metavar="FILES",
-    default=NEUROIGNORE_FILENAME,
-    show_default=True,
     help=(
-        "A list of names of files that contain patterns for exclusion files "
-        "and directories. Used only when upload."
+        "A list of file names that contain patterns for exclusion files "
+        "and directories. Used only when upload. "
+        "The default can be changed using the storage.cp-exclude-from-files "
+        'configuration variable documented in "neuro help user-config"'
     ),
 )
 @option(
@@ -374,6 +374,7 @@ async def cp(
             target_dir = dst
             dst = None
 
+    ignore_file_names = await calc_ignore_file_names(root.client, exclude_from_files)
     filters = await calc_filters(root.client, filters)
     srcs = await _expand(sources, root, glob, allow_file=True)
     if no_target_directory and len(srcs) > 1:
@@ -384,7 +385,6 @@ async def cp(
         log.debug("%s %s", "Exclude" if exclude else "Include", pattern)
         file_filter.append(exclude, pattern)
 
-    ignore_file_names = exclude_from_files.split()
     show_progress = root.tty and progress
 
     errors = False
@@ -709,6 +709,19 @@ async def calc_filters(
             else:
                 ret.append((True, flt))
     return tuple(ret)
+
+
+async def calc_ignore_file_names(
+    client: Client, exclude_from_files: Optional[str]
+) -> List[str]:
+    if exclude_from_files is not None:
+        return exclude_from_files.split()
+    config = await client.config.get_user_config()
+    section = config.get("storage")
+    ignore_file_names = [NEUROIGNORE_FILENAME]
+    if section is not None:
+        ignore_file_names = section.get("cp-exclude-from-files", ignore_file_names)
+    return ignore_file_names
 
 
 async def fetch_tree(client: Client, uri: URL, show_all: bool) -> Tree:
