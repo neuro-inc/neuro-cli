@@ -7,7 +7,7 @@ from typing import Sequence, Union
 from yarl import URL
 
 
-CLUSTER_SCHEMES = ("storage", "image", "job")
+CLUSTER_SCHEMES = ("storage", "image", "job", "secret")
 
 
 def uri_from_cli(

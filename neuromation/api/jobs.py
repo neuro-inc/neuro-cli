@@ -15,6 +15,7 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
+    Tuple,
     Union,
 )
 
@@ -96,6 +97,8 @@ class Container:
     http: Optional[HTTPPort] = None
     env: Mapping[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
+    secret_env: Mapping[str, URL] = field(default_factory=dict)
+    secret_files: Sequence[Tuple[URL, str]] = field(default_factory=list)
     tty: bool = False
 
 
@@ -646,6 +649,8 @@ def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
         http=_http_port_from_api(data["http"]) if "http" in data else None,
         env=data.get("env", dict()),
         volumes=[_volume_from_api(v) for v in data.get("volumes", [])],
+        secret_env={name: URL(val) for name, val in data.get("secret_env", {}).items()},
+        secret_files=[_secret_file_from_api(v) for v in data.get("secret_volumes", [])],
         tty=data.get("tty", False),
     )
 
@@ -665,6 +670,12 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
         primitive["env"] = container.env
     if container.volumes:
         primitive["volumes"] = [_volume_to_api(v) for v in container.volumes]
+    if container.secret_env:
+        primitive["secret_env"] = [(k, str(v)) for k, v in container.secret_env.items()]
+    if container.secret_files:
+        primitive["secret_volumes"] = [
+            _secret_file_to_api(v) for v in container.secret_files
+        ]
     if container.tty:
         primitive["tty"] = True
     return primitive
@@ -734,6 +745,14 @@ def _volume_to_api(volume: Volume) -> Dict[str, Any]:
     return resp
 
 
+def _secret_file_to_api(secret_file: Tuple[URL, str]) -> Dict[str, Any]:
+    secret_uri, container_path = secret_file
+    return {
+        "src_secret_uri": str(secret_uri),
+        "dst_path": container_path,
+    }
+
+
 def _volume_from_api(data: Dict[str, Any]) -> Volume:
     storage_uri = URL(data["src_storage_uri"])
     container_path = data["dst_path"]
@@ -741,6 +760,12 @@ def _volume_from_api(data: Dict[str, Any]) -> Volume:
     return Volume(
         storage_uri=storage_uri, container_path=container_path, read_only=read_only
     )
+
+
+def _secret_file_from_api(data: Dict[str, Any]) -> Tuple[URL, str]:
+    secret_uri = URL(data["src_secret_uri"])
+    container_path = data["dst_path"]
+    return secret_uri, container_path
 
 
 def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:
