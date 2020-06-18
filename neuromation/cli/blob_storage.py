@@ -20,7 +20,7 @@ from .formatters.blob_storage import (
 )
 from .formatters.storage import FilesSorter, create_storage_progress, get_painter
 from .root import Root
-from .storage import calc_filters, filter_option
+from .storage import calc_filters, calc_ignore_file_names, filter_option
 from .utils import (
     command,
     group,
@@ -191,6 +191,17 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     ),
 )
 @option(
+    "--exclude-from-files",
+    metavar="FILES",
+    default=None,
+    help=(
+        "A list of file names that contain patterns for exclusion files "
+        "and directories. Used only for uploading. "
+        "The default can be changed using the storage.cp-exclude-from-files "
+        'configuration variable documented in "neuro help user-config"'
+    ),
+)
+@option(
     "-p/-P",
     "--progress/--no-progress",
     is_flag=True,
@@ -206,6 +217,7 @@ async def cp(
     target_directory: Optional[str],
     no_target_directory: bool,
     filters: Optional[Tuple[Tuple[bool, str], ...]],
+    exclude_from_files: str,
     progress: bool,
 ) -> None:
     """
@@ -261,6 +273,7 @@ async def cp(
             target_dir = dst
             dst = None
 
+    ignore_file_names = await calc_ignore_file_names(root.client, exclude_from_files)
     filters = await calc_filters(root.client, filters)
     srcs = await _expand(sources, root, glob, allow_file=True)
     if no_target_directory and len(srcs) > 1:
@@ -291,7 +304,11 @@ async def cp(
             if src.scheme == "file" and dst.scheme == "blob":
                 if recursive and await _is_dir(root, src):
                     await root.client.blob_storage.upload_dir(
-                        src, dst, filter=file_filter.match, progress=progress_blob,
+                        src,
+                        dst,
+                        filter=file_filter.match,
+                        ignore_file_names=ignore_file_names,
+                        progress=progress_blob,
                     )
                 else:
                     await root.client.blob_storage.upload_file(
@@ -300,7 +317,7 @@ async def cp(
             elif src.scheme == "blob" and dst.scheme == "file":
                 if recursive and await _is_dir(root, src):
                     await root.client.blob_storage.download_dir(
-                        src, dst, filter=file_filter.match, progress=progress_blob,
+                        src, dst, filter=file_filter.match, progress=progress_blob
                     )
                 else:
                     await root.client.blob_storage.download_file(

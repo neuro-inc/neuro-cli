@@ -1246,7 +1246,7 @@ async def test_storage_download_dir_update(
     assert local_file.read_bytes() == b"xxx"
 
 
-async def test_storage_upload_dir_with_neuroignore(
+async def test_storage_upload_dir_with_ignore_file_names(
     storage_server: Any, make_client: _MakeClient, tmp_path: Path, storage_path: Path
 ) -> None:
     local_dir = tmp_path / "folder"
@@ -1256,12 +1256,16 @@ async def test_storage_upload_dir_with_neuroignore(
         (local_dir / name).write_bytes(b"")
         (local_dir2 / name).write_bytes(b"")
     (local_dir / ".neuroignore").write_text("one")
-    (local_dir2 / ".neuroignore").write_text("two")
+    (local_dir2 / ".gitignore").write_text("two")
 
     async with make_client(storage_server.make_url("/")) as client:
-        await client.storage.upload_dir(URL(local_dir.as_uri()), URL("storage:folder"))
+        await client.storage.upload_dir(
+            URL(local_dir.as_uri()),
+            URL("storage:folder"),
+            ignore_file_names={".neuroignore", ".gitignore"},
+        )
 
-    names = set(os.listdir(storage_path / "folder"))
-    assert names == {"nested", ".neuroignore", "two", "three"}
-    names = set(os.listdir(storage_path / "folder" / "nested"))
-    assert names == {".neuroignore", "three"}
+    names = sorted(os.listdir(storage_path / "folder"))
+    assert names == [".neuroignore", "nested", "three", "two"]
+    names = sorted(os.listdir(storage_path / "folder" / "nested"))
+    assert names == [".gitignore", "three"]

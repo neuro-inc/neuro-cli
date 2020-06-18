@@ -41,6 +41,8 @@ from .utils import (
 )
 
 
+NEUROIGNORE_FILENAME = ".neuroignore"
+
 log = logging.getLogger(__name__)
 
 
@@ -278,6 +280,16 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     ),
 )
 @option(
+    "--exclude-from-files",
+    metavar="FILES",
+    help=(
+        "A list of file names that contain patterns for exclusion files "
+        "and directories. Used only for uploading. "
+        "The default can be changed using the storage.cp-exclude-from-files "
+        'configuration variable documented in "neuro help user-config"'
+    ),
+)
+@option(
     "-p/-P",
     "--progress/--no-progress",
     is_flag=True,
@@ -294,6 +306,7 @@ async def cp(
     no_target_directory: bool,
     update: bool,
     filters: Optional[Tuple[Tuple[bool, str], ...]],
+    exclude_from_files: str,
     progress: bool,
 ) -> None:
     """
@@ -361,6 +374,7 @@ async def cp(
             target_dir = dst
             dst = None
 
+    ignore_file_names = await calc_ignore_file_names(root.client, exclude_from_files)
     filters = await calc_filters(root.client, filters)
     srcs = await _expand(sources, root, glob, allow_file=True)
     if no_target_directory and len(srcs) > 1:
@@ -390,6 +404,7 @@ async def cp(
                         dst,
                         update=update,
                         filter=file_filter.match,
+                        ignore_file_names=ignore_file_names,
                         progress=progress_obj,
                     )
                 else:
@@ -694,6 +709,19 @@ async def calc_filters(
             else:
                 ret.append((True, flt))
     return tuple(ret)
+
+
+async def calc_ignore_file_names(
+    client: Client, exclude_from_files: Optional[str]
+) -> List[str]:
+    if exclude_from_files is not None:
+        return exclude_from_files.split()
+    config = await client.config.get_user_config()
+    section = config.get("storage")
+    ignore_file_names = [NEUROIGNORE_FILENAME]
+    if section is not None:
+        ignore_file_names = section.get("cp-exclude-from-files", ignore_file_names)
+    return ignore_file_names
 
 
 async def fetch_tree(client: Client, uri: URL, show_all: bool) -> Tree:
