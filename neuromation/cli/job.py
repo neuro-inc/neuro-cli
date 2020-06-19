@@ -437,7 +437,8 @@ async def exec(
     if tty is None:
         tty = root.tty
     _check_tty(root, tty)
-    async with async_timeout.timeout(timeout):
+    # 0 is zero timeout (expired), need convertion to None
+    async with async_timeout.timeout(timeout or None):
         await process_exec(root, job, real_cmd, tty)
 
 
