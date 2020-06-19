@@ -36,11 +36,6 @@ def test_e2e_storage(data: Tuple[Path, str], tmp_path: Path, helper: Helper) -> 
         "foo", "folder", checksum, str(tmp_path), "bar"
     )
 
-    # Download into deeper local dir and confirm checksum
-    localdir = tmp_path / "baz"
-    localdir.mkdir()
-    helper.check_file_on_storage_checksum("foo", "folder", checksum, localdir, "foo")
-
     # Rename file on the storage
     helper.check_rename_file_on_storage("foo", "folder", "bar", "folder")
     helper.check_file_exists_on_storage("bar", "folder", FILE_SIZE_B)
