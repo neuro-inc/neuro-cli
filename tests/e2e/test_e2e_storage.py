@@ -95,8 +95,8 @@ def test_e2e_mkdir(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_copy_local_file_to_platform_directory(helper: Helper, data: _Data) -> None:
-    srcfile, checksum = data
+def test_copy_local_file_to_platform_directory(helper: Helper, data2: _Data) -> None:
+    srcfile, checksum = data2
     file_name = str(PurePath(srcfile).name)
 
     helper.mkdir("folder", parents=True)
@@ -104,14 +104,14 @@ def test_copy_local_file_to_platform_directory(helper: Helper, data: _Data) -> N
     helper.run_cli(["storage", "cp", srcfile, helper.tmpstorage + "/folder"])
 
     # Ensure file is there
-    helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B)
+    helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B // 3)
 
 
 @pytest.mark.e2e
 def test_copy_local_file_to_platform_directory_explicit(
-    helper: Helper, data: _Data
+    helper: Helper, data2: _Data
 ) -> None:
-    srcfile, checksum = data
+    srcfile, checksum = data2
     file_name = str(PurePath(srcfile).name)
 
     helper.mkdir("folder", parents=True)
@@ -119,7 +119,7 @@ def test_copy_local_file_to_platform_directory_explicit(
     helper.run_cli(["storage", "cp", "-t", helper.tmpstorage + "/folder", srcfile])
 
     # Ensure file is there
-    helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B)
+    helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B // 3)
 
 
 @pytest.mark.e2e
@@ -141,10 +141,10 @@ def test_copy_local_single_file_to_platform_file(helper: Helper, data: _Data) ->
 
 @pytest.mark.e2e
 def test_copy_local_single_file_to_platform_file_explicit(
-    helper: Helper, data: _Data
+    helper: Helper, data2: _Data
 ) -> None:
     # case when copy happens with rename to 'different_name.txt'
-    srcfile, checksum = data
+    srcfile, checksum = data2
     file_name = str(PurePath(srcfile).name)
 
     helper.mkdir("folder", parents=True)
@@ -160,7 +160,7 @@ def test_copy_local_single_file_to_platform_file_explicit(
     )
 
     # Ensure file is there
-    helper.check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B)
+    helper.check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B // 3)
     helper.check_file_absent_on_storage(file_name, "folder")
 
 
@@ -251,12 +251,12 @@ def test_e2e_copy_no_target_directory_extra_operand(
 
 @pytest.mark.e2e
 def test_copy_and_remove_multiple_files(
-    helper: Helper, data: _Data, data2: _Data, tmp_path: Path
+    helper: Helper, data2: _Data, data3: _Data, tmp_path: Path
 ) -> None:
     helper.mkdir("")
     # case when copy happens with rename to 'different_name.txt'
-    srcfile, checksum = data
-    srcfile2, checksum2 = data2
+    srcfile, checksum = data2
+    srcfile2, checksum2 = data3
     srcname = os.path.basename(srcfile)
     srcname2 = os.path.basename(srcfile2)
 
@@ -265,8 +265,8 @@ def test_copy_and_remove_multiple_files(
     assert captured.out == ""
 
     # Confirm files has been uploaded
-    helper.check_file_exists_on_storage(srcname, "", FILE_SIZE_B)
-    helper.check_file_exists_on_storage(srcname2, "", FILE_SIZE_B // 3)
+    helper.check_file_exists_on_storage(srcname, "", FILE_SIZE_B // 3)
+    helper.check_file_exists_on_storage(srcname2, "", FILE_SIZE_B // 5)
 
     # Download into local directory and confirm checksum
     targetdir = tmp_path / "bar"
@@ -314,7 +314,7 @@ def test_e2e_copy_recursive_to_platform(
     assert not captured.out
 
     helper.check_file_exists_on_storage(
-        target_file_name, f"nested/directory/for/test", FILE_SIZE_B
+        target_file_name, f"nested/directory/for/test", FILE_SIZE_B // 3
     )
 
     # Download into local directory and confirm checksum

@@ -156,7 +156,7 @@ def test_e2e_blob_storage_copy_recursive_folder(
     assert not captured.out
 
     helper.check_blob_size(
-        tmp_bucket, f"nested/directory/for/test/{target_file_name}", FILE_SIZE_B
+        tmp_bucket, f"nested/directory/for/test/{target_file_name}", FILE_SIZE_B //3
     )
 
     # Download into local directory and confirm checksum
