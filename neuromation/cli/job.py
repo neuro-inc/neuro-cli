@@ -409,6 +409,7 @@ async def submit(
     default=0,
     type=float,
     show_default=True,
+    hidden=True,
     help="Maximum allowed time for executing the command, 0 for no timeout",
 )
 async def exec(
@@ -437,9 +438,7 @@ async def exec(
     if tty is None:
         tty = root.tty
     _check_tty(root, tty)
-    # 0 is zero timeout (expired), need convertion to None
-    async with async_timeout.timeout(timeout or None):
-        await process_exec(root, job, real_cmd, tty)
+    await process_exec(root, job, real_cmd, tty)
 
 
 @command()
