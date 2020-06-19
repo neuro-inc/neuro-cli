@@ -139,8 +139,8 @@ Name | Description|
 | _[neuro status](#neuro-status)_| Display status of a job |
 | _[neuro exec](#neuro-exec)_| Execute command in a running job |
 | _[neuro port-forward](#neuro-port-forward)_| Forward port\(s) of a running job to local port\(s) |
-| _[neuro attach](#neuro-attach)_| Print the logs for a container |
-| _[neuro logs](#neuro-logs)_| Print the logs for a container |
+| _[neuro attach](#neuro-attach)_| Attach local standard input, output, and error streams to a running job |
+| _[neuro logs](#neuro-logs)_| Print the logs for a job |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
 | _[neuro save](#neuro-save)_| Save job's state to an image |
@@ -377,19 +377,19 @@ Name | Description|
 | _[neuro job tags](#neuro-job-tags)_| List all tags submitted by the user |
 | _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
 | _[neuro job port-forward](#neuro-job-port-forward)_| Forward port\(s) of a running job to local port\(s) |
-| _[neuro job logs](#neuro-job-logs)_| Print the logs for a container |
+| _[neuro job logs](#neuro-job-logs)_| Print the logs for a job |
 | _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
 | _[neuro job save](#neuro-job-save)_| Save job's state to an image |
 | _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
-| _[neuro job attach](#neuro-job-attach)_| Print the logs for a container |
+| _[neuro job attach](#neuro-job-attach)_| Attach local standard input, output, and error streams to a running job |
 
 
 
 
 ### neuro job run
 
-Run a job with predefined resources configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
+Run a job with predefined resources configuration.<br/><br/>IMAGE docker image name to run in a job.<br/><br/>CMD list will be passed as arguments to the executed job's image.<br/>
 
 **Usage:**
 
@@ -477,7 +477,7 @@ Name | Description|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
-|_--http PORT_|Enable HTTP port forwarding to container|
+|_--http PORT_|Enable HTTP port forwarding to a job|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
@@ -657,7 +657,7 @@ Name | Description|
 
 ### neuro job logs
 
-Print the logs for a container.
+Print the logs for a job.
 
 **Usage:**
 
@@ -763,7 +763,7 @@ Name | Description|
 
 ### neuro job attach
 
-Print the logs for a container.
+Attach local standard input, output, and error streams to a running job.
 
 **Usage:**
 
@@ -1778,7 +1778,7 @@ Name | Description|
 
 ## neuro run
 
-Run a job with predefined resources configuration.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
+Run a job with predefined resources configuration.<br/><br/>IMAGE docker image name to run in a job.<br/><br/>CMD list will be passed as arguments to the executed job's image.<br/>
 
 **Usage:**
 
@@ -1866,7 +1866,7 @@ Name | Description|
 |_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
 |_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
-|_--http PORT_|Enable HTTP port forwarding to container|
+|_--http PORT_|Enable HTTP port forwarding to a job|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
 |_\-n, --name NAME_|Optional job name|
@@ -2027,7 +2027,7 @@ Name | Description|
 
 ## neuro attach
 
-Print the logs for a container.
+Attach local standard input, output, and error streams to a running job.
 
 **Usage:**
 
@@ -2046,7 +2046,7 @@ Name | Description|
 
 ## neuro logs
 
-Print the logs for a container.
+Print the logs for a job.
 
 **Usage:**
 

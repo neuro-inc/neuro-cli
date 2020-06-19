@@ -467,7 +467,13 @@ class JobStopProgress:
     def __init__(self) -> None:
         self._time = self.time_factory()
 
-    def __call__(self, job: JobDescription) -> bool:
+    def kill(self, job: JobDescription) -> None:
+        pass
+
+    def detach(self, job: JobDescription) -> None:
+        pass
+
+    def step(self, job: JobDescription) -> bool:
         # return False if timeout, True otherwise
         new_time = self.time_factory()
         if new_time - self._time > self.TIMEOUT:
@@ -491,6 +497,26 @@ class DetailedJobStopProgress(JobStopProgress):
         self._spinner = SPINNER
         self._printer = TTYPrinter()
         self._lineno = 0
+
+    def detach(self, job: JobDescription) -> None:
+        secho()
+        secho("Terminal was detached but job is still running", fg="red")
+        secho("Re-attach to job:", dim=True, fg="yellow")
+        secho(f"  neuro attach {job.id}", dim=True)
+        secho("Check job status:", dim=True, fg="yellow")
+        secho(f"  neuro status {job.id}", dim=True)
+        secho("Kill job:", dim=True, fg="yellow")
+        secho(f"  neuro kill {job.id}", dim=True)
+        secho("Fetch job logs:", dim=True, fg="yellow")
+        secho(f"  neuro logs {job.id}", dim=True)
+
+    def kill(self, job: JobDescription) -> None:
+        secho()
+        secho("Job was killed", fg="red")
+        secho("Get job status:", dim=True, fg="yellow")
+        secho(f"  neuro status {job.id}", dim=True)
+        secho("Fetch job logs:", dim=True, fg="yellow")
+        secho(f"  neuro logs {job.id}", dim=True)
 
     def tick(self, job: JobDescription) -> None:
         new_time = self.time_factory()
@@ -529,13 +555,21 @@ class StreamJobStopProgress(JobStopProgress):
         self._printer = StreamPrinter()
         self._printer.print("Wait for stopping")
 
+    def detach(self, job: JobDescription) -> None:
+        pass
+
+    def kill(self, job: JobDescription) -> None:
+        self._printer.print("Job was killed")
+
     def tick(self, job: JobDescription) -> None:
         self._printer.tick()
 
     def timeout(self, job: JobDescription) -> None:
-        print()
-        print("Warning !!!")
-        print("The attached session was disconnected but the job is still alive.")
+        self._printer.print("")
+        self._printer.print("Warning !!!")
+        self._printer.print(
+            "The attached session was disconnected but the job is still alive."
+        )
 
 
 class ExecStopProgress:

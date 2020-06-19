@@ -8,11 +8,12 @@ import logging
 import signal
 import sys
 import threading
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, List, Optional
 
 import click
 from prompt_toolkit.formatted_text import HTML, merge_formatted_text
 from prompt_toolkit.input import create_input
+from prompt_toolkit.key_binding import KeyPress
 from prompt_toolkit.key_binding.key_bindings import KeyBindings
 from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.keys import Keys
@@ -20,7 +21,7 @@ from prompt_toolkit.output import Output, create_output
 from prompt_toolkit.shortcuts import PromptSession
 from typing_extensions import NoReturn
 
-from neuromation.api import IllegalArgumentError, JobStatus, StdStream
+from neuromation.api import IllegalArgumentError, JobDescription, JobStatus, StdStream
 
 from .const import EX_IOERR, EX_PLATFORMERROR
 from .formatters.jobs import ExecStopProgress, JobStopProgress
@@ -38,7 +39,9 @@ JOB_STARTED_TTY = (
     click.style("√ ", fg="green")
     + click.style("=========== Job is running in terminal mode ===========\n", dim=True)
     + click.style("√ ", fg="green")
-    + click.style("(If you don't see a command prompt, try pressing enter)", dim=True)
+    + click.style("(If you don't see a command prompt, try pressing enter)\n", dim=True)
+    + click.style("√ ", fg="green")
+    + click.style("(Use CTRL-p CTRL-q key sequence to detach from the job)", dim=True)
 )
 
 ATTACH_STARTED_AFTER_LOGS = click.style(
@@ -46,19 +49,25 @@ ATTACH_STARTED_AFTER_LOGS = click.style(
 )
 
 
+class InterruptAction(enum.Enum):
+    NOTHING = enum.auto()
+    DETACH = enum.auto()
+    KILL = enum.auto()
+
+
 class AttachHelper:
     attach_ready: bool
     log_printed: bool
     write_sem: asyncio.Semaphore
     quiet: bool
-    skip_stopper: bool
+    action: InterruptAction
 
     def __init__(self, *, quiet: bool) -> None:
         self.attach_ready = False
         self.log_printed = False
         self.write_sem = asyncio.Semaphore()
         self.quiet = quiet
-        self.skip_stopper = False
+        self.action = InterruptAction.NOTHING
 
 
 async def process_logs(root: Root, job: str, helper: Optional[AttachHelper]) -> None:
@@ -175,32 +184,39 @@ async def _exec_watcher(root: Root, job: str, exec_id: str) -> None:
         await asyncio.sleep(5)
 
 
-async def process_attach(root: Root, job: str, tty: bool, logs: bool) -> NoReturn:
+async def process_attach(
+    root: Root, job: JobDescription, tty: bool, logs: bool
+) -> NoReturn:
     # Note, the job should be in running/finished state for this call,
     # passing pending job is forbidden
+    progress = JobStopProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
     try:
         if tty:
-            await _attach_tty(root, job, logs)
+            action = await _attach_tty(root, job.id, logs)
         else:
-            skip_stopper = await _attach_non_tty(root, job, logs)
-            if skip_stopper:
-                sys.exit(128 + signal.SIGINT)
+            action = await _attach_non_tty(root, job.id, logs)
+
+        if action == InterruptAction.KILL:
+            progress.kill(job)
+            sys.exit(128 + signal.SIGINT)
+        elif action == InterruptAction.DETACH:
+            progress.detach(job)
+            sys.exit(0)
     finally:
         root.soft_reset_tty()
 
-    status = await root.client.jobs.status(job)
-    progress = JobStopProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
-    while status.status == JobStatus.RUNNING:
+    job = await root.client.jobs.status(job.id)
+    while job.status == JobStatus.RUNNING:
         await asyncio.sleep(0.2)
-        status = await root.client.jobs.status(job)
-        if not progress(status):
+        job = await root.client.jobs.status(job.id)
+        if not progress.step(job):
             sys.exit(EX_IOERR)
-    if status.status == JobStatus.FAILED:
-        sys.exit(status.history.exit_code or EX_PLATFORMERROR)
-    sys.exit(status.history.exit_code)
+    if job.status == JobStatus.FAILED:
+        sys.exit(job.history.exit_code or EX_PLATFORMERROR)
+    sys.exit(job.history.exit_code)
 
 
-async def _attach_tty(root: Root, job: str, logs: bool) -> None:
+async def _attach_tty(root: Root, job: str, logs: bool) -> InterruptAction:
     if not root.quiet:
         click.echo(JOB_STARTED_TTY)
 
@@ -236,7 +252,7 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
                 sys.exit(status.history.exit_code)
 
         tasks = []
-        tasks.append(loop.create_task(_process_stdin_tty(stream)))
+        tasks.append(loop.create_task(_process_stdin_tty(stream, helper)))
         tasks.append(
             loop.create_task(_process_stdout_tty(root, stream, stdout, helper))
         )
@@ -255,6 +271,7 @@ async def _attach_tty(root: Root, job: str, logs: bool) -> None:
                 await root.cancel_with_logging(task)
 
             await root.cancel_with_logging(logs_printer)
+        return helper.action
 
 
 async def _attach_watcher(root: Root, job: str) -> None:
@@ -316,11 +333,25 @@ async def _process_resizing(
             signal.signal(signal.SIGWINCH, previous_winch_handler)
 
 
-async def _process_stdin_tty(stream: StdStream) -> None:
+def _has_detach(keys: List[KeyPress], term: List[Keys]):
+    for i in range(len(keys) - len(term) + 1):
+        if keys[i].key == term[0]:
+            for j in range(1, len(term)):
+                if keys[i + j].key != term[j]:
+                    break
+            else:
+                return True
+    return False
+
+
+async def _process_stdin_tty(stream: StdStream, helper: AttachHelper) -> None:
     ev = asyncio.Event()
 
     def read_ready() -> None:
         ev.set()
+
+    term = (Keys.ControlP, Keys.ControlQ)
+    prev = []
 
     inp = create_input()
     with inp.raw_mode():
@@ -331,6 +362,12 @@ async def _process_stdin_tty(stream: StdStream) -> None:
                 if inp.closed:
                     return
                 keys = inp.read_keys()  # + inp.flush_keys()
+                if _has_detach(prev + keys, term):
+                    helper.action = InterruptAction.DETACH
+                if len(keys) > len(term):
+                    prev = keys
+                else:
+                    prev.extend(keys)
                 buf = b"".join(key.data.encode("utf8") for key in keys)
                 await stream.write_in(buf)
 
@@ -365,7 +402,7 @@ async def _process_stdout_tty(
             stdout.flush()
 
 
-async def _attach_non_tty(root: Root, job: str, logs: bool) -> bool:
+async def _attach_non_tty(root: Root, job: str, logs: bool) -> InterruptAction:
     if not root.quiet:
         s = JOB_STARTED
         if root.tty:
@@ -399,12 +436,12 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> bool:
 
         try:
             await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            return helper.skip_stopper
         finally:
             for task in tasks:
                 await root.cancel_with_logging(task)
 
             await root.cancel_with_logging(logs_printer)
+        return helper.action
 
 
 async def _process_stdin_non_tty(root: Root, stream: StdStream) -> None:
@@ -466,31 +503,25 @@ async def _process_stdout_non_tty(
             await _write(chunk.fileno, txt)
 
 
-class InterruptAction(enum.Enum):
-    nothing = enum.auto()
-    detach = enum.auto()
-    kill = enum.auto()
-
-
 def _create_interruption_dialog() -> PromptSession[InterruptAction]:
     bindings = KeyBindings()
 
     @bindings.add(Keys.Enter)
     @bindings.add(Keys.Escape)
     def nothing(event: KeyPressEvent) -> None:
-        event.app.exit(result=InterruptAction.nothing)
+        event.app.exit(result=InterruptAction.NOTHING)
 
     @bindings.add("c-c")
     @bindings.add("C")
     @bindings.add("c")
     def kill(event: KeyPressEvent) -> None:
-        event.app.exit(result=InterruptAction.kill)
+        event.app.exit(result=InterruptAction.KILL)
 
     @bindings.add("c-d")
     @bindings.add("D")
     @bindings.add("d")
     def detach(event: KeyPressEvent) -> None:
-        event.app.exit(result=InterruptAction.detach)
+        event.app.exit(result=InterruptAction.DETACH)
 
     @bindings.add(Keys.Any)
     def _(event: KeyPressEvent) -> None:
@@ -543,19 +574,19 @@ async def _process_ctrl_c(root: Root, job: str, helper: AttachHelper) -> None:
                 # Ask nothing but just kill a job
                 # if executed from non-terminal
                 await root.client.jobs.kill(job)
-                helper.skip_stopper = True
+                helper.stop_action = InterruptAction.KILL
                 return
             async with helper.write_sem:
                 session = _create_interruption_dialog()
                 answer = await session.prompt_async(set_exception_handler=False)
-                if answer == InterruptAction.detach:
+                if answer == InterruptAction.DETACH:
                     click.secho("Detach terminal", dim=True, fg="green")
-                    helper.skip_stopper = True
+                    helper.action = answer
                     return
-                elif answer == InterruptAction.kill:
+                elif answer == InterruptAction.KILL:
                     click.secho("Kill job", fg="red")
                     await root.client.jobs.kill(job)
-                    helper.skip_stopper = True
+                    helper.action = answer
                     return
     finally:
         signal.signal(signal.SIGINT, prev_signal)
