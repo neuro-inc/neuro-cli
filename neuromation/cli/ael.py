@@ -8,7 +8,7 @@ import logging
 import signal
 import sys
 import threading
-from typing import Any, Awaitable, Callable, List, Optional
+from typing import Any, Awaitable, Callable, List, Optional, Sequence
 
 import click
 from prompt_toolkit.formatted_text import HTML, merge_formatted_text
@@ -130,7 +130,7 @@ async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
             sys.exit(info.exit_code)
 
         tasks = []
-        tasks.append(loop.create_task(_process_stdin_tty(stream)))
+        tasks.append(loop.create_task(_process_stdin_tty(stream, helper)))
         tasks.append(
             loop.create_task(_process_stdout_tty(root, stream, stdout, helper))
         )
@@ -333,7 +333,7 @@ async def _process_resizing(
             signal.signal(signal.SIGWINCH, previous_winch_handler)
 
 
-def _has_detach(keys: List[KeyPress], term: List[Keys]):
+def _has_detach(keys: Sequence[KeyPress], term: Sequence[Keys]) -> bool:
     for i in range(len(keys) - len(term) + 1):
         if keys[i].key == term[0]:
             for j in range(1, len(term)):
@@ -351,7 +351,7 @@ async def _process_stdin_tty(stream: StdStream, helper: AttachHelper) -> None:
         ev.set()
 
     term = (Keys.ControlP, Keys.ControlQ)
-    prev = []
+    prev: List[KeyPress] = []
 
     inp = create_input()
     with inp.raw_mode():
@@ -574,7 +574,7 @@ async def _process_ctrl_c(root: Root, job: str, helper: AttachHelper) -> None:
                 # Ask nothing but just kill a job
                 # if executed from non-terminal
                 await root.client.jobs.kill(job)
-                helper.stop_action = InterruptAction.KILL
+                helper.action = InterruptAction.KILL
                 return
             async with helper.write_sem:
                 session = _create_interruption_dialog()
