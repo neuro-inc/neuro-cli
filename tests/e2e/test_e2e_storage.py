@@ -160,7 +160,9 @@ def test_copy_local_single_file_to_platform_file_explicit(
     )
 
     # Ensure file is there
-    helper.check_file_exists_on_storage("different_name.txt", "folder", FILE_SIZE_B // 3)
+    helper.check_file_exists_on_storage(
+        "different_name.txt", "folder", FILE_SIZE_B // 3
+    )
     helper.check_file_absent_on_storage(file_name, "folder")
 
 
