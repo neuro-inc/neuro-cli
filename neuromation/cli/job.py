@@ -199,9 +199,7 @@ def job() -> None:
     show_default=True,
     help="Request extended '/dev/shm' space",
 )
-@option(
-    "--http", type=int, metavar="PORT", help="Enable HTTP port forwarding to container"
-)
+@option("--http", type=int, metavar="PORT", help="Enable HTTP port forwarding to a job")
 @option(
     "--http-auth/--no-http-auth",
     is_flag=True,
@@ -470,7 +468,7 @@ async def port_forward(
     rsync -avxzhe "ssh -p 2222" root@localhost:/data .
 
     # Forward few ports at once
-    neuro job port-forward my-job- 2080:80 2222:22 2000:100
+    neuro job port-forward my-job 2080:80 2222:22 2000:100
 
     """
     job_id = await resolve_job(
@@ -500,7 +498,7 @@ async def port_forward(
 @argument("job", type=JOB)
 async def logs(root: Root, job: str) -> None:
     """
-    Print the logs for a container.
+    Print the logs for a job.
     """
     id = await resolve_job(
         job,
@@ -519,7 +517,7 @@ async def logs(root: Root, job: str) -> None:
 @argument("job", type=JOB)
 async def attach(root: Root, job: str) -> None:
     """
-    Print the logs for a container.
+    Attach local standard input, output, and error streams to a running job.
     """
     id = await resolve_job(
         job,
@@ -540,7 +538,7 @@ async def attach(root: Root, job: str) -> None:
     tty = status.container.tty
     _check_tty(root, tty)
 
-    await process_attach(root, id, tty=tty, logs=False)
+    await process_attach(root, status, tty=tty, logs=False)
 
 
 @command()
@@ -983,9 +981,9 @@ async def run(
     """
     Run a job with predefined resources configuration.
 
-    IMAGE container image name.
+    IMAGE docker image name to run in a job.
 
-    CMD list will be passed as commands to model container.
+    CMD list will be passed as arguments to the executed job's image.
 
     Examples:
 
@@ -1185,7 +1183,7 @@ async def run_job(
         await browse_job(root, job)
 
     if not detach:
-        await process_attach(root, job.id, tty=tty, logs=True)
+        await process_attach(root, job, tty=tty, logs=True)
 
     return job
 

@@ -1226,3 +1226,37 @@ async def test_blob_storage_glob_blobs(
             async for x in client.blob_storage.glob_blobs(bucket_name, pattern=pattern)
         ]
         assert ret == expected_keys
+
+
+async def test_storage_upload_dir_with_ignore_file_names(
+    blob_storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    blob_storage_contents: _ContentsObj,
+) -> None:
+    local_dir = tmp_path / "folder"
+    local_dir2 = local_dir / "nested"
+    local_dir2.mkdir(parents=True)
+    for name in "one", "two", "three":
+        (local_dir / name).write_bytes(b"")
+        (local_dir2 / name).write_bytes(b"")
+    (local_dir / ".neuroignore").write_text("one")
+    (local_dir2 / ".gitignore").write_text("two")
+
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_dir(
+            URL(local_dir.as_uri()),
+            URL("blob:foo/folder"),
+            ignore_file_names={".neuroignore", ".gitignore"},
+        )
+
+    keys = sorted(k for k in blob_storage_contents if k.startswith("folder/"))
+    assert keys == [
+        "folder/",
+        "folder/.neuroignore",
+        "folder/nested/",
+        "folder/nested/.gitignore",
+        "folder/nested/three",
+        "folder/three",
+        "folder/two",
+    ]

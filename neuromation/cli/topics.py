@@ -179,6 +179,20 @@ async def user_config() -> None:
       Exclamation mark ! is used to negate the pattern, e.g. `["*.jpg", "!main.jpg"]`
       excludes all `.jpg` files except `main.jpg`.
 
+    **cp-exclude-from-files**
+
+      Default value for `neuro cp --exclude-from-files=XXX` option.
+
+      The value is a list of filenames that contain patterns for exclusion files
+      and directories from uploading. For every proceeded folder
+      patterns from matched exclusion files (e.g. ".neuroignore")
+      are read and recursively applied to the directory content.
+      Default is `[".neuroignore"]`.
+
+      The format of files is the same as the format of `.gitignore` files:
+      every line contains a pattern, exclamation mark `!` is used to negate
+      the pattern, empty lines and lines which start with `#` are ignored.
+
     **life-span**
 
       Default job run-time limit for `neuro run --life-span=XXX` option.
@@ -199,6 +213,7 @@ async def user_config() -> None:
       # storage section
       [storage]
       cp-exclude = ["*.jpg", "!main.jpg"]
+      cp-exclude-from-files = [".neuroignore", ".gitignore"]
     ```
 
     """

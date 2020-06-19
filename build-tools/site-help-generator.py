@@ -194,7 +194,7 @@ def gen_topics(target_path, ctx):
 )
 def main(target_dir):
     target_path = Path(target_dir)
-    EXCLUDES = "README.md"
+    EXCLUDES = ("README.md", "CLI.md")
     for child in target_path.iterdir():
         if child.suffix != ".md":
             continue

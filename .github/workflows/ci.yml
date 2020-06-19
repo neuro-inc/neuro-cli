@@ -98,7 +98,6 @@ jobs:
       matrix:
         python-version: [3.6, 3.7]
         os: [ubuntu, macos, windows]
-        test-target: [jobs, sumo]
         exclude:
         - os: macos
           python-version: 3.6
@@ -129,14 +128,14 @@ jobs:
       with:
         path: requirements/ci.txt
     - name: Run E2E tests
-      timeout-minutes: 10
+      timeout-minutes: 15
       env:
         E2E_TOKEN: ${{ secrets.E2E_TOKEN }}
         E2E_USER_TOKEN: ${{ secrets.E2E_USER_TOKEN }}
-        PYTEST_XDIST_NUM_THREADS: 8
+        PYTEST_XDIST_NUM_THREADS: 16
         COLOR: 'yes'
       run: |
-        make .e2e-${{ matrix.test-target }}
+        make .e2e
     - name: Upload coverage
       uses: codecov/codecov-action@v1
       with:

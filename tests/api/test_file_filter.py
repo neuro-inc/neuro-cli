@@ -1,3 +1,5 @@
+import codecs
+
 from neuromation.api.file_filter import FileFilter, translate
 
 
@@ -127,6 +129,21 @@ async def test_exclude_recursive() -> None:
     assert await ff.match("dir/child/spam")
 
 
+async def test_exclude_include_with_prefix() -> None:
+    ff = FileFilter()
+    ff.exclude("*.txt", "parent/")
+    ff.include("s*", "parent/child/")
+
+    assert await ff.match("spam.txt")
+    assert await ff.match("ham.txt")
+    assert not await ff.match("parent/spam.txt")
+    assert not await ff.match("parent/ham.txt")
+    assert await ff.match("other/spam.txt")
+    assert await ff.match("other/ham.txt")
+    assert await ff.match("parent/child/spam.txt")
+    assert not await ff.match("parent/child/ham.txt")
+
+
 def test_translate() -> None:
     assert translate("") == "/?"
     assert translate("abc") == r"abc/?"
@@ -139,6 +156,7 @@ def test_translate() -> None:
     assert translate("a[b-d]e") == r"a[b-d](?<!/)e/?"
     assert translate("a[!b-d]e") == r"a[^b-d](?<!/)e/?"
     assert translate("[a-zA-Z_]") == r"[a-zA-Z_](?<!/)/?"
+    assert translate(r"\?") == r"\?/?"
 
 
 def test_translate_recursive() -> None:
@@ -149,3 +167,18 @@ def test_translate_recursive() -> None:
     assert translate("abc/**") == r"abc/.*"
     assert translate("/**/") == r"/(?:.+/)?"
     assert translate("abc/**/def") == r"abc/(?:.+/)?def/?"
+
+
+async def test_read_from_buffer() -> None:
+    ff = FileFilter()
+    ff.read_from_buffer(
+        codecs.BOM_UTF8 + b"*.txt  \r\n"  # CRLF and trailing spaces
+        b"\n"  # empty line
+        b"# comment\n"  # comment
+        b"!s*",  # negation
+        prefix="base/",
+    )
+    assert len(ff.filters) == 2
+    assert await ff.match("base/spam.txt")
+    assert not await ff.match("base/ham.txt")
+    assert await ff.match("ham.txt")

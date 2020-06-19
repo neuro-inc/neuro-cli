@@ -2,15 +2,15 @@
 
 mypy==0.780
 pytest==5.4.3
-pytest-cov==2.9.0
+pytest-cov==2.10.0
 pytest-aiohttp==0.3.0
 pytest-xdist==1.32.0
-pytest-timeout==1.4.0
+pytest-timeout==1.4.1
 pexpect==4.8.0
 flake8==3.8.3
 isort==4.3.21
 black==19.10b0
-setuptools==47.3.0
+setuptools==47.3.1
 wheel==0.34.2
 cmarkgfm==0.4.2
 twine==3.1.1

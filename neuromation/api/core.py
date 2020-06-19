@@ -133,6 +133,9 @@ class _Core:
         else:
             real_headers = CIMultiDict()
         real_headers["Authorization"] = auth
+        if "Content-Type" not in real_headers:
+            if json is not None:
+                real_headers["Content-Type"] = "application/json"
         trace_request_ctx = SimpleNamespace()
         trace_id = self._trace_id
         if trace_id is None:
