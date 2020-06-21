@@ -500,7 +500,7 @@ class DetailedJobStopProgress(JobStopProgress):
 
     def detach(self, job: JobDescription) -> None:
         secho()
-        secho("Terminal was detached but job is still running", fg="red")
+        secho("× Terminal was detached but job is still running", fg="red")
         secho("Re-attach to job:", dim=True, fg="yellow")
         secho(f"  neuro attach {job.id}", dim=True)
         secho("Check job status:", dim=True, fg="yellow")
@@ -512,7 +512,7 @@ class DetailedJobStopProgress(JobStopProgress):
 
     def kill(self, job: JobDescription) -> None:
         secho()
-        secho("Job was killed", fg="red")
+        secho("× Job was killed", fg="red")
         secho("Get job status:", dim=True, fg="yellow")
         secho(f"  neuro status {job.id}", dim=True)
         secho("Fetch job logs:", dim=True, fg="yellow")
