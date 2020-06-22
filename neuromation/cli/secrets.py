@@ -1,5 +1,8 @@
 from .root import Root
 from .utils import argument, command, group, pager_maybe
+from .formatters.ftable import table
+
+import click
 
 
 @group()
@@ -15,10 +18,10 @@ async def ls(root: Root) -> None:
     List secrets.
     """
 
-    ret = []
+    ret = [[click.style("Key", bold=True)]]
     async for secret in root.client.secrets.list():
-        ret.append(secret.key)
-        pager_maybe(ret, root.tty, root.terminal_size)
+        ret.append([secret.key])
+        pager_maybe(table(ret), root.tty, root.terminal_size)
 
 
 @command()
