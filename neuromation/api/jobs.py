@@ -26,14 +26,13 @@ from dateutil.parser import isoparse
 from multidict import MultiDict
 from yarl import URL
 
-from neuromation.api.abc import (
+from .abc import (
     AbstractDockerImageProgress,
     ImageCommitFinished,
     ImageCommitStarted,
     ImageProgressPush,
     ImageProgressSave,
 )
-
 from .config import Config
 from .core import _Core
 from .images import (
@@ -43,6 +42,7 @@ from .images import (
 )
 from .parser import Parser, Volume
 from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
+from .url_utils import normalize_storage_path_uri
 from .utils import NoPublicConstructor, asynccontextmanager
 
 
@@ -212,7 +212,7 @@ class Jobs(metaclass=NoPublicConstructor):
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
         payload: Dict[str, Any] = {
-            "container": _container_to_api(container),
+            "container": _container_to_api(container, self._config),
             "is_preemptible": is_preemptible,
         }
         if name:
@@ -650,7 +650,7 @@ def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
     )
 
 
-def _container_to_api(container: Container) -> Dict[str, Any]:
+def _container_to_api(container: Container, config: Config) -> Dict[str, Any]:
     primitive: Dict[str, Any] = {
         "image": _as_repo_str(container.image),
         "resources": _resources_to_api(container.resources),
@@ -664,7 +664,7 @@ def _container_to_api(container: Container) -> Dict[str, Any]:
     if container.env:
         primitive["env"] = container.env
     if container.volumes:
-        primitive["volumes"] = [_volume_to_api(v) for v in container.volumes]
+        primitive["volumes"] = [_volume_to_api(v, config) for v in container.volumes]
     if container.tty:
         primitive["tty"] = True
     return primitive
@@ -725,9 +725,12 @@ def _job_telemetry_from_api(value: Dict[str, Any]) -> JobTelemetry:
     )
 
 
-def _volume_to_api(volume: Volume) -> Dict[str, Any]:
+def _volume_to_api(volume: Volume, config: Config) -> Dict[str, Any]:
+    uri = normalize_storage_path_uri(
+        volume.storage_uri, config.username, config.cluster_name
+    )
     resp: Dict[str, Any] = {
-        "src_storage_uri": str(volume.storage_uri),
+        "src_storage_uri": str(uri),
         "dst_path": volume.container_path,
         "read_only": bool(volume.read_only),
     }
