@@ -2,7 +2,7 @@
 
 * Make sure that the code is in a good shape, all tests are passed etc.
 * Switch to `master` branch (`git checkout master`).
-* Open `neuromation/__init__.py`, increment the `__version__` string, e.g. `__version__ = '1.2.3'`.
+* Open `VERSION.txt`, increment the file content, e.g. `20.6.22`.
 * Run `make format`.
 * Run `towncrier` to update `CHANGELOG.md`.
 * Open `CHANGELOG.md`, make sure that the generated file content looks good. Fix it if needed.
