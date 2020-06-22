@@ -1,8 +1,8 @@
+import click
+
+from .formatters.ftable import table
 from .root import Root
 from .utils import argument, command, group, pager_maybe
-from .formatters.ftable import table
-
-import click
 
 
 @group()
