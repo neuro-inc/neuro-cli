@@ -1785,8 +1785,8 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro secret ls](#neuro-secret-ls)_| List secrets |
-| _[neuro secret add](#neuro-secret-add)_| Add secret |
-| _[neuro secret rm](#neuro-secret-rm)_| Add secret |
+| _[neuro secret add](#neuro-secret-add)_| Add secret KEY with data VALUE |
+| _[neuro secret rm](#neuro-secret-rm)_| Add secret KEY |
 
 
 
@@ -1812,12 +1812,21 @@ Name | Description|
 
 ### neuro secret add
 
-Add secret.
+Add secret KEY with data VALUE.<br/><br/>If VALUE starts with @ it points to a file with secrets content.<br/>
 
 **Usage:**
 
 ```bash
 neuro secret add [OPTIONS] KEY VALUE
+```
+
+**Examples:**
+
+```bash
+
+neuro secret add KEY_NAME VALUE
+neuro secret add KEY_NAME @path/to/file.txt
+
 ```
 
 **Options:**
@@ -1831,7 +1840,7 @@ Name | Description|
 
 ### neuro secret rm
 
-Add secret.
+Add secret KEY.
 
 **Usage:**
 

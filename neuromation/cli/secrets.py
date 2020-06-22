@@ -40,13 +40,7 @@ async def add(root: Root, key: str, value: str) -> None:
       neuro secret add KEY_NAME VALUE
       neuro secret add KEY_NAME @path/to/file.txt
     """
-    if value.startswith("@"):
-        # Read from file
-        data = pathlib.Path(value[1:]).read_bytes()
-    else:
-        data = value.encode("utf-8")
-
-    await root.client.secrets.add(key, data)
+    await root.client.secrets.add(key, read_data(value))
 
 
 @command()
@@ -62,3 +56,12 @@ async def rm(root: Root, key: str) -> None:
 secret.add_command(ls)
 secret.add_command(add)
 secret.add_command(rm)
+
+
+def read_data(value: str) -> bytes:
+    if value.startswith("@"):
+        # Read from file
+        data = pathlib.Path(value[1:]).read_bytes()
+    else:
+        data = value.encode("utf-8")
+    return data
