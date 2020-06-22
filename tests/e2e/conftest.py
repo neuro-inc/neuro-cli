@@ -765,11 +765,18 @@ def data2(static_path: Path) -> Tuple[str, str]:
 
 
 @pytest.fixture(scope="session")
+def data3(static_path: Path) -> Tuple[str, str]:
+    folder = static_path / "data3"
+    folder.mkdir()
+    return generate_random_file(folder, FILE_SIZE_B // 5)
+
+
+@pytest.fixture(scope="session")
 def nested_data(static_path: Path) -> Tuple[str, str, str]:
     root_dir = static_path / "neested_data" / "nested"
     nested_dir = root_dir / "directory" / "for" / "test"
     nested_dir.mkdir(parents=True, exist_ok=True)
-    generated_file, hash = generate_random_file(nested_dir, FILE_SIZE_B)
+    generated_file, hash = generate_random_file(nested_dir, FILE_SIZE_B // 3)
     return generated_file, hash, str(root_dir)
 
 

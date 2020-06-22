@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import re
-
 from setuptools import find_packages, setup
 
 
@@ -9,17 +7,9 @@ with open("README.md") as f:
     readme = f.read()
 
 
-with open("neuromation/__init__.py") as f:
-    txt = f.read()
-    try:
-        version = re.findall(r'^__version__ = "([^"]+)"\r?$', txt, re.M)[0]
-    except IndexError:
-        raise RuntimeError("Unable to determine version.")
-
-
 setup(
     name="neuromation",
-    version=version,
+    version="20.6.10",
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[

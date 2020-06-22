@@ -41,7 +41,7 @@ JOB_STARTED_TTY = (
     + click.style("√ ", fg="green")
     + click.style("(If you don't see a command prompt, try pressing enter)\n", dim=True)
     + click.style("√ ", fg="green")
-    + click.style("(Use CTRL-p CTRL-q key sequence to detach from the job)", dim=True)
+    + click.style("(Use Ctrl-P Ctrl-Q key sequence to detach from the job)", dim=True)
 )
 
 ATTACH_STARTED_AFTER_LOGS = click.style(
