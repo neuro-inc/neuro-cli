@@ -123,7 +123,7 @@ __all__ = (
     "Cluster",
     "Images",
     "Parser",
-    "Screts",
+    "Secrets",
     "Secret",
 )
 
