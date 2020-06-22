@@ -53,6 +53,7 @@ from .jobs import (
 )
 from .parser import Parser
 from .parsing_utils import LocalImage, RemoteImage, TagOption
+from .secrets import Secret, Secrets
 from .server_cfg import Cluster
 from .storage import FileStatus, FileStatusType, Storage
 from .tracing import gen_trace_id
@@ -122,6 +123,8 @@ __all__ = (
     "Cluster",
     "Images",
     "Parser",
+    "Screts",
+    "Secret",
 )
 
 

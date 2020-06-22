@@ -25,12 +25,12 @@ class Secrets(metaclass=NoPublicConstructor):
             for j in ret:
                 yield Secret(key=j["key"])
 
-    async def add(self, key: str, value: str) -> None:
+    async def add(self, key: str, value: bytes) -> None:
         url = self._config.secrets_url
         auth = await self._config._api_auth()
         data = {
             "key": key,
-            "value": base64.b64encode(value.encode("utf8")).decode("ascii"),
+            "value": base64.b64encode(value).decode("ascii"),
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             resp

@@ -29,7 +29,7 @@ async def add(root: Root, key: str, value: str) -> None:
     Add secret.
     """
 
-    await root.client.secrets.add(key, value)
+    await root.client.secrets.add(key, value.encode("utf-8"))
 
 
 @command()
