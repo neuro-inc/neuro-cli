@@ -1,3 +1,5 @@
+import pathlib
+
 import click
 
 from .formatters.ftable import table
@@ -29,17 +31,29 @@ async def ls(root: Root) -> None:
 @argument("value")
 async def add(root: Root, key: str, value: str) -> None:
     """
-    Add secret.
-    """
+    Add secret KEY with data VALUE.
 
-    await root.client.secrets.add(key, value.encode("utf-8"))
+    If VALUE starts with @ it points to a file with secrets content.
+
+    Examples:
+
+      neuro secret add KEY_NAME VALUE
+      neuro secret add KEY_NAME @path/to/file.txt
+    """
+    if value.startswith("@"):
+        # Read from file
+        data = pathlib.Path(value[1:]).read_bytes()
+    else:
+        data = value.encode("utf-8")
+
+    await root.client.secrets.add(key, data)
 
 
 @command()
 @argument("key")
 async def rm(root: Root, key: str) -> None:
     """
-    Add secret.
+    Add secret KEY.
     """
 
     await root.client.secrets.rm(key)
