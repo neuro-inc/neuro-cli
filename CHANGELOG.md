@@ -5,6 +5,44 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.6.23 (2020-06-23)
+================================
+
+Features
+--------
+
+
+- A `.neuroignore` file specifies files that `neuro cp` should ignore when upload directories to the storage or object storage. Syntax and semantic are similar to `.gitignore` files. ([#1446](https://github.com/neuromation/platform-api-clients/issues/1446))
+
+- API: `Client.jobs.run()` supports now relative storage URIs for volumes. ([#1464](https://github.com/neuromation/platform-api-clients/issues/1464))
+
+- Explicit options `--exclude` and `--include` no longer disable the defaults from the storage.cp-exclude configuration variable. Use explicit `--exclude="*" or --include="*"` to override default patterns. ([#1489](https://github.com/neuromation/platform-api-clients/issues/1489))
+
+- Support leading and trailing slashes (`/`) in filters. Leading slash prevents matching in subdirectories, e.g. `/*.txt` matches `spam.txt`, but not `dir/spam.txt`, while `*.txt` matches both of them. Patterns with trailing slash match only directories, while patterns without trailing slash match both directories and files. ([#1490](https://github.com/neuromation/platform-api-clients/issues/1490))
+
+- Implement attach/exec/interactive-run using WebSockets. ([#1497](https://github.com/neuromation/platform-api-clients/issues/1497))
+
+- Implement port forwarding over WebSockets. ([#1555](https://github.com/neuromation/platform-api-clients/issues/1555))
+
+- Added the `--exclude-from-files` option in `neuro cp`.
+
+  API: Added the optional parameter `ignore_file_names` in the `upload_dir()` methods of `storage` and `blob_storage`. ([#1560](https://github.com/neuromation/platform-api-clients/issues/1560))
+
+
+Bugfixes
+--------
+
+
+- Fix swallowing underscores in `neuro status`. ([#1565](https://github.com/neuromation/platform-api-clients/issues/1565))
+
+
+Deprecations and Removals
+-------------------------
+
+
+- Drop deprected and hidden `neuro storage load` command. ([#1542](https://github.com/neuromation/platform-api-clients/issues/1542))
+
+
 Neuromation 20.6.10 (2020-06-10)
 ================================
 

@@ -1,1 +1,0 @@
-Explicit options `--exclude` and `--include` no longer disable the defaults from the storage.cp-exclude configuration variable. Use explicit `--exclude="*" or --include="*"` to override default patterns.

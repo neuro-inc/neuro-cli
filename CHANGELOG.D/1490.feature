@@ -1,1 +1,0 @@
-Support leading and trailing slashes (`/`) in filters. Leading slash prevents matching in subdirectories, e.g. `/*.txt` matches `spam.txt`, but not `dir/spam.txt`, while `*.txt` matches both of them. Patterns with trailing slash match only directories, while patterns without trailing slash match both directories and files.
