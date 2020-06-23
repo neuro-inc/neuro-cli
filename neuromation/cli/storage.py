@@ -697,8 +697,6 @@ storage.add_command(tree)
 async def calc_filters(
     client: Client, filters: Optional[Tuple[Tuple[bool, str], ...]]
 ) -> Tuple[Tuple[bool, str], ...]:
-    if filters is not None:
-        return filters
     ret = []
     config = await client.config.get_user_config()
     section = config.get("storage")
@@ -708,6 +706,8 @@ async def calc_filters(
                 ret.append((False, flt[1:]))
             else:
                 ret.append((True, flt))
+    if filters is not None:
+        ret.extend(filters)
     return tuple(ret)
 
 
