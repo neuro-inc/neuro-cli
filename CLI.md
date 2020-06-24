@@ -225,7 +225,7 @@ neuro admin generate-cluster-config [OPTIONS] [CONFIG]
 
 Name | Description|
 |----|------------|
-|_--type \[aws &#124; gcp]_||
+|_--type \[aws &#124; gcp &#124; azure]_||
 |_--help_|Show this message and exit.|
 
 
