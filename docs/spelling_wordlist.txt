@@ -1,3 +1,4 @@
+async
 config
 dataclass
 entrypoint

@@ -170,6 +170,10 @@ class Config(metaclass=NoPublicConstructor):
         cluster = self._config_data.clusters[self._config_data.cluster_name]
         return cluster.registry_url
 
+    @property
+    def secrets_url(self) -> URL:
+        return self._config_data.url / "secrets"
+
     async def token(self) -> str:
         token = self._config_data.auth_token
         if not token.is_expired():

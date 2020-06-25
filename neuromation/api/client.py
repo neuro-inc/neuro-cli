@@ -13,6 +13,7 @@ from .core import _Core
 from .images import Images
 from .jobs import Jobs
 from .parser import Parser
+from .secrets import Secrets
 from .server_cfg import Preset
 from .storage import Storage
 from .users import Users
@@ -41,6 +42,7 @@ class Client(metaclass=NoPublicConstructor):
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core, self._config)
         self._quota = _Quota._create(self._core, self._config)
+        self._secrets = Secrets._create(self._core, self._config)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
@@ -104,6 +106,10 @@ class Client(metaclass=NoPublicConstructor):
         if self._images is None:
             self._images = Images._create(self._core, self._config, self._parser)
         return self._images
+
+    @property
+    def secrets(self) -> Secrets:
+        return self._secrets
 
     @property
     def parse(self) -> Parser:
