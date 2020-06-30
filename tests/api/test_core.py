@@ -1,4 +1,3 @@
-import operator
 import sqlite3
 import ssl
 import sys
@@ -139,18 +138,18 @@ async def test_server_bad_gateway(
 # ### Cookies tests ###
 
 
-def test_load_cookies_no_table():
+def test_load_cookies_no_table() -> None:
     with sqlite3.connect(":memory:") as db:
         assert [] == _load_cookies(db)
 
 
-def test_load_cookies_incorrect_schema():
+def test_load_cookies_incorrect_schema() -> None:
     with sqlite3.connect(":memory:") as db:
         db.execute("CREATE TABLE cookie_session (a TEXT)")
         assert [] == _load_cookies(db)
 
 
-def test_load_cookies_valid():
+def test_load_cookies_valid() -> None:
     now = 123456
 
     with sqlite3.connect(":memory:") as db:
@@ -175,7 +174,7 @@ def test_load_cookies_valid():
         ] == _load_cookies(db, now=now)
 
 
-def test_save_load_multiple_cookies():
+def test_save_load_multiple_cookies() -> None:
     now = 123456
 
     with sqlite3.connect(":memory:") as db:
@@ -192,7 +191,7 @@ def test_save_load_multiple_cookies():
         assert [c2, c1] == _load_cookies(db, now=now)
 
 
-def test_save_load_multiple_cookies_last_stamps():
+def test_save_load_multiple_cookies_last_stamps() -> None:
     now = 123456
 
     with sqlite3.connect(":memory:") as db:

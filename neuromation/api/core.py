@@ -265,7 +265,7 @@ def _load_cookies(
         """,
         (now - SESSION_COOKIE_MAXAGE,),
     )
-    ret: Morsel[str] = []
+    ret: List[Morsel[str]] = []
     for name, domain, path, value, timestamp in cur:
         ret.append(_make_cookie(name, value, domain, path))
     return ret
