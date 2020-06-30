@@ -27,8 +27,14 @@ SCHEMA = {
         "CREATE TABLE cookie_session "
         "(name TEXT, domain TEXT, path TEXT, cookie TEXT, timestamp REAL)"
     ),
+    "cookie_session_index": (
+        "CREATE UNIQUE INDEX cookie_session_index ON cookie_session " "(name)"
+    ),
 }
-DROP = {"cookie_session": "DROP TABLE IF EXISTS cookie_session"}
+DROP = {
+    "cookie_session_index": "DROP INDEX IF EXISTS cookie_session_index",
+    "cookie_session": "DROP TABLE IF EXISTS cookie_session",
+}
 
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 60, 60)
@@ -84,7 +90,7 @@ class _Core:
         self._prev_cookie: Optional[Morsel[str]] = None
 
     def _post_init(self, db: sqlite3.Connection,) -> None:
-        for cookie in load_cookies(db):
+        for cookie in _load_cookies(db):
             self._session.cookie_jar.update_cookies(
                 {cookie.key: cookie}  # type: ignore
             )
@@ -95,7 +101,7 @@ class _Core:
             name = cookie.key
             if name.startswith("NEURO_") and name.endswith("_SESSION"):
                 to_save.append(cookie)
-        save_cookies(db, to_save)
+        _save_cookies(db, to_save)
 
     @property
     def timeout(self) -> aiohttp.ClientTimeout:
@@ -195,7 +201,7 @@ class _Core:
                     yield msg
 
 
-def ensure_schema(db: sqlite3.Connection, *, update: bool) -> bool:
+def _ensure_schema(db: sqlite3.Connection, *, update: bool) -> bool:
     cur = db.cursor()
     ok = True
     found = set()
@@ -219,7 +225,7 @@ def ensure_schema(db: sqlite3.Connection, *, update: bool) -> bool:
     return False
 
 
-def save_cookies(
+def _save_cookies(
     db: sqlite3.Connection,
     cookies: Sequence["Morsel[str]"],
     *,
@@ -227,13 +233,14 @@ def save_cookies(
 ) -> None:
     if now is None:
         now = time.time()
-    ensure_schema(db, update=True)
+    _ensure_schema(db, update=True)
     cur = db.cursor()
     for cookie in cookies:
         cur.execute(
-            """INSERT INTO cookie_session
-               (name, domain, path, cookie, timestamp)
-               VALUES (?, ?, ?, ?, ?)""",
+            """\
+                INSERT OR REPLACE INTO cookie_session
+                (name, domain, path, cookie, timestamp)
+                VALUES (?, ?, ?, ?, ?)""",
             (cookie.key, cookie["domain"], cookie["path"], cookie.value, now),
         )
     cur.execute(
@@ -243,27 +250,32 @@ def save_cookies(
         db.commit()
 
 
-def load_cookies(
+def _load_cookies(
     db: sqlite3.Connection, *, now: Optional[float] = None
 ) -> List["Morsel[str]"]:
-    ret: List[Morsel[str]] = []
     if now is None:
         now = time.time()
-    if ensure_schema(db, update=False):
-        return ret
+    if _ensure_schema(db, update=False):
+        return []
     cur = db.execute(
-        """
-                     SELECT name, domain, path, cookie FROM cookie_session
-                     WHERE timestamp > ?
-                     ORDER BY timestamp DESC
-                     LIMIT 1""",
+        """\
+            SELECT name, domain, path, cookie, timestamp FROM cookie_session
+            WHERE timestamp >= ?
+            ORDER BY name
+        """,
         (now - SESSION_COOKIE_MAXAGE,),
     )
-    for name, domain, path, value in cur:
-        tmp = SimpleCookie()  # type: ignore
-        tmp[name] = value
-        cookie = tmp[name]
-        cookie["domain"] = domain
-        cookie["path"] = path
-        ret.append(cookie)
+    ret: Morsel[str] = []
+    for name, domain, path, value, timestamp in cur:
+        ret.append(_make_cookie(name, value, domain, path))
     return ret
+
+
+def _make_cookie(name: str, value: str, domain: str, path: str) -> "Morsel[str]":
+    tmp = SimpleCookie()  # type: ignore
+    tmp[name] = value
+    cookie = tmp[name]
+    cookie["domain"] = domain
+    cookie["path"] = path
+    cookie["max-age"] = str(SESSION_COOKIE_MAXAGE)
+    return cookie
