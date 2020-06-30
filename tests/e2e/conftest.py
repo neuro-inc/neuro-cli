@@ -655,7 +655,6 @@ class Helper:
                     and bucket.creation_time < time() - 3600 * 4
                     and bucket.permission in (Action.WRITE, Action.MANAGE)
                 ):
-                    print("DELETE STALE BUCKET", bucket.name, bucket)
                     await self.acleanup_bucket(bucket.name)
                     await self.adelete_bucket(bucket.name)
 
