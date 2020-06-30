@@ -7,7 +7,7 @@ import sqlite3
 import time
 from http.cookies import Morsel, SimpleCookie
 from types import SimpleNamespace
-from typing import Any, AsyncIterator, Dict, Mapping, Optional
+from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence
 
 import aiohttp
 from aiohttp import WSMessage
@@ -25,7 +25,7 @@ SESSION_COOKIE_MAXAGE = 5 * 60  # 5 min
 SCHEMA = {
     "cookie_session": (
         "CREATE TABLE cookie_session "
-        "(domain TEXT, path TEXT, cookie TEXT, timestamp REAL)"
+        "(name TEXT, domain TEXT, path TEXT, cookie TEXT, timestamp REAL)"
     ),
 }
 DROP = {"cookie_session": "DROP TABLE IF EXISTS cookie_session"}
@@ -83,37 +83,19 @@ class _Core:
         }
         self._prev_cookie: Optional[Morsel[str]] = None
 
-    def _post_init(
-        self,
-        db: sqlite3.Connection,
-        storage_url: URL,
-        registry_url: URL,
-        blob_storage_url: URL,
-    ) -> None:
-        for url in (storage_url, registry_url, blob_storage_url):
-            if url is not None:
-                domain = url.host
-                path = url.path
-                if domain is not None:
-                    self._load_cookie(db, domain, path)
-
-    def _load_cookie(self, db: sqlite3.Connection, domain: str, path: str) -> None:
-        cookie_val = load_cookie(db, domain, path)
-        if cookie_val is not None:
-            tmp = SimpleCookie()  # type: ignore
-            tmp["NEURO_SESSION"] = cookie_val
-            cookie = tmp["NEURO_SESSION"]
-            cookie["domain"] = domain
-            cookie["path"] = path
+    def _post_init(self, db: sqlite3.Connection,) -> None:
+        for cookie in load_cookies(db):
             self._session.cookie_jar.update_cookies(
-                {"NEURO_SESSION": cookie}  # type: ignore
-                # TODO: pass cookie["domain"]
+                {cookie.key: cookie}  # type: ignore
             )
 
-    def _save_cookie(self, db: sqlite3.Connection) -> None:
+    def _save_cookies(self, db: sqlite3.Connection) -> None:
+        to_save = []
         for cookie in self._session.cookie_jar:
-            if cookie.key == "NEURO_SESSION":
-                save_cookie(db, cookie["domain"], cookie["path"], cookie.value)
+            name = cookie.key
+            if name.startswith("NEURO_") and name.endswith("_SESSION"):
+                to_save.append(cookie)
+        save_cookies(db, to_save)
 
     @property
     def timeout(self) -> aiohttp.ClientTimeout:
@@ -237,11 +219,9 @@ def ensure_schema(db: sqlite3.Connection, *, update: bool) -> bool:
     return False
 
 
-def save_cookie(
+def save_cookies(
     db: sqlite3.Connection,
-    domain: str,
-    path: str,
-    cookie: str,
+    cookies: Sequence["Morsel[str]"],
     *,
     now: Optional[float] = None,
 ) -> None:
@@ -249,12 +229,13 @@ def save_cookie(
         now = time.time()
     ensure_schema(db, update=True)
     cur = db.cursor()
-    cur.execute(
-        """INSERT INTO cookie_session
-           (domain, path, cookie, timestamp)
-           VALUES (?, ?, ?, ?)""",
-        (domain, path, cookie, now),
-    )
+    for cookie in cookies:
+        cur.execute(
+            """INSERT INTO cookie_session
+               (name, domain, path, cookie, timestamp)
+               VALUES (?, ?, ?, ?, ?)""",
+            (cookie.key, cookie["domain"], cookie["path"], cookie.value, now),
+        )
     cur.execute(
         "DELETE FROM cookie_session WHERE timestamp < ?", (now - SESSION_COOKIE_MAXAGE,)
     )
@@ -262,23 +243,27 @@ def save_cookie(
         db.commit()
 
 
-def load_cookie(
-    db: sqlite3.Connection, domain: str, path: str, *, now: Optional[float] = None
-) -> Optional[str]:
+def load_cookies(
+    db: sqlite3.Connection, *, now: Optional[float] = None
+) -> List["Morsel[str]"]:
+    ret: List[Morsel[str]] = []
     if now is None:
         now = time.time()
     if ensure_schema(db, update=False):
-        return None
+        return ret
     cur = db.execute(
         """
-                     SELECT domain, path, cookie FROM cookie_session
-                     WHERE timestamp > ? AND domain = ?
+                     SELECT name, domain, path, cookie FROM cookie_session
+                     WHERE timestamp > ?
                      ORDER BY timestamp DESC
                      LIMIT 1""",
-        (now - SESSION_COOKIE_MAXAGE, domain),
+        (now - SESSION_COOKIE_MAXAGE,),
     )
-    row = cur.fetchone()
-    if row is None:
-        return None
-    _, _, cookie = row
-    return cookie
+    for name, domain, path, value in cur:
+        tmp = SimpleCookie()  # type: ignore
+        tmp[name] = value
+        cookie = tmp[name]
+        cookie["domain"] = domain
+        cookie["path"] = path
+        ret.append(cookie)
+    return ret
