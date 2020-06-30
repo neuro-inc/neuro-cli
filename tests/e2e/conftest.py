@@ -600,10 +600,21 @@ class Helper:
 
     kill_job = run_async(akill_job)
 
-    async def acreate_bucket(self, name: str) -> None:
+    async def acreate_bucket(self, name: str, *, wait: bool = False) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.blob_storage.create_bucket(name)
+            if wait:
+                t0 = time()
+                delay = 1
+                while time() - t0 < 30:
+                    try:
+                        await client.blob_storage.list_blobs(name, max_keys=10)
+                        return
+                    except ResourceNotFound:
+                        delay = min(delay * 2, 15)
+                        await asyncio.sleep(delay)
+                raise RuntimeError(f"Bucket {name} doesn't exist after the creation")
 
     create_bucket = run_async(acreate_bucket)
 
@@ -792,7 +803,7 @@ def _tmp_bucket_create(
 
     try:
         helper.drop_stale_buckets("neuro-e2e-")
-        helper.create_bucket(tmpbucketname)
+        helper.create_bucket(tmpbucketname, wait=True)
     except AuthorizationError:
         pytest.skip("No permission to create bucket for user E2E_TOKEN")
     yield tmpbucketname, helper

@@ -121,14 +121,10 @@ def test_job_submit(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_job_description(helper: Helper) -> None:
     # Remember original running jobs
-    captured = helper.run_cli(
-        ["job", "ls", "--status", "running", "--status", "pending"]
-    )
-    store_out_list = captured.out.split("\n")[1:]
-    jobs_orig = [x.split("  ")[0] for x in store_out_list]
-    description = "Test description for a job"
+    captured = helper.run_cli(["job", "ls", "--status", "running"])
+    description = str(uuid4())
     # Run a new job
-    command = "bash -c 'sleep 10m; false'"
+    command = "bash -c 'sleep 15m; false'"
     captured = helper.run_cli(
         [
             "job",
@@ -150,33 +146,19 @@ def test_job_description(helper: Helper) -> None:
 
     # Check it was not running before
     assert job_id.startswith("job-")
-    assert job_id not in jobs_orig
-
-    # Check it is in a running,pending job list now
-    captured = helper.run_cli(
-        ["job", "ls", "--status", "running", "--status", "pending"]
-    )
-    store_out_list = captured.out.split("\n")[1:]
-    jobs_updated = [x.split("  ")[0] for x in store_out_list]
-    assert job_id in jobs_updated
 
     # Wait until the job is running
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING, JobStatus.FAILED)
 
     # Check that it is in a running job list
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
+    captured = helper.run_cli(
+        ["job", "ls", "--status", "running", "--format", "{id}, {description}"]
+    )
     store_out = captured.out
     assert job_id in store_out
     # Check that description is in the list
     assert description in store_out
-    assert command in store_out
 
-    # Check that no description is in the list if quite
-    captured = helper.run_cli(["-q", "job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id in store_out
-    assert description not in store_out
-    assert command not in store_out
     helper.kill_job(job_id, wait=False)
 
 

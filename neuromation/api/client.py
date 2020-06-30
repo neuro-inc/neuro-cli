@@ -34,7 +34,7 @@ class Client(metaclass=NoPublicConstructor):
         # the storage cookie session
         self._config._load()
         with self._config._open_db() as db:
-            self._core._post_init(db, self._config.storage_url)
+            self._core._post_init(db,)
         self._parser = Parser._create(self._config)
         self._admin = _Admin._create(self._core, self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)
@@ -50,7 +50,7 @@ class Client(metaclass=NoPublicConstructor):
             return
         self._closed = True
         with self._config._open_db() as db:
-            self._core._save_cookie(db)
+            self._core._save_cookies(db)
         await self._core.close()
         if self._images is not None:
             await self._images._close()
