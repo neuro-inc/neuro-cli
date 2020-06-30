@@ -89,7 +89,7 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.xml
         flags: unit
-        fail_ci_if_error: true
+        fail_ci_if_error: false
 
   e2e:
     name: E2E
@@ -142,7 +142,7 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.xml
         flags: e2e
-        fail_ci_if_error: true
+        fail_ci_if_error: false
 
   trigger-e2e:
     name: Trigger external E2E tests
