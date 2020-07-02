@@ -36,7 +36,7 @@ class Users(metaclass=NoPublicConstructor):
     async def get_acl(
         self, user: str, scheme: Optional[str] = None
     ) -> Sequence[Permission]:
-        url = self._config.api_url / "users" / user / "permissions"
+        url = self._get_user_url(user) / "permissions"
         params = {"scheme": scheme} if scheme else {}
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, params=params, auth=auth) as resp:
@@ -51,7 +51,7 @@ class Users(metaclass=NoPublicConstructor):
     async def get_shares(
         self, user: str, scheme: Optional[str] = None
     ) -> Sequence[Share]:
-        url = self._config.api_url / "users" / user / "permissions" / "shared"
+        url = self._get_user_url(user) / "permissions" / "shared"
         params = {"scheme": scheme} if scheme else {}
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, params=params, auth=auth) as resp:
@@ -64,7 +64,7 @@ class Users(metaclass=NoPublicConstructor):
         return ret
 
     async def share(self, user: str, permission: Permission) -> None:
-        url = self._config.api_url / "users" / user / "permissions"
+        url = self._get_user_url(user) / "permissions"
         payload = [_permission_to_api(permission)]
         auth = await self._config._api_auth()
         async with self._core.request("POST", url, json=payload, auth=auth) as resp:
@@ -75,7 +75,7 @@ class Users(metaclass=NoPublicConstructor):
         return None
 
     async def revoke(self, user: str, uri: URL) -> None:
-        url = self._config.api_url / "users" / user / "permissions"
+        url = self._get_user_url(user) / "permissions"
         auth = await self._config._api_auth()
         async with self._core.request(
             "DELETE", url, params={"uri": str(uri)}, auth=auth
@@ -87,6 +87,33 @@ class Users(metaclass=NoPublicConstructor):
                     f"Server return unexpected result: {resp.status}."
                 )  # NOQA
         return None
+
+    async def add(self, user: str) -> None:
+        url = self._config.api_url / "users"
+        auth = await self._config._api_auth()
+        async with self._core.request(
+            "POST", url, json={"name": user}, auth=auth
+        ) as resp:
+            if resp.status != HTTPCreated.status_code:
+                raise ClientError(
+                    f"Server return unexpected result: {resp.status}."
+                )  # NOQA
+        return None
+
+    async def remove(self, user: str) -> None:
+        url = self._get_user_url(user)
+        auth = await self._config._api_auth()
+        async with self._core.request("DELETE", url, auth=auth) as resp:
+            if resp.status != HTTPNoContent.status_code:
+                raise ClientError(
+                    f"Server return unexpected result: {resp.status}."
+                )  # NOQA
+        return None
+
+    def _get_user_url(self, user: str) -> URL:
+        if ":" in user:
+            raise ValueError(f"Invalid name: {user!r}")
+        return self._config.api_url / "users" / user.replace("/", ":")
 
 
 def _permission_to_api(perm: Permission) -> Dict[str, Any]:

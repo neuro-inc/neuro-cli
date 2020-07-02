@@ -53,9 +53,23 @@ Users
 
    .. comethod:: revoke(user: str, uri: URL) -> None
 
+      Revoke all permissions for a resource specified by *uri* from *user*.
+
       :param str user: user name to revoke a resource from.
 
       :param URL uri: a resource to revoke.
+
+   .. comethod:: add(user: str) -> None
+
+      Add new role.
+
+      :param str user: role name. Components are separated by "/".
+
+   .. comethod:: remove(user: str) -> None
+
+      Remove existing role.
+
+      :param str user: role name. Components are separated by "/".
 
 
 Action

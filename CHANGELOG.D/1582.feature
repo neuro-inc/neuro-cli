@@ -1,0 +1,1 @@
+Added commands for adding and removing roles: `neuro acl add-role` and `neuro acl remove-role`.

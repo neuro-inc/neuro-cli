@@ -59,6 +59,8 @@
 		* [neuro acl grant](#neuro-acl-grant)
 		* [neuro acl revoke](#neuro-acl-revoke)
 		* [neuro acl list](#neuro-acl-list)
+		* [neuro acl add-role](#neuro-acl-add-role)
+		* [neuro acl remove-role](#neuro-acl-remove-role)
 	* [neuro blob](#neuro-blob)
 		* [neuro blob cp](#neuro-blob-cp)
 		* [neuro blob ls](#neuro-blob-ls)
@@ -1570,6 +1572,8 @@ Name | Description|
 | _[neuro acl grant](#neuro-acl-grant)_| Shares resource with another user |
 | _[neuro acl revoke](#neuro-acl-revoke)_| Revoke user access from another user |
 | _[neuro acl list](#neuro-acl-list)_| List shared resources |
+| _[neuro acl add-role](#neuro-acl-add-role)_| Add new role |
+| _[neuro acl remove-role](#neuro-acl-remove-role)_| Remove existing role |
 
 
 
@@ -1661,6 +1665,60 @@ Name | Description|
 |_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user.|
 |_--shared_|Output the resources shared by the user.|
 |_\--full-uri_|Output full URI.|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro acl add-role
+
+Add new role.<br/>
+
+**Usage:**
+
+```bash
+neuro acl add-role [OPTIONS] ROLE_NAME
+```
+
+**Examples:**
+
+```bash
+
+neuro acl add-role mycompany/subdivision
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro acl remove-role
+
+Remove existing role.<br/>
+
+**Usage:**
+
+```bash
+neuro acl remove-role [OPTIONS] ROLE_NAME
+```
+
+**Examples:**
+
+```bash
+
+neuro acl remove-role mycompany/subdivision
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
 |_--help_|Show this message and exit.|
 
 
