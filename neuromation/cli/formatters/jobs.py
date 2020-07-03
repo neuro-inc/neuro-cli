@@ -459,7 +459,7 @@ class StreamJobStartProgress(JobStartProgress):
 
 
 class JobStopProgress:
-    TIMEOUT = 15
+    TIMEOUT = 15 * 60
     time_factory = staticmethod(time.monotonic)
 
     @classmethod

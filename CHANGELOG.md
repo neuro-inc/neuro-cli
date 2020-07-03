@@ -5,6 +5,17 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.7.3 (2020-07-03)
+===============================
+
+Bugfixes
+--------
+
+
+- Increase timeout for waiting for jobs exit after finishing attached session from 15
+  seconds to 15 minutes. ([#1584](https://github.com/neuromation/platform-api-clients/issues/1584))
+
+
 Neuromation 20.6.23 (2020-06-23)
 ================================
 
