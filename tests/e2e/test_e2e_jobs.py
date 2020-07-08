@@ -1161,5 +1161,6 @@ def secret(helper: Helper) -> Iterator[Tuple[str, str]]:
 
     yield (secret_name, secret_value)
 
+    # Remove secret
     cap = helper.run_cli(["secret", "rm", secret_name])
     assert cap.err == ""
