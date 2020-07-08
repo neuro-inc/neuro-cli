@@ -131,8 +131,8 @@ class JobStatusFormatter:
 
         if job_status.container.secret_files:
             rows2 = [
-                (container_path, self._format_uri(secret_uri))
-                for secret_uri, container_path in job_status.container.secret_files
+                (secret_file.container_path, self._format_uri(secret_file.secret_uri))
+                for secret_file in job_status.container.secret_files
             ]
             lines.append("**Secret files**:")
             lines.extend(f"  {i}" for i in table(rows2))

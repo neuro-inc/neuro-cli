@@ -25,6 +25,7 @@ from neuromation.api import (
     JobStatus,
     RemoteImage,
     Resources,
+    SecretFile,
     Volume,
 )
 from neuromation.cli.formatters.images import DockerImageProgress
@@ -1272,17 +1273,15 @@ async def _build_volumes(
     return volumes
 
 
-async def _build_secret_files(
-    root: Root, input_volumes: Set[str]
-) -> Set[Tuple[URL, str]]:
-    secret_files: Set[Tuple[URL, str]] = set()
+async def _build_secret_files(root: Root, input_volumes: Set[str]) -> Set[SecretFile]:
+    secret_files: Set[SecretFile] = set()
     for volume in input_volumes:
         parts = volume.split(":")
         if len(parts) != 3:
             raise ValueError(f"Invalid secret file specification '{volume}'")
         container_path = parts.pop()
         secret_uri = parse_secret_resource(":".join(parts), root)
-        secret_files.add((secret_uri, container_path))
+        secret_files.add(SecretFile(secret_uri, container_path))
     return secret_files
 
 

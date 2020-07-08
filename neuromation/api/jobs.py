@@ -15,7 +15,6 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
-    Tuple,
     Union,
 )
 
@@ -89,6 +88,12 @@ class HTTPPort:
 
 
 @dataclass(frozen=True)
+class SecretFile:
+    secret_uri: URL
+    container_path: str
+
+
+@dataclass(frozen=True)
 class Container:
     image: RemoteImage
     resources: Resources
@@ -98,7 +103,7 @@ class Container:
     env: Mapping[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
     secret_env: Mapping[str, URL] = field(default_factory=dict)
-    secret_files: Sequence[Tuple[URL, str]] = field(default_factory=list)
+    secret_files: Sequence[SecretFile] = field(default_factory=list)
     tty: bool = False
 
 
@@ -751,12 +756,13 @@ def _volume_to_api(volume: Volume, config: Config) -> Dict[str, Any]:
     return resp
 
 
-def _secret_file_to_api(secret_file: Tuple[URL, str], config: Config) -> Dict[str, Any]:
-    secret_uri, container_path = secret_file
-    secret_uri = normalize_secret_uri(secret_uri, config.username, config.cluster_name)
+def _secret_file_to_api(secret_file: SecretFile, config: Config) -> Dict[str, Any]:
+    uri = normalize_secret_uri(
+        secret_file.secret_uri, config.username, config.cluster_name
+    )
     return {
-        "src_secret_uri": str(secret_uri),
-        "dst_path": container_path,
+        "src_secret_uri": str(uri),
+        "dst_path": secret_file.container_path,
     }
 
 
@@ -769,10 +775,10 @@ def _volume_from_api(data: Dict[str, Any]) -> Volume:
     )
 
 
-def _secret_file_from_api(data: Dict[str, Any]) -> Tuple[URL, str]:
+def _secret_file_from_api(data: Dict[str, Any]) -> SecretFile:
     secret_uri = URL(data["src_secret_uri"])
     container_path = data["dst_path"]
-    return secret_uri, container_path
+    return SecretFile(secret_uri, container_path)
 
 
 def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:

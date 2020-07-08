@@ -16,6 +16,7 @@ from neuromation.api import (
     JobTelemetry,
     RemoteImage,
     Resources,
+    SecretFile,
     Volume,
 )
 from neuromation.api.parsing_utils import _ImageNameParser
@@ -1032,15 +1033,15 @@ class TestJobOutputFormatter:
                     ),
                 ],
                 secret_files=[
-                    (
+                    SecretFile(
                         URL("secret://test-cluster/test-user/secret1"),
                         "/var/run/secret1",
                     ),
-                    (
+                    SecretFile(
                         URL("secret://test-cluster/otheruser/secret2"),
                         "/var/run/secret2",
                     ),
-                    (
+                    SecretFile(
                         URL("secret://othercluster/otheruser/secret3"),
                         "/var/run/secret3",
                     ),

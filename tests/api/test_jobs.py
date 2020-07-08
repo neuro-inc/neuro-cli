@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 import pytest
 from aiodocker.exceptions import DockerError
@@ -18,6 +18,7 @@ from neuromation.api import (
     RemoteImage,
     ResourceNotFound,
     Resources,
+    SecretFile,
     Volume,
 )
 from neuromation.api.jobs import INVALID_IMAGE_NAME, _job_description_from_api
@@ -1195,11 +1196,9 @@ async def test_job_run_with_secret_uris(
         resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         env = {"VAR": "VAL"}
         secret_env = {"SECRET_VAR": URL("secret:secret")}
-        volumes: List[Volume] = [
-            Volume(URL("storage:path"), "/container/my_path", False)
-        ]
-        secret_files: List[Tuple[URL, str]] = [
-            (URL("secret:secret"), "/secrets/my_path"),
+        volumes = [Volume(URL("storage:path"), "/container/my_path", False)]
+        secret_files = [
+            SecretFile(URL("secret:secret"), "/secrets/my_path"),
         ]
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
