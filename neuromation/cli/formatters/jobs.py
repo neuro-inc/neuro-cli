@@ -134,7 +134,7 @@ class JobStatusFormatter:
                 (secret_file.container_path, self._format_uri(secret_file.secret_uri))
                 for secret_file in job_status.container.secret_files
             ]
-            lines.append("**Secret files**:")
+            lines.append(f"{bold('Secret files')}:")
             lines.extend(f"  {i}" for i in table(rows2))
 
         if job_status.internal_hostname:
@@ -148,7 +148,7 @@ class JobStatusFormatter:
             for key, value in job_status.container.env.items():
                 lines.append(f"  {key}={value}")
         if job_status.container.secret_env:
-            lines.append(f"**Secret environment**:")
+            lines.append(f"{bold('Secret environment')}:")
             for key, uri in job_status.container.secret_env.items():
                 lines.append(f"  {key}={self._format_uri(uri)}")
 
