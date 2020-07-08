@@ -775,6 +775,70 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:24.759433+00:00"
         )
 
+    def test_job_with_environment(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            name="test-job-name",
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_neuro_image(
+                    name="test-image",
+                    tag="sometag",
+                    registry="https://registry.neu.ro",
+                    owner="test-user",
+                    cluster_name="test-cluster",
+                ),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+                env={"ENV_NAME_1": "__value1__", "ENV_NAME_2": "**value2**"},
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
+        resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
+        assert (
+            status == "Job: test-job\n"
+            "Name: test-job-name\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: image:test-image:sometag\n"
+            "Command: test-command\n"
+            f"{resource}\n"
+            "TTY: False\n"
+            "Http URL: http://local.host.test/\n"
+            "Http authentication: True\n"
+            "Environment:\n"
+            "  ENV_NAME_1=__value1__\n"
+            "  ENV_NAME_2=**value2**\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "===Description===\n"
+            "ErrorDesc\n================="
+        )
+
     def test_job_with_volumes_short(self) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
@@ -807,8 +871,8 @@ class TestJobOutputFormatter:
                 http=HTTPPort(port=80, requires_auth=True),
                 volumes=[
                     Volume(
-                        storage_uri=URL("storage://test-cluster/otheruser/ro"),
-                        container_path="/mnt/ro",
+                        storage_uri=URL("storage://test-cluster/otheruser/_ro_"),
+                        container_path="/mnt/_ro_",
                         read_only=True,
                     ),
                     Volume(
@@ -818,7 +882,7 @@ class TestJobOutputFormatter:
                     ),
                     Volume(
                         storage_uri=URL("storage://othercluster/otheruser/ro"),
-                        container_path="/mnt/ro2",
+                        container_path="/mnt/ro",
                         read_only=True,
                     ),
                 ],
@@ -843,9 +907,9 @@ class TestJobOutputFormatter:
             f"{resource}\n"
             "TTY: False\n"
             "Volumes:\n"
-            "  /mnt/ro   storage:/otheruser/ro                READONLY\n"
-            "  /mnt/rw   storage:rw                                   \n"
-            "  /mnt/ro2  storage://othercluster/otheruser/ro  READONLY\n"
+            "  /mnt/_ro_  storage:/otheruser/_ro_              READONLY\n"
+            "  /mnt/rw    storage:rw                                   \n"
+            "  /mnt/ro    storage://othercluster/otheruser/ro  READONLY\n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"

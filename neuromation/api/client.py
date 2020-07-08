@@ -13,6 +13,7 @@ from .core import _Core
 from .images import Images
 from .jobs import Jobs
 from .parser import Parser
+from .secrets import Secrets
 from .server_cfg import Preset
 from .storage import Storage
 from .users import Users
@@ -33,7 +34,7 @@ class Client(metaclass=NoPublicConstructor):
         # the storage cookie session
         self._config._load()
         with self._config._open_db() as db:
-            self._core._post_init(db, self._config.storage_url)
+            self._core._post_init(db,)
         self._parser = Parser._create(self._config)
         self._admin = _Admin._create(self._core, self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)
@@ -41,6 +42,7 @@ class Client(metaclass=NoPublicConstructor):
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core, self._config)
         self._quota = _Quota._create(self._core, self._config)
+        self._secrets = Secrets._create(self._core, self._config)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
@@ -48,7 +50,7 @@ class Client(metaclass=NoPublicConstructor):
             return
         self._closed = True
         with self._config._open_db() as db:
-            self._core._save_cookie(db)
+            self._core._save_cookies(db)
         await self._core.close()
         if self._images is not None:
             await self._images._close()
@@ -104,6 +106,10 @@ class Client(metaclass=NoPublicConstructor):
         if self._images is None:
             self._images = Images._create(self._core, self._config, self._parser)
         return self._images
+
+    @property
+    def secrets(self) -> Secrets:
+        return self._secrets
 
     @property
     def parse(self) -> Parser:

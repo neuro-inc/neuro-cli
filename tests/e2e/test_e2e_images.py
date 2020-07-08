@@ -129,17 +129,24 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
 
     image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
 
-    delay = 1
+    delay = 0
     t0 = time.time()
 
-    while time.time() - t0 < 60:
+    found = False
+    while time.time() - t0 < 180:
+        time.sleep(delay)
         # check the tag is present now
         captured = helper.run_cli(["image", "tags", image_full_str_no_tag])
         if tag in captured.out:
+            found = True
             break
         # Give a chance to sync remote registries
-        time.sleep(delay)
-        delay = min(delay * 2, 10)
+        delay = min(delay * 2 + 1, 15)
+
+    if not found:
+        raise AssertionError(
+            f"Delay is reached on waiting for tag {tag} in {captured.out}"
+        )
 
     # Check again
     assert tag in captured.out

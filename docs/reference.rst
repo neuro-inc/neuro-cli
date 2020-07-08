@@ -20,5 +20,6 @@ Reference
    blob_storage_reference
    images_reference
    users_reference
+   secrets_reference
    parse_reference
    glossary

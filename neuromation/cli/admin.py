@@ -6,6 +6,7 @@ from typing import IO, Optional
 
 import click
 import yaml
+from prompt_toolkit import PromptSession
 
 from neuromation.api.admin import _ClusterUserRoleType
 
@@ -55,7 +56,9 @@ async def add_cluster(root: Root, cluster_name: str, config: IO[str]) -> None:
     type=click.Path(exists=False, path_type=str),
     default="cluster.yml",
 )
-@option("--type", prompt="Select cluster type", type=click.Choice(["aws", "gcp"]))
+@option(
+    "--type", prompt="Select cluster type", type=click.Choice(["aws", "gcp", "azure"])
+)
 async def generate_cluster_config(root: Root, config: str, type: str) -> None:
     """
     Create a cluster configuration file.
@@ -66,10 +69,13 @@ async def generate_cluster_config(root: Root, config: str, type: str) -> None:
             f"Config path {config_path} already exists, "
             "please remove the file or pass the new file name explicitly."
         )
+    session = PromptSession()
     if type == "aws":
-        content = await generate_aws()
+        content = await generate_aws(session)
     elif type == "gcp":
-        content = await generate_gcp()
+        content = await generate_gcp(session)
+    elif type == "azure":
+        content = await generate_azure(session)
     else:
         assert False, "Prompt should prevent this case"
     config_path.write_text(content, encoding="utf-8")
@@ -102,9 +108,9 @@ storage:
 """
 
 
-async def generate_aws() -> str:
+async def generate_aws(session: PromptSession) -> str:
     args = {}
-    args["vpc_id"] = click.prompt("AWS VPC ID")
+    args["vpc_id"] = await session.prompt_async("AWS VPC ID: ")
     access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
     secret_access_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
     if access_key_id is None or secret_access_key is None:
@@ -114,15 +120,19 @@ async def generate_aws() -> str:
         aws_config_file = aws_config_file.expanduser().absolute()
         parser = configparser.ConfigParser()
         parser.read(aws_config_file)
-        profile = click.prompt(
-            "AWS profile name", default=os.environ.get("AWS_PROFILE", "default")
+        profile = await session.prompt_async(
+            "AWS profile name: ", default=os.environ.get("AWS_PROFILE", "default")
         )
         if access_key_id is None:
             access_key_id = parser[profile]["aws_access_key_id"]
         if secret_access_key is None:
             secret_access_key = parser[profile]["aws_secret_access_key"]
-    access_key_id = click.prompt("AWS Access Key", default=access_key_id)
-    secret_access_key = click.prompt("AWS Secret Key", default=secret_access_key)
+    access_key_id = await session.prompt_async(
+        "AWS Access Key: ", default=access_key_id
+    )
+    secret_access_key = await session.prompt_async(
+        "AWS Secret Key: ", default=secret_access_key
+    )
     args["access_key_id"] = access_key_id
     args["secret_access_key"] = secret_access_key
     return AWS_TEMPLATE.format_map(args)
@@ -152,18 +162,64 @@ storage:
 """
 
 
-async def generate_gcp() -> str:
+async def generate_gcp(session: PromptSession) -> str:
     args = {}
-    args["project_name"] = click.prompt("GCP project name")
-    credentials_file = click.prompt(
-        "Service Account Key File (.json)",
-        default=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS"),
+    args["project_name"] = await session.prompt_async("GCP project name: ")
+    credentials_file = await session.prompt_async(
+        "Service Account Key File (.json): ",
+        default=os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""),
     )
     with open(credentials_file, "rb") as fp:
         data = json.load(fp)
     out = yaml.dump(data)
     args["credentials"] = "\n" + "\n".join("  " + line for line in out.splitlines())
     return GCP_TEMPLATE.format_map(args)
+
+
+AZURE_TEMPLATE = """\
+type: azure
+region: centralus
+resource_group: {resource_group}
+credentials:
+  subscription_id: {subscription_id}
+  tenant_id: {tenant_id}
+  client_id: {client_id}
+  client_secret: {client_secret}
+node_pools:
+- id: standard_d8s_v3
+  min_size: 1
+  max_size: 4
+- id: standard_nc6_1x_nvidia_tesla_k80
+  min_size: 1
+  max_size: 4
+- id: standard_nc6s_v3_1x_nvidia_tesla_v100
+  min_size: 0
+  max_size: 1
+storage:
+  id: premium_lrs
+  file_share_size_gib: {file_share_size_gib}
+"""
+
+
+async def generate_azure(session: PromptSession) -> str:
+    args = {}
+    args["subscription_id"] = await session.prompt_async(
+        "Azure subscription ID: ", default=os.environ.get("AZURE_SUBSCRIPTION_ID", "")
+    )
+    args["client_id"] = await session.prompt_async(
+        "Azure client ID: ", default=os.environ.get("AZURE_CLIENT_ID", "")
+    )
+    args["tenant_id"] = await session.prompt_async(
+        "Azure tenant ID: ", default=os.environ.get("AZURE_TENANT_ID", "")
+    )
+    args["client_secret"] = await session.prompt_async(
+        "Azure client secret: ", default=os.environ.get("AZURE_CLIENT_SECRET", "")
+    )
+    args["resource_group"] = await session.prompt_async("Azure resource group: ")
+    args["file_share_size_gib"] = await session.prompt_async(
+        "Azure Files storage size (Gib): "
+    )
+    return AZURE_TEMPLATE.format_map(args)
 
 
 @command()

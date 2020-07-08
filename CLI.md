@@ -63,6 +63,10 @@
 		* [neuro blob cp](#neuro-blob-cp)
 		* [neuro blob ls](#neuro-blob-ls)
 		* [neuro blob glob](#neuro-blob-glob)
+	* [neuro secret](#neuro-secret)
+		* [neuro secret ls](#neuro-secret-ls)
+		* [neuro secret add](#neuro-secret-add)
+		* [neuro secret rm](#neuro-secret-rm)
 	* [neuro help](#neuro-help)
 	* [neuro run](#neuro-run)
 	* [neuro submit](#neuro-submit)
@@ -126,6 +130,7 @@ Name | Description|
 | _[neuro completion](#neuro-completion)_| Output shell completion code |
 | _[neuro acl](#neuro-acl)_| Access Control List management |
 | _[neuro blob](#neuro-blob)_| Blob storage operations |
+| _[neuro secret](#neuro-secret)_| Operations with secrets |
 
 
 **Commands:**
@@ -225,7 +230,7 @@ neuro admin generate-cluster-config [OPTIONS] [CONFIG]
 
 Name | Description|
 |----|------------|
-|_--type \[aws &#124; gcp]_||
+|_--type \[aws &#124; gcp &#124; azure]_||
 |_--help_|Show this message and exit.|
 
 
@@ -610,7 +615,6 @@ neuro exec --no-tty my-job ls -l
 Name | Description|
 |----|------------|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
-|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
 
@@ -1759,6 +1763,100 @@ Name | Description|
 
 
 
+## neuro secret
+
+Operations with secrets.
+
+**Usage:**
+
+```bash
+neuro secret [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro secret ls](#neuro-secret-ls)_| List secrets |
+| _[neuro secret add](#neuro-secret-add)_| Add secret KEY with data VALUE |
+| _[neuro secret rm](#neuro-secret-rm)_| Add secret KEY |
+
+
+
+
+### neuro secret ls
+
+List secrets.
+
+**Usage:**
+
+```bash
+neuro secret ls [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro secret add
+
+Add secret KEY with data VALUE.<br/><br/>If VALUE starts with @ it points to a file with secrets content.<br/>
+
+**Usage:**
+
+```bash
+neuro secret add [OPTIONS] KEY VALUE
+```
+
+**Examples:**
+
+```bash
+
+neuro secret add KEY_NAME VALUE
+neuro secret add KEY_NAME @path/to/file.txt
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro secret rm
+
+Add secret KEY.
+
+**Usage:**
+
+```bash
+neuro secret rm [OPTIONS] KEY
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ## neuro help
 
 Get help on a command.
@@ -1982,7 +2080,6 @@ neuro exec --no-tty my-job ls -l
 Name | Description|
 |----|------------|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
-|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--help_|Show this message and exit.|
 
 

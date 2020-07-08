@@ -1,1 +1,0 @@
-A `.neuroignore` file specifies files that `neuro cp` should ignore when upload directories to the storage or object storage. Syntax and semantic are similar to `.gitignore` files.

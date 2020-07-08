@@ -21,7 +21,7 @@ from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
 
 from .ftable import table
-from .utils import ImageFormatter, URIFormatter, apply_styling, image_formatter
+from .utils import ImageFormatter, URIFormatter, image_formatter
 
 
 COLORS = {
@@ -37,6 +37,10 @@ if sys.platform == "win32":
     SPINNER = itertools.cycle(r"-\|/")
 else:
     SPINNER = itertools.cycle("◢◣◤◥")
+
+
+def bold(text: str) -> str:
+    return style(text, bold=True)
 
 
 def format_job_status(status: JobStatus) -> str:
@@ -71,42 +75,47 @@ class JobStatusFormatter:
     def __call__(self, job_status: JobDescription) -> str:
         assert job_status.history is not None
         lines = []
-        lines.append(f"**Job**: {job_status.id}")
+
+        def add(descr: str, value: str) -> None:
+            lines.append(f"{bold(descr)}: {value}")
+
+        add("Job", job_status.id)
         if job_status.name:
-            lines.append(f"**Name**: {job_status.name}")
+            add("Name", job_status.name)
         if job_status.tags:
-            lines.append(f"**Tags**: {', '.join(job_status.tags)}")
-        lines.append(f"**Owner**: {job_status.owner if job_status.owner else ''}")
-        lines.append(f"**Cluster**: {job_status.cluster_name}")
+            add("Tags", ", ".join(job_status.tags))
+        add("Owner", job_status.owner or "")
+        add("Cluster", job_status.cluster_name)
         if job_status.description:
-            lines.append(f"**Description**: {job_status.description}")
-        line = f"**Status**: {format_job_status(job_status.status)}"
+            add("Description", job_status.description)
+        status_str = format_job_status(job_status.status)
         if job_status.history.reason and job_status.status in [
             JobStatus.FAILED,
             JobStatus.PENDING,
         ]:
-            line += f" ({job_status.history.reason})"
-        lines.append(line)
-        lines.append(f"**Image**: {self._format_image(job_status.container.image)}")
+            status_str += f" ({job_status.history.reason})"
+        add("Status", status_str)
+        add("Image", self._format_image(job_status.container.image))
 
         if job_status.container.entrypoint:
-            lines.append(f"**Entrypoint**: {job_status.container.entrypoint}")
-        lines.append(f"**Command**: {job_status.container.command}")
+            add("Entrypoint", job_status.container.entrypoint)
+        if job_status.container.command:
+            add("Command", job_status.container.command)
         resource_formatter = ResourcesFormatter()
         lines.append(resource_formatter(job_status.container.resources))
         if job_status.is_preemptible:
-            lines.append(f"**Preemptible**: True")
+            add("Preemptible", "True")
         if job_status.restart_policy != JobRestartPolicy.NEVER:
-            lines.append(f"**Restart policy**: {job_status.restart_policy}")
+            add("Restart policy", job_status.restart_policy)
         if job_status.life_span is not None:
             limit = (
                 "no limit"
                 if job_status.life_span == 0
                 else format_timedelta(datetime.timedelta(seconds=job_status.life_span))
             )
-            lines.append(f"**Life span**: {limit}")
+            add("Life span", limit)
 
-        lines.append(f"**TTY**: {job_status.container.tty}")
+        add("TTY", str(job_status.container.tty))
 
         if job_status.container.volumes:
             rows = [
@@ -117,7 +126,7 @@ class JobStatusFormatter:
                 )
                 for volume in job_status.container.volumes
             ]
-            lines.append("**Volumes**:")
+            lines.append(f"{bold('Volumes')}:")
             lines.extend(f"  {i}" for i in table(rows))
 
         if job_status.container.secret_files:
@@ -129,15 +138,13 @@ class JobStatusFormatter:
             lines.extend(f"  {i}" for i in table(rows2))
 
         if job_status.internal_hostname:
-            lines.append(f"**Internal Hostname**: {job_status.internal_hostname}")
+            add("Internal Hostname", job_status.internal_hostname)
         if job_status.http_url:
-            lines.append(f"**Http URL**: {job_status.http_url}")
+            add("Http URL", str(job_status.http_url))
         if job_status.container.http:
-            lines.append(
-                f"**Http authentication**: {job_status.container.http.requires_auth}"
-            )
+            add("Http authentication", str(job_status.container.http.requires_auth))
         if job_status.container.env:
-            lines.append(f"**Environment**:")
+            lines.append(f"{bold('Environment')}:")
             for key, value in job_status.container.env.items():
                 lines.append(f"  {key}={value}")
         if job_status.container.secret_env:
@@ -146,26 +153,23 @@ class JobStatusFormatter:
                 lines.append(f"  {key}={self._format_uri(uri)}")
 
         assert job_status.history.created_at is not None
-        created_at = job_status.history.created_at.isoformat()
-        lines.append(f"**Created**: {created_at}")
+        add("Created", job_status.history.created_at.isoformat())
         if job_status.status in [
             JobStatus.RUNNING,
             JobStatus.FAILED,
             JobStatus.SUCCEEDED,
         ]:
             assert job_status.history.started_at is not None
-            started_at = job_status.history.started_at.isoformat()
-            lines.append(f"**Started**: {started_at}")
+            add("Started", job_status.history.started_at.isoformat())
         if job_status.status in [JobStatus.FAILED, JobStatus.SUCCEEDED]:
             assert job_status.history.finished_at is not None
-            finished_at = job_status.history.finished_at.isoformat()
-            lines.append(f"**Finished**: {finished_at}")
-            lines.append(f"**Exit code**: {job_status.history.exit_code}")
+            add("Finished", job_status.history.finished_at.isoformat())
+            add("Exit code", str(job_status.history.exit_code))
         if job_status.status == JobStatus.FAILED and job_status.history.description:
-            lines.append("**===Description===**")
+            lines.append(bold("===Description==="))
             lines.append(job_status.history.description)
             lines.append("=================")
-        return apply_styling("\n".join(lines))
+        return "\n".join(lines)
 
 
 class JobTelemetryFormatter:
@@ -305,25 +309,27 @@ class TabularJobsFormatter(BaseJobsFormatter):
 class ResourcesFormatter:
     def __call__(self, resources: Resources) -> str:
         lines = []
-        lines.append("**Memory**: " + format_size(resources.memory_mb * 1024 ** 2))
-        lines.append(f"**CPU**: {resources.cpu:0.1f}")
+
+        def add(descr: str, value: str) -> None:
+            lines.append(f"{bold(descr)}: {value}")
+
+        add("Memory", format_size(resources.memory_mb * 1024 ** 2))
+        add("CPU", f"{resources.cpu:0.1f}")
         if resources.gpu:
-            lines.append(f"**GPU**: {resources.gpu:0.1f} x {resources.gpu_model}")
+            add("GPU", f"{resources.gpu:0.1f} x {resources.gpu_model}")
 
         if resources.tpu_type:
-            lines.append(
-                f"**TPU**: {resources.tpu_type}/{resources.tpu_software_version}"
-            )
+            add("TPU", f"{resources.tpu_type}/{resources.tpu_software_version}")
 
         additional = []
         if resources.shm:
             additional.append("Extended SHM space")
 
         if additional:
-            lines.append(f'**Additional**: {",".join(additional)}')
+            add("Additional", ",".join(additional))
 
         indent = "  "
-        return apply_styling("**Resources**:\n" + indent + f"\n{indent}".join(lines))
+        return f"{bold('Resources')}:\n" + indent + f"\n{indent}".join(lines)
 
 
 class JobStartProgress:
@@ -465,7 +471,7 @@ class StreamJobStartProgress(JobStartProgress):
 
 
 class JobStopProgress:
-    TIMEOUT = 15
+    TIMEOUT = 15 * 60
     time_factory = staticmethod(time.monotonic)
 
     @classmethod
@@ -512,7 +518,7 @@ class DetailedJobStopProgress(JobStopProgress):
 
     def detach(self, job: JobDescription) -> None:
         secho()
-        secho("Terminal was detached but job is still running", fg="red")
+        secho("× Terminal was detached but job is still running", fg="red")
         secho("Re-attach to job:", dim=True, fg="yellow")
         secho(f"  neuro attach {job.id}", dim=True)
         secho("Check job status:", dim=True, fg="yellow")
@@ -524,7 +530,7 @@ class DetailedJobStopProgress(JobStopProgress):
 
     def kill(self, job: JobDescription) -> None:
         secho()
-        secho("Job was killed", fg="red")
+        secho("× Job was killed", fg="red")
         secho("Get job status:", dim=True, fg="yellow")
         secho(f"  neuro status {job.id}", dim=True)
         secho("Fetch job logs:", dim=True, fg="yellow")

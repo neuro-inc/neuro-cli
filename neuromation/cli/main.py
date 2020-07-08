@@ -16,7 +16,6 @@ from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 
 import neuromation
 from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError
-from neuromation.cli.root import Root
 
 from . import (
     admin,
@@ -26,6 +25,7 @@ from . import (
     image,
     job,
     project,
+    secrets,
     share,
     storage,
 )
@@ -42,6 +42,7 @@ from .const import (
     EX_TIMEOUT,
 )
 from .log_formatter import ConsoleHandler, ConsoleWarningFormatter
+from .root import Root
 from .topics import topics
 from .tty_utils import enable_ansi
 from .utils import (
@@ -478,6 +479,8 @@ cli.add_command(config.config)
 cli.add_command(completion.completion)
 cli.add_command(share.acl)
 cli.add_command(blob_storage.blob_storage)
+cli.add_command(blob_storage.blob_storage)
+cli.add_command(secrets.secret)
 
 cli.add_command(DeprecatedGroup(storage.storage, name="store", hidden=True))
 

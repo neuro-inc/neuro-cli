@@ -1,6 +1,6 @@
+import sqlite3
 import ssl
 import sys
-from http.cookies import Morsel  # noqa
 from typing import AsyncIterator, Callable
 
 import aiohttp
@@ -11,7 +11,13 @@ from typing_extensions import AsyncContextManager
 from yarl import URL
 
 from neuromation.api import IllegalArgumentError, ServerNotAvailable
-from neuromation.api.core import _Core
+from neuromation.api.core import (
+    _Core,
+    _ensure_schema,
+    _load_cookies,
+    _make_cookie,
+    _save_cookies,
+)
 from tests import _TestServerFactory
 
 
@@ -127,3 +133,82 @@ async def test_server_bad_gateway(
         with pytest.raises(ServerNotAvailable, match="^502: Bad Gateway$"):
             async with api.request(method="GET", url=url, auth="auth") as resp:
                 assert resp.status == 200
+
+
+# ### Cookies tests ###
+
+
+def test_load_cookies_no_table() -> None:
+    with sqlite3.connect(":memory:") as db:
+        assert [] == _load_cookies(db)
+
+
+def test_load_cookies_incorrect_schema() -> None:
+    with sqlite3.connect(":memory:") as db:
+        db.execute("CREATE TABLE cookie_session (a TEXT)")
+        assert [] == _load_cookies(db)
+
+
+def test_load_cookies_valid() -> None:
+    now = 123456
+
+    with sqlite3.connect(":memory:") as db:
+        _ensure_schema(db, update=True)
+
+        db.execute(
+            """INSERT INTO cookie_session
+        (name, domain, path, cookie, timestamp)
+        VALUES (?, ?, ?, ?, ?)""",
+            (
+                "NEURO_STORAGEAPI_SESSION",
+                "https://dev.neu.ro",
+                "/",
+                "cookie-value",
+                now,
+            ),
+        )
+        assert [
+            _make_cookie(
+                "NEURO_STORAGEAPI_SESSION", "cookie-value", "https://dev.neu.ro", "/",
+            )
+        ] == _load_cookies(db, now=now)
+
+
+def test_save_load_multiple_cookies() -> None:
+    now = 123456
+
+    with sqlite3.connect(":memory:") as db:
+        c1 = _make_cookie(
+            "NEURO_STORAGEAPI_SESSION", "cookie-value", "https://dev.neu.ro", "/",
+        )
+
+        c2 = _make_cookie(
+            "NEURO_REGISTRYAPI_SESSION", "cookie-value", "https://dev.neu.ro", "/",
+        )
+
+        _save_cookies(db, [c1, c2], now=now)
+
+        assert [c2, c1] == _load_cookies(db, now=now)
+
+
+def test_save_load_multiple_cookies_last_stamps() -> None:
+    now = 123456
+
+    with sqlite3.connect(":memory:") as db:
+        c1 = _make_cookie(
+            "NEURO_STORAGEAPI_SESSION", "cookie-value", "https://dev.neu.ro", "/",
+        )
+
+        c2 = _make_cookie(
+            "NEURO_REGISTRYAPI_SESSION", "cookie-value", "https://dev.neu.ro", "/",
+        )
+
+        _save_cookies(db, [c1, c2], now=now)
+
+        c3 = _make_cookie(
+            "NEURO_REGISTRYAPI_SESSION", "cookie-value2", "https://dev.neu.ro", "/",
+        )
+
+        _save_cookies(db, [c3], now=now + 1)
+
+        assert [c3, c1] == _load_cookies(db, now=now + 1)
