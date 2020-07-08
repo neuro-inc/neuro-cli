@@ -671,7 +671,7 @@ def _container_to_api(container: Container, config: Config) -> Dict[str, Any]:
     if container.volumes:
         primitive["volumes"] = [_volume_to_api(v, config) for v in container.volumes]
     if container.secret_env:
-        primitive["secret_env"] = [(k, str(v)) for k, v in container.secret_env.items()]
+        primitive["secret_env"] = {k: str(v) for k, v in container.secret_env.items()}
     if container.secret_files:
         primitive["secret_volumes"] = [
             _secret_file_to_api(v) for v in container.secret_files
