@@ -133,7 +133,7 @@ test-all: .update-deps
 .PHONY: lint
 lint: lint-docs
 	./build-tools/version.py check
-	isort -c -rc ${ISORT_DIRS}
+	isort -c -df -rc ${ISORT_DIRS}
 	black --check $(BLACK_DIRS)
 	mypy $(MYPY_DIRS)
 	flake8 $(FLAKE8_DIRS)
