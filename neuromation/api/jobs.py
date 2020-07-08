@@ -43,7 +43,7 @@ from .images import (
 )
 from .parser import Parser, Volume
 from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
-from .url_utils import normalize_storage_path_uri
+from .url_utils import normalize_secret_uri, normalize_storage_path_uri
 from .utils import NoPublicConstructor, asynccontextmanager
 
 
@@ -671,10 +671,13 @@ def _container_to_api(container: Container, config: Config) -> Dict[str, Any]:
     if container.volumes:
         primitive["volumes"] = [_volume_to_api(v, config) for v in container.volumes]
     if container.secret_env:
-        primitive["secret_env"] = {k: str(v) for k, v in container.secret_env.items()}
+        primitive["secret_env"] = {
+            k: str(normalize_secret_uri(v, config.username, config.cluster_name))
+            for k, v in container.secret_env.items()
+        }
     if container.secret_files:
         primitive["secret_volumes"] = [
-            _secret_file_to_api(v) for v in container.secret_files
+            _secret_file_to_api(v, config) for v in container.secret_files
         ]
     if container.tty:
         primitive["tty"] = True
@@ -748,8 +751,9 @@ def _volume_to_api(volume: Volume, config: Config) -> Dict[str, Any]:
     return resp
 
 
-def _secret_file_to_api(secret_file: Tuple[URL, str]) -> Dict[str, Any]:
+def _secret_file_to_api(secret_file: Tuple[URL, str], config: Config) -> Dict[str, Any]:
     secret_uri, container_path = secret_file
+    secret_uri = normalize_secret_uri(secret_uri, config.username, config.cluster_name)
     return {
         "src_secret_uri": str(secret_uri),
         "dst_path": container_path,

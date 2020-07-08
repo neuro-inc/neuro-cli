@@ -63,6 +63,15 @@ def normalize_storage_path_uri(uri: URL, username: str, cluster_name: str) -> UR
     return _normalize_uri(uri, username, cluster_name)
 
 
+def normalize_secret_uri(uri: URL, username: str, cluster_name: str) -> URL:
+    """Normalize secret url."""
+    if uri.scheme != "secret":
+        raise ValueError(
+            f"Invalid storage scheme '{uri.scheme}:' (only 'secret:' is allowed)"
+        )
+    return _normalize_uri(uri, username, cluster_name)
+
+
 def normalize_blob_path_uri(uri: URL, cluster_name: str) -> URL:
     """Normalize Blob Storage url."""
     if uri.scheme != "blob":
