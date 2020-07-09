@@ -189,13 +189,15 @@ async def process_attach(
 ) -> NoReturn:
     # Note, the job should be in running/finished state for this call,
     # passing pending job is forbidden
-    progress = JobStopProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
     try:
         if tty:
             action = await _attach_tty(root, job.id, logs)
         else:
             action = await _attach_non_tty(root, job.id, logs)
 
+        progress = JobStopProgress.create(
+            tty=root.tty, color=root.color, quiet=root.quiet
+        )
         if action == InterruptAction.KILL:
             progress.kill(job)
             sys.exit(128 + signal.SIGINT)
@@ -205,6 +207,9 @@ async def process_attach(
     finally:
         root.soft_reset_tty()
 
+    # The class pins the current time in counstructor, that's why we need to initialize
+    # it AFTER the disconnection from attached session.
+    progress = JobStopProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
     job = await root.client.jobs.status(job.id)
     while job.status == JobStatus.RUNNING:
         await asyncio.sleep(0.2)
