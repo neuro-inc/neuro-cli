@@ -14,6 +14,12 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, TypeVar
 from typing_extensions import final
 
 
+if sys.version_info >= (3, 7):
+    from asyncio import current_task
+else:
+    current_task = asyncio.Task.current_task
+
+
 _T = TypeVar("_T")
 logger = logging.getLogger(__name__)
 
@@ -300,12 +306,3 @@ def setup_child_watcher() -> None:
     else:
         if sys.version_info < (3, 8):
             asyncio.set_child_watcher(ThreadedChildWatcher())
-
-
-def current_task(
-    loop: Optional[asyncio.AbstractEventLoop] = None,
-) -> "asyncio.Task[Any]":
-    if sys.version_info >= (3, 7):
-        return asyncio.current_task(loop=loop)  # type: ignore
-    else:
-        return asyncio.Task.current_task(loop=loop)
