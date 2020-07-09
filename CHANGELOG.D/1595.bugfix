@@ -1,1 +1,0 @@
-Always set "LESS=-R" env variable to fix outputs with scrolling, e.g. "neuro help"
