@@ -13,7 +13,6 @@
 		* [neuro admin add-user-quota](#neuro-admin-add-user-quota)
 	* [neuro job](#neuro-job)
 		* [neuro job run](#neuro-job-run)
-		* [neuro job submit](#neuro-job-submit)
 		* [neuro job ls](#neuro-job-ls)
 		* [neuro job status](#neuro-job-status)
 		* [neuro job tags](#neuro-job-tags)
@@ -69,7 +68,6 @@
 		* [neuro secret rm](#neuro-secret-rm)
 	* [neuro help](#neuro-help)
 	* [neuro run](#neuro-run)
-	* [neuro submit](#neuro-submit)
 	* [neuro ps](#neuro-ps)
 	* [neuro status](#neuro-status)
 	* [neuro exec](#neuro-exec)
@@ -139,7 +137,6 @@ Name | Description|
 |---|---|
 | _[neuro help](#neuro-help)_| Get help on a command |
 | _[neuro run](#neuro-run)_| Run a job with predefined resources configuration |
-| _[neuro submit](#neuro-submit)_| Submit an image to run on the cluster |
 | _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro status](#neuro-status)_| Display status of a job |
 | _[neuro exec](#neuro-exec)_| Execute command in a running job |
@@ -376,7 +373,6 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro job run](#neuro-job-run)_| Run a job with predefined resources configuration |
-| _[neuro job submit](#neuro-job-submit)_| Submit an image to run on the cluster |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
 | _[neuro job tags](#neuro-job-tags)_| List all tags submitted by the user |
@@ -439,65 +435,6 @@ Name | Description|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_--tag TAG_|Optional job tag, multiple values allowed|
-|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
-|_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
-
-
-
-
-### neuro job submit
-
-Submit an image to run on the cluster.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
-
-**Usage:**
-
-```bash
-neuro job submit [OPTIONS] IMAGE [CMD]...
-```
-
-**Examples:**
-
-```bash
-
-# Starts a container pytorch:latest with two paths mounted. Directory /q1/
-# is mounted in read only mode to /qm directory within container.
-# Directory /mod mounted to /mod directory in read-write mode.
-neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
-
-# Starts a container using the custom image my-ubuntu:latest stored in neuromation
-# registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
-neuro submit image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--browse_|Open a job's URL in a web browser|
-|_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
-|_\-d, --description DESC_|Optional job description in free format|
-|_--detach_|Don't attach to job logs and don't wait for exit code|
-|_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
-|_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
-|_\--env-file PATH_|File with environment variables to pass|
-|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
-|_\-g, --gpu NUMBER_|Number of GPUs to request  \[default: 0]|
-|_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
-|_--help_|Show this message and exit.|
-|_--http PORT_|Enable HTTP port forwarding to a job|
-|_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
-|_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
-|_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
-|_\-n, --name NAME_|Optional job name|
-|_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
-|_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
-|_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
-|_--tag TAG_|Optional job tag, multiple values allowed|
-|_\--tpu-sw-version VERSION_|Requested TPU software version|
-|_\--tpu-type TYPE_|TPU type to use|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
@@ -1923,65 +1860,6 @@ Name | Description|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_--tag TAG_|Optional job tag, multiple values allowed|
-|_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
-|_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
-
-
-
-
-## neuro submit
-
-Submit an image to run on the cluster.<br/><br/>IMAGE container image name.<br/><br/>CMD list will be passed as commands to model container.<br/>
-
-**Usage:**
-
-```bash
-neuro submit [OPTIONS] IMAGE [CMD]...
-```
-
-**Examples:**
-
-```bash
-
-# Starts a container pytorch:latest with two paths mounted. Directory /q1/
-# is mounted in read only mode to /qm directory within container.
-# Directory /mod mounted to /mod directory in read-write mode.
-neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw pytorch:latest
-
-# Starts a container using the custom image my-ubuntu:latest stored in neuromation
-# registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
-neuro submit image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--browse_|Open a job's URL in a web browser|
-|_\-c, --cpu NUMBER_|Number of CPUs to request  \[default: 0.1]|
-|_\-d, --description DESC_|Optional job description in free format|
-|_--detach_|Don't attach to job logs and don't wait for exit code|
-|_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
-|_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
-|_\--env-file PATH_|File with environment variables to pass|
-|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
-|_\-g, --gpu NUMBER_|Number of GPUs to request  \[default: 0]|
-|_\--gpu-model MODEL_|GPU to use  \[default: nvidia\-tesla-k80]|
-|_--help_|Show this message and exit.|
-|_--http PORT_|Enable HTTP port forwarding to a job|
-|_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
-|_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
-|_\-m, --memory AMOUNT_|Memory amount to request  \[default: 1G]|
-|_\-n, --name NAME_|Optional job name|
-|_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
-|_\-p, --preemptible / -P, --non-preemptible_|Run job on a lower-cost preemptible instance  \[default: False]|
-|_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
-|_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
-|_--tag TAG_|Optional job tag, multiple values allowed|
-|_\--tpu-sw-version VERSION_|Requested TPU software version|
-|_\--tpu-type TYPE_|TPU type to use|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
