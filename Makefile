@@ -133,7 +133,7 @@ test-all: .update-deps
 .PHONY: lint
 lint: lint-docs
 	./build-tools/version.py check
-	isort -c -df -rc ${ISORT_DIRS}
+	isort --check-only --diff ${ISORT_DIRS}
 	black --check $(BLACK_DIRS)
 	mypy $(MYPY_DIRS)
 	flake8 $(FLAKE8_DIRS)
@@ -146,7 +146,7 @@ publish-lint:
 .PHONY: format fmt
 format fmt:
 	./build-tools/version.py update
-	isort -rc $(ISORT_DIRS)
+	isort $(ISORT_DIRS)
 	black $(BLACK_DIRS)
 	# generate docs as the last stage to allow reformat code first
 	make docs

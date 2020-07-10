@@ -6,6 +6,7 @@ import attr
 import enum
 import json
 import logging
+import sys
 from aiodocker.exceptions import DockerError
 from aiohttp import WSMsgType, WSServerHandshakeError
 from contextlib import suppress
@@ -396,7 +397,8 @@ class Jobs(metaclass=NoPublicConstructor):
             yield
         finally:
             srv.close()
-            await srv.wait_closed()
+            if sys.version_info >= (3, 7):
+                await srv.wait_closed()
 
     async def _port_forward(
         self,
@@ -428,7 +430,8 @@ class Jobs(metaclass=NoPublicConstructor):
                         with suppress(asyncio.CancelledError):
                             await task
                 writer.close()
-                await writer.wait_closed()
+                if sys.version_info >= (3, 7):
+                    await writer.wait_closed()
                 await ws.close()
         except asyncio.CancelledError:
             raise
@@ -443,7 +446,8 @@ class Jobs(metaclass=NoPublicConstructor):
             writer.write(msg.data)
             await writer.drain()
         writer.close()
-        await writer.wait_closed()
+        if sys.version_info >= (3, 7):
+            await writer.wait_closed()
 
     async def _port_writer(
         self, ws: aiohttp.ClientWebSocketResponse, reader: asyncio.StreamReader

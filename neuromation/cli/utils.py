@@ -572,6 +572,9 @@ def pager_maybe(
             click.echo(line)
         return
 
+    # Enforce ANSI sequence handling (colors etc.)
+    os.environ["LESS"] = "-R"
+
     lines_it: Iterator[str] = iter(lines)
     count = int(terminal_size[1] * 2 / 3)
     handled = list(itertools.islice(lines_it, count))
