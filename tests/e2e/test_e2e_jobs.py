@@ -733,9 +733,7 @@ def test_pass_config(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_job_submit_bad_http_auth(helper: Helper, http_auth: str) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(
-            ["job", "run", "--http=0", http_auth, UBUNTU_IMAGE_NAME, "true"]
-        )
+        helper.run_cli(["job", "run", "--http=0", http_auth, UBUNTU_IMAGE_NAME, "true"])
     assert cm.value.returncode == 2
     assert f"{http_auth} requires --http" in cm.value.stderr
 
