@@ -1,7 +1,11 @@
+import aiodocker
+import aiohttp
 import asyncio
 import hashlib
 import logging
 import os
+import pexpect
+import pytest
 import re
 import shlex
 import subprocess
@@ -25,11 +29,6 @@ from typing import (
     Union,
 )
 from uuid import uuid4 as uuid
-
-import aiodocker
-import aiohttp
-import pexpect
-import pytest
 from yarl import URL
 
 from neuromation.api import (

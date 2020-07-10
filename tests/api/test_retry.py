@@ -1,8 +1,7 @@
-import logging
-from typing import Any
-
 import aiohttp
+import logging
 import pytest
+from typing import Any
 
 from neuromation.api.utils import retries
 

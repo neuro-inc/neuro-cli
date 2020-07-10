@@ -1,11 +1,10 @@
+import click
 import re
 import shlex
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
-
-import click
 from click.utils import make_default_short_help
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 from neuromation.api import ConfigError
 

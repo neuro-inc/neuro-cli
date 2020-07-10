@@ -1,6 +1,5 @@
-import uuid
-
 import pytest
+import uuid
 
 from tests.e2e.conftest import Helper
 

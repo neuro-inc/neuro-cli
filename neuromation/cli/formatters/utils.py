@@ -1,8 +1,7 @@
+import click
 import re
 from typing import Callable
 from uuid import uuid4
-
-import click
 from yarl import URL
 
 from neuromation.api import RemoteImage

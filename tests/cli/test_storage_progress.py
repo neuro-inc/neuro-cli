@@ -1,10 +1,9 @@
+import click
+import pytest
 import sys
 from pathlib import Path
 from typing import Any, Callable, Iterator, List
 from unittest import mock
-
-import click
-import pytest
 from yarl import URL
 
 from neuromation.api import (

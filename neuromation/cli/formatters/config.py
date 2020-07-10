@@ -1,8 +1,7 @@
-import operator
-from typing import Iterable, Iterator, List, Mapping, Optional
-
 import click
+import operator
 from click import style
+from typing import Iterable, Iterator, List, Mapping, Optional
 
 from neuromation.api import Client, Cluster, Preset
 from neuromation.api.admin import _Quota

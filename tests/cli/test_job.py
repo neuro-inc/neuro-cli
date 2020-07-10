@@ -1,11 +1,10 @@
+import click
 import logging
+import pytest
+import toml
 from datetime import timedelta
 from pathlib import Path
 from typing import Any, Callable, Tuple
-
-import click
-import pytest
-import toml
 from yarl import URL
 
 from neuromation.api import Client, JobStatus

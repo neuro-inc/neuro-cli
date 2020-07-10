@@ -1,3 +1,4 @@
+import aiohttp
 import asyncio
 import contextlib
 import errno
@@ -5,13 +6,11 @@ import json as jsonmodule
 import logging
 import sqlite3
 import time
+from aiohttp import WSMessage
 from http.cookies import Morsel, SimpleCookie
+from multidict import CIMultiDict
 from types import SimpleNamespace
 from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence
-
-import aiohttp
-from aiohttp import WSMessage
-from multidict import CIMultiDict
 from yarl import URL
 
 from .tracing import gen_trace_id

@@ -1,7 +1,6 @@
 import base64
-from typing import Callable
-
 from aiohttp import web
+from typing import Callable
 
 from neuromation.api import Client, Secret
 from tests import _TestServerFactory

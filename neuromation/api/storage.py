@@ -1,4 +1,8 @@
+from dataclasses import dataclass
+
+import aiohttp
 import asyncio
+import attr
 import datetime
 import enum
 import errno
@@ -8,7 +12,6 @@ import logging
 import os
 import re
 import time
-from dataclasses import dataclass
 from email.utils import parsedate
 from pathlib import Path
 from stat import S_ISREG
@@ -26,9 +29,6 @@ from typing import (
     Union,
     cast,
 )
-
-import aiohttp
-import attr
 from yarl import URL
 
 from .abc import (

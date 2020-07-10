@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+
 from enum import Enum
 from itertools import zip_longest
 from typing import Any, Iterator, List, Optional, Sequence

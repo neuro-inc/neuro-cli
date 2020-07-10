@@ -1,18 +1,18 @@
+from dataclasses import dataclass
+
 import abc
+import click
 import contextlib
 import enum
 import operator
 import os
 import sys
 import time
-from dataclasses import dataclass
+from click import style, unstyle
 from fnmatch import fnmatch
 from math import ceil
 from time import monotonic
 from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
-
-import click
-from click import style, unstyle
 from yarl import URL
 
 from neuromation.api import (

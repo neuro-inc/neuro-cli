@@ -1,10 +1,9 @@
 import abc
+import click
 import re
+from click import BadParameter
 from datetime import datetime, timedelta
 from typing import Generic, List, Optional, Sequence, Tuple, TypeVar, Union, cast
-
-import click
-from click import BadParameter
 
 from neuromation.api import LocalImage, RemoteImage, TagOption
 

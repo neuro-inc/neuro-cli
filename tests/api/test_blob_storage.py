@@ -1,13 +1,12 @@
 import base64
 import hashlib
 import os
+import pytest
+from aiohttp import web
 from datetime import datetime
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable, Dict, List, NoReturn, Set  # noqa: F401
 from unittest import mock
-
-import pytest
-from aiohttp import web
 from yarl import URL
 
 from neuromation.api import (

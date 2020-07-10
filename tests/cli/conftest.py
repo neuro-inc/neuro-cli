@@ -1,10 +1,9 @@
 import asyncio
 import logging
+import pytest
 from collections import namedtuple
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable, List
-
-import pytest
 from yarl import URL
 
 import neuromation

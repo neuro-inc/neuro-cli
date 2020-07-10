@@ -1,12 +1,11 @@
+import aiohttp
 import asyncio
+import certifi
 import os
 import ssl
 import sys
 from pathlib import Path
 from typing import Awaitable, Callable, List, Optional
-
-import aiohttp
-import certifi
 from yarl import URL
 
 import neuromation

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-import abc
 import dataclasses
+
+import abc
+import click
 import pathlib
 import re
 from typing import Dict
-
-import click
 
 
 class VersionProcessor(abc.ABC):

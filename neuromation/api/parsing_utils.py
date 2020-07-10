@@ -1,7 +1,7 @@
-import enum
 from dataclasses import dataclass
-from typing import Optional, Tuple
 
+import enum
+from typing import Optional, Tuple
 from yarl import URL
 
 

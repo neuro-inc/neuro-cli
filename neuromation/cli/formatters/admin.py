@@ -1,8 +1,7 @@
-import operator
-from typing import Iterable, Iterator, List
-
 import click
+import operator
 from click import style
+from typing import Iterable, Iterator, List
 
 from neuromation.api.admin import _Cluster, _ClusterUser, _NodePool
 from neuromation.cli.utils import format_size

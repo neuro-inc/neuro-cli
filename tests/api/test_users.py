@@ -1,7 +1,6 @@
-from typing import AsyncIterator, Callable
-
 import pytest
 from aiohttp import web
+from typing import AsyncIterator, Callable
 from yarl import URL
 
 from neuromation.api import Action, Client, Permission, ResourceNotFound

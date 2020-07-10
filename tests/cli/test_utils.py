@@ -1,9 +1,8 @@
+import pytest
+from aiohttp import web
 from pathlib import Path
 from typing import Any, Callable, Dict, NoReturn
 from unittest import mock
-
-import pytest
-from aiohttp import web
 from yarl import URL
 
 from neuromation.api import Action, Client, JobStatus

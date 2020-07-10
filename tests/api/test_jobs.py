@@ -1,11 +1,10 @@
 import asyncio
 import json
-from typing import Any, Callable, Dict, List, Optional
-
 import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
 from dateutil.parser import isoparse
+from typing import Any, Callable, Dict, List, Optional
 from yarl import URL
 
 from neuromation.api import (

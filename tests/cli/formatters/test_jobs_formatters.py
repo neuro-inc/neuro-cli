@@ -1,9 +1,8 @@
-from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
-
 import click
 import pytest
+from datetime import datetime, timedelta, timezone
 from dateutil.parser import isoparse
+from typing import Any, Optional
 from yarl import URL
 
 from neuromation.api import (

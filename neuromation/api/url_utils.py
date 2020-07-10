@@ -3,7 +3,6 @@ import re
 import sys
 from pathlib import Path
 from typing import Sequence, Union
-
 from yarl import URL
 
 

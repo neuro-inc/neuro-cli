@@ -1,7 +1,7 @@
 from dataclasses import dataclass
-from typing import Any, Dict, Mapping, Optional
 
 import aiohttp
+from typing import Any, Dict, Mapping, Optional
 from yarl import URL
 
 from .login import AuthException, _AuthConfig

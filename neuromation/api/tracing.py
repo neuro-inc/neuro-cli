@@ -1,9 +1,8 @@
 # Distributed tracing support
 
+import aiohttp
 import os
 import types
-
-import aiohttp
 from multidict import CIMultiDict
 
 

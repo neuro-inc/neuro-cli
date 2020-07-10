@@ -1,16 +1,16 @@
+from dataclasses import dataclass, field
+
+import aiohttp
 import asyncio
+import click
 import contextlib
 import logging
 import re
 import sys
-from dataclasses import dataclass, field
 from http.cookies import Morsel  # noqa
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Awaitable, Dict, Iterator, List, Optional, Tuple, TypeVar
-
-import aiohttp
-import click
 
 from neuromation.api import Client, Factory, gen_trace_id
 from neuromation.api.config import _ConfigData

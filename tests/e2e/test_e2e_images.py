@@ -1,4 +1,6 @@
+import aiodocker
 import asyncio
+import pytest
 import re
 import subprocess
 import time
@@ -6,9 +8,6 @@ import urllib.parse
 from pathlib import Path
 from typing import Any, AsyncIterator, Set
 from uuid import uuid4 as uuid
-
-import aiodocker
-import pytest
 from yarl import URL
 
 from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, JobStatus

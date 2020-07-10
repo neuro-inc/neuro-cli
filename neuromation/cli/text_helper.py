@@ -1,9 +1,8 @@
+import click
 import re
 from difflib import SequenceMatcher
 from textwrap import fill, wrap
 from typing import Iterator, List, Sequence
-
-import click
 from wcwidth import wcswidth
 
 

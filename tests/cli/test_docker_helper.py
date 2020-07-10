@@ -1,12 +1,11 @@
 import io
 import json
 import logging
+import pytest
 import sys
 from collections import namedtuple
 from pathlib import Path
 from typing import Any, Callable, List
-
-import pytest
 from yarl import URL
 
 from neuromation.api import CONFIG_ENV_NAME, Config

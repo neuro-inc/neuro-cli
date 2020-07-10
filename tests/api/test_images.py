@@ -1,11 +1,10 @@
-import os
-import sys
-from typing import Any, AsyncIterator, Callable, Dict, Iterator
-
 import asynctest
+import os
 import pytest
+import sys
 from aiodocker.exceptions import DockerError
 from aiohttp import web
+from typing import Any, AsyncIterator, Callable, Dict, Iterator
 from yarl import URL
 
 from neuromation.api import (

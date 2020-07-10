@@ -1,7 +1,6 @@
+import aiohttp
 from pathlib import Path
 from typing import Awaitable, Callable, Optional
-
-import aiohttp
 from yarl import URL
 
 from .abc import (

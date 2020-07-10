@@ -1,7 +1,6 @@
 import abc
-from typing import Dict, Iterable
-
 import click
+from typing import Dict, Iterable
 
 from neuromation.api import (
     AbstractDockerImageProgress,

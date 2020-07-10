@@ -1,6 +1,5 @@
-from typing import Any
-
 import pytest
+from typing import Any
 
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 

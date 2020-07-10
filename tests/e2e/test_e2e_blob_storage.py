@@ -1,9 +1,8 @@
 import os
+import pytest
 import subprocess
 from pathlib import Path, PurePath
 from typing import Tuple
-
-import pytest
 
 from neuromation.cli.const import EX_OSFILE
 from tests.e2e import Helper

@@ -1,7 +1,6 @@
 import asyncio
 from typing import Callable
 from unittest import mock
-
 from yarl import URL
 
 from neuromation.api import Client, Cluster, Preset

@@ -1,5 +1,6 @@
-import base64
 from dataclasses import dataclass
+
+import base64
 from typing import AsyncIterator
 
 from .config import Config

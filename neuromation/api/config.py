@@ -1,3 +1,5 @@
+from dataclasses import dataclass, replace
+
 import base64
 import contextlib
 import json
@@ -7,12 +9,10 @@ import re
 import sqlite3
 import sys
 import time
-from dataclasses import dataclass, replace
+import toml
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Dict, Iterator, List, Mapping, Optional, Set, Tuple, Union
-
-import toml
 from yarl import URL
 
 import neuromation

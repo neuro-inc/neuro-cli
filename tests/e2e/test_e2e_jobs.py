@@ -1,21 +1,20 @@
+import aiodocker
+import aiohttp
 import asyncio
 import os
+import pytest
 import re
 import subprocess
 import sys
 import uuid
+from aiohttp.test_utils import unused_port
 from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
+from pexpect.replwrap import REPLWrapper
 from time import sleep, time
 from typing import Any, AsyncIterator, Callable, Dict, Iterator, List, Tuple
 from uuid import uuid4
-
-import aiodocker
-import aiohttp
-import pytest
-from aiohttp.test_utils import unused_port
-from pexpect.replwrap import REPLWrapper
 from yarl import URL
 
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get

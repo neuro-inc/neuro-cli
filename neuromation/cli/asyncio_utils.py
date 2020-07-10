@@ -10,7 +10,6 @@ import warnings
 from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, TypeVar
-
 from typing_extensions import final
 
 

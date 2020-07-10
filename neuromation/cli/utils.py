@@ -1,5 +1,7 @@
 import asyncio
+import click
 import functools
+import humanize
 import inspect
 import itertools
 import logging
@@ -9,6 +11,7 @@ import re
 import shlex
 import shutil
 import sys
+from click.types import convert_type
 from typing import (
     Any,
     Awaitable,
@@ -26,10 +29,6 @@ from typing import (
     Union,
     cast,
 )
-
-import click
-import humanize
-from click.types import convert_type
 from yarl import URL
 
 from neuromation.api import Action, Client, Factory, JobStatus, TagOption, Volume

@@ -1,3 +1,4 @@
+import aiohttp
 import asyncio
 import logging
 import sys
@@ -15,8 +16,6 @@ from typing import (
     Type,
     TypeVar,
 )
-
-import aiohttp
 
 
 if sys.version_info >= (3, 7):  # pragma: no cover

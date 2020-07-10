@@ -1,6 +1,7 @@
 # Attach / exec / logs utilities
 
 import asyncio
+import click
 import codecs
 import enum
 import functools
@@ -8,9 +9,6 @@ import logging
 import signal
 import sys
 import threading
-from typing import Any, Awaitable, Callable, List, Optional, Sequence
-
-import click
 from prompt_toolkit.formatted_text import HTML, merge_formatted_text
 from prompt_toolkit.input import create_input
 from prompt_toolkit.key_binding import KeyPress
@@ -19,6 +17,7 @@ from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.output import Output, create_output
 from prompt_toolkit.shortcuts import PromptSession
+from typing import Any, Awaitable, Callable, List, Optional, Sequence
 from typing_extensions import NoReturn
 
 from neuromation.api import IllegalArgumentError, JobDescription, JobStatus, StdStream

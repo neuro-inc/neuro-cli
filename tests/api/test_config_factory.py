@@ -1,12 +1,11 @@
+import aiohttp
+import pytest
 import sys
+from aiohttp import web
+from aiohttp.test_utils import TestServer as _TestServer
 from pathlib import Path
 from typing import Any, Callable, Dict
 from unittest import mock
-
-import aiohttp
-import pytest
-from aiohttp import web
-from aiohttp.test_utils import TestServer as _TestServer
 from yarl import URL
 
 import neuromation

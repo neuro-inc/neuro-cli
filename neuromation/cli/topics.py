@@ -1,7 +1,6 @@
-from typing import Any, Callable, Iterable, Optional, Type
-
 import click
 from click.utils import make_default_short_help
+from typing import Any, Callable, Iterable, Optional, Type
 
 from .formatters.utils import apply_styling
 
