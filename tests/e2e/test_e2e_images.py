@@ -13,7 +13,6 @@ from yarl import URL
 
 from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, JobStatus
 from tests.e2e import Helper
-from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS
 
 
 TEST_IMAGE_NAME = "e2e-banana-image"
@@ -101,16 +100,7 @@ def test_images_complete_lifecycle(
     assert image in local_images
 
     # Execute image and check result
-    captured = helper.run_cli(
-        [
-            "-q",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            str(image_url),
-        ]
-    )
+    captured = helper.run_cli(["-q", "run", "--no-wait-start", str(image_url)])
     assert not captured.err
     job_id = captured.out
     assert job_id.startswith("job-")
