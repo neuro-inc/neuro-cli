@@ -145,7 +145,7 @@ def job() -> None:
     """
 
 
-@command(context_settings=dict(allow_interspersed_args=False))
+@command(context_settings=dict(allow_interspersed_args=False), hidden=True)
 @argument("image", type=ImageType())
 @argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @option(
