@@ -506,8 +506,8 @@ class TestExternalAliasOptions:
             Alias for "script {{opt}}"
 
             Options:
-              --opt
               --help  Show this message and exit.
+              --opt
         """
         )
         assert expected == capture.out
@@ -538,8 +538,8 @@ class TestExternalAliasOptions:
             Alias for "script {{opt}}"
 
             Options:
-              --opt   Option description.
               --help  Show this message and exit.
+              --opt   Option description.
         """
         )
         assert expected == capture.out
@@ -570,8 +570,8 @@ class TestExternalAliasOptions:
             Alias for "script {{opt}}"
 
             Options:
-              -o, --opt  Option description.
               --help     Show this message and exit.
+              -o, --opt  Option description.
         """
         )
         assert expected == capture.out
@@ -602,8 +602,8 @@ class TestExternalAliasOptions:
             Alias for "script {{opt}}"
 
             Options:
-              -o, --opt VAL  Option description.
               --help         Show this message and exit.
+              -o, --opt VAL  Option description.
         """
         )
         assert expected == capture.out
@@ -634,8 +634,8 @@ class TestExternalAliasOptions:
             Alias for "script {{opt}}"
 
             Options:
-              -o, --opt VAL  Description.
               --help         Show this message and exit.
+              -o, --opt VAL  Description.
         """
         )
         assert expected == capture.out
@@ -666,8 +666,8 @@ class TestExternalAliasOptions:
             Alias for "script {{opt}}"
 
             Options:
-              -o, --opt VAL  Option description.
               --help         Show this message and exit.
+              -o, --opt VAL  Option description.
         """
         )
         assert expected == capture.out
