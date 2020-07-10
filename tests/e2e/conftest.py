@@ -682,8 +682,11 @@ class Helper:
                     and bucket.creation_time < time() - 3600 * 4
                     and bucket.permission in (Action.WRITE, Action.MANAGE)
                 ):
-                    await self.acleanup_bucket(bucket.name)
-                    await self.adelete_bucket(bucket.name)
+                    with suppress(ResourceNotFound):
+                        # bucket can be deleted by another parallel test run,
+                        # ignore ResourceNotFound errors
+                        await self.acleanup_bucket(bucket.name)
+                        await self.adelete_bucket(bucket.name)
 
     @run_async
     async def upload_blob(self, bucket_name: str, key: str, file: Path) -> None:
