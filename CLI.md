@@ -438,6 +438,7 @@ Name | Description|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
+|_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
@@ -497,6 +498,7 @@ Name | Description|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
+|_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
@@ -627,7 +629,7 @@ Forward port\(s) of a running job to local port\(s).<br/>
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] JOB LOCAL_REMOTE_PORT...
+neuro job port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT
 ```
 
 **Examples:**
@@ -653,7 +655,6 @@ neuro job port-forward my-job 2080:80 2222:22 2000:100
 
 Name | Description|
 |----|------------|
-|_\--no-key-check_|Disable host key checks. Should be used with caution.|
 |_--help_|Show this message and exit.|
 
 
@@ -779,6 +780,7 @@ neuro job attach [OPTIONS] JOB
 
 Name | Description|
 |----|------------|
+|_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_--help_|Show this message and exit.|
 
 
@@ -1922,6 +1924,7 @@ Name | Description|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
+|_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
@@ -1981,6 +1984,7 @@ Name | Description|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
+|_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_--browse_|Open a job's URL in a web browser|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
@@ -2092,7 +2096,7 @@ Forward port\(s) of a running job to local port\(s).<br/>
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] JOB LOCAL_REMOTE_PORT...
+neuro port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT
 ```
 
 **Examples:**
@@ -2118,7 +2122,6 @@ neuro job port-forward my-job 2080:80 2222:22 2000:100
 
 Name | Description|
 |----|------------|
-|_\--no-key-check_|Disable host key checks. Should be used with caution.|
 |_--help_|Show this message and exit.|
 
 
@@ -2138,6 +2141,7 @@ neuro attach [OPTIONS] JOB
 
 Name | Description|
 |----|------------|
+|_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_--help_|Show this message and exit.|
 
 

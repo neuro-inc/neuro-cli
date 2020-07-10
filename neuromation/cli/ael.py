@@ -8,7 +8,7 @@ import logging
 import signal
 import sys
 import threading
-from typing import Any, Awaitable, Callable, List, Optional, Sequence
+from typing import Any, Awaitable, Callable, List, Optional, Sequence, Tuple
 
 import click
 from prompt_toolkit.formatted_text import HTML, merge_formatted_text
@@ -26,6 +26,7 @@ from neuromation.api import IllegalArgumentError, JobDescription, JobStatus, Std
 from .const import EX_IOERR, EX_PLATFORMERROR
 from .formatters.jobs import ExecStopProgress, JobStopProgress
 from .root import Root
+from .utils import AsyncExitStack
 
 
 log = logging.getLogger(__name__)
@@ -185,40 +186,57 @@ async def _exec_watcher(root: Root, job: str, exec_id: str) -> None:
 
 
 async def process_attach(
-    root: Root, job: JobDescription, tty: bool, logs: bool
-) -> NoReturn:
+    root: Root,
+    job: JobDescription,
+    tty: bool,
+    logs: bool,
+    port_forward: List[Tuple[int, int]],
+) -> None:
     # Note, the job should be in running/finished state for this call,
     # passing pending job is forbidden
-    try:
-        if tty:
-            action = await _attach_tty(root, job.id, logs)
-        else:
-            action = await _attach_non_tty(root, job.id, logs)
 
+    async with AsyncExitStack() as stack:
+        for local_port, job_port in port_forward:
+            click.echo(
+                f"Port localhost:{local_port} will be forwarded to port {job_port}"
+            )
+            await stack.enter_async_context(
+                root.client.jobs.port_forward(job.id, local_port, job_port)
+            )
+
+        try:
+            if tty:
+                action = await _attach_tty(root, job.id, logs)
+            else:
+                action = await _attach_non_tty(root, job.id, logs)
+
+            progress = JobStopProgress.create(
+                tty=root.tty, color=root.color, quiet=root.quiet
+            )
+            if action == InterruptAction.KILL:
+                progress.kill(job)
+                sys.exit(128 + signal.SIGINT)
+            elif action == InterruptAction.DETACH:
+                progress.detach(job)
+                sys.exit(0)
+        finally:
+            root.soft_reset_tty()
+
+        # The class pins the current time in counstructor,
+        # that's why we need to initialize
+        # it AFTER the disconnection from attached session.
         progress = JobStopProgress.create(
             tty=root.tty, color=root.color, quiet=root.quiet
         )
-        if action == InterruptAction.KILL:
-            progress.kill(job)
-            sys.exit(128 + signal.SIGINT)
-        elif action == InterruptAction.DETACH:
-            progress.detach(job)
-            sys.exit(0)
-    finally:
-        root.soft_reset_tty()
-
-    # The class pins the current time in counstructor, that's why we need to initialize
-    # it AFTER the disconnection from attached session.
-    progress = JobStopProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
-    job = await root.client.jobs.status(job.id)
-    while job.status == JobStatus.RUNNING:
-        await asyncio.sleep(0.2)
         job = await root.client.jobs.status(job.id)
-        if not progress.step(job):
-            sys.exit(EX_IOERR)
-    if job.status == JobStatus.FAILED:
-        sys.exit(job.history.exit_code or EX_PLATFORMERROR)
-    sys.exit(job.history.exit_code)
+        while job.status == JobStatus.RUNNING:
+            await asyncio.sleep(0.2)
+            job = await root.client.jobs.status(job.id)
+            if not progress.step(job):
+                sys.exit(EX_IOERR)
+        if job.status == JobStatus.FAILED:
+            sys.exit(job.history.exit_code or EX_PLATFORMERROR)
+        sys.exit(job.history.exit_code)
 
 
 async def _attach_tty(root: Root, job: str, logs: bool) -> InterruptAction:

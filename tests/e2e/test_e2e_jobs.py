@@ -602,41 +602,77 @@ async def nginx_job_async(
                 await client.jobs.kill(job.id)
 
 
+async def fetch_http(
+    url: str, test: str, *, loop_sleep: float = 1.0, service_wait_time: float = 10 * 60
+) -> int:
+    status = 999
+    start_time = time()
+    async with aiohttp.ClientSession() as session:
+        while status != 200 and (int(time() - start_time) < service_wait_time):
+            try:
+                async with session.get(url) as resp:
+                    status = resp.status
+                    text = await resp.text()
+                    assert text == test, (
+                        f"Secret not found "
+                        f"via {url}. Like as it's not our test server."
+                    )
+            except aiohttp.ClientConnectionError:
+                status = 599
+            if status != 200:
+                await asyncio.sleep(loop_sleep)
+    return status
+
+
 @pytest.mark.e2e
-async def test_port_forward(nmrc_path: Path, nginx_job_async: Tuple[str, str]) -> None:
-    loop_sleep = 1
-    service_wait_time = 10 * 60
+async def test_port_forward(helper: Helper, nginx_job_async: Tuple[str, str]) -> None:
+    port = unused_port()
+    job_id, secret = nginx_job_async
 
-    async def get_(url: str) -> int:
-        status = 999
-        start_time = time()
-        async with aiohttp.ClientSession() as session:
-            while status != 200 and (int(time() - start_time) < service_wait_time):
-                try:
-                    async with session.get(url) as resp:
-                        status = resp.status
-                        text = await resp.text()
-                        assert text == nginx_job_async[1], (
-                            f"Secret not found "
-                            f"via {url}. Like as it's not our test server."
-                        )
-                except aiohttp.ClientConnectionError:
-                    status = 599
-                if status != 200:
-                    await asyncio.sleep(loop_sleep)
-        return status
+    proc = await helper.acli(
+        ["port-forward", job_id, f"{port}:80"]
+    )
+    try:
+        await asyncio.sleep(1)
+        url = f"http://127.0.0.1:{port}/secret.txt"
+        probe = await fetch_http(url, str(secret))
+        assert probe == 200
 
-    async with api_get(path=nmrc_path, timeout=CLIENT_TIMEOUT) as client:
-        port = unused_port()
-        # We test client instead of run_cli as asyncio subprocesses do
-        # not work if run from thread other than main.
-        async with client.jobs.port_forward(
-            nginx_job_async[0], port, 80, no_key_check=True
-        ):
-            await asyncio.sleep(loop_sleep)
-            url = f"http://127.0.0.1:{port}/secret.txt"
-            probe = await get_(url)
-            assert probe == 200
+        assert proc.returncode is None
+    finally:
+        proc.terminate()
+        await proc.wait()
+
+
+@pytest.mark.e2e
+async def test_run_with_port_forward(helper: Helper) -> None:
+    port = unused_port()
+    job_id = None
+
+    secret = uuid4()
+    command = (
+        f"bash -c \"echo -n '{secret}' > /usr/share/nginx/html/secret.txt; "
+        f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
+    )
+
+    proc = await helper.acli(
+        ["run", "--port-forward", f"{port}:80", "nginx:latest", command]
+    )
+    try:
+        await asyncio.sleep(1)
+        url = f"http://127.0.0.1:{port}/secret.txt"
+        probe = await fetch_http(url, str(secret))
+        assert probe == 200
+
+        assert proc.returncode is None
+        out = await proc.stdout.read(64 * 1024)
+        job_id = helper.find_job_id(out.decode('utf-8', 'replace'))
+        assert job_id is not None
+    finally:
+        proc.terminate()
+        await proc.wait()
+        if job_id is not None:
+            await helper.akill_job(job_id)
 
 
 @pytest.mark.e2e
