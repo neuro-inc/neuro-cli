@@ -146,8 +146,9 @@ def format_example(example: str, formatter: click.HelpFormatter) -> None:
 
 
 class NeuroClickMixin:
-    def get_params(self, ctx: click.Context) -> List[click.Option]:
-        ret = super().get_params(ctx)
+    def get_params(self, ctx: click.Context) -> List[click.Parameter]:
+        # super() is available after using as a mixin
+        ret = super().get_params(ctx)  # type: ignore
         args = [i for i in ret if not isinstance(i, click.Option)]
         opts = [i for i in ret if isinstance(i, click.Option)]
 
