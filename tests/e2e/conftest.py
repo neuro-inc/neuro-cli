@@ -1,4 +1,5 @@
 import asyncio
+import asyncio.subprocess
 import hashlib
 import logging
 import os
@@ -434,7 +435,7 @@ class Helper:
         *,
         verbosity: int = 0,
         network_timeout: float = NETWORK_TIMEOUT,
-    ) -> SysCap:
+    ) -> asyncio.subprocess.Process:
         __tracebackhide__ = True
 
         log.info("Run 'neuro %s'", " ".join(arguments))

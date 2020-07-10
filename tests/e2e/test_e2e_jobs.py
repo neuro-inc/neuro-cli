@@ -19,7 +19,7 @@ from yarl import URL
 
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
 from neuromation.cli.asyncio_utils import run
-from tests.e2e.conftest import CLIENT_TIMEOUT, Helper
+from tests.e2e.conftest import Helper
 from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS
 
 
@@ -629,9 +629,7 @@ async def test_port_forward(helper: Helper, nginx_job_async: Tuple[str, str]) ->
     port = unused_port()
     job_id, secret = nginx_job_async
 
-    proc = await helper.acli(
-        ["port-forward", job_id, f"{port}:80"]
-    )
+    proc = await helper.acli(["port-forward", job_id, f"{port}:80"])
     try:
         await asyncio.sleep(1)
         url = f"http://127.0.0.1:{port}/secret.txt"
@@ -665,8 +663,9 @@ async def test_run_with_port_forward(helper: Helper) -> None:
         assert probe == 200
 
         assert proc.returncode is None
+        assert proc.stdout is not None
         out = await proc.stdout.read(64 * 1024)
-        job_id = helper.find_job_id(out.decode('utf-8', 'replace'))
+        job_id = helper.find_job_id(out.decode("utf-8", "replace"))
         assert job_id is not None
     finally:
         proc.terminate()

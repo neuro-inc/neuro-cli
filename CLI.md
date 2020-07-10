@@ -629,7 +629,7 @@ Forward port\(s) of a running job to local port\(s).<br/>
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT
+neuro job port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
 ```
 
 **Examples:**
@@ -2096,7 +2096,7 @@ Forward port\(s) of a running job to local port\(s).<br/>
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT
+neuro port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
 ```
 
 **Examples:**
