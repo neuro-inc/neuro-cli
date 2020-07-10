@@ -308,6 +308,14 @@ def job() -> None:
     show_default=True,
     help="Upload neuro config to the job",
 )
+@option(
+    "--port-forward",
+    type=LOCAL_REMOTE_PORT,
+    multiple=True,
+    metavar="LOCAL_PORT:REMOTE_RORT",
+    help="Forward port(s) of a running job to local port(s) "
+    "(use multiple times for forwarding several ports)",
+)
 @option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @option(
     "--detach",
@@ -334,6 +342,7 @@ async def submit(
     env_file: Optional[str],
     restart: str,
     life_span: Optional[str],
+    port_forward: List[Tuple[int, int]],
     preemptible: bool,
     name: Optional[str],
     tag: Sequence[str],
@@ -384,6 +393,7 @@ async def submit(
         env_file=env_file,
         restart=restart,
         life_span=life_span,
+        port_forward=port_forward,
         preemptible=preemptible,
         name=name,
         tags=tag,
@@ -445,11 +455,18 @@ async def exec(
 
 @command()
 @argument("job", type=JOB)
-@argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
+@argument(
+    "local_remote_port",
+    type=LOCAL_REMOTE_PORT,
+    nargs=-1,
+    required=True,
+    metavar="LOCAL_PORT:REMOTE_RORT...",
+)
 @option(
     "--no-key-check",
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
+    hidden=True,
 )
 async def port_forward(
     root: Root, job: str, no_key_check: bool, local_remote_port: List[Tuple[int, int]]
@@ -473,6 +490,13 @@ async def port_forward(
     neuro job port-forward my-job 2080:80 2222:22 2000:100
 
     """
+    if no_key_check:
+        click.secho(
+            "--no-key-check option is deprecated and "
+            "will be removed from the future Neuro CLI release",
+            fg="red",
+            err=True,
+        )
     job_id = await resolve_job(
         job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
     )
@@ -483,9 +507,7 @@ async def port_forward(
                 f"to port {job_port} of {job_id}"
             )
             await stack.enter_async_context(
-                root.client.jobs.port_forward(
-                    job_id, local_port, job_port, no_key_check=no_key_check
-                )
+                root.client.jobs.port_forward(job_id, local_port, job_port)
             )
 
         click.echo("Press ^C to stop forwarding")
@@ -517,7 +539,15 @@ async def logs(root: Root, job: str) -> None:
 
 @command()
 @argument("job", type=JOB)
-async def attach(root: Root, job: str) -> None:
+@option(
+    "--port-forward",
+    type=LOCAL_REMOTE_PORT,
+    multiple=True,
+    metavar="LOCAL_PORT:REMOTE_RORT",
+    help="Forward port(s) of a running job to local port(s) "
+    "(use multiple times for forwarding several ports)",
+)
+async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> None:
     """
     Attach local standard input, output, and error streams to a running job.
     """
@@ -540,7 +570,7 @@ async def attach(root: Root, job: str) -> None:
     tty = status.container.tty
     _check_tty(root, tty)
 
-    await process_attach(root, status, tty=tty, logs=False)
+    await process_attach(root, status, tty=tty, logs=False, port_forward=port_forward)
 
 
 @command()
@@ -949,6 +979,14 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
     help="Upload neuro config to the job",
 )
+@option(
+    "--port-forward",
+    type=LOCAL_REMOTE_PORT,
+    multiple=True,
+    metavar="LOCAL_PORT:REMOTE_RORT",
+    help="Forward port(s) of a running job to local port(s) "
+    "(use multiple times for forwarding several ports)",
+)
 @option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @option(
     "--detach",
@@ -976,6 +1014,7 @@ async def run(
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
+    port_forward: List[Tuple[int, int]],
     browse: bool,
     detach: bool,
     tty: Optional[bool],
@@ -1028,6 +1067,7 @@ async def run(
         env_file=env_file,
         restart=restart,
         life_span=life_span,
+        port_forward=port_forward,
         preemptible=job_preset.is_preemptible,
         name=name,
         tags=tag,
@@ -1079,6 +1119,7 @@ async def run_job(
     env_file: Optional[str],
     restart: str,
     life_span: Optional[str],
+    port_forward: List[Tuple[int, int]],
     preemptible: bool,
     name: Optional[str],
     tags: Sequence[str],
@@ -1185,7 +1226,7 @@ async def run_job(
         await browse_job(root, job)
 
     if not detach:
-        await process_attach(root, job, tty=tty, logs=True)
+        await process_attach(root, job, tty=tty, logs=True, port_forward=port_forward)
 
     return job
 

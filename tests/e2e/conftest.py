@@ -1,4 +1,5 @@
 import asyncio
+import asyncio.subprocess
 import hashlib
 import logging
 import os
@@ -30,6 +31,7 @@ import aiodocker
 import aiohttp
 import pexpect
 import pytest
+from typing_extensions import Final
 from yarl import URL
 
 from neuromation.api import (
@@ -61,7 +63,7 @@ CLIENT_TIMEOUT = aiohttp.ClientTimeout(None, None, NETWORK_TIMEOUT, NETWORK_TIME
 
 log = logging.getLogger(__name__)
 
-job_id_pattern = re.compile(
+JOB_ID_PATTERN: Final = re.compile(
     # pattern for UUID v4 taken here: https://stackoverflow.com/a/38191078
     r"(job-[0-9a-f]{8}-[0-9a-f]{4}-[4][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})",
     re.IGNORECASE,
@@ -427,6 +429,27 @@ class Helper:
 
         return args
 
+    async def acli(
+        self,
+        arguments: List[str],
+        *,
+        verbosity: int = 0,
+        network_timeout: float = NETWORK_TIMEOUT,
+    ) -> asyncio.subprocess.Process:
+        __tracebackhide__ = True
+
+        log.info("Run 'neuro %s'", " ".join(arguments))
+
+        # 5 min timeout is overkill
+        proc = await asyncio.create_subprocess_exec(
+            "neuro",
+            *(self._default_args(verbosity, network_timeout) + arguments),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        return proc
+
     def run_cli(
         self,
         arguments: List[str],
@@ -461,15 +484,19 @@ class Helper:
             start in " ".join(arguments)
             for start in ("submit", "job submit", "run", "job run")
         ):
-            match = job_id_pattern.search(out)
-            if match:
-                self._executed_jobs.append(match.group(1))
+            job_id = self.find_job_id(out)
+            if job_id:
+                self._executed_jobs.append(job_id)
         out = out.strip()
         err = err.strip()
         if verbosity > 0:
             print(f"neuro stdout: {out}")
             print(f"neuro stderr: {err}")
         return SysCap(out, err)
+
+    def find_job_id(self, arg: str) -> Optional[str]:
+        match = JOB_ID_PATTERN.search(arg)
+        return match.group(1) if match else None
 
     def pexpect(
         self,

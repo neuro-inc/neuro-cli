@@ -431,6 +431,7 @@ Name | Description|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\-n, --name NAME_|Optional job name|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
+|_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
@@ -564,7 +565,7 @@ Forward port\(s) of a running job to local port\(s).<br/>
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] JOB LOCAL_REMOTE_PORT...
+neuro job port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
 ```
 
 **Examples:**
@@ -591,7 +592,6 @@ neuro job port-forward my-job 2080:80 2222:22 2000:100
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\--no-key-check_|Disable host key checks. Should be used with caution.|
 
 
 
@@ -717,6 +717,7 @@ neuro job attach [OPTIONS] JOB
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 
 
 
@@ -1856,6 +1857,7 @@ Name | Description|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\-n, --name NAME_|Optional job name|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
+|_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
@@ -1970,7 +1972,7 @@ Forward port\(s) of a running job to local port\(s).<br/>
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] JOB LOCAL_REMOTE_PORT...
+neuro port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
 ```
 
 **Examples:**
@@ -1997,7 +1999,6 @@ neuro job port-forward my-job 2080:80 2222:22 2000:100
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\--no-key-check_|Disable host key checks. Should be used with caution.|
 
 
 
@@ -2017,6 +2018,7 @@ neuro attach [OPTIONS] JOB
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 
 
 
