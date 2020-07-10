@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
-import click
 import re
 import shlex
 import sys
-from click.formatting import wrap_text
 from pathlib import Path
+
+import click
+from click.formatting import wrap_text
 
 from neuromation.cli.main import cli, topics
 from neuromation.cli.utils import split_examples

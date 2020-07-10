@@ -1,5 +1,8 @@
-import aiohttp
 import asyncio
+from typing import AsyncIterator, Optional
+from unittest import mock
+
+import aiohttp
 import pytest
 from aiohttp import ClientSession
 from aiohttp.test_utils import unused_port
@@ -14,8 +17,6 @@ from aiohttp.web import (
     Response,
     json_response,
 )
-from typing import AsyncIterator, Optional
-from unittest import mock
 from yarl import URL
 
 from neuromation.api.login import (

@@ -1,7 +1,8 @@
-import click
 import contextlib
 import logging
 from typing import Optional
+
+import click
 
 from neuromation.api import LocalImage, RemoteImage
 from neuromation.cli.formatters.images import (

@@ -1,11 +1,12 @@
-import click
 import configparser
 import json
 import os
 import pathlib
+from typing import IO, Optional
+
+import click
 import yaml
 from prompt_toolkit import PromptSession
-from typing import IO, Optional
 
 from neuromation.api.admin import _ClusterUserRoleType
 

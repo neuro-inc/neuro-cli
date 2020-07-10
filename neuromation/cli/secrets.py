@@ -1,5 +1,6 @@
-import click
 import pathlib
+
+import click
 
 from .formatters.ftable import table
 from .root import Root

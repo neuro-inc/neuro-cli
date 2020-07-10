@@ -1,6 +1,4 @@
-import async_timeout
 import asyncio
-import click
 import contextlib
 import logging
 import os
@@ -10,8 +8,11 @@ import sys
 import uuid
 import webbrowser
 from datetime import datetime, timedelta
-from dateutil.parser import isoparse
 from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
+
+import async_timeout
+import click
+from dateutil.parser import isoparse
 from yarl import URL
 
 from neuromation.api import (

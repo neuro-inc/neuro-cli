@@ -1,13 +1,14 @@
 import asyncio
-import click
 import json
 import os
 import sys
 import webbrowser
 from pathlib import Path
+from typing import Any, Dict, Optional
+
+import click
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
-from typing import Any, Dict, Optional
 from yarl import URL
 
 from neuromation.api import DEFAULT_API_URL, Client, ConfigError

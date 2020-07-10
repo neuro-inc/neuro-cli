@@ -1,8 +1,9 @@
 import os
-import pytest
 import sqlite3
 import urllib
 from unittest import mock
+
+import pytest
 from yarl import URL
 
 import neuromation

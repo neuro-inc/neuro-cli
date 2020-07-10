@@ -1,19 +1,12 @@
-from dataclasses import dataclass, field
-
-import aiohttp
 import asyncio
-import attr
 import enum
 import json
 import logging
 import sys
-from aiodocker.exceptions import DockerError
-from aiohttp import WSMsgType, WSServerHandshakeError
 from contextlib import suppress
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from dateutil.parser import isoparse
 from functools import partial
-from multidict import MultiDict
 from typing import (
     Any,
     AsyncIterator,
@@ -25,6 +18,13 @@ from typing import (
     Sequence,
     Union,
 )
+
+import aiohttp
+import attr
+from aiodocker.exceptions import DockerError
+from aiohttp import WSMsgType, WSServerHandshakeError
+from dateutil.parser import isoparse
+from multidict import MultiDict
 from yarl import URL
 
 from .abc import (

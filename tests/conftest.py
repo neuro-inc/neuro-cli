@@ -1,12 +1,12 @@
+import asyncio
 from dataclasses import replace
+from pathlib import Path
+from typing import Callable, Dict, Optional
 
 import aiohttp
 import aiohttp.pytest_plugin
-import asyncio
 import pytest
 from jose import jwt
-from pathlib import Path
-from typing import Callable, Dict, Optional
 from yarl import URL
 
 import neuromation

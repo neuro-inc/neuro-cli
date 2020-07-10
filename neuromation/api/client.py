@@ -1,7 +1,8 @@
-import aiohttp
 from pathlib import Path
 from types import TracebackType
 from typing import Mapping, Optional, Type
+
+import aiohttp
 
 from neuromation.api.quota import _Quota
 

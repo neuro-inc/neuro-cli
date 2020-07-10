@@ -1,8 +1,9 @@
 import asyncio
-import pytest
 import sys
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable
+
+import pytest
 from yarl import URL
 
 from neuromation.api import Client

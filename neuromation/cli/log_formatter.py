@@ -1,5 +1,6 @@
-import click
 import logging
+
+import click
 
 
 class ConsoleWarningFormatter(logging.Formatter):

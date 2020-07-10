@@ -1,6 +1,7 @@
 import logging
-from cookiecutter.main import cookiecutter
 from typing import Optional
+
+from cookiecutter.main import cookiecutter
 
 from .root import Root
 from .utils import argument, command, group

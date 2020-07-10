@@ -1,11 +1,11 @@
 from dataclasses import replace
+from pathlib import Path
+from typing import Any, Callable
+from unittest import mock
 
 import pytest
 import toml
 from aiohttp import web
-from pathlib import Path
-from typing import Any, Callable
-from unittest import mock
 from yarl import URL
 
 from neuromation.api import Client, Cluster, ConfigError, Preset

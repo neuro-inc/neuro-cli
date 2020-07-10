@@ -1,13 +1,13 @@
-from dataclasses import dataclass
-
 import abc
 import datetime
-import humanize
 import itertools
 import sys
 import time
-from click import secho, style, unstyle
+from dataclasses import dataclass
 from typing import Iterable, Iterator, List
+
+import humanize
+from click import secho, style, unstyle
 
 from neuromation.api import (
     JobDescription,

@@ -1,13 +1,24 @@
-from dataclasses import dataclass, field
-
 import abc
-import aiohttp
 import asyncio
 import base64
 import errno
 import hashlib
 import secrets
 import time
+from dataclasses import dataclass, field
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    cast,
+)
+
+import aiohttp
 from aiohttp import ClientResponseError
 from aiohttp.web import (
     Application,
@@ -21,17 +32,6 @@ from aiohttp.web import (
     TCPSite,
 )
 from jose import JWTError, jwt
-from typing import (
-    Any,
-    AsyncIterator,
-    Awaitable,
-    Callable,
-    List,
-    Optional,
-    Sequence,
-    Type,
-    cast,
-)
 from yarl import URL
 
 from .utils import asynccontextmanager

@@ -1,11 +1,12 @@
 import errno
 import os
-import pytest
 import subprocess
 import sys
 import textwrap
 from pathlib import Path, PurePath
 from typing import Tuple
+
+import pytest
 from yarl import URL
 
 from neuromation.cli.const import EX_OSFILE

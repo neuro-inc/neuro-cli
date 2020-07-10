@@ -1,11 +1,12 @@
-import aiohttp
-import certifi
-import pytest
 import sqlite3
 import ssl
 import sys
-from aiohttp import web
 from typing import AsyncIterator, Callable
+
+import aiohttp
+import certifi
+import pytest
+from aiohttp import web
 from typing_extensions import AsyncContextManager
 from yarl import URL
 

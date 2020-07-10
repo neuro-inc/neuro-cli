@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 
-from dataclasses import dataclass, field
-
-import click
 import os
 import re
 import sys
+from dataclasses import dataclass, field
 from textwrap import dedent
 from typing import Any, List
+
+import click
 
 from neuromation.cli.main import cli
 

@@ -2,13 +2,14 @@ import asyncio
 import errno
 import json
 import os
-import pytest
-from aiohttp import web
 from filecmp import dircmp
 from pathlib import Path
 from shutil import copytree
 from typing import Any, AsyncIterator, Callable, List, Tuple
 from unittest import mock
+
+import pytest
+from aiohttp import web
 from yarl import URL
 
 import neuromation.api.storage

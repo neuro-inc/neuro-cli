@@ -1,6 +1,7 @@
 import abc
-import click
 from time import time
+
+import click
 
 
 TICK_TIMEOUT = 1

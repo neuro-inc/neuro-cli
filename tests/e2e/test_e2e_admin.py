@@ -1,6 +1,7 @@
-import pytest
 import re
 import subprocess
+
+import pytest
 
 from tests.e2e import Helper
 

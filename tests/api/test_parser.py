@@ -1,5 +1,6 @@
-import pytest
 from typing import Callable
+
+import pytest
 from yarl import URL
 
 from neuromation.api import Client, LocalImage, RemoteImage

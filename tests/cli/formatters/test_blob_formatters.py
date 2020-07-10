@@ -1,6 +1,7 @@
-import pytest
 from datetime import datetime
 from typing import List, Union, cast
+
+import pytest
 
 from neuromation.api import Action, BlobListing, BucketListing, PrefixListing
 from neuromation.cli.formatters.blob_storage import (

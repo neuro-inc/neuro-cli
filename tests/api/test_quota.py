@@ -1,6 +1,7 @@
+from typing import Callable
+
 import pytest
 from aiohttp import web
-from typing import Callable
 
 from neuromation.api import AuthorizationError, Client
 from neuromation.api.quota import _QuotaInfo

@@ -1,5 +1,6 @@
-from click.testing import CliRunner
 from textwrap import dedent
+
+from click.testing import CliRunner
 
 from neuromation.cli.main import MainGroup
 from neuromation.cli.root import Root

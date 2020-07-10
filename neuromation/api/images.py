@@ -1,12 +1,12 @@
-from dataclasses import replace
-
-import aiodocker
-import aiohttp
 import contextlib
 import logging
 import re
-from aiodocker.exceptions import DockerError
+from dataclasses import replace
 from typing import Any, Dict, List, Optional, Set
+
+import aiodocker
+import aiohttp
+from aiodocker.exceptions import DockerError
 
 from .abc import (
     AbstractDockerImageProgress,

@@ -1,11 +1,11 @@
-import dataclasses
-
 import asyncio
-import click
+import dataclasses
 import glob as globmodule  # avoid conflict with subcommand "glob"
 import logging
 import sys
 from typing import Any, Callable, List, Optional, Sequence, Tuple
+
+import click
 from yarl import URL
 
 from neuromation.api import (

@@ -1,6 +1,7 @@
-import click
 import logging
 from typing import Any, List, Optional
+
+import click
 
 from neuromation.api import Permission, Share
 

@@ -1,7 +1,7 @@
-from dataclasses import dataclass
-
 import enum
+from dataclasses import dataclass
 from typing import Optional, Tuple
+
 from yarl import URL
 
 

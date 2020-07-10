@@ -1,8 +1,4 @@
-from dataclasses import dataclass
-
-import aiohttp
 import asyncio
-import attr
 import base64
 import errno
 import hashlib
@@ -10,7 +6,7 @@ import itertools
 import logging
 import re
 import time
-from dateutil.parser import isoparse
+from dataclasses import dataclass
 from email.utils import parsedate
 from pathlib import Path, PurePath
 from typing import (
@@ -27,6 +23,10 @@ from typing import (
     Union,
     cast,
 )
+
+import aiohttp
+import attr
+from dateutil.parser import isoparse
 from yarl import URL
 
 from .abc import (

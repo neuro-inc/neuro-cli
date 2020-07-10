@@ -1,9 +1,10 @@
-import click
 import glob as globmodule  # avoid conflict with subcommand "glob"
 import logging
 import sys
 from itertools import chain
 from typing import List, Optional, Sequence, Tuple, Union, cast
+
+import click
 from yarl import URL
 
 from neuromation.api import FileStatusType, IllegalArgumentError, ResourceNotFound

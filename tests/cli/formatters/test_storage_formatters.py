@@ -1,7 +1,8 @@
-import click
-import pytest
 import time
 from typing import Any, List
+
+import click
+import pytest
 
 from neuromation.api import Action, FileStatus, FileStatusType
 from neuromation.cli.formatters.storage import (

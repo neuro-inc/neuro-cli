@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-
-from aiohttp.web import HTTPCreated, HTTPNoContent
 from enum import Enum
 from typing import Any, Dict, Optional, Sequence
+
+from aiohttp.web import HTTPCreated, HTTPNoContent
 from yarl import URL
 
 from .config import Config

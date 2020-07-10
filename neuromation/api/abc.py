@@ -1,6 +1,6 @@
+import abc
 from dataclasses import dataclass
 
-import abc
 from yarl import URL
 
 from .parsing_utils import LocalImage, RemoteImage

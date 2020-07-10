@@ -1,6 +1,7 @@
+from pathlib import Path
+
 import aiohttp
 import pytest
-from pathlib import Path
 
 from neuromation.cli.root import Root
 
