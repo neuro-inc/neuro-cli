@@ -3,6 +3,7 @@ import functools
 import inspect
 import itertools
 import logging
+import operator
 import os
 import pathlib
 import re
@@ -145,6 +146,13 @@ def format_example(example: str, formatter: click.HelpFormatter) -> None:
 
 
 class NeuroClickMixin:
+    def get_params(self, ctx: click.Context) -> List[click.Option]:
+        ret = super().get_params(ctx)
+        args = [i for i in ret if not isinstance(i, click.Option)]
+        opts = [i for i in ret if isinstance(i, click.Option)]
+
+        return args + sorted(opts, key=operator.attrgetter("name"))
+
     def get_help_option(self, ctx: click.Context) -> Optional[click.Option]:
         help_options = self.get_help_option_names(ctx)  # type: ignore
         if not help_options or not self.add_help_option:  # type: ignore
