@@ -1077,8 +1077,7 @@ def test_job_secret_env(helper: Helper, secret: Tuple[str, str]) -> None:
     captured = helper.run_cli(
         [
             "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
+            "run",
             "-e",
             f"SECRET_VAR=secret:{secret_name}",
             "--non-preemptible",
@@ -1109,8 +1108,7 @@ def test_job_secret_file(helper: Helper, secret: Tuple[str, str]) -> None:
     captured = helper.run_cli(
         [
             "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
+            "run",
             "-v",
             f"secret:{secret_name}:/secrets/secretfile",
             "--non-preemptible",
