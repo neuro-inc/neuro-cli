@@ -10,7 +10,7 @@ pexpect==4.8.0
 flake8==3.8.3
 isort==5.0.6
 black==19.10b0
-setuptools==49.1.0
+setuptools==49.2.0
 wheel==0.34.2
 cmarkgfm==0.4.2
 twine==3.2.0
