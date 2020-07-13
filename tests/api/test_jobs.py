@@ -18,6 +18,7 @@ from neuromation.api import (
     RemoteImage,
     ResourceNotFound,
     Resources,
+    SecretFile,
     Volume,
 )
 from neuromation.api.jobs import INVALID_IMAGE_NAME, _job_description_from_api
@@ -1109,6 +1110,104 @@ async def test_job_run_with_relative_volume_uris(
             command="submit-command",
             resources=resources,
             volumes=volumes,
+            http=HTTPPort(8181),
+        )
+        ret = await client.jobs.run(container=container, is_preemptible=False)
+
+        assert ret == _job_description_from_api(JSON, client.parse)
+
+
+async def test_job_run_with_secret_uris(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "shm": False,
+                "gpu_model": "nvidia-tesla-p4",
+            },
+        },
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "ssh_auth_server": "ssh://my_host.ssh:22",
+        "is_preemptible": False,
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "http": {"port": 8181, "requires_auth": True},
+                "resources": {
+                    "memory_mb": 16384,
+                    "cpu": 7.0,
+                    "shm": True,
+                    "gpu": 1,
+                    "gpu_model": "test-gpu-model",
+                },
+                "env": {"VAR": "VAL"},
+                "secret_env": {"SECRET_VAR": "secret://default/user/secret"},
+                "volumes": [
+                    {
+                        "src_storage_uri": "storage://default/user/path",
+                        "dst_path": "/container/my_path",
+                        "read_only": False,
+                    }
+                ],
+                "secret_volumes": [
+                    {
+                        "src_secret_uri": "secret://default/user/secret",
+                        "dst_path": "/secrets/my_path",
+                    }
+                ],
+            },
+            "is_preemptible": False,
+            "cluster_name": "default",
+        }
+
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        env = {"VAR": "VAL"}
+        secret_env = {"SECRET_VAR": URL("secret:secret")}
+        volumes = [Volume(URL("storage:path"), "/container/my_path", False)]
+        secret_files = [
+            SecretFile(URL("secret:secret"), "/secrets/my_path"),
+        ]
+        container = Container(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            command="submit-command",
+            resources=resources,
+            env=env,
+            secret_env=secret_env,
+            volumes=volumes,
+            secret_files=secret_files,
             http=HTTPPort(8181),
         )
         ret = await client.jobs.run(container=container, is_preemptible=False)

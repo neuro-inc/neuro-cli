@@ -43,7 +43,7 @@ from .images import (
 )
 from .parser import Parser, Volume
 from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
-from .url_utils import normalize_storage_path_uri
+from .url_utils import normalize_secret_uri, normalize_storage_path_uri
 from .utils import NoPublicConstructor, asynccontextmanager
 
 
@@ -89,6 +89,12 @@ class HTTPPort:
 
 
 @dataclass(frozen=True)
+class SecretFile:
+    secret_uri: URL
+    container_path: str
+
+
+@dataclass(frozen=True)
 class Container:
     image: RemoteImage
     resources: Resources
@@ -97,6 +103,8 @@ class Container:
     http: Optional[HTTPPort] = None
     env: Mapping[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
+    secret_env: Mapping[str, URL] = field(default_factory=dict)
+    secret_files: Sequence[SecretFile] = field(default_factory=list)
     tty: bool = False
 
 
@@ -650,6 +658,8 @@ def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
         http=_http_port_from_api(data["http"]) if "http" in data else None,
         env=data.get("env", dict()),
         volumes=[_volume_from_api(v) for v in data.get("volumes", [])],
+        secret_env={name: URL(val) for name, val in data.get("secret_env", {}).items()},
+        secret_files=[_secret_file_from_api(v) for v in data.get("secret_volumes", [])],
         tty=data.get("tty", False),
     )
 
@@ -669,6 +679,15 @@ def _container_to_api(container: Container, config: Config) -> Dict[str, Any]:
         primitive["env"] = container.env
     if container.volumes:
         primitive["volumes"] = [_volume_to_api(v, config) for v in container.volumes]
+    if container.secret_env:
+        primitive["secret_env"] = {
+            k: str(normalize_secret_uri(v, config.username, config.cluster_name))
+            for k, v in container.secret_env.items()
+        }
+    if container.secret_files:
+        primitive["secret_volumes"] = [
+            _secret_file_to_api(v, config) for v in container.secret_files
+        ]
     if container.tty:
         primitive["tty"] = True
     return primitive
@@ -741,6 +760,16 @@ def _volume_to_api(volume: Volume, config: Config) -> Dict[str, Any]:
     return resp
 
 
+def _secret_file_to_api(secret_file: SecretFile, config: Config) -> Dict[str, Any]:
+    uri = normalize_secret_uri(
+        secret_file.secret_uri, config.username, config.cluster_name
+    )
+    return {
+        "src_secret_uri": str(uri),
+        "dst_path": secret_file.container_path,
+    }
+
+
 def _volume_from_api(data: Dict[str, Any]) -> Volume:
     storage_uri = URL(data["src_storage_uri"])
     container_path = data["dst_path"]
@@ -748,6 +777,12 @@ def _volume_from_api(data: Dict[str, Any]) -> Volume:
     return Volume(
         storage_uri=storage_uri, container_path=container_path, read_only=read_only
     )
+
+
+def _secret_file_from_api(data: Dict[str, Any]) -> SecretFile:
+    secret_uri = URL(data["src_secret_uri"])
+    container_path = data["dst_path"]
+    return SecretFile(secret_uri, container_path)
 
 
 def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:

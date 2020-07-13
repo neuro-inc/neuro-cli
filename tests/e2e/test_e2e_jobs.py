@@ -3,11 +3,12 @@ import os
 import re
 import subprocess
 import sys
+import uuid
 from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep, time
-from typing import Any, AsyncIterator, Callable, Dict, List, Tuple
+from typing import Any, AsyncIterator, Callable, Dict, Iterator, List, Tuple
 from uuid import uuid4
 
 import aiodocker
@@ -1065,3 +1066,80 @@ def test_job_attach_tty(helper: Helper) -> None:
 
 #     assert captured.err == ""
 #     assert captured.out == "6"
+
+
+@pytest.mark.e2e
+def test_job_secret_env(helper: Helper, secret: Tuple[str, str]) -> None:
+    secret_name, secret_value = secret
+
+    bash_script = f'echo "begin"$SECRET_VAR"end" | grep begin{secret_value}end'
+    command = f"bash -c '{bash_script}'"
+    captured = helper.run_cli(
+        [
+            "job",
+            "submit",
+            *JOB_TINY_CONTAINER_PARAMS,
+            "-e",
+            f"SECRET_VAR=secret:{secret_name}",
+            "--non-preemptible",
+            "--no-wait-start",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+
+    out = captured.out
+    match = re.match("Job ID: (.+)", out)
+    assert match is not None
+    job_id = match.group(1)
+
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
+    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
+
+
+@pytest.mark.e2e
+def test_job_secret_file(helper: Helper, secret: Tuple[str, str]) -> None:
+    secret_name, secret_value = secret
+
+    bash_script = (
+        f'test -f /secrets/secretfile && grep "^{secret_value}$" /secrets/secretfile'
+    )
+    command = f"bash -c '{bash_script}'"
+    captured = helper.run_cli(
+        [
+            "job",
+            "submit",
+            *JOB_TINY_CONTAINER_PARAMS,
+            "-v",
+            f"secret:{secret_name}:/secrets/secretfile",
+            "--non-preemptible",
+            "--no-wait-start",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+
+    out = captured.out
+    match = re.match("Job ID: (.+)", out)
+    assert match is not None
+    job_id = match.group(1)
+
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
+    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
+
+
+@pytest.fixture
+def secret(helper: Helper) -> Iterator[Tuple[str, str]]:
+    secret_name = "secret" + str(uuid.uuid4()).replace("-", "")[:10]
+    secret_value = str(uuid.uuid4())
+    # Add secret
+    cap = helper.run_cli(["secret", "add", secret_name, secret_value])
+    assert cap.err == ""
+
+    yield (secret_name, secret_value)
+
+    # Remove secret
+    cap = helper.run_cli(["secret", "rm", secret_name])
+    assert cap.err == ""

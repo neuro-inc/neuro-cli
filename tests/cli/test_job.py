@@ -6,11 +6,13 @@ from typing import Any, Callable, Tuple
 import click
 import pytest
 import toml
+from yarl import URL
 
 from neuromation.api import Client, JobStatus
 from neuromation.cli.job import (
     DEFAULT_JOB_LIFE_SPAN,
     NEUROMATION_ROOT_ENV_VAR,
+    _extract_secret_env,
     _parse_cmd,
     _parse_timedelta,
     build_env,
@@ -19,6 +21,7 @@ from neuromation.cli.job import (
     calc_statuses,
 )
 from neuromation.cli.parse_utils import COLUMNS_MAP, get_default_columns
+from neuromation.cli.root import Root
 
 
 logger = logging.getLogger(__name__)
@@ -159,6 +162,24 @@ def test_build_env_comments(tmp_path: Path) -> None:
         "ENV_VAR_1": "value1",
         "ENV_VAR_3": "#value3#",
     }
+
+
+def test_extract_secret_env(root: Root) -> None:
+    username = root.client.username
+    cluster_name = root.client.cluster_name
+    env = {
+        "ENV_VAR_1": "secret:value1",
+        "ENV_VAR_2": "value2",
+        "ENV_VAR_3": "secret:/otheruser/value3",
+        "ENV_VAR_4": "value4",
+        "ENV_VAR_5": "secret://othercluster/otheruser/value5",
+    }
+    assert _extract_secret_env(env, root) == {
+        "ENV_VAR_1": URL(f"secret://{cluster_name}/{username}/value1"),
+        "ENV_VAR_3": URL(f"secret://{cluster_name}/otheruser/value3"),
+        "ENV_VAR_5": URL(f"secret://othercluster/otheruser/value5"),
+    }
+    assert env == {"ENV_VAR_2": "value2", "ENV_VAR_4": "value4"}
 
 
 async def test_calc_columns_section_doesnt_exist(

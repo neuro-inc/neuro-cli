@@ -7,7 +7,7 @@ from typing import Sequence, Union
 from yarl import URL
 
 
-CLUSTER_SCHEMES = ("storage", "image", "job")
+CLUSTER_SCHEMES = ("storage", "image", "job", "secret")
 
 
 def uri_from_cli(
@@ -59,6 +59,15 @@ def normalize_storage_path_uri(uri: URL, username: str, cluster_name: str) -> UR
     if uri.scheme != "storage":
         raise ValueError(
             f"Invalid storage scheme '{uri.scheme}:' (only 'storage:' is allowed)"
+        )
+    return _normalize_uri(uri, username, cluster_name)
+
+
+def normalize_secret_uri(uri: URL, username: str, cluster_name: str) -> URL:
+    """Normalize secret url."""
+    if uri.scheme != "secret":
+        raise ValueError(
+            f"Invalid storage scheme '{uri.scheme}:' (only 'secret:' is allowed)"
         )
     return _normalize_uri(uri, username, cluster_name)
 

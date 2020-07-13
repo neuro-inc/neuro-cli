@@ -25,6 +25,7 @@ from neuromation.api import (
     JobStatus,
     RemoteImage,
     Resources,
+    SecretFile,
     Volume,
 )
 from neuromation.cli.formatters.images import DockerImageProgress
@@ -72,6 +73,7 @@ from .utils import (
     group,
     option,
     pager_maybe,
+    parse_secret_resource,
     resolve_job,
     volume_to_verbose_str,
 )
@@ -136,6 +138,15 @@ def build_env(env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
             )
         env_dict[name] = val
     return env_dict
+
+
+def _extract_secret_env(env_dict: Dict[str, str], root: Root) -> Dict[str, URL]:
+    secret_env_dict = {}
+    for name, val in env_dict.copy().items():
+        if val.startswith("secret:"):
+            secret_env_dict[name] = parse_secret_resource(val, root)
+            del env_dict[name]
+    return secret_env_dict
 
 
 @group()
@@ -1153,6 +1164,7 @@ async def run_job(
     log.debug(f"Job run-time limit: {job_life_span}")
 
     env_dict = build_env(env, env_file)
+    secret_env_dict = _extract_secret_env(env_dict, root)
     real_cmd = _parse_cmd(cmd)
 
     log.debug(f'entrypoint="{entrypoint}"')
@@ -1174,7 +1186,10 @@ async def run_job(
         tpu_type=tpu_type,
         tpu_software_version=tpu_software_version,
     )
-    volumes = await _build_volumes(root, volume, env_dict)
+    input_secret_files = {vol for vol in volume if vol.startswith("secret:")}
+    input_volumes = set(volume) - input_secret_files
+    secret_files = await _build_secret_files(root, input_secret_files)
+    volumes = await _build_volumes(root, input_volumes, env_dict)
 
     if pass_config:
         env_name = NEURO_STEAL_CONFIG
@@ -1198,6 +1213,8 @@ async def run_job(
         resources=resources,
         env=env_dict,
         volumes=list(volumes),
+        secret_env=secret_env_dict,
+        secret_files=list(secret_files),
         tty=tty,
     )
 
@@ -1240,14 +1257,13 @@ def _parse_cmd(cmd: Sequence[str]) -> str:
 
 
 async def _build_volumes(
-    root: Root, input_volumes: Sequence[str], env_dict: Dict[str, str]
+    root: Root, input_volumes: Set[str], env_dict: Dict[str, str]
 ) -> Set[Volume]:
     cluster_name = root.client.cluster_name
-    input_volumes_set = set(input_volumes)
     volumes: Set[Volume] = set()
 
-    if "ALL" in input_volumes_set:
-        if len(input_volumes_set) > 1:
+    if "ALL" in input_volumes:
+        if len(input_volumes) > 1:
             raise click.UsageError(
                 f"Cannot use `--volume=ALL` together with other `--volume` options"
             )
@@ -1275,7 +1291,7 @@ async def _build_volumes(
                 f"  {NEUROMATION_HOME_ENV_VAR}={neuro_mountpoint}"
             )
     else:
-        for vol in input_volumes_set:
+        for vol in input_volumes:
             if vol == "HOME":
                 volumes.add(
                     root.client.parse.volume(f"storage::{STORAGE_MOUNTPOINT}/home:rw")
@@ -1298,6 +1314,18 @@ async def _build_volumes(
             else:
                 volumes.add(root.client.parse.volume(vol))
     return volumes
+
+
+async def _build_secret_files(root: Root, input_volumes: Set[str]) -> Set[SecretFile]:
+    secret_files: Set[SecretFile] = set()
+    for volume in input_volumes:
+        parts = volume.split(":")
+        if len(parts) != 3:
+            raise ValueError(f"Invalid secret file specification '{volume}'")
+        container_path = parts.pop()
+        secret_uri = parse_secret_resource(":".join(parts), root)
+        secret_files.add(SecretFile(secret_uri, container_path))
+    return secret_files
 
 
 async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:

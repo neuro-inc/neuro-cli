@@ -16,6 +16,7 @@ from neuromation.api import (
     JobTelemetry,
     RemoteImage,
     Resources,
+    SecretFile,
     Volume,
 )
 from neuromation.api.parsing_utils import _ImageNameParser
@@ -986,6 +987,105 @@ class TestJobOutputFormatter:
             "  /mnt/rw  storage://test-cluster/test-user/rw          \n"
             "Http URL: http://local.host.test/\n"
             "Http authentication: True\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "===Description===\n"
+            "ErrorDesc\n================="
+        )
+
+    def test_job_with_secrets_short(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            name="test-job-name",
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_neuro_image(
+                    name="test-image",
+                    tag="sometag",
+                    registry="https://registry.neu.ro",
+                    owner="test-user",
+                    cluster_name="test-cluster",
+                ),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+                volumes=[
+                    Volume(
+                        storage_uri=URL("storage://test-cluster/test-user/rw"),
+                        container_path="/mnt/rw",
+                        read_only=False,
+                    ),
+                ],
+                secret_files=[
+                    SecretFile(
+                        URL("secret://test-cluster/test-user/secret1"),
+                        "/var/run/secret1",
+                    ),
+                    SecretFile(
+                        URL("secret://test-cluster/otheruser/secret2"),
+                        "/var/run/secret2",
+                    ),
+                    SecretFile(
+                        URL("secret://othercluster/otheruser/secret3"),
+                        "/var/run/secret3",
+                    ),
+                ],
+                env={"ENV_NAME_0": "somevalue"},
+                secret_env={
+                    "ENV_NAME_1": URL("secret://test-cluster/test-user/secret4"),
+                    "ENV_NAME_2": URL("secret://test-cluster/otheruser/secret5"),
+                    "ENV_NAME_3": URL("secret://othercluster/otheruser/secret6"),
+                },
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
+        resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
+        assert (
+            status == "Job: test-job\n"
+            "Name: test-job-name\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: image:test-image:sometag\n"
+            "Command: test-command\n"
+            f"{resource}\n"
+            "TTY: False\n"
+            "Volumes:\n"
+            "  /mnt/rw  storage:rw   \n"
+            "Secret files:\n"
+            "  /var/run/secret1  secret:secret1                         \n"
+            "  /var/run/secret2  secret:/otheruser/secret2              \n"
+            "  /var/run/secret3  secret://othercluster/otheruser/secret3\n"
+            "Http URL: http://local.host.test/\n"
+            "Http authentication: True\n"
+            "Environment:\n"
+            "  ENV_NAME_0=somevalue\n"
+            "Secret environment:\n"
+            "  ENV_NAME_1=secret:secret4\n"
+            "  ENV_NAME_2=secret:/otheruser/secret5\n"
+            "  ENV_NAME_3=secret://othercluster/otheruser/secret6\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"

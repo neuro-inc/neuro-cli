@@ -515,6 +515,12 @@ def parse_blob_or_file_resource(uri: str, root: Root) -> URL:
     )
 
 
+def parse_secret_resource(uri: str, root: Root) -> URL:
+    return uri_from_cli(
+        uri, root.client.username, root.client.cluster_name, allowed_schemes=("secret"),
+    )
+
+
 def parse_permission_action(action: str) -> Action:
     try:
         return Action[action.upper()]
