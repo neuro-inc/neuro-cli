@@ -25,6 +25,7 @@ from neuromation.api import (
     JobStatus,
     RemoteImage,
     Resources,
+    SecretFile,
     Volume,
 )
 from neuromation.cli.formatters.images import DockerImageProgress
@@ -72,6 +73,7 @@ from .utils import (
     group,
     option,
     pager_maybe,
+    parse_secret_resource,
     resolve_job,
     volume_to_verbose_str,
 )
@@ -138,6 +140,15 @@ def build_env(env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
     return env_dict
 
 
+def _extract_secret_env(env_dict: Dict[str, str], root: Root) -> Dict[str, URL]:
+    secret_env_dict = {}
+    for name, val in env_dict.copy().items():
+        if val.startswith("secret:"):
+            secret_env_dict[name] = parse_secret_resource(val, root)
+            del env_dict[name]
+    return secret_env_dict
+
+
 @group()
 def job() -> None:
     """
@@ -145,7 +156,9 @@ def job() -> None:
     """
 
 
-@command(context_settings=dict(allow_interspersed_args=False))
+@command(
+    context_settings=dict(allow_interspersed_args=False), hidden=True, deprecated=True
+)
 @argument("image", type=ImageType())
 @argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @option(
@@ -306,6 +319,14 @@ def job() -> None:
     show_default=True,
     help="Upload neuro config to the job",
 )
+@option(
+    "--port-forward",
+    type=LOCAL_REMOTE_PORT,
+    multiple=True,
+    metavar="LOCAL_PORT:REMOTE_RORT",
+    help="Forward port(s) of a running job to local port(s) "
+    "(use multiple times for forwarding several ports)",
+)
 @option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @option(
     "--detach",
@@ -332,6 +353,7 @@ async def submit(
     env_file: Optional[str],
     restart: str,
     life_span: Optional[str],
+    port_forward: List[Tuple[int, int]],
     preemptible: bool,
     name: Optional[str],
     tag: Sequence[str],
@@ -382,6 +404,7 @@ async def submit(
         env_file=env_file,
         restart=restart,
         life_span=life_span,
+        port_forward=port_forward,
         preemptible=preemptible,
         name=name,
         tags=tag,
@@ -443,11 +466,18 @@ async def exec(
 
 @command()
 @argument("job", type=JOB)
-@argument("local_remote_port", type=LOCAL_REMOTE_PORT, nargs=-1, required=True)
+@argument(
+    "local_remote_port",
+    type=LOCAL_REMOTE_PORT,
+    nargs=-1,
+    required=True,
+    metavar="LOCAL_PORT:REMOTE_RORT...",
+)
 @option(
     "--no-key-check",
     is_flag=True,
     help="Disable host key checks. Should be used with caution.",
+    hidden=True,
 )
 async def port_forward(
     root: Root, job: str, no_key_check: bool, local_remote_port: List[Tuple[int, int]]
@@ -471,6 +501,13 @@ async def port_forward(
     neuro job port-forward my-job 2080:80 2222:22 2000:100
 
     """
+    if no_key_check:
+        click.secho(
+            "--no-key-check option is deprecated and "
+            "will be removed from the future Neuro CLI release",
+            fg="red",
+            err=True,
+        )
     job_id = await resolve_job(
         job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
     )
@@ -481,9 +518,7 @@ async def port_forward(
                 f"to port {job_port} of {job_id}"
             )
             await stack.enter_async_context(
-                root.client.jobs.port_forward(
-                    job_id, local_port, job_port, no_key_check=no_key_check
-                )
+                root.client.jobs.port_forward(job_id, local_port, job_port)
             )
 
         click.echo("Press ^C to stop forwarding")
@@ -515,7 +550,15 @@ async def logs(root: Root, job: str) -> None:
 
 @command()
 @argument("job", type=JOB)
-async def attach(root: Root, job: str) -> None:
+@option(
+    "--port-forward",
+    type=LOCAL_REMOTE_PORT,
+    multiple=True,
+    metavar="LOCAL_PORT:REMOTE_RORT",
+    help="Forward port(s) of a running job to local port(s) "
+    "(use multiple times for forwarding several ports)",
+)
+async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> None:
     """
     Attach local standard input, output, and error streams to a running job.
     """
@@ -538,7 +581,7 @@ async def attach(root: Root, job: str) -> None:
     tty = status.container.tty
     _check_tty(root, tty)
 
-    await process_attach(root, status, tty=tty, logs=False)
+    await process_attach(root, status, tty=tty, logs=False, port_forward=port_forward)
 
 
 @command()
@@ -947,6 +990,14 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
     help="Upload neuro config to the job",
 )
+@option(
+    "--port-forward",
+    type=LOCAL_REMOTE_PORT,
+    multiple=True,
+    metavar="LOCAL_PORT:REMOTE_RORT",
+    help="Forward port(s) of a running job to local port(s) "
+    "(use multiple times for forwarding several ports)",
+)
 @option("--browse", is_flag=True, help="Open a job's URL in a web browser")
 @option(
     "--detach",
@@ -974,6 +1025,7 @@ async def run(
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
+    port_forward: List[Tuple[int, int]],
     browse: bool,
     detach: bool,
     tty: Optional[bool],
@@ -1026,6 +1078,7 @@ async def run(
         env_file=env_file,
         restart=restart,
         life_span=life_span,
+        port_forward=port_forward,
         preemptible=job_preset.is_preemptible,
         name=name,
         tags=tag,
@@ -1077,6 +1130,7 @@ async def run_job(
     env_file: Optional[str],
     restart: str,
     life_span: Optional[str],
+    port_forward: List[Tuple[int, int]],
     preemptible: bool,
     name: Optional[str],
     tags: Sequence[str],
@@ -1110,6 +1164,7 @@ async def run_job(
     log.debug(f"Job run-time limit: {job_life_span}")
 
     env_dict = build_env(env, env_file)
+    secret_env_dict = _extract_secret_env(env_dict, root)
     real_cmd = _parse_cmd(cmd)
 
     log.debug(f'entrypoint="{entrypoint}"')
@@ -1131,7 +1186,10 @@ async def run_job(
         tpu_type=tpu_type,
         tpu_software_version=tpu_software_version,
     )
-    volumes = await _build_volumes(root, volume, env_dict)
+    input_secret_files = {vol for vol in volume if vol.startswith("secret:")}
+    input_volumes = set(volume) - input_secret_files
+    secret_files = await _build_secret_files(root, input_secret_files)
+    volumes = await _build_volumes(root, input_volumes, env_dict)
 
     if pass_config:
         env_name = NEURO_STEAL_CONFIG
@@ -1155,6 +1213,8 @@ async def run_job(
         resources=resources,
         env=env_dict,
         volumes=list(volumes),
+        secret_env=secret_env_dict,
+        secret_files=list(secret_files),
         tty=tty,
     )
 
@@ -1183,7 +1243,7 @@ async def run_job(
         await browse_job(root, job)
 
     if not detach:
-        await process_attach(root, job, tty=tty, logs=True)
+        await process_attach(root, job, tty=tty, logs=True, port_forward=port_forward)
 
     return job
 
@@ -1197,14 +1257,13 @@ def _parse_cmd(cmd: Sequence[str]) -> str:
 
 
 async def _build_volumes(
-    root: Root, input_volumes: Sequence[str], env_dict: Dict[str, str]
+    root: Root, input_volumes: Set[str], env_dict: Dict[str, str]
 ) -> Set[Volume]:
     cluster_name = root.client.cluster_name
-    input_volumes_set = set(input_volumes)
     volumes: Set[Volume] = set()
 
-    if "ALL" in input_volumes_set:
-        if len(input_volumes_set) > 1:
+    if "ALL" in input_volumes:
+        if len(input_volumes) > 1:
             raise click.UsageError(
                 f"Cannot use `--volume=ALL` together with other `--volume` options"
             )
@@ -1232,7 +1291,7 @@ async def _build_volumes(
                 f"  {NEUROMATION_HOME_ENV_VAR}={neuro_mountpoint}"
             )
     else:
-        for vol in input_volumes_set:
+        for vol in input_volumes:
             if vol == "HOME":
                 volumes.add(
                     root.client.parse.volume(f"storage::{STORAGE_MOUNTPOINT}/home:rw")
@@ -1255,6 +1314,18 @@ async def _build_volumes(
             else:
                 volumes.add(root.client.parse.volume(vol))
     return volumes
+
+
+async def _build_secret_files(root: Root, input_volumes: Set[str]) -> Set[SecretFile]:
+    secret_files: Set[SecretFile] = set()
+    for volume in input_volumes:
+        parts = volume.split(":")
+        if len(parts) != 3:
+            raise ValueError(f"Invalid secret file specification '{volume}'")
+        container_path = parts.pop()
+        secret_uri = parse_secret_resource(":".join(parts), root)
+        secret_files.add(SecretFile(secret_uri, container_path))
+    return secret_files
 
 
 async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:

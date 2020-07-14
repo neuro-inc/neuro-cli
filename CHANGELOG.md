@@ -5,6 +5,18 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.7.9 (2020-07-09)
+===============================
+
+Bugfixes
+--------
+
+
+- Always set "LESS=-R" env variable to fix outputs with scrolling, e.g. "neuro help" ([#1595](https://github.com/neuromation/platform-api-clients/issues/1595))
+
+- Fix a warning raised by `neuro job port-forward` command on Python 3.6 ([#1592](https://github.com/neuromation/platform-api-clients/issues/1592))
+
+
 Neuromation 20.7.3 (2020-07-03)
 ===============================
 

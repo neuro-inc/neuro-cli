@@ -18,7 +18,6 @@ file_format_re = (
     r"(?P<name>.+)"
 )
 
-JOB_TINY_CONTAINER_PARAMS = ["-m", "20M", "-c", "0.1", "-g", "0"]
 JOB_TINY_CONTAINER_PRESET = "cpu-micro"
 
 

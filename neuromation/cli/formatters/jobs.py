@@ -129,6 +129,14 @@ class JobStatusFormatter:
             lines.append(f"{bold('Volumes')}:")
             lines.extend(f"  {i}" for i in table(rows))
 
+        if job_status.container.secret_files:
+            rows2 = [
+                (secret_file.container_path, self._format_uri(secret_file.secret_uri))
+                for secret_file in job_status.container.secret_files
+            ]
+            lines.append(f"{bold('Secret files')}:")
+            lines.extend(f"  {i}" for i in table(rows2))
+
         if job_status.internal_hostname:
             add("Internal Hostname", job_status.internal_hostname)
         if job_status.http_url:
@@ -139,6 +147,10 @@ class JobStatusFormatter:
             lines.append(f"{bold('Environment')}:")
             for key, value in job_status.container.env.items():
                 lines.append(f"  {key}={value}")
+        if job_status.container.secret_env:
+            lines.append(f"{bold('Secret environment')}:")
+            for key, uri in job_status.container.secret_env.items():
+                lines.append(f"  {key}={self._format_uri(uri)}")
 
         assert job_status.history.created_at is not None
         add("Created", job_status.history.created_at.isoformat())

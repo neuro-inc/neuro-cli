@@ -3,6 +3,7 @@ import functools
 import inspect
 import itertools
 import logging
+import operator
 import os
 import pathlib
 import re
@@ -145,6 +146,14 @@ def format_example(example: str, formatter: click.HelpFormatter) -> None:
 
 
 class NeuroClickMixin:
+    def get_params(self, ctx: click.Context) -> List[click.Parameter]:
+        # super() is available after using as a mixin
+        ret = super().get_params(ctx)  # type: ignore
+        args = [i for i in ret if not isinstance(i, click.Option)]
+        opts = [i for i in ret if isinstance(i, click.Option)]
+
+        return args + sorted(opts, key=operator.attrgetter("name"))
+
     def get_help_option(self, ctx: click.Context) -> Optional[click.Option]:
         help_options = self.get_help_option_names(ctx)  # type: ignore
         if not help_options or not self.add_help_option:  # type: ignore
@@ -506,6 +515,12 @@ def parse_blob_or_file_resource(uri: str, root: Root) -> URL:
     )
 
 
+def parse_secret_resource(uri: str, root: Root) -> URL:
+    return uri_from_cli(
+        uri, root.client.username, root.client.cluster_name, allowed_schemes=("secret"),
+    )
+
+
 def parse_permission_action(action: str) -> Action:
     try:
         return Action[action.upper()]
@@ -566,6 +581,9 @@ def pager_maybe(
         for line in lines:
             click.echo(line)
         return
+
+    # Enforce ANSI sequence handling (colors etc.)
+    os.environ["LESS"] = "-R"
 
     lines_it: Iterator[str] = iter(lines)
     count = int(terminal_size[1] * 2 / 3)

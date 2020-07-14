@@ -317,8 +317,21 @@ Container
 
    .. attribute:: volumes
 
-      Docker volumes to mount into container, a :class:`~collections.abc.Sequence` or
-      :class:`Volume` objects. Empty :class:`list` by default.
+      Docker volumes to mount into container, a :class:`~collections.abc.Sequence`
+      of :class:`Volume` objects. Empty :class:`list` by default.
+
+   .. attribute:: secret_env
+
+      Secrets pushed as custom *environment variables* into container's task.
+
+      A :class:`~collections.abc.Mapping` where keys are environments variables
+      names (:class:`str`) and values are secret URIs (:class:`yarl.URL`).
+      Empty :class:`dict` by default.
+
+   .. attribute:: secret_files
+
+      Secrets mounted as files in a container, a :class:`~collections.abc.Sequence`
+      of :class:`SecretFile` objects. Empty :class:`list` by default.
 
 
 ExecInspect
@@ -676,6 +689,25 @@ Volume
 
       ``True`` is the volume is mounted in read-only mode, ``False`` for read-write
       (default).
+
+
+SecretFile
+==========
+
+
+.. class:: SecretFile
+
+
+   *Read-only* :class:`~dataclasses.dataclass` for describing secrets mounted
+   as files in a container.
+
+   .. attribute:: secret_uri
+
+      An URI on a secret, :class:`yarl.URL`.
+
+   .. attribute:: container_path
+
+      A path on container filesystem, :class:`str`.
 
 
 .. _ENTRYPOINT: https://docs.docker.com/engine/reference/builder/#entrypoint

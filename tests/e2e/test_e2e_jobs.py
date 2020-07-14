@@ -3,11 +3,12 @@ import os
 import re
 import subprocess
 import sys
+import uuid
 from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep, time
-from typing import Any, AsyncIterator, Callable, Dict, List, Tuple
+from typing import Any, AsyncIterator, Callable, Dict, Iterator, List, Tuple
 from uuid import uuid4
 
 import aiodocker
@@ -19,8 +20,7 @@ from yarl import URL
 
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
 from neuromation.cli.asyncio_utils import run
-from tests.e2e.conftest import CLIENT_TIMEOUT, Helper
-from tests.e2e.utils import JOB_TINY_CONTAINER_PARAMS
+from tests.e2e.conftest import Helper
 
 
 pytestmark = pytest.mark.e2e_job
@@ -49,7 +49,7 @@ def strip_ansi(s: str) -> str:
 
 
 @pytest.mark.e2e
-def test_job_submit(helper: Helper) -> None:
+def test_job_run(helper: Helper) -> None:
 
     job_name = f"test-job-{os.urandom(5).hex()}"
 
@@ -74,11 +74,9 @@ def test_job_submit(helper: Helper) -> None:
     captured = helper.run_cli(
         [
             "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
+            "run",
             "--http",
             "80",
-            "--non-preemptible",
             "--no-wait-start",
             "--restart",
             "never",
@@ -128,13 +126,11 @@ def test_job_description(helper: Helper) -> None:
     captured = helper.run_cli(
         [
             "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
+            "run",
             "--http",
             "80",
             "--description",
             description,
-            "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
@@ -236,15 +232,7 @@ def test_e2e_no_env(helper: Helper) -> None:
     bash_script = 'echo "begin"$VAR"end"  | grep beginend'
     command = f"bash -c '{bash_script}'"
     captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
+        ["job", "run", "--no-wait-start", UBUNTU_IMAGE_NAME, command]
     )
 
     out = captured.out
@@ -263,17 +251,7 @@ def test_e2e_env(helper: Helper) -> None:
     bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
     command = f"bash -c '{bash_script}'"
     captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "-e",
-            "VAR=VAL",
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
+        ["job", "run", "-e", "VAR=VAL", "--no-wait-start", UBUNTU_IMAGE_NAME, command]
     )
 
     out = captured.out
@@ -293,17 +271,7 @@ def test_e2e_env_from_local(helper: Helper) -> None:
     bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
     command = f"bash -c '{bash_script}'"
     captured = helper.run_cli(
-        [
-            "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
-            "-e",
-            "VAR",
-            "--non-preemptible",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
+        ["job", "run", "-e", "VAR", "--no-wait-start", UBUNTU_IMAGE_NAME, command]
     )
 
     out = captured.out
@@ -324,13 +292,11 @@ def test_e2e_multiple_env(helper: Helper) -> None:
     captured = helper.run_cli(
         [
             "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
+            "run",
             "-e",
             "VAR=VAL",
             "-e",
             "VAR2=VAL2",
-            "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
@@ -358,15 +324,13 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
         [
             "-q",
             "job",
-            "submit",
-            *JOB_TINY_CONTAINER_PARAMS,
+            "run",
             "-e",
             "VAR=VAL",
             "-e",
             "VAR2=VAL2",
             "--env-file",
             str(env_file),
-            "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
@@ -602,41 +566,76 @@ async def nginx_job_async(
                 await client.jobs.kill(job.id)
 
 
+async def fetch_http(
+    url: str, test: str, *, loop_sleep: float = 1.0, service_wait_time: float = 10 * 60
+) -> int:
+    status = 999
+    start_time = time()
+    async with aiohttp.ClientSession() as session:
+        while status != 200 and (int(time() - start_time) < service_wait_time):
+            try:
+                async with session.get(url) as resp:
+                    status = resp.status
+                    text = await resp.text()
+                    assert text == test, (
+                        f"Secret not found "
+                        f"via {url}. Like as it's not our test server."
+                    )
+            except aiohttp.ClientConnectionError:
+                status = 599
+            if status != 200:
+                await asyncio.sleep(loop_sleep)
+    return status
+
+
 @pytest.mark.e2e
-async def test_port_forward(nmrc_path: Path, nginx_job_async: Tuple[str, str]) -> None:
-    loop_sleep = 1
-    service_wait_time = 10 * 60
+async def test_port_forward(helper: Helper, nginx_job_async: Tuple[str, str]) -> None:
+    port = unused_port()
+    job_id, secret = nginx_job_async
 
-    async def get_(url: str) -> int:
-        status = 999
-        start_time = time()
-        async with aiohttp.ClientSession() as session:
-            while status != 200 and (int(time() - start_time) < service_wait_time):
-                try:
-                    async with session.get(url) as resp:
-                        status = resp.status
-                        text = await resp.text()
-                        assert text == nginx_job_async[1], (
-                            f"Secret not found "
-                            f"via {url}. Like as it's not our test server."
-                        )
-                except aiohttp.ClientConnectionError:
-                    status = 599
-                if status != 200:
-                    await asyncio.sleep(loop_sleep)
-        return status
+    proc = await helper.acli(["port-forward", job_id, f"{port}:80"])
+    try:
+        await asyncio.sleep(1)
+        url = f"http://127.0.0.1:{port}/secret.txt"
+        probe = await fetch_http(url, str(secret))
+        assert probe == 200
 
-    async with api_get(path=nmrc_path, timeout=CLIENT_TIMEOUT) as client:
-        port = unused_port()
-        # We test client instead of run_cli as asyncio subprocesses do
-        # not work if run from thread other than main.
-        async with client.jobs.port_forward(
-            nginx_job_async[0], port, 80, no_key_check=True
-        ):
-            await asyncio.sleep(loop_sleep)
-            url = f"http://127.0.0.1:{port}/secret.txt"
-            probe = await get_(url)
-            assert probe == 200
+        assert proc.returncode is None
+    finally:
+        proc.terminate()
+        await proc.wait()
+
+
+@pytest.mark.e2e
+async def test_run_with_port_forward(helper: Helper) -> None:
+    port = unused_port()
+    job_id = None
+
+    secret = uuid4()
+    command = (
+        f"bash -c \"echo -n '{secret}' > /usr/share/nginx/html/secret.txt; "
+        f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
+    )
+
+    proc = await helper.acli(
+        ["run", "--port-forward", f"{port}:80", "nginx:latest", command]
+    )
+    try:
+        await asyncio.sleep(1)
+        url = f"http://127.0.0.1:{port}/secret.txt"
+        probe = await fetch_http(url, str(secret))
+        assert probe == 200
+
+        assert proc.returncode is None
+        assert proc.stdout is not None
+        out = await proc.stdout.read(64 * 1024)
+        job_id = helper.find_job_id(out.decode("utf-8", "replace"))
+        assert job_id is not None
+    finally:
+        proc.terminate()
+        await proc.wait()
+        if job_id is not None:
+            await helper.akill_job(job_id)
 
 
 @pytest.mark.e2e
@@ -693,7 +692,7 @@ def test_job_submit_http_auth(
 
 
 @pytest.mark.e2e
-def test_job_run(helper: Helper) -> None:
+def test_job_run_exit_code(helper: Helper) -> None:
     # Run a new job
     command = 'bash -c "exit 101"'
     captured = helper.run_cli(
@@ -735,17 +734,7 @@ def test_pass_config(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_job_submit_bad_http_auth(helper: Helper, http_auth: str) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(
-            [
-                "job",
-                "submit",
-                *JOB_TINY_CONTAINER_PARAMS,
-                http_auth,
-                "--no-wait-start",
-                UBUNTU_IMAGE_NAME,
-                "true",
-            ]
-        )
+        helper.run_cli(["job", "run", "--http=0", http_auth, UBUNTU_IMAGE_NAME, "true"])
     assert cm.value.returncode == 2
     assert f"{http_auth} requires --http" in cm.value.stderr
 
@@ -781,16 +770,7 @@ def test_job_submit_no_detach_failure(helper: Helper) -> None:
     # Run a new job
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         helper.run_cli(
-            [
-                "-v",
-                "job",
-                "submit",
-                *JOB_TINY_CONTAINER_PARAMS,
-                "--http",
-                "80",
-                UBUNTU_IMAGE_NAME,
-                f"exit 127",
-            ]
+            ["-v", "job", "run", "--http", "80", UBUNTU_IMAGE_NAME, f"exit 127"]
         )
     assert exc_info.value.returncode == 127
 
@@ -1086,3 +1066,78 @@ def test_job_attach_tty(helper: Helper) -> None:
 
 #     assert captured.err == ""
 #     assert captured.out == "6"
+
+
+@pytest.mark.e2e
+def test_job_secret_env(helper: Helper, secret: Tuple[str, str]) -> None:
+    secret_name, secret_value = secret
+
+    bash_script = f'echo "begin"$SECRET_VAR"end" | grep begin{secret_value}end'
+    command = f"bash -c '{bash_script}'"
+    captured = helper.run_cli(
+        [
+            "job",
+            "run",
+            "-e",
+            f"SECRET_VAR=secret:{secret_name}",
+            "--non-preemptible",
+            "--no-wait-start",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+
+    out = captured.out
+    match = re.match("Job ID: (.+)", out)
+    assert match is not None
+    job_id = match.group(1)
+
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
+    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
+
+
+@pytest.mark.e2e
+def test_job_secret_file(helper: Helper, secret: Tuple[str, str]) -> None:
+    secret_name, secret_value = secret
+
+    bash_script = (
+        f'test -f /secrets/secretfile && grep "^{secret_value}$" /secrets/secretfile'
+    )
+    command = f"bash -c '{bash_script}'"
+    captured = helper.run_cli(
+        [
+            "job",
+            "run",
+            "-v",
+            f"secret:{secret_name}:/secrets/secretfile",
+            "--non-preemptible",
+            "--no-wait-start",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+
+    out = captured.out
+    match = re.match("Job ID: (.+)", out)
+    assert match is not None
+    job_id = match.group(1)
+
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
+    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
+
+
+@pytest.fixture
+def secret(helper: Helper) -> Iterator[Tuple[str, str]]:
+    secret_name = "secret" + str(uuid.uuid4()).replace("-", "")[:10]
+    secret_value = str(uuid.uuid4())
+    # Add secret
+    cap = helper.run_cli(["secret", "add", secret_name, secret_value])
+    assert cap.err == ""
+
+    yield (secret_name, secret_value)
+
+    # Remove secret
+    cap = helper.run_cli(["secret", "rm", secret_name])
+    assert cap.err == ""

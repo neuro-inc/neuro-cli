@@ -48,6 +48,7 @@ from .jobs import (
     JobStatusHistory,
     JobTelemetry,
     Resources,
+    SecretFile,
     StdStream,
     Volume,
 )
@@ -74,6 +75,7 @@ __all__ = (
     "Resources",
     "StdStream",
     "Volume",
+    "SecretFile",
     "HTTPPort",
     "Users",
     "Action",
