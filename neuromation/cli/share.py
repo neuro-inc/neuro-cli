@@ -164,6 +164,32 @@ async def list(
     pager_maybe(out, root.tty, root.terminal_size)
 
 
+@command()
+@argument("role_name")
+async def add_role(root: Root, role_name: str) -> None:
+    """
+        Add new role.
+
+        Examples:
+        neuro acl add-role mycompany/subdivision
+    """
+    await root.client.users.add(role_name)
+
+
+@command()
+@argument("role_name")
+async def remove_role(root: Root, role_name: str) -> None:
+    """
+        Remove existing role.
+
+        Examples:
+        neuro acl remove-role mycompany/subdivision
+    """
+    await root.client.users.remove(role_name)
+
+
 acl.add_command(grant)
 acl.add_command(revoke)
 acl.add_command(list)
+acl.add_command(add_role)
+acl.add_command(remove_role)
