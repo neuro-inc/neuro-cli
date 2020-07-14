@@ -151,7 +151,7 @@ def test_list_role(request: Any, helper: Helper) -> None:
     for line in result:
         uri, *_ = line.split()
         assert uri.startswith("role://")
-        if uri != self_role_uri:
+        if not uri.startswith(self_role_uri):
             role = uri[len("role://") :]
     print(f"Test using role {role!r}")
 
