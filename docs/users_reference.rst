@@ -59,17 +59,17 @@ Users
 
       :param URL uri: a resource to revoke.
 
-   .. comethod:: add(user: str) -> None
+   .. comethod:: add(role_name: str) -> None
 
       Add new role.
 
-      :param str user: role name. Components are separated by "/".
+      :param str role_name: role name. Components are separated by "/".
 
-   .. comethod:: remove(user: str) -> None
+   .. comethod:: remove(role_name: str) -> None
 
       Remove existing role.
 
-      :param str user: role name. Components are separated by "/".
+      :param str role_name: role name. Components are separated by "/".
 
 
 Action

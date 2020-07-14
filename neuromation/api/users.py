@@ -88,11 +88,11 @@ class Users(metaclass=NoPublicConstructor):
                 )  # NOQA
         return None
 
-    async def add(self, user: str) -> None:
+    async def add(self, role_name: str) -> None:
         url = self._config.api_url / "users"
         auth = await self._config._api_auth()
         async with self._core.request(
-            "POST", url, json={"name": user}, auth=auth
+            "POST", url, json={"name": role_name}, auth=auth
         ) as resp:
             if resp.status != HTTPCreated.status_code:
                 raise ClientError(
@@ -100,8 +100,8 @@ class Users(metaclass=NoPublicConstructor):
                 )  # NOQA
         return None
 
-    async def remove(self, user: str) -> None:
-        url = self._get_user_url(user)
+    async def remove(self, role_name: str) -> None:
+        url = self._get_user_url(role_name)
         auth = await self._config._api_auth()
         async with self._core.request("DELETE", url, auth=auth) as resp:
             if resp.status != HTTPNoContent.status_code:
