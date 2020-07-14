@@ -1,0 +1,1 @@
+Take Secrets Service URL from `/config`.
