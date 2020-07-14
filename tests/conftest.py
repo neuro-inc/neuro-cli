@@ -57,6 +57,7 @@ def cluster_config() -> Cluster:
         storage_url=URL("https://storage-dev.neu.ro"),
         users_url=URL("https://users-dev.neu.ro"),
         monitoring_url=URL("https://monitoring-dev.neu.ro"),
+        secrets_url=URL("https://secrets-dev.neu.ro"),
         presets={
             "gpu-small": Preset(
                 cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
@@ -91,6 +92,7 @@ def make_client(
                 monitoring_url=(url / "jobs"),
                 storage_url=(url / "storage"),
                 users_url=url,
+                secrets_url=(url / "secrets"),
                 presets={
                     "gpu-small": Preset(
                         cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"

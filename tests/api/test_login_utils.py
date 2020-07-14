@@ -123,6 +123,7 @@ async def test_get_server_config_with_token_legacy(
                 "storage_url": storage_url,
                 "registry_url": registry_url,
                 "users_url": users_url,
+                "secrets_url": "https://secrets-dev.neu.ro",
                 "resource_presets": [
                     {
                         "name": "gpu-small",
@@ -171,6 +172,7 @@ async def test_get_server_config_with_token_legacy(
                 storage_url=URL(storage_url),
                 users_url=URL(users_url),
                 monitoring_url=URL(monitoring_url),
+                secrets_url=URL("https://secrets-dev.neu.ro"),
                 presets={
                     "gpu-small": Preset(
                         cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
@@ -229,6 +231,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
                 "storage_url": storage_url,
                 "users_url": users_url,
                 "monitoring_url": monitoring_url,
+                "secrets_url": "https://secrets-dev.neu.ro",
                 "resource_presets": [
                     {
                         "name": "gpu-small",
@@ -278,6 +281,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
         storage_url=URL(storage_url),
         users_url=URL(users_url),
         monitoring_url=URL(monitoring_url),
+        secrets_url=URL("https://secrets-dev.neu.ro"),
         presets={
             "gpu-small": Preset(
                 cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"

@@ -172,7 +172,8 @@ class Config(metaclass=NoPublicConstructor):
 
     @property
     def secrets_url(self) -> URL:
-        return self._config_data.url / "secrets"
+        cluster = self._config_data.clusters[self._config_data.cluster_name]
+        return cluster.secrets_url
 
     async def token(self) -> str:
         token = self._config_data.auth_token
@@ -345,6 +346,7 @@ def _deserialize_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
             storage_url=URL(cluster_config["storage_url"]),
             users_url=URL(cluster_config["users_url"]),
             monitoring_url=URL(cluster_config["monitoring_url"]),
+            secrets_url=URL(cluster_config["secrets_url"]),
             presets=dict(
                 _deserialize_resource_preset(data)
                 for data in cluster_config.get("presets", [])
@@ -452,6 +454,7 @@ def _serialize_clusters(clusters: Mapping[str, Cluster]) -> str:
             "storage_url": str(cluster.storage_url),
             "users_url": str(cluster.users_url),
             "monitoring_url": str(cluster.monitoring_url),
+            "secrets_url": str(cluster.secrets_url),
             "presets": [
                 _serialize_resource_preset(name, preset)
                 for name, preset in cluster.presets.items()
