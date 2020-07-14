@@ -1080,7 +1080,6 @@ def test_job_secret_env(helper: Helper, secret: Tuple[str, str]) -> None:
             "run",
             "-e",
             f"SECRET_VAR=secret:{secret_name}",
-            "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
@@ -1089,7 +1088,7 @@ def test_job_secret_env(helper: Helper, secret: Tuple[str, str]) -> None:
 
     out = captured.out
     match = re.match("Job ID: (.+)", out)
-    assert match is not None
+    assert match is not None, captured
     job_id = match.group(1)
 
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
@@ -1111,7 +1110,6 @@ def test_job_secret_file(helper: Helper, secret: Tuple[str, str]) -> None:
             "run",
             "-v",
             f"secret:{secret_name}:/secrets/secretfile",
-            "--non-preemptible",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
@@ -1120,7 +1118,7 @@ def test_job_secret_file(helper: Helper, secret: Tuple[str, str]) -> None:
 
     out = captured.out
     match = re.match("Job ID: (.+)", out)
-    assert match is not None
+    assert match is not None, captured
     job_id = match.group(1)
 
     helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
