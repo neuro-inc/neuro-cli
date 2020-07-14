@@ -23,7 +23,7 @@ async def ls(root: Root) -> None:
     ret = [[click.style("Key", bold=True)]]
     async for secret in root.client.secrets.list():
         ret.append([secret.key])
-        pager_maybe(table(ret), root.tty, root.terminal_size)
+    pager_maybe(table(ret), root.tty, root.terminal_size)
 
 
 @command()

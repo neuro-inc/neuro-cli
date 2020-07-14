@@ -25,6 +25,7 @@ class Cluster:
     storage_url: URL
     users_url: URL
     monitoring_url: URL
+    secrets_url: URL
     presets: Mapping[str, Preset]
 
 
@@ -61,6 +62,7 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
         storage_url=URL(payload["storage_url"]),
         users_url=URL(payload["users_url"]),
         monitoring_url=URL(payload["monitoring_url"]),
+        secrets_url=URL(payload["secrets_url"]),
         presets=presets,
     )
     return cluster_config

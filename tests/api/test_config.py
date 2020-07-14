@@ -207,6 +207,7 @@ async def test_clusters(
                 storage_url=srv.make_url("/storage"),
                 users_url=srv.make_url("/"),
                 monitoring_url=srv.make_url("/jobs"),
+                secrets_url=srv.make_url("/secrets"),
                 presets=mock.ANY,
             )
         }
@@ -219,6 +220,7 @@ async def test_fetch(
     storage_url = "https://storage2-dev.neu.ro"
     users_url = "https://users2-dev.neu.ro"
     monitoring_url = "https://jobs2-dev.neu.ro"
+    secrets_url = "https://secrets2-dev.neu.ro"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
     client_id = "this_is_client_id"
@@ -239,6 +241,7 @@ async def test_fetch(
                 "storage_url": storage_url,
                 "users_url": users_url,
                 "monitoring_url": monitoring_url,
+                "secrets_url": secrets_url,
                 "resource_presets": [
                     {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
                 ],
@@ -262,6 +265,7 @@ async def test_fetch(
                 storage_url=URL("https://storage2-dev.neu.ro"),
                 users_url=URL("https://users2-dev.neu.ro"),
                 monitoring_url=URL("https://jobs2-dev.neu.ro"),
+                secrets_url=URL("https://secrets2-dev.neu.ro"),
                 presets={
                     "cpu-small": Preset(
                         cpu=2,
@@ -285,6 +289,7 @@ async def test_fetch_dropped_selected_cluster(
     storage_url = "https://storage2-dev.neu.ro"
     users_url = "https://users2-dev.neu.ro"
     monitoring_url = "https://jobs2-dev.neu.ro"
+    secrets_url = "https://secrets2-dev.neu.ro"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
     client_id = "this_is_client_id"
@@ -305,6 +310,7 @@ async def test_fetch_dropped_selected_cluster(
                 "storage_url": storage_url,
                 "users_url": users_url,
                 "monitoring_url": monitoring_url,
+                "secrets_url": secrets_url,
                 "resource_presets": [
                     {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
                 ],
@@ -342,6 +348,7 @@ async def test_switch_clusters(
                 "storage_url": "https://storage-dev.neu.ro",
                 "users_url": "https://users-dev.neu.ro",
                 "monitoring_url": "https://jobs-dev.neu.ro",
+                "secrets_url": "https://secrets-dev.neu.ro",
                 "resource_presets": [
                     {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
                 ],
@@ -352,6 +359,7 @@ async def test_switch_clusters(
                 "storage_url": "https://storage2-dev.neu.ro",
                 "users_url": "https://users2-dev.neu.ro",
                 "monitoring_url": "https://jobs2-dev.neu.ro",
+                "secrets_url": "https://secrets-dev.neu.ro",
                 "resource_presets": [
                     {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
                 ],
@@ -391,6 +399,7 @@ async def test_switch_clusters_unknown(
                 "storage_url": "https://storage-dev.neu.ro",
                 "users_url": "https://users-dev.neu.ro",
                 "monitoring_url": "https://jobs-dev.neu.ro",
+                "secrets_url": "https://secrets-dev.neu.ro",
                 "resource_presets": [
                     {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
                 ],
@@ -421,6 +430,7 @@ async def test_check_server_mismatch_clusters(
     storage_url = "https://storage2-dev.neu.ro"
     users_url = "https://users2-dev.neu.ro"
     monitoring_url = "https://jobs2-dev.neu.ro"
+    secrets_url = "https://secrets2-dev.neu.ro"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
     client_id = "this_is_client_id"
@@ -441,6 +451,7 @@ async def test_check_server_mismatch_clusters(
                 "storage_url": storage_url,
                 "users_url": users_url,
                 "monitoring_url": monitoring_url,
+                "secrets_url": secrets_url,
                 "resource_presets": [
                     {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
                 ],
@@ -472,6 +483,7 @@ async def test_check_server_mismatch_auth(
     storage_url = "https://storage2-dev.neu.ro"
     users_url = "https://users2-dev.neu.ro"
     monitoring_url = "https://jobs2-dev.neu.ro"
+    secrets_url = "https://secrets2-dev.neu.ro"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
     audience = "https://platform.dev.neuromation.io"
@@ -491,6 +503,7 @@ async def test_check_server_mismatch_auth(
                 "storage_url": storage_url,
                 "users_url": users_url,
                 "monitoring_url": monitoring_url,
+                "secrets_url": secrets_url,
                 "resource_presets": [
                     {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
                 ],
