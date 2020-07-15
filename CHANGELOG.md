@@ -5,6 +5,31 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.7.14 (2020-07-14)
+================================
+
+Features
+--------
+
+
+- Implement secrets management commands. ([#1545](https://github.com/neuromation/platform-api-clients/issues/1545))
+
+- `neuro run` allows now to specify secrets: either as a file `-v secret:<KEY>:<PATH>` or as an environment variable `-e <NAME>=secret:<KEY>`. ([#1558](https://github.com/neuromation/platform-api-clients/issues/1558))
+
+- Support azure cluster config file generation. ([#1577](https://github.com/neuromation/platform-api-clients/issues/1577))
+
+- Implement `--port-forward` option for `run` and `attach` commands. ([#1601](https://github.com/neuromation/platform-api-clients/issues/1601))
+
+- Take Secrets Service URL from `/config`. ([#1607](https://github.com/neuromation/platform-api-clients/issues/1607))
+
+
+Deprecations and Removals
+-------------------------
+
+
+- Deprecate and hide `submit` command. ([#1602](https://github.com/neuromation/platform-api-clients/issues/1602))
+
+
 Neuromation 20.7.9 (2020-07-09)
 ===============================
 

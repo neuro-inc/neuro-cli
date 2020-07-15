@@ -151,7 +151,7 @@ def test_list_role(request: Any, helper: Helper) -> None:
     for line in result:
         uri, *_ = line.split()
         assert uri.startswith("role://")
-        if uri != self_role_uri:
+        if not uri.startswith(self_role_uri):
             role = uri[len("role://") :]
     print(f"Test using role {role!r}")
 
@@ -168,3 +168,47 @@ def test_list_role_forbidden(request: Any, helper: Helper) -> None:
         helper.run_cli(["acl", "list", "-u", "admin"])
     with pytest.raises(subprocess.CalledProcessError):
         helper.run_cli(["acl", "list", "-u", "admin", "--shared"])
+
+
+@pytest.mark.e2e
+def test_add_grant_remove_role(request: Any, helper: Helper) -> None:
+    role_name = f"{helper.username}/roles/test-{uuid4()}"
+    captured = helper.run_cli(["acl", "add-role", role_name])
+    assert captured.err == ""
+    assert captured.out == ""
+
+    uri = f"storage://{helper.cluster_name}/{helper.username}/{uuid4()}"
+    captured = helper.run_cli(["acl", "grant", uri, role_name, "read"])
+    assert captured.err == ""
+    assert captured.out == ""
+
+    request.addfinalizer(lambda: revoke(helper, f"role://{role_name}", "public"))
+    captured = helper.run_cli(["acl", "grant", f"role://{role_name}", "public", "read"])
+    assert captured.err == ""
+    assert captured.out == ""
+
+    captured = helper.run_cli(["acl", "list", "--full-uri", "-u", role_name])
+    assert captured.err == ""
+    result = captured.out.splitlines()
+    assert f"{uri} read" in result
+
+    captured = helper.run_cli(["acl", "list", "--full-uri", "-u", "public"])
+    assert captured.err == ""
+    result = captured.out.splitlines()
+    assert f"role://{role_name} read" in result
+    assert f"{uri} read" in result
+
+    captured = helper.run_cli(["acl", "remove-role", role_name])
+    assert captured.err == ""
+    assert captured.out == ""
+
+    with pytest.raises(subprocess.CalledProcessError) as cm:
+        helper.run_cli(["acl", "list", "--full-uri", "-u", role_name])
+    assert cm.value.returncode == 72
+    assert f'user "{role_name}" was not found' in cm.value.stderr
+
+    captured = helper.run_cli(["acl", "list", "--full-uri", "-u", "public"])
+    assert captured.err == ""
+    result = captured.out.splitlines()
+    assert f"role://{role_name} read" in result
+    assert f"{uri} read" not in result

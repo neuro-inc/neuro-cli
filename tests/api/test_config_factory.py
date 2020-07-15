@@ -87,6 +87,7 @@ async def mock_for_login(
                             "storage_url": "https://storage-dev.test.com",
                             "users_url": "https://users-dev.test.com",
                             "monitoring_url": "https://monitoring-dev.test.com",
+                            "secrets_url": "https://secrets-dev.test.com",
                             "resource_presets": [
                                 {
                                     "name": "gpu-small",
