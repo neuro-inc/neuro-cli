@@ -404,7 +404,7 @@ async def cp(
                         dst,
                         update=update,
                         filter=file_filter.match,
-                        ignore_file_names=ignore_file_names,
+                        ignore_file_names=frozenset(ignore_file_names),
                         progress=progress_obj,
                     )
                 else:

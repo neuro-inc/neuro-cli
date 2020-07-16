@@ -21,9 +21,7 @@ from typing import (
     Dict,
     Iterable,
     Optional,
-    Sequence,
     Tuple,
-    Union,
     cast,
 )
 
@@ -403,7 +401,7 @@ class Storage(metaclass=NoPublicConstructor):
         *,
         update: bool = False,
         filter: Optional[Callable[[str], Awaitable[bool]]] = None,
-        ignore_file_names: Union[Sequence[str], AbstractSet[str]] = (),
+        ignore_file_names: AbstractSet[str] = frozenset(),
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if filter is None:
@@ -441,7 +439,7 @@ class Storage(metaclass=NoPublicConstructor):
         *,
         update: bool,
         filter: Callable[[str], Awaitable[bool]],
-        ignore_file_names: Union[Sequence[str], AbstractSet[str]],
+        ignore_file_names: AbstractSet[str],
         progress: "QueuedProgress",
     ) -> None:
         tasks = []

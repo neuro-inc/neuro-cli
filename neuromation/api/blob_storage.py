@@ -522,7 +522,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         dst: URL,
         *,
         filter: Optional[Callable[[str], Awaitable[bool]]] = None,
-        ignore_file_names: Union[Sequence[str], AbstractSet[str]] = (),
+        ignore_file_names: AbstractSet[str] = frozenset(),
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         if filter is None:
@@ -556,7 +556,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         rel_path: str,
         *,
         filter: Callable[[str], Awaitable[bool]],
-        ignore_file_names: Union[Sequence[str], AbstractSet[str]],
+        ignore_file_names: AbstractSet[str],
         progress: QueuedProgress,
     ) -> None:
         tasks = []

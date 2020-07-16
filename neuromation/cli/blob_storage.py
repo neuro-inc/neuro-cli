@@ -307,7 +307,7 @@ async def cp(
                         src,
                         dst,
                         filter=file_filter.match,
-                        ignore_file_names=ignore_file_names,
+                        ignore_file_names=frozenset(ignore_file_names),
                         progress=progress_blob,
                     )
                 else:

@@ -192,7 +192,9 @@ Blob Storage
          progress report (default).
 
    .. comethod:: download_dir(src: URL, dst: URL, \
-                              *, progress: Optional[AbstractFileProgress] = None \
+                              *, update: bool = False, \
+                              filter: Optional[Callable[[str], Awaitable[bool]]] = None, \
+                              progress: Optional[AbstractRecursiveFileProgress] = None \
                  ) -> None:
 
       Similarly to :meth:`Storage.download_dir`, allows to recursively download
@@ -204,13 +206,24 @@ Blob Storage
       :param ~yarl.URL dst: local path to save downloaded directory,
                             e.g. ``yarl.URL("file:///home/andrew/folder")``.
 
+      :param bool update: if true, download only when the source file is newer
+                          than the destination file or when the destination
+                          file is missing.
+
+      :param Callable[[str], Awaitable[bool]] filter:
+
+         a callback function for determining which files and subdirectories
+         be downloaded. It is called with a relative path of file or directory
+         and if the result is false the file or directory will be skipped.
+
       :param AbstractRecursiveFileProgress progress:
 
          a callback interface for reporting downloading progress, ``None`` for no
          progress report (default).
 
    .. comethod:: download_file(src: URL, dst: URL, \
-                              *, progress: Optional[AbstractFileProgress] = None \
+                               *, update: bool = False, \
+                               progress: Optional[AbstractFileProgress] = None \
                  ) -> None:
 
       Similarly to :meth:`Storage.download_file`, allows to download remote file
@@ -222,13 +235,20 @@ Blob Storage
       :param ~yarl.URL dst: local path to save downloaded file,
                             e.g. ``yarl.URL("file:///home/andrew/folder/file.bin")``.
 
-      :param AbstractRecursiveFileProgress progress:
+      :param bool update: if true, download only when the source file is newer
+                          than the destination file or when the destination
+                          file is missing.
+
+      :param AbstractFileProgress progress:
 
          a callback interface for reporting downloading progress, ``None`` for
          no progress report (default).
 
    .. comethod:: upload_dir(src: URL, dst: URL, \
-                             *, progress: Optional[AbstractFileProgress] = None \
+                            *, update: bool = False, \
+                            filter: Optional[Callable[[str], Awaitable[bool]]] = None, \
+                            ignore_file_names: AbstractSet[str] = frozenset(), \
+                            progress: Optional[AbstractRecursiveFileProgress] = None \
                  ) -> None:
 
       Similarly to :meth:`Storage.upload_dir`, allows to recursively upload local
@@ -241,13 +261,31 @@ Blob Storage
       :param ~yarl.URL dst: path on Blob Storage for saving uploading directory
                             e.g. ``yarl.URL("blob:my_folder/folder/")``.
 
+
+      :param bool update: if true, download only when the source file is newer
+                          than the destination file or when the destination
+                          file is missing.
+
+      :param Callable[[str], Awaitable[bool]] filter:
+
+         a callback function for determining which files and subdirectories
+         be uploaded. It is called with a relative path of file or directory
+         and if the result is false the file or directory will be skipped.
+
+      :param AbstractSet[str] ignore_file_names:
+
+         a set of names of files which specify filters for skipping files and
+         subdirectories. The format of ignore files is the same as
+         ``.gitignore``.
+
       :param AbstractRecursiveFileProgress progress:
 
          a callback interface for reporting uploading progress, ``None`` for no progress
          report (default).
 
    .. comethod:: upload_file(src: URL, dst: URL, \
-                             *, progress: Optional[AbstractFileProgress] = None \
+                             *, update: bool = False, \
+                             progress: Optional[AbstractFileProgress] = None \
                  ) -> None:
 
       Similarly to :meth:`Storage.upload_file`, allows to upload local file *src* to
@@ -258,6 +296,10 @@ Blob Storage
 
       :param ~yarl.URL dst: path on remote storage for saving uploading file
                             e.g. ``yarl.URL("storage:folder/file.txt")``.
+
+      :param bool update: if true, download only when the source file is newer
+                          than the destination file or when the destination
+                          file is missing.
 
       :param AbstractFileProgress progress:
 
