@@ -4,7 +4,7 @@ import itertools
 import sys
 import time
 from dataclasses import dataclass
-from typing import Iterable, Iterator, List
+from typing import Iterable, Iterator, List, Optional
 
 import humanize
 from click import secho, style, unstyle
@@ -108,12 +108,7 @@ class JobStatusFormatter:
         if job_status.restart_policy != JobRestartPolicy.NEVER:
             add("Restart policy", job_status.restart_policy)
         if job_status.life_span is not None:
-            limit = (
-                "no limit"
-                if job_status.life_span == 0
-                else format_timedelta(datetime.timedelta(seconds=job_status.life_span))
-            )
-            add("Life span", limit)
+            add("Life span", format_life_span(job_status.life_span))
 
         add("TTY", str(job_status.container.tty))
 
@@ -170,6 +165,14 @@ class JobStatusFormatter:
             lines.append(job_status.history.description)
             lines.append("=================")
         return "\n".join(lines)
+
+
+def format_life_span(life_span: Optional[float]) -> str:
+    if life_span is None:
+        return ""
+    if life_span == 0:
+        return "no limit"
+    return format_timedelta(datetime.timedelta(seconds=life_span))
 
 
 class JobTelemetryFormatter:
@@ -240,6 +243,7 @@ class TabularJobRow:
     description: str
     cluster_name: str
     command: str
+    life_span: str
 
     @classmethod
     def from_job(
@@ -269,6 +273,7 @@ class TabularJobRow:
             description=job.description if job.description else "",
             cluster_name=job.cluster_name,
             command=job.container.command if job.container.command else "",
+            life_span=format_life_span(job.life_span),
         )
 
     def to_list(self, columns: List[JobColumnInfo]) -> List[str]:

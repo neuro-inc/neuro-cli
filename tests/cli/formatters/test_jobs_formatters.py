@@ -1495,7 +1495,7 @@ class TestTabularJobsFormatter:
             f"                                                                       name:with-long-tag",  # noqa: E501
         ]
 
-    def test_custol_columns(self) -> None:
+    def test_custom_columns(self) -> None:
         job = JobDescription(
             status=JobStatus.FAILED,
             id="j",
@@ -1526,6 +1526,49 @@ class TestTabularJobsFormatter:
         result = [item.rstrip() for item in formatter([job])]
 
         assert result == ["         Status Code", "              failed"]
+
+    def test_life_span(self) -> None:
+        life_spans = [None, 0, 7 * 24 * 3600, 12345]
+        jobs = [
+            JobDescription(
+                status=JobStatus.FAILED,
+                id=f"job-{i}",
+                owner="owner",
+                cluster_name="dc",
+                uri=URL("job://dc/owner/j"),
+                name="name",
+                description="d",
+                history=JobStatusHistory(
+                    status=JobStatus.FAILED,
+                    reason="ErrorReason",
+                    description="ErrorDesc",
+                    created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+                ),
+                container=Container(
+                    image=RemoteImage.new_external_image(name="i", tag="l"),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                    command="c",
+                ),
+                ssh_server=URL("ssh-auth"),
+                is_preemptible=True,
+                life_span=life_span,
+            )
+            for i, life_span in enumerate(life_spans, 1)
+        ]
+
+        columns = parse_columns("id life_span")
+        formatter = TabularJobsFormatter(100, "owner", columns, image_formatter=str)
+        result = [item.rstrip() for item in formatter(jobs)]
+
+        assert result == [
+            "ID     LIFE-SPAN",
+            "job-1",
+            "job-2  no limit",
+            "job-3  7d",
+            "job-4  3h25m45s",
+        ]
 
 
 class TestResourcesFormatter:
