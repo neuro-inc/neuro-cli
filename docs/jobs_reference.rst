@@ -100,6 +100,7 @@ Jobs
                       since: Optional[datetime] = None, \
                       until: Optional[datetime] = None, \
                       reverse: bool = False, \
+                      limit: Optional[int] = None, \
                  ) -> AsyncIterator[JobDescription]
       :async-for:
 
