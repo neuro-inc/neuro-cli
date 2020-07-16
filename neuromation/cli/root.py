@@ -7,13 +7,23 @@ from dataclasses import dataclass, field
 from http.cookies import Morsel  # noqa
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Awaitable, Dict, Iterator, List, Optional, Tuple, TypeVar
+from typing import (
+    Any,
+    Awaitable,
+    Dict,
+    Iterator,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    TypeVar,
+)
 
 import aiohttp
 import click
 
 from neuromation.api import Client, Factory, gen_trace_id
-from neuromation.api.config import _ConfigData
+from neuromation.api.config import ConfigError, _ConfigData, load_user_config
 
 from .asyncio_utils import Runner
 
@@ -112,6 +122,14 @@ class Root:
 
         self._client = client
         return self._client
+
+    async def get_user_config(self) -> Mapping[str, Any]:
+        try:
+            client = await self.init_client()
+        except ConfigError:
+            return await load_user_config(self.config_path.expanduser())
+        else:
+            return await client.config.get_user_config()
 
     def _create_trace_config(self) -> aiohttp.TraceConfig:
         trace_config = aiohttp.TraceConfig()

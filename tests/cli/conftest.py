@@ -52,15 +52,14 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
     return nmrc_path
 
 
-@pytest.fixture()
-async def root(nmrc_path: Path, loop: asyncio.AbstractEventLoop) -> AsyncIterator[Root]:
-    root = Root(
+def create_root(config_path: Path) -> Root:
+    return Root(
         color=False,
         tty=False,
         terminal_size=(80, 24),
         disable_pypi_version_check=True,
         network_timeout=60,
-        config_path=nmrc_path,
+        config_path=config_path,
         verbosity=0,
         trace=False,
         trace_hide_token=True,
@@ -70,9 +69,23 @@ async def root(nmrc_path: Path, loop: asyncio.AbstractEventLoop) -> AsyncIterato
         show_traceback=False,
     )
 
+
+@pytest.fixture()
+async def root(nmrc_path: Path, loop: asyncio.AbstractEventLoop) -> AsyncIterator[Root]:
+    root = create_root(config_path=nmrc_path)
     await root.init_client()
     yield root
     await root.client.close()
+
+
+@pytest.fixture()
+async def root_no_logged_in(
+    tmp_path: Path, loop: asyncio.AbstractEventLoop
+) -> AsyncIterator[Root]:
+    root = create_root(config_path=tmp_path)
+    assert root._client is None
+    yield root
+    assert root._client is None
 
 
 @pytest.fixture()

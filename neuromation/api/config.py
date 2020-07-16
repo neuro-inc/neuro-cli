@@ -205,32 +205,36 @@ class Config(metaclass=NoPublicConstructor):
         ).decode("ascii")
 
     async def get_user_config(self) -> Mapping[str, Any]:
-        # TODO: search in several locations (HOME+curdir),
-        # merge found configs
-        filename = self._path / "user.toml"
-        if not filename.exists():
-            # Empty global configuration
-            config: Mapping[str, Any] = {}
-        elif not filename.is_file():
-            raise ConfigError(f"User config {filename} should be a regular file")
-        else:
-            config = _load_file(filename)
-        folder = Path.cwd()
-        while True:
-            filename = folder / ".neuro.toml"
-            if filename.exists() and filename.is_file():
-                local_config = _load_file(filename)
-                return _merge_user_configs(config, local_config)
-            if folder == folder.parent:
-                # No local config is found
-                return config
-            else:
-                folder = folder.parent
+        return await load_user_config(self._path)
 
     @contextlib.contextmanager
     def _open_db(self) -> Iterator[sqlite3.Connection]:
         with _open_db_rw(self._path) as db:
             yield db
+
+
+async def load_user_config(path: Path) -> Mapping[str, Any]:
+    # TODO: search in several locations (HOME+curdir),
+    # merge found configs
+    filename = path / "user.toml"
+    if not filename.exists():
+        # Empty global configuration
+        config: Mapping[str, Any] = {}
+    elif not filename.is_file():
+        raise ConfigError(f"User config {filename} should be a regular file")
+    else:
+        config = _load_file(filename)
+    folder = Path.cwd()
+    while True:
+        filename = folder / ".neuro.toml"
+        if filename.exists() and filename.is_file():
+            local_config = _load_file(filename)
+            return _merge_user_configs(config, local_config)
+        if folder == folder.parent:
+            # No local config is found
+            return config
+        else:
+            folder = folder.parent
 
 
 @contextlib.contextmanager
