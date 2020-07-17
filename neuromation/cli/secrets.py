@@ -61,7 +61,7 @@ secret.add_command(rm)
 def read_data(value: str) -> bytes:
     if value.startswith("@"):
         # Read from file
-        data = pathlib.Path(value[1:]).read_bytes()
+        data = pathlib.Path(value[1:]).expanduser().read_bytes()
     else:
         data = value.encode("utf-8")
     return data
