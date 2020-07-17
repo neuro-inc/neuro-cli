@@ -817,7 +817,7 @@ Name | Description|
 
 ### neuro storage cp
 
-Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/><br/>Use /dev/stdin and /dev/stdout file names to copy a file from terminal and<br/>print the content of file on the storage to console.<br/>
+Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/><br/>Use /dev/stdin and /dev/stdout file names to copy a file from terminal and<br/>print the content of file on the storage to console.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters<br/>that appear later in the command take precedence over filters that appear<br/>earlier in the command.  If neither \--exclude nor --include options are<br/>specified the default can be changed using the storage.cp-exclude<br/>configuration variable documented in "neuro help user-config".<br/>
 
 **Usage:**
 
@@ -860,8 +860,8 @@ neuro cp storage:results/*.out .
 Name | Description|
 |----|------------|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
-|_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
-|_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_--exclude_|Exclude files and directories that match the specified pattern.|
+|_--include_|Don't exclude files and directories that match the specified pattern.|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
 |_--help_|Show this message and exit.|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
@@ -1692,7 +1692,7 @@ Name | Description|
 
 ### neuro blob cp
 
-Simple utility to copy files and directories into and from Blob Storage.<br/>Either SOURCES or DESTINATION should have `blob://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy<br/>files between Blob Storage \(`blob://`) destination, nor with `storage://`<br/>scheme paths. Use `/dev/stdin` and `/dev/stdout` file names to upload a file<br/>from standard input or output to stdout. File permissions, modification<br/>times and other attributes will not be passed to Blob Storage metadata<br/>during upload.
+Simple utility to copy files and directories into and from Blob Storage.<br/><br/>Either SOURCES or DESTINATION should have `blob://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy<br/>files between Blob Storage \(`blob://`) destination, nor with `storage://`<br/>scheme paths.<br/><br/>Use `/dev/stdin` and `/dev/stdout` file names to upload a file from standard<br/>input or output to stdout.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters<br/>that appear later in the command take precedence over filters that appear<br/>earlier in the command.  If neither \--exclude nor --include options are<br/>specified the default can be changed using the storage.cp-exclude<br/>configuration variable documented in "neuro help user-config".<br/><br/>File permissions, modification times and other attributes will not be passed<br/>to Blob Storage metadata during upload.
 
 **Usage:**
 
@@ -1705,8 +1705,8 @@ neuro blob cp [OPTIONS] [SOURCES]... [DESTINATION]
 Name | Description|
 |----|------------|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
-|_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
-|_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_--exclude_|Exclude files and directories that match the specified pattern.|
+|_--include_|Don't exclude files and directories that match the specified pattern.|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
 |_--help_|Show this message and exit.|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
@@ -2208,7 +2208,7 @@ Name | Description|
 
 ## neuro cp
 
-Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/><br/>Use /dev/stdin and /dev/stdout file names to copy a file from terminal and<br/>print the content of file on the storage to console.<br/>
+Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/><br/>Use /dev/stdin and /dev/stdout file names to copy a file from terminal and<br/>print the content of file on the storage to console.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters<br/>that appear later in the command take precedence over filters that appear<br/>earlier in the command.  If neither \--exclude nor --include options are<br/>specified the default can be changed using the storage.cp-exclude<br/>configuration variable documented in "neuro help user-config".<br/>
 
 **Usage:**
 
@@ -2251,8 +2251,8 @@ neuro cp storage:results/*.out .
 Name | Description|
 |----|------------|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
-|_--exclude_|Exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
-|_--include_|Don't exclude files and directories that match the specified pattern. The default can be changed using the storage.cp\-exclude configuration variable documented in "neuro help user-config"|
+|_--exclude_|Exclude files and directories that match the specified pattern.|
+|_--include_|Don't exclude files and directories that match the specified pattern.|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
 |_--help_|Show this message and exit.|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
