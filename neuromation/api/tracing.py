@@ -1,6 +1,7 @@
 # Distributed tracing support
 
 import os
+import time
 import types
 
 import aiohttp
@@ -8,6 +9,21 @@ from multidict import CIMultiDict
 
 
 def gen_trace_id() -> str:
+    """Return 16 random hexadecimal digits.
+
+    The upper 32 bits are the current time in epoch seconds, and the
+    lower 96 bits are random. This allows for AWS X-Ray `interop
+    <https://github.com/openzipkin/zipkin/issues/1754>`_
+
+    The id is used for distributed tracing.
+    """
+
+    traced_id_high = format(int(time.time()), "x")
+    traced_id = os.urandom(12).hex()
+    return traced_id_high + traced_id
+
+
+def _gen_span_id() -> str:
     """Return 16 random hexadecimal digits.
 
     The id is used for distributed tracing.
@@ -31,7 +47,7 @@ async def _on_request_start(
     trace_id = getattr(trace_ctx, "trace_id", None)
     if trace_id is None:
         return
-    span_id = gen_trace_id()
+    span_id = _gen_span_id()
     _update_headers(params.headers, trace_id, span_id)
 
 
