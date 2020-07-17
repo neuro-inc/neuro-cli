@@ -9,7 +9,7 @@ from multidict import CIMultiDict
 
 
 def gen_trace_id() -> str:
-    """Return 16 random hexadecimal digits.
+    """Return  random hexadecimal digits.
 
     The upper 32 bits are the current time in epoch seconds, and the
     lower 96 bits are random. This allows for AWS X-Ray `interop
