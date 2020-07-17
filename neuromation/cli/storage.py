@@ -263,21 +263,13 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     "--exclude",
     "filters",
     flag_value=True,
-    help=(
-        "Exclude files and directories that match the specified pattern. "
-        "The default can be changed using the storage.cp-exclude "
-        'configuration variable documented in "neuro help user-config"'
-    ),
+    help=("Exclude files and directories that match the specified pattern."),
 )
 @filter_option(
     "--include",
     "filters",
     flag_value=False,
-    help=(
-        "Don't exclude files and directories that match the specified pattern. "
-        "The default can be changed using the storage.cp-exclude "
-        'configuration variable documented in "neuro help user-config"'
-    ),
+    help=("Don't exclude files and directories that match the specified pattern."),
 )
 @option(
     "--exclude-from-files",
@@ -317,6 +309,13 @@ async def cp(
 
     Use /dev/stdin and /dev/stdout file names to copy a file from terminal
     and print the content of file on the storage to console.
+
+    Any number of --exclude and --include options can be passed.  The
+    filters that appear later in the command take precedence over filters
+    that appear earlier in the command.  If neither --exclude nor
+    --include options are specified the default can be changed using the
+    storage.cp-exclude configuration variable documented in
+    "neuro help user-config".
 
     Examples:
 
