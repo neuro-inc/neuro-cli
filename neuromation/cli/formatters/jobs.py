@@ -142,6 +142,7 @@ class JobStatusFormatter:
         if job_status.http_url:
             add("Http URL", str(job_status.http_url))
         if job_status.container.http:
+            add("Http port", str(job_status.container.http.port))
             add("Http authentication", str(job_status.container.http.requires_auth))
         if job_status.container.env:
             lines.append(f"{bold('Environment')}:")
