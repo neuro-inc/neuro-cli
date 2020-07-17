@@ -8,13 +8,14 @@ grpc
 gRPC
 iterable
 login
+namespace
 neuro
 neuromation
-namespace
 preemptible
 startup
 stderr
 stdin
 stdout
-usernames
+subdirectories
 timestamp
+usernames
