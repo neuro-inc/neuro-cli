@@ -107,6 +107,7 @@ async def ps_format() -> None:
       cluster_name  CLUSTER     left  -   15   -
       description   DESCRIPTION left  -   50   -
       command       COMMAND     left  -   100  -
+      life_span     LIFE-SPAN   left  -   -    -
 
       By default all columns are left aligned and have no minimal and default widths.
 
