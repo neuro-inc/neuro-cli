@@ -1,0 +1,1 @@
+Added support of the `--schedule-timeout` option in `neuro run`.

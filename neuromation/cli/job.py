@@ -89,7 +89,7 @@ NEUROMATION_HOME_ENV_VAR = "NEUROMATION_HOME"
 RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
 
 DEFAULT_JOB_LIFE_SPAN = "1d"
-REGEX_JOB_LIFE_SPAN = re.compile(
+REGEX_TIME_DELTA = re.compile(
     r"^((?P<d>\d+)d)?((?P<h>\d+)h)?((?P<m>\d+)m)?((?P<s>\d+)s)?$"
 )
 
@@ -414,6 +414,7 @@ async def submit(
         browse=browse,
         detach=detach,
         tty=tty,
+        schedule_timeout=None,
     )
 
 
@@ -979,6 +980,16 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
 )
 @option(
+    "--schedule-timeout",
+    type=str,
+    metavar="TIMEDELTA",
+    help=(
+        "Optional job schedule timeout in the format '3m4s' "
+        "(some parts may be missing)."
+    ),
+    show_default=True,
+)
+@option(
     "--wait-start/--no-wait-start",
     default=True,
     show_default=True,
@@ -1029,6 +1040,7 @@ async def run(
     browse: bool,
     detach: bool,
     tty: Optional[bool],
+    schedule_timeout: Optional[str],
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -1088,6 +1100,7 @@ async def run(
         browse=browse,
         detach=detach,
         tty=tty,
+        schedule_timeout=schedule_timeout,
     )
 
 
@@ -1140,6 +1153,7 @@ async def run_job(
     browse: bool,
     detach: bool,
     tty: bool,
+    schedule_timeout: Optional[str],
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -1162,6 +1176,12 @@ async def run_job(
 
     job_life_span = await calc_life_span(root.client, life_span)
     log.debug(f"Job run-time limit: {job_life_span}")
+
+    if schedule_timeout is None:
+        job_schedule_timeout = None
+    else:
+        job_schedule_timeout = _parse_timedelta(schedule_timeout).total_seconds()
+    log.debug(f"Job schedule timeout: {job_schedule_timeout}")
 
     env_dict = build_env(env, env_file)
     secret_env_dict = _extract_secret_env(env_dict, root)
@@ -1226,6 +1246,7 @@ async def run_job(
         description=description,
         restart_policy=job_restart_policy,
         life_span=job_life_span,
+        schedule_timeout=job_schedule_timeout,
     )
     progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
     progress.begin(job)
@@ -1439,12 +1460,12 @@ async def calc_life_span(client: Client, value: Optional[str]) -> Optional[float
 
 def _parse_timedelta(value: str) -> timedelta:
     value = value.strip()
-    err = f"Could not parse job timeout '{value}'"
+    err = f"Could not parse time delta '{value}'"
     if value == "":
         raise click.UsageError(f"{err}: Empty string not allowed")
     if value == "0":
         return timedelta(0)
-    match = REGEX_JOB_LIFE_SPAN.search(value)
+    match = REGEX_TIME_DELTA.search(value)
     if match is None:
         raise click.UsageError(
             f"{err}: Should be like '1d2h3m4s' (some parts may be missing)."

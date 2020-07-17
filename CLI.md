@@ -437,6 +437,7 @@ Name | Description|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
+|_\--schedule-timeout TIMEDELTA_|Optional job schedule timeout in the format '3m4s' \(some parts may be missing).|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
@@ -1919,6 +1920,7 @@ Name | Description|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
+|_\--schedule-timeout TIMEDELTA_|Optional job schedule timeout in the format '3m4s' \(some parts may be missing).|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
