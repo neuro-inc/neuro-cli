@@ -1,6 +1,7 @@
 # Distributed tracing support
 
 import os
+import random
 import time
 import types
 
@@ -9,7 +10,7 @@ from multidict import CIMultiDict
 
 
 def gen_trace_id() -> str:
-    """Return  random hexadecimal digits.
+    """Return 32 hexadecimal digits.
 
     The upper 32 bits are the current time in epoch seconds, and the
     lower 96 bits are random. This allows for AWS X-Ray `interop
@@ -18,9 +19,9 @@ def gen_trace_id() -> str:
     The id is used for distributed tracing.
     """
 
-    traced_id_high = format(int(time.time()), "x")
-    traced_id = os.urandom(12).hex()
-    return traced_id_high + traced_id
+    high = int(time.time())
+    low = random.getrandbits(96)
+    return "{:032x}".format((high << 96) | low)
 
 
 def _gen_span_id() -> str:
