@@ -158,7 +158,7 @@ async def logout(root: Root) -> None:
     click.echo("Logged out")
 
 
-@command()
+@command(init_client=False)
 async def aliases(root: Root) -> None:
     """
     List available command aliases.
