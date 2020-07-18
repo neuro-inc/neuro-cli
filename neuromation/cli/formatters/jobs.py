@@ -176,6 +176,17 @@ def format_life_span(life_span: Optional[float]) -> str:
     return format_timedelta(datetime.timedelta(seconds=life_span))
 
 
+def format_datetime(when: Optional[datetime.datetime]) -> str:
+    if when is None:
+        return ""
+    assert when.tzinfo is not None
+    delta = datetime.datetime.now(datetime.timezone.utc) - when
+    if delta < datetime.timedelta(days=1):
+        return humanize.naturaltime(delta)
+    else:
+        return humanize.naturaldate(when.astimezone())
+
+
 class JobTelemetryFormatter:
     def __init__(self) -> None:
         self.col_len = {
@@ -239,6 +250,9 @@ class TabularJobRow:
     tags: str
     status: str
     when: str
+    created: str
+    started: str
+    finished: str
     image: str
     owner: str
     description: str
@@ -257,18 +271,15 @@ class TabularJobRow:
         else:
             when = job.history.finished_at
         assert when is not None
-        assert when.tzinfo is not None
-        delta = datetime.datetime.now(datetime.timezone.utc) - when
-        if delta < datetime.timedelta(days=1):
-            when_humanized = humanize.naturaltime(delta)
-        else:
-            when_humanized = humanize.naturaldate(when.astimezone())
         return cls(
             id=job.id,
             name=job.name if job.name else "",
             tags=",".join(job.tags),
             status=job.status,
-            when=when_humanized,
+            when=format_datetime(when),
+            created=format_datetime(job.history.created_at),
+            started=format_datetime(job.history.started_at),
+            finished=format_datetime(job.history.finished_at),
             image=image_formatter(job.container.image),
             owner=("<you>" if job.owner == username else job.owner),
             description=job.description if job.description else "",

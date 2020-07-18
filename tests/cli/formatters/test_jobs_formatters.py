@@ -1580,6 +1580,74 @@ class TestTabularJobsFormatter:
             "job-4  3h25m45s",
         ]
 
+    def test_dates(self) -> None:
+        items = [
+            JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ContainerCreating",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=None,
+                finished_at=None,
+            ),
+            JobStatusHistory(
+                status=JobStatus.RUNNING,
+                reason="ContainerRunning",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                finished_at=None,
+            ),
+            JobStatusHistory(
+                status=JobStatus.FAILED,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                finished_at=isoparse("2018-09-26T12:28:59.759433+00:00"),
+            ),
+            JobStatusHistory(
+                status=JobStatus.FAILED,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=datetime.now(timezone.utc) - timedelta(seconds=12345),
+                started_at=datetime.now(timezone.utc) - timedelta(seconds=1234),
+                finished_at=datetime.now(timezone.utc) - timedelta(seconds=12),
+            ),
+        ]
+        jobs = [
+            JobDescription(
+                status=item.status,
+                owner="test-user",
+                cluster_name="default",
+                id=f"job-{i}",
+                uri=URL(f"job://default/test-user/job-{i}"),
+                description=None,
+                history=item,
+                container=Container(
+                    command="test-command",
+                    image=RemoteImage.new_external_image(name="test-image"),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                ),
+                ssh_server=URL("ssh-auth"),
+                is_preemptible=False,
+                internal_hostname="host.local",
+            )
+            for i, item in enumerate(items, 1)
+        ]
+
+        columns = parse_columns("id status when created started finished")
+        formatter = TabularJobsFormatter(100, "test-user", columns, image_formatter=str)
+        result = [item.rstrip() for item in formatter(jobs)]
+
+        assert result == [
+            "ID     STATUS   WHEN            CREATED      STARTED         FINISHED",
+            "job-1  pending  Sep 25 2018     Sep 25 2018",
+            "job-2  running  Sep 25 2018     Sep 25 2018  Sep 25 2018",
+            "job-3  failed   Sep 26 2018     Sep 25 2018  Sep 25 2018     Sep 26 2018",
+            "job-4  failed   12 seconds ago  3 hours ago  20 minutes ago  12 seconds ago",  # noqa: E501
+        ]
+
 
 class TestResourcesFormatter:
     def test_tiny_container(self) -> None:
