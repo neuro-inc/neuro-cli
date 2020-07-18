@@ -77,10 +77,12 @@ COLUMNS = [
     JobColumnInfo("cluster_name", "CLUSTER", Align.LEFT, ColumnWidth(max=15)),
     JobColumnInfo("description", "DESCRIPTION", Align.LEFT, ColumnWidth(max=50)),
     JobColumnInfo("command", "COMMAND", Align.LEFT, ColumnWidth(max=100)),
+    JobColumnInfo("life_span", "LIFE-SPAN", Align.LEFT, ColumnWidth()),
 ]
 
 COLUMNS_DEFAULT_IGNORE = {
     "tags",
+    "life_span",
 }
 
 
