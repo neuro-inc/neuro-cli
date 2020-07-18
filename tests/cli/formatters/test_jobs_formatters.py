@@ -280,8 +280,8 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_tags(self) -> None:
@@ -335,8 +335,8 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_life_span_with_value(self) -> None:
@@ -390,8 +390,8 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_life_span_without_value(self) -> None:
@@ -445,8 +445,8 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_restart_policy(self) -> None:
@@ -500,8 +500,8 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_pending_job(self) -> None:
@@ -553,8 +553,8 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 321\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_pending_job_no_reason(self) -> None:
@@ -843,8 +843,8 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_volumes_short(self) -> None:
@@ -925,8 +925,8 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_volumes_long(self) -> None:
@@ -1000,8 +1000,8 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_secrets_short(self) -> None:
@@ -1100,8 +1100,8 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
 

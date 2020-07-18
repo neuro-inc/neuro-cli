@@ -162,9 +162,9 @@ class JobStatusFormatter:
             add("Finished", job_status.history.finished_at.isoformat())
             add("Exit code", str(job_status.history.exit_code))
         if job_status.status == JobStatus.FAILED and job_status.history.description:
-            lines.append(bold("===Description==="))
+            lines.append(bold("=== Description ==="))
             lines.append(job_status.history.description)
-            lines.append("=================")
+            lines.append("===================")
         return "\n".join(lines)
 
 
