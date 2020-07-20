@@ -103,9 +103,9 @@ neuro [OPTIONS] COMMAND [ARGS]...
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
 |_--color \[yes &#124; no &#124; auto]_|Color mode.|
 |_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuro Platform CLI is available for download.|
-|_--help_|Show this message and exit.|
 |_\--hide-token / --no-hide-token_|Prevent user's token sent in HTTP headers from being printed out to stderr during HTTP tracing. Can be used only together with option '--trace'. On by default.|
 |_\--network-timeout FLOAT_|Network read timeout, seconds.|
 |_\--neuromation-config PATH_|Path to config directory.|
@@ -325,8 +325,8 @@ neuro admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 
 Name | Description|
 |----|------------|
-|_\-g, --gpu AMOUNT_|GPU quota value in hours \(h) or minutes \(m).|
 |_--help_|Show this message and exit.|
+|_\-g, --gpu AMOUNT_|GPU quota value in hours \(h) or minutes \(m).|
 |_\-n, --non-gpu AMOUNT_|Non-GPU quota value in hours \(h) or minutes \(m).|
 
 
@@ -346,8 +346,8 @@ neuro admin add-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 
 Name | Description|
 |----|------------|
-|_\-g, --gpu AMOUNT_|Additional GPU quota value in hours \(h) or minutes \(m).|
 |_--help_|Show this message and exit.|
+|_\-g, --gpu AMOUNT_|Additional GPU quota value in hours \(h) or minutes \(m).|
 |_\-n, --non-gpu AMOUNT_|Additional non-GPU quota value in hours \(h) or minutes \(m).|
 
 
@@ -420,6 +420,7 @@ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
 |_--browse_|Open a job's URL in a web browser|
 |_\-d, --description DESC_|Optional job description in free format|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
@@ -427,7 +428,6 @@ Name | Description|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
-|_--help_|Show this message and exit.|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
@@ -472,11 +472,11 @@ neuro ps -t tag1 -t tag2
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
 |_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
-|_--help_|Show this message and exit.|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
@@ -503,8 +503,8 @@ neuro job status [OPTIONS] JOB
 
 Name | Description|
 |----|------------|
-|_\--full-uri_|Output full URI.|
 |_--help_|Show this message and exit.|
+|_\--full-uri_|Output full URI.|
 
 
 
@@ -859,11 +859,11 @@ neuro cp storage:results/*.out .
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
 |_--exclude_|Exclude files and directories that match the specified pattern.|
 |_--include_|Don't exclude files and directories that match the specified pattern.|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
-|_--help_|Show this message and exit.|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_\-r, --recursive_|Recursive copy, off by default|
@@ -887,9 +887,9 @@ neuro storage ls [OPTIONS] [PATHS]...
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
 |_\-d, --directory_|list directories themselves, not their contents.|
 |_-l_|use a long listing format.|
-|_--help_|Show this message and exit.|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
 |_\-a, --all_|do not ignore entries starting with .|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
@@ -941,8 +941,8 @@ neuro rm storage:foo/**/*.tmp
 
 Name | Description|
 |----|------------|
-|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
 |_--help_|Show this message and exit.|
+|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
 |_\-r, --recursive_|remove directories and their contents recursively|
 
 
@@ -1006,8 +1006,8 @@ neuro mv storage://{username}/foo.txt storage:bar.dat
 
 Name | Description|
 |----|------------|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
 |_--help_|Show this message and exit.|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 
@@ -1080,9 +1080,9 @@ neuro image ls [OPTIONS]
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
 |_-l_|List in long format.|
 |_\--full-uri_|Output full image URI.|
-|_--help_|Show this message and exit.|
 
 
 
@@ -1396,8 +1396,8 @@ neuro config docker [OPTIONS]
 
 Name | Description|
 |----|------------|
-|_\--docker-config PATH_|Specifies the location of the Docker client configuration files|
 |_--help_|Show this message and exit.|
+|_\--docker-config PATH_|Specifies the location of the Docker client configuration files|
 
 
 
@@ -1599,8 +1599,8 @@ neuro acl list --shared --scheme image
 
 Name | Description|
 |----|------------|
-|_\--full-uri_|Output full URI.|
 |_--help_|Show this message and exit.|
+|_\--full-uri_|Output full URI.|
 |_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user.|
 |_--shared_|Output the resources shared by the user.|
 |_-u TEXT_|Use specified user or role.|
@@ -1704,11 +1704,11 @@ neuro blob cp [OPTIONS] [SOURCES]... [DESTINATION]
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
 |_--exclude_|Exclude files and directories that match the specified pattern.|
 |_--include_|Don't exclude files and directories that match the specified pattern.|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
-|_--help_|Show this message and exit.|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
 |_\-r, --recursive_|Recursive copy, off by default|
@@ -1731,8 +1731,8 @@ neuro blob ls [OPTIONS] [PATHS]...
 
 Name | Description|
 |----|------------|
-|_-l_|use a long listing format.|
 |_--help_|Show this message and exit.|
+|_-l_|use a long listing format.|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
 |_\-r, --recursive_|List all keys under the URL path provided, not just 1 level depths.|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
@@ -1902,6 +1902,7 @@ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
 |_--browse_|Open a job's URL in a web browser|
 |_\-d, --description DESC_|Optional job description in free format|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
@@ -1909,7 +1910,6 @@ Name | Description|
 |_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
-|_--help_|Show this message and exit.|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
@@ -1954,11 +1954,11 @@ neuro ps -t tag1 -t tag2
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
 |_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
-|_--help_|Show this message and exit.|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
@@ -1985,8 +1985,8 @@ neuro status [OPTIONS] JOB
 
 Name | Description|
 |----|------------|
-|_\--full-uri_|Output full URI.|
 |_--help_|Show this message and exit.|
+|_\--full-uri_|Output full URI.|
 
 
 
@@ -2250,11 +2250,11 @@ neuro cp storage:results/*.out .
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
 |_--exclude_|Exclude files and directories that match the specified pattern.|
 |_--include_|Don't exclude files and directories that match the specified pattern.|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
-|_--help_|Show this message and exit.|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_\-r, --recursive_|Recursive copy, off by default|
@@ -2278,9 +2278,9 @@ neuro ls [OPTIONS] [PATHS]...
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
 |_\-d, --directory_|list directories themselves, not their contents.|
 |_-l_|use a long listing format.|
-|_--help_|Show this message and exit.|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
 |_\-a, --all_|do not ignore entries starting with .|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
@@ -2313,8 +2313,8 @@ neuro rm storage:foo/**/*.tmp
 
 Name | Description|
 |----|------------|
-|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
 |_--help_|Show this message and exit.|
+|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
 |_\-r, --recursive_|remove directories and their contents recursively|
 
 
@@ -2378,8 +2378,8 @@ neuro mv storage://{username}/foo.txt storage:bar.dat
 
 Name | Description|
 |----|------------|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
 |_--help_|Show this message and exit.|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 
@@ -2400,9 +2400,9 @@ neuro images [OPTIONS]
 
 Name | Description|
 |----|------------|
+|_--help_|Show this message and exit.|
 |_-l_|List in long format.|
 |_\--full-uri_|Output full image URI.|
-|_--help_|Show this message and exit.|
 
 
 

@@ -3,7 +3,6 @@ import functools
 import inspect
 import itertools
 import logging
-import operator
 import os
 import pathlib
 import re
@@ -152,7 +151,13 @@ class NeuroClickMixin:
         args = [i for i in ret if not isinstance(i, click.Option)]
         opts = [i for i in ret if isinstance(i, click.Option)]
 
-        return args + sorted(opts, key=operator.attrgetter("name"))
+        help_names = self.get_help_option_names(ctx)  # type: ignore
+
+        def sort_key(opt: click.Option) -> Tuple[bool, str]:
+            flag = set(opt.opts) & help_names or set(opt.secondary_opts) & help_names
+            return (not flag, opt.name)
+
+        return args + sorted(opts, key=sort_key)
 
     def get_help_option(self, ctx: click.Context) -> Optional[click.Option]:
         help_options = self.get_help_option_names(ctx)  # type: ignore
