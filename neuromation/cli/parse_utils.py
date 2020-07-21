@@ -72,6 +72,9 @@ COLUMNS = [
     JobColumnInfo("tags", "TAGS", Align.LEFT, ColumnWidth(max=40)),
     JobColumnInfo("status", "STATUS", Align.LEFT, ColumnWidth(max=10)),
     JobColumnInfo("when", "WHEN", Align.LEFT, ColumnWidth(max=15)),
+    JobColumnInfo("created", "CREATED", Align.LEFT, ColumnWidth(max=15)),
+    JobColumnInfo("started", "STARTED", Align.LEFT, ColumnWidth(max=15)),
+    JobColumnInfo("finished", "FINISHED", Align.LEFT, ColumnWidth(max=15)),
     JobColumnInfo("image", "IMAGE", Align.LEFT, ColumnWidth(max=40)),
     JobColumnInfo("owner", "OWNER", Align.LEFT, ColumnWidth(max=25)),
     JobColumnInfo("cluster_name", "CLUSTER", Align.LEFT, ColumnWidth(max=15)),
@@ -83,6 +86,9 @@ COLUMNS = [
 COLUMNS_DEFAULT_IGNORE = {
     "tags",
     "life_span",
+    "created",
+    "started",
+    "finished",
 }
 
 

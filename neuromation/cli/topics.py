@@ -102,6 +102,9 @@ async def ps_format() -> None:
       tags          TAGS        left  -   40   -
       status        STATUS      left  -   10   -
       when          WHEN        left  -   15   -
+      created       CREATED     left  -   15   -
+      started       STARTED     left  -   15   -
+      finished      FINISHED    left  -   15   -
       image         IMAGE       left  -   40   -
       owner         OWNER       left  -   25   -
       cluster_name  CLUSTER     left  -   15   -
