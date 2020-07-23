@@ -1,0 +1,1 @@
+Long list of tags for `neuro status` is now wrapped.

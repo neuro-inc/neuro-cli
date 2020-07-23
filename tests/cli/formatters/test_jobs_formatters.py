@@ -339,6 +339,64 @@ class TestJobOutputFormatter:
             "ErrorDesc\n==================="
         )
 
+    def test_job_with_tags_wrap_tags(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            tags=["long-tag-1", "long-tag-2", "long-tag-3", "long-tag-4"],
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_external_image(name="test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = click.unstyle(
+            JobStatusFormatter(uri_formatter=uri_fmtr, width=50)(description)
+        )
+        resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
+        assert (
+            status == "Job: test-job\n"
+            "Tags: long-tag-1, long-tag-2, long-tag-3,\n"
+            "      long-tag-4\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: test-image\n"
+            "Command: test-command\n"
+            f"{resource}\n"
+            "TTY: False\n"
+            "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
+            "Http authentication: True\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
+        )
+
     def test_job_with_life_span_with_value(self) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,

@@ -2,6 +2,7 @@ import abc
 import datetime
 import itertools
 import sys
+import textwrap
 import time
 from dataclasses import dataclass
 from typing import Iterable, Iterator, List, Optional
@@ -68,8 +69,9 @@ def format_timedelta(delta: datetime.timedelta) -> str:
 
 
 class JobStatusFormatter:
-    def __init__(self, uri_formatter: URIFormatter) -> None:
+    def __init__(self, uri_formatter: URIFormatter, width: int = 0) -> None:
         self._format_uri = uri_formatter
+        self._width = width
         self._format_image = image_formatter(uri_formatter=uri_formatter)
 
     def __call__(self, job_status: JobDescription) -> str:
@@ -83,7 +85,16 @@ class JobStatusFormatter:
         if job_status.name:
             add("Name", job_status.name)
         if job_status.tags:
-            add("Tags", ", ".join(job_status.tags))
+            text = ", ".join(job_status.tags)
+            indent = len("Tags: ")
+            if self._width > indent:
+                width = self._width - indent
+                text = textwrap.fill(
+                    text, width=width, break_long_words=False, break_on_hyphens=False
+                )
+                if "\n" in text:
+                    text = textwrap.indent(text, " " * indent).lstrip()
+            add("Tags", text)
         add("Owner", job_status.owner or "")
         add("Cluster", job_status.cluster_name)
         if job_status.description:
