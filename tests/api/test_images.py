@@ -228,6 +228,7 @@ class TestImageParser:
             "image://test-cluster/bob/ubuntu?key=value",
             "image:///ubuntu?key=value",
             "image:ubuntu?key=value",
+            "image:5000?key=value",
         ],
     )
     def test_parse_as_neuro_image__with_query__fail(self, url: str) -> None:
@@ -241,6 +242,7 @@ class TestImageParser:
             "image://test-cluster/bob/ubuntu#fragment",
             "image:///ubuntu#fragment",
             "image:ubuntu#fragment",
+            "image:5000#fragment",
         ],
     )
     def test_parse_as_neuro_image__with_fragment__fail(self, url: str) -> None:
@@ -262,12 +264,12 @@ class TestImageParser:
         with pytest.raises(ValueError, match="port is not allowed"):
             self.parser.parse_as_neuro_image(url)
 
-    def test_parse_as_neuro_image_empty_fail__fail(self) -> None:
+    def test_parse_as_neuro_image_empty__fail(self) -> None:
         image = ""
         with pytest.raises(ValueError, match="empty image name"):
             self.parser.parse_as_neuro_image(image)
 
-    def test_parse_as_neuro_image_dash_fail__fail(self) -> None:
+    def test_parse_as_neuro_image_dash__fail(self) -> None:
         image = "-zxc"
         with pytest.raises(ValueError, match="image cannot start with dash"):
             self.parser.parse_as_neuro_image(image)
@@ -275,21 +277,21 @@ class TestImageParser:
     def test_parse_as_neuro_image_no_scheme_fail(self) -> None:
         image = "ubuntu"
         with pytest.raises(
-            ValueError, match="scheme 'image://' is required for remote images"
+            ValueError, match="scheme 'image:' is required for remote images"
         ):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_invalid_scheme_1_fail(self) -> None:
         image = "ubuntu:latest"
         with pytest.raises(
-            ValueError, match="scheme 'image://' is required for remote images"
+            ValueError, match="scheme 'image:' is required for remote images"
         ):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_invalid_scheme_2_fail(self) -> None:
         image = "http://ubuntu"
         with pytest.raises(
-            ValueError, match="scheme 'image://' is required for remote images"
+            ValueError, match="scheme 'image:' is required for remote images"
         ):
             self.parser.parse_as_neuro_image(image)
 
@@ -577,42 +579,38 @@ class TestImageParser:
 
     def test_parse_as_neuro_image_no_scheme_no_slash_no_tag_fail(self) -> None:
         image = "ubuntu"
-        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+        with pytest.raises(ValueError, match="scheme 'image:' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_no_slash_with_tag_fail(self) -> None:
         image = "ubuntu:v10.04"
-        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+        with pytest.raises(ValueError, match="scheme 'image:' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_1_slash_no_tag_fail(self) -> None:
         image = "library/ubuntu"
-        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+        with pytest.raises(ValueError, match="scheme 'image:' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_1_slash_with_tag_fail(self) -> None:
         image = "library/ubuntu:v10.04"
-        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+        with pytest.raises(ValueError, match="scheme 'image:' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_2_slash_no_tag_fail(self) -> None:
         image = "docker.io/library/ubuntu"
-        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+        with pytest.raises(ValueError, match="scheme 'image:' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_2_slash_with_tag_fail(self) -> None:
         image = "docker.io/library/ubuntu:v10.04"
-        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+        with pytest.raises(ValueError, match="scheme 'image:' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_3_slash_no_tag_fail(self) -> None:
         image = "something/docker.io/library/ubuntu"
-        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+        with pytest.raises(ValueError, match="scheme 'image:' is required"):
             self.parser.parse_as_neuro_image(image)
-
-    def test_is_neuro_registry_with_registry_prefix(self) -> None:
-        assert self.parser.is_in_neuro_registry("reg.neu.ro/user/image:tag")
-        assert not self.parser.is_in_neuro_registry('docker.io/library/ubuntu"')
 
     def test_parse_as_neuro_image_with_registry_prefix(self) -> None:
         image = self.parser.parse_as_neuro_image("reg.neu.ro/user/image:tag")
@@ -620,7 +618,7 @@ class TestImageParser:
 
     def test_parse_as_neuro_image_no_scheme_3_slash_with_tag_fail(self) -> None:
         image = "something/docker.io/library/ubuntu:v10.04"
-        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+        with pytest.raises(ValueError, match="scheme 'image:' is required"):
             self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_allow_tag_false_with_scheme_no_tag(self) -> None:
@@ -636,7 +634,7 @@ class TestImageParser:
 
     def test_parse_as_neuro_image_allow_tag_false_no_scheme_no_tag(self) -> None:
         image = "ubuntu"
-        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+        with pytest.raises(ValueError, match="scheme 'image:' is required"):
             self.parser.parse_as_neuro_image(image, tag_option=TagOption.DENY)
 
     def test_parse_as_neuro_image_allow_tag_false_no_scheme_with_tag(self) -> None:
@@ -677,19 +675,38 @@ class TestImageParser:
             registry="reg.neu.ro",
         )
 
-    def test_normalize_is_neuro_image(self) -> None:
-        image = "image:ubuntu"
-        assert (
-            self.parser.normalize(image) == "image://test-cluster/alice/ubuntu:latest"
+    def test_convert_to_neuro_image__neuro_registry(self) -> None:
+        local_image = LocalImage(name="reg.neu.ro/bob/ubuntu", tag="v20.04")
+        neuro_image = self.parser.convert_to_neuro_image(local_image)
+        assert neuro_image == RemoteImage.new_neuro_image(
+            name="ubuntu",
+            tag="v20.04",
+            owner="bob",
+            cluster_name="test-cluster",
+            registry="reg.neu.ro",
         )
 
-    def test_normalize_is_local_image(self) -> None:
-        image = "docker.io/library/ubuntu"
-        assert self.parser.normalize(image) == "docker.io/library/ubuntu:latest"
+    def test_convert_to_neuro_image__neuro_registry__no_user(self) -> None:
+        local_image = LocalImage(name="reg.neu.ro/ubuntu", tag="v20.04")
+        neuro_image = self.parser.convert_to_neuro_image(local_image)
+        assert neuro_image == RemoteImage.new_neuro_image(
+            name="ubuntu",
+            tag="v20.04",
+            owner="alice",
+            cluster_name="test-cluster",
+            registry="reg.neu.ro",
+        )
 
-    def test_normalize_invalid_image_name_left_as_is(self) -> None:
-        image = "image://test-cluster/ubuntu"
-        assert self.parser.normalize(image) == "image://test-cluster/ubuntu"
+    def test_convert_to_neuro_image__neuro_registry__no_path(self) -> None:
+        local_image = LocalImage(name="reg.neu.ro/", tag="v20.04")
+        neuro_image = self.parser.convert_to_neuro_image(local_image)
+        assert neuro_image == RemoteImage.new_neuro_image(
+            name="reg.neu.ro/",
+            tag="v20.04",
+            owner="alice",
+            cluster_name="test-cluster",
+            registry="reg.neu.ro",
+        )
 
     # corner case 'image:latest'
 
@@ -705,51 +722,31 @@ class TestImageParser:
 
     # other corner cases
 
-    def test_is_in_neuro_registry__registry_has_port__neuro_image(self) -> None:
-        my_parser = _ImageNameParser(
-            default_user="alice",
-            default_cluster="test-cluster",
-            registry_url=URL("http://localhost:5000"),
+    def test_parse_as_neuro_image__numeric_name(self) -> None:
+        image = "image:5000"
+        parsed = self.parser.parse_as_neuro_image(image)
+        assert parsed == RemoteImage.new_neuro_image(
+            name="5000",
+            tag="latest",
+            owner="alice",
+            cluster_name="test-cluster",
+            registry="reg.neu.ro",
         )
-        image = "image://test-cluster/bob/library/ubuntu:v10.04"
-        assert my_parser.is_in_neuro_registry(image) is True
 
-    def test_is_in_neuro_registry__registry_has_port__image_in_good_repo(self) -> None:
-        my_parser = _ImageNameParser(
-            default_user="alice",
-            default_cluster="test-cluster",
-            registry_url=URL("http://localhost:5000"),
-        )
-        image = "localhost:5000/bob/library/ubuntu:v10.04"
-        assert my_parser.is_in_neuro_registry(image) is True
+    def test_parse_as_local_image__neuro_registry(self) -> None:
+        image = "reg.neu.ro/bob/ubuntu:v10.04"
+        parsed = self.parser.parse_as_local_image(image)
+        assert parsed == LocalImage(name="reg.neu.ro/bob/ubuntu", tag="v10.04")
 
-    def test_is_in_neuro_registry__registry_has_port__image_in_bad_repo(self) -> None:
+    def test_parse_as_local_image__registry_has_port__neuro_registry(self) -> None:
         my_parser = _ImageNameParser(
             default_user="alice",
             default_cluster="test-cluster",
             registry_url=URL("http://localhost:5000"),
         )
-        image = "localhost:9999/bob/library/ubuntu:v10.04"
-        assert my_parser.is_in_neuro_registry(image) is False
-
-    def test_is_in_neuro_registry__registry_has_port__local_image(self) -> None:
-        my_parser = _ImageNameParser(
-            default_user="alice",
-            default_cluster="test-cluster",
-            registry_url=URL("http://localhost:5000"),
-        )
-        image = "ubuntu:v10.04"
-        assert my_parser.is_in_neuro_registry(image) is False
-
-    def test_is_in_neuro_registry__registry_has_port(self) -> None:
-        my_parser = _ImageNameParser(
-            default_user="alice",
-            default_cluster="test-cluster",
-            registry_url=URL("http://localhost:5000"),
-        )
-        image = "ubuntu:v10.04"
+        image = "localhost:5000/bob/ubuntu:v10.04"
         parsed = my_parser.parse_as_local_image(image)
-        assert parsed == LocalImage(name="ubuntu", tag="v10.04")
+        assert parsed == LocalImage(name="localhost:5000/bob/ubuntu", tag="v10.04")
 
     def test_parse_as_neuro_image__registry_has_port__neuro_image(self) -> None:
         my_parser = _ImageNameParser(
@@ -790,7 +787,7 @@ class TestImageParser:
             registry_url=URL("http://localhost:5000"),
         )
         image = "localhost:9999/bob/library/ubuntu:v10.04"
-        with pytest.raises(ValueError, match="scheme 'image://' is required"):
+        with pytest.raises(ValueError, match="scheme 'image:' is required"):
             my_parser.parse_as_neuro_image(image)
 
     def test_parse_remote__registry_has_port__neuro_image(self) -> None:

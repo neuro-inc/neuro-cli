@@ -131,7 +131,7 @@ class _ImageNameParser:
     def parse_remote(
         self, value: str, *, tag_option: TagOption = TagOption.DEFAULT
     ) -> RemoteImage:
-        if self.is_in_neuro_registry(value):
+        if value.startswith("image:") or value.startswith(f"{self._registry}/"):
             return self.parse_as_neuro_image(value, tag_option=tag_option)
         else:
             img = self.parse_as_local_image(value)
@@ -146,34 +146,28 @@ class _ImageNameParser:
                 name=name, tag=img.tag, registry=registry
             )
 
-    def is_in_neuro_registry(self, image: str) -> bool:
-        # not use URL here because URL("ubuntu:v1") is parsed as scheme=ubuntu path=v1
-        return image.startswith("image:") or image.startswith(f"{self._registry}/")
-
     def convert_to_neuro_image(self, image: LocalImage) -> RemoteImage:
         assert self._registry is not None
+        owner = self._default_user
+        name = image.name
+        if image.name.startswith(f"{self._registry}/"):
+            path = image.name[len(self._registry) :].lstrip("/")
+            if path:
+                owner, _, name = path.partition("/")
+                if not name:
+                    owner = self._default_user
+                    name = path
+
         return RemoteImage.new_neuro_image(
-            name=image.name,
+            name=name,
             tag=image.tag,
-            owner=self._default_user,
+            owner=owner,
             cluster_name=self._default_cluster,
             registry=self._registry,
         )
 
     def convert_to_local_image(self, image: RemoteImage) -> LocalImage:
         return LocalImage(name=image.name, tag=image.tag)
-
-    def normalize(self, image: str) -> str:
-        try:
-            if self.is_in_neuro_registry(image):
-                remote_image = self.parse_as_neuro_image(image)
-                image_normalized = str(remote_image)
-            else:
-                local_image = self.parse_as_local_image(image)
-                image_normalized = str(local_image)
-        except ValueError:
-            image_normalized = image
-        return image_normalized
 
     def has_tag(self, image: str) -> bool:
         prefix = "image:"
@@ -193,7 +187,7 @@ class _ImageNameParser:
             )
 
     def _parse_as_local_image(self, image: str) -> LocalImage:
-        if self.is_in_neuro_registry(image):
+        if image.startswith("image:"):
             raise ValueError("scheme 'image://' is not allowed for local images")
         name, tag = self._split_image_name(image, "latest")
         return LocalImage(name=name, tag=tag)
@@ -201,32 +195,28 @@ class _ImageNameParser:
     def _parse_as_neuro_image(
         self, image: str, default_tag: Optional[str]
     ) -> RemoteImage:
-        if not self.is_in_neuro_registry(image):
-            raise ValueError("scheme 'image://' is required for remote images")
-
-        if image.startswith(f"{self._registry}/"):
-            path = image[len(f"{self._registry}/") :]
-            image = f"image://{self._default_cluster}/{path}"
-
-        url = URL(image)
-
-        if url.scheme and url.scheme != "image":
-            # image with port in registry: `localhost:5000/owner/ubuntu:latest`
-            url = URL(f"//{url}")
-
-        if not url.scheme:
-            parts = url.path.split("/")
+        assert self._registry is not None
+        if image.startswith("image:"):
+            url = URL(image)
+            if not url.scheme and url.path.startswith("image:"):
+                url = URL.build(
+                    scheme="image",
+                    host=self._default_cluster,
+                    path=f"/{self._default_user}/{url.path[len('image:') :]}",
+                    fragment=url.fragment,
+                    query=url.query,
+                )
+        elif image.startswith(f"{self._registry}/"):
             url = URL.build(
                 scheme="image",
-                host=parts[1],
-                path="/".join([""] + parts[2:]),
-                query=url.query,
+                host=self._default_cluster,
+                path=image[len(self._registry) :],
             )
+        else:
+            raise ValueError("scheme 'image:' is required for remote images")
 
         self._check_allowed_uri_elements(url)
 
-        assert self._registry is not None
-        registry = self._registry
         name, tag = self._split_image_name(url.path.lstrip("/"), default_tag)
         cluster_name = url.host or self._default_cluster
         if url.path.startswith("/"):
@@ -238,7 +228,7 @@ class _ImageNameParser:
         return RemoteImage.new_neuro_image(
             name=name,
             tag=tag,
-            registry=registry,
+            registry=self._registry,
             owner=owner,
             cluster_name=cluster_name,
         )
