@@ -563,7 +563,7 @@ class Jobs(metaclass=NoPublicConstructor):
 
 
 def _load_chunk(chunk: bytes) -> Dict[str, Any]:
-    return json.loads(chunk, encoding="utf-8")
+    return json.loads(chunk.decode())
 
 
 def _parse_commit_started_chunk(
