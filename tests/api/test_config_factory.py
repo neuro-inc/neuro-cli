@@ -21,7 +21,7 @@ from tests import _TestServerFactory
 @pytest.fixture
 def tmp_home(tmp_path: Path, monkeypatch: Any) -> Path:
     monkeypatch.setattr(Path, "home", lambda: tmp_path)  # Like as it's not enough
-    if os.name == "nt":
+    if os.name == "nt" and sys.version_info >= (3, 8):
         monkeypatch.setenv("USERPROFILE", str(tmp_path))
     else:
         monkeypatch.setenv("HOME", str(tmp_path))
