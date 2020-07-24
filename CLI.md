@@ -406,9 +406,10 @@ neuro job run [OPTIONS] IMAGE [CMD]...
 
 # Starts a container pytorch:latest on a machine with smaller GPU resources
 # (see exact values in `neuro config show`) and with two volumes mounted:
-#   storage://<home-directory>   --> /var/storage/home (in read-write mode),
-#   storage://neuromation/public --> /var/storage/neuromation (in read-only mode).
-neuro run --preset=gpu-small --volume=HOME pytorch:latest
+#   storage:/<home-directory>   --> /var/storage/home (in read-write mode),
+#   storage:/neuromation/public --> /var/storage/neuromation (in read-only mode).
+neuro run --preset=gpu-small --volume=storage::/var/storage/home:rw \
+--volume=storage:/neuromation/public:/var/storage/home:ro pytorch:latest
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
 # registry, run /script.sh and pass arg1 and arg2 as its arguments:
@@ -439,7 +440,7 @@ Name | Description|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. Use --volume=ALL to mount all accessible storage directories.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 
 
@@ -1888,9 +1889,10 @@ neuro run [OPTIONS] IMAGE [CMD]...
 
 # Starts a container pytorch:latest on a machine with smaller GPU resources
 # (see exact values in `neuro config show`) and with two volumes mounted:
-#   storage://<home-directory>   --> /var/storage/home (in read-write mode),
-#   storage://neuromation/public --> /var/storage/neuromation (in read-only mode).
-neuro run --preset=gpu-small --volume=HOME pytorch:latest
+#   storage:/<home-directory>   --> /var/storage/home (in read-write mode),
+#   storage:/neuromation/public --> /var/storage/neuromation (in read-only mode).
+neuro run --preset=gpu-small --volume=storage::/var/storage/home:rw \
+--volume=storage:/neuromation/public:/var/storage/home:ro pytorch:latest
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuromation
 # registry, run /script.sh and pass arg1 and arg2 as its arguments:
@@ -1921,7 +1923,7 @@ Name | Description|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. --volume=HOME is an alias for storage::/var/storage/home:rw and storage://neuromation/public:/var/storage/neuromation:ro|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. Use --volume=ALL to mount all accessible storage directories.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 
 

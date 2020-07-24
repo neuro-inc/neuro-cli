@@ -807,25 +807,6 @@ def test_job_run_with_tty(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_run_home_volumes_automount(helper: Helper, fakebrowser: Any) -> None:
-    command = "[ -d /var/storage/home -a -d /var/storage/neuromation ]"
-
-    with pytest.raises(subprocess.CalledProcessError) as cm:
-        # first, run without --volume=HOME
-        helper.run_cli(["-q", "job", "run", UBUNTU_IMAGE_NAME, command])
-
-    assert cm.value.returncode == 1
-
-    # then, run with --volume=HOME
-    capture = helper.run_cli(
-        ["-q", "job", "run", "--volume", "HOME", UBUNTU_IMAGE_NAME, command]
-    )
-
-    job_id_2 = capture.out
-    helper.wait_job_change_state_to(job_id_2, JobStatus.SUCCEEDED, JobStatus.FAILED)
-
-
-@pytest.mark.e2e
 def test_job_run_volume_all(helper: Helper) -> None:
     root_mountpoint = "/var/neuro"
     cmd = " && ".join(
@@ -858,15 +839,6 @@ def test_job_run_volume_all(helper: Helper) -> None:
     helper.wait_job_change_state_to(
         job_id, JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
     )
-
-
-@pytest.mark.e2e
-def test_job_run_volume_all_and_home(helper: Helper) -> None:
-    with pytest.raises(subprocess.CalledProcessError):
-        args = ["--volume", "ALL", "--volume", "HOME"]
-        captured = helper.run_cli(["job", "run", *args, UBUNTU_IMAGE_NAME, "sleep 30"])
-        msg = "Cannot use `--volume=ALL` together with other `--volume` options"
-        assert msg in captured.err
 
 
 @pytest.mark.e2e
