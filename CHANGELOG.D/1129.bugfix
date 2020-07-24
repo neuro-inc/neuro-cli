@@ -1,0 +1,1 @@
+Fixed "division by zero" error when copy from `/dev/stdin` to storage.

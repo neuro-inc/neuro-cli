@@ -745,7 +745,7 @@ class TTYProgress(BaseStorageProgress):
 
     def step(self, data: StorageProgressStep) -> None:
         src = self.fmt_str(data.src.name, FileStatusType.FILE)
-        progress = (100 * data.current) / data.size
+        progress = 100 * data.current / data.size if data.size else 100
         current = self.fmt_size(data.current)
         total = self.fmt_size(data.size)
         self.replace(data.src, f"{src} [{progress:.2f}%] {current} of {total}")
