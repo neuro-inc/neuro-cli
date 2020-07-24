@@ -22,6 +22,7 @@ from typing import (
     Iterable,
     Optional,
     Tuple,
+    Union,
     cast,
 )
 
@@ -239,7 +240,7 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._core.request("PUT", url, auth=auth) as resp:
             resp  # resp.status == 201
 
-    async def create(self, uri: URL, data: AsyncIterator[bytes]) -> None:
+    async def create(self, uri: URL, data: Union[bytes, AsyncIterator[bytes]]) -> None:
         path = self._uri_to_path(uri)
         assert path, "Creation in root is not allowed"
         url = self._config.storage_url / path
