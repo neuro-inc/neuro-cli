@@ -174,21 +174,13 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     "--exclude",
     "filters",
     flag_value=True,
-    help=(
-        "Exclude files and directories that match the specified pattern. "
-        "The default can be changed using the storage.cp-exclude "
-        'configuration variable documented in "neuro help user-config"'
-    ),
+    help=("Exclude files and directories that match the specified pattern."),
 )
 @filter_option(
     "--include",
     "filters",
     flag_value=False,
-    help=(
-        "Don't exclude files and directories that match the specified pattern. "
-        "The default can be changed using the storage.cp-exclude "
-        'configuration variable documented in "neuro help user-config"'
-    ),
+    help=("Don't exclude files and directories that match the specified pattern."),
 )
 @option(
     "--exclude-from-files",
@@ -222,12 +214,22 @@ async def cp(
 ) -> None:
     """
     Simple utility to copy files and directories into and from Blob Storage.
+
     Either SOURCES or DESTINATION should have `blob://` scheme.
     If scheme is omitted, file:// scheme is assumed. It is currently not possible to
     copy files between Blob Storage (`blob://`) destination, nor with `storage://`
     scheme paths.
+
     Use `/dev/stdin` and `/dev/stdout` file names to upload a file from standard input
     or output to stdout.
+
+    Any number of --exclude and --include options can be passed.  The
+    filters that appear later in the command take precedence over filters
+    that appear earlier in the command.  If neither --exclude nor
+    --include options are specified the default can be changed using the
+    storage.cp-exclude configuration variable documented in
+    "neuro help user-config".
+
     File permissions, modification times and other attributes will not be passed to
     Blob Storage metadata during upload.
     """

@@ -258,8 +258,7 @@ def job() -> None:
     help=(
         "Mounts directory from vault into container. "
         "Use multiple options to mount more than one volume. "
-        "--volume=HOME is an alias for storage::/var/storage/home:rw and "
-        "storage://neuromation/public:/var/storage/neuromation:ro"
+        "Use --volume=ALL to mount all accessible storage directories."
     ),
     secure=True,
 )
@@ -746,7 +745,11 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
         uri_fmtr = uri_formatter(
             username=root.client.username, cluster_name=root.client.cluster_name
         )
-    click.echo(JobStatusFormatter(uri_formatter=uri_fmtr)(res))
+    if root.tty:
+        width = root.terminal_size[0]
+    else:
+        width = 0
+    click.echo(JobStatusFormatter(uri_formatter=uri_fmtr, width=width)(res))
 
 
 @command()
@@ -929,8 +932,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help=(
         "Mounts directory from vault into container. "
         "Use multiple options to mount more than one volume. "
-        "--volume=HOME is an alias for storage::/var/storage/home:rw and "
-        "storage://neuromation/public:/var/storage/neuromation:ro"
+        "Use --volume=ALL to mount all accessible storage directories."
     ),
     secure=True,
 )
@@ -1053,9 +1055,10 @@ async def run(
 
     # Starts a container pytorch:latest on a machine with smaller GPU resources
     # (see exact values in `neuro config show`) and with two volumes mounted:
-    #   storage://<home-directory>   --> /var/storage/home (in read-write mode),
-    #   storage://neuromation/public --> /var/storage/neuromation (in read-only mode).
-    neuro run --preset=gpu-small --volume=HOME pytorch:latest
+    #   storage:/<home-directory>   --> /var/storage/home (in read-write mode),
+    #   storage:/neuromation/public --> /var/storage/neuromation (in read-only mode).
+    neuro run --preset=gpu-small --volume=storage::/var/storage/home:rw \\\\
+        --volume=storage:/neuromation/public:/var/storage/home:ro pytorch:latest
 
     # Starts a container using the custom image my-ubuntu:latest stored in neuromation
     # registry, run /script.sh and pass arg1 and arg2 as its arguments:
@@ -1312,28 +1315,10 @@ async def _build_volumes(
                 f"  {NEUROMATION_HOME_ENV_VAR}={neuro_mountpoint}"
             )
     else:
+        if "HOME" in input_volumes:
+            raise ValueError("--volume=HOME no longer supported")
         for vol in input_volumes:
-            if vol == "HOME":
-                volumes.add(
-                    root.client.parse.volume(f"storage::{STORAGE_MOUNTPOINT}/home:rw")
-                )
-                volumes.add(
-                    root.client.parse.volume(
-                        f"storage://{cluster_name}/neuromation/public:"
-                        f"{STORAGE_MOUNTPOINT}/neuromation:ro"
-                    )
-                )
-                click.echo(
-                    click.style(
-                        "DeprecationWarning: Option `--volume=HOME` is deprecated. "
-                        "Use `--volume=ALL`.  Mountpoint will be available in "
-                        "container via variable NEUROMATION_HOME",
-                        fg="red",
-                    ),
-                    err=True,
-                )
-            else:
-                volumes.add(root.client.parse.volume(vol))
+            volumes.add(root.client.parse.volume(vol))
     return volumes
 
 

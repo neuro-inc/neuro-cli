@@ -1,0 +1,1 @@
+Fixed support of relative image URIs with numeric name, like `image:5000`.

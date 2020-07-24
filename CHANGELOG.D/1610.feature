@@ -1,0 +1,1 @@
+Support expansion of the user home directory ("~") in the file path argument in `neuro secret add`.

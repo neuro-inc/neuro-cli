@@ -50,7 +50,7 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        python-version: [3.6, 3.7]
+        python-version: [3.6, 3.7, 3.8]
         os: [ubuntu, macos, windows]
       fail-fast:
         false
@@ -96,7 +96,7 @@ jobs:
     needs: unit
     strategy:
       matrix:
-        python-version: [3.6, 3.7]
+        python-version: [3.6, 3.7, 3.8]
         os: [ubuntu, macos, windows]
         exclude:
         - os: macos

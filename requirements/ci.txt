@@ -5,10 +5,10 @@ pytest==5.4.3
 pytest-cov==2.10.0
 pytest-aiohttp==0.3.0
 pytest-xdist==1.33.0
-pytest-timeout==1.4.1
+pytest-timeout==1.4.2
 pexpect==4.8.0
 flake8==3.8.3
-isort==5.0.9
+isort==5.1.4
 black==19.10b0
 setuptools==49.2.0
 wheel==0.34.2
@@ -17,5 +17,5 @@ twine==3.2.0
 markdown-toc==1.2.6
 towncrier==19.2.0
 asynctest==0.13.0
-cryptography==2.9.2  # temporary pin the version until trusme fixes deprecation warning
+cryptography==3.0  # temporary pin the version until trusme fixes deprecation warning
 trustme==0.6.0

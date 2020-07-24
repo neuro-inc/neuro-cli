@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 from typing import Any, Callable, Dict
@@ -20,7 +21,10 @@ from tests import _TestServerFactory
 @pytest.fixture
 def tmp_home(tmp_path: Path, monkeypatch: Any) -> Path:
     monkeypatch.setattr(Path, "home", lambda: tmp_path)  # Like as it's not enough
-    monkeypatch.setenv("HOME", str(tmp_path))
+    if os.name == "nt" and sys.version_info >= (3, 8):
+        monkeypatch.setenv("USERPROFILE", str(tmp_path))
+    else:
+        monkeypatch.setenv("HOME", str(tmp_path))
 
     return tmp_path
 

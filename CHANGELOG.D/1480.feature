@@ -1,0 +1,1 @@
+Command aliases are now supported if not logged in.

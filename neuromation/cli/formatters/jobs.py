@@ -2,9 +2,10 @@ import abc
 import datetime
 import itertools
 import sys
+import textwrap
 import time
 from dataclasses import dataclass
-from typing import Iterable, Iterator, List
+from typing import Iterable, Iterator, List, Optional
 
 import humanize
 from click import secho, style, unstyle
@@ -68,8 +69,9 @@ def format_timedelta(delta: datetime.timedelta) -> str:
 
 
 class JobStatusFormatter:
-    def __init__(self, uri_formatter: URIFormatter) -> None:
+    def __init__(self, uri_formatter: URIFormatter, width: int = 0) -> None:
         self._format_uri = uri_formatter
+        self._width = width
         self._format_image = image_formatter(uri_formatter=uri_formatter)
 
     def __call__(self, job_status: JobDescription) -> str:
@@ -83,7 +85,16 @@ class JobStatusFormatter:
         if job_status.name:
             add("Name", job_status.name)
         if job_status.tags:
-            add("Tags", ", ".join(job_status.tags))
+            text = ", ".join(job_status.tags)
+            indent = len("Tags: ")
+            if self._width > indent:
+                width = self._width - indent
+                text = textwrap.fill(
+                    text, width=width, break_long_words=False, break_on_hyphens=False
+                )
+                if "\n" in text:
+                    text = textwrap.indent(text, " " * indent).lstrip()
+            add("Tags", text)
         add("Owner", job_status.owner or "")
         add("Cluster", job_status.cluster_name)
         if job_status.description:
@@ -108,12 +119,7 @@ class JobStatusFormatter:
         if job_status.restart_policy != JobRestartPolicy.NEVER:
             add("Restart policy", job_status.restart_policy)
         if job_status.life_span is not None:
-            limit = (
-                "no limit"
-                if job_status.life_span == 0
-                else format_timedelta(datetime.timedelta(seconds=job_status.life_span))
-            )
-            add("Life span", limit)
+            add("Life span", format_life_span(job_status.life_span))
 
         add("TTY", str(job_status.container.tty))
 
@@ -142,6 +148,7 @@ class JobStatusFormatter:
         if job_status.http_url:
             add("Http URL", str(job_status.http_url))
         if job_status.container.http:
+            add("Http port", str(job_status.container.http.port))
             add("Http authentication", str(job_status.container.http.requires_auth))
         if job_status.container.env:
             lines.append(f"{bold('Environment')}:")
@@ -166,10 +173,29 @@ class JobStatusFormatter:
             add("Finished", job_status.history.finished_at.isoformat())
             add("Exit code", str(job_status.history.exit_code))
         if job_status.status == JobStatus.FAILED and job_status.history.description:
-            lines.append(bold("===Description==="))
+            lines.append(bold("=== Description ==="))
             lines.append(job_status.history.description)
-            lines.append("=================")
+            lines.append("===================")
         return "\n".join(lines)
+
+
+def format_life_span(life_span: Optional[float]) -> str:
+    if life_span is None:
+        return ""
+    if life_span == 0:
+        return "no limit"
+    return format_timedelta(datetime.timedelta(seconds=life_span))
+
+
+def format_datetime(when: Optional[datetime.datetime]) -> str:
+    if when is None:
+        return ""
+    assert when.tzinfo is not None
+    delta = datetime.datetime.now(datetime.timezone.utc) - when
+    if delta < datetime.timedelta(days=1):
+        return humanize.naturaltime(delta)
+    else:
+        return humanize.naturaldate(when.astimezone())
 
 
 class JobTelemetryFormatter:
@@ -235,11 +261,15 @@ class TabularJobRow:
     tags: str
     status: str
     when: str
+    created: str
+    started: str
+    finished: str
     image: str
     owner: str
     description: str
     cluster_name: str
     command: str
+    life_span: str
 
     @classmethod
     def from_job(
@@ -252,23 +282,21 @@ class TabularJobRow:
         else:
             when = job.history.finished_at
         assert when is not None
-        assert when.tzinfo is not None
-        delta = datetime.datetime.now(datetime.timezone.utc) - when
-        if delta < datetime.timedelta(days=1):
-            when_humanized = humanize.naturaltime(delta)
-        else:
-            when_humanized = humanize.naturaldate(when.astimezone())
         return cls(
             id=job.id,
             name=job.name if job.name else "",
             tags=",".join(job.tags),
             status=job.status,
-            when=when_humanized,
+            when=format_datetime(when),
+            created=format_datetime(job.history.created_at),
+            started=format_datetime(job.history.started_at),
+            finished=format_datetime(job.history.finished_at),
             image=image_formatter(job.container.image),
             owner=("<you>" if job.owner == username else job.owner),
             description=job.description if job.description else "",
             cluster_name=job.cluster_name,
             command=job.container.command if job.container.command else "",
+            life_span=format_life_span(job.life_span),
         )
 
     def to_list(self, columns: List[JobColumnInfo]) -> List[str]:

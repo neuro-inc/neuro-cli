@@ -1058,8 +1058,8 @@ def test_external_alias_simplified(
     assert "['--opt', 'arg']" == capture.out
 
 
-async def test_list_aliases(root: Root, nmrc_path: Path) -> None:
-    user_cfg = nmrc_path / "user.toml"
+async def _test_list_aliases(root: Root) -> None:
+    user_cfg = root.config_path / "user.toml"
     user_cfg.write_text(
         toml.dumps(
             {
@@ -1078,20 +1078,33 @@ async def test_list_aliases(root: Root, nmrc_path: Path) -> None:
     assert names == ["lsl", "user-cmd"]
 
 
-async def test_find_alias_without_config(tmp_path: Path) -> None:
-    root = Root(
-        color=False,
-        tty=False,
-        terminal_size=(80, 24),
-        disable_pypi_version_check=True,
-        network_timeout=60,
-        config_path=tmp_path,
-        verbosity=0,
-        trace=False,
-        trace_hide_token=True,
-        command_path="",
-        command_params=[],
-        skip_gmp_stats=True,
-        show_traceback=True,
+async def test_list_aliases(root: Root) -> None:
+    await _test_list_aliases(root)
+
+
+async def test_list_aliases_no_logged_in(root_no_logged_in: Root) -> None:
+    await _test_list_aliases(root_no_logged_in)
+
+
+async def test_find_alias_no_logged_in(root_no_logged_in: Root) -> None:
+    user_cfg = root_no_logged_in.config_path / "user.toml"
+    user_cfg.write_text(
+        toml.dumps(
+            {
+                "alias": {
+                    "lsl": {
+                        "cmd": "storage ls -l",
+                        "help": "Custom ls with long output.",
+                    },
+                    "user-cmd": {"exec": "script"},
+                }
+            }
+        )
     )
-    assert await find_alias(root, "unknown-cmd") is None
+    cmd = await find_alias(root_no_logged_in, "lsl")
+    assert cmd is not None
+    assert cmd.get_short_help_str() == "Custom ls with long output."
+
+
+async def test_find_alias_without_config(root_no_logged_in: Root) -> None:
+    assert await find_alias(root_no_logged_in, "unknown-cmd") is None

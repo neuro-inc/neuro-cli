@@ -3,7 +3,6 @@ import functools
 import inspect
 import itertools
 import logging
-import operator
 import os
 import pathlib
 import re
@@ -152,7 +151,13 @@ class NeuroClickMixin:
         args = [i for i in ret if not isinstance(i, click.Option)]
         opts = [i for i in ret if isinstance(i, click.Option)]
 
-        return args + sorted(opts, key=operator.attrgetter("name"))
+        help_names = self.get_help_option_names(ctx)  # type: ignore
+
+        def sort_key(opt: click.Option) -> Tuple[bool, str]:
+            flag = set(opt.opts) & help_names or set(opt.secondary_opts) & help_names
+            return (not flag, opt.name)
+
+        return args + sorted(opts, key=sort_key)
 
     def get_help_option(self, ctx: click.Context) -> Optional[click.Option]:
         help_options = self.get_help_option_names(ctx)  # type: ignore
@@ -445,7 +450,6 @@ async def resolve_job(
     if re.fullmatch(JOB_ID_PATTERN, id_or_name):
         return id_or_name
 
-    details = f"name={id_or_name}, owner={owner}"
     try:
         async for job in client.jobs.list(
             name=id_or_name, owners={owner}, reverse=True, limit=1
@@ -457,9 +461,11 @@ async def resolve_job(
     except Exception as e:
         log.error(
             f"Failed to resolve job-name {id_or_name_or_uri} resolved as "
-            f"{details} to a job-ID: {e}"
+            f"name={id_or_name}, owner={owner} to a job-ID: {e}"
         )
 
+    if owner != default_user:
+        raise ValueError(f"Failed to resolve job {id_or_name_or_uri}")
     return id_or_name
 
 

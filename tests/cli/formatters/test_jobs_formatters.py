@@ -274,13 +274,14 @@ class TestJobOutputFormatter:
             f"{resource}\n"
             "TTY: False\n"
             "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_tags(self) -> None:
@@ -328,13 +329,72 @@ class TestJobOutputFormatter:
             f"{resource}\n"
             "TTY: False\n"
             "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
+        )
+
+    def test_job_with_tags_wrap_tags(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            tags=["long-tag-1", "long-tag-2", "long-tag-3", "long-tag-4"],
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_external_image(name="test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = click.unstyle(
+            JobStatusFormatter(uri_formatter=uri_fmtr, width=50)(description)
+        )
+        resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
+        assert (
+            status == "Job: test-job\n"
+            "Tags: long-tag-1, long-tag-2, long-tag-3,\n"
+            "      long-tag-4\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: test-image\n"
+            "Command: test-command\n"
+            f"{resource}\n"
+            "TTY: False\n"
+            "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
+            "Http authentication: True\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_life_span_with_value(self) -> None:
@@ -382,13 +442,14 @@ class TestJobOutputFormatter:
             "Life span: 1d2h3m4s\n"
             "TTY: False\n"
             "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_life_span_without_value(self) -> None:
@@ -436,13 +497,14 @@ class TestJobOutputFormatter:
             "Life span: no limit\n"
             "TTY: False\n"
             "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_restart_policy(self) -> None:
@@ -490,13 +552,14 @@ class TestJobOutputFormatter:
             "Restart policy: always\n"
             "TTY: False\n"
             "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_pending_job(self) -> None:
@@ -542,13 +605,14 @@ class TestJobOutputFormatter:
             f"{resource}\n"
             "TTY: False\n"
             "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 321\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_pending_job_no_reason(self) -> None:
@@ -828,6 +892,7 @@ class TestJobOutputFormatter:
             f"{resource}\n"
             "TTY: False\n"
             "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
             "Http authentication: True\n"
             "Environment:\n"
             "  ENV_NAME_1=__value1__\n"
@@ -836,8 +901,8 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_volumes_short(self) -> None:
@@ -912,13 +977,14 @@ class TestJobOutputFormatter:
             "  /mnt/rw    storage:rw                                   \n"
             "  /mnt/ro    storage://othercluster/otheruser/ro  READONLY\n"
             "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_volumes_long(self) -> None:
@@ -986,13 +1052,14 @@ class TestJobOutputFormatter:
             "  /mnt/ro  storage://test-cluster/otheruser/ro  READONLY\n"
             "  /mnt/rw  storage://test-cluster/test-user/rw          \n"
             "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
             "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
     def test_job_with_secrets_short(self) -> None:
@@ -1079,6 +1146,7 @@ class TestJobOutputFormatter:
             "  /var/run/secret2  secret:/otheruser/secret2              \n"
             "  /var/run/secret3  secret://othercluster/otheruser/secret3\n"
             "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
             "Http authentication: True\n"
             "Environment:\n"
             "  ENV_NAME_0=somevalue\n"
@@ -1090,8 +1158,8 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"
             "Exit code: 123\n"
-            "===Description===\n"
-            "ErrorDesc\n================="
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
         )
 
 
@@ -1495,7 +1563,7 @@ class TestTabularJobsFormatter:
             f"                                                                       name:with-long-tag",  # noqa: E501
         ]
 
-    def test_custol_columns(self) -> None:
+    def test_custom_columns(self) -> None:
         job = JobDescription(
             status=JobStatus.FAILED,
             id="j",
@@ -1526,6 +1594,117 @@ class TestTabularJobsFormatter:
         result = [item.rstrip() for item in formatter([job])]
 
         assert result == ["         Status Code", "              failed"]
+
+    def test_life_span(self) -> None:
+        life_spans = [None, 0, 7 * 24 * 3600, 12345]
+        jobs = [
+            JobDescription(
+                status=JobStatus.FAILED,
+                id=f"job-{i}",
+                owner="owner",
+                cluster_name="dc",
+                uri=URL("job://dc/owner/j"),
+                name="name",
+                description="d",
+                history=JobStatusHistory(
+                    status=JobStatus.FAILED,
+                    reason="ErrorReason",
+                    description="ErrorDesc",
+                    created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+                ),
+                container=Container(
+                    image=RemoteImage.new_external_image(name="i", tag="l"),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                    command="c",
+                ),
+                ssh_server=URL("ssh-auth"),
+                is_preemptible=True,
+                life_span=life_span,
+            )
+            for i, life_span in enumerate(life_spans, 1)
+        ]
+
+        columns = parse_columns("id life_span")
+        formatter = TabularJobsFormatter(100, "owner", columns, image_formatter=str)
+        result = [item.rstrip() for item in formatter(jobs)]
+
+        assert result == [
+            "ID     LIFE-SPAN",
+            "job-1",
+            "job-2  no limit",
+            "job-3  7d",
+            "job-4  3h25m45s",
+        ]
+
+    def test_dates(self) -> None:
+        items = [
+            JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ContainerCreating",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=None,
+                finished_at=None,
+            ),
+            JobStatusHistory(
+                status=JobStatus.RUNNING,
+                reason="ContainerRunning",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                finished_at=None,
+            ),
+            JobStatusHistory(
+                status=JobStatus.FAILED,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                finished_at=isoparse("2018-09-26T12:28:59.759433+00:00"),
+            ),
+            JobStatusHistory(
+                status=JobStatus.FAILED,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=datetime.now(timezone.utc) - timedelta(seconds=12345),
+                started_at=datetime.now(timezone.utc) - timedelta(seconds=1234),
+                finished_at=datetime.now(timezone.utc) - timedelta(seconds=12),
+            ),
+        ]
+        jobs = [
+            JobDescription(
+                status=item.status,
+                owner="test-user",
+                cluster_name="default",
+                id=f"job-{i}",
+                uri=URL(f"job://default/test-user/job-{i}"),
+                description=None,
+                history=item,
+                container=Container(
+                    command="test-command",
+                    image=RemoteImage.new_external_image(name="test-image"),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                ),
+                ssh_server=URL("ssh-auth"),
+                is_preemptible=False,
+                internal_hostname="host.local",
+            )
+            for i, item in enumerate(items, 1)
+        ]
+
+        columns = parse_columns("id status when created started finished")
+        formatter = TabularJobsFormatter(100, "test-user", columns, image_formatter=str)
+        result = [item.rstrip() for item in formatter(jobs)]
+
+        assert result == [
+            "ID     STATUS   WHEN            CREATED      STARTED         FINISHED",
+            "job-1  pending  Sep 25 2018     Sep 25 2018",
+            "job-2  running  Sep 25 2018     Sep 25 2018  Sep 25 2018",
+            "job-3  failed   Sep 26 2018     Sep 25 2018  Sep 25 2018     Sep 26 2018",
+            "job-4  failed   12 seconds ago  3 hours ago  20 minutes ago  12 seconds ago",  # noqa: E501
+        ]
 
 
 class TestResourcesFormatter:
