@@ -247,7 +247,7 @@ async def test_calc_default_life_span_invalid(
         # empty config
         local_conf.write_text(toml.dumps({"job": {"life-span": "invalid"}}))
         with pytest.raises(
-            click.UsageError, match="Could not parse job timeout",
+            click.UsageError, match="Could not parse time delta",
         ):
             await calc_life_span(client, None)
 
