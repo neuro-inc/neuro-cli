@@ -84,7 +84,41 @@ async def test_resolve_job_id__from_string__no_jobs_found(
         assert resolved == job_id
 
 
-async def test_resolve_job_id__from_uri_with_owner__no_jobs_found(
+async def test_resolve_job_id__from_uri_with_owner_same_user__no_jobs_found(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    job_owner = "user"
+    job_name = "job-name"
+    uri = f"job://default/{job_owner}/{job_name}"
+    JSON: Dict[str, Any] = {"jobs": []}
+
+    async def handler(request: web.Request) -> web.Response:
+        # Since `resolve_job` excepts any Exception, `assert` will be caught there
+        name = request.query.get("name")
+        if name != job_name:
+            pytest.fail(f"received: {name}")
+        owner = request.query.get("owner")
+        if owner != job_owner:
+            pytest.fail(f"received: {owner}")
+        reverse = request.query.get("reverse")
+        if reverse != "1":
+            pytest.fail(f"received: reverse={reverse}")
+        limit = request.query.get("limit")
+        if limit != "1":
+            pytest.fail(f"received: limit={limit}")
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
+        assert resolved == job_name
+
+
+async def test_resolve_job_id__from_uri_with_owner_other_user__no_jobs_found(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     job_owner = "job-owner"
@@ -114,8 +148,8 @@ async def test_resolve_job_id__from_uri_with_owner__no_jobs_found(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
-        assert resolved == job_name
+        with pytest.raises(ValueError):
+            await resolve_job(uri, client=client, status={JobStatus.RUNNING})
 
 
 async def test_resolve_job_id__from_uri_without_owner__no_jobs_found(
@@ -289,7 +323,40 @@ async def test_resolve_job_id__server_error(
         assert resolved == job_id
 
 
-async def test_resolve_job_id__from_uri_with_owner__with_owner__server_error(
+async def test_resolve_job_id__from_uri_with_owner_same_user__server_error(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    job_owner = "user"
+    job_name = "job-name"
+    uri = f"job://default/{job_owner}/{job_name}"
+
+    async def handler(request: web.Request) -> NoReturn:
+        # Since `resolve_job` excepts any Exception, `assert` will be caught there
+        name = request.query.get("name")
+        if name != job_name:
+            pytest.fail(f"received: {name}")
+        owner = request.query.get("owner")
+        if owner != job_owner:
+            pytest.fail(f"received: {owner}")
+        reverse = request.query.get("reverse")
+        if reverse != "1":
+            pytest.fail(f"received: reverse={reverse}")
+        limit = request.query.get("limit")
+        if limit != "1":
+            pytest.fail(f"received: limit={limit}")
+        raise web.HTTPError()
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
+        assert resolved == job_name
+
+
+async def test_resolve_job_id__from_uri_with_owner_other_user__server_error(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     job_owner = "job-owner"
@@ -318,8 +385,8 @@ async def test_resolve_job_id__from_uri_with_owner__with_owner__server_error(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
-        assert resolved == job_name
+        with pytest.raises(ValueError):
+            await resolve_job(uri, client=client, status={JobStatus.RUNNING})
 
 
 async def test_resolve_job_id__from_uri_without_owner__server_error(

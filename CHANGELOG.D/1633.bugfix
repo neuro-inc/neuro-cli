@@ -1,0 +1,1 @@
+When resolve job URI with other user's name and job name (like `job:/bob/test-name`), the owner name no longer ignored when the shared job is not found.

@@ -450,7 +450,6 @@ async def resolve_job(
     if re.fullmatch(JOB_ID_PATTERN, id_or_name):
         return id_or_name
 
-    details = f"name={id_or_name}, owner={owner}"
     try:
         async for job in client.jobs.list(
             name=id_or_name, owners={owner}, reverse=True, limit=1
@@ -462,9 +461,11 @@ async def resolve_job(
     except Exception as e:
         log.error(
             f"Failed to resolve job-name {id_or_name_or_uri} resolved as "
-            f"{details} to a job-ID: {e}"
+            f"name={id_or_name}, owner={owner} to a job-ID: {e}"
         )
 
+    if owner != default_user:
+        raise ValueError(f"Failed to resolve job {id_or_name_or_uri}")
     return id_or_name
 
 
