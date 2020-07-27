@@ -426,7 +426,7 @@ Name | Description|
 |_\-d, --description DESC_|Optional job description in free format|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
-|_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
+|_\-e, --env VAR=VAL_|Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables.|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
@@ -441,7 +441,7 @@ Name | Description|
 |_\--schedule-timeout TIMEDELTA_|Optional job schedule timeout in the format '3m4s' \(some parts may be missing).|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. Use --volume=ALL to mount all accessible storage directories.|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. Use --volume=ALL to mount all accessible storage directories. See `neuro help secrets` for information about passing secrets as mounted files.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 
 
@@ -1910,7 +1910,7 @@ Name | Description|
 |_\-d, --description DESC_|Optional job description in free format|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
-|_\-e, --env VAR=VAL_|Set environment variable in container Use multiple options to define more than one variable|
+|_\-e, --env VAR=VAL_|Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables.|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
@@ -1925,7 +1925,7 @@ Name | Description|
 |_\--schedule-timeout TIMEDELTA_|Optional job schedule timeout in the format '3m4s' \(some parts may be missing).|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. Use --volume=ALL to mount all accessible storage directories.|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. Use --volume=ALL to mount all accessible storage directories. See `neuro help secrets` for information about passing secrets as mounted files.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 
 
