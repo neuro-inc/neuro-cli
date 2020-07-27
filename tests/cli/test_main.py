@@ -2,7 +2,7 @@ import shutil
 from pathlib import Path
 from typing import Any, Callable, List
 
-from neuromation.cli.utils import NEURO_STEAL_CONFIG
+from neuromation.api.client import NEURO_STEAL_CONFIG
 
 from .conftest import SysCapWithCode
 

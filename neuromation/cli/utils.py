@@ -38,7 +38,7 @@ from neuromation.api.url_utils import uri_from_cli
 from .root import Root
 from .stats import upload_gmp_stats
 from .version_utils import run_version_checker
-
+from ..api.client import NEURO_STEAL_CONFIG
 
 log = logging.getLogger(__name__)
 
@@ -46,8 +46,6 @@ _T = TypeVar("_T")
 
 DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
 DEPRECATED_INVOKE_NOTICE = "DeprecationWarning: The command {name} is deprecated."
-
-NEURO_STEAL_CONFIG = "NEURO_STEAL_CONFIG"
 
 
 async def _run_async_function(

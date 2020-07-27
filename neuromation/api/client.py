@@ -1,8 +1,11 @@
+import uuid
 from pathlib import Path
 from types import TracebackType
-from typing import Mapping, Optional, Type
+from typing import Mapping, Optional, Type, Dict, Set, Tuple, List, MutableSequence
 
 import aiohttp
+import click
+from yarl import URL
 
 from neuromation.api.quota import _Quota
 
@@ -12,7 +15,7 @@ from .config import Config
 from .core import _Core
 from .images import Images
 from .jobs import Jobs
-from .parser import Parser
+from .parser import Parser, Volume
 from .secrets import Secrets
 from .server_cfg import Preset
 from .storage import Storage
@@ -114,3 +117,49 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def parse(self) -> Parser:
         return self._parser
+
+    async def pass_config(
+        self, env_dict: Dict[str, str], volumes: List[Volume], quiet: bool
+    ) -> None:
+        env_name = NEURO_STEAL_CONFIG
+        if env_name in env_dict:
+            raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
+        env_var, secret_volume = await self.upload_and_map_config(quiet)
+        env_dict[NEURO_STEAL_CONFIG] = env_var
+        volumes.append(secret_volume)
+
+    async def upload_and_map_config(self, quiet: bool) -> Tuple[str, Volume]:
+        # store the Neuro CLI config on the storage under some random path
+        nmrc_path = URL(self._config._path.expanduser().resolve().as_uri())
+        random_nmrc_filename = f"{uuid.uuid4()}-cfg"
+        storage_nmrc_folder = URL(
+            f"storage://{self.cluster_name}/{self.username}/.neuro/"
+        )
+        storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
+        local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/.neuro/"
+        local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
+        if not quiet:
+            click.echo(
+                f"Temporary config file created on storage: {storage_nmrc_path}."
+            )
+            click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
+        await self.storage.mkdir(storage_nmrc_folder, parents=True, exist_ok=True)
+
+        async def skip_tmp(fname: str) -> bool:
+            return not fname.endswith(("-shm", "-wal", "-journal"))
+
+        await self.storage.upload_dir(nmrc_path, storage_nmrc_path, filter=skip_tmp)
+        # specify a container volume and mount the storage path
+        # into specific container path
+        return (
+            local_nmrc_path,
+            Volume(
+                storage_uri=storage_nmrc_folder,
+                container_path=local_nmrc_folder,
+                read_only=False,
+            ),
+        )
+
+
+NEURO_STEAL_CONFIG = "NEURO_STEAL_CONFIG"
+STORAGE_MOUNTPOINT = "/var/storage"

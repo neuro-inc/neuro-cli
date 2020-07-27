@@ -64,7 +64,6 @@ from .formatters.jobs import (
 from .parse_utils import JobColumnInfo, get_default_columns, parse_columns
 from .root import Root
 from .utils import (
-    NEURO_STEAL_CONFIG,
     AsyncExitStack,
     alias,
     argument,
@@ -77,11 +76,10 @@ from .utils import (
     resolve_job,
     volume_to_verbose_str,
 )
-
+from ..api.client import NEURO_STEAL_CONFIG, STORAGE_MOUNTPOINT
 
 log = logging.getLogger(__name__)
 
-STORAGE_MOUNTPOINT = "/var/storage"
 ROOT_MOUNTPOINT = "/var/neuro"
 
 NEUROMATION_ROOT_ENV_VAR = "NEUROMATION_ROOT"
@@ -1215,12 +1213,7 @@ async def run_job(
     volumes = await _build_volumes(root, input_volumes, env_dict)
 
     if pass_config:
-        env_name = NEURO_STEAL_CONFIG
-        if env_name in env_dict:
-            raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
-        env_var, secret_volume = await upload_and_map_config(root)
-        env_dict[NEURO_STEAL_CONFIG] = env_var
-        volumes.add(secret_volume)
+        await root.client.pass_config(env_dict, volumes, root.quiet)
 
     if volumes:
         log.info(

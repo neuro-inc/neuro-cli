@@ -4,7 +4,6 @@ import json
 import logging
 import sys
 from contextlib import suppress
-from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from functools import partial
 from typing import (
@@ -23,6 +22,7 @@ import aiohttp
 import attr
 from aiodocker.exceptions import DockerError
 from aiohttp import WSMsgType, WSServerHandshakeError
+from dataclasses import dataclass, field
 from dateutil.parser import isoparse
 from multidict import MultiDict
 from yarl import URL
@@ -45,7 +45,6 @@ from .parser import Parser, Volume
 from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
 from .url_utils import normalize_secret_uri, normalize_storage_path_uri
 from .utils import NoPublicConstructor, asynccontextmanager
-
 
 log = logging.getLogger(__name__)
 
