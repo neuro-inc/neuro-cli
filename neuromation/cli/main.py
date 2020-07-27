@@ -247,7 +247,10 @@ class MainGroup(Group):
         groups: List[Tuple[str, click.MultiCommand]] = []
         topics: List[Tuple[str, click.Command]] = []
         if self.topics is not None:
-            topics = list(self.topics.commands.items())
+            topics = [
+                (name, self.topics.get_command(ctx, name))
+                for name in self.topics.list_commands(ctx)
+            ]
 
         for subcommand in self.list_commands(ctx):
             cmd = self.get_command(ctx, subcommand)
