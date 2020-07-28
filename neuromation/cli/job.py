@@ -932,7 +932,9 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help=(
         "Mounts directory from vault into container. "
         "Use multiple options to mount more than one volume. "
-        "Use --volume=ALL to mount all accessible storage directories."
+        "Use --volume=ALL to mount all accessible storage directories. "
+        "See `neuro help secrets` for information about "
+        "passing secrets as mounted files."
     ),
     secure=True,
 )
@@ -952,8 +954,10 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     metavar="VAR=VAL",
     multiple=True,
     help=(
-        "Set environment variable in container "
-        "Use multiple options to define more than one variable"
+        "Set environment variable in container. "
+        "Use multiple options to define more than one variable. "
+        "See `neuro help secrets` for information about "
+        "passing secrets as environment variables."
     ),
     secure=True,
 )
