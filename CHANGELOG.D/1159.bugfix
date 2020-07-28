@@ -1,1 +1,0 @@
-Fixed support of local images whose name starts with Neuro registry prefix, e.g. `registry.neu.ro/alice/imagename`.

@@ -1,1 +1,0 @@
-Put `--help` option first in the help output for a command or command group

@@ -1,1 +1,0 @@
-`neuro ps` supports now columns "created", "started" and "finished" (hidden by default).

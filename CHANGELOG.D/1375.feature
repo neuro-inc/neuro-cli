@@ -1,1 +1,0 @@
-`neuro status` shows now the job's http port.

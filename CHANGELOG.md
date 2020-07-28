@@ -5,6 +5,56 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.7.28 (2020-07-28)
+================================
+
+Features
+--------
+
+
+- `neuro ps` supports now columns "created", "started" and "finished" (hidden by default). ([#1020](https://github.com/neuromation/platform-api-clients/issues/1020))
+
+- `neuro status` shows now the job's http port. ([#1375](https://github.com/neuromation/platform-api-clients/issues/1375))
+
+- Long list of tags for `neuro status` is now wrapped. ([#1408](https://github.com/neuromation/platform-api-clients/issues/1408))
+
+- `neuro ps` supports now the "life_span" column (hidden by default). ([#1448](https://github.com/neuromation/platform-api-clients/issues/1448))
+
+- Command aliases are now supported if not logged in. ([#1480](https://github.com/neuromation/platform-api-clients/issues/1480))
+
+- Added support of the `--schedule-timeout` option in `neuro run`. ([#1499](https://github.com/neuromation/platform-api-clients/issues/1499))
+
+- Added commands for adding and removing roles: `neuro acl add-role` and `neuro acl remove-role`. ([#1582](https://github.com/neuromation/platform-api-clients/issues/1582))
+
+- Support expansion of the user home directory ("~") in the file path argument in `neuro secret add`. ([#1610](https://github.com/neuromation/platform-api-clients/issues/1610))
+
+- Put `--help` option first in the help output for a command or command group ([#1627](https://github.com/neuromation/platform-api-clients/issues/1627))
+
+- Officially support Python 3.8. ([#1638](https://github.com/neuromation/platform-api-clients/issues/1638))
+
+- Create a topic about secrets management and usage. ([#1640](https://github.com/neuromation/platform-api-clients/issues/1640))
+
+
+Bugfixes
+--------
+
+
+- Fixed "division by zero" error when copy from `/dev/stdin` to storage. ([#1129](https://github.com/neuromation/platform-api-clients/issues/1129))
+
+- Fixed support of local images whose name starts with Neuro registry prefix, e.g. `registry.neu.ro/alice/imagename`. ([#1159](https://github.com/neuromation/platform-api-clients/issues/1159))
+
+- Fixed support of relative image URIs with numeric name, like `image:5000`. ([#1631](https://github.com/neuromation/platform-api-clients/issues/1631))
+
+- When resolve job URI with other user's name and job name (like `job:/bob/test-name`), the owner name no longer ignored when the shared job is not found. ([#1633](https://github.com/neuromation/platform-api-clients/issues/1633))
+
+
+Deprecations and Removals
+-------------------------
+
+
+- Removed support of `--volume=HOME` in `neuro run`. ([#1202](https://github.com/neuromation/platform-api-clients/issues/1202))
+
+
 Neuromation 20.7.14 (2020-07-14)
 ================================
 
