@@ -73,6 +73,7 @@ class FileStatus:
     type: FileStatusType
     modification_time: int
     permission: Action
+    uri: URL
 
     def is_file(self) -> bool:
         return self.type == FileStatusType.FILE
@@ -144,11 +145,11 @@ class Storage(metaclass=NoPublicConstructor):
             if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
                 async for line in resp.content:
                     status = json.loads(line)["FileStatus"]
-                    yield _file_status_from_api(status)
+                    yield _file_status_from_api(url, status)
             else:
                 res = await resp.json()
                 for status in res["FileStatuses"]["FileStatus"]:
-                    yield _file_status_from_api(status)
+                    yield _file_status_from_api(url, status)
 
     async def glob(self, uri: URL, *, dironly: bool = False) -> AsyncIterator[URL]:
         if not _has_magic(uri.path):
@@ -262,7 +263,7 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._core.request("GET", url, auth=auth) as resp:
             self._set_time_diff(request_time, resp)
             res = await resp.json()
-            return _file_status_from_api(res["FileStatus"])
+            return _file_status_from_api(url.parent, res["FileStatus"])
 
     async def open(self, uri: URL) -> AsyncIterator[bytes]:
         url = self._config.storage_url / self._uri_to_path(uri)
@@ -693,13 +694,14 @@ def _isrecursive(pattern: str) -> bool:
     return pattern == "**"
 
 
-def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
+def _file_status_from_api(base_uri: URL, values: Dict[str, Any]) -> FileStatus:
     return FileStatus(
         path=values["path"],
         type=FileStatusType(values["type"]),
         size=int(values["length"]),
         modification_time=int(values["modificationTime"]),
         permission=Action(values["permission"]),
+        uri=base_uri / Path(values["path"]).name,
     )
 
 

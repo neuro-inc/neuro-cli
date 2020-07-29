@@ -3,6 +3,7 @@ from typing import Any, List
 
 import click
 import pytest
+from yarl import URL
 
 from neuromation.api import Action, FileStatus, FileStatusType
 from neuromation.cli.formatters.storage import (
@@ -30,6 +31,7 @@ class TestNonePainter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage:File1"),
         )
         assert painter.paint(file.name, file.type) == file.name
 
@@ -43,6 +45,7 @@ class TestQuotedPainter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage:File1"),
         )
         assert painter.paint(file.name, file.type) == "'File1'"
 
@@ -54,6 +57,7 @@ class TestQuotedPainter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage:File'2"),
         )
         assert painter.paint(file.name, file.type) == '''"File1'2"'''
 

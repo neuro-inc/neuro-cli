@@ -1,16 +1,19 @@
+from yarl import URL
+
 from neuromation.api import FileStatusType
 from neuromation.api.storage import _file_status_from_api
 
 
 def test_from_api() -> None:
     stat = _file_status_from_api(
+        URL("storage:dir"),
         {
             "path": "name",
             "type": "FILE",
             "length": 1234,
             "modificationTime": 3456,
             "permission": "read",
-        }
+        },
     )
     assert stat.path == "name"
     assert stat.type == FileStatusType.FILE
@@ -21,13 +24,14 @@ def test_from_api() -> None:
 
 def test_file() -> None:
     stat = _file_status_from_api(
+        URL("storage:dir"),
         {
             "path": "name",
             "type": "FILE",
             "length": 1234,
             "modificationTime": 3456,
             "permission": "read",
-        }
+        },
     )
     assert stat.type == FileStatusType.FILE
     assert stat.is_file()
@@ -36,13 +40,14 @@ def test_file() -> None:
 
 def test_is_dir() -> None:
     stat = _file_status_from_api(
+        URL("storage:dir"),
         {
             "path": "name",
             "type": "DIRECTORY",
             "length": 1234,
             "modificationTime": 3456,
             "permission": "read",
-        }
+        },
     )
     assert stat.type == FileStatusType.DIRECTORY
     assert not stat.is_file()
@@ -51,12 +56,27 @@ def test_is_dir() -> None:
 
 def test_name() -> None:
     stat = _file_status_from_api(
+        URL("storage:dir"),
         {
             "path": "name",
             "type": "FILE",
             "length": 1234,
             "modificationTime": 3456,
             "permission": "read",
-        }
+        },
     )
     assert stat.name == "name"
+
+
+def test_uri() -> None:
+    stat = _file_status_from_api(
+        URL("storage:dir"),
+        {
+            "path": "name",
+            "type": "FILE",
+            "length": 1234,
+            "modificationTime": 3456,
+            "permission": "read",
+        },
+    )
+    assert stat.uri == URL("storage:dir/name")
