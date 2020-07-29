@@ -94,10 +94,16 @@ class Storage(metaclass=NoPublicConstructor):
         self._min_time_diff = 0.0
         self._max_time_diff = 0.0
 
-    def _uri_to_path(self, uri: URL) -> str:
-        uri = normalize_storage_path_uri(
+    def _normalize_uri(self, uri: URL) -> URL:
+        return normalize_storage_path_uri(
             uri, self._config.username, self._config.cluster_name
         )
+
+    def _uri_to_path(self, uri: URL, *, normalized: bool = False) -> str:
+        if not normalized:
+            uri = normalize_storage_path_uri(
+                uri, self._config.username, self._config.cluster_name
+            )
         if not uri.host:
             return ""
         if uri.host != self._config.cluster_name:
@@ -134,7 +140,8 @@ class Storage(metaclass=NoPublicConstructor):
         )
 
     async def ls(self, uri: URL) -> AsyncIterator[FileStatus]:
-        url = self._config.storage_url / self._uri_to_path(uri)
+        uri = self._normalize_uri(uri)
+        url = self._config.storage_url / self._uri_to_path(uri, normalized=True)
         url = url.with_query(op="LISTSTATUS")
         headers = {"Accept": "application/x-ndjson"}
 
@@ -145,11 +152,11 @@ class Storage(metaclass=NoPublicConstructor):
             if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
                 async for line in resp.content:
                     status = json.loads(line)["FileStatus"]
-                    yield _file_status_from_api(url, status)
+                    yield _file_status_from_api(uri, status)
             else:
                 res = await resp.json()
                 for status in res["FileStatuses"]["FileStatus"]:
-                    yield _file_status_from_api(url, status)
+                    yield _file_status_from_api(uri, status)
 
     async def glob(self, uri: URL, *, dironly: bool = False) -> AsyncIterator[URL]:
         if not _has_magic(uri.path):
@@ -255,7 +262,8 @@ class Storage(metaclass=NoPublicConstructor):
             resp  # resp.status == 201
 
     async def stat(self, uri: URL) -> FileStatus:
-        url = self._config.storage_url / self._uri_to_path(uri)
+        uri = self._normalize_uri(uri)
+        url = self._config.storage_url / self._uri_to_path(uri, normalized=True)
         url = url.with_query(op="GETFILESTATUS")
         auth = await self._config._api_auth()
 
@@ -263,7 +271,7 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._core.request("GET", url, auth=auth) as resp:
             self._set_time_diff(request_time, resp)
             res = await resp.json()
-            return _file_status_from_api(url.parent, res["FileStatus"])
+            return _file_status_from_api(uri.parent, res["FileStatus"])
 
     async def open(self, uri: URL) -> AsyncIterator[bytes]:
         url = self._config.storage_url / self._uri_to_path(uri)

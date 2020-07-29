@@ -6,7 +6,7 @@ from neuromation.api.storage import _file_status_from_api
 
 def test_from_api() -> None:
     stat = _file_status_from_api(
-        URL("storage:dir"),
+        URL("storage://default/user/foo"),
         {
             "path": "name",
             "type": "FILE",
@@ -24,7 +24,7 @@ def test_from_api() -> None:
 
 def test_file() -> None:
     stat = _file_status_from_api(
-        URL("storage:dir"),
+        URL("storage://default/user/foo"),
         {
             "path": "name",
             "type": "FILE",
@@ -40,7 +40,7 @@ def test_file() -> None:
 
 def test_is_dir() -> None:
     stat = _file_status_from_api(
-        URL("storage:dir"),
+        URL("storage://default/user/foo"),
         {
             "path": "name",
             "type": "DIRECTORY",
@@ -56,7 +56,7 @@ def test_is_dir() -> None:
 
 def test_name() -> None:
     stat = _file_status_from_api(
-        URL("storage:dir"),
+        URL("storage://default/user/foo"),
         {
             "path": "name",
             "type": "FILE",
@@ -70,7 +70,7 @@ def test_name() -> None:
 
 def test_uri() -> None:
     stat = _file_status_from_api(
-        URL("storage:dir"),
+        URL("storage://default/user/foo"),
         {
             "path": "name",
             "type": "FILE",
@@ -79,4 +79,4 @@ def test_uri() -> None:
             "permission": "read",
         },
     )
-    assert stat.uri == URL("storage:dir/name")
+    assert stat.uri == URL("storage://default/user/foo/name")

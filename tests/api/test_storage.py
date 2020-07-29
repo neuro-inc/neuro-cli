@@ -166,7 +166,7 @@ async def test_storage_ls_legacy(
             type=FileStatusType.FILE,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage:folder/foo"),
+            uri=URL("storage://default/user/folder/foo"),
         ),
         FileStatus(
             path="bar",
@@ -174,7 +174,7 @@ async def test_storage_ls_legacy(
             type=FileStatusType.DIRECTORY,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage:folder/bar"),
+            uri=URL("storage://default/user/folder/bar"),
         ),
     ]
 
@@ -233,7 +233,7 @@ async def test_storage_ls(
             type=FileStatusType.FILE,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage:folder/foo"),
+            uri=URL("storage://default/user/folder/foo"),
         ),
         FileStatus(
             path="bar",
@@ -241,7 +241,7 @@ async def test_storage_ls(
             type=FileStatusType.DIRECTORY,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage:folder/bar"),
+            uri=URL("storage://default/user/folder/bar"),
         ),
     ]
 
@@ -670,6 +670,7 @@ async def test_storage_stats(
             size=1234,
             modification_time=3456,
             permission=Action.READ,
+            uri=URL("storage://default/user/folder"),
         )
 
 
