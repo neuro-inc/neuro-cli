@@ -1,0 +1,1 @@
+Implement `FileStatus.uri` property
