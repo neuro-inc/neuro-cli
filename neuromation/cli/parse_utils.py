@@ -81,6 +81,7 @@ COLUMNS = [
     JobColumnInfo("description", "DESCRIPTION", Align.LEFT, ColumnWidth(max=50)),
     JobColumnInfo("command", "COMMAND", Align.LEFT, ColumnWidth(max=100)),
     JobColumnInfo("life_span", "LIFE-SPAN", Align.LEFT, ColumnWidth()),
+    JobColumnInfo("workdir", "WORKDIR", Align.LEFT, ColumnWidth()),
 ]
 
 COLUMNS_DEFAULT_IGNORE = {
@@ -89,6 +90,7 @@ COLUMNS_DEFAULT_IGNORE = {
     "created",
     "started",
     "finished",
+    "workdir",
 }
 
 

@@ -100,6 +100,7 @@ class Container:
     resources: Resources
     entrypoint: Optional[str] = None
     command: Optional[str] = None
+    working_dir: Optional[str] = None
     http: Optional[HTTPPort] = None
     env: Mapping[str, str] = field(default_factory=dict)
     volumes: Sequence[Volume] = field(default_factory=list)
@@ -655,6 +656,7 @@ def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
         resources=_resources_from_api(data["resources"]),
         entrypoint=data.get("entrypoint", None),
         command=data.get("command", None),
+        working_dir=data.get("working_dir"),
         http=_http_port_from_api(data["http"]) if "http" in data else None,
         env=data.get("env", dict()),
         volumes=[_volume_from_api(v) for v in data.get("volumes", [])],
@@ -673,6 +675,8 @@ def _container_to_api(container: Container, config: Config) -> Dict[str, Any]:
         primitive["entrypoint"] = container.entrypoint
     if container.command:
         primitive["command"] = container.command
+    if container.working_dir:
+        primitive["working_dir"] = container.working_dir
     if container.http:
         primitive["http"] = _http_port_to_api(container.http)
     if container.env:

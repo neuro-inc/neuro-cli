@@ -1111,3 +1111,27 @@ def secret(helper: Helper) -> Iterator[Tuple[str, str]]:
     # Remove secret
     cap = helper.run_cli(["secret", "rm", secret_name])
     assert cap.err == ""
+
+
+@pytest.mark.e2e
+def test_job_working_dir(helper: Helper) -> None:
+    bash_script = '[ "x$(pwd)" == "x/var/log" ]'
+    command = f"bash -c '{bash_script}'"
+    captured = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            "-w",
+            "/var/log",
+            "--no-wait-start",
+            UBUNTU_IMAGE_NAME,
+            command,
+        ]
+    )
+
+    job_id = captured.out
+
+    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
+    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)

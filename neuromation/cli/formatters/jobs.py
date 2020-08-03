@@ -112,6 +112,8 @@ class JobStatusFormatter:
             add("Entrypoint", job_status.container.entrypoint)
         if job_status.container.command:
             add("Command", job_status.container.command)
+        if job_status.container.working_dir:
+            add("Working dir", job_status.container.working_dir)
         resource_formatter = ResourcesFormatter()
         lines.append(resource_formatter(job_status.container.resources))
         if job_status.is_preemptible:
@@ -270,6 +272,7 @@ class TabularJobRow:
     cluster_name: str
     command: str
     life_span: str
+    workdir: str
 
     @classmethod
     def from_job(
@@ -297,6 +300,7 @@ class TabularJobRow:
             cluster_name=job.cluster_name,
             command=job.container.command if job.container.command else "",
             life_span=format_life_span(job.life_span),
+            workdir=job.container.working_dir or "",
         )
 
     def to_list(self, columns: List[JobColumnInfo]) -> List[str]:

@@ -2020,6 +2020,43 @@ async def test_job_run_restart_policy(
         )
 
 
+async def test_job_run_working_dir(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+                "command": "submit-command",
+                "working_dir": "/working/dir",
+            },
+            "is_preemptible": False,
+            "cluster_name": "default",
+        }
+        result = create_job_response("job-id-1", "running")
+        result["container"]["working_dir"] = "/working/dir"
+        return web.json_response(result)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16, 0.5)
+        container = Container(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            command="submit-command",
+            working_dir="/working/dir",
+            resources=resources,
+        )
+        ret = await client.jobs.run(container=container)
+
+        assert ret.container.working_dir == "/working/dir"
+
+
 async def test_port_forward(
     aiohttp_server: _TestServerFactory,
     make_client: _MakeClient,
