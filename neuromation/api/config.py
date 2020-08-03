@@ -12,6 +12,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Dict, Iterator, List, Mapping, Optional, Set, Tuple, Union
 
+import pkg_resources
 import toml
 from yarl import URL
 
@@ -19,6 +20,7 @@ import neuromation
 
 from .core import _Core
 from .login import AuthTokenClient, _AuthConfig, _AuthToken
+from .plugins import PluginManager
 from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
 from .utils import NoPublicConstructor, flat
 
@@ -578,21 +580,19 @@ def _validate_user_config(
     #
     # Since currently CLI is the only API client that reads user config data, API
     # validates it.
-    #
-    # Later, after possible introduction of plugin subsystem the validation should
-    # be extended by plugin-provided rules.  That will be done by providing
-    # additional API for describing new supported config sections, keys and values.
-    # Right now this functionality is skipped for the sake of simplicity.
-    _check_sections(config, {"alias", "job", "storage"}, filename)
-    _check_section(
-        config, "job", {"ps-format": str, "life-span": str}, filename,
-    )
-    _check_section(
-        config,
-        "storage",
-        {"cp-exclude": (list, str), "cp-exclude-from-files": (list, str)},
-        filename,
-    )
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "ps-format")
+    plugin_manager.config.define_str("job", "life-span")
+    plugin_manager.config.define_str_list("storage", "cp-exclude")
+    plugin_manager.config.define_str_list("storage", "cp-exclude-from-files")
+    for entry_point in pkg_resources.iter_entry_points("neuro_api"):
+        entry_point.load()(plugin_manager)
+    config_spec = plugin_manager.config._get_spec()
+
+    # Alias section uses different validation
+    _check_sections(config, set(config_spec.keys()) | {"alias"}, filename)
+    for section_name, section_validator in config_spec.items():
+        _check_section(config, section_name, section_validator, filename)
     aliases = config.get("alias", {})
     for key, value in aliases.items():
         # check keys and values

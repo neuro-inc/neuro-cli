@@ -54,6 +54,7 @@ from .jobs import (
 )
 from .parser import Parser
 from .parsing_utils import LocalImage, RemoteImage, TagOption
+from .plugins import PluginManager
 from .secrets import Secret, Secrets
 from .server_cfg import Cluster
 from .storage import FileStatus, FileStatusType, Storage
@@ -127,6 +128,7 @@ __all__ = (
     "Parser",
     "Secrets",
     "Secret",
+    "PluginManager",
 )
 
 
