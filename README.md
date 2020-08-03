@@ -29,8 +29,8 @@ source .env/bin/activate
 
 Development flow:
 
-* Install dependencies: `make init`
-* Reformat code: `make fmt`
+* Install dependencies: `make setup`
+* Reformat code: `make format`
 * Lint: `make lint`
 * Run tests: `make test`
 * Run end-to-end tests: `make e2e`
