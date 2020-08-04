@@ -145,7 +145,7 @@ async def login(
     *,
     url: URL = DEFAULT_API_URL,
     path: Optional[Path] = None,
-    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
 ) -> None:
     await Factory(path).login(show_browser_cb, url=url, timeout=timeout)
 
@@ -155,7 +155,7 @@ async def login_with_token(
     *,
     url: URL = DEFAULT_API_URL,
     path: Optional[Path] = None,
-    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
 ) -> None:
     await Factory(path).login_with_token(token, url=url, timeout=timeout)
 
@@ -165,10 +165,24 @@ async def login_headless(
     *,
     url: URL = DEFAULT_API_URL,
     path: Optional[Path] = None,
-    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
 ) -> None:
     await Factory(path).login_headless(get_auth_code_cb, url=url, timeout=timeout)
 
 
 async def logout(*, path: Optional[Path] = None) -> None:
     await Factory(path).logout()
+
+
+class NoProjectRoot(Exception):
+    pass
+
+
+def find_project_root() -> Path:
+    here = Path.cwd()
+    while here.parent != here:
+        config = here / ".neuro.toml"
+        if config.exists():
+            return here
+        here = here.parent
+    raise NoProjectRoot(f"Project root is not found for {here}")
