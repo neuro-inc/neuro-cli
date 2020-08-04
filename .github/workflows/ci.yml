@@ -173,7 +173,7 @@ jobs:
         python-version: 3.7
     - name: Install dependencies
       run: |
-        make init
+        make setup
         python -m pip install twine
     - name: Make dists
       run: |

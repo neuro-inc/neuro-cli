@@ -71,10 +71,7 @@ def test_calc_statuses__not_contains_all__all_statuses_true(
 def test_calc_statuses__not_contains_all__all_statuses_true__quiet_mode(
     capsys: Any, caplog: Any
 ) -> None:
-    root_logger = logging.getLogger()
-    handler = root_logger.handlers[-1]
-    assert handler.formatter
-    handler.setLevel(logging.ERROR)
+    caplog.set_level(logging.ERROR)
 
     assert calc_statuses(["succeeded", "pending"], all=True) == set()
     std = capsys.readouterr()

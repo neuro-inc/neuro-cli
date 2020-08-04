@@ -37,7 +37,7 @@ stages:
       displayName: "User Python 3.7"
 
     - script: |
-        make init
+        make setup
       displayName: 'Install dependencies'
 
     - script: |

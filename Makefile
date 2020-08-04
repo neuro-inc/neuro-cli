@@ -15,12 +15,12 @@ help:
 	echo -e "Available targets: \n\
 	* Common: \n\
 	- help: this help \n\
-	- init: initialize project for development \n\
+	- setup: initialize project for development \n\
 	- update-deps: install.update all development dependencies \n\
 	- clean: remove generated files \n\
 \n\
 	* Modifications and generations: \n\
-	- fmt: format python code(isort + black) \n\
+	- format: format python code(isort + black) \n\
 	- docs: generate docs \n\
 	  example: make changelog VERSION=0.5 \n\
 \n\
@@ -39,8 +39,8 @@ help:
         - api-doc-spelling: check dockumentation spelling \n\
     "
 
-.PHONY: init
-init: _init-cli-help update-deps
+.PHONY: setup init
+setup init: _init-cli-help update-deps
 	rm -rf .mypy_cache
 
 _init-cli-help:
