@@ -1162,6 +1162,69 @@ class TestJobOutputFormatter:
             "ErrorDesc\n==================="
         )
 
+    def test_job_with_working_dir(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            name="test-job-name",
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_neuro_image(
+                    name="test-image",
+                    tag="sometag",
+                    registry="https://registry.neu.ro",
+                    owner="test-user",
+                    cluster_name="test-cluster",
+                ),
+                working_dir="/working/dir",
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
+        resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
+        assert (
+            status == "Job: test-job\n"
+            "Name: test-job-name\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: image:test-image:sometag\n"
+            "Command: test-command\n"
+            "Working dir: /working/dir\n"
+            f"{resource}\n"
+            "TTY: False\n"
+            "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
+            "Http authentication: True\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
+        )
+
 
 class TestJobTelemetryFormatter:
     def _format(
@@ -1704,6 +1767,47 @@ class TestTabularJobsFormatter:
             "job-2  running  Sep 25 2018     Sep 25 2018  Sep 25 2018",
             "job-3  failed   Sep 26 2018     Sep 25 2018  Sep 25 2018     Sep 26 2018",
             "job-4  failed   12 seconds ago  3 hours ago  20 minutes ago  12 seconds ago",  # noqa: E501
+        ]
+
+    def test_working_dir(self) -> None:
+        items = [None, "/working/dir"]
+        jobs = [
+            JobDescription(
+                status=JobStatus.FAILED,
+                owner="test-user",
+                cluster_name="default",
+                id=f"job-{i}",
+                uri=URL(f"job://default/test-user/job-{i}"),
+                description=None,
+                history=JobStatusHistory(
+                    status=JobStatus.FAILED,
+                    reason="ErrorReason",
+                    description="ErrorDesc",
+                    created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+                ),
+                container=Container(
+                    command="test-command",
+                    image=RemoteImage.new_external_image(name="test-image"),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                    working_dir=working_dir,
+                ),
+                ssh_server=URL("ssh-auth"),
+                is_preemptible=False,
+                internal_hostname="host.local",
+            )
+            for i, working_dir in enumerate(items, 1)
+        ]
+
+        columns = parse_columns("id workdir")
+        formatter = TabularJobsFormatter(100, "test-user", columns, image_formatter=str)
+        result = [item.rstrip() for item in formatter(jobs)]
+
+        assert result == [
+            "ID     WORKDIR",
+            "job-1",
+            "job-2  /working/dir",
         ]
 
 

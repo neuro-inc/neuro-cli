@@ -443,6 +443,7 @@ Name | Description|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. Use --volume=ALL to mount all accessible storage directories. See `neuro help secrets` for information about passing secrets as mounted files.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_\-w, --workdir TEXT_|Working directory inside the container|
 
 
 
@@ -1927,6 +1928,7 @@ Name | Description|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. Use --volume=ALL to mount all accessible storage directories. See `neuro help secrets` for information about passing secrets as mounted files.|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_\-w, --workdir TEXT_|Working directory inside the container|
 
 
 
