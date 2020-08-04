@@ -18,7 +18,8 @@ from .abc import (
     ImageProgressStep,
 )
 from .config import Config
-from .core import AuthorizationError, _Core
+from .core import _Core
+from .errors import AuthorizationError
 from .parser import Parser
 from .parsing_utils import LocalImage, RemoteImage, TagOption, _as_repo_str
 from .utils import NoPublicConstructor

@@ -19,14 +19,11 @@ from yarl import URL
 import neuromation
 
 from .core import _Core
+from .errors import ConfigError
 from .login import AuthTokenClient, _AuthConfig, _AuthToken
 from .plugins import PluginManager
 from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
 from .utils import NoPublicConstructor, flat
-
-
-class ConfigError(RuntimeError):
-    pass
 
 
 WIN32 = sys.platform == "win32"

@@ -1,6 +1,8 @@
 import numbers
 from typing import Any, Dict, List, Mapping, Tuple, Type, Union
 
+from neuromation.api.errors import ConfigError
+
 
 class ConfigBuilder:
     _config_spec: Dict[str, Any]
@@ -23,9 +25,6 @@ class ConfigBuilder:
             Tuple[Type[List[Any]], Type[numbers.Integral]],
         ],
     ) -> None:
-        # Avoid circular import config.py <-> plugins.py
-        from .config import ConfigError
-
         if section == "alias":
             raise ConfigError("Registering aliases is not supported yet.")
         if section in self._config_spec and name in self._config_spec[section]:

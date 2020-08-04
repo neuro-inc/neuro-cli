@@ -14,6 +14,14 @@ from aiohttp import WSMessage
 from multidict import CIMultiDict
 from yarl import URL
 
+from .errors import (
+    AuthenticationError,
+    AuthorizationError,
+    ClientError,
+    IllegalArgumentError,
+    ResourceNotFound,
+    ServerNotAvailable,
+)
 from .tracing import gen_trace_id
 from .utils import asynccontextmanager
 
@@ -38,34 +46,6 @@ DROP = {
 
 
 DEFAULT_TIMEOUT = aiohttp.ClientTimeout(None, None, 60, 60)
-
-
-class ClientError(Exception):
-    pass
-
-
-class IllegalArgumentError(ValueError):
-    pass
-
-
-class AuthError(ClientError):
-    pass
-
-
-class AuthenticationError(AuthError):
-    pass
-
-
-class AuthorizationError(AuthError):
-    pass
-
-
-class ResourceNotFound(ValueError):
-    pass
-
-
-class ServerNotAvailable(ValueError):
-    pass
 
 
 class _Core:

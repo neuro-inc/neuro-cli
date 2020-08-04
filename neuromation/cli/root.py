@@ -22,8 +22,8 @@ from typing import (
 import aiohttp
 import click
 
-from neuromation.api import Client, Factory, gen_trace_id
-from neuromation.api.config import ConfigError, _ConfigData, load_user_config
+from neuromation.api import Client, ConfigError, Factory, gen_trace_id
+from neuromation.api.config import _ConfigData, load_user_config
 
 from .asyncio_utils import Runner
 

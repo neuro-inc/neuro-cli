@@ -40,7 +40,8 @@ from .abc import (
     StorageProgressStep,
 )
 from .config import Config
-from .core import ResourceNotFound, _Core
+from .core import _Core
+from .errors import ResourceNotFound
 from .file_filter import FileFilter, translate
 from .storage import (
     QueuedProgress,

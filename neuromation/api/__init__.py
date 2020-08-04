@@ -20,19 +20,20 @@ from .abc import (
 )
 from .blob_storage import Blob, BlobListing, BlobStorage, BucketListing, PrefixListing
 from .client import Client, Preset
-from .config import Config, ConfigError
+from .config import Config
 from .config_factory import (
     CONFIG_ENV_NAME,
     DEFAULT_API_URL,
     DEFAULT_CONFIG_PATH,
     Factory,
 )
-from .core import (
-    DEFAULT_TIMEOUT,
+from .core import DEFAULT_TIMEOUT
+from .errors import (
     AuthenticationError,
     AuthError,
     AuthorizationError,
     ClientError,
+    ConfigError,
     IllegalArgumentError,
     ResourceNotFound,
     ServerNotAvailable,

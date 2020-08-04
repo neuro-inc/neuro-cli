@@ -19,9 +19,9 @@ from aiohttp.web import (
 )
 from yarl import URL
 
+from neuromation.api.errors import AuthException
 from neuromation.api.login import (
     AuthCode,
-    AuthException,
     AuthNegotiator,
     AuthTokenClient,
     HeadlessNegotiator,

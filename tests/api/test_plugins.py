@@ -29,11 +29,11 @@ def test_config_builder(define_method_name: str, expected_type: Any) -> None:
 def test_cannot_config_parameter_under_alias_section() -> None:
     config = ConfigBuilder()
     with pytest.raises(ConfigError):
-        config.define_str('alias', 'foo')
+        config.define_str("alias", "foo")
 
 
 def test_cannot_add_parameter_twice() -> None:
     config = ConfigBuilder()
-    config.define_str('foo', 'bar')
+    config.define_str("foo", "bar")
     with pytest.raises(ConfigError):
-        config.define_str('foo', 'bar')
+        config.define_str("foo", "bar")

@@ -15,6 +15,7 @@ from aiodocker.exceptions import DockerError
 from click.exceptions import Abort as ClickAbort, Exit as ClickExit
 
 import neuromation
+import neuromation.api.errors
 from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, ConfigError
 
 from . import (
@@ -532,26 +533,26 @@ def main(args: Optional[List[str]] = None) -> None:
         LOG_ERROR("Timeout")
         sys.exit(EX_TIMEOUT)
 
-    except neuromation.api.IllegalArgumentError as error:
+    except neuromation.api.errors.IllegalArgumentError as error:
         LOG_ERROR(f"Illegal argument(s) ({error})")
         sys.exit(EX_DATAERR)
 
-    except neuromation.api.ResourceNotFound as error:
+    except neuromation.api.errors.ResourceNotFound as error:
         LOG_ERROR(f"{error}")
         sys.exit(EX_OSFILE)
 
-    except neuromation.api.AuthenticationError as error:
+    except neuromation.api.errors.AuthenticationError as error:
         LOG_ERROR(f"Cannot authenticate ({error})")
         sys.exit(EX_NOPERM)
-    except neuromation.api.AuthorizationError as error:
+    except neuromation.api.errors.AuthorizationError as error:
         LOG_ERROR(f"Not enough permissions ({error})")
         sys.exit(EX_NOPERM)
 
-    except neuromation.api.ClientError as error:
+    except neuromation.api.errors.ClientError as error:
         LOG_ERROR(f"Application error ({error})")
         sys.exit(EX_SOFTWARE)
 
-    except neuromation.api.ServerNotAvailable as error:
+    except neuromation.api.errors.ServerNotAvailable as error:
         LOG_ERROR(f"Application error ({error})")
         sys.exit(EX_PLATFORMERROR)
 

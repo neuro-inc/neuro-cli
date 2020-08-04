@@ -12,8 +12,9 @@ from yarl import URL
 import neuromation
 
 from .client import Client
-from .config import ConfigError, _ConfigData, _save
+from .config import _ConfigData, _save
 from .core import DEFAULT_TIMEOUT
+from .errors import ConfigError
 from .login import AuthNegotiator, HeadlessNegotiator, _AuthToken
 from .server_cfg import _ServerConfig, get_server_config
 from .tracing import _make_trace_config
