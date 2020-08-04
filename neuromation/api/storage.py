@@ -706,7 +706,9 @@ def _isrecursive(pattern: str) -> bool:
     return pattern == "**"
 
 
-def _file_status_from_api(base_uri: Optional[URL], values: Dict[str, Any]) -> FileStatus:
+def _file_status_from_api(
+    base_uri: Optional[URL], values: Dict[str, Any]
+) -> FileStatus:
     if base_uri is None:
         uri = URL("storage://" + values["path"].lstrip("/"))
     else:
