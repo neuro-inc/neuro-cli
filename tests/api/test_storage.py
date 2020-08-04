@@ -674,6 +674,41 @@ async def test_storage_stats(
         )
 
 
+async def test_storage_stats_user_home(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user"
+        assert request.query == {"op": "GETFILESTATUS"}
+        return web.json_response(
+            {
+                "FileStatus": {
+                    "path": "/default/user",
+                    "type": "DIRECTORY",
+                    "length": 1234,
+                    "modificationTime": 3456,
+                    "permission": "read",
+                }
+            }
+        )
+
+    app = web.Application()
+    app.router.add_get("/storage/user", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        stats = await client.storage.stat(URL("storage:"))
+        assert stats == FileStatus(
+            path="/default/user",
+            type=FileStatusType.DIRECTORY,
+            size=1234,
+            modification_time=3456,
+            permission=Action.READ,
+            uri=URL("storage://default/user"),
+        )
+
+
 async def test_storage_open(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -689,7 +724,7 @@ async def test_storage_open(
             return web.json_response(
                 {
                     "FileStatus": {
-                        "path": "/user/file",
+                        "path": "file",
                         "type": "FILE",
                         "length": 5,
                         "modificationTime": 3456,

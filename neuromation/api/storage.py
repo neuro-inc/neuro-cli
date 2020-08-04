@@ -147,6 +147,8 @@ class Storage(metaclass=NoPublicConstructor):
 
         request_time = time.time()
         auth = await self._config._api_auth()
+        # NB: the storage server returns file names in FileStatus for LISTSTATUS
+        # but full path for GETFILESTATUS
         async with self._core.request("GET", url, headers=headers, auth=auth) as resp:
             self._set_time_diff(request_time, resp)
             if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
@@ -268,10 +270,12 @@ class Storage(metaclass=NoPublicConstructor):
         auth = await self._config._api_auth()
 
         request_time = time.time()
+        # NB: the storage server returns file names in FileStatus for LISTSTATUS
+        # but full path for GETFILESTATUS
         async with self._core.request("GET", url, auth=auth) as resp:
             self._set_time_diff(request_time, resp)
             res = await resp.json()
-            return _file_status_from_api(uri.parent, res["FileStatus"])
+            return _file_status_from_api(None, res["FileStatus"])
 
     async def open(self, uri: URL) -> AsyncIterator[bytes]:
         url = self._config.storage_url / self._uri_to_path(uri)
@@ -702,14 +706,18 @@ def _isrecursive(pattern: str) -> bool:
     return pattern == "**"
 
 
-def _file_status_from_api(base_uri: URL, values: Dict[str, Any]) -> FileStatus:
+def _file_status_from_api(base_uri: Optional[URL], values: Dict[str, Any]) -> FileStatus:
+    if base_uri is None:
+        uri = URL("storage://" + values["path"].lstrip("/"))
+    else:
+        uri = base_uri / values["path"]
     return FileStatus(
         path=values["path"],
         type=FileStatusType(values["type"]),
         size=int(values["length"]),
         modification_time=int(values["modificationTime"]),
         permission=Action(values["permission"]),
-        uri=base_uri / Path(values["path"]).name,
+        uri=uri,
     )
 
 
