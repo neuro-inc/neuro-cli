@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+from pathlib import Path
 from types import TracebackType
 from typing import (
     Any,
@@ -17,6 +18,8 @@ from typing import (
 )
 
 import aiohttp
+
+from neuromation.api.errors import ConfigError
 
 
 if sys.version_info >= (3, 7):  # pragma: no cover
@@ -112,3 +115,15 @@ def retries(
 
 def flat(sql: str) -> str:
     return " ".join(line.strip() for line in sql.splitlines() if line.strip())
+
+
+def find_project_root(path: Optional[Path] = None) -> Path:
+    if path is None:
+        path = Path.cwd()
+    here = path
+    while here.parent != here:
+        config = here / ".neuro.toml"
+        if config.exists():
+            return here
+        here = here.parent
+    raise ConfigError(f"Project root is not found for {path}")

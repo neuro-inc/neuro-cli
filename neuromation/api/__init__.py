@@ -61,7 +61,7 @@ from .server_cfg import Cluster
 from .storage import FileStatus, FileStatusType, Storage
 from .tracing import gen_trace_id
 from .users import Action, Permission, Share, Users
-from .utils import _ContextManager
+from .utils import _ContextManager, find_project_root
 
 
 __all__ = (
@@ -130,6 +130,7 @@ __all__ = (
     "Secrets",
     "Secret",
     "PluginManager",
+    "find_project_root",
 )
 
 
@@ -175,17 +176,3 @@ async def login_headless(
 
 async def logout(*, path: Optional[Path] = None) -> None:
     await Factory(path).logout()
-
-
-class NoProjectRoot(Exception):
-    pass
-
-
-def find_project_root() -> Path:
-    here = Path.cwd()
-    while here.parent != here:
-        config = here / ".neuro.toml"
-        if config.exists():
-            return here
-        here = here.parent
-    raise NoProjectRoot(f"Project root is not found for {here}")

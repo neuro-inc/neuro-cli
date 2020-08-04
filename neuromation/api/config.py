@@ -23,7 +23,7 @@ from .errors import ConfigError
 from .login import AuthTokenClient, _AuthConfig, _AuthToken
 from .plugins import PluginManager
 from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
-from .utils import NoPublicConstructor, flat
+from .utils import NoPublicConstructor, find_project_root, flat
 
 
 WIN32 = sys.platform == "win32"
@@ -223,17 +223,14 @@ async def load_user_config(path: Path) -> Mapping[str, Any]:
         raise ConfigError(f"User config {filename} should be a regular file")
     else:
         config = _load_file(filename)
-    folder = Path.cwd()
-    while True:
-        filename = folder / ".neuro.toml"
-        if filename.exists() and filename.is_file():
-            local_config = _load_file(filename)
-            return _merge_user_configs(config, local_config)
-        if folder == folder.parent:
-            # No local config is found
-            return config
-        else:
-            folder = folder.parent
+    try:
+        project_root = find_project_root()
+    except ConfigError:
+        return config
+    else:
+        filename = project_root / ".neuro.toml"
+        local_config = _load_file(filename)
+        return _merge_user_configs(config, local_config)
 
 
 @contextlib.contextmanager

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from neuromation.api import NoProjectRoot, find_project_root
+from neuromation.api import ConfigError, find_project_root
 
 
 @pytest.fixture()
@@ -34,11 +34,20 @@ def test_find_root_in_subdir(project_root: Path) -> None:
         os.chdir(old_workdir)
 
 
+def test_find_root_uses_path_argument(project_root: Path) -> None:
+    old_workdir = os.getcwd()
+    try:
+        os.chdir(project_root.parent)
+        assert find_project_root(project_root) == project_root
+    finally:
+        os.chdir(old_workdir)
+
+
 def test_find_root_not_in_project(tmp_path: Path) -> None:
     old_workdir = os.getcwd()
     try:
         os.chdir(tmp_path)
-        with pytest.raises(NoProjectRoot):
+        with pytest.raises(ConfigError):
             find_project_root()
     finally:
         os.chdir(old_workdir)
