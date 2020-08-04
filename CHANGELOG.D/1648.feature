@@ -1,1 +1,1 @@
-Implement `FileStatus.uri` property
+Implement `FileStatus.uri` property.
