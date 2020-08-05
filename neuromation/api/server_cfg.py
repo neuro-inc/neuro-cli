@@ -4,7 +4,8 @@ from typing import Any, Dict, Mapping, Optional
 import aiohttp
 from yarl import URL
 
-from .login import AuthException, _AuthConfig
+from .errors import AuthException
+from .login import _AuthConfig
 
 
 @dataclass(frozen=True)
@@ -33,10 +34,6 @@ class Cluster:
 class _ServerConfig:
     auth_config: _AuthConfig
     clusters: Mapping[str, Cluster]
-
-
-class ConfigLoadException(Exception):
-    pass
 
 
 def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:

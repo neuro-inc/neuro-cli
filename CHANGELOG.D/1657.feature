@@ -1,0 +1,1 @@
+Add support of plugin-defined config parameters

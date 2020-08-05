@@ -83,8 +83,40 @@ Config
 
    .. comethod:: get_user_config() -> Mapping[str, Any]
 
-      Return user-provided config dictionary, run ``neuro help user-config`` for details
-      about the user configuration files format and location.
+      Return user-provided config dictionary. Config is loaded from config files.
+      There are two configuration files: **global** and **local**, both are optional
+      and can be absent.
+
+      The global file is named ``user.toml`` and the API search for it in the path
+      provided to :class:`Factory` or :func:`get` (``$HOME/.neuro/user.toml`` by default).
+
+      The local config file is named ``.neuro.toml``, and the API search for this file
+      starting from the current folder up to the root directory.
+
+      Found local and global configurations are merged.
+      If a parameter is present are both global and local versions the local parameter
+      take a precedence.
+
+      Configuration files have a TOML format (a stricter version of well-known INI
+      format). See https://en.wikipedia.org/wiki/TOML and
+      https://github.com/toml-lang/toml#toml for the format specification details.
+
+      The API will raise an :class:`ConfigError` if configuration files contains unknown sections or parameters.
+      Note that currently API doesn't use any parameter from user config.
+
+      Known sections: **alias**, **job**, **storage**.
+
+      Section **alias** can have any subsections with any keys.
+
+      Section **job** can have following keys: **ps-format** - string, **life-span** - string.
+
+      Section **storage** can have following keys: **cp-exclude** - list of strings,
+      **cp-exclude-from-files** - list of strings.
+
+      There is a plugin system that allows to register additional config parameters. To
+      define a plugin, add a **neuro_api** entrypoint (check
+      https://packaging.python.org/specifications/entry-points/ for more info about entry points).
+      Entry point should be callable with single argument of type :class:`PluginManager`.
 
       .. versionadded:: 20.01.15
 

@@ -34,6 +34,7 @@ from aiohttp.web import (
 from jose import JWTError, jwt
 from yarl import URL
 
+from .errors import AuthException
 from .utils import asynccontextmanager
 
 
@@ -43,10 +44,6 @@ def urlsafe_unpadded_b64encode(payload: bytes) -> str:
 
 JWT_IDENTITY_CLAIM = "https://platform.neuromation.io/user"
 JWT_IDENTITY_CLAIM_OPTIONS = ("identity", JWT_IDENTITY_CLAIM)
-
-
-class AuthException(Exception):
-    pass
 
 
 class AuthCode:

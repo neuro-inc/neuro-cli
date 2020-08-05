@@ -41,7 +41,8 @@ from .abc import (
     StorageProgressStep,
 )
 from .config import Config
-from .core import ResourceNotFound, _Core
+from .core import _Core
+from .errors import ResourceNotFound
 from .file_filter import FileFilter
 from .url_utils import (
     _extract_path,

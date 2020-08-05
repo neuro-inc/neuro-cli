@@ -6,7 +6,8 @@ from aiohttp.web import HTTPCreated, HTTPNoContent
 from yarl import URL
 
 from .config import Config
-from .core import ClientError, _Core
+from .core import _Core
+from .errors import ClientError
 from .utils import NoPublicConstructor
 
 

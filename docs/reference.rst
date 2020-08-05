@@ -22,4 +22,5 @@ Reference
    users_reference
    secrets_reference
    parse_reference
+   plugin_reference
    glossary

@@ -154,7 +154,7 @@ async def user_config() -> None:
 
       A section for describing user-provided aliases.
 
-      See `neuro help alias` for details about avaiable section contents.
+      See `neuro help aliases` for details about avaiable section contents.
 
     **[job]**
 
@@ -165,6 +165,16 @@ async def user_config() -> None:
       Default value for `neuro ps --format=XXX` option.
 
       See `neuro help ps-format` for information about the value specification.
+
+    **life-span**
+
+      Default job run-time limit for `neuro run --life-span=XXX` option.
+
+      The value is a string in format `1d2h3m4s` (this example will set the limit to
+      1 day, 2 hours, 3 minutes and 4 seconds). Some values can be missing, for example:
+      `1d6h`, `30m`. No spaces are allowed between values.
+
+      To completely disable run-time limit, use `0`.
 
     **[storage]**
 
@@ -196,16 +206,6 @@ async def user_config() -> None:
       The format of files is the same as the format of `.gitignore` files:
       every line contains a pattern, exclamation mark `!` is used to negate
       the pattern, empty lines and lines which start with `#` are ignored.
-
-    **life-span**
-
-      Default job run-time limit for `neuro run --life-span=XXX` option.
-
-      The value is a string in format `1d2h3m4s` (this example will set the limit to
-      1 day, 2 hours, 3 minutes and 4 seconds). Some values can be missing, for example:
-      `1d6h`, `30m`. No spaces are allowed between values.
-
-      To completely disable run-time limit, use `0`.
 
     Example:
     ```

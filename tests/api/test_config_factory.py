@@ -14,7 +14,7 @@ import neuromation
 import neuromation.api.config_factory
 from neuromation.api import Cluster, ConfigError, Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData
-from neuromation.api.login import AuthException
+from neuromation.api.errors import AuthException
 from tests import _TestServerFactory
 
 
