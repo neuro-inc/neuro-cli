@@ -3,6 +3,7 @@ from typing import Any, List
 
 import click
 import pytest
+from yarl import URL
 
 from neuromation.api import Action, FileStatus, FileStatusType
 from neuromation.cli.formatters.storage import (
@@ -30,6 +31,7 @@ class TestNonePainter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage://default/user/File1"),
         )
         assert painter.paint(file.name, file.type) == file.name
 
@@ -43,6 +45,7 @@ class TestQuotedPainter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage://default/userFile1"),
         )
         assert painter.paint(file.name, file.type) == "'File1'"
 
@@ -54,6 +57,7 @@ class TestQuotedPainter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage://default/userFile'2"),
         )
         assert painter.paint(file.name, file.type) == '''"File1'2"'''
 
@@ -186,6 +190,7 @@ class TestGnuPainter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage://default/usertest.txt"),
         )
         folder = FileStatus(
             "tmp",
@@ -193,6 +198,7 @@ class TestGnuPainter:
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.WRITE,
+            uri=URL("storage://default/usertmp"),
         )
         painter = GnuPainter("di=32;41:fi=0;44:no=0;46")
         assert painter.paint(file.name, file.type) == "\x1b[0;44mtest.txt\x1b[0m"
@@ -221,6 +227,7 @@ class TestGnuPainter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage://default/usertest.txt"),
         )
         folder = FileStatus(
             "tmp",
@@ -228,6 +235,7 @@ class TestGnuPainter:
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.WRITE,
+            uri=URL("storage://default/usertmp"),
         )
         painter = GnuPainter("di=32;41:fi=0;44:no=0;46", underline=True)
         assert painter.paint(file.name, file.type) == "\x1b[0;44m\x1b[4mtest.txt\x1b[0m"
@@ -262,6 +270,7 @@ class TestBSDPainter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage://default/usertest.txt"),
         )
         folder = FileStatus(
             "tmp",
@@ -269,6 +278,7 @@ class TestBSDPainter:
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.WRITE,
+            uri=URL("storage://default/usertmp"),
         )
         painter = BSDPainter("exfxcxdxbxegedabagacad")
         assert painter.paint(file.name, file.type) == "test.txt"
@@ -287,6 +297,7 @@ class TestBSDPainter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage://default/usertest.txt"),
         )
         folder = FileStatus(
             "tmp",
@@ -294,6 +305,7 @@ class TestBSDPainter:
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.WRITE,
+            uri=URL("storage://default/usertmp"),
         )
         painter = BSDPainter("exfxcxdxbxegedabagacad", underline=True)
         assert painter.paint(file.name, file.type) == click.style(
@@ -346,6 +358,7 @@ class TestFilesFormatter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage://default/userFile1"),
         ),
         FileStatus(
             "File2",
@@ -353,6 +366,7 @@ class TestFilesFormatter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2018-10-10 13:10:10", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage://default/userFile2"),
         ),
         FileStatus(
             "File3 with space",
@@ -360,6 +374,7 @@ class TestFilesFormatter:
             FileStatusType.FILE,
             int(time.mktime(time.strptime("2019-02-02 05:02:02", "%Y-%m-%d %H:%M:%S"))),
             Action.READ,
+            uri=URL("storage://default/userFile 3 with space"),
         ),
     ]
     folders = [
@@ -369,6 +384,7 @@ class TestFilesFormatter:
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2017-03-03 06:03:03", "%Y-%m-%d %H:%M:%S"))),
             Action.MANAGE,
+            uri=URL("storage://default/userFolder11"),
         ),
         FileStatus(
             "1Folder with space",
@@ -376,6 +392,7 @@ class TestFilesFormatter:
             FileStatusType.DIRECTORY,
             int(time.mktime(time.strptime("2017-03-03 06:03:02", "%Y-%m-%d %H:%M:%S"))),
             Action.MANAGE,
+            uri=URL("storage://default/user1Folder with space"),
         ),
     ]
     files_and_folders = files + folders

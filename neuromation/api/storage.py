@@ -74,6 +74,7 @@ class FileStatus:
     type: FileStatusType
     modification_time: int
     permission: Action
+    uri: URL
 
     def is_file(self) -> bool:
         return self.type == FileStatusType.FILE
@@ -94,10 +95,16 @@ class Storage(metaclass=NoPublicConstructor):
         self._min_time_diff = 0.0
         self._max_time_diff = 0.0
 
-    def _uri_to_path(self, uri: URL) -> str:
-        uri = normalize_storage_path_uri(
+    def _normalize_uri(self, uri: URL) -> URL:
+        return normalize_storage_path_uri(
             uri, self._config.username, self._config.cluster_name
         )
+
+    def _uri_to_path(self, uri: URL, *, normalized: bool = False) -> str:
+        if not normalized:
+            uri = normalize_storage_path_uri(
+                uri, self._config.username, self._config.cluster_name
+            )
         if not uri.host:
             return ""
         if uri.host != self._config.cluster_name:
@@ -134,22 +141,25 @@ class Storage(metaclass=NoPublicConstructor):
         )
 
     async def ls(self, uri: URL) -> AsyncIterator[FileStatus]:
-        url = self._config.storage_url / self._uri_to_path(uri)
+        uri = self._normalize_uri(uri)
+        url = self._config.storage_url / self._uri_to_path(uri, normalized=True)
         url = url.with_query(op="LISTSTATUS")
         headers = {"Accept": "application/x-ndjson"}
 
         request_time = time.time()
         auth = await self._config._api_auth()
+        # NB: the storage server returns file names in FileStatus for LISTSTATUS
+        # but full path for GETFILESTATUS
         async with self._core.request("GET", url, headers=headers, auth=auth) as resp:
             self._set_time_diff(request_time, resp)
             if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
                 async for line in resp.content:
                     status = json.loads(line)["FileStatus"]
-                    yield _file_status_from_api(status)
+                    yield _file_status_from_api_ls(uri, status)
             else:
                 res = await resp.json()
                 for status in res["FileStatuses"]["FileStatus"]:
-                    yield _file_status_from_api(status)
+                    yield _file_status_from_api_ls(uri, status)
 
     async def glob(self, uri: URL, *, dironly: bool = False) -> AsyncIterator[URL]:
         if not _has_magic(uri.path):
@@ -255,15 +265,20 @@ class Storage(metaclass=NoPublicConstructor):
             resp  # resp.status == 201
 
     async def stat(self, uri: URL) -> FileStatus:
-        url = self._config.storage_url / self._uri_to_path(uri)
+        uri = self._normalize_uri(uri)
+        url = self._config.storage_url / self._uri_to_path(uri, normalized=True)
         url = url.with_query(op="GETFILESTATUS")
         auth = await self._config._api_auth()
 
         request_time = time.time()
+        # NB: the storage server returns file names in FileStatus for LISTSTATUS
+        # but full path for GETFILESTATUS
         async with self._core.request("GET", url, auth=auth) as resp:
             self._set_time_diff(request_time, resp)
             res = await resp.json()
-            return _file_status_from_api(res["FileStatus"])
+            return _file_status_from_api_stat(
+                self._config.cluster_name, res["FileStatus"]
+            )
 
     async def open(self, uri: URL) -> AsyncIterator[bytes]:
         url = self._config.storage_url / self._uri_to_path(uri)
@@ -694,13 +709,26 @@ def _isrecursive(pattern: str) -> bool:
     return pattern == "**"
 
 
-def _file_status_from_api(values: Dict[str, Any]) -> FileStatus:
+def _file_status_from_api_ls(base_uri: URL, values: Dict[str, Any]) -> FileStatus:
     return FileStatus(
         path=values["path"],
         type=FileStatusType(values["type"]),
         size=int(values["length"]),
         modification_time=int(values["modificationTime"]),
         permission=Action(values["permission"]),
+        uri=base_uri / values["path"],
+    )
+
+
+def _file_status_from_api_stat(cluster_name: str, values: Dict[str, Any]) -> FileStatus:
+    base_uri = URL.build(scheme="storage", authority=cluster_name)
+    return FileStatus(
+        path=values["path"],
+        type=FileStatusType(values["type"]),
+        size=int(values["length"]),
+        modification_time=int(values["modificationTime"]),
+        permission=Action(values["permission"]),
+        uri=base_uri / values["path"].lstrip("/"),
     )
 
 
