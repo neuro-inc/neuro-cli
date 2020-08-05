@@ -87,10 +87,10 @@ Config
       There are two configuration files: **global** and **local**, both are optional
       and can be absent.
 
-      The global file is named `user.toml` and the API search for it in path
-      provided to :class:`Factory` or :func:`get`.
+      The global file is named ``user.toml`` and the API search for it in the path
+      provided to :class:`Factory` or :func:`get` (``$HOME/.neuro/user.toml`` by default).
 
-      The local config file is named `.neuro.toml`, and the API search for this file
+      The local config file is named ``.neuro.toml``, and the API search for this file
       starting from the current folder up to the root directory.
 
       Found local and global configurations are merged.
