@@ -37,11 +37,13 @@ from .abc import (
     AbstractFileProgress,
     AbstractRecursiveFileProgress,
     StorageProgressComplete,
+    StorageProgressDelete,
     StorageProgressEnterDir,
     StorageProgressFail,
     StorageProgressLeaveDir,
     StorageProgressStart,
     StorageProgressStep,
+    _AsyncAbstractDeleteProgress,
     _AsyncAbstractFileProgress,
     _AsyncAbstractRecursiveFileProgress,
 )
@@ -302,7 +304,6 @@ class Storage(metaclass=NoPublicConstructor):
         recursive: bool = False,
         progress: Optional[AbstractDeleteProgress] = None,
     ) -> None:
-        path = self._uri_to_path(uri)
         # TODO (asvetlov): add a minor protection against deleting everything from root
         # or user volume root, however force operation here should allow user to delete
         # everything.
@@ -314,12 +315,41 @@ class Storage(metaclass=NoPublicConstructor):
         # if final_path == root_data_path or final_path.parent == root_data_path:
         #     raise ValueError("Invalid path value.")
 
+        async_progress: _AsyncAbstractDeleteProgress
+        queue, async_progress = queue_calls(progress)
+        await run_progress(
+            queue, self._rm(uri, recursive=recursive, progress=async_progress)
+        )
+
+    async def _rm(
+        self, uri: URL, *, recursive: bool, progress: _AsyncAbstractDeleteProgress
+    ) -> None:
+        path = self._uri_to_path(uri)
+
         url = self._config.storage_url / path
         url = url.with_query(op="DELETE", recursive="true" if recursive else "false")
         auth = await self._config._api_auth()
 
-        async with self._core.request("DELETE", url, auth=auth) as resp:
-            resp  # resp.status == 204
+        def server_status_to_uri(status: Dict[str, Any]) -> URL:
+            base_uri = URL.build(scheme="storage", authority=self._config.cluster_name)
+            return base_uri / status["path"].lstrip("/")
+
+        headers = {"Accept": "application/x-ndjson"}
+
+        async with self._core.request(
+            "DELETE", url, headers=headers, auth=auth
+        ) as resp:
+            if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
+                async for line in resp.content:
+                    status = json.loads(line)["FileStatus"]
+                    await progress.delete(
+                        StorageProgressDelete(
+                            uri=server_status_to_uri(status),
+                            is_dir=FileStatusType.DIRECTORY == status["type"],
+                        )
+                    )
+            else:
+                pass  # Old server versions do not support delete status streaming
 
     async def mv(self, src: URL, dst: URL) -> None:
         url = self._config.storage_url / self._uri_to_path(src)

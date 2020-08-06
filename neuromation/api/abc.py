@@ -52,7 +52,8 @@ class StorageProgressFail:
 
 @dataclass(frozen=True)
 class StorageProgressDelete:
-    src: URL
+    uri: URL
+    is_dir: bool
 
 
 class AbstractFileProgress(abc.ABC):
@@ -128,7 +129,7 @@ class _AsyncAbstractRecursiveFileProgress(_AsyncAbstractFileProgress):
 
 class _AsyncAbstractDeleteProgress(abc.ABC):
     @abc.abstractmethod
-    def delete(self, data: StorageProgressDelete) -> None:
+    async def delete(self, data: StorageProgressDelete) -> None:
         pass  # pragma: no cover
 
 
