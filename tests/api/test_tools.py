@@ -1,9 +1,12 @@
+import asyncio
 import os
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
 from neuromation.api import ConfigError, find_project_root
+from neuromation.api.utils import queue_calls
 
 
 @pytest.fixture()
@@ -51,3 +54,37 @@ def test_find_root_not_in_project(tmp_path: Path) -> None:
             find_project_root()
     finally:
         os.chdir(old_workdir)
+
+
+async def test_queue_calls_saves_args(loop: asyncio.AbstractEventLoop) -> None:
+    mock = Mock()
+
+    class Foo:
+        def bar(self, *args, **kwargs):
+            mock(*args, **kwargs)
+
+    queue, foo = queue_calls(Foo())
+    args = (1, 2, 3)
+    kwargs = dict(bar="baz")
+    await foo.bar(*args, **kwargs)
+    queued_call = await queue.get()
+    queued_call.execute()
+    mock.assert_called_with(*args, **kwargs)
+
+
+async def test_queue_calls_attribute_error_for_non_existing_method() -> None:
+    class Foo:
+        pass
+
+    queue, foo = queue_calls(Foo())
+    with pytest.raises(AttributeError):
+        await foo.bar()
+
+
+async def test_queue_calls_type_error_for_not_method() -> None:
+    class Foo:
+        bar = "sss"
+
+    queue, foo = queue_calls(Foo())
+    with pytest.raises(TypeError):
+        await foo.bar()

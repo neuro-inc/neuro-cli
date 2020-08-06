@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+from functools import partial
 from pathlib import Path
 from types import TracebackType
 from typing import (
@@ -13,8 +14,10 @@ from typing import (
     Generic,
     Iterator,
     Optional,
+    Tuple,
     Type,
     TypeVar,
+    cast,
 )
 
 import aiohttp
@@ -127,3 +130,54 @@ def find_project_root(path: Optional[Path] = None) -> Path:
             return here
         here = here.parent
     raise ConfigError(f"Project root is not found for {path}")
+
+
+class QueuedCall:
+    def __init__(
+        self, real_callable: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> None:
+        self._real_callable = real_callable
+        self._args = args
+        self._kwargs = kwargs
+
+    def execute(self) -> Any:
+        return self._real_callable(*self._args, **self._kwargs)
+
+
+def queue_calls(
+    any_obj: Any,
+) -> Tuple["asyncio.Queue[QueuedCall]", Any]:  # Sadly, but there is now way to annotate
+    """Add calls to asyncio.Queue instead executing them directly
+
+    Wraps given object into proxy, so trying to call any of its method will produce
+    a coroutine, that add QueuedCall to queue. For example, the following code:
+
+    class Foo:
+        def bar(self, arg):
+            print(arg)
+    queue, wrapped = queue_calls(Foo())
+    await wrapped.bar("foo")
+
+    Will add QueuedCall(foo.bar, args=("foo",)) to the queue and will not print anything.
+
+    To execute calls, you can do next:
+
+    queued_call = await queue.get()
+    queued_call.execute()
+    """
+    queue: "asyncio.Queue[QueuedCall]" = asyncio.Queue()
+
+    async def add_to_queue(
+        real_method: Callable[..., None], *args: Any, **kwargs: Any
+    ) -> None:
+        if not callable(real_method):
+            # Force TypeError
+            real_method()  # NOQA
+        await queue.put(QueuedCall(real_method, *args, **kwargs))
+
+    class Proxy:
+        def __getattr__(self, item: str) -> Callable[[Any], Coroutine[Any, Any, None]]:
+            real_method = getattr(any_obj, item)
+            return partial(add_to_queue, real_method)
+
+    return queue, Proxy()
