@@ -30,6 +30,8 @@ import aiohttp
 import attr
 from yarl import URL
 
+from neuromation.api.utils import QueuedCall, queue_calls
+
 from .abc import (
     AbstractFileProgress,
     AbstractRecursiveFileProgress,
@@ -39,6 +41,8 @@ from .abc import (
     StorageProgressLeaveDir,
     StorageProgressStart,
     StorageProgressStep,
+    _AsyncAbstractFileProgress,
+    _AsyncAbstractRecursiveFileProgress,
 )
 from .config import Config
 from .core import _Core
@@ -290,7 +294,7 @@ class Storage(metaclass=NoPublicConstructor):
             async for data in resp.content.iter_any():
                 yield data
 
-    async def rm(self, uri: URL, *, recursive: bool = False) -> None:
+    async def rm(self, uri: URL, *, recursive: bool = False,) -> None:
         path = self._uri_to_path(uri)
         # TODO (asvetlov): add a minor protection against deleting everything from root
         # or user volume root, however force operation here should allow user to delete
@@ -328,7 +332,7 @@ class Storage(metaclass=NoPublicConstructor):
     # high-level helpers
 
     async def _iterate_file(
-        self, src: Path, dst: URL, *, progress: "QueuedProgress",
+        self, src: Path, dst: URL, *, progress: _AsyncAbstractFileProgress,
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
         src_url = URL(src.as_uri())
@@ -399,11 +403,12 @@ class Storage(metaclass=NoPublicConstructor):
                     ):
                         return
 
-        queued = QueuedProgress(progress)
-        await run_progress(queued, self._upload_file(path, dst, progress=queued))
+        async_progress: _AsyncAbstractFileProgress
+        queue, async_progress = queue_calls(progress)
+        await run_progress(queue, self._upload_file(path, dst, progress=async_progress))
 
     async def _upload_file(
-        self, src_path: Path, dst: URL, *, progress: "QueuedProgress",
+        self, src_path: Path, dst: URL, *, progress: _AsyncAbstractFileProgress,
     ) -> None:
         for retry in retries(f"Fail to upload {dst}"):
             async with retry:
@@ -432,9 +437,10 @@ class Storage(metaclass=NoPublicConstructor):
             raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
         if not path.is_dir():
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(path))
-        queued = QueuedProgress(progress)
+        async_progress: _AsyncAbstractRecursiveFileProgress
+        queue, async_progress = queue_calls(progress)
         await run_progress(
-            queued,
+            queue,
             self._upload_dir(
                 src,
                 path,
@@ -443,7 +449,7 @@ class Storage(metaclass=NoPublicConstructor):
                 update=update,
                 filter=filter,
                 ignore_file_names=ignore_file_names,
-                progress=queued,
+                progress=async_progress,
             ),
         )
 
@@ -457,7 +463,7 @@ class Storage(metaclass=NoPublicConstructor):
         update: bool,
         filter: Callable[[str], Awaitable[bool]],
         ignore_file_names: AbstractSet[str],
-        progress: "QueuedProgress",
+        progress: _AsyncAbstractRecursiveFileProgress,
     ) -> None:
         tasks = []
         try:
@@ -565,9 +571,11 @@ class Storage(metaclass=NoPublicConstructor):
                     dst_stat, src_stat
                 ):
                     return
-        queued = QueuedProgress(progress)
+        async_progress: _AsyncAbstractFileProgress
+        queue, async_progress = queue_calls(progress)
         await run_progress(
-            queued, self._download_file(src, dst, path, src_stat.size, progress=queued),
+            queue,
+            self._download_file(src, dst, path, src_stat.size, progress=async_progress),
         )
 
     async def _download_file(
@@ -577,7 +585,7 @@ class Storage(metaclass=NoPublicConstructor):
         dst_path: Path,
         size: int,
         *,
-        progress: "QueuedProgress",
+        progress: _AsyncAbstractFileProgress,
     ) -> None:
         loop = asyncio.get_event_loop()
         async with self._file_sem:
@@ -610,11 +618,19 @@ class Storage(metaclass=NoPublicConstructor):
         )
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        queued = QueuedProgress(progress)
+
+        async_progress: _AsyncAbstractRecursiveFileProgress
+        queue, async_progress = queue_calls(progress)
         await run_progress(
-            queued,
+            queue,
             self._download_dir(
-                src, dst, path, "", update=update, filter=filter, progress=queued
+                src,
+                dst,
+                path,
+                "",
+                update=update,
+                filter=filter,
+                progress=async_progress,
             ),
         )
 
@@ -627,7 +643,7 @@ class Storage(metaclass=NoPublicConstructor):
         *,
         update: bool,
         filter: Callable[[str], Awaitable[bool]],
-        progress: "QueuedProgress",
+        progress: _AsyncAbstractRecursiveFileProgress,
     ) -> None:
         dst_path.mkdir(parents=True, exist_ok=True)
         await progress.enter(StorageProgressEnterDir(src, dst))
@@ -735,58 +751,15 @@ def _file_status_from_api_stat(cluster_name: str, values: Dict[str, Any]) -> Fil
 ProgressQueueItem = Optional[Tuple[Callable[[Any], None], Any]]
 
 
-class QueuedProgress:
-    def __init__(
-        self, progress: Optional[AbstractFileProgress],
-    ):
-        self._progress = progress
-        self._queue: "asyncio.Queue[ProgressQueueItem]" = asyncio.Queue()
-
-    @property
-    def queue(self) -> "asyncio.Queue[ProgressQueueItem]":
-        return self._queue
-
-    async def start(self, data: StorageProgressStart) -> None:
-        if self._progress is not None:
-            await self._queue.put((self._progress.start, data))
-
-    async def complete(self, data: StorageProgressComplete) -> None:
-        if self._progress is not None:
-            await self._queue.put((self._progress.complete, data))
-
-    async def step(self, data: StorageProgressStep) -> None:
-        if self._progress is not None:
-            await self._queue.put((self._progress.step, data))
-
-    async def enter(self, data: StorageProgressEnterDir) -> None:
-        if self._progress is not None:
-            progress = cast(AbstractRecursiveFileProgress, self._progress)
-            await self._queue.put((progress.enter, data))
-
-    async def leave(self, data: StorageProgressLeaveDir) -> None:
-        if self._progress is not None:
-            progress = cast(AbstractRecursiveFileProgress, self._progress)
-            await self._queue.put((progress.leave, data))
-
-    async def fail(self, data: StorageProgressFail) -> None:
-        if self._progress is not None:
-            progress = cast(AbstractRecursiveFileProgress, self._progress)
-            await self._queue.put((progress.fail, data))
-
-
 async def run_progress(
-    progress: Optional[QueuedProgress], coro: Awaitable[None]
+    queue: "asyncio.Queue[QueuedCall]", coro: Awaitable[None]
 ) -> None:
-    if progress is None:
-        return await coro
-
-    queue = progress.queue
-
     async def wrapped() -> None:
         try:
             await coro
         finally:
-            await queue.put(None)
+            # Add special marker to queue to allow loop below to exit
+            await queue.put(cast(QueuedCall, None))
 
     loop = asyncio.get_event_loop()
     task = loop.create_task(wrapped())
@@ -794,8 +767,7 @@ async def run_progress(
         item = await queue.get()
         if item is None:
             break
-        cb, data = item
-        cb(data)
+        item()
     await task
 
 

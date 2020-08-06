@@ -38,22 +38,17 @@ from .abc import (
     StorageProgressLeaveDir,
     StorageProgressStart,
     StorageProgressStep,
+    _AsyncAbstractFileProgress,
+    _AsyncAbstractRecursiveFileProgress,
 )
 from .config import Config
 from .core import _Core
 from .errors import ResourceNotFound
 from .file_filter import FileFilter, translate
-from .storage import (
-    QueuedProgress,
-    _always,
-    _has_magic,
-    _magic_check,
-    run_concurrently,
-    run_progress,
-)
+from .storage import _always, _has_magic, _magic_check, run_concurrently, run_progress
 from .url_utils import _extract_path, normalize_blob_path_uri, normalize_local_path_uri
 from .users import Action
-from .utils import NoPublicConstructor, asynccontextmanager, retries
+from .utils import NoPublicConstructor, asynccontextmanager, queue_calls, retries
 
 
 log = logging.getLogger(__name__)
@@ -396,7 +391,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
     # high-level helpers
 
     async def _iterate_file(
-        self, src: Path, dst: URL, size: int, *, progress: QueuedProgress,
+        self, src: Path, dst: URL, size: int, *, progress: _AsyncAbstractFileProgress,
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
         src_url = URL(src.as_uri())
@@ -495,12 +490,12 @@ class BlobStorage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(
                     errno.ENOTDIR, "Not a directory", str(dst.parent)
                 )
-
-        queued = QueuedProgress(progress)
-        await run_progress(queued, self._upload_file(path, dst, progress=queued))
+        async_progress: _AsyncAbstractFileProgress
+        queue, async_progress = queue_calls(progress)
+        await run_progress(queue, self._upload_file(path, dst, progress=async_progress))
 
     async def _upload_file(
-        self, src_path: Path, dst: URL, *, progress: QueuedProgress,
+        self, src_path: Path, dst: URL, *, progress: _AsyncAbstractFileProgress,
     ) -> None:
         bucket_name, key = self._extract_bucket_and_key(dst)
         # Be careful not to have too many opened files.
@@ -535,9 +530,10 @@ class BlobStorage(metaclass=NoPublicConstructor):
             raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
         if not path.is_dir():
             raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(path))
-        queued = QueuedProgress(progress)
+        async_progress: _AsyncAbstractRecursiveFileProgress
+        queue, async_progress = queue_calls(progress)
         await run_progress(
-            queued,
+            queue,
             self._upload_dir(
                 src,
                 path,
@@ -545,7 +541,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
                 "",
                 filter=filter,
                 ignore_file_names=ignore_file_names,
-                progress=queued,
+                progress=async_progress,
             ),
         )
 
@@ -558,7 +554,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         *,
         filter: Callable[[str], Awaitable[bool]],
         ignore_file_names: AbstractSet[str],
-        progress: QueuedProgress,
+        progress: _AsyncAbstractRecursiveFileProgress,
     ) -> None:
         tasks = []
         if not dst.path.endswith("/"):
@@ -640,9 +636,11 @@ class BlobStorage(metaclass=NoPublicConstructor):
         path = _extract_path(dst)
         bucket_name, key = self._extract_bucket_and_key(src)
         src_stat = await self.head_blob(bucket_name=bucket_name, key=key)
-        queued = QueuedProgress(progress)
+        async_progress: _AsyncAbstractFileProgress
+        queue, async_progress = queue_calls(progress)
         await run_progress(
-            queued, self._download_file(src, dst, path, src_stat.size, progress=queued),
+            queue,
+            self._download_file(src, dst, path, src_stat.size, progress=async_progress),
         )
 
     async def _download_file(
@@ -652,7 +650,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         dst_path: Path,
         size: int,
         *,
-        progress: QueuedProgress,
+        progress: _AsyncAbstractFileProgress,
     ) -> None:
         loop = asyncio.get_event_loop()
         async with self._file_sem:
@@ -685,9 +683,11 @@ class BlobStorage(metaclass=NoPublicConstructor):
         src = normalize_blob_path_uri(src, self._config.cluster_name)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
-        queued = QueuedProgress(progress)
+        async_progress: _AsyncAbstractRecursiveFileProgress
+        queue, async_progress = queue_calls(progress)
         await run_progress(
-            queued, self._download_dir(src, dst, path, filter=filter, progress=queued),
+            queue,
+            self._download_dir(src, dst, path, filter=filter, progress=async_progress),
         )
 
     async def _download_dir(
@@ -697,7 +697,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         dst_path: Path,
         *,
         filter: Callable[[str], Awaitable[bool]],
-        progress: QueuedProgress,
+        progress: _AsyncAbstractRecursiveFileProgress,
     ) -> None:
         dst_path.mkdir(parents=True, exist_ok=True)
         await progress.enter(StorageProgressEnterDir(src, dst))

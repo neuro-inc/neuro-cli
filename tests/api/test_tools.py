@@ -1,7 +1,8 @@
 import asyncio
 import os
 from pathlib import Path
-from unittest.mock import Mock
+from typing import Any
+from unittest.mock import Mock, call
 
 import pytest
 
@@ -60,7 +61,7 @@ async def test_queue_calls_saves_args(loop: asyncio.AbstractEventLoop) -> None:
     mock = Mock()
 
     class Foo:
-        def bar(self, *args, **kwargs):
+        def bar(self, *args: Any, **kwargs: Any) -> None:
             mock(*args, **kwargs)
 
     queue, foo = queue_calls(Foo())
@@ -68,8 +69,25 @@ async def test_queue_calls_saves_args(loop: asyncio.AbstractEventLoop) -> None:
     kwargs = dict(bar="baz")
     await foo.bar(*args, **kwargs)
     queued_call = await queue.get()
-    queued_call.execute()
+    queued_call()
     mock.assert_called_with(*args, **kwargs)
+
+
+async def test_queue_calls_multiple_calls(loop: asyncio.AbstractEventLoop) -> None:
+    calls_cnt = 5
+    mock = Mock()
+
+    class Foo:
+        def bar(self, *args: Any, **kwargs: Any) -> None:
+            mock(*args, **kwargs)
+
+    queue, foo = queue_calls(Foo())
+    for _ in range(calls_cnt):
+        await foo.bar(42)
+    while not queue.empty():
+        queued_call = await queue.get()
+        queued_call()
+    mock.assert_has_calls([call(42) for _ in range(calls_cnt)])
 
 
 async def test_queue_calls_attribute_error_for_non_existing_method() -> None:
@@ -88,3 +106,9 @@ async def test_queue_calls_type_error_for_not_method() -> None:
     queue, foo = queue_calls(Foo())
     with pytest.raises(TypeError):
         await foo.bar()
+
+
+async def test_queue_calls_no_errors_for_none() -> None:
+    queue, foo = queue_calls(None, allow_any_for_none=True)
+    await foo.bar()
+    await foo.baz()
