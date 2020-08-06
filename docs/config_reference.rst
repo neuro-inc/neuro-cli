@@ -10,6 +10,18 @@ Configuration API Reference
 
 .. currentmodule:: neuromation.api
 
+API functions
+=============
+
+.. function:: find_project_root(path: Optional[Path] = None) -> Path
+
+   Look for project root directory.
+
+   Folder is considered a project root when it
+   contains ``.neuro.toml``. Search begins at **path** or :meth:`Path.cwd` (current
+   working directory) when **path** is **None** and checks all parent folders sequentially.
+   Will raise an :class:`ConfigError` if search reaches root directory.
+
 
 Config
 ======
