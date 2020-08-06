@@ -33,6 +33,7 @@ from yarl import URL
 from neuromation.api.utils import QueuedCall, queue_calls
 
 from .abc import (
+    AbstractDeleteProgress,
     AbstractFileProgress,
     AbstractRecursiveFileProgress,
     StorageProgressComplete,
@@ -294,7 +295,13 @@ class Storage(metaclass=NoPublicConstructor):
             async for data in resp.content.iter_any():
                 yield data
 
-    async def rm(self, uri: URL, *, recursive: bool = False,) -> None:
+    async def rm(
+        self,
+        uri: URL,
+        *,
+        recursive: bool = False,
+        progress: Optional[AbstractDeleteProgress] = None,
+    ) -> None:
         path = self._uri_to_path(uri)
         # TODO (asvetlov): add a minor protection against deleting everything from root
         # or user volume root, however force operation here should allow user to delete

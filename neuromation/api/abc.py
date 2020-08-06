@@ -50,6 +50,11 @@ class StorageProgressFail:
     message: str
 
 
+@dataclass(frozen=True)
+class StorageProgressDelete:
+    src: URL
+
+
 class AbstractFileProgress(abc.ABC):
     # design note:
     # dataclasses used instead of direct passing parameters
@@ -84,6 +89,12 @@ class AbstractRecursiveFileProgress(AbstractFileProgress):
         pass  # pragma: no cover
 
 
+class AbstractDeleteProgress(abc.ABC):
+    @abc.abstractmethod
+    def delete(self, data: StorageProgressDelete) -> None:
+        pass  # pragma: no cover
+
+
 # Next class for typing only (wrapped with queue_calls version of above classes)
 
 
@@ -112,6 +123,12 @@ class _AsyncAbstractRecursiveFileProgress(_AsyncAbstractFileProgress):
 
     @abc.abstractmethod
     async def fail(self, data: StorageProgressFail) -> None:
+        pass  # pragma: no cover
+
+
+class _AsyncAbstractDeleteProgress(abc.ABC):
+    @abc.abstractmethod
+    def delete(self, data: StorageProgressDelete) -> None:
         pass  # pragma: no cover
 
 
