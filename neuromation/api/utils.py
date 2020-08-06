@@ -157,7 +157,7 @@ def queue_calls(
     queue, wrapped = queue_calls(Foo())
     await wrapped.bar("foo")
 
-    Will add QueuedCall(foo.bar, args=("foo",)) to the queue and will not print
+    Will add partial(foo.bar, "foo",)) to the queue and will not print
     anything.
 
     To execute calls, you can do next:
