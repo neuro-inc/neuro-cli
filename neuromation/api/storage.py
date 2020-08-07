@@ -330,9 +330,9 @@ class Storage(metaclass=NoPublicConstructor):
         url = url.with_query(op="DELETE", recursive="true" if recursive else "false")
         auth = await self._config._api_auth()
 
-        def server_status_to_uri(status: Dict[str, Any]) -> URL:
+        def server_status_to_uri(path: str) -> URL:
             base_uri = URL.build(scheme="storage", authority=self._config.cluster_name)
-            return base_uri / status["path"].lstrip("/")
+            return base_uri / path.lstrip("/")
 
         headers = {"Accept": "application/x-ndjson"}
 
@@ -341,11 +341,11 @@ class Storage(metaclass=NoPublicConstructor):
         ) as resp:
             if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
                 async for line in resp.content:
-                    status = json.loads(line)["FileStatus"]
+                    remove_listing = json.loads(line)
                     await progress.delete(
                         StorageProgressDelete(
-                            uri=server_status_to_uri(status),
-                            is_dir=FileStatusType.DIRECTORY == status["type"],
+                            uri=server_status_to_uri(remove_listing["path"]),
+                            is_dir=remove_listing["is_dir"],
                         )
                     )
             else:
