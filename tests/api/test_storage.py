@@ -5,7 +5,7 @@ import os
 from filecmp import dircmp
 from pathlib import Path
 from shutil import copytree
-from typing import Any, AsyncIterator, Callable, List, Mapping, Tuple
+from typing import Any, AsyncIterator, Callable, List, Tuple
 from unittest import mock
 
 import pytest
@@ -401,36 +401,19 @@ async def test_storage_glob(
         assert await glob("storage:**/b*/") == [URL("storage:folder/bar/")]
 
 
-def _fstat_to_remove_listing(fstat: Mapping[str, Any]) -> Mapping[str, str]:
-    return {
-        "path": fstat["FileStatus"]["path"],
-        "is_dir": fstat["FileStatus"]["type"] == "DIRECTORY",
-    }
-
-
 async def test_storage_rm_file(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    file_status = {
-        "FileStatus": {
-            "path": "/user/file",
-            "type": "FILE",
-            "length": 1234,
-            "modificationTime": 3456,
-            "permission": "read",
-        }
-    }
+    remove_listing = {"path": "/user/file", "is_dir": False}
 
-    async def delete_handler(request: web.Request) -> web.Response:
+    async def delete_handler(request: web.Request) -> web.StreamResponse:
         assert request.path == "/storage/user/file"
         assert request.query == {"op": "DELETE", "recursive": "false"}
         assert request.headers["Accept"] == "application/x-ndjson"
         resp = web.StreamResponse()
         resp.headers["Content-Type"] = "application/x-ndjson"
         await resp.prepare(request)
-        await resp.write(
-            json.dumps(_fstat_to_remove_listing(file_status)).encode() + b"\n"
-        )
+        await resp.write(json.dumps(remove_listing).encode() + b"\n")
         return resp
 
     app = web.Application()
@@ -445,15 +428,7 @@ async def test_storage_rm_file(
 async def test_storage_rm_file_progress(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    file_status = {
-        "FileStatus": {
-            "path": "/user/file",
-            "type": "FILE",
-            "length": 1234,
-            "modificationTime": 3456,
-            "permission": "read",
-        }
-    }
+    remove_listing = {"path": "/user/file", "is_dir": False}
 
     async def delete_handler(request: web.Request) -> web.StreamResponse:
         assert request.path == "/storage/user/file"
@@ -462,9 +437,7 @@ async def test_storage_rm_file_progress(
         resp = web.StreamResponse()
         resp.headers["Content-Type"] = "application/x-ndjson"
         await resp.prepare(request)
-        await resp.write(
-            json.dumps(_fstat_to_remove_listing(file_status)).encode() + b"\n"
-        )
+        await resp.write(json.dumps(remove_listing).encode() + b"\n")
         return resp
 
     app = web.Application()
@@ -506,14 +479,9 @@ async def test_storage_rm_directory(
 async def test_storage_rm_recursive(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    file_status = {
-        "FileStatus": {
-            "path": "/user/folder",
-            "type": "DIRECTORY",
-            "length": 1234,
-            "modificationTime": 3456,
-            "permission": "read",
-        }
+    remove_listing = {
+        "path": "/user/folder",
+        "is_dir": True,
     }
 
     async def delete_handler(request: web.Request) -> web.StreamResponse:
@@ -523,9 +491,7 @@ async def test_storage_rm_recursive(
         resp = web.StreamResponse()
         resp.headers["Content-Type"] = "application/x-ndjson"
         await resp.prepare(request)
-        await resp.write(
-            json.dumps(_fstat_to_remove_listing(file_status)).encode() + b"\n"
-        )
+        await resp.write(json.dumps(remove_listing).encode() + b"\n")
         return resp
 
     app = web.Application()
