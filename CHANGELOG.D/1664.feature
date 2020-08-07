@@ -1,0 +1,1 @@
+Added `progress` argument to `Storage.rm` for tracking delete progress
