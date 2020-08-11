@@ -69,7 +69,7 @@ async def generate_cluster_config(root: Root, config: str, type: str) -> None:
             f"Config path {config_path} already exists, "
             "please remove the file or pass the new file name explicitly."
         )
-    session = PromptSession()
+    session: PromptSession[str] = PromptSession()
     if type == "aws":
         content = await generate_aws(session)
     elif type == "gcp":
@@ -108,7 +108,7 @@ storage:
 """
 
 
-async def generate_aws(session: PromptSession) -> str:
+async def generate_aws(session: PromptSession[str]) -> str:
     args = {}
     args["vpc_id"] = await session.prompt_async("AWS VPC ID: ")
     access_key_id = os.environ.get("AWS_ACCESS_KEY_ID")
@@ -162,7 +162,7 @@ storage:
 """
 
 
-async def generate_gcp(session: PromptSession) -> str:
+async def generate_gcp(session: PromptSession[str]) -> str:
     args = {}
     args["project_name"] = await session.prompt_async("GCP project name: ")
     credentials_file = await session.prompt_async(
@@ -201,7 +201,7 @@ storage:
 """
 
 
-async def generate_azure(session: PromptSession) -> str:
+async def generate_azure(session: PromptSession[str]) -> str:
     args = {}
     args["subscription_id"] = await session.prompt_async(
         "Azure subscription ID: ", default=os.environ.get("AZURE_SUBSCRIPTION_ID", "")
