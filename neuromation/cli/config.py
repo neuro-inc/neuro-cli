@@ -131,7 +131,7 @@ async def login_headless(root: Root, url: URL) -> None:
     """
 
     async def login_callback(url: URL) -> str:
-        session = PromptSession()
+        session: PromptSession[str] = PromptSession()
         click.echo(f"Open {url} in a browser")
         click.echo("Put the code displayed in a browser after successful login")
         with patch_stdout():
@@ -248,7 +248,7 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
 
 
 async def prompt_cluster(
-    client: Client, *, session: Optional[PromptSession] = None
+    client: Client, *, session: Optional[PromptSession[str]] = None
 ) -> str:
     if session is None:
         session = PromptSession()
