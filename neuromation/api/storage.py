@@ -303,15 +303,8 @@ class Storage(metaclass=NoPublicConstructor):
         # if final_path == root_data_path or final_path.parent == root_data_path:
         #     raise ValueError("Invalid path value.")
 
-        if not recursive:
-            stats = await self.stat(uri)
-            if stats.type is FileStatusType.DIRECTORY:
-                raise IsADirectoryError(
-                    errno.EISDIR, "Is a directory, use recursive remove", str(uri)
-                )
-
         url = self._config.storage_url / path
-        url = url.with_query(op="DELETE")
+        url = url.with_query(op="DELETE", recursive="true" if recursive else "false")
         auth = await self._config._api_auth()
 
         async with self._core.request("DELETE", url, auth=auth) as resp:
