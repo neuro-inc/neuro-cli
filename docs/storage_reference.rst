@@ -303,17 +303,142 @@ FileStatus
 AbstractFileProgress
 ====================
 
-
 .. class:: AbstractFileProgress
 
    Base class for file upload/download progress, inherited from :class:`abc.ABC`.  User
    should inherit from this class and override abstract methods to get progress info
    from :meth:`Storage.upload_file` and :meth:`Storage.download_file` calls.
 
+   .. method:: start(data: StorageProgressStart) -> None
+
+      Called when transmission of the file starts.
+
+      :param StorageProgressStart data: data for this event
+
+   .. method:: step(data: StorageProgressStep) -> None
+
+      Called when transmission of the file progresses (more bytes are transmitted).
+
+      :param StorageProgressStep data: data for this event
+
+   .. method:: complete(data: StorageProgressComplete) -> None
+
+      Called when transmission of the file completes.
+
+      :param StorageProgressComplete data: data for this event
+
+
+AbstractRecursiveFileProgress
+=============================
 
 .. class:: AbstractRecursiveFileProgress
 
-   Base class for file upload/download progress, inherited from
+   Base class for recursive file upload/download progress, inherited from
    :class:`AbstractFileProgress`.  User should inherit from this class and override
    abstract methods to get progress info from :meth:`Storage.upload_dir` and
    :meth:`Storage.download_dir` calls.
+
+   .. method:: enter(data: StorageProgressEnterDir) -> None
+
+      Called when recursive process enters directory.
+
+      :param StorageProgressComplete data: data for this event
+
+   .. method:: leave(data: StorageProgressLeaveDir) -> None
+
+      Called when recursive process leaves directory. All files in that
+      directory are now transmitted.
+
+      :param StorageProgressLeaveDir data: data for this event
+
+   .. method:: fail(data: StorageProgressFail) -> None
+
+      Called when recursive process fails. It can happen because of
+      touching special file (like block device file) or some other
+      reason. Check **data.message** to get error details.
+
+      :param StorageProgressFail data: data for this event
+
+
+StorageProgress event classes
+=============================
+
+.. class:: StorageProgressStart
+
+   .. attribute:: src
+
+      :class:`yarl.URL` of source file, e.g. ``URL("file:/home/user/upload.txt")``.
+
+   .. attribute:: dst
+
+      :class:`yarl.URL` of destination file, e.g. ``URL("storage://cluster/user/upload_to.txt")``.
+
+   .. attribute:: size
+
+      Size of the transmitted file, in bytes, :class:`int`.
+
+.. class:: StorageProgressStep
+
+   .. attribute:: src
+
+      :class:`yarl.URL` of source file, e.g. ``URL("file:/home/user/upload.txt")``.
+
+   .. attribute:: dst
+
+      :class:`yarl.URL` of destination file, e.g. ``URL("storage://cluster/user/upload_to.txt")``.
+
+   .. attribute:: current
+
+      Count of the transmitted bytes, :class:`int`.
+
+   .. attribute:: size
+
+      Size of the transmitted file, in bytes, :class:`int`.
+
+.. class:: StorageProgressComplete
+
+   .. attribute:: src
+
+      :class:`yarl.URL` of source file, e.g. ``URL("file:/home/user/upload.txt")``.
+
+   .. attribute:: dst
+
+      :class:`yarl.URL` of destination file, e.g. ``URL("storage://cluster/user/upload_to.txt")``.
+
+   .. attribute:: size
+
+      Size of the transmitted file, in bytes, :class:`int`.
+
+.. class:: StorageProgressEnterDir
+
+   .. attribute:: src
+
+      :class:`yarl.URL` of source directory, e.g. ``URL("file:/home/user/upload/")``.
+
+   .. attribute:: dst
+
+      :class:`yarl.URL` of destination directory, e.g. ``URL("storage://cluster/user/upload_to/")``.
+
+.. class:: StorageProgressLeaveDir
+
+   .. attribute:: src
+
+      :class:`yarl.URL` of source directory, e.g. ``URL("file:/home/user/upload/")``.
+
+   .. attribute:: dst
+
+      :class:`yarl.URL` of destination directory, e.g. ``URL("storage://cluster/user/upload_to/")``.
+
+.. class:: StorageProgressFail
+
+   .. attribute:: src
+
+      :class:`yarl.URL` of source file that triggered error, e.g. ``URL("file:/dev/sda")``.
+
+   .. attribute:: dst
+
+      :class:`yarl.URL` of destination file, e.g. ``URL("storage://cluster/user/dev/sda.bin")``.
+
+   .. attribute:: message
+
+      Explanation message for the error, :class:`str`.
