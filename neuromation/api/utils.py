@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import sys
+from functools import partial
 from pathlib import Path
 from types import TracebackType
 from typing import (
@@ -13,6 +14,7 @@ from typing import (
     Generic,
     Iterator,
     Optional,
+    Tuple,
     Type,
     TypeVar,
 )
@@ -127,3 +129,59 @@ def find_project_root(path: Optional[Path] = None) -> Path:
             return here
         here = here.parent
     raise ConfigError(f"Project root is not found for {path}")
+
+
+QueuedCall = Callable[[], Any]
+
+
+async def _noop(*args: Any, **kwargs: Any) -> None:
+    pass
+
+
+class _NoopProxy:
+    def __getattr__(self, name: str) -> Callable[[Any], Coroutine[Any, Any, None]]:
+        return _noop
+
+
+def queue_calls(
+    any_obj: Any, allow_any_for_none: bool = True,
+) -> Tuple["asyncio.Queue[QueuedCall]", Any]:  # Sadly, but there is now way to annotate
+    """Add calls to asyncio.Queue instead executing them directly
+
+    Wraps given object into proxy, so trying to call any of its method will produce
+    a coroutine, that add QueuedCall to queue. For example, the following code:
+
+    class Foo:
+        def bar(self, arg):
+            print(arg)
+    queue, wrapped = queue_calls(Foo())
+    await wrapped.bar("foo")
+
+    Will add QueuedCall(foo.bar, args=("foo",)) to the queue and will not print
+    anything.
+
+    To execute calls, you can do next:
+
+    queued_call = await queue.get()
+    queued_call.execute()
+
+    In case `any_obj` is `None` and `allow_any_for_none` is set, then a proxy will not
+    raise any AttributeErrors and just absorb all cals silently.
+    """
+    queue: "asyncio.Queue[QueuedCall]" = asyncio.Queue()
+
+    async def add_to_queue(
+        real_method: Callable[..., None], *args: Any, **kwargs: Any
+    ) -> None:
+        await queue.put(partial(real_method, *args, **kwargs))
+
+    class Proxy:
+        def __getattr__(self, name: str) -> Callable[[Any], Coroutine[Any, Any, None]]:
+            real_method = getattr(any_obj, name)
+            setattr(self, name, partial(add_to_queue, real_method))
+            return partial(add_to_queue, real_method)
+
+    if any_obj is None and allow_any_for_none:
+        return queue, _NoopProxy()
+
+    return queue, Proxy()

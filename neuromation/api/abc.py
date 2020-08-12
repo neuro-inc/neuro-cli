@@ -84,6 +84,37 @@ class AbstractRecursiveFileProgress(AbstractFileProgress):
         pass  # pragma: no cover
 
 
+# Next class for typing only (wrapped with queue_calls version of above classes)
+
+
+class _AsyncAbstractFileProgress(abc.ABC):
+    @abc.abstractmethod
+    async def start(self, data: StorageProgressStart) -> None:
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
+    async def complete(self, data: StorageProgressComplete) -> None:
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
+    async def step(self, data: StorageProgressStep) -> None:
+        pass  # pragma: no cover
+
+
+class _AsyncAbstractRecursiveFileProgress(_AsyncAbstractFileProgress):
+    @abc.abstractmethod
+    async def enter(self, data: StorageProgressEnterDir) -> None:
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
+    async def leave(self, data: StorageProgressLeaveDir) -> None:
+        pass  # pragma: no cover
+
+    @abc.abstractmethod
+    async def fail(self, data: StorageProgressFail) -> None:
+        pass  # pragma: no cover
+
+
 # image
 
 
