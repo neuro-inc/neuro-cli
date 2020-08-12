@@ -46,6 +46,7 @@ def _job_entry(job_id: str) -> Dict[str, Any]:
         "is_preemptible": True,
         "name": "job-name",
         "internal_hostname": "job-id.default",
+        "internal_hostname_named": "job-name--job-owner.default",
     }
 
 

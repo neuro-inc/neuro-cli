@@ -791,6 +791,57 @@ class TestJobOutputFormatter:
             "Started: 2018-09-25T12:28:24.759433+00:00"
         )
 
+    def test_running_named_job(self) -> None:
+        description = JobDescription(
+            status=JobStatus.RUNNING,
+            owner="test-user",
+            name="test-job",
+            cluster_name="default",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            description="test job description",
+            history=JobStatusHistory(
+                status=JobStatus.RUNNING,
+                reason="ContainerRunning",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                finished_at=None,
+            ),
+            http_url=URL("http://local.host.test/"),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_external_image(name="test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+            internal_hostname="host.local",
+            internal_hostname_named="test-job--test-owner.local",
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
+        resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
+        assert (
+            status == "Job: test-job\n"
+            "Name: test-job\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: running\n"
+            "Image: test-image\n"
+            "Command: test-command\n"
+            f"{resource}\n"
+            "TTY: False\n"
+            "Internal Hostname: host.local\n"
+            "Internal Hostname Named: test-job--test-owner.local\n"
+            "Http URL: http://local.host.test/\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:24.759433+00:00"
+        )
+
     def test_job_with_entrypoint(self) -> None:
         description = JobDescription(
             status=JobStatus.RUNNING,

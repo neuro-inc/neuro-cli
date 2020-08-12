@@ -464,6 +464,11 @@ JobDescription
 
       DNS name to access the running job from other jobs.
 
+   .. attribute:: internal_hostname_named
+
+      DNS name to access the running job from other jobs based on jobs name instead of
+      jobs id. Produces same value for jobs with ``name`` and ``owner`` in same cluster.
+
 
 JobStatus
 =========
