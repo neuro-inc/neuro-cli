@@ -436,6 +436,10 @@ class Jobs(metaclass=NoPublicConstructor):
                 await ws.close()
         except asyncio.CancelledError:
             raise
+        except WSServerHandshakeError as e:
+            if e.headers and "X-Error" in e.headers:
+                log.error(f"Error during port-forwarding: {e.headers['X-Error']}")
+            log.exception("Unhandled exception during port-forwarding")
         except Exception:
             log.exception("Unhandled exception during port-forwarding")
 
