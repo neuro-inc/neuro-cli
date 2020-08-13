@@ -1,0 +1,1 @@
+Added printing of documentation link to `nuero login` command
