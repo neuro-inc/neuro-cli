@@ -394,7 +394,7 @@ async def secrets() -> None:
       Secrets are isolated and user-specific, a secret that belongs to user A cannot be
       accessed by user B.
 
-    ** Secrets management **
+    **Secrets management**
 
       Use `neuro secret` command group for managing secrets.
 
@@ -411,7 +411,7 @@ async def secrets() -> None:
       Internally, Neuro Platform uses Kubernetes Cluster secrets subsystem a secrets
       storage.
 
-    ** Secrets usage **
+    **Secrets usage**
 
       As said above, you cannot read a secret directly but should pass it into a running
       job as an environment variable or mounted file.
