@@ -73,6 +73,14 @@ async def add_quota(root: Root) -> None:
     )
 
 
+def _print_welcome(url: URL) -> None:
+    click.echo(f"Logged into {url}")
+    click.echo(
+        "Read the docs at https://docs.neu.ro or run `neuro --help` "
+        "to see the reference"
+    )
+
+
 @command(init_client=False)
 @argument("url", required=False, default=DEFAULT_API_URL, type=URL)
 async def login(root: Root, url: URL) -> None:
@@ -92,7 +100,7 @@ async def login(root: Root, url: URL) -> None:
         await root.factory.logout()
         click.echo("You were successfully logged out.")
         await root.factory.login(show_browser, url=url, timeout=root.timeout)
-    click.echo(f"Logged into {url}")
+    _print_welcome(url)
 
 
 @command(init_client=False)
@@ -111,7 +119,7 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
         await root.factory.logout()
         click.echo("You were successfully logged out.")
         await root.factory.login_with_token(token, url=url, timeout=root.timeout)
-    click.echo(f"Logged into {url}")
+    _print_welcome(url)
 
 
 @command(init_client=False)
@@ -146,7 +154,7 @@ async def login_headless(root: Root, url: URL) -> None:
         await root.factory.logout()
         click.echo("You were successfully logged out.")
         await root.factory.login_headless(login_callback, url=url, timeout=root.timeout)
-    click.echo(f"Logged into {url}")
+    _print_welcome(url)
 
 
 @command(init_client=False)
