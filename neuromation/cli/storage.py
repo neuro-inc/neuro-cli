@@ -20,6 +20,7 @@ from neuromation.api.url_utils import _extract_path
 from .const import EX_OSFILE
 from .formatters.storage import (
     BaseFilesFormatter,
+    DeleteProgress,
     FilesSorter,
     LongFilesFormatter,
     SimpleFilesFormatter,
@@ -68,7 +69,20 @@ def storage() -> None:
     show_default=True,
     help="Expand glob patterns in PATHS",
 )
-async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> None:
+@option(
+    "-p/-P",
+    "--progress/--no-progress",
+    is_flag=True,
+    default=None,
+    help="Show progress, on by default in TTY mode, off otherwise.",
+)
+async def rm(
+    root: Root,
+    paths: Sequence[str],
+    recursive: bool,
+    glob: bool,
+    progress: Optional[bool],
+) -> None:
     """
     Remove files or directories.
 
@@ -80,9 +94,14 @@ async def rm(root: Root, paths: Sequence[str], recursive: bool, glob: bool) -> N
     neuro rm storage:foo/**/*.tmp
     """
     errors = False
+    show_progress = root.tty if progress is None else progress
+
     for uri in await _expand(paths, root, glob):
         try:
-            await root.client.storage.rm(uri, recursive=recursive)
+            progress_obj = DeleteProgress(root) if show_progress else None
+            await root.client.storage.rm(
+                uri, recursive=recursive, progress=progress_obj
+            )
         except (OSError, ResourceNotFound, IllegalArgumentError) as error:
             log.error(f"cannot remove {uri}: {error}")
             errors = True

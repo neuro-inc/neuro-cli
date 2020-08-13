@@ -360,6 +360,23 @@ AbstractRecursiveFileProgress
       :param StorageProgressFail data: data for this event
 
 
+AbstractDeleteProgress
+======================
+
+.. class:: AbstractDeleteProgress
+
+   Base class for file/directory delete progress, inherited from :class:`abc.ABC`.  User
+   should inherit from this class and override abstract methods to get progress info
+   from :meth:`Storage.rm` calls.
+
+  .. method:: delete(data: StorageProgressDelete) -> None
+
+      Called when single item (either file or directory) was deleted. Directory removal
+      happens after removal of all files and subdirectories is contains.
+
+      :param StorageProgressDelete data: data for this event
+
+
 StorageProgress event classes
 =============================
 
@@ -442,3 +459,13 @@ StorageProgress event classes
    .. attribute:: message
 
       Explanation message for the error, :class:`str`.
+
+.. class:: StorageProgressDelete
+
+   .. attribute:: uri
+
+      :class:`yarl.URL` of the deleted file, e.g. ``URL("storage://cluster/user/delete_me.txt")``.
+
+   .. attribute:: is_dir
+
+      **True** if removed item was a directory; **False** otherwise. :class:`bool`

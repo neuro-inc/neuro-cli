@@ -16,11 +16,13 @@ from click import style, unstyle
 from yarl import URL
 
 from neuromation.api import (
+    AbstractDeleteProgress,
     AbstractRecursiveFileProgress,
     Action,
     FileStatus,
     FileStatusType,
     StorageProgressComplete,
+    StorageProgressDelete,
     StorageProgressEnterDir,
     StorageProgressFail,
     StorageProgressLeaveDir,
@@ -565,6 +567,20 @@ class FilesSorter(str, enum.Enum):
 
 
 # progress indicator
+
+
+class DeleteProgress(AbstractDeleteProgress):
+    def __init__(self, root: Root) -> None:
+        self.painter = get_painter(root.color, quote=True)
+
+    def fmt_url(self, url: URL, type: FileStatusType) -> str:
+        return self.painter.paint(str(url), type)
+
+    def delete(self, data: StorageProgressDelete) -> None:
+        url_label = self.fmt_url(
+            data.uri, FileStatusType.DIRECTORY if data.is_dir else FileStatusType.FILE,
+        )
+        click.echo(f"Removed: {url_label}")
 
 
 class BaseStorageProgress(AbstractRecursiveFileProgress):

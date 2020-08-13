@@ -946,6 +946,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_\-r, --recursive_|remove directories and their contents recursively|
 
 
@@ -2321,6 +2322,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_\-r, --recursive_|remove directories and their contents recursively|
 
 
