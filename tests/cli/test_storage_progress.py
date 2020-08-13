@@ -10,6 +10,7 @@ from yarl import URL
 from neuromation.api import (
     FileStatusType,
     StorageProgressComplete,
+    StorageProgressDelete,
     StorageProgressEnterDir,
     StorageProgressFail,
     StorageProgressLeaveDir,
@@ -18,6 +19,7 @@ from neuromation.api import (
 )
 from neuromation.cli.formatters.storage import (
     BaseStorageProgress,
+    DeleteProgress,
     StreamProgress,
     TTYProgress,
     create_storage_progress,
@@ -500,3 +502,17 @@ def test_tty_append_second_dir(make_root: _MakeRoot) -> None:
             (URL("c"), True, "c"),
             (URL("d"), False, "d"),
         ]
+
+
+def test_delete_progress_no_color(capsys: Any, make_root: _MakeRoot) -> None:
+    report = DeleteProgress(make_root(False, False, False))
+    url_file = URL("storage:/abc/foo")
+    url_dir = URL("storage:/abc")
+
+    report.delete(StorageProgressDelete(url_file, is_dir=False))
+    captured = capsys.readouterr()
+    assert captured.out == f"Removed: '{url_file}'\n"
+
+    report.delete(StorageProgressDelete(url_dir, is_dir=True))
+    captured = capsys.readouterr()
+    assert captured.out == f"Removed: '{url_dir}'\n"

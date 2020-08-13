@@ -5,6 +5,7 @@ import aiohttp
 from yarl import URL
 
 from .abc import (
+    AbstractDeleteProgress,
     AbstractDockerImageProgress,
     AbstractFileProgress,
     AbstractRecursiveFileProgress,
@@ -12,6 +13,7 @@ from .abc import (
     ImageProgressPush,
     ImageProgressStep,
     StorageProgressComplete,
+    StorageProgressDelete,
     StorageProgressEnterDir,
     StorageProgressFail,
     StorageProgressLeaveDir,
@@ -103,6 +105,7 @@ __all__ = (
     "ServerNotAvailable",
     "AbstractFileProgress",
     "AbstractRecursiveFileProgress",
+    "AbstractDeleteProgress",
     "AbstractDockerImageProgress",
     "StorageProgressStart",
     "StorageProgressComplete",
@@ -110,6 +113,7 @@ __all__ = (
     "StorageProgressFail",
     "StorageProgressEnterDir",
     "StorageProgressLeaveDir",
+    "StorageProgressDelete",
     "ImageProgressPull",
     "ImageProgressPush",
     "ImageProgressStep",

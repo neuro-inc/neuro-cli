@@ -2084,3 +2084,34 @@ async def test_port_forward(
                 writer.write(str(i).encode("ascii"))
                 ret = await reader.read(1024)
                 assert ret == b"rep-" + str(i).encode("ascii")
+
+
+async def test_port_forward_logs_error(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    aiohttp_unused_port: Callable[[], int],
+    caplog: Any,
+) -> None:
+
+    port = aiohttp_unused_port()
+
+    async def handler(request: web.Request) -> web.WebSocketResponse:
+        raise web.HTTPBadRequest(
+            text="test",
+            content_type="application/json",
+            headers={"X-Error": "test error info"},
+        )
+
+    app = web.Application()
+    app.router.add_get("/jobs/job-id/port_forward/12345", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        async with client.jobs.port_forward("job-id", port, 12345):
+            reader, writer = await asyncio.open_connection("127.0.0.1", port)
+            writer.write("boom".encode("ascii"))
+            await writer.drain()
+            await asyncio.sleep(0.1)
+
+    assert "test error info" in caplog.text

@@ -1,4 +1,5 @@
-from typing import Callable, List
+import json
+from typing import Any, Callable, List, Mapping
 from unittest import mock
 
 from neuromation.api.admin import _Admin, _ClusterUser, _ClusterUserRoleType
@@ -48,3 +49,20 @@ def test_remove_cluster_user_print_result(run_cli: _RunCli) -> None:
         capture = run_cli(["-q", "admin", "remove-cluster-user", "default", "ivan"])
         assert not capture.err
         assert not capture.out
+
+
+def test_show_cluster_config_options(run_cli: _RunCli) -> None:
+    with mock.patch.object(_Admin, "get_cloud_provider_options") as mocked:
+        sample_data = {"foo": "bar", "baz": {"t2": 1, "t1": 2}}
+
+        async def get_cloud_provider_options(
+            cloud_provider_name: str,
+        ) -> Mapping[str, Any]:
+            assert cloud_provider_name == "aws"
+            return sample_data
+
+        mocked.side_effect = get_cloud_provider_options
+        capture = run_cli(["admin", "show-cluster-options", "--type", "aws"])
+        assert not capture.err
+
+        assert json.loads(capture.out) == sample_data

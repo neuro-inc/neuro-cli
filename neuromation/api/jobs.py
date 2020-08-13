@@ -148,6 +148,7 @@ class JobDescription:
     http_url: URL = URL()
     ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
+    internal_hostname_named: Optional[str] = None
     restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER
     life_span: Optional[float] = None
 
@@ -436,6 +437,10 @@ class Jobs(metaclass=NoPublicConstructor):
                 await ws.close()
         except asyncio.CancelledError:
             raise
+        except WSServerHandshakeError as e:
+            if e.headers and "X-Error" in e.headers:
+                log.error(f"Error during port-forwarding: {e.headers['X-Error']}")
+            log.exception("Unhandled exception during port-forwarding")
         except Exception:
             log.exception("Unhandled exception during port-forwarding")
 
@@ -717,6 +722,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
     http_url_named = URL(res.get("http_url_named", ""))
     ssh_server = URL(res.get("ssh_server", ""))
     internal_hostname = res.get("internal_hostname", None)
+    internal_hostname_named = res.get("internal_hostname_named", None)
     restart_policy = JobRestartPolicy(res.get("restart_policy", JobRestartPolicy.NEVER))
     max_run_time_minutes = res.get("max_run_time_minutes")
     life_span = (
@@ -736,6 +742,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         http_url=http_url_named or http_url,
         ssh_server=ssh_server,
         internal_hostname=internal_hostname,
+        internal_hostname_named=internal_hostname_named,
         uri=URL(res["uri"]),
         restart_policy=restart_policy,
         life_span=life_span,

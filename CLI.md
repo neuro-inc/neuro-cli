@@ -6,6 +6,7 @@
 		* [neuro admin get-clusters](#neuro-admin-get-clusters)
 		* [neuro admin generate-cluster-config](#neuro-admin-generate-cluster-config)
 		* [neuro admin add-cluster](#neuro-admin-add-cluster)
+		* [neuro admin show-cluster-options](#neuro-admin-show-cluster-options)
 		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
 		* [neuro admin add-cluster-user](#neuro-admin-add-cluster-user)
 		* [neuro admin remove-cluster-user](#neuro-admin-remove-cluster-user)
@@ -187,6 +188,7 @@ Name | Description|
 | _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
 | _[neuro admin generate\-cluster-config](#neuro-admin-generate-cluster-config)_| Create a cluster configuration file |
 | _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster and start its provisioning |
+| _[neuro admin show\-cluster-options](#neuro-admin-show-cluster-options)_| Create a cluster configuration file |
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
 | _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster |
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
@@ -250,6 +252,26 @@ neuro admin add-cluster [OPTIONS] CLUSTER_NAME CONFIG
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin show-cluster-options
+
+Create a cluster configuration file.
+
+**Usage:**
+
+```bash
+neuro admin show-cluster-options [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--type \[aws &#124; gcp &#124; azure]_||
 
 
 
@@ -946,6 +968,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_\-r, --recursive_|remove directories and their contents recursively|
 
 
@@ -2321,6 +2344,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_\-r, --recursive_|remove directories and their contents recursively|
 
 

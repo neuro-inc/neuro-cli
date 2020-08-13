@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum, unique
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 from neuromation.api.config import Config
 from neuromation.api.core import _Core
@@ -185,6 +185,14 @@ class _Admin(metaclass=NoPublicConstructor):
         async with self._core.request("PATCH", url, json=payload, auth=auth) as resp:
             payload = await resp.json()
             return _cluster_user_with_quota_from_api(user_name, payload)
+
+    async def get_cloud_provider_options(
+        self, cloud_provider_name: str
+    ) -> Mapping[str, Any]:
+        url = self._config.api_url / "cloud_providers" / cloud_provider_name
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            return await resp.json()
 
 
 def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:

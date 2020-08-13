@@ -471,3 +471,23 @@ async def test_add_user_quota(
         assert {
             "additional_quota": {"total_gpu_run_time_minutes": 150},
         } in requested_payloads
+
+
+async def test_get_cloud_provider_options(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    sample_response = {"foo": "bar"}
+
+    async def handle_cloud_providers(request: web.Request,) -> web.Response:
+        return web.json_response(sample_response, status=HTTPOk.status_code)
+
+    app = web.Application()
+    app.router.add_get(
+        "/api/v1/cloud_providers/aws", handle_cloud_providers,
+    )
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        result = await client._admin.get_cloud_provider_options("aws")
+        assert result == sample_response

@@ -23,6 +23,7 @@ from neuromation.api import (
     StorageProgressStart,
     StorageProgressStep,
 )
+from neuromation.api.abc import StorageProgressDelete
 from tests import _RawTestServerFactory, _TestServerFactory
 
 
@@ -403,10 +404,17 @@ async def test_storage_glob(
 async def test_storage_rm_file(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    async def delete_handler(request: web.Request) -> web.Response:
+    remove_listing = {"path": "/user/file", "is_dir": False}
+
+    async def delete_handler(request: web.Request) -> web.StreamResponse:
         assert request.path == "/storage/user/file"
         assert request.query == {"op": "DELETE", "recursive": "false"}
-        return web.Response(status=204)
+        assert request.headers["Accept"] == "application/x-ndjson"
+        resp = web.StreamResponse()
+        resp.headers["Content-Type"] = "application/x-ndjson"
+        await resp.prepare(request)
+        await resp.write(json.dumps(remove_listing).encode() + b"\n")
+        return resp
 
     app = web.Application()
     app.router.add_delete("/storage/user/file", delete_handler)
@@ -415,6 +423,35 @@ async def test_storage_rm_file(
 
     async with make_client(srv.make_url("/")) as client:
         await client.storage.rm(URL("storage:file"))
+
+
+async def test_storage_rm_file_progress(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    remove_listing = {"path": "/user/file", "is_dir": False}
+
+    async def delete_handler(request: web.Request) -> web.StreamResponse:
+        assert request.path == "/storage/user/file"
+        assert request.query == {"op": "DELETE", "recursive": "false"}
+        assert request.headers["Accept"] == "application/x-ndjson"
+        resp = web.StreamResponse()
+        resp.headers["Content-Type"] = "application/x-ndjson"
+        await resp.prepare(request)
+        await resp.write(json.dumps(remove_listing).encode() + b"\n")
+        return resp
+
+    app = web.Application()
+    app.router.add_delete("/storage/user/file", delete_handler)
+
+    srv = await aiohttp_server(app)
+
+    progress = mock.Mock()
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.rm(URL("storage:file"), progress=progress)
+
+    progress.delete.assert_called_with(
+        StorageProgressDelete(uri=URL("storage://default/user/file"), is_dir=False,)
+    )
 
 
 async def test_storage_rm_directory(
@@ -442,10 +479,20 @@ async def test_storage_rm_directory(
 async def test_storage_rm_recursive(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    async def delete_handler(request: web.Request) -> web.Response:
+    remove_listing = {
+        "path": "/user/folder",
+        "is_dir": True,
+    }
+
+    async def delete_handler(request: web.Request) -> web.StreamResponse:
         assert request.path == "/storage/user/folder"
         assert request.query == {"op": "DELETE", "recursive": "true"}
-        return web.Response(status=204)
+        assert request.headers["Accept"] == "application/x-ndjson"
+        resp = web.StreamResponse()
+        resp.headers["Content-Type"] = "application/x-ndjson"
+        await resp.prepare(request)
+        await resp.write(json.dumps(remove_listing).encode() + b"\n")
+        return resp
 
     app = web.Application()
     app.router.add_delete("/storage/user/folder", delete_handler)
