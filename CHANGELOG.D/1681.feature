@@ -1,1 +1,0 @@
-Added `neuro admin show-cluster-options` command for displaying possible cluster configuration options.

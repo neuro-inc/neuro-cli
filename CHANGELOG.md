@@ -5,6 +5,30 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.8.13 (2020-08-13)
+================================
+
+Features
+--------
+
+
+- Implement `FileStatus.uri` property. ([#1648](https://github.com/neuromation/platform-api-clients/issues/1648))
+
+- Add support of plugin-defined config parameters ([#1657](https://github.com/neuromation/platform-api-clients/issues/1657))
+
+- Added `find_project_root` function ([#1660](https://github.com/neuromation/platform-api-clients/issues/1660))
+
+- Added `neuro rm --progress` and `progress` argument to `Storage.rm` for tracking delete progress ([#1664](https://github.com/neuromation/platform-api-clients/issues/1664))
+
+- Added `internal_hostname_named` to `JobDescription` and to output of `neuro job status`. ([#1675](https://github.com/neuromation/platform-api-clients/issues/1675))
+
+- Added logging of `X-Error` error description in `neuro port-forward`. ([#1676](https://github.com/neuromation/platform-api-clients/issues/1676))
+
+- Added printing of documentation link to `nuero login` command ([#1680](https://github.com/neuromation/platform-api-clients/issues/1680))
+
+- Added `neuro admin show-cluster-options` command for displaying possible cluster configuration options. ([#1681](https://github.com/neuromation/platform-api-clients/issues/1681))
+
+
 Neuromation 20.7.28 (2020-07-28)
 ================================
 

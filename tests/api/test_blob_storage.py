@@ -3,7 +3,7 @@ import hashlib
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, Dict, List, NoReturn, Set  # noqa: F401
+from typing import Any, AsyncIterator, Callable, Dict, List, NoReturn, Set
 from unittest import mock
 
 import pytest

@@ -1,1 +1,0 @@
-Added `find_project_root` function
