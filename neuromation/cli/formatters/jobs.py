@@ -147,6 +147,8 @@ class JobStatusFormatter:
 
         if job_status.internal_hostname:
             add("Internal Hostname", job_status.internal_hostname)
+        if job_status.internal_hostname_named:
+            add("Internal Hostname Named", job_status.internal_hostname_named)
         if job_status.http_url:
             add("Http URL", str(job_status.http_url))
         if job_status.container.http:

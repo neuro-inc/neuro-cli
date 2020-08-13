@@ -1,0 +1,1 @@
+Added `internal_hostname_named` to `JobDescription` and to output of `neuro job status`.
