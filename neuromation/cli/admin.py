@@ -50,6 +50,18 @@ async def add_cluster(root: Root, cluster_name: str, config: IO[str]) -> None:
 
 
 @command()
+@option(
+    "--type", prompt="Select cluster type", type=click.Choice(["aws", "gcp", "azure"])
+)
+async def show_cluster_options(root: Root, type: str) -> None:
+    """
+    Create a cluster configuration file.
+    """
+    config_options = await root.client._admin.get_cloud_provider_options(type)
+    click.echo(json.dumps(config_options, sort_keys=True, indent=2))
+
+
+@command()
 @argument(
     "config",
     required=False,
@@ -382,6 +394,7 @@ async def add_user_quota(
 admin.add_command(get_clusters)
 admin.add_command(generate_cluster_config)
 admin.add_command(add_cluster)
+admin.add_command(show_cluster_options)
 
 admin.add_command(get_cluster_users)
 admin.add_command(add_cluster_user)

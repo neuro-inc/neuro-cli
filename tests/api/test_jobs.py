@@ -2111,6 +2111,7 @@ async def test_port_forward_logs_error(
         async with client.jobs.port_forward("job-id", port, 12345):
             reader, writer = await asyncio.open_connection("127.0.0.1", port)
             writer.write("boom".encode("ascii"))
-            await asyncio.sleep(0.01)
+            await writer.drain()
+            await asyncio.sleep(0.1)
 
     assert "test error info" in caplog.text
