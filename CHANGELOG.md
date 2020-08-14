@@ -5,6 +5,12 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.8.14 (2020-08-14)
+================================
+
+- Pin `yarl` version dependency to 1.5.1+.
+
+
 Neuromation 20.8.13 (2020-08-13)
 ================================
 

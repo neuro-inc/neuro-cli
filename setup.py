@@ -9,7 +9,7 @@ with open("README.md") as f:
 
 setup(
     name="neuromation",
-    version="20.8.13",
+    version="20.8.14",
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
@@ -20,7 +20,7 @@ setup(
         'async-exit-stack>=1.0.1; python_version<"3.7"',
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
-        "yarl>=1.3.0",
+        "yarl>=1.5.1",
         "multidict>=4.0",
         "aiodocker>=0.18.7",
         "click>=7.0",
