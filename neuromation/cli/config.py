@@ -31,7 +31,10 @@ async def show(root: Root) -> None:
     Print current settings.
     """
     fmt = ConfigFormatter()
-    click.echo(fmt(root.client))
+    available_jobs_counts = await root.client.jobs.get_available_jobs_counts(
+        root.client.config.presets
+    )
+    click.echo(fmt(root.client.config, available_jobs_counts))
 
 
 @command()
