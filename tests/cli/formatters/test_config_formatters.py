@@ -21,7 +21,7 @@ from neuromation.cli.root import Root
 
 class TestConfigFormatter:
     async def test_output(self, root: Root) -> None:
-        out = ConfigFormatter()(root.client)
+        out = ConfigFormatter()(root.client.config, {})
         assert "\n".join(
             line.rstrip() for line in click.unstyle(out).splitlines()
         ) == textwrap.dedent(
@@ -65,7 +65,7 @@ class TestConfigFormatter:
         client = make_client(
             "https://dev.neu.ro/api/v1", clusters={new_config.name: new_config}
         )
-        out = ConfigFormatter()(client)
+        out = ConfigFormatter()(client.config, {})
 
         assert "\n".join(
             line.rstrip() for line in click.unstyle(out).splitlines()
@@ -85,6 +85,29 @@ class TestConfigFormatter:
                 cpu-large-p     7   14.0G       √
                 tpu-small       2    2.0G       ×                              v3-8/1.14
                 hybrid          4   30.0G       ×       2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
+        )
+
+    async def test_output_with_jobs_available(self, root: Root) -> None:
+        available_jobs_counts = {
+            "cpu-small": 1,
+            "cpu-large": 2,
+        }
+        out = ConfigFormatter()(root.client.config, available_jobs_counts)
+        assert "\n".join(
+            line.rstrip() for line in click.unstyle(out).splitlines()
+        ) == textwrap.dedent(
+            f"""\
+            User Configuration:
+              User Name: user
+              Current Cluster: default
+              API URL: https://dev.neu.ro/api/v1
+              Docker Registry URL: https://registry-dev.neu.ro
+              Resource Presets:
+                Name       #CPU  Memory  Preemptible  GPU                    Jobs Available
+                gpu-small     7   30.0G       ×       1 x nvidia-tesla-k80
+                gpu-large     7   60.0G       ×       1 x nvidia-tesla-v100
+                cpu-small     7    2.0G       ×                                           1
+                cpu-large     7   14.0G       ×                                           2"""  # noqa: E501, ignore line
         )
 
 

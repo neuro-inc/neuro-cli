@@ -43,6 +43,7 @@ from .images import (
 )
 from .parser import Parser, Volume
 from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
+from .server_cfg import Preset
 from .url_utils import normalize_secret_uri, normalize_storage_path_uri
 from .utils import NoPublicConstructor, asynccontextmanager
 
@@ -563,6 +564,23 @@ class Jobs(metaclass=NoPublicConstructor):
         auth = await self._config._api_auth()
         async with self._core.request("POST", url, auth=auth) as resp:
             resp
+
+    async def get_available_jobs_counts(
+        self, presets: Mapping[str, Preset]
+    ) -> Mapping[str, int]:
+        url = self._config.monitoring_url / "available"
+        auth = await self._config._api_auth()
+        payload: Dict[str, Any] = {}
+        for name, preset in presets.items():
+            payload[name] = {
+                "cpu": preset.cpu,
+                "memory_mb": preset.memory_mb,
+                "gpu": preset.gpu or 0,
+                "gpu_model": preset.gpu_model or "",
+                "is_preemptible": preset.is_preemptible,
+            }
+        async with self._core.request("POST", url, auth=auth, json=payload) as resp:
+            return await resp.json()
 
 
 #  ############## Internal helpers ###################
