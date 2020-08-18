@@ -26,7 +26,6 @@ from neuromation.api.jobs import (
     _calc_status,
     _job_description_from_api,
 )
-from neuromation.api.jobs import INVALID_IMAGE_NAME, _job_description_from_api
 from neuromation.api.server_cfg import Preset
 from tests import _TestServerFactory
 
