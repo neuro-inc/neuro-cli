@@ -22,6 +22,7 @@ from neuromation.api import (
     Volume,
 )
 from neuromation.api.jobs import INVALID_IMAGE_NAME, _job_description_from_api
+from neuromation.api.server_cfg import Preset
 from tests import _TestServerFactory
 
 
@@ -2115,3 +2116,39 @@ async def test_port_forward_logs_error(
             await asyncio.sleep(0.1)
 
     assert "test error info" in caplog.text
+
+
+async def test_get_available_jobs_counts(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        payload = await request.json()
+        assert payload == {
+            "gpu-p": {
+                "cpu": 0.1,
+                "memory_mb": 100,
+                "gpu": 1,
+                "gpu_model": "nvidia-tesla-k80",
+                "is_preemptible": True,
+            }
+        }
+        return web.json_response({"cpu-micro": 10})
+
+    app = web.Application()
+    app.router.add_post("/jobs/available", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        result = await client.jobs.get_available_jobs_counts(
+            {
+                "gpu-p": Preset(
+                    cpu=0.1,
+                    memory_mb=100,
+                    gpu=1,
+                    gpu_model="nvidia-tesla-k80",
+                    is_preemptible=True,
+                )
+            }
+        )
+        assert result == {"cpu-micro": 10}

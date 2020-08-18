@@ -4,7 +4,7 @@ from typing import Iterable, Iterator, List, Mapping, Optional
 import click
 from click import style
 
-from neuromation.api import Client, Cluster, Preset
+from neuromation.api import Cluster, Config, Preset
 from neuromation.api.admin import _Quota
 from neuromation.api.quota import _QuotaInfo
 from neuromation.cli.utils import format_size
@@ -13,8 +13,7 @@ from .ftable import Align, table
 
 
 class ConfigFormatter:
-    def __call__(self, client: Client) -> str:
-        config = client.config
+    def __call__(self, config: Config, available_jobs_counts: Mapping[str, int]) -> str:
         lines = []
         lines.append(style("User Configuration", bold=True) + ":")
         lines.append("  " + style("User Name", bold=True) + f": {config.username}")
@@ -26,7 +25,7 @@ class ConfigFormatter:
             "  " + style("Docker Registry URL", bold=True) + f": {config.registry_url}"
         )
         lines.append("  " + style("Resource Presets", bold=True) + f":")
-        lines.extend(_format_presets(config.presets, "    "))
+        lines.extend(_format_presets(config.presets, available_jobs_counts, "    "))
         return "\n".join(lines)
 
 
@@ -104,11 +103,15 @@ class ClustersFormatter:
             pre = "* " if cluster.name == default_name else "  "
             out.append(pre + style("Name: ", bold=True) + name)
             out.append(style("  Presets:", bold=True))
-            out.extend(_format_presets(cluster.presets, "    "))
+            out.extend(_format_presets(cluster.presets, None, "    "))
         return out
 
 
-def _format_presets(presets: Mapping[str, Preset], prefix: str) -> Iterator[str]:
+def _format_presets(
+    presets: Mapping[str, Preset],
+    available_jobs_counts: Optional[Mapping[str, int]],
+    prefix: str,
+) -> Iterator[str]:
     has_tpu = False
     for preset in presets.values():
         if preset.tpu_type:
@@ -117,6 +120,8 @@ def _format_presets(presets: Mapping[str, Preset], prefix: str) -> Iterator[str]
 
     rows = []
     headers = ["Name", "#CPU", "Memory", "Preemptible", "GPU"]
+    if available_jobs_counts:
+        headers.append("Jobs Available")
     # TODO: support ANSI styles in headers
     # headers = [style(name, bold=True) for name in headers]
     rows.append(headers)
@@ -141,10 +146,16 @@ def _format_presets(presets: Mapping[str, Preset], prefix: str) -> Iterator[str]
                 else ""
             )
             row.append(tpu)
+        if available_jobs_counts:
+            if name in available_jobs_counts:
+                row.append(str(available_jobs_counts[name]))
+            else:
+                row.append("")
         rows.append(row)
-    for line in table(
-        rows=rows, aligns=[Align.LEFT, Align.RIGHT, Align.RIGHT, Align.CENTER]
-    ):
+    aligns = [Align.LEFT, Align.RIGHT, Align.RIGHT, Align.CENTER, Align.LEFT]
+    if available_jobs_counts:
+        aligns.append(Align.RIGHT)
+    for line in table(rows=rows, aligns=aligns):
         yield prefix + line
 
 
