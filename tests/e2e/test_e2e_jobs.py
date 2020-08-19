@@ -531,7 +531,7 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
 
     # wait to free the job name:
     helper.run_cli(["job", "kill", job_id_1])
-    helper.wait_job_change_state_to(job_id_1, JobStatus.SUCCEEDED)
+    helper.wait_job_change_state_to(job_id_1, JobStatus.CANCELLED)
 
     command = 'sh -c \'[ "$(cat /test)" = "123" ]\''
     helper.run_job_and_wait_state(

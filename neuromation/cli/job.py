@@ -547,6 +547,7 @@ async def logs(root: Root, job: str) -> None:
             JobStatus.PENDING,
             JobStatus.RUNNING,
             JobStatus.SUCCEEDED,
+            JobStatus.CANCELLED,
             JobStatus.FAILED,
         },
     )
@@ -574,6 +575,7 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
             JobStatus.PENDING,
             JobStatus.RUNNING,
             JobStatus.SUCCEEDED,
+            JobStatus.CANCELLED,
             JobStatus.FAILED,
         },
     )
@@ -739,6 +741,7 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
             JobStatus.PENDING,
             JobStatus.RUNNING,
             JobStatus.SUCCEEDED,
+            JobStatus.CANCELLED,
             JobStatus.FAILED,
         },
     )
@@ -825,6 +828,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
             JobStatus.PENDING,
             JobStatus.RUNNING,
             JobStatus.SUCCEEDED,
+            JobStatus.CANCELLED,
             JobStatus.FAILED,
         },
     )

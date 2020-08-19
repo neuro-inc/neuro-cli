@@ -507,6 +507,10 @@ JobStatus
 
       Job is finished successfully.
 
+   .. attribute:: CANCELLED
+
+      Job was canceled while it was running.
+
    .. attribute:: FAILED
 
       Job execution is failed.
