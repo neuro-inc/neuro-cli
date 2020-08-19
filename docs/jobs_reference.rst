@@ -91,7 +91,7 @@ Jobs
                      presets: Mapping[str, Preset]\
                  ) -> Mapping[str, int]
 
-      Get counts of available job for current cluster for ech available preset.
+      Get counts of available job for current cluster for each available preset.
 
       The returned numbers reflect the remaining *cluster capacity*. In other words, it
       displays how many concurrent jobs for each preset can be started at the moment of
