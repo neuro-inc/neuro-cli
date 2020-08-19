@@ -87,9 +87,7 @@ Jobs
       :return: Asynchronous context manager which can be used to access
                stdin/stdout/stderr, see :class:`StdStream` for details.
 
-   .. comethod:: get_cluster_capacity(\
-                     presets: Mapping[str, Preset]\
-                 ) -> Mapping[str, int]
+   .. comethod:: get_capacity(presets: Mapping[str, Preset]) -> Mapping[str, int]
 
       Get counts of available job for current cluster for each available preset.
 

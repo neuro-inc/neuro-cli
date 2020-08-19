@@ -2130,7 +2130,7 @@ def test__calc_status_unknown() -> None:
     assert _calc_status("something") == JobStatus.UNKNOWN
 
 
-async def test_get_cluster_capacity(
+async def test_get_capacity(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
@@ -2152,7 +2152,7 @@ async def test_get_cluster_capacity(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        result = await client.jobs.get_cluster_capacity(
+        result = await client.jobs.get_capacity(
             {
                 "gpu-p": Preset(
                     cpu=0.1,

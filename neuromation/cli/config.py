@@ -31,7 +31,7 @@ async def show(root: Root) -> None:
     Print current settings.
     """
     fmt = ConfigFormatter()
-    available_jobs_counts = await root.client.jobs.get_cluster_capacity(
+    available_jobs_counts = await root.client.jobs.get_capacity(
         root.client.config.presets
     )
     click.echo(fmt(root.client.config, available_jobs_counts))
