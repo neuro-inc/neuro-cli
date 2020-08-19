@@ -565,9 +565,7 @@ class Jobs(metaclass=NoPublicConstructor):
         async with self._core.request("POST", url, auth=auth) as resp:
             resp
 
-    async def get_available_jobs_counts(
-        self, presets: Mapping[str, Preset]
-    ) -> Mapping[str, int]:
+    async def get_capacity(self, presets: Mapping[str, Preset]) -> Mapping[str, int]:
         url = self._config.monitoring_url / "available"
         auth = await self._config._api_auth()
         payload: Dict[str, Any] = {}

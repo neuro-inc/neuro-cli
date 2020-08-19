@@ -87,6 +87,22 @@ Jobs
       :return: Asynchronous context manager which can be used to access
                stdin/stdout/stderr, see :class:`StdStream` for details.
 
+   .. comethod:: get_capacity(presets: Mapping[str, Preset]) -> Mapping[str, int]
+
+      Get counts of available job for current cluster for each available preset.
+
+      The returned numbers reflect the remaining *cluster capacity*. In other words, it
+      displays how many concurrent jobs for each preset can be started at the moment of
+      the method call.
+
+      The returned capacity is an approximation, the real value can differ if already
+      running jobs are finished or another user starts own jobs at the same time.
+
+      :param presets: presets mapping, as :attr:`Config.presets` attribute.
+
+      :return: A mapping of *preset_name* to *count*, where *count* is a number of
+               concurrent jobs that can be executed using *preset_name*.
+
    .. comethod:: kill(id: str) -> None
 
       Kill a job.
