@@ -5,6 +5,19 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.8.19 (2020-08-19)
+================================
+
+Features
+--------
+
+
+- Show add available jobs counts (cluster capacity) in `neuro config show` command. ([#1687](https://github.com/neuromation/platform-api-clients/issues/1687))
+
+- Make JobStatus calculation forward-compatible; `JobStatus.UNKNOWN` is returned for
+  unknown statuses but the code doesn't raise `ValueError` at least. ([#1688](https://github.com/neuromation/platform-api-clients/issues/1688))
+
+
 Neuromation 20.8.14 (2020-08-14)
 ================================
 
