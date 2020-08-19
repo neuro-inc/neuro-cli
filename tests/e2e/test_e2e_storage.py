@@ -45,7 +45,7 @@ def test_e2e_storage(data: Tuple[Path, str], tmp_path: Path, helper: Helper) -> 
     helper.check_file_exists_on_storage("bar", "folder2", FILE_SIZE_B)
 
     # Non-recursive removing should not have any effect
-    with pytest.raises(IsADirectoryError, match="Is a directory") as cm:
+    with pytest.raises(IsADirectoryError, match=".+Target is a directory") as cm:
         helper.rm("folder2", recursive=False)
     assert cm.value.errno == errno.EISDIR
     helper.check_file_exists_on_storage("bar", "folder2", FILE_SIZE_B)
