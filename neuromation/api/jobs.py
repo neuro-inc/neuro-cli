@@ -565,7 +565,7 @@ class Jobs(metaclass=NoPublicConstructor):
         async with self._core.request("POST", url, auth=auth) as resp:
             resp
 
-    async def get_available_jobs_counts(
+    async def get_cluster_capacity(
         self, presets: Mapping[str, Preset]
     ) -> Mapping[str, int]:
         url = self._config.monitoring_url / "available"

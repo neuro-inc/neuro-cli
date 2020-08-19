@@ -12,7 +12,7 @@ from .conftest import SysCapWithCode
 _RunCli = Callable[[List[str]], SysCapWithCode]
 
 
-@asynctest.mock.patch("neuromation.api.jobs.Jobs.get_available_jobs_counts")
+@asynctest.mock.patch("neuromation.api.jobs.Jobs.get_cluster_capacity")
 def test_steal_config(
     patched_jobs_counts: Any,
     nmrc_path: Path,
@@ -27,7 +27,7 @@ def test_steal_config(
     assert ret.code == 0, ret
 
 
-@asynctest.mock.patch("neuromation.api.jobs.Jobs.get_available_jobs_counts")
+@asynctest.mock.patch("neuromation.api.jobs.Jobs.get_cluster_capacity")
 def test_steal_config_dont_override_existing(
     patched_jobs_counts: Any,
     nmrc_path: Path,
