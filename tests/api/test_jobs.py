@@ -21,7 +21,11 @@ from neuromation.api import (
     SecretFile,
     Volume,
 )
-from neuromation.api.jobs import INVALID_IMAGE_NAME, _job_description_from_api
+from neuromation.api.jobs import (
+    INVALID_IMAGE_NAME,
+    _calc_status,
+    _job_description_from_api,
+)
 from neuromation.api.server_cfg import Preset
 from tests import _TestServerFactory
 
@@ -2116,6 +2120,14 @@ async def test_port_forward_logs_error(
             await asyncio.sleep(0.1)
 
     assert "test error info" in caplog.text
+
+
+def test__calc_status_known() -> None:
+    assert _calc_status("pending") == JobStatus.PENDING
+
+
+def test__calc_status_unknown() -> None:
+    assert _calc_status("something") == JobStatus.UNKNOWN
 
 
 async def test_get_available_jobs_counts(

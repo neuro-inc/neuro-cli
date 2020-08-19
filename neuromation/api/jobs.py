@@ -720,6 +720,14 @@ def _container_to_api(container: Container, config: Config) -> Dict[str, Any]:
     return primitive
 
 
+def _calc_status(stat: str) -> JobStatus:
+    # Forward-compatible support for CANCELLED status
+    try:
+        return JobStatus(stat)
+    except ValueError:
+        return JobStatus.UNKNOWN
+
+
 def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescription:
     container = _container_from_api(res["container"], parse)
     owner = res["owner"]
@@ -728,7 +736,8 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
     tags = res.get("tags", ())
     description = res.get("description")
     history = JobStatusHistory(
-        status=JobStatus(res["history"].get("status", "unknown")),
+        # Forward-compatible support for CANCELLED status
+        status=_calc_status(res["history"].get("status", "unknown")),
         reason=res["history"].get("reason", ""),
         description=res["history"].get("description", ""),
         created_at=_parse_datetime(res["history"].get("created_at")),
@@ -747,7 +756,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         max_run_time_minutes * 60.0 if max_run_time_minutes is not None else None
     )
     return JobDescription(
-        status=JobStatus(res["status"]),
+        status=_calc_status(res["status"]),
         id=res["id"],
         owner=owner,
         cluster_name=cluster_name,
