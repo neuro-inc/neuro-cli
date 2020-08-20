@@ -288,7 +288,7 @@ class TabularJobRow:
             when = job.history.finished_at
         assert when is not None
         return cls(
-            id=style(job.id, bold=True),
+            id=bold(job.id),
             name=job.name if job.name else "",
             tags=",".join(job.tags),
             status=format_job_status(job.status),
@@ -324,7 +324,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
 
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
         rows: List[List[str]] = []
-        rows.append([style(column.title, bold=True) for column in self._columns])
+        rows.append([bold(column.title) for column in self._columns])
         for job in jobs:
             rows.append(
                 TabularJobRow.from_job(
@@ -412,11 +412,11 @@ class DetailedJobStartProgress(JobStartProgress):
 
     def begin(self, job: JobDescription) -> None:
         self._printer.print(
-            style("√ ", fg="green") + style("Job ID", bold=True) + f": {job.id} "
+            style("√ ", fg="green") + bold("Job ID") + f": {job.id} "
         )
         if job.name:
             self._printer.print(
-                style("√ ", fg="green") + style("Name", bold=True) + f": {job.name}"
+                style("√ ", fg="green") + bold("Name") + f": {job.name}"
             )
 
     def step(self, job: JobDescription) -> None:
@@ -425,7 +425,7 @@ class DetailedJobStartProgress(JobStartProgress):
         msg = "Status: " + format_job_status(job.status)
         reason = self._get_status_reason_message(job)
         if reason:
-            msg += " " + style(reason, bold=True)
+            msg += " " + bold(reason)
         description = self._get_status_description_message(job)
         if description:
             msg += " " + description
@@ -459,7 +459,7 @@ class DetailedJobStartProgress(JobStartProgress):
             if http_url:
                 out.append(
                     style("√ ", fg="green")
-                    + style("Http URL", bold=True)
+                    + bold("Http URL")
                     + f": {http_url}"
                 )
             if job.life_span:
