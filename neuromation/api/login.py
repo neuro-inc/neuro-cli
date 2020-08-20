@@ -346,6 +346,7 @@ class AuthTokenClient:
 class _AuthConfig:
     auth_url: URL
     token_url: URL
+    logout_url: URL
 
     client_id: str
     audience: str
@@ -373,6 +374,7 @@ class _AuthConfig:
         cls,
         auth_url: URL,
         token_url: URL,
+        logout_url: URL,
         client_id: str,
         audience: str,
         headless_callback_url: URL,
@@ -382,6 +384,7 @@ class _AuthConfig:
         return cls(
             auth_url=auth_url,
             token_url=token_url,
+            logout_url=logout_url,
             client_id=client_id,
             audience=audience,
             headless_callback_url=headless_callback_url,
@@ -455,3 +458,10 @@ class HeadlessNegotiator(BaseNegotiator):
             get_auth_code_cb=self._get_auth_code_cb,
         )
         return await code_callback_client.request(code)
+
+
+async def logout_from_browser(
+    config: _AuthConfig, show_browser_cb: Callable[[URL], Awaitable[None]]
+) -> None:
+    logout_url = config.logout_url.with_query(client_id=config.client_id)
+    await show_browser_cb(logout_url)

@@ -96,6 +96,7 @@ async def get_server_config(
         auth_config = _AuthConfig(
             auth_url=URL(payload["auth_url"]),
             token_url=URL(payload["token_url"]),
+            logout_url=URL(payload["logout_url"]),
             client_id=payload["client_id"],
             audience=payload["audience"],
             success_redirect_url=success_redirect_url,

@@ -328,6 +328,7 @@ def _deserialize_auth_config(payload: Dict[str, Any]) -> _AuthConfig:
     return _AuthConfig(
         auth_url=URL(auth_config["auth_url"]),
         token_url=URL(auth_config["token_url"]),
+        logout_url=URL(auth_config["logout_url"]),
         client_id=auth_config["client_id"],
         audience=auth_config["audience"],
         headless_callback_url=URL(auth_config["headless_callback_url"]),
@@ -436,6 +437,7 @@ def _serialize_auth_config(auth_config: _AuthConfig) -> str:
         {
             "auth_url": str(auth_config.auth_url),
             "token_url": str(auth_config.token_url),
+            "logout_url": str(auth_config.logout_url),
             "client_id": auth_config.client_id,
             "audience": auth_config.audience,
             "headless_callback_url": str(auth_config.headless_callback_url),

@@ -71,6 +71,7 @@ async def mock_for_login(
         config_json: Dict[str, Any] = {
             "auth_url": str(srv.make_url("/authorize")),
             "token_url": str(srv.make_url("/oauth/token")),
+            "logout_url": str(srv.make_url("/v2/logout")),
             "client_id": "banana",
             "audience": "https://test.dev.neuromation.io",
             "headless_callback_url": str(srv.make_url("/oauth/show-code")),
@@ -292,8 +293,22 @@ class TestHeadlessLogin:
 
 
 class TestLogout:
-    async def test_logout(self, config_dir: Path) -> None:
+    async def test_logout_no_browser_callback(self, config_dir: Path) -> None:
         await Factory().logout()
+        assert not config_dir.exists(), "Config not removed after logout\n" + "\n".join(
+            [p.name for p in config_dir.iterdir()]
+        )
+
+    async def test_logout_with_browser_callback(
+        self, auth_config: _AuthConfig, config_dir: Path
+    ) -> None:
+        async def show_browser(url: URL) -> None:
+            expected_logout_url = auth_config.logout_url.with_query(
+                client_id=auth_config.client_id
+            )
+            assert url == expected_logout_url
+
+        await Factory().logout(show_browser)
         assert not config_dir.exists(), "Config not removed after logout\n" + "\n".join(
             [p.name for p in config_dir.iterdir()]
         )

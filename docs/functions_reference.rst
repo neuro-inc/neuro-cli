@@ -61,7 +61,11 @@ API functions
 
    A shortcut for :meth:`Factory.login_with_token`. See the method for details.
 
-.. cofunction:: logout(*, path: Optional[Path] = None) -> None
+.. cofunction:: logout(\
+                    *, \
+                    path: Optional[Path] = None, \
+                    show_browser_cb: Callable[[URL], Awaitable[None]] = None, \
+                ) -> None
 
    A shortcut for :meth:`Factory.logout`. See the method for details.
 
@@ -182,9 +186,13 @@ Config Factory
        :param aiohttp.ClientTimeout timeout: optional timeout for HTTP operations, see
                                              also :ref:`timeouts`.
 
-   .. comethod:: logout()
+   .. comethod:: logout(show_browser_cb: Callable[[URL], Awaitable[None]] = None)
 
-      Log out from Neuro Platform.
+      Log out from Neuro Platform. In case *show_browser_cb* callback passed,
+      the browser will be opened to remove session cookie.
+
+      :param show_browser_cb: a callback that should open a browser with specified URL
+                              for handling authorization.
 
 .. _timeouts:
 

@@ -1,0 +1,1 @@
+Added way to destroy browser session by during `neuro logout`.

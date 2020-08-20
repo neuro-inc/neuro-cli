@@ -223,6 +223,7 @@ async def test_fetch(
     secrets_url = "https://secrets2-dev.neu.ro"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
     client_id = "this_is_client_id"
     audience = "https://platform.dev.neuromation.io"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
@@ -230,6 +231,7 @@ async def test_fetch(
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
+        "logout_url": logout_url,
         "client_id": client_id,
         "audience": audience,
         "headless_callback_url": headless_callback_url,
@@ -292,6 +294,7 @@ async def test_fetch_dropped_selected_cluster(
     secrets_url = "https://secrets2-dev.neu.ro"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
     client_id = "this_is_client_id"
     audience = "https://platform.dev.neuromation.io"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
@@ -299,6 +302,7 @@ async def test_fetch_dropped_selected_cluster(
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
+        "logout_url": logout_url,
         "client_id": client_id,
         "audience": audience,
         "headless_callback_url": headless_callback_url,
@@ -337,6 +341,7 @@ async def test_switch_clusters(
     JSON = {
         "auth_url": "https://dev-neuromation.auth0.com/authorize",
         "token_url": "https://dev-neuromation.auth0.com/oauth/token",
+        "logout_url": "https://dev-neuromation.auth0.com/v2/logout",
         "client_id": "this_is_client_id",
         "audience": "https://platform.dev.neuromation.io",
         "headless_callback_url": "https://dev.neu.ro/oauth/show-code",
@@ -388,6 +393,7 @@ async def test_switch_clusters_unknown(
     JSON = {
         "auth_url": "https://dev-neuromation.auth0.com/authorize",
         "token_url": "https://dev-neuromation.auth0.com/oauth/token",
+        "logout_url": "https://dev-neuromation.auth0.com/v2/logout",
         "client_id": "this_is_client_id",
         "audience": "https://platform.dev.neuromation.io",
         "headless_callback_url": "https://dev.neu.ro/oauth/show-code",
@@ -433,6 +439,7 @@ async def test_check_server_mismatch_clusters(
     secrets_url = "https://secrets2-dev.neu.ro"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
     client_id = "this_is_client_id"
     audience = "https://platform.dev.neuromation.io"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
@@ -440,6 +447,7 @@ async def test_check_server_mismatch_clusters(
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
+        "logout_url": logout_url,
         "client_id": client_id,
         "audience": audience,
         "headless_callback_url": headless_callback_url,
@@ -486,12 +494,14 @@ async def test_check_server_mismatch_auth(
     secrets_url = "https://secrets2-dev.neu.ro"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
     audience = "https://platform.dev.neuromation.io"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neuromation.io"
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
+        "logout_url": logout_url,
         "client_id": "other_client_id",
         "audience": audience,
         "headless_callback_url": headless_callback_url,
