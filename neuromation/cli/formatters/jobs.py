@@ -288,10 +288,10 @@ class TabularJobRow:
             when = job.history.finished_at
         assert when is not None
         return cls(
-            id=job.id,
+            id=style(job.id, bold=True),
             name=job.name if job.name else "",
             tags=",".join(job.tags),
-            status=job.status,
+            status=format_job_status(job.status),
             when=format_datetime(when),
             created=format_datetime(job.history.created_at),
             started=format_datetime(job.history.started_at),
@@ -324,7 +324,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
 
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
         rows: List[List[str]] = []
-        rows.append([column.title for column in self._columns])
+        rows.append([style(column.title, bold=True) for column in self._columns])
         for job in jobs:
             rows.append(
                 TabularJobRow.from_job(
