@@ -411,9 +411,7 @@ class DetailedJobStartProgress(JobStartProgress):
         self._lineno = 0
 
     def begin(self, job: JobDescription) -> None:
-        self._printer.print(
-            style("√ ", fg="green") + bold("Job ID") + f": {job.id} "
-        )
+        self._printer.print(style("√ ", fg="green") + bold("Job ID") + f": {job.id} ")
         if job.name:
             self._printer.print(
                 style("√ ", fg="green") + bold("Name") + f": {job.name}"
@@ -457,11 +455,7 @@ class DetailedJobStartProgress(JobStartProgress):
         if job.status != JobStatus.FAILED:
             http_url = job.http_url
             if http_url:
-                out.append(
-                    style("√ ", fg="green")
-                    + bold("Http URL")
-                    + f": {http_url}"
-                )
+                out.append(style("√ ", fg="green") + bold("Http URL") + f": {http_url}")
             if job.life_span:
                 limit = humanize.naturaldelta(datetime.timedelta(seconds=job.life_span))
                 out.append(
