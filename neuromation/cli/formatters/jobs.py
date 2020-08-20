@@ -288,10 +288,10 @@ class TabularJobRow:
             when = job.history.finished_at
         assert when is not None
         return cls(
-            id=job.id,
+            id=bold(job.id),
             name=job.name if job.name else "",
             tags=",".join(job.tags),
-            status=job.status,
+            status=format_job_status(job.status),
             when=format_datetime(when),
             created=format_datetime(job.history.created_at),
             started=format_datetime(job.history.started_at),
@@ -324,7 +324,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
 
     def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
         rows: List[List[str]] = []
-        rows.append([column.title for column in self._columns])
+        rows.append([bold(column.title) for column in self._columns])
         for job in jobs:
             rows.append(
                 TabularJobRow.from_job(
@@ -411,12 +411,10 @@ class DetailedJobStartProgress(JobStartProgress):
         self._lineno = 0
 
     def begin(self, job: JobDescription) -> None:
-        self._printer.print(
-            style("√ ", fg="green") + style("Job ID", bold=True) + f": {job.id} "
-        )
+        self._printer.print(style("√ ", fg="green") + bold("Job ID") + f": {job.id} ")
         if job.name:
             self._printer.print(
-                style("√ ", fg="green") + style("Name", bold=True) + f": {job.name}"
+                style("√ ", fg="green") + bold("Name") + f": {job.name}"
             )
 
     def step(self, job: JobDescription) -> None:
@@ -425,7 +423,7 @@ class DetailedJobStartProgress(JobStartProgress):
         msg = "Status: " + format_job_status(job.status)
         reason = self._get_status_reason_message(job)
         if reason:
-            msg += " " + style(reason, bold=True)
+            msg += " " + bold(reason)
         description = self._get_status_description_message(job)
         if description:
             msg += " " + description
@@ -457,11 +455,7 @@ class DetailedJobStartProgress(JobStartProgress):
         if job.status != JobStatus.FAILED:
             http_url = job.http_url
             if http_url:
-                out.append(
-                    style("√ ", fg="green")
-                    + style("Http URL", bold=True)
-                    + f": {http_url}"
-                )
+                out.append(style("√ ", fg="green") + bold("Http URL") + f": {http_url}")
             if job.life_span:
                 limit = humanize.naturaldelta(datetime.timedelta(seconds=job.life_span))
                 out.append(

@@ -1493,7 +1493,7 @@ class TestTabularJobRow:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(status), "owner", image_formatter=str
         )
-        assert row.status == f"{status}"
+        assert click.unstyle(row.status) == f"{status}"
         assert row.when == date
 
     def test_image_from_registry_parsing_short(self) -> None:
@@ -1541,14 +1541,14 @@ class TestTabularJobsFormatter:
         formatter = TabularJobsFormatter(
             0, "owner", parse_columns(None), image_formatter=str
         )
-        result = [item for item in formatter([])]
+        result = [click.unstyle(item) for item in formatter([])]
         assert result == ["  ".join(self.columns)]
 
     def test_width_cutting(self) -> None:
         formatter = TabularJobsFormatter(
             10, "owner", parse_columns(None), image_formatter=str
         )
-        result = [item for item in formatter([])]
+        result = [click.unstyle(item) for item in formatter([])]
         assert result == ["  ".join(self.columns)[:10]]
 
     @pytest.mark.parametrize(
@@ -1582,7 +1582,7 @@ class TestTabularJobsFormatter:
         formatter = TabularJobsFormatter(
             0, "owner", parse_columns(None), image_formatter=str
         )
-        result = [item.rstrip() for item in formatter([job])]
+        result = [click.unstyle(item.rstrip()) for item in formatter([job])]
         assert result in [
             [
                 "ID  NAME  STATUS  WHEN  IMAGE  OWNER  CLUSTER  DESCRIPTION  COMMAND",
@@ -1669,7 +1669,7 @@ class TestTabularJobsFormatter:
         formatter = TabularJobsFormatter(
             0, "owner", parse_columns(None), image_formatter=str
         )
-        result = [item.rstrip() for item in formatter(jobs)]
+        result = [click.unstyle(item.rstrip()) for item in formatter(jobs)]
         assert result == [
             f"ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  CLUSTER  DESCRIPTION                           COMMAND",  # noqa: E501
             f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag             {owner_printed}  default  some description long long long long  ls -la /some/path",  # noqa: E501
@@ -1705,7 +1705,7 @@ class TestTabularJobsFormatter:
 
         columns = parse_columns("{status;align=right;min=20;Status Code}")
         formatter = TabularJobsFormatter(0, "owner", columns, image_formatter=str)
-        result = [item.rstrip() for item in formatter([job])]
+        result = [click.unstyle(item.rstrip()) for item in formatter([job])]
 
         assert result == ["         Status Code", "              failed"]
 
@@ -1742,7 +1742,7 @@ class TestTabularJobsFormatter:
 
         columns = parse_columns("id life_span")
         formatter = TabularJobsFormatter(100, "owner", columns, image_formatter=str)
-        result = [item.rstrip() for item in formatter(jobs)]
+        result = [click.unstyle(item.rstrip()) for item in formatter(jobs)]
 
         assert result == [
             "ID     LIFE-SPAN",
@@ -1810,7 +1810,7 @@ class TestTabularJobsFormatter:
 
         columns = parse_columns("id status when created started finished")
         formatter = TabularJobsFormatter(100, "test-user", columns, image_formatter=str)
-        result = [item.rstrip() for item in formatter(jobs)]
+        result = [click.unstyle(item.rstrip()) for item in formatter(jobs)]
 
         assert result == [
             "ID     STATUS   WHEN            CREATED      STARTED         FINISHED",
@@ -1853,7 +1853,7 @@ class TestTabularJobsFormatter:
 
         columns = parse_columns("id workdir")
         formatter = TabularJobsFormatter(100, "test-user", columns, image_formatter=str)
-        result = [item.rstrip() for item in formatter(jobs)]
+        result = [click.unstyle(item.rstrip()) for item in formatter(jobs)]
 
         assert result == [
             "ID     WORKDIR",
