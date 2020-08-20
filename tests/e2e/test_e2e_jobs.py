@@ -962,7 +962,9 @@ def test_job_autocomplete(helper: Helper) -> None:
 
     job_name = f"test-job-{os.urandom(5).hex()}"
     helper.kill_job(job_name)
-    job_id = helper.run_job_and_wait_state(ALPINE_IMAGE_NAME, "sleep 60", name=job_name)
+    job_id = helper.run_job_and_wait_state(
+        ALPINE_IMAGE_NAME, "sleep 600", name=job_name
+    )
 
     out = helper.autocomplete(["kill", "test-job"])
     assert job_name in out
