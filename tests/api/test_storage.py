@@ -247,6 +247,34 @@ async def test_storage_ls(
     ]
 
 
+async def test_storage_ls_error_in_server_response(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    error_result = {"error": "Server is to busy", "errno": "EBUSY"}
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.path == "/storage/user/folder"
+        assert request.query == {"op": "LISTSTATUS"}
+        resp = web.StreamResponse()
+        resp.headers["Content-Type"] = "application/x-ndjson"
+        await resp.prepare(request)
+        await resp.write(json.dumps(error_result).encode() + b"\n")
+        return resp
+
+    app = web.Application()
+    app.router.add_get("/storage/user/folder", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        with pytest.raises(OSError) as err:
+            async for _ in client.storage.ls(URL("storage:folder")):
+                pass
+        assert err.value.strerror == "Server is to busy"
+        assert err.value.errno == errno.EBUSY
+
+
 async def test_storage_glob(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -551,8 +579,9 @@ async def test_storage_rm_generic_error_in_the_response_stream(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        with pytest.raises(Exception):
+        with pytest.raises(Exception) as err:
             await client.storage.rm(URL("storage:file"))
+        assert err.value.args[0] == "Server failed"
 
 
 async def test_storage_mv(

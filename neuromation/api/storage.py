@@ -20,6 +20,7 @@ from typing import (
     Callable,
     Dict,
     Iterable,
+    Mapping,
     Optional,
     Tuple,
     Union,
@@ -161,7 +162,9 @@ class Storage(metaclass=NoPublicConstructor):
             self._set_time_diff(request_time, resp)
             if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
                 async for line in resp.content:
-                    status = json.loads(line)["FileStatus"]
+                    server_message = json.loads(line)
+                    self.check_for_server_error(server_message)
+                    status = server_message["FileStatus"]
                     yield _file_status_from_api_ls(uri, status)
             else:
                 res = await resp.json()
@@ -321,6 +324,15 @@ class Storage(metaclass=NoPublicConstructor):
             queue, self._rm(uri, recursive=recursive, progress=async_progress)
         )
 
+    def check_for_server_error(self, server_message: Mapping[str, Any]) -> None:
+        if "error" in server_message:
+            err_text = server_message["error"]
+            os_errno = server_message.get("errno", None)
+            if os_errno is not None:
+                os_errno = errno.__dict__.get(os_errno, os_errno)
+                raise OSError(os_errno, err_text)
+            raise Exception(err_text)
+
     async def _rm(
         self, uri: URL, *, recursive: bool, progress: _AsyncAbstractDeleteProgress
     ) -> None:
@@ -339,13 +351,7 @@ class Storage(metaclass=NoPublicConstructor):
             if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
                 async for line in resp.content:
                     server_message = json.loads(line)
-                    if "error" in server_message:
-                        err_text = server_message["error"]
-                        os_errno = server_message.get("errno", None)
-                        if os_errno is not None:
-                            os_errno = errno.__dict__.get(os_errno, os_errno)
-                            raise OSError(os_errno, err_text)
-                        raise Exception(err_text)
+                    self.check_for_server_error(server_message)
                     await progress.delete(
                         StorageProgressDelete(
                             uri=base_uri / server_message["path"].lstrip("/"),

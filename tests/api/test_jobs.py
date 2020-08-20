@@ -1555,6 +1555,29 @@ def create_job_response(
     return result
 
 
+async def test_list_error_in_stream_response(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    error_result = {"error": "Failed"}
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        resp = web.StreamResponse()
+        resp.headers["Content-Type"] = "application/x-ndjson"
+        await resp.prepare(request)
+        await resp.write(json.dumps(error_result).encode() + b"\n")
+        return resp
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        with pytest.raises(Exception) as err:
+            async for _ in client.jobs.list():
+                pass
+        assert err.value.args[0] == "Failed"
+
+
 async def test_list_no_filter(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
