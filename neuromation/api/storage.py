@@ -338,11 +338,18 @@ class Storage(metaclass=NoPublicConstructor):
         ) as resp:
             if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
                 async for line in resp.content:
-                    remove_listing = json.loads(line)
+                    server_message = json.loads(line)
+                    if "error" in server_message:
+                        err_text = server_message["error"]
+                        os_errno = server_message.get("errno", None)
+                        if os_errno is not None:
+                            os_errno = errno.__dict__.get(os_errno, os_errno)
+                            raise OSError(os_errno, err_text)
+                        raise Exception(err_text)
                     await progress.delete(
                         StorageProgressDelete(
-                            uri=base_uri / remove_listing["path"].lstrip("/"),
-                            is_dir=remove_listing["is_dir"],
+                            uri=base_uri / server_message["path"].lstrip("/"),
+                            is_dir=server_message["is_dir"],
                         )
                     )
             else:

@@ -503,6 +503,58 @@ async def test_storage_rm_recursive(
         await client.storage.rm(URL("storage:folder"), recursive=True)
 
 
+async def test_storage_rm_oserror_in_the_response_stream(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    error_result = {"error": "Server is to busy", "errno": "EBUSY"}
+
+    async def delete_handler(request: web.Request) -> web.StreamResponse:
+        assert request.path == "/storage/user/file"
+        assert request.query == {"op": "DELETE", "recursive": "false"}
+        assert request.headers["Accept"] == "application/x-ndjson"
+        resp = web.StreamResponse()
+        resp.headers["Content-Type"] = "application/x-ndjson"
+        await resp.prepare(request)
+        await resp.write(json.dumps(error_result).encode() + b"\n")
+        return resp
+
+    app = web.Application()
+    app.router.add_delete("/storage/user/file", delete_handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        with pytest.raises(OSError) as err:
+            await client.storage.rm(URL("storage:file"))
+        assert err.value.strerror == "Server is to busy"
+        assert err.value.errno == errno.EBUSY
+
+
+async def test_storage_rm_generic_error_in_the_response_stream(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    error_result = {"error": "Server failed", "errno": None}
+
+    async def delete_handler(request: web.Request) -> web.StreamResponse:
+        assert request.path == "/storage/user/file"
+        assert request.query == {"op": "DELETE", "recursive": "false"}
+        assert request.headers["Accept"] == "application/x-ndjson"
+        resp = web.StreamResponse()
+        resp.headers["Content-Type"] = "application/x-ndjson"
+        await resp.prepare(request)
+        await resp.write(json.dumps(error_result).encode() + b"\n")
+        return resp
+
+    app = web.Application()
+    app.router.add_delete("/storage/user/file", delete_handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        with pytest.raises(Exception):
+            await client.storage.rm(URL("storage:file"))
+
+
 async def test_storage_mv(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
