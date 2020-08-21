@@ -173,32 +173,37 @@ def test_list_role_forbidden(request: Any, helper: Helper) -> None:
 @pytest.mark.e2e
 def test_add_grant_remove_role(request: Any, helper: Helper) -> None:
     role_name = f"{helper.username}/roles/test-{uuid4()}"
-    captured = helper.run_cli(["acl", "add-role", role_name])
-    assert captured.err == ""
-    assert captured.out == ""
+    try:
+        captured = helper.run_cli(["acl", "add-role", role_name])
+        assert captured.err == ""
+        assert captured.out == ""
 
-    uri = f"storage://{helper.cluster_name}/{helper.username}/{uuid4()}"
-    captured = helper.run_cli(["acl", "grant", uri, role_name, "read"])
-    assert captured.err == ""
-    assert captured.out == ""
+        uri = f"storage://{helper.cluster_name}/{helper.username}/{uuid4()}"
+        captured = helper.run_cli(["acl", "grant", uri, role_name, "read"])
+        assert captured.err == ""
+        assert captured.out == ""
 
-    request.addfinalizer(lambda: revoke(helper, f"role://{role_name}", "public"))
-    captured = helper.run_cli(["acl", "grant", f"role://{role_name}", "public", "read"])
-    assert captured.err == ""
-    assert captured.out == ""
+        request.addfinalizer(lambda: revoke(helper, f"role://{role_name}", "public"))
+        captured = helper.run_cli(
+            ["acl", "grant", f"role://{role_name}", "public", "read"]
+        )
+        assert captured.err == ""
+        assert captured.out == ""
 
-    captured = helper.run_cli(["acl", "list", "--full-uri", "-u", role_name])
-    assert captured.err == ""
-    result = captured.out.splitlines()
-    assert f"{uri} read" in result
+        captured = helper.run_cli(["acl", "list", "--full-uri", "-u", role_name])
+        assert captured.err == ""
+        result = captured.out.splitlines()
+        assert f"{uri} read" in result
 
-    captured = helper.run_cli(["acl", "list", "--full-uri", "-u", "public"])
-    assert captured.err == ""
-    result = captured.out.splitlines()
-    assert f"role://{role_name} read" in result
-    assert f"{uri} read" in result
+        captured = helper.run_cli(["acl", "list", "--full-uri", "-u", "public"])
+        assert captured.err == ""
+        result = captured.out.splitlines()
+        assert f"role://{role_name} read" in result
+        assert f"{uri} read" in result
 
-    captured = helper.run_cli(["acl", "remove-role", role_name])
+    finally:
+        captured = helper.run_cli(["acl", "remove-role", role_name])
+
     assert captured.err == ""
     assert captured.out == ""
 
