@@ -10,7 +10,7 @@ click==7.1.2
 humanize==2.6.0
 # upgrade setup.py after pinning certtifi to new version
 certifi==2020.6.20
-typing_extensions==3.7.4.2
+typing_extensions==3.7.4.3
 wcwidth==0.2.5
 toml==0.10.1
 requests==2.24.0
