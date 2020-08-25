@@ -84,6 +84,11 @@ def _print_welcome(url: URL) -> None:
     )
 
 
+async def _show_browser(url: URL) -> None:
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, webbrowser.open_new, str(url))
+
+
 @command(init_client=False)
 @argument("url", required=False, default=DEFAULT_API_URL, type=URL)
 async def login(root: Root, url: URL) -> None:
@@ -93,16 +98,12 @@ async def login(root: Root, url: URL) -> None:
     URL is a platform entrypoint URL.
     """
 
-    async def show_browser(url: URL) -> None:
-        loop = asyncio.get_event_loop()
-        await loop.run_in_executor(None, webbrowser.open_new, str(url))
-
     try:
-        await root.factory.login(show_browser, url=url, timeout=root.timeout)
+        await root.factory.login(_show_browser, url=url, timeout=root.timeout)
     except (ConfigError, FileExistsError):
         await root.factory.logout()
         click.echo("You were successfully logged out.")
-        await root.factory.login(show_browser, url=url, timeout=root.timeout)
+        await root.factory.login(_show_browser, url=url, timeout=root.timeout)
     _print_welcome(url)
 
 
@@ -119,7 +120,7 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
     try:
         await root.factory.login_with_token(token, url=url, timeout=root.timeout)
     except ConfigError:
-        await root.factory.logout()
+        await root.factory.logout(_show_browser)
         click.echo("You were successfully logged out.")
         await root.factory.login_with_token(token, url=url, timeout=root.timeout)
     _print_welcome(url)
@@ -165,7 +166,7 @@ async def logout(root: Root) -> None:
     """
     Log out.
     """
-    await root.factory.logout()
+    await root.factory.logout(_show_browser)
     click.echo("Logged out")
 
 

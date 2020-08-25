@@ -313,6 +313,7 @@ async def auth_config(
     yield _AuthConfig.create(
         auth_url=auth_server / "authorize",
         token_url=auth_server / "oauth/token",
+        logout_url=auth_server / "v2/logout",
         client_id=auth_client_id,
         audience="https://platform.dev.neuromation.io",
         headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),

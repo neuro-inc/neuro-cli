@@ -178,5 +178,9 @@ async def login_headless(
     await Factory(path).login_headless(get_auth_code_cb, url=url, timeout=timeout)
 
 
-async def logout(*, path: Optional[Path] = None) -> None:
-    await Factory(path).logout()
+async def logout(
+    *,
+    path: Optional[Path] = None,
+    show_browser_cb: Callable[[URL], Awaitable[None]] = None,
+) -> None:
+    await Factory(path).logout(show_browser_cb)

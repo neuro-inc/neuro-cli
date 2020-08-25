@@ -12,10 +12,10 @@ from yarl import URL
 import neuromation
 
 from .client import Client
-from .config import _ConfigData, _save
+from .config import _ConfigData, _load, _save
 from .core import DEFAULT_TIMEOUT
 from .errors import ConfigError
-from .login import AuthNegotiator, HeadlessNegotiator, _AuthToken
+from .login import AuthNegotiator, HeadlessNegotiator, _AuthToken, logout_from_browser
 from .server_cfg import _ServerConfig, get_server_config
 from .tracing import _make_trace_config
 from .utils import _ContextManager
@@ -155,8 +155,17 @@ class Factory:
         )
         return config
 
-    async def logout(self) -> None:
-        # TODO: logout from auth0
+    async def logout(
+        self, show_browser_cb: Callable[[URL], Awaitable[None]] = None,
+    ) -> None:
+        if show_browser_cb is not None:
+            try:
+                old_config = _load(self._path)
+            except ConfigError:
+                pass  # Do not try to logout from auth0 if config is broken
+            else:
+                await logout_from_browser(old_config.auth_config, show_browser_cb)
+
         files = ["db", "db-wal", "db-shm"]
         for name in files:
             f = self._path / name

@@ -14,6 +14,7 @@ async def test_get_server_config_no_clusters(
 ) -> None:
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
     client_id = "this_is_client_id"
     audience = "https://platform.dev.neuromation.io"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
@@ -26,6 +27,7 @@ async def test_get_server_config_no_clusters(
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
+        "logout_url": logout_url,
         "client_id": client_id,
         "audience": audience,
         "callback_urls": callback_urls,
@@ -46,6 +48,7 @@ async def test_get_server_config_no_clusters(
         auth_config=_AuthConfig(
             auth_url=URL(auth_url),
             token_url=URL(token_url),
+            logout_url=URL(logout_url),
             client_id=client_id,
             audience=audience,
             headless_callback_url=URL(headless_callback_url),
@@ -61,6 +64,7 @@ async def test_get_server_config_no_callback_urls(
 ) -> None:
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
     client_id = "this_is_client_id"
     audience = "https://platform.dev.neuromation.io"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
@@ -68,6 +72,7 @@ async def test_get_server_config_no_callback_urls(
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
+        "logout_url": logout_url,
         "client_id": client_id,
         "audience": audience,
         "headless_callback_url": headless_callback_url,
@@ -87,6 +92,7 @@ async def test_get_server_config_no_callback_urls(
         auth_config=_AuthConfig(
             auth_url=URL(auth_url),
             token_url=URL(token_url),
+            logout_url=URL(logout_url),
             client_id=client_id,
             audience=audience,
             headless_callback_url=URL(headless_callback_url),
@@ -105,6 +111,7 @@ async def test_get_server_config_with_token_legacy(
     monitoring_url = "https://dev.neuromation.io/monitoring"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
     client_id = "this_is_client_id"
     audience = "https://platform.dev.neuromation.io"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
@@ -112,6 +119,7 @@ async def test_get_server_config_with_token_legacy(
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
+        "logout_url": logout_url,
         "client_id": client_id,
         "audience": audience,
         "headless_callback_url": headless_callback_url,
@@ -161,6 +169,7 @@ async def test_get_server_config_with_token_legacy(
         auth_config=_AuthConfig(
             auth_url=URL(auth_url),
             token_url=URL(token_url),
+            logout_url=URL(logout_url),
             client_id=client_id,
             audience=audience,
             headless_callback_url=URL(headless_callback_url),
@@ -196,6 +205,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
     monitoring_url = "https://dev.neuromation.io/monitoring"
     auth_url = "https://dev-neuromation.auth0.com/authorize"
     token_url = "https://dev-neuromation.auth0.com/oauth/token"
+    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
     client_id = "this_is_client_id"
     audience = "https://platform.dev.neuromation.io"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
@@ -254,6 +264,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
         ],
         "auth_url": auth_url,
         "token_url": token_url,
+        "logout_url": logout_url,
         "client_id": client_id,
         "audience": audience,
         "callback_urls": [
@@ -298,6 +309,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
         auth_config=_AuthConfig(
             auth_url=URL(auth_url),
             token_url=URL(token_url),
+            logout_url=URL(logout_url),
             client_id=client_id,
             audience=audience,
             headless_callback_url=URL(headless_callback_url),

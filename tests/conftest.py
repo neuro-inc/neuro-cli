@@ -38,6 +38,7 @@ def auth_config() -> _AuthConfig:
     return _AuthConfig.create(
         auth_url=URL("https://dev-neuromation.auth0.com/authorize"),
         token_url=URL("https://dev-neuromation.auth0.com/oauth/token"),
+        logout_url=URL("https://dev-neuromation.auth0.com/v2/logout"),
         client_id="CLIENT-ID",
         audience="https://platform.dev.neuromation.io",
         headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
