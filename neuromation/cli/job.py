@@ -1,7 +1,6 @@
 import asyncio
 import contextlib
 import logging
-import os
 import re
 import shlex
 import sys
@@ -73,11 +72,9 @@ from .utils import (
     group,
     option,
     pager_maybe,
-    parse_secret_resource,
     resolve_job,
     volume_to_verbose_str,
 )
-
 
 log = logging.getLogger(__name__)
 
@@ -1206,8 +1203,8 @@ async def run_job(
         job_schedule_timeout = _parse_timedelta(schedule_timeout).total_seconds()
     log.debug(f"Job schedule timeout: {job_schedule_timeout}")
 
-    env_dict = build_env(env, env_file)
-    secret_env_dict = _extract_secret_env(env_dict, root)
+    env_dict = root.client.parse.build_env(env, env_file)
+    secret_env_dict = root.client.parse.extract_secret_env(env_dict)
     real_cmd = _parse_cmd(cmd)
 
     log.debug(f'entrypoint="{entrypoint}"')
@@ -1231,7 +1228,7 @@ async def run_job(
     )
     input_secret_files = {vol for vol in volume if vol.startswith("secret:")}
     input_volumes = set(volume) - input_secret_files
-    secret_files = await _build_secret_files(root, input_secret_files)
+    secret_files = root.client.parse.build_secret_files(input_secret_files)
     volumes = await _build_volumes(root, input_volumes, env_dict)
 
     if pass_config:
@@ -1341,18 +1338,6 @@ async def _build_volumes(
         for vol in input_volumes:
             volumes.add(root.client.parse.volume(vol))
     return volumes
-
-
-async def _build_secret_files(root: Root, input_volumes: Set[str]) -> Set[SecretFile]:
-    secret_files: Set[SecretFile] = set()
-    for volume in input_volumes:
-        parts = volume.split(":")
-        if len(parts) != 3:
-            raise ValueError(f"Invalid secret file specification '{volume}'")
-        container_path = parts.pop()
-        secret_uri = parse_secret_resource(":".join(parts), root)
-        secret_files.add(SecretFile(secret_uri, container_path))
-    return secret_files
 
 
 async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:

@@ -12,10 +12,8 @@ from neuromation.api import Client, JobStatus
 from neuromation.cli.job import (
     DEFAULT_JOB_LIFE_SPAN,
     NEUROMATION_ROOT_ENV_VAR,
-    _extract_secret_env,
     _parse_cmd,
     _parse_timedelta,
-    build_env,
     calc_columns,
     calc_life_span,
     calc_statuses,
@@ -116,20 +114,22 @@ def test_calc_statuses__check_defaults__all_statuses_true(
 @pytest.mark.parametrize(
     "env_var", [NEUROMATION_ROOT_ENV_VAR, f"{NEUROMATION_ROOT_ENV_VAR}=value"]
 )
-def test_build_env_reserved_env_var_conflict_passed_as_parameter(env_var: str) -> None:
+def test_build_env_reserved_env_var_conflict_passed_as_parameter(
+    env_var: str, root: Root
+) -> None:
     env = ("ENV_VAR_1=value", "ENV_VAR_2=value", env_var)
     with pytest.raises(
         click.UsageError,
         match="Unable to re-define system-reserved environment variable",
     ):
-        build_env(env)
+        root.client.parse.build_env(env)
 
 
 @pytest.mark.parametrize(
     "env_var", [NEUROMATION_ROOT_ENV_VAR, f"{NEUROMATION_ROOT_ENV_VAR}=value"]
 )
 def test_build_env_reserved_env_var_conflict_passed_in_file(
-    env_var: str, tmp_path: Path
+    env_var: str, tmp_path: Path, root: Root
 ) -> None:
     env_1 = ("ENV_VAR_1=value",)
     env_2 = ("ENV_VAR_2=value", env_var)
@@ -140,28 +140,28 @@ def test_build_env_reserved_env_var_conflict_passed_in_file(
         click.UsageError,
         match="Unable to re-define system-reserved environment variable",
     ):
-        build_env(env_1, [str(env_file)])
+        root.client.parse.build_env(env_1, [str(env_file)])
 
 
-def test_build_env_blank_lines(tmp_path: Path) -> None:
+def test_build_env_blank_lines(tmp_path: Path, root: Root) -> None:
     env_file = tmp_path / "env_var.txt"
     env_file.write_text("ENV_VAR_1=value1\n\n  \n\t\nENV_VAR_2=value2")
-    assert build_env([], [str(env_file)]) == {
+    assert root.client.parse.build_env([], [str(env_file)]) == {
         "ENV_VAR_1": "value1",
         "ENV_VAR_2": "value2",
     }
 
 
-def test_build_env_comments(tmp_path: Path) -> None:
+def test_build_env_comments(tmp_path: Path, root: Root) -> None:
     env_file = tmp_path / "env_var.txt"
     env_file.write_text("ENV_VAR_1=value1\n#ENV_VAR_2=value2\nENV_VAR_3=#value3#")
-    assert build_env([], [str(env_file)]) == {
+    assert root.client.parse.build_env([], [str(env_file)]) == {
         "ENV_VAR_1": "value1",
         "ENV_VAR_3": "#value3#",
     }
 
 
-def test_build_env_multiple_files(tmp_path: Path) -> None:
+def test_build_env_multiple_files(tmp_path: Path, root: Root) -> None:
     env_1 = ("ENV_VAR_1=value1",)
     env_2 = ("ENV_VAR_2=value2",)
     env_file1 = tmp_path / "env_var.txt"
@@ -169,7 +169,7 @@ def test_build_env_multiple_files(tmp_path: Path) -> None:
     env_file2 = tmp_path / "env_var2.txt"
     env_file2.write_text("\n".join(env_2))
 
-    assert build_env([], [str(env_file1), str(env_file2)]) == {
+    assert root.client.parse.build_env([], [str(env_file1), str(env_file2)]) == {
         "ENV_VAR_1": "value1",
         "ENV_VAR_2": "value2",
     }
@@ -183,18 +183,18 @@ def test_build_env_override_literals() -> None:
     }
 
 
-def test_build_env_override_literal_and_file(tmp_path: Path) -> None:
+def test_build_env_override_literal_and_file(tmp_path: Path, root: Root) -> None:
     env_1 = ("ENV_VAR=value1",)
     env_2 = ("ENV_VAR=value2",)
     env_file = tmp_path / "env_var.txt"
     env_file.write_text("\n".join(env_2))
 
-    assert build_env(env_1, [str(env_file)]) == {
+    assert root.client.parse.build_env(env_1, [str(env_file)]) == {
         "ENV_VAR": "value1",
     }
 
 
-def test_build_env_override_same_file(tmp_path: Path) -> None:
+def test_build_env_override_same_file(tmp_path: Path, root: Root) -> None:
     env = (
         "ENV_VAR=value1",
         "ENV_VAR=value2",
@@ -202,12 +202,12 @@ def test_build_env_override_same_file(tmp_path: Path) -> None:
     env_file = tmp_path / "env_var.txt"
     env_file.write_text("\n".join(env))
 
-    assert build_env([], [str(env_file)]) == {
+    assert root.client.parse.build_env([], [str(env_file)]) == {
         "ENV_VAR": "value2",
     }
 
 
-def test_build_env_override_different_files(tmp_path: Path) -> None:
+def test_build_env_override_different_files(tmp_path: Path, root: Root) -> None:
     env_1 = ("ENV_VAR=value1",)
     env_2 = ("ENV_VAR=value2",)
     env_file1 = tmp_path / "env_var.txt"
@@ -215,7 +215,7 @@ def test_build_env_override_different_files(tmp_path: Path) -> None:
     env_file2 = tmp_path / "env_var2.txt"
     env_file2.write_text("\n".join(env_2))
 
-    assert build_env([], [str(env_file1), str(env_file2)]) == {
+    assert root.client.parse.build_env([], [str(env_file1), str(env_file2)]) == {
         "ENV_VAR": "value2",
     }
 
@@ -230,7 +230,7 @@ def test_extract_secret_env(root: Root) -> None:
         "ENV_VAR_4": "value4",
         "ENV_VAR_5": "secret://othercluster/otheruser/value5",
     }
-    assert _extract_secret_env(env, root) == {
+    assert root.client.parse.extract_secret_env(env) == {
         "ENV_VAR_1": URL(f"secret://{cluster_name}/{username}/value1"),
         "ENV_VAR_3": URL(f"secret://{cluster_name}/otheruser/value3"),
         "ENV_VAR_5": URL(f"secret://othercluster/otheruser/value5"),
