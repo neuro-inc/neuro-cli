@@ -7,8 +7,6 @@ from typing import Any, Dict, List, Optional, Set
 import aiodocker
 import aiohttp
 from aiodocker.exceptions import DockerError
-from aiohttp.hdrs import LINK
-from yarl import URL
 
 from .abc import (
     AbstractDockerImageProgress,
