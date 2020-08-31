@@ -26,7 +26,7 @@ Users
 
       :param str scheme: a filter to fetch permissions for specified URI scheme only,
                          e.g. ``"job"`` or ``"storage"``. Passing *scheme* is
-                         equivalent to passing  ``uri=scheme + ":"`.
+                         equivalent to passing  ``uri=scheme + ":"``.
 
       :param URL uri: a filter to fetch permissions for specified URI prefix only,
                       e.g. ``URL("job:")`` or ``URL("storage://mycluster/myname/mydir")``.
@@ -47,7 +47,7 @@ Users
 
       :param str scheme: a filter to fetch shares for specified URI scheme only,
                          e.g. ``"job"`` or ``"storage"``. Passing *scheme* is
-                         equivalent to passing  ``uri=scheme + ":"`.
+                         equivalent to passing  ``uri=scheme + ":"``.
 
       :param URL uri: a filter to fetch permissions for specified URI prefix only,
                       e.g. ``"job:"`` or ``"storage://mycluster/myname/mydir"``.
