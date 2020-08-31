@@ -18,7 +18,6 @@ from neuromation.api import (
     RemoteImage,
     ResourceNotFound,
     Resources,
-    SecretFile,
     Volume,
 )
 from neuromation.api.jobs import (
@@ -26,6 +25,7 @@ from neuromation.api.jobs import (
     _calc_status,
     _job_description_from_api,
 )
+from neuromation.api.parser import SecretFile
 from neuromation.api.server_cfg import Preset
 from tests import _TestServerFactory
 

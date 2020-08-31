@@ -7,7 +7,7 @@ import sys
 import uuid
 import webbrowser
 from datetime import datetime, timedelta
-from typing import Dict, Iterator, List, Optional, Sequence, Set, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
@@ -24,7 +24,6 @@ from neuromation.api import (
     JobStatus,
     RemoteImage,
     Resources,
-    SecretFile,
     Volume,
 )
 from neuromation.cli.formatters.images import DockerImageProgress
@@ -34,6 +33,7 @@ from neuromation.cli.formatters.utils import (
     uri_formatter,
 )
 
+from ..api.parser import NEUROMATION_HOME_ENV_VAR, NEUROMATION_ROOT_ENV_VAR
 from .ael import process_attach, process_exec, process_logs
 from .click_types import (
     JOB,
@@ -76,14 +76,11 @@ from .utils import (
     volume_to_verbose_str,
 )
 
+
 log = logging.getLogger(__name__)
 
 STORAGE_MOUNTPOINT = "/var/storage"
 ROOT_MOUNTPOINT = "/var/neuro"
-
-NEUROMATION_ROOT_ENV_VAR = "NEUROMATION_ROOT"
-NEUROMATION_HOME_ENV_VAR = "NEUROMATION_HOME"
-RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
 
 DEFAULT_JOB_LIFE_SPAN = "1d"
 REGEX_TIME_DELTA = re.compile(

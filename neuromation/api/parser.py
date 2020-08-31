@@ -1,17 +1,25 @@
 import os
-from typing import Set, Dict, Sequence, Optional
+from dataclasses import dataclass
+from typing import Dict, Iterator, Optional, Sequence, Set
 
 import click
-from dataclasses import dataclass
-
 from yarl import URL
 
 from .config import Config
-from .jobs import SecretFile
 from .parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
 from .url_utils import normalize_storage_path_uri, uri_from_cli
 from .utils import NoPublicConstructor
-from ..cli.job import _read_lines, RESERVED_ENV_VARS
+
+
+NEUROMATION_ROOT_ENV_VAR = "NEUROMATION_ROOT"
+NEUROMATION_HOME_ENV_VAR = "NEUROMATION_HOME"
+RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
+
+
+@dataclass(frozen=True)
+class SecretFile:
+    secret_uri: URL
+    container_path: str
 
 
 @dataclass(frozen=True)
@@ -116,3 +124,12 @@ class Parser(metaclass=NoPublicConstructor):
                 secret_env_dict[name] = self.parse_secret_resource(val)
                 del env_dict[name]
         return secret_env_dict
+
+
+def _read_lines(env_file: str) -> Iterator[str]:
+    with open(env_file, encoding="utf-8-sig") as ef:
+        lines = ef.read().splitlines()
+    for line in lines:
+        line = line.lstrip()
+        if line and not line.startswith("#"):
+            yield line

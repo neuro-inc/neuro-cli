@@ -9,9 +9,9 @@ import toml
 from yarl import URL
 
 from neuromation.api import Client, JobStatus
+from neuromation.api.parser import NEUROMATION_ROOT_ENV_VAR
 from neuromation.cli.job import (
     DEFAULT_JOB_LIFE_SPAN,
-    NEUROMATION_ROOT_ENV_VAR,
     _parse_cmd,
     _parse_timedelta,
     calc_columns,

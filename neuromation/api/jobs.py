@@ -41,7 +41,7 @@ from .images import (
     _raise_on_error_chunk,
     _try_parse_image_progress_step,
 )
-from .parser import Parser, Volume
+from .parser import Parser, SecretFile, Volume
 from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
 from .server_cfg import Preset
 from .url_utils import normalize_secret_uri, normalize_storage_path_uri
@@ -87,12 +87,6 @@ class JobStatus(str, enum.Enum):
 class HTTPPort:
     port: int
     requires_auth: bool = True
-
-
-@dataclass(frozen=True)
-class SecretFile:
-    secret_uri: URL
-    container_path: str
 
 
 @dataclass(frozen=True)
