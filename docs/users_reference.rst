@@ -16,7 +16,8 @@ Users
 
    .. comethod:: get_acl(\
                      user: str, \
-                     scheme: Optional[str] = None \
+                     scheme: Optional[str] = None, *, \
+                     uri: Optional[URL] = None \
                  ) -> Sequence[Permission]
 
       Get a list of permissions for *user*.
@@ -24,13 +25,20 @@ Users
       :param str user: user name of person whom permissions are retrieved.
 
       :param str scheme: a filter to fetch permissions for specified URI scheme only,
-                         e.g. ``"job"`` or ``"storage"``.
+                         e.g. ``"job"`` or ``"storage"``. Passing *scheme* is
+                         equivalent to passing  ``uri=scheme + ":"`.
 
-      :return: a :class:`typing.Sequence` or :class:`Permission` objects.  Consider the
+      :param URL uri: a filter to fetch permissions for specified URI prefix only,
+                      e.g. ``URL("job:")`` or ``URL("storage://mycluster/myname/mydir")``.
+                      You should specify full URI.
+
+      :return: a :class:`typing.Sequence` of :class:`Permission` objects.  Consider the
                return type as immutable list.
 
+
    .. comethod:: get_shares( \
-                     user: str, scheme: Optional[str] = None \
+                     user: str, scheme: Optional[str] = None, *, \
+                     uri: Optional[URL] = None \
                  ) -> Sequence[Share]
 
       Get resources shared with *user* by others.
@@ -38,9 +46,15 @@ Users
       :param str user: user name of person whom shares are retrieved.
 
       :param str scheme: a filter to fetch shares for specified URI scheme only,
-                         e.g. ``"job"`` or ``"storage"``.
+                         e.g. ``"job"`` or ``"storage"``. Passing *scheme* is
+                         equivalent to passing  ``uri=scheme + ":"`.
 
-      :return: a :class:`typing.Sequence` or :class:`Share` objects.  Consider the
+      :param URL uri: a filter to fetch permissions for specified URI prefix only,
+                      e.g. ``"job:"`` or ``"storage://mycluster/myname/mydir"``.
+                      You should specify full URI.
+
+
+      :return: a :class:`typing.Sequence` of :class:`Share` objects.  Consider the
                return type as immutable list.
 
    .. comethod:: share(user: str, permission: Permission) -> None
