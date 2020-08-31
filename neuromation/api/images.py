@@ -141,16 +141,12 @@ class Images(metaclass=NoPublicConstructor):
     async def ls(self) -> List[RemoteImage]:
         auth = await self._config._registry_auth()
         prefix = f"image://{self._config.cluster_name}/"
-        url: Optional[URL] = self._registry_url / "_catalog"
+        url = self._registry_url / "_catalog"
         result: List[RemoteImage] = []
         while True:
-            print("url =", url)
             async with self._core.request("GET", url, auth=auth) as resp:
                 ret = await resp.json()
                 repos = ret["repositories"]
-                print("repos =", repos)
-                if not repos:
-                    break
                 for repo in repos:
                     try:
                         result.append(
@@ -160,14 +156,9 @@ class Images(metaclass=NoPublicConstructor):
                         )
                     except ValueError as err:
                         log.warning(str(err))
-                print("links =", resp.headers.getall(LINK, ()))
-                for link in resp.headers.getall(LINK, ()):
-                    m = re.fullmatch(r'(?i)<(.*)>; rel="next"', link)
-                    if m:
-                        url = URL(m[1])
-                        break
-                else:
+                if not repos or "next" not in resp.links:
                     break
+                url = resp.links["next"]["url"]
         return result
 
     def _validate_image_for_tags(self, image: RemoteImage) -> None:

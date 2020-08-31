@@ -6,6 +6,7 @@ import asynctest
 import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
+from aiohttp.hdrs import LINK
 from yarl import URL
 
 from neuromation.api import (
@@ -1114,6 +1115,68 @@ class TestRegistry:
                 "alpine",
                 tag=None,
                 owner="bob",
+                cluster_name="default",
+                registry=registry,
+            ),
+            RemoteImage.new_neuro_image(
+                "bananas",
+                tag=None,
+                owner="jill",
+                cluster_name="default",
+                registry=registry,
+            ),
+        }
+
+    async def test_ls_repositories_chunked(
+        self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
+    ) -> None:
+        async def handler(request: web.Request) -> web.Response:
+            nonlocal step
+            step += 1
+            if step == 1:
+                assert "last" not in request.query
+                payload = {"repositories": ["bob/alpine", "jill/bananas"]}
+                headers = {LINK: f'<{registry_url}_catalog?last=lsttkn>; rel="next"'}
+                return web.json_response(payload, headers=headers)
+            elif step == 2:
+                assert request.query["last"] == "lsttkn"
+                payload = {"repositories": ["alice/library/ubuntu"]}
+                headers = {LINK: f'<{registry_url}_catalog?last=lsttkn2>; rel="next"'}
+                return web.json_response(payload, headers=headers)
+            elif step == 3:
+                assert request.query["last"] == "lsttkn2"
+                payload = {"repositories": []}
+                headers = {LINK: f'<{registry_url}_catalog?last=lsttkn3>; rel="next"'}
+                return web.json_response(payload, headers=headers)
+            else:
+                assert False
+
+        app = web.Application()
+        app.router.add_get("/v2/_catalog", handler)
+
+        srv = await aiohttp_server(app)
+        url = "http://platform"
+        registry_url = srv.make_url("/v2/")
+
+        step = 0
+        async with make_client(url, registry_url=registry_url) as client:
+            ret = await client.images.ls()
+        assert step == 3
+
+        registry = _get_url_authority(registry_url)
+        assert registry is not None
+        assert set(ret) == {
+            RemoteImage.new_neuro_image(
+                "alpine",
+                tag=None,
+                owner="bob",
+                cluster_name="default",
+                registry=registry,
+            ),
+            RemoteImage.new_neuro_image(
+                "library/ubuntu",
+                tag=None,
+                owner="alice",
                 cluster_name="default",
                 registry=registry,
             ),
