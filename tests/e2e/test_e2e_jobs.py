@@ -830,7 +830,7 @@ def test_job_run_volume_all(helper: Helper) -> None:
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(["run", "-T", "--volume=ALL", img, command])
-    assert cm.value.returncode == 1
+    assert cm.value.returncode == 127
 
 
 @pytest.mark.e2e
