@@ -69,7 +69,7 @@ class Parser(metaclass=NoPublicConstructor):
             uri,
             self._config.username,
             self._config.cluster_name,
-            allowed_schemes=("secret"),
+            allowed_schemes=("secret",),
         )
 
     def local_image(self, image: str) -> LocalImage:
