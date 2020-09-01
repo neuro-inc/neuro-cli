@@ -120,8 +120,8 @@ def _read_lines(env_file: str) -> Iterator[str]:
             yield line
 
 
-def build_env(env: Sequence[str], env_file: Sequence[str]) -> Dict[str, str]:
-    lines = []
+def build_env(env: Sequence[str], env_file: Sequence[str] = ()) -> Dict[str, str]:
+    lines: List[str] = []
     for filename in env_file:
         lines.extend(_read_lines(filename))
     lines.extend(env)
