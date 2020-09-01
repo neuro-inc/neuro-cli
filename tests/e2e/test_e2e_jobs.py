@@ -316,9 +316,13 @@ def test_e2e_multiple_env(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
-    env_file = tmp_path / "env_file"
-    env_file.write_text("VAR2=LAV2\nVAR3=VAL3\n")
-    bash_script = 'echo begin"$VAR""$VAR2""$VAR3"end  | grep beginVALVAL2VAL3end'
+    env_file1 = tmp_path / "env_file1"
+    env_file1.write_text("VAR2=LAV2\nVAR3=VAL3\n#VAR3=LAV3\nVAR4=LAV4\n\n")
+    env_file2 = tmp_path / "env_file2"
+    env_file2.write_text("VAR4=LAV4\nVAR4=VAL4")
+    bash_script = (
+        'echo begin"$VAR""$VAR2""$VAR3""$VAR4"end  | grep beginVALVAL2VAL3VAL4end'
+    )
     command = f"bash -c '{bash_script}'"
     captured = helper.run_cli(
         [
@@ -328,9 +332,13 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
             "-e",
             "VAR=VAL",
             "-e",
+            "VAR2=VAL",
+            "-e",
             "VAR2=VAL2",
             "--env-file",
-            str(env_file),
+            str(env_file1),
+            "--env-file",
+            str(env_file2),
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             command,
