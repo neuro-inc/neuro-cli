@@ -58,7 +58,7 @@ Parser
       tuple of two mappings - first one for all environment variables and second for
       environment variables using secrets.
 
-      :raise: :exc:`ValueError` if caller attempts to redefine a system-reserved env var
+      :raise: :exc:`ValueError` if caller attempts to redefine a system-reserved environment variable
 
    .. method:: volumes(volume: Sequence[str]) -> Tuple[Set[Volume], Set[SecretFile]]
 
