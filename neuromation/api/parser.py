@@ -56,40 +56,13 @@ class Parser(metaclass=NoPublicConstructor):
             storage_uri=storage_uri, container_path=container_path, read_only=read_only
         )
 
-    async def _build_volumes(
-        self, input_volumes: Set[str], env_dict: Dict[str, str]
-    ) -> Set[Volume]:
-        cluster_name = self._config.cluster_name
-        volumes: Set[Volume] = set()
-
+    def _build_volumes(self, input_volumes: Set[str]) -> Set[Volume]:
+        if "HOME" in input_volumes:
+            raise ValueError("--volume=HOME no longer supported")
         if "ALL" in input_volumes:
-            if len(input_volumes) > 1:
-                raise ValueError(
-                    f"Cannot use `--volume=ALL` together with other `--volume` options"
-                )
-            available = await self._users.get_acl(
-                self._config.username, scheme="storage"
-            )
-            for perm in available:
-                if perm.uri.host == cluster_name:
-                    path = perm.uri.path
-                    assert path[0] == "/"
-                    volumes.add(
-                        Volume(
-                            storage_uri=perm.uri,
-                            container_path=f"{ROOT_MOUNTPOINT}{path}",
-                            read_only=perm.action not in ("write", "manage"),
-                        )
-                    )
-            neuro_mountpoint = _get_neuro_mountpoint(self._config.username)
-            env_dict[NEUROMATION_HOME_ENV_VAR] = neuro_mountpoint
-            env_dict[NEUROMATION_ROOT_ENV_VAR] = ROOT_MOUNTPOINT
-        else:
-            if "HOME" in input_volumes:
-                raise ValueError("--volume=HOME no longer supported")
-            for vol in input_volumes:
-                volumes.add(self.volume(vol))
-        return volumes
+            raise ValueError("--volume=ALL no longer supported")
+
+        return {self.volume(vol) for vol in input_volumes}
 
     def _build_secret_files(self, input_volumes: Set[str]) -> Set[SecretFile]:
         secret_files: Set[SecretFile] = set()
@@ -174,13 +147,11 @@ class Parser(metaclass=NoPublicConstructor):
                 del env_dict[name]
         return secret_env_dict
 
-    async def volumes(
-        self, volume: Sequence[str], env_dict: Dict[str, str]
-    ) -> Tuple[Set[Volume], Set[SecretFile]]:
+    def volumes(self, volume: Sequence[str]) -> Tuple[Set[Volume], Set[SecretFile]]:
         input_secret_files = {vol for vol in volume if vol.startswith("secret:")}
         input_volumes = set(volume) - input_secret_files
         secret_files = self._build_secret_files(input_secret_files)
-        vols = await self._build_volumes(input_volumes, env_dict)
+        vols = self._build_volumes(input_volumes)
         return vols, secret_files
 
 

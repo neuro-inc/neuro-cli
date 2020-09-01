@@ -1177,7 +1177,7 @@ async def run_job(
         tpu_software_version=tpu_software_version,
     )
 
-    volumes, secret_files = await root.client.parse.volumes(volume, env_dict)
+    volumes, secret_files = root.client.parse.volumes(volume)
 
     if pass_config:
         env_name = NEURO_STEAL_CONFIG
