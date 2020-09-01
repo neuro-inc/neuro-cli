@@ -99,50 +99,6 @@ TTY_OPT = option(
 )
 
 
-def _get_neuro_mountpoint(username: str) -> str:
-    return f"{ROOT_MOUNTPOINT}/{username}"
-
-
-def _read_lines(env_file: str) -> Iterator[str]:
-    with open(env_file, encoding="utf-8-sig") as ef:
-        lines = ef.read().splitlines()
-    for line in lines:
-        line = line.lstrip()
-        if line and not line.startswith("#"):
-            yield line
-
-
-def build_env(env: Sequence[str], env_file: Sequence[str] = ()) -> Dict[str, str]:
-    lines: List[str] = []
-    for filename in env_file:
-        lines.extend(_read_lines(filename))
-    lines.extend(env)
-
-    env_dict = {}
-    for line in lines:
-        splitted = line.split("=", 1)
-        name = splitted[0]
-        if len(splitted) == 1:
-            val = os.environ.get(splitted[0], "")
-        else:
-            val = splitted[1]
-        if name in RESERVED_ENV_VARS:
-            raise click.UsageError(
-                f"Unable to re-define system-reserved environment variable: {name}"
-            )
-        env_dict[name] = val
-    return env_dict
-
-
-def _extract_secret_env(env_dict: Dict[str, str], root: Root) -> Dict[str, URL]:
-    secret_env_dict = {}
-    for name, val in env_dict.copy().items():
-        if val.startswith("secret:"):
-            secret_env_dict[name] = parse_secret_resource(val, root)
-            del env_dict[name]
-    return secret_env_dict
-
-
 @group()
 def job() -> None:
     """

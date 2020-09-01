@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import Dict, Iterator, Mapping, Optional, Sequence, Set, Tuple
+from typing import Dict, Iterator, List, Mapping, Sequence, Set, Tuple
 
 from yarl import URL
 
@@ -137,18 +137,22 @@ class Parser(metaclass=NoPublicConstructor):
         return parser.convert_to_local_image(image)
 
     def env(
-        self, env: Sequence[str], env_file: Optional[str]
+        self, env: Sequence[str], env_file: Sequence[str] = ()
     ) -> Tuple[Dict[str, str], Mapping[str, URL]]:
         env_dict = self._build_env(env, env_file)
         secret_env_dict = self._extract_secret_env(env_dict)
         return env_dict, secret_env_dict
 
-    def _build_env(self, env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
-        if env_file:
-            env = [*_read_lines(env_file), *env]
+    def _build_env(
+        self, env: Sequence[str], env_file: Sequence[str] = ()
+    ) -> Dict[str, str]:
+        lines: List[str] = []
+        for filename in env_file:
+            lines.extend(_read_lines(filename))
+        lines.extend(env)
 
         env_dict = {}
-        for line in env:
+        for line in lines:
             splitted = line.split("=", 1)
             name = splitted[0]
             if len(splitted) == 1:
