@@ -50,6 +50,8 @@ Parser
 
       :raise: :exc:`ValueError` if *image* has invalid format.
 
+  .. _DockerHub: https://hub.docker.com
+
    .. method:: env(env: Sequence[str], env_file: Sequence[str] = ()) -> Tuple[Dict[str, str], Mapping[str, URL]]
 
       Parse a sequence of *env* variables and a sequence of *env_file* file names into a
@@ -63,7 +65,6 @@ Parser
       Parse a sequence of volume definition into a tuple of two mappings - first one for
       all regular volumes and second one for volumes using secrets.
 
-      :raise: :exc:`ValueError` if `volumes` sequence contains `ALL` or `HOME` values,
-      which are deprecated.
+      :raise: :exc:`ValueError` if `volumes` sequence contains `ALL` or `HOME` values, which are deprecated.
 
-.. _DockerHub: https://hub.docker.com
+
