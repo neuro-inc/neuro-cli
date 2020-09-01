@@ -12,10 +12,6 @@ from .utils import NoPublicConstructor
 
 ROOT_MOUNTPOINT = "/var/neuro"
 
-NEUROMATION_ROOT_ENV_VAR = "NEUROMATION_ROOT"
-NEUROMATION_HOME_ENV_VAR = "NEUROMATION_HOME"
-RESERVED_ENV_VARS = {NEUROMATION_ROOT_ENV_VAR, NEUROMATION_HOME_ENV_VAR}
-
 
 @dataclass(frozen=True)
 class SecretFile:
@@ -130,10 +126,6 @@ class Parser(metaclass=NoPublicConstructor):
                 val = os.environ.get(splitted[0], "")
             else:
                 val = splitted[1]
-            if name in RESERVED_ENV_VARS:
-                raise ValueError(
-                    f"Unable to re-define system-reserved environment variable: {name}"
-                )
             env_dict[name] = val
         return env_dict
 
