@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass
-from typing import Dict, Iterator, List, Mapping, Sequence, Set, Tuple
+from typing import Dict, Iterator, List, Sequence, Set, Tuple
 
 from yarl import URL
 
@@ -71,11 +71,11 @@ class Parser(metaclass=NoPublicConstructor):
             if len(parts) != 3:
                 raise ValueError(f"Invalid secret file specification '{volume}'")
             container_path = parts.pop()
-            secret_uri = self.parse_secret_resource(":".join(parts))
+            secret_uri = self._parse_secret_resource(":".join(parts))
             secret_files.add(SecretFile(secret_uri, container_path))
         return secret_files
 
-    def parse_secret_resource(self, uri: str) -> URL:
+    def _parse_secret_resource(self, uri: str) -> URL:
         return uri_from_cli(
             uri,
             self._config.username,
@@ -111,7 +111,7 @@ class Parser(metaclass=NoPublicConstructor):
 
     def env(
         self, env: Sequence[str], env_file: Sequence[str] = ()
-    ) -> Tuple[Dict[str, str], Mapping[str, URL]]:
+    ) -> Tuple[Dict[str, str], Dict[str, URL]]:
         env_dict = self._build_env(env, env_file)
         secret_env_dict = self._extract_secret_env(env_dict)
         return env_dict, secret_env_dict
@@ -143,7 +143,7 @@ class Parser(metaclass=NoPublicConstructor):
         secret_env_dict = {}
         for name, val in env_dict.copy().items():
             if val.startswith("secret:"):
-                secret_env_dict[name] = self.parse_secret_resource(val)
+                secret_env_dict[name] = self._parse_secret_resource(val)
                 del env_dict[name]
         return secret_env_dict
 
