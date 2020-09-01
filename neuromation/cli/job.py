@@ -120,12 +120,14 @@ def _read_lines(env_file: str) -> Iterator[str]:
             yield line
 
 
-def build_env(env: Sequence[str], env_file: Optional[str]) -> Dict[str, str]:
-    if env_file:
-        env = [*_read_lines(env_file), *env]
+def build_env(env: Sequence[str], env_file: Sequence[str] = ()) -> Dict[str, str]:
+    lines: List[str] = []
+    for filename in env_file:
+        lines.extend(_read_lines(filename))
+    lines.extend(env)
 
     env_dict = {}
-    for line in env:
+    for line in lines:
         splitted = line.split("=", 1)
         name = splitted[0]
         if len(splitted) == 1:
@@ -286,6 +288,7 @@ def job() -> None:
 @option(
     "--env-file",
     type=click.Path(exists=True),
+    multiple=True,
     help="File with environment variables to pass",
     secure=True,
 )
@@ -350,7 +353,7 @@ async def submit(
     working_dir: Optional[str],
     volume: Sequence[str],
     env: Sequence[str],
-    env_file: Optional[str],
+    env_file: Sequence[str],
     restart: str,
     life_span: Optional[str],
     port_forward: List[Tuple[int, int]],
@@ -973,6 +976,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 @option(
     "--env-file",
     type=click.Path(exists=True),
+    multiple=True,
     help="File with environment variables to pass",
     secure=True,
 )
@@ -1043,7 +1047,7 @@ async def run(
     workdir: Optional[str],
     volume: Sequence[str],
     env: Sequence[str],
-    env_file: Optional[str],
+    env_file: Sequence[str],
     restart: str,
     life_span: Optional[str],
     preemptible: Optional[bool],
@@ -1159,7 +1163,7 @@ async def run_job(
     working_dir: Optional[str],
     volume: Sequence[str],
     env: Sequence[str],
-    env_file: Optional[str],
+    env_file: Sequence[str],
     restart: str,
     life_span: Optional[str],
     port_forward: List[Tuple[int, int]],
