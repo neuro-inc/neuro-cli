@@ -288,8 +288,10 @@ class Jobs(metaclass=NoPublicConstructor):
         ) as resp:
             if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
                 async for line in resp.content:
-                    j = json.loads(line)
-                    yield _job_description_from_api(j, self._parse)
+                    server_message = json.loads(line)
+                    if "error" in server_message:
+                        raise Exception(server_message["error"])
+                    yield _job_description_from_api(server_message, self._parse)
             else:
                 ret = await resp.json()
                 for j in ret["jobs"]:
