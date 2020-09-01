@@ -17,12 +17,12 @@ def revoke(helper: Helper, uri: str, username: str) -> None:
 @pytest.mark.e2e
 def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     uri = f"storage://{helper.cluster_name}/{helper.username}/{uuid4()}"
-    uri2 = f"image://{helper.cluster_name}/{helper.username}/{uuid4()}"
+    uri2 = f"{uri}/{uuid4()}"
 
     another_test_user = "test2"
 
-    request.addfinalizer(lambda: revoke(helper, uri, "public"))
-    captured = helper.run_cli(["-v", "acl", "grant", uri, "public", "read"])
+    request.addfinalizer(lambda: revoke(helper, uri, another_test_user))
+    captured = helper.run_cli(["-v", "acl", "grant", uri, another_test_user, "read"])
     assert captured.out == ""
     expected_err = f"Using resource '{uri}'"
     assert expected_err in captured.err
@@ -54,10 +54,24 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     for line in result:
         assert line.startswith("storage://")
 
+    captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "storage:"])
+    assert captured.err == ""
+    result = captured.out.splitlines()
+    assert (
+        f"storage://{helper.cluster_name}/{helper.username} manage" in result
+        or f"storage://{helper.cluster_name} manage" in result
+    )
+    for line in result:
+        assert line.startswith("storage://")
+
+    captured = helper.run_cli(["-v", "acl", "list", "--full-uri", uri])
+    assert captured.err == ""
+    assert captured.out.strip() == f"{uri} manage"
+
     captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
-    assert f"{uri} read public" in result
+    assert f"{uri} read {another_test_user}" in result
     assert f"{uri2} write {another_test_user}" in result
     for line in result:
         assert not line.endswith(f" {helper.username}")
@@ -67,22 +81,20 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     )
     assert captured.err == ""
     result = captured.out.splitlines()
-    assert f"{uri} read public" in result
-    for line in result:
-        assert line.startswith("storage://")
-        assert not line.endswith(f" {helper.username}")
-
-    captured = helper.run_cli(
-        ["-v", "acl", "list", "--full-uri", "--shared", "--scheme", "image"]
-    )
-    assert captured.err == ""
-    result = captured.out.splitlines()
+    assert f"{uri} read {another_test_user}" in result
     assert f"{uri2} write {another_test_user}" in result
     for line in result:
-        assert line.startswith("image://")
+        assert line.startswith(f"storage://{helper.cluster_name}")
         assert not line.endswith(f" {helper.username}")
 
-    captured = helper.run_cli(["-v", "acl", "revoke", uri, "public"])
+    captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared", uri])
+    assert captured.err == ""
+    result = captured.out.splitlines()
+    assert sorted(result) == sorted(
+        [f"{uri} read {another_test_user}", f"{uri2} write {another_test_user}"]
+    )
+
+    captured = helper.run_cli(["-v", "acl", "revoke", uri, another_test_user])
     assert captured.out == ""
     assert expected_err in captured.err
 
@@ -93,11 +105,15 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared"])
     assert captured.err == ""
     result = captured.out.splitlines()
-    assert f"{uri} read public" not in result
+    assert f"{uri} read {another_test_user}" not in result
     assert f"{uri2} write {another_test_user}" not in result
     for line in result:
         assert not line.startswith("{uri} ")
         assert not line.startswith("{uri2} ")
+
+    captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared", uri])
+    assert captured.err == ""
+    assert captured.out == ""
 
 
 @pytest.mark.e2e

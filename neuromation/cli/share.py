@@ -2,6 +2,7 @@ import logging
 from typing import Any, List, Optional
 
 import click
+from yarl import URL
 
 from neuromation.api import Permission, Share
 
@@ -86,6 +87,7 @@ async def revoke(root: Root, uri: str, user: str) -> None:
 
 
 @command()
+@argument("uri", required=False)
 @option(
     "-u", "username", default=None, help="Use specified user or role.",
 )
@@ -93,7 +95,8 @@ async def revoke(root: Root, uri: str, user: str) -> None:
     "-s",
     "--scheme",
     default=None,
-    help="Filter resources by scheme, e.g. job, storage, image or user.",
+    help="Filter resources by scheme, e.g. job, storage, image or user. "
+    "Deprecated, use the uri argument instead.",
 )
 @option(
     "--shared",
@@ -104,6 +107,7 @@ async def revoke(root: Root, uri: str, user: str) -> None:
 @option("--full-uri", is_flag=True, help="Output full URI.")
 async def list(
     root: Root,
+    uri: Optional[str],
     username: Optional[str],
     scheme: Optional[str],
     shared: bool,
@@ -118,9 +122,9 @@ async def list(
 
         Examples:
         neuro acl list
-        neuro acl list --scheme storage
+        neuro acl list storage://
         neuro acl list --shared
-        neuro acl list --shared --scheme image
+        neuro acl list --shared image://
     """
     if username is None:
         username = root.client.username
@@ -133,6 +137,8 @@ async def list(
             username=root.client.username, cluster_name=root.client.cluster_name
         )
 
+    uri_obj = URL(uri) if uri else None
+
     out: List[str] = []
     if not shared:
 
@@ -140,7 +146,8 @@ async def list(
             return p.uri, p.action
 
         for p in sorted(
-            await root.client.users.get_acl(username, scheme), key=permission_key,
+            await root.client.users.get_acl(username, scheme=scheme, uri=uri_obj),
+            key=permission_key,
         ):
             out.append(f"{uri_fmtr(p.uri)} {p.action.value}")
     else:
@@ -149,7 +156,7 @@ async def list(
             return share.permission.uri, share.permission.action.value, share.user
 
         for share in sorted(
-            await root.client.users.get_shares(username, scheme),
+            await root.client.users.get_shares(username, scheme=scheme, uri=uri_obj),
             key=shared_permission_key,
         ):
             out.append(

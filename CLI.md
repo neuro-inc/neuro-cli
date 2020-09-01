@@ -1607,7 +1607,7 @@ List shared resources.<br/><br/>The command displays a list of resources shared 
 **Usage:**
 
 ```bash
-neuro acl list [OPTIONS]
+neuro acl list [OPTIONS] [URI]
 ```
 
 **Examples:**
@@ -1615,9 +1615,9 @@ neuro acl list [OPTIONS]
 ```bash
 
 neuro acl list
-neuro acl list --scheme storage
+neuro acl list storage://
 neuro acl list --shared
-neuro acl list --shared --scheme image
+neuro acl list --shared image://
 
 ```
 
@@ -1627,7 +1627,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\--full-uri_|Output full URI.|
-|_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user.|
+|_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user. Deprecated, use the uri argument instead.|
 |_--shared_|Output the resources shared by the user.|
 |_-u TEXT_|Use specified user or role.|
 

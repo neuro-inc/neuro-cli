@@ -35,10 +35,14 @@ class Users(metaclass=NoPublicConstructor):
         self._config = config
 
     async def get_acl(
-        self, user: str, scheme: Optional[str] = None
+        self, user: str, scheme: Optional[str] = None, *, uri: Optional[URL] = None
     ) -> Sequence[Permission]:
         url = self._get_user_url(user) / "permissions"
-        params = {"scheme": scheme} if scheme else {}
+        if scheme:
+            if uri is not None:
+                raise ValueError("Conflicting arguments 'uri' and 'scheme'")
+            uri = URL.build(scheme=scheme)
+        params = {"uri": str(uri)} if uri is not None else {}
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, params=params, auth=auth) as resp:
             payload = await resp.json()
@@ -50,10 +54,14 @@ class Users(metaclass=NoPublicConstructor):
         return ret
 
     async def get_shares(
-        self, user: str, scheme: Optional[str] = None
+        self, user: str, scheme: Optional[str] = None, *, uri: Optional[URL] = None
     ) -> Sequence[Share]:
         url = self._get_user_url(user) / "permissions" / "shared"
-        params = {"scheme": scheme} if scheme else {}
+        if scheme:
+            if uri is not None:
+                raise ValueError("Conflicting arguments 'uri' and 'scheme'")
+            uri = URL.build(scheme=scheme)
+        params = {"uri": str(uri)} if uri is not None else {}
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, params=params, auth=auth) as resp:
             payload = await resp.json()
