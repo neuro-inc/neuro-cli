@@ -7,7 +7,6 @@ from yarl import URL
 from .config import Config
 from .parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
 from .url_utils import normalize_storage_path_uri, uri_from_cli
-from .users import Users
 from .utils import NoPublicConstructor
 
 
@@ -32,9 +31,8 @@ class Volume:
 
 
 class Parser(metaclass=NoPublicConstructor):
-    def __init__(self, config: Config, users: Users) -> None:
+    def __init__(self, config: Config) -> None:
         self._config = config
-        self._users = users
 
     def volume(self, volume: str) -> Volume:
         parts = volume.split(":")

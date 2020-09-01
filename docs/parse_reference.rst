@@ -65,6 +65,3 @@ Parser
       Parse a sequence of volume definition into a tuple of two mappings - first one for
       all regular volumes and second one for volumes using secrets.
 
-      :raise: :exc:`ValueError` if `volumes` sequence contains `ALL` or `HOME` values, which are deprecated.
-
-
