@@ -162,7 +162,3 @@ def _read_lines(env_file: str) -> Iterator[str]:
         line = line.lstrip()
         if line and not line.startswith("#"):
             yield line
-
-
-def _get_neuro_mountpoint(username: str) -> str:
-    return f"{ROOT_MOUNTPOINT}/{username}"
