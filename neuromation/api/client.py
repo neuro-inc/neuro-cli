@@ -35,12 +35,12 @@ class Client(metaclass=NoPublicConstructor):
         self._config._load()
         with self._config._open_db() as db:
             self._core._post_init(db,)
-        self._parser = Parser._create(self._config)
+        self._users = Users._create(self._core, self._config)
+        self._parser = Parser._create(self._config, self._users)
         self._admin = _Admin._create(self._core, self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)
         self._blob_storage = BlobStorage._create(self._core, self._config)
         self._storage = Storage._create(self._core, self._config)
-        self._users = Users._create(self._core, self._config)
         self._quota = _Quota._create(self._core, self._config)
         self._secrets = Secrets._create(self._core, self._config)
         self._images: Optional[Images] = None

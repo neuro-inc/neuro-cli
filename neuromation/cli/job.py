@@ -7,7 +7,7 @@ import sys
 import uuid
 import webbrowser
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Sequence, Set, Tuple
+from typing import List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
@@ -33,7 +33,6 @@ from neuromation.cli.formatters.utils import (
     uri_formatter,
 )
 
-from ..api.parser import NEUROMATION_HOME_ENV_VAR, NEUROMATION_ROOT_ENV_VAR
 from .ael import process_attach, process_exec, process_logs
 from .click_types import (
     JOB,
@@ -80,7 +79,6 @@ from .utils import (
 log = logging.getLogger(__name__)
 
 STORAGE_MOUNTPOINT = "/var/storage"
-ROOT_MOUNTPOINT = "/var/neuro"
 
 DEFAULT_JOB_LIFE_SPAN = "1d"
 REGEX_TIME_DELTA = re.compile(
@@ -1200,8 +1198,7 @@ async def run_job(
         job_schedule_timeout = _parse_timedelta(schedule_timeout).total_seconds()
     log.debug(f"Job schedule timeout: {job_schedule_timeout}")
 
-    env_dict = root.client.parse.build_env(env, env_file)
-    secret_env_dict = root.client.parse.extract_secret_env(env_dict)
+    env_dict, secret_env_dict = root.client.parse.env(env, env_file)
     real_cmd = _parse_cmd(cmd)
 
     log.debug(f'entrypoint="{entrypoint}"')
@@ -1223,10 +1220,8 @@ async def run_job(
         tpu_type=tpu_type,
         tpu_software_version=tpu_software_version,
     )
-    input_secret_files = {vol for vol in volume if vol.startswith("secret:")}
-    input_volumes = set(volume) - input_secret_files
-    secret_files = root.client.parse.build_secret_files(input_secret_files)
-    volumes = await _build_volumes(root, input_volumes, env_dict)
+
+    volumes, secret_files = await root.client.parse.volumes(volume, env_dict)
 
     if pass_config:
         env_name = NEURO_STEAL_CONFIG
@@ -1293,48 +1288,6 @@ def _parse_cmd(cmd: Sequence[str]) -> str:
     else:
         real_cmd = " ".join(shlex.quote(arg) for arg in cmd)
     return real_cmd
-
-
-async def _build_volumes(
-    root: Root, input_volumes: Set[str], env_dict: Dict[str, str]
-) -> Set[Volume]:
-    cluster_name = root.client.cluster_name
-    volumes: Set[Volume] = set()
-
-    if "ALL" in input_volumes:
-        if len(input_volumes) > 1:
-            raise click.UsageError(
-                f"Cannot use `--volume=ALL` together with other `--volume` options"
-            )
-        available = await root.client.users.get_acl(
-            root.client.username, scheme="storage"
-        )
-        for perm in available:
-            if perm.uri.host == cluster_name:
-                path = perm.uri.path
-                assert path[0] == "/"
-                volumes.add(
-                    Volume(
-                        storage_uri=perm.uri,
-                        container_path=f"{ROOT_MOUNTPOINT}{path}",
-                        read_only=perm.action not in ("write", "manage"),
-                    )
-                )
-        neuro_mountpoint = _get_neuro_mountpoint(root.client.username)
-        env_dict[NEUROMATION_HOME_ENV_VAR] = neuro_mountpoint
-        env_dict[NEUROMATION_ROOT_ENV_VAR] = ROOT_MOUNTPOINT
-        if not root.quiet:
-            click.echo(
-                "Storage mountpoints will be available as the environment variables:\n"
-                f"  {NEUROMATION_ROOT_ENV_VAR}={ROOT_MOUNTPOINT}\n"
-                f"  {NEUROMATION_HOME_ENV_VAR}={neuro_mountpoint}"
-            )
-    else:
-        if "HOME" in input_volumes:
-            raise ValueError("--volume=HOME no longer supported")
-        for vol in input_volumes:
-            volumes.add(root.client.parse.volume(vol))
-    return volumes
 
 
 async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
