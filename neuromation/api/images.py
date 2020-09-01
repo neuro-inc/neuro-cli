@@ -25,6 +25,8 @@ from .parsing_utils import LocalImage, RemoteImage, TagOption, _as_repo_str
 from .utils import NoPublicConstructor
 
 
+REPOS_PER_PAGE = 30
+
 log = logging.getLogger(__name__)
 
 
@@ -142,6 +144,7 @@ class Images(metaclass=NoPublicConstructor):
         url = self._registry_url / "_catalog"
         result: List[RemoteImage] = []
         while True:
+            url = url.update_query(n=str(REPOS_PER_PAGE))
             async with self._core.request("GET", url, auth=auth) as resp:
                 ret = await resp.json()
                 repos = ret["repositories"]

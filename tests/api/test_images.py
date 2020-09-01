@@ -1096,6 +1096,8 @@ class TestRegistry:
         JSON = {"repositories": ["bob/alpine", "jill/bananas"]}
 
         async def handler(request: web.Request) -> web.Response:
+            assert "n" in request.query
+            assert "last" not in request.query
             return web.json_response(JSON)
 
         app = web.Application()
@@ -1136,6 +1138,7 @@ class TestRegistry:
             nonlocal step
             step += 1
             headers: Dict[str, str]
+            assert "n" in request.query
             if step == 1:
                 assert "last" not in request.query
                 payload = {"repositories": ["bob/alpine", "jill/bananas"]}
