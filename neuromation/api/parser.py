@@ -10,9 +10,6 @@ from .url_utils import normalize_storage_path_uri, uri_from_cli
 from .utils import NoPublicConstructor
 
 
-ROOT_MOUNTPOINT = "/var/neuro"
-
-
 @dataclass(frozen=True)
 class SecretFile:
     secret_uri: URL
@@ -50,23 +47,23 @@ class Parser(metaclass=NoPublicConstructor):
             storage_uri=storage_uri, container_path=container_path, read_only=read_only
         )
 
-    def _build_volumes(self, input_volumes: Set[str]) -> Set[Volume]:
+    def _build_volumes(self, input_volumes: Set[str]) -> Sequence[Volume]:
         if "HOME" in input_volumes:
             raise ValueError("--volume=HOME no longer supported")
         if "ALL" in input_volumes:
             raise ValueError("--volume=ALL no longer supported")
 
-        return {self.volume(vol) for vol in input_volumes}
+        return [self.volume(vol) for vol in input_volumes]
 
-    def _build_secret_files(self, input_volumes: Set[str]) -> Set[SecretFile]:
-        secret_files: Set[SecretFile] = set()
+    def _build_secret_files(self, input_volumes: Set[str]) -> Sequence[SecretFile]:
+        secret_files: List[SecretFile] = []
         for volume in input_volumes:
             parts = volume.split(":")
             if len(parts) != 3:
                 raise ValueError(f"Invalid secret file specification '{volume}'")
             container_path = parts.pop()
             secret_uri = self._parse_secret_resource(":".join(parts))
-            secret_files.add(SecretFile(secret_uri, container_path))
+            secret_files.append(SecretFile(secret_uri, container_path))
         return secret_files
 
     def _parse_secret_resource(self, uri: str) -> URL:
@@ -137,7 +134,9 @@ class Parser(metaclass=NoPublicConstructor):
                 del env_dict[name]
         return secret_env_dict
 
-    def volumes(self, volume: Sequence[str]) -> Tuple[Set[Volume], Set[SecretFile]]:
+    def volumes(
+        self, volume: Sequence[str]
+    ) -> Tuple[Sequence[Volume], Sequence[SecretFile]]:
         input_secret_files = {vol for vol in volume if vol.startswith("secret:")}
         input_volumes = set(volume) - input_secret_files
         secret_files = self._build_secret_files(input_secret_files)

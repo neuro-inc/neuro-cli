@@ -1178,6 +1178,7 @@ async def run_job(
     )
 
     volumes, secret_files = root.client.parse.volumes(volume)
+    volumes = list(volumes)
 
     if pass_config:
         env_name = NEURO_STEAL_CONFIG
@@ -1185,7 +1186,7 @@ async def run_job(
             raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
         env_var, secret_volume = await upload_and_map_config(root)
         env_dict[NEURO_STEAL_CONFIG] = env_var
-        volumes.add(secret_volume)
+        volumes.append(secret_volume)
 
     if volumes:
         log.info(
