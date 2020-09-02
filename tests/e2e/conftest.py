@@ -185,6 +185,7 @@ class Helper:
                     JobStatus.PENDING,
                     JobStatus.RUNNING,
                     JobStatus.SUCCEEDED,
+                    JobStatus.CANCELLED,
                     JobStatus.FAILED,
                 },
             )

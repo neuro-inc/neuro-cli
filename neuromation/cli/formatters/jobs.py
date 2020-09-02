@@ -29,6 +29,7 @@ COLORS = {
     JobStatus.PENDING: "yellow",
     JobStatus.RUNNING: "blue",
     JobStatus.SUCCEEDED: "green",
+    JobStatus.CANCELLED: "green",
     JobStatus.FAILED: "red",
     JobStatus.UNKNOWN: "yellow",
 }
@@ -169,10 +170,15 @@ class JobStatusFormatter:
             JobStatus.RUNNING,
             JobStatus.FAILED,
             JobStatus.SUCCEEDED,
+            JobStatus.CANCELLED,
         ]:
             assert job_status.history.started_at is not None
             add("Started", job_status.history.started_at.isoformat())
-        if job_status.status in [JobStatus.FAILED, JobStatus.SUCCEEDED]:
+        if job_status.status in [
+            JobStatus.CANCELLED,
+            JobStatus.FAILED,
+            JobStatus.SUCCEEDED,
+        ]:
             assert job_status.history.finished_at is not None
             add("Finished", job_status.history.finished_at.isoformat())
             add("Exit code", str(job_status.history.exit_code))

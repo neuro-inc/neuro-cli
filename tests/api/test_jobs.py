@@ -1659,6 +1659,7 @@ async def test_list_filter_by_statuses(
         create_job_response("job-id-8", "pending"),
         create_job_response("job-id-9", "succeeded"),
         create_job_response("job-id-10", "failed"),
+        create_job_response("job-id-10", "cancelled"),
     ]
 
     async def handler(request: web.Request) -> web.Response:
@@ -1672,7 +1673,7 @@ async def test_list_filter_by_statuses(
     app.router.add_get("/jobs", handler)
     srv = await aiohttp_server(app)
 
-    statuses = {JobStatus.FAILED, JobStatus.SUCCEEDED}
+    statuses = {JobStatus.FAILED, JobStatus.SUCCEEDED, JobStatus.CANCELLED}
     async with make_client(srv.make_url("/")) as client:
         ret = [job async for job in client.jobs.list(statuses=statuses)]
 

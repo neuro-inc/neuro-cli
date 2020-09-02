@@ -1487,6 +1487,7 @@ class TestTabularJobRow:
             (JobStatus.RUNNING, "Feb 03 2017"),
             (JobStatus.FAILED, "Mar 04 2017"),
             (JobStatus.SUCCEEDED, "Mar 04 2017"),
+            (JobStatus.CANCELLED, "Mar 04 2017"),
         ],
     )
     def test_status_date_relation(self, status: JobStatus, date: str) -> None:
