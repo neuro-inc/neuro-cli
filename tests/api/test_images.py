@@ -6,6 +6,7 @@ import asynctest
 import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
+from aiohttp.hdrs import LINK
 from yarl import URL
 
 from neuromation.api import (
@@ -1097,6 +1098,8 @@ class TestRegistry:
         JSON = {"repositories": ["bob/alpine", "jill/bananas"]}
 
         async def handler(request: web.Request) -> web.Response:
+            assert "n" in request.query
+            assert "last" not in request.query
             return web.json_response(JSON)
 
         app = web.Application()
@@ -1125,6 +1128,197 @@ class TestRegistry:
                 owner="jill",
                 cluster_name="default",
                 registry=registry,
+            ),
+        }
+
+    async def test_ls_repositories_chunked(
+        self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
+    ) -> None:
+        step = 0
+
+        async def handler(request: web.Request) -> web.Response:
+            nonlocal step
+            step += 1
+            headers: Dict[str, str]
+            assert "n" in request.query
+            if step == 1:
+                assert "last" not in request.query
+                payload = {"repositories": ["bob/alpine", "jill/bananas"]}
+                headers = {LINK: f'<{catalog_url}?last=lsttkn>; rel="next"'}
+                return web.json_response(payload, headers=headers)
+            elif step == 2:
+                assert request.query["last"] == "lsttkn"
+                payload = {"repositories": ["alice/library/ubuntu"]}
+                headers = {LINK: f'<{catalog_url}?last=lsttkn2>; rel="next"'}
+                return web.json_response(payload, headers=headers)
+            elif step == 3:
+                assert request.query["last"] == "lsttkn2"
+                payload = {"repositories": []}
+                headers = {LINK: f'<{catalog_url}?last=lsttkn3>; rel="next"'}
+                return web.json_response(payload, headers=headers)
+            else:  # pragma: no cover
+                assert False
+
+        app = web.Application()
+        app.router.add_get("/v2/_catalog", handler)
+
+        srv = await aiohttp_server(app)
+        url = "http://platform"
+        registry_url = srv.make_url("/v2/")
+        catalog_url = registry_url / "_catalog"
+
+        async with make_client(url, registry_url=registry_url) as client:
+            ret = await client.images.ls()
+        assert step == 3  # All steps are passed
+
+        registry = _get_url_authority(registry_url)
+        assert registry is not None
+        assert set(ret) == {
+            RemoteImage.new_neuro_image(
+                "alpine",
+                tag=None,
+                owner="bob",
+                cluster_name="default",
+                registry=registry,
+            ),
+            RemoteImage.new_neuro_image(
+                "library/ubuntu",
+                tag=None,
+                owner="alice",
+                cluster_name="default",
+                registry=registry,
+            ),
+            RemoteImage.new_neuro_image(
+                "bananas",
+                tag=None,
+                owner="jill",
+                cluster_name="default",
+                registry=registry,
+            ),
+        }
+
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="aiodocker doesn't support Windows pipes yet"
+    )
+    async def test_ls_tags(
+        self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
+    ) -> None:
+        JSON = {"name": "test", "tags": ["alpha", "beta", "gamma"]}
+
+        async def handler(request: web.Request) -> web.Response:
+            assert "n" in request.query
+            assert "last" not in request.query
+            return web.json_response(JSON)
+
+        app = web.Application()
+        app.router.add_get("/v2/me/test/tags/list", handler)
+
+        srv = await aiohttp_server(app)
+        url = "http://platform"
+        registry_url = srv.make_url("/v2/")
+
+        async with make_client(url, registry_url=registry_url) as client:
+            image = RemoteImage.new_neuro_image(
+                name="test",
+                tag=None,
+                owner="me",
+                cluster_name="test-cluster",
+                registry="reg",
+            )
+            ret = await client.images.tags(image)
+
+        assert set(ret) == {
+            RemoteImage.new_neuro_image(
+                "test",
+                tag="alpha",
+                owner="me",
+                cluster_name="test-cluster",
+                registry="reg",
+            ),
+            RemoteImage.new_neuro_image(
+                "test",
+                tag="beta",
+                owner="me",
+                cluster_name="test-cluster",
+                registry="reg",
+            ),
+            RemoteImage.new_neuro_image(
+                "test",
+                tag="gamma",
+                owner="me",
+                cluster_name="test-cluster",
+                registry="reg",
+            ),
+        }
+
+    async def test_ls_tags_chunked(
+        self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
+    ) -> None:
+        step = 0
+
+        async def handler(request: web.Request) -> web.Response:
+            nonlocal step
+            step += 1
+            headers: Dict[str, str]
+            assert "n" in request.query
+            if step == 1:
+                assert "last" not in request.query
+                payload = {"name": "test", "tags": ["alpha", "beta"]}
+                headers = {LINK: f'<{tags_list_url}?last=lsttkn>; rel="next"'}
+                return web.json_response(payload, headers=headers)
+            elif step == 2:
+                assert request.query["last"] == "lsttkn"
+                payload = {"name": "test", "tags": ["gamma"]}
+                headers = {LINK: f'<{tags_list_url}?last=lsttkn2>; rel="next"'}
+                return web.json_response(payload, headers=headers)
+            elif step == 3:
+                assert request.query["last"] == "lsttkn2"
+                payload = {"name": "test", "tags": []}
+                headers = {LINK: f'<{tags_list_url}?last=lsttkn3>; rel="next"'}
+                return web.json_response(payload, headers=headers)
+            else:  # pragma: no cover
+                assert False
+
+        app = web.Application()
+        app.router.add_get("/v2/me/test/tags/list", handler)
+
+        srv = await aiohttp_server(app)
+        url = "http://platform"
+        registry_url = srv.make_url("/v2/")
+        tags_list_url = registry_url / "me/test/tags/list"
+
+        async with make_client(url, registry_url=registry_url) as client:
+            image = RemoteImage.new_neuro_image(
+                name="test",
+                tag=None,
+                owner="me",
+                cluster_name="test-cluster",
+                registry="reg",
+            )
+            ret = await client.images.tags(image)
+        assert step == 3  # All steps are passed
+
+        assert set(ret) == {
+            RemoteImage.new_neuro_image(
+                "test",
+                tag="alpha",
+                owner="me",
+                cluster_name="test-cluster",
+                registry="reg",
+            ),
+            RemoteImage.new_neuro_image(
+                "test",
+                tag="beta",
+                owner="me",
+                cluster_name="test-cluster",
+                registry="reg",
+            ),
+            RemoteImage.new_neuro_image(
+                "test",
+                tag="gamma",
+                owner="me",
+                cluster_name="test-cluster",
+                registry="reg",
             ),
         }
 
