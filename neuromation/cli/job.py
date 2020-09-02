@@ -1178,7 +1178,6 @@ async def run_job(
     )
 
     volumes, secret_files = root.client.parse.volumes(volume)
-    volumes = list(volumes)
 
     if pass_config:
         env_name = NEURO_STEAL_CONFIG

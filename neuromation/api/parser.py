@@ -47,7 +47,7 @@ class Parser(metaclass=NoPublicConstructor):
             storage_uri=storage_uri, container_path=container_path, read_only=read_only
         )
 
-    def _build_volumes(self, input_volumes: Set[str]) -> Sequence[Volume]:
+    def _build_volumes(self, input_volumes: Set[str]) -> List[Volume]:
         if "HOME" in input_volumes:
             raise ValueError("--volume=HOME no longer supported")
         if "ALL" in input_volumes:
@@ -55,7 +55,7 @@ class Parser(metaclass=NoPublicConstructor):
 
         return [self.volume(vol) for vol in input_volumes]
 
-    def _build_secret_files(self, input_volumes: Set[str]) -> Sequence[SecretFile]:
+    def _build_secret_files(self, input_volumes: Set[str]) -> List[SecretFile]:
         secret_files: List[SecretFile] = []
         for volume in input_volumes:
             parts = volume.split(":")
@@ -134,9 +134,7 @@ class Parser(metaclass=NoPublicConstructor):
                 del env_dict[name]
         return secret_env_dict
 
-    def volumes(
-        self, volume: Sequence[str]
-    ) -> Tuple[Sequence[Volume], Sequence[SecretFile]]:
+    def volumes(self, volume: Sequence[str]) -> Tuple[List[Volume], List[SecretFile]]:
         input_secret_files = {vol for vol in volume if vol.startswith("secret:")}
         input_volumes = set(volume) - input_secret_files
         secret_files = self._build_secret_files(input_secret_files)
