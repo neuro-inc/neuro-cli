@@ -1,1 +1,0 @@
-Colorize `neuro ps` output.

@@ -5,6 +5,28 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.9.2 (2020-09-02)
+===============================
+
+Features
+--------
+
+
+- Added support of `CANCELED` state. ([#1696](https://github.com/neuromation/platform-api-clients/issues/1696))
+
+- Added support of error messages in streamed delete response. ([#1697](https://github.com/neuromation/platform-api-clients/issues/1697))
+
+- Colorize `neuro ps` output. ([#1698](https://github.com/neuromation/platform-api-clients/issues/1698))
+
+- Added way to destroy browser session by during `neuro logout`. ([#1699](https://github.com/neuromation/platform-api-clients/issues/1699))
+
+- Remove `--volume=ALL` option from CLI and move volume and env variable parsing from CLI module to the `Parser` class in API ([#1707](https://github.com/neuromation/platform-api-clients/issues/1707))
+
+- Command `neuro acl list` accepts now a URI prefix for filtering. API functions `users.get_acl()` and `users.get_shares()` accept now the *uri* argument. ([#1708](https://github.com/neuromation/platform-api-clients/issues/1708))
+
+- `neuro run` supports now multiple `--env-file` options. ([#1710](https://github.com/neuromation/platform-api-clients/issues/1710))
+
+
 Neuromation 20.8.19 (2020-08-19)
 ================================
 

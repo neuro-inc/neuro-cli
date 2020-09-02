@@ -1,1 +1,0 @@
-Remove `--volume=ALL` option from CLI and move volume and env variable parsing from CLI module to the `Parser` class in API

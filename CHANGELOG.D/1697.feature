@@ -1,1 +1,0 @@
-Added support of error messages in streamed delete response.

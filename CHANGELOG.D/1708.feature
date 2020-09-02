@@ -1,1 +1,0 @@
-Command `neuro acl list` accepts now a URI prefix for filtering. API functions `users.get_acl()` and `users.get_shares()` accept now the *uri* argument.

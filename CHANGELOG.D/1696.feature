@@ -1,1 +1,0 @@
-Added support of `CANCELED` state.
