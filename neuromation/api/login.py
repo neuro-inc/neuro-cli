@@ -274,7 +274,9 @@ class _AuthToken:
             now = time.time()
         expiration_time = now + expires_in * expiration_ratio
         return cls(
-            token=token, expiration_time=expiration_time, refresh_token=refresh_token,
+            token=token,
+            expiration_time=expiration_time,
+            refresh_token=refresh_token,
         )
 
     @classmethod

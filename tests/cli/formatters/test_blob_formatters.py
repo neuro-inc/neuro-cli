@@ -66,8 +66,8 @@ class TestBlobFormatter:
         PrefixListing(bucket_name="neuro-shared-bucket", prefix="folder2/"),
     ]
 
-    list_results: List[ListResult] = (
-        cast(List[ListResult], blobs) + cast(List[ListResult], folders)
+    list_results: List[ListResult] = cast(List[ListResult], blobs) + cast(
+        List[ListResult], folders
     )
 
     def test_simple_formatter(self) -> None:

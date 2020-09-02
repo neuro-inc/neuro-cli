@@ -832,7 +832,9 @@ class TestImageParser:
         parsed = my_parser.parse_remote(image)
         # NOTE: "owner" is parsed only for images in neuromation registry
         assert parsed == RemoteImage.new_external_image(
-            name="bob/library/ubuntu", tag="v10.04", registry="example.com:9999",
+            name="bob/library/ubuntu",
+            tag="v10.04",
+            registry="example.com:9999",
         )
 
 

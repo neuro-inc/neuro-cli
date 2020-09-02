@@ -257,7 +257,9 @@ async def test_normalize_storage_path_uri__tilde_in_relative_path_2(
     assert str(url) == "storage://test-cluster/user/~/path/to/file.txt"
 
 
-async def test_normalize_local_path_uri__tilde_in_relative_path_2(pwd: Path,) -> None:
+async def test_normalize_local_path_uri__tilde_in_relative_path_2(
+    pwd: Path,
+) -> None:
     url = URL("file:./~/path/to/file.txt")
     url = normalize_local_path_uri(url)
     assert url.scheme == "file"

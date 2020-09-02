@@ -144,7 +144,8 @@ class _NoopProxy:
 
 
 def queue_calls(
-    any_obj: Any, allow_any_for_none: bool = True,
+    any_obj: Any,
+    allow_any_for_none: bool = True,
 ) -> Tuple["asyncio.Queue[QueuedCall]", Any]:  # Sadly, but there is now way to annotate
     """Add calls to asyncio.Queue instead executing them directly
 

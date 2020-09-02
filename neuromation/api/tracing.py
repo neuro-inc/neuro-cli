@@ -33,8 +33,7 @@ def _gen_span_id() -> str:
 
 
 def _update_headers(headers: "CIMultiDict[str]", trace_id: str, span_id: str) -> None:
-    """Creates dict with zipkin single header format.
-    """
+    """Creates dict with zipkin single header format."""
     # b3={TraceId}-{SpanId}-{SamplingState}-{ParentSpanId}
     headers["b3"] = f"{trace_id}-{span_id}"
 

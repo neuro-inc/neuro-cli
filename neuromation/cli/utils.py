@@ -94,7 +94,8 @@ async def _run_async_function(
 
 
 def _wrap_async_callback(
-    callback: Callable[..., Awaitable[_T]], init_client: bool = True,
+    callback: Callable[..., Awaitable[_T]],
+    init_client: bool = True,
 ) -> Callable[..., _T]:
     assert inspect.iscoroutinefunction(callback)
 
@@ -260,7 +261,8 @@ class Command(NeuroClickMixin, click.Command):
         if wrap_async:
             callback = _wrap_async_callback(callback, init_client=init_client)
         super().__init__(
-            callback=callback, **kwargs,
+            callback=callback,
+            **kwargs,
         )
         self.init_client = init_client
 
@@ -473,7 +475,7 @@ SHARE_SCHEMES = ("storage", "image", "job", "blob", "role")
 
 
 def parse_resource_for_sharing(uri: str, root: Root) -> URL:
-    """ Parses the neuromation resource URI string.
+    """Parses the neuromation resource URI string.
     Available schemes: storage, image, job. For image URIs, tags are not allowed.
     """
     if uri.startswith("image:"):
@@ -493,7 +495,7 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
 
 
 def parse_file_resource(uri: str, root: Root) -> URL:
-    """ Parses the neuromation resource URI string.
+    """Parses the neuromation resource URI string.
     Available schemes: file, storage.
     """
     return uri_from_cli(
@@ -523,7 +525,10 @@ def parse_blob_or_file_resource(uri: str, root: Root) -> URL:
 
 def parse_secret_resource(uri: str, root: Root) -> URL:
     return uri_from_cli(
-        uri, root.client.username, root.client.cluster_name, allowed_schemes=("secret"),
+        uri,
+        root.client.username,
+        root.client.cluster_name,
+        allowed_schemes=("secret"),
     )
 
 

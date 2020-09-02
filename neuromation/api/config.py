@@ -521,7 +521,10 @@ def _check_sections(
 
 
 def _check_item(
-    val: Any, validator: Any, full_name: str, filename: Union[str, "os.PathLike[str]"],
+    val: Any,
+    validator: Any,
+    full_name: str,
+    filename: Union[str, "os.PathLike[str]"],
 ) -> None:
     if isinstance(validator, tuple):
         container_type, item_type = validator

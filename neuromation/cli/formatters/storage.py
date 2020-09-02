@@ -578,7 +578,8 @@ class DeleteProgress(AbstractDeleteProgress):
 
     def delete(self, data: StorageProgressDelete) -> None:
         url_label = self.fmt_url(
-            data.uri, FileStatusType.DIRECTORY if data.is_dir else FileStatusType.FILE,
+            data.uri,
+            FileStatusType.DIRECTORY if data.is_dir else FileStatusType.FILE,
         )
         click.echo(f"Removed: {url_label}")
 

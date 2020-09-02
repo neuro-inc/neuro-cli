@@ -22,7 +22,10 @@ from .utils import NoPublicConstructor
 
 class Client(metaclass=NoPublicConstructor):
     def __init__(
-        self, session: aiohttp.ClientSession, path: Path, trace_id: Optional[str],
+        self,
+        session: aiohttp.ClientSession,
+        path: Path,
+        trace_id: Optional[str],
     ) -> None:
         self._closed = False
         self._trace_id = trace_id
@@ -34,7 +37,9 @@ class Client(metaclass=NoPublicConstructor):
         # the storage cookie session
         self._config._load()
         with self._config._open_db() as db:
-            self._core._post_init(db,)
+            self._core._post_init(
+                db,
+            )
         self._parser = Parser._create(self._config)
         self._admin = _Admin._create(self._core, self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)

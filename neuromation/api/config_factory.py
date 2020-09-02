@@ -156,7 +156,8 @@ class Factory:
         return config
 
     async def logout(
-        self, show_browser_cb: Callable[[URL], Awaitable[None]] = None,
+        self,
+        show_browser_cb: Callable[[URL], Awaitable[None]] = None,
     ) -> None:
         if show_browser_cb is not None:
             try:

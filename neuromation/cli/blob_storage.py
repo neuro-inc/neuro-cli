@@ -106,7 +106,9 @@ async def ls(
 
             try:
                 blobs, prefixes = await blob_storage.list_blobs(
-                    bucket_name=bucket_name, prefix=key, recursive=recursive,
+                    bucket_name=bucket_name,
+                    prefix=key,
+                    recursive=recursive,
                 )
                 items = cast(Sequence[BlobListings], chain(blobs, prefixes))
             except ResourceNotFound as error:

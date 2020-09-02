@@ -169,7 +169,10 @@ def test_load_cookies_valid() -> None:
         )
         assert [
             _make_cookie(
-                "NEURO_STORAGEAPI_SESSION", "cookie-value", "https://dev.neu.ro", "/",
+                "NEURO_STORAGEAPI_SESSION",
+                "cookie-value",
+                "https://dev.neu.ro",
+                "/",
             )
         ] == _load_cookies(db, now=now)
 
@@ -179,11 +182,17 @@ def test_save_load_multiple_cookies() -> None:
 
     with sqlite3.connect(":memory:") as db:
         c1 = _make_cookie(
-            "NEURO_STORAGEAPI_SESSION", "cookie-value", "https://dev.neu.ro", "/",
+            "NEURO_STORAGEAPI_SESSION",
+            "cookie-value",
+            "https://dev.neu.ro",
+            "/",
         )
 
         c2 = _make_cookie(
-            "NEURO_REGISTRYAPI_SESSION", "cookie-value", "https://dev.neu.ro", "/",
+            "NEURO_REGISTRYAPI_SESSION",
+            "cookie-value",
+            "https://dev.neu.ro",
+            "/",
         )
 
         _save_cookies(db, [c1, c2], now=now)
@@ -196,17 +205,26 @@ def test_save_load_multiple_cookies_last_stamps() -> None:
 
     with sqlite3.connect(":memory:") as db:
         c1 = _make_cookie(
-            "NEURO_STORAGEAPI_SESSION", "cookie-value", "https://dev.neu.ro", "/",
+            "NEURO_STORAGEAPI_SESSION",
+            "cookie-value",
+            "https://dev.neu.ro",
+            "/",
         )
 
         c2 = _make_cookie(
-            "NEURO_REGISTRYAPI_SESSION", "cookie-value", "https://dev.neu.ro", "/",
+            "NEURO_REGISTRYAPI_SESSION",
+            "cookie-value",
+            "https://dev.neu.ro",
+            "/",
         )
 
         _save_cookies(db, [c1, c2], now=now)
 
         c3 = _make_cookie(
-            "NEURO_REGISTRYAPI_SESSION", "cookie-value2", "https://dev.neu.ro", "/",
+            "NEURO_REGISTRYAPI_SESSION",
+            "cookie-value2",
+            "https://dev.neu.ro",
+            "/",
         )
 
         _save_cookies(db, [c3], now=now + 1)

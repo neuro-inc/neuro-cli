@@ -13,7 +13,7 @@ CLEAR_LINE_TAIL = f"{CSI}0K"
 
 class AbstractPrinter(abc.ABC):
     """
-        Printer is mechanism for displaying some text to end-user
+    Printer is mechanism for displaying some text to end-user
     """
 
     def close(self) -> str:
@@ -26,9 +26,9 @@ class AbstractPrinter(abc.ABC):
 
 class TTYPrinter(AbstractPrinter):
     """
-        TTYPrinter allow to output texts in specified bu number lines
-        Cursor will be keeped after latest line. Then if exception raised
-        error message will be printed after reported before lines
+    TTYPrinter allow to output texts in specified bu number lines
+    Cursor will be keeped after latest line. Then if exception raised
+    error message will be printed after reported before lines
     """
 
     def __init__(self) -> None:

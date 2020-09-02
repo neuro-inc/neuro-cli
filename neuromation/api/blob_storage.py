@@ -331,8 +331,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
 
     @asynccontextmanager
     async def get_blob(self, bucket_name: str, key: str) -> AsyncIterator[Blob]:
-        """ Return blob status and body stream of the blob
-        """
+        """Return blob status and body stream of the blob"""
         url = self._config.blob_storage_url / "o" / bucket_name / key
         auth = await self._config._api_auth()
 
@@ -342,8 +341,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
             yield Blob(resp, stats)
 
     async def fetch_blob(self, bucket_name: str, key: str) -> AsyncIterator[bytes]:
-        """ Return only bytes data of the blob
-        """
+        """Return only bytes data of the blob"""
         async with self.get_blob(bucket_name, key) as blob:
             async for data in blob.body_stream.iter_any():
                 yield data
@@ -391,7 +389,12 @@ class BlobStorage(metaclass=NoPublicConstructor):
     # high-level helpers
 
     async def _iterate_file(
-        self, src: Path, dst: URL, size: int, *, progress: _AsyncAbstractFileProgress,
+        self,
+        src: Path,
+        dst: URL,
+        size: int,
+        *,
+        progress: _AsyncAbstractFileProgress,
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
         src_url = URL(src.as_uri())
@@ -420,7 +423,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         return bucket_name, key
 
     async def _is_dir(self, uri: URL) -> bool:
-        """ Check if provided path is an dir or serves as a prefix to a different key,
+        """Check if provided path is an dir or serves as a prefix to a different key,
         as it would result in name conflicts on download.
         """
         if uri.path.endswith("/"):
@@ -445,13 +448,17 @@ class BlobStorage(metaclass=NoPublicConstructor):
         await self.put_blob(bucket_name=bucket_name, key=key, body=b"")
 
     def make_url(self, bucket_name: str, key: str) -> URL:
-        """ Helper function to let users create correct URL's for upload/download from
+        """Helper function to let users create correct URL's for upload/download from
         bucket_name and key.
         """
         return _format_bucket_uri(bucket_name, key)
 
     async def upload_file(
-        self, src: URL, dst: URL, *, progress: Optional[AbstractFileProgress] = None,
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
         dst = normalize_blob_path_uri(dst, self._config.cluster_name)
@@ -495,7 +502,11 @@ class BlobStorage(metaclass=NoPublicConstructor):
         await run_progress(queue, self._upload_file(path, dst, progress=async_progress))
 
     async def _upload_file(
-        self, src_path: Path, dst: URL, *, progress: _AsyncAbstractFileProgress,
+        self,
+        src_path: Path,
+        dst: URL,
+        *,
+        progress: _AsyncAbstractFileProgress,
     ) -> None:
         bucket_name, key = self._extract_bucket_and_key(dst)
         # Be careful not to have too many opened files.

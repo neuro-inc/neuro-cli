@@ -466,7 +466,10 @@ class DetailedJobStartProgress(JobStartProgress):
                 limit = humanize.naturaldelta(datetime.timedelta(seconds=job.life_span))
                 out.append(
                     style("√ ", fg="green")
-                    + style(f"The job will die in {limit}. ", fg="yellow",)
+                    + style(
+                        f"The job will die in {limit}. ",
+                        fg="yellow",
+                    )
                     + "See --life-span option documentation for details.",
                 )
             self._printer.print("\n".join(out))
@@ -585,7 +588,8 @@ class DetailedJobStopProgress(JobStopProgress):
         if not self._color:
             msg = unstyle(msg)
         self._printer.print(
-            msg, lineno=self._lineno,
+            msg,
+            lineno=self._lineno,
         )
 
     def timeout(self, job: JobDescription) -> None:
@@ -677,7 +681,8 @@ class DetailedExecStopProgress(ExecStopProgress):
             msg = style("√", fg="green") + " Stopped"
 
         self._printer.print(
-            msg, lineno=self._lineno,
+            msg,
+            lineno=self._lineno,
         )
 
     def timeout(self) -> None:

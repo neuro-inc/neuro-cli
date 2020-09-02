@@ -385,7 +385,7 @@ class Helper:
         self, job_id: str, expected: str, flags: int = 0
     ) -> None:
         """
-            Wait until job output satisfies given regexp
+        Wait until job output satisfies given regexp
         """
         __tracebackhide__ = True
 
@@ -595,7 +595,7 @@ class Helper:
     @run_async
     async def check_http_get(self, url: Union[URL, str]) -> str:
         """
-            Try to fetch given url few times.
+        Try to fetch given url few times.
         """
         __tracebackhide__ = True
         async with aiohttp.ClientSession() as session:
