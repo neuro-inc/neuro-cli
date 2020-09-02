@@ -40,8 +40,8 @@ class Client(metaclass=NoPublicConstructor):
         self._jobs = Jobs._create(self._core, self._config, self._parser)
         self._blob_storage = BlobStorage._create(self._core, self._config)
         self._storage = Storage._create(self._core, self._config)
-        self._users = Users._create(self._core, self._config)
         self._quota = _Quota._create(self._core, self._config)
+        self._users = Users._create(self._core, self._config)
         self._secrets = Secrets._create(self._core, self._config)
         self._images: Optional[Images] = None
 

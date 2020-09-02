@@ -829,24 +829,8 @@ def test_job_run_volume_all(helper: Helper) -> None:
     img = UBUNTU_IMAGE_NAME
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        # first, run without --volume=ALL
-        captured = helper.run_cli(["--quiet", "run", "-T", img, command])
-    assert cm.value.returncode == 1
-
-    # then, run with --volume=ALL
-    captured = helper.run_cli(["run", "-T", "--volume=ALL", img, command])
-    msg = (
-        "Storage mountpoints will be available as the environment variables:\n"
-        f"  NEUROMATION_ROOT={root_mountpoint}\n"
-        f"  NEUROMATION_HOME={root_mountpoint}/{helper.username}"
-    )
-    assert msg in captured.out
-    found_job_ids = re.findall("Job ID: (job-.+)", captured.out)
-    assert len(found_job_ids) == 1
-    job_id = found_job_ids[0]
-    helper.wait_job_change_state_to(
-        job_id, JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
-    )
+        helper.run_cli(["run", "-T", "--volume=ALL", img, command])
+    assert cm.value.returncode == 127
 
 
 @pytest.mark.e2e
