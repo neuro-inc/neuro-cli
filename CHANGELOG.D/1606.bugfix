@@ -1,1 +1,1 @@
-`neuro image ls` can now output more than 100 images.
+Commands `neuro image ls` and `neuro image tags` and corresponding API `images.ls()` and `images.tags()` can now return more than 100 items.
