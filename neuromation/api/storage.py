@@ -372,7 +372,11 @@ class Storage(metaclass=NoPublicConstructor):
     # high-level helpers
 
     async def _iterate_file(
-        self, src: Path, dst: URL, *, progress: _AsyncAbstractFileProgress,
+        self,
+        src: Path,
+        dst: URL,
+        *,
+        progress: _AsyncAbstractFileProgress,
     ) -> AsyncIterator[bytes]:
         loop = asyncio.get_event_loop()
         src_url = URL(src.as_uri())
@@ -448,12 +452,17 @@ class Storage(metaclass=NoPublicConstructor):
         await run_progress(queue, self._upload_file(path, dst, progress=async_progress))
 
     async def _upload_file(
-        self, src_path: Path, dst: URL, *, progress: _AsyncAbstractFileProgress,
+        self,
+        src_path: Path,
+        dst: URL,
+        *,
+        progress: _AsyncAbstractFileProgress,
     ) -> None:
         for retry in retries(f"Fail to upload {dst}"):
             async with retry:
                 await self.create(
-                    dst, self._iterate_file(src_path, dst, progress=progress),
+                    dst,
+                    self._iterate_file(src_path, dst, progress=progress),
                 )
 
     async def upload_dir(

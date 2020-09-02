@@ -69,7 +69,12 @@ async def _add_record(
         if pypi is None:
             return
         inserts.append(
-            (pypi["package"], pypi["version"], pypi["uploaded"], pypi["checked"],)
+            (
+                pypi["package"],
+                pypi["version"],
+                pypi["uploaded"],
+                pypi["checked"],
+            )
         )
 
 

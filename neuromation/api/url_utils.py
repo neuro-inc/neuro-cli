@@ -95,8 +95,7 @@ def normalize_blob_path_uri(uri: URL, cluster_name: str) -> URL:
 
 
 def _normalize_uri(resource: Union[URL, str], username: str, cluster_name: str) -> URL:
-    """ Normalize all other user-bound URI's like jobs, storage, images, etc.
-    """
+    """Normalize all other user-bound URI's like jobs, storage, images, etc."""
     uri = resource if isinstance(resource, URL) else URL(resource)
     path = uri.path
     if (uri.host or path.lstrip("/")).startswith("~"):

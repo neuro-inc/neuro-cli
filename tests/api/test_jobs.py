@@ -935,7 +935,9 @@ async def test_job_run_with_tags(
             http=HTTPPort(8181),
         )
         ret = await client.jobs.run(
-            container, is_preemptible=False, tags=["t1", "t2", "t3"],
+            container,
+            is_preemptible=False,
+            tags=["t1", "t2", "t3"],
         )
 
         assert ret == _job_description_from_api(JSON, client.parse)
@@ -1103,7 +1105,11 @@ async def test_job_run_with_relative_volume_uris(
         resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
         volumes: List[Volume] = [
             Volume(URL("storage:path"), "/container/my_path", False),
-            Volume(URL("storage:/otheruser/path"), "/container/other_user_path", True,),
+            Volume(
+                URL("storage:/otheruser/path"),
+                "/container/other_user_path",
+                True,
+            ),
             Volume(
                 URL("storage://othercluster/otheruser/path"),
                 "/container/other_cluster_path",

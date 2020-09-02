@@ -450,7 +450,8 @@ async def test_resolve_job_id__from_uri__missing_job_id_2(
 
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(
-            ValueError, match="Invalid job URI: cluster_name != 'default'",
+            ValueError,
+            match="Invalid job URI: cluster_name != 'default'",
         ):
             await resolve_job(uri, client=client, status={JobStatus.RUNNING})
 

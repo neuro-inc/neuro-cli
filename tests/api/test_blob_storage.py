@@ -127,10 +127,10 @@ def blob_storage_contents() -> _ContentsObj:
 
 @pytest.fixture
 async def blob_storage_server(
-    aiohttp_server: _TestServerFactory, blob_storage_contents: _ContentsObj,
+    aiohttp_server: _TestServerFactory,
+    blob_storage_contents: _ContentsObj,
 ) -> Any:
-    """ Minimal functional Blob Storage server implementation
-    """
+    """Minimal functional Blob Storage server implementation"""
     CONTENTS = blob_storage_contents
 
     def with_keys(d: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
@@ -266,10 +266,14 @@ async def test_blob_storage_list_buckets(
 
     assert ret == [
         BucketListing(
-            name="foo", creation_time=int(mtime1.timestamp()), permission=Action.READ,
+            name="foo",
+            creation_time=int(mtime1.timestamp()),
+            permission=Action.READ,
         ),
         BucketListing(
-            name="bar", creation_time=int(mtime2.timestamp()), permission=Action.READ,
+            name="bar",
+            creation_time=int(mtime2.timestamp()),
+            permission=Action.READ,
         ),
     ]
 
@@ -632,7 +636,10 @@ async def test_blob_storage_delete_blob(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        res = await client.blob_storage.delete_blob(bucket_name=bucket_name, key=key,)
+        res = await client.blob_storage.delete_blob(
+            bucket_name=bucket_name,
+            key=key,
+        )
         assert res is None
 
 
@@ -872,7 +879,8 @@ async def test_blob_storage_upload_recursive_src_is_a_file(
 
 
 async def test_blob_storage_upload_recursive_target_is_a_file(
-    blob_storage_server: Any, make_client: _MakeClient,
+    blob_storage_server: Any,
+    make_client: _MakeClient,
 ) -> None:
 
     async with make_client(blob_storage_server.make_url("/")) as client:

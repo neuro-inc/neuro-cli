@@ -55,7 +55,9 @@ class _Core:
     """
 
     def __init__(
-        self, session: aiohttp.ClientSession, trace_id: Optional[str],
+        self,
+        session: aiohttp.ClientSession,
+        trace_id: Optional[str],
     ) -> None:
         self._session = session
         self._trace_id = trace_id
@@ -69,7 +71,10 @@ class _Core:
         }
         self._prev_cookie: Optional[Morsel[str]] = None
 
-    def _post_init(self, db: sqlite3.Connection,) -> None:
+    def _post_init(
+        self,
+        db: sqlite3.Connection,
+    ) -> None:
         for cookie in _load_cookies(db):
             self._session.cookie_jar.update_cookies(
                 {cookie.key: cookie}  # type: ignore

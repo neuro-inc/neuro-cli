@@ -222,7 +222,8 @@ class TestQuotaInfoFormatter:
 class TestQuotaFormatter:
     def test_output(self) -> None:
         quota = _Quota(
-            total_gpu_run_time_minutes=321, total_non_gpu_run_time_minutes=123,
+            total_gpu_run_time_minutes=321,
+            total_non_gpu_run_time_minutes=123,
         )
         out = QuotaFormatter()(quota)
         assert out == "\n".join(

@@ -364,7 +364,10 @@ async def test_remove_cluster_user(
 
     async def handle_remove_cluster_user(request: web.Request) -> web.StreamResponse:
         requested_cluster_users.append(
-            (request.match_info["cluster_name"], request.match_info["user_name"],)
+            (
+                request.match_info["cluster_name"],
+                request.match_info["user_name"],
+            )
         )
         return web.Response(status=HTTPNoContent.status_code)
 
@@ -391,7 +394,10 @@ async def test_set_user_quota(
         request: web.Request,
     ) -> web.StreamResponse:
         requested_cluster_users.append(
-            (request.match_info["cluster_name"], request.match_info["user_name"],)
+            (
+                request.match_info["cluster_name"],
+                request.match_info["user_name"],
+            )
         )
         payload = await request.json()
         requested_payloads.append(dict(payload))
@@ -436,7 +442,10 @@ async def test_add_user_quota(
         request: web.Request,
     ) -> web.StreamResponse:
         requested_cluster_users.append(
-            (request.match_info["cluster_name"], request.match_info["user_name"],)
+            (
+                request.match_info["cluster_name"],
+                request.match_info["user_name"],
+            )
         )
         payload = await request.json()
         requested_payloads.append(dict(payload))
@@ -478,12 +487,15 @@ async def test_get_cloud_provider_options(
 ) -> None:
     sample_response = {"foo": "bar"}
 
-    async def handle_cloud_providers(request: web.Request,) -> web.Response:
+    async def handle_cloud_providers(
+        request: web.Request,
+    ) -> web.Response:
         return web.json_response(sample_response, status=HTTPOk.status_code)
 
     app = web.Application()
     app.router.add_get(
-        "/api/v1/cloud_providers/aws", handle_cloud_providers,
+        "/api/v1/cloud_providers/aws",
+        handle_cloud_providers,
     )
 
     srv = await aiohttp_server(app)

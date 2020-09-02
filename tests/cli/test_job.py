@@ -262,7 +262,10 @@ async def test_calc_life_span_default_life_span_all_keys(
 
 
 async def test_calc_default_life_span_invalid(
-    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient,
+    caplog: Any,
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
 ) -> None:
     async with make_client("https://example.com") as client:
         monkeypatch.chdir(tmp_path)
@@ -270,13 +273,17 @@ async def test_calc_default_life_span_invalid(
         # empty config
         local_conf.write_text(toml.dumps({"job": {"life-span": "invalid"}}))
         with pytest.raises(
-            click.UsageError, match="Could not parse time delta",
+            click.UsageError,
+            match="Could not parse time delta",
         ):
             await calc_life_span(client, None)
 
 
 async def test_calc_default_life_span_default_value(
-    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient,
+    caplog: Any,
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
 ) -> None:
     async with make_client("https://example.com") as client:
         monkeypatch.chdir(tmp_path)

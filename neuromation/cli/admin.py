@@ -29,7 +29,9 @@ async def get_clusters(root: Root) -> None:
     fmt = ClustersFormatter()
     clusters = await root.client._admin.list_clusters()
     pager_maybe(
-        fmt(clusters.values()), root.tty, root.terminal_size,
+        fmt(clusters.values()),
+        root.tty,
+        root.terminal_size,
     )
 
 

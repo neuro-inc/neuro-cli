@@ -620,7 +620,10 @@ async def mv(
     help="Print the size in a more human readable way.",
 )
 @option(
-    "--size", "-s", is_flag=True, help="Print the size in bytes of each file.",
+    "--size",
+    "-s",
+    is_flag=True,
+    help="Print the size in bytes of each file.",
 )
 @option(
     "--sort",

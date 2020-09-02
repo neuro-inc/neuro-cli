@@ -59,8 +59,7 @@ class FileFilter:
 
 
 def translate(pat: str) -> str:
-    """Translate a shell PATTERN to a regular expression.
-    """
+    """Translate a shell PATTERN to a regular expression."""
 
     i = 0
     n = len(pat)
@@ -154,6 +153,5 @@ def _strip_trailing_spaces(s: str) -> str:
 
 
 def escape(pathname: str) -> str:
-    """Escape all special characters.
-    """
+    """Escape all special characters."""
     return re.sub(r"([*?[\\])", r"[\1]", pathname)

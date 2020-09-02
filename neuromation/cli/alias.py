@@ -194,7 +194,11 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
         description = description.strip()
         ret.append(
             Option(
-                opts, is_flag=is_flag, multiple=True, metavar=metavar, help=description,
+                opts,
+                is_flag=is_flag,
+                multiple=True,
+                metavar=metavar,
+                help=description,
             )
         )
     return ret  # type: ignore

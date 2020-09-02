@@ -1502,7 +1502,8 @@ class TestTabularJobRow:
         image_fmtr = image_formatter(uri_formatter=uri_fmtr)
         row = TabularJobRow.from_job(
             self._job_descr_with_status(
-                JobStatus.PENDING, "registry-test.neu.ro/bob/swiss-box:red",
+                JobStatus.PENDING,
+                "registry-test.neu.ro/bob/swiss-box:red",
             ),
             "bob",
             image_formatter=image_fmtr,
@@ -1513,7 +1514,8 @@ class TestTabularJobRow:
     def test_image_from_registry_parsing_long(self) -> None:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(
-                JobStatus.PENDING, "registry-test.neu.ro/bob/swiss-box:red",
+                JobStatus.PENDING,
+                "registry-test.neu.ro/bob/swiss-box:red",
             ),
             "owner",
             image_formatter=str,

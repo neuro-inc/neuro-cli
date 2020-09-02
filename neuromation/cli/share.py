@@ -35,18 +35,18 @@ def acl() -> None:
 @argument("permission", type=click.Choice(["read", "write", "manage"]))
 async def grant(root: Root, uri: str, user: str, permission: str) -> None:
     """
-        Shares resource with another user.
+    Shares resource with another user.
 
-        URI shared resource.
+    URI shared resource.
 
-        USER username to share resource with.
+    USER username to share resource with.
 
-        PERMISSION sharing access right: read, write, or manage.
+    PERMISSION sharing access right: read, write, or manage.
 
-        Examples:
-        neuro acl grant storage:///sample_data/ alice manage
-        neuro acl grant image:resnet50 bob read
-        neuro acl grant job:///my_job_id alice write
+    Examples:
+    neuro acl grant storage:///sample_data/ alice manage
+    neuro acl grant image:resnet50 bob read
+    neuro acl grant job:///my_job_id alice write
     """
     try:
         uri_obj = parse_resource_for_sharing(uri, root)
@@ -65,16 +65,16 @@ async def grant(root: Root, uri: str, user: str, permission: str) -> None:
 @argument("user")
 async def revoke(root: Root, uri: str, user: str) -> None:
     """
-        Revoke user access from another user.
+    Revoke user access from another user.
 
-        URI previously shared resource to revoke.
+    URI previously shared resource to revoke.
 
-        USER to revoke URI resource from.
+    USER to revoke URI resource from.
 
-        Examples:
-        neuro acl revoke storage:///sample_data/ alice
-        neuro acl revoke image:resnet50 bob
-        neuro acl revoke job:///my_job_id alice
+    Examples:
+    neuro acl revoke storage:///sample_data/ alice
+    neuro acl revoke image:resnet50 bob
+    neuro acl revoke job:///my_job_id alice
     """
     try:
         uri_obj = parse_resource_for_sharing(uri, root)
@@ -89,7 +89,10 @@ async def revoke(root: Root, uri: str, user: str) -> None:
 @command()
 @argument("uri", required=False)
 @option(
-    "-u", "username", default=None, help="Use specified user or role.",
+    "-u",
+    "username",
+    default=None,
+    help="Use specified user or role.",
 )
 @option(
     "-s",
@@ -114,17 +117,17 @@ async def list(
     full_uri: bool,
 ) -> None:
     """
-        List shared resources.
+    List shared resources.
 
-        The command displays a list of resources shared BY current user (default).
+    The command displays a list of resources shared BY current user (default).
 
-        To display a list of resources shared WITH current user apply --shared option.
+    To display a list of resources shared WITH current user apply --shared option.
 
-        Examples:
-        neuro acl list
-        neuro acl list storage://
-        neuro acl list --shared
-        neuro acl list --shared image://
+    Examples:
+    neuro acl list
+    neuro acl list storage://
+    neuro acl list --shared
+    neuro acl list --shared image://
     """
     if username is None:
         username = root.client.username
@@ -175,10 +178,10 @@ async def list(
 @argument("role_name")
 async def add_role(root: Root, role_name: str) -> None:
     """
-        Add new role.
+    Add new role.
 
-        Examples:
-        neuro acl add-role mycompany/subdivision
+    Examples:
+    neuro acl add-role mycompany/subdivision
     """
     await root.client.users.add(role_name)
 
@@ -187,10 +190,10 @@ async def add_role(root: Root, role_name: str) -> None:
 @argument("role_name")
 async def remove_role(root: Root, role_name: str) -> None:
     """
-        Remove existing role.
+    Remove existing role.
 
-        Examples:
-        neuro acl remove-role mycompany/subdivision
+    Examples:
+    neuro acl remove-role mycompany/subdivision
     """
     await root.client.users.remove(role_name)
 

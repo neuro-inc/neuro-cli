@@ -478,7 +478,10 @@ async def test_storage_rm_file_progress(
         await client.storage.rm(URL("storage:file"), progress=progress)
 
     progress.delete.assert_called_with(
-        StorageProgressDelete(uri=URL("storage://default/user/file"), is_dir=False,)
+        StorageProgressDelete(
+            uri=URL("storage://default/user/file"),
+            is_dir=False,
+        )
     )
 
 

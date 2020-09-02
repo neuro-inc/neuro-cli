@@ -69,7 +69,11 @@ class TestClustersFormatter:
                 name="on-prem",
                 status="deployed",
                 cloud_provider=_CloudProvider(
-                    type="on_prem", region=None, zones=[], node_pools=[], storage=None,
+                    type="on_prem",
+                    region=None,
+                    zones=[],
+                    node_pools=[],
+                    storage=None,
                 ),
             ),
         ]

@@ -8,7 +8,7 @@ from wcwidth import wcswidth
 
 
 class StyledTextHelper:
-    """ Utilities to perform string operations on terminal styled text with better
+    """Utilities to perform string operations on terminal styled text with better
     unicode support.
 
     NOTE: The helper does not recognise controll sequences other than SGR
@@ -97,7 +97,7 @@ class StyledTextHelper:
 
     @classmethod
     def _reapply_styles(cls, text: str, wrapped: str) -> Iterator[str]:
-        """ Iterate over wrapped text and original one and reapply styles from
+        """Iterate over wrapped text and original one and reapply styles from
         the original to wrapped
         """
         sm = SequenceMatcher(None, text, wrapped)
