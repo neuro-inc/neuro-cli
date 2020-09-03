@@ -52,9 +52,8 @@ from .jobs import (
     JobTelemetry,
     Resources,
     StdStream,
-    Volume,
 )
-from .parser import Parser
+from .parser import Parser, SecretFile, Volume
 from .parsing_utils import LocalImage, RemoteImage, TagOption
 from .plugins import PluginManager
 from .secrets import Secret, Secrets
@@ -131,6 +130,7 @@ __all__ = (
     "Parser",
     "Secrets",
     "Secret",
+    "SecretFile",
     "PluginManager",
     "find_project_root",
 )

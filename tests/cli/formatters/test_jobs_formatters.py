@@ -16,9 +16,9 @@ from neuromation.api import (
     JobTelemetry,
     RemoteImage,
     Resources,
+    SecretFile,
     Volume,
 )
-from neuromation.api.parser import SecretFile
 from neuromation.api.parsing_utils import _ImageNameParser
 from neuromation.cli.formatters.jobs import (
     JobStartProgress,
