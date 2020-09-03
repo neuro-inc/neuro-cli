@@ -10,6 +10,7 @@ from .admin import _Admin
 from .blob_storage import BlobStorage
 from .config import Config
 from .core import _Core
+from .disks import Disks
 from .images import Images
 from .jobs import Jobs
 from .parser import Parser
@@ -48,6 +49,7 @@ class Client(metaclass=NoPublicConstructor):
         self._quota = _Quota._create(self._core, self._config)
         self._users = Users._create(self._core, self._config)
         self._secrets = Secrets._create(self._core, self._config)
+        self._disks = Disks._create(self._core, self._config)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
@@ -115,6 +117,10 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def secrets(self) -> Secrets:
         return self._secrets
+
+    @property
+    def disks(self) -> Disks:
+        return self._disks
 
     @property
     def parse(self) -> Parser:
