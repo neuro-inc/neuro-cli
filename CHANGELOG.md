@@ -5,6 +5,18 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.9.3 (2020-09-03)
+===============================
+
+Bugfixes
+--------
+
+
+- Commands `neuro image ls` and `neuro image tags` and corresponding API `images.ls()` and `images.tags()` can now return more than 100 items. ([#1606](https://github.com/neuromation/platform-api-clients/issues/1606))
+
+- Make `neuromation.api.SecretFile` class public ([#1714](https://github.com/neuromation/platform-api-clients/issues/1714))
+
+
 Neuromation 20.9.2 (2020-09-02)
 ===============================
 
