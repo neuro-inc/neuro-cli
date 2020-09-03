@@ -69,6 +69,11 @@
 		* [neuro secret ls](#neuro-secret-ls)
 		* [neuro secret add](#neuro-secret-add)
 		* [neuro secret rm](#neuro-secret-rm)
+	* [neuro disk](#neuro-disk)
+		* [neuro disk ls](#neuro-disk-ls)
+		* [neuro disk create](#neuro-disk-create)
+		* [neuro disk get](#neuro-disk-get)
+		* [neuro disk rm](#neuro-disk-rm)
 	* [neuro help](#neuro-help)
 	* [neuro run](#neuro-run)
 	* [neuro ps](#neuro-ps)
@@ -132,6 +137,7 @@ Name | Description|
 | _[neuro acl](#neuro-acl)_| Access Control List management |
 | _[neuro blob](#neuro-blob)_| Blob storage operations |
 | _[neuro secret](#neuro-secret)_| Operations with secrets |
+| _[neuro disk](#neuro-disk)_| Operations with disks |
 
 
 **Commands:**
@@ -1808,7 +1814,7 @@ Name | Description|
 |---|---|
 | _[neuro secret ls](#neuro-secret-ls)_| List secrets |
 | _[neuro secret add](#neuro-secret-add)_| Add secret KEY with data VALUE |
-| _[neuro secret rm](#neuro-secret-rm)_| Add secret KEY |
+| _[neuro secret rm](#neuro-secret-rm)_| Remove secret KEY |
 
 
 
@@ -1862,12 +1868,127 @@ Name | Description|
 
 ### neuro secret rm
 
-Add secret KEY.
+Remove secret KEY.
 
 **Usage:**
 
 ```bash
 neuro secret rm [OPTIONS] KEY
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro disk
+
+Operations with disks.
+
+**Usage:**
+
+```bash
+neuro disk [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro disk ls](#neuro-disk-ls)_| List disks |
+| _[neuro disk create](#neuro-disk-create)_| Create disk with storage amount STORAGE |
+| _[neuro disk get](#neuro-disk-get)_| Get disk DISK_ID |
+| _[neuro disk rm](#neuro-disk-rm)_| Remove disk DISK_ID |
+
+
+
+
+### neuro disk ls
+
+List disks.
+
+**Usage:**
+
+```bash
+neuro disk ls [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\--full-uri_|Output full disk URI.|
+
+
+
+
+### neuro disk create
+
+Create disk with storage amount STORAGE.<br/>
+
+**Usage:**
+
+```bash
+neuro disk create [OPTIONS] STORAGE
+```
+
+**Examples:**
+
+```bash
+
+neuro disk create 10Gi
+neuro disk create 500Mi
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro disk get
+
+Get disk DISK_ID.
+
+**Usage:**
+
+```bash
+neuro disk get [OPTIONS] DISK_ID
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro disk rm
+
+Remove disk DISK_ID.
+
+**Usage:**
+
+```bash
+neuro disk rm [OPTIONS] DISK_ID
 ```
 
 **Options:**

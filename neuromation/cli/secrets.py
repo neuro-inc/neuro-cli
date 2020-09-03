@@ -47,7 +47,7 @@ async def add(root: Root, key: str, value: str) -> None:
 @argument("key")
 async def rm(root: Root, key: str) -> None:
     """
-    Add secret KEY.
+    Remove secret KEY.
     """
 
     await root.client.secrets.rm(key)

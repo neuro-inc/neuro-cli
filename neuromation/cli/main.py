@@ -23,6 +23,7 @@ from . import (
     blob_storage,
     completion,
     config,
+    disks,
     image,
     job,
     project,
@@ -483,8 +484,8 @@ cli.add_command(config.config)
 cli.add_command(completion.completion)
 cli.add_command(share.acl)
 cli.add_command(blob_storage.blob_storage)
-cli.add_command(blob_storage.blob_storage)
 cli.add_command(secrets.secret)
+cli.add_command(disks.disk)
 
 cli.add_command(DeprecatedGroup(storage.storage, name="store", hidden=True))
 
