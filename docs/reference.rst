@@ -21,6 +21,7 @@ Reference
    images_reference
    users_reference
    secrets_reference
+   disks_reference
    parse_reference
    plugin_reference
    glossary

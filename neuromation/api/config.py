@@ -174,6 +174,12 @@ class Config(metaclass=NoPublicConstructor):
         cluster = self._config_data.clusters[self._config_data.cluster_name]
         return cluster.secrets_url
 
+    @property
+    def disk_api_url(self) -> URL:
+        cluster = self._config_data.clusters[self._config_data.cluster_name]
+        # XXX: Update properly the API to return Object storage as separate URL
+        return URL(str(cluster.secrets_url).replace("/secrets", "/disk"))
+
     async def token(self) -> str:
         token = self._config_data.auth_token
         if not token.is_expired():

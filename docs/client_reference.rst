@@ -42,6 +42,14 @@ Client class
 
       Images subsystem, see :class:`Images` for details.
 
+   .. attribute:: secrets
+
+      Images subsystem, see :class:`Secrets` for details.
+
+   .. attribute:: disks
+
+      Images subsystem, see :class:`Disks` for details.
+
    .. attribute:: parse
 
       A set or helpers used for parsing different Neuro API definitions, see
