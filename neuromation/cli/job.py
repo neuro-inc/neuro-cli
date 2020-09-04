@@ -208,7 +208,6 @@ def job() -> None:
     help=(
         "Mounts directory from vault into container. "
         "Use multiple options to mount more than one volume. "
-        "Use --volume=ALL to mount all accessible storage directories."
     ),
     secure=True,
 )
@@ -889,7 +888,6 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help=(
         "Mounts directory from vault into container. "
         "Use multiple options to mount more than one volume. "
-        "Use --volume=ALL to mount all accessible storage directories. "
         "See `neuro help secrets` for information about "
         "passing secrets as mounted files."
     ),
