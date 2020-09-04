@@ -11,6 +11,7 @@ from yarl import URL
 from neuromation.api import (
     Client,
     Container,
+    DiskVolume,
     HTTPPort,
     JobRestartPolicy,
     JobStatus,
@@ -1219,6 +1220,97 @@ async def test_job_run_with_secret_uris(
             secret_env=secret_env,
             volumes=volumes,
             secret_files=secret_files,
+            http=HTTPPort(8181),
+        )
+        ret = await client.jobs.run(container=container, is_preemptible=False)
+
+        assert ret == _job_description_from_api(JSON, client.parse)
+
+
+async def test_job_run_with_disk_volume_uris(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "shm": False,
+                "gpu_model": "nvidia-tesla-p4",
+            },
+            "disk_volumes": [
+                {
+                    "src_disk_uri": "disk://default/user/disk-1",
+                    "dst_path": "/container/my_path",
+                    "read_only": False,
+                }
+            ],
+        },
+        "http_url": "http://my_host:8889",
+        "ssh_server": "ssh://my_host.ssh:22",
+        "ssh_auth_server": "ssh://my_host.ssh:22",
+        "is_preemptible": False,
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "http": {"port": 8181, "requires_auth": True},
+                "resources": {
+                    "memory_mb": 16384,
+                    "cpu": 7.0,
+                    "shm": True,
+                    "gpu": 1,
+                    "gpu_model": "test-gpu-model",
+                },
+                "disk_volumes": [
+                    {
+                        "src_disk_uri": "disk://default/user/disk-1",
+                        "dst_path": "/container/my_path",
+                        "read_only": False,
+                    }
+                ],
+            },
+            "is_preemptible": False,
+            "cluster_name": "default",
+        }
+
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        disk_volumes = [
+            DiskVolume(URL("disk:disk-1"), "/container/my_path"),
+        ]
+        container = Container(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            command="submit-command",
+            resources=resources,
+            disk_volumes=disk_volumes,
             http=HTTPPort(8181),
         )
         ret = await client.jobs.run(container=container, is_preemptible=False)

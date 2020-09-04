@@ -58,8 +58,8 @@ Parser
       tuple of two mappings - first one for all environment variables and second for
       environment variables using secrets.
 
-   .. method:: volumes(volume: Sequence[str]) -> Tuple[List[Volume], List[SecretFile]]
+   .. method:: volumes(volume: Sequence[str]) -> Tuple[List[Volume], List[SecretFile], List[DiskVolume]]
 
-      Parse a sequence of volume definition into a tuple of two mappings - first one for
-      all regular volumes and second one for volumes using secrets.
+      Parse a sequence of volume definition into a tuple of three mappings - first one for
+      all regular volumes, second one for volumes using secrets and third for disk volumes.
 

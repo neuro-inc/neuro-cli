@@ -8,6 +8,7 @@ from yarl import URL
 
 from neuromation.api import (
     Container,
+    DiskVolume,
     HTTPPort,
     JobDescription,
     JobRestartPolicy,
@@ -1205,6 +1206,88 @@ class TestJobOutputFormatter:
             "  ENV_NAME_1=secret:secret4\n"
             "  ENV_NAME_2=secret:/otheruser/secret5\n"
             "  ENV_NAME_3=secret://othercluster/otheruser/secret6\n"
+            "Created: 2018-09-25T12:28:21.298672+00:00\n"
+            "Started: 2018-09-25T12:28:59.759433+00:00\n"
+            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
+            "Exit code: 123\n"
+            "=== Description ===\n"
+            "ErrorDesc\n==================="
+        )
+
+    def test_job_with_disk_volumes_short(self) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            name="test-job-name",
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_neuro_image(
+                    name="test-image",
+                    tag="sometag",
+                    registry="https://registry.neu.ro",
+                    owner="test-user",
+                    cluster_name="test-cluster",
+                ),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+                disk_volumes=[
+                    DiskVolume(
+                        URL("disk://test-cluster/test-user/disk1"),
+                        "/mnt/disk1",
+                        read_only=True,
+                    ),
+                    DiskVolume(
+                        URL("disk://test-cluster/otheruser/disk2"),
+                        "/mnt/disk2",
+                        read_only=False,
+                    ),
+                    DiskVolume(
+                        URL("disk://othercluster/otheruser/disk3"),
+                        "/mnt/disk3",
+                        read_only=False,
+                    ),
+                ],
+            ),
+            ssh_server=URL("ssh-auth"),
+            is_preemptible=False,
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
+        resource_formatter = ResourcesFormatter()
+        resource = click.unstyle(resource_formatter(description.container.resources))
+        assert (
+            status == "Job: test-job\n"
+            "Name: test-job-name\n"
+            "Owner: test-user\n"
+            "Cluster: default\n"
+            "Description: test job description\n"
+            "Status: failed (ErrorReason)\n"
+            "Image: image:test-image:sometag\n"
+            "Command: test-command\n"
+            f"{resource}\n"
+            "TTY: False\n"
+            "Disk volumes:\n"
+            "  /mnt/disk1  disk:disk1                           READONLY\n"
+            "  /mnt/disk2  disk:/otheruser/disk2                        \n"
+            "  /mnt/disk3  disk://othercluster/otheruser/disk3          \n"
+            "Http URL: http://local.host.test/\n"
+            "Http port: 80\n"
+            "Http authentication: True\n"
             "Created: 2018-09-25T12:28:21.298672+00:00\n"
             "Started: 2018-09-25T12:28:59.759433+00:00\n"
             "Finished: 2018-09-25T12:28:59.759433+00:00\n"

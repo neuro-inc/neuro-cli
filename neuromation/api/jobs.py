@@ -41,10 +41,14 @@ from .images import (
     _raise_on_error_chunk,
     _try_parse_image_progress_step,
 )
-from .parser import Parser, SecretFile, Volume
+from .parser import DiskVolume, Parser, SecretFile, Volume
 from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
 from .server_cfg import Preset
-from .url_utils import normalize_secret_uri, normalize_storage_path_uri
+from .url_utils import (
+    normalize_disk_uri,
+    normalize_secret_uri,
+    normalize_storage_path_uri,
+)
 from .utils import NoPublicConstructor, asynccontextmanager
 
 
@@ -102,6 +106,7 @@ class Container:
     volumes: Sequence[Volume] = field(default_factory=list)
     secret_env: Mapping[str, URL] = field(default_factory=dict)
     secret_files: Sequence[SecretFile] = field(default_factory=list)
+    disk_volumes: Sequence[DiskVolume] = field(default_factory=list)
     tty: bool = False
 
 
@@ -680,6 +685,7 @@ def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
         volumes=[_volume_from_api(v) for v in data.get("volumes", [])],
         secret_env={name: URL(val) for name, val in data.get("secret_env", {}).items()},
         secret_files=[_secret_file_from_api(v) for v in data.get("secret_volumes", [])],
+        disk_volumes=[_disk_volume_from_api(v) for v in data.get("disk_volumes", [])],
         tty=data.get("tty", False),
     )
 
@@ -709,6 +715,10 @@ def _container_to_api(container: Container, config: Config) -> Dict[str, Any]:
     if container.secret_files:
         primitive["secret_volumes"] = [
             _secret_file_to_api(v, config) for v in container.secret_files
+        ]
+    if container.disk_volumes:
+        primitive["disk_volumes"] = [
+            _disk_volume_to_api(v, config) for v in container.disk_volumes
         ]
     if container.tty:
         primitive["tty"] = True
@@ -803,6 +813,16 @@ def _secret_file_to_api(secret_file: SecretFile, config: Config) -> Dict[str, An
     }
 
 
+def _disk_volume_to_api(volume: DiskVolume, config: Config) -> Dict[str, Any]:
+    uri = normalize_disk_uri(volume.disk_uri, config.username, config.cluster_name)
+    resp: Dict[str, Any] = {
+        "src_disk_uri": str(uri),
+        "dst_path": volume.container_path,
+        "read_only": bool(volume.read_only),
+    }
+    return resp
+
+
 def _volume_from_api(data: Dict[str, Any]) -> Volume:
     storage_uri = URL(data["src_storage_uri"])
     container_path = data["dst_path"]
@@ -816,6 +836,13 @@ def _secret_file_from_api(data: Dict[str, Any]) -> SecretFile:
     secret_uri = URL(data["src_secret_uri"])
     container_path = data["dst_path"]
     return SecretFile(secret_uri, container_path)
+
+
+def _disk_volume_from_api(data: Dict[str, Any]) -> DiskVolume:
+    disk_uri = URL(data["src_disk_uri"])
+    container_path = data["dst_path"]
+    read_only = data.get("read_only", True)
+    return DiskVolume(disk_uri, container_path, read_only)
 
 
 def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:

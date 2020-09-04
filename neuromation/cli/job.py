@@ -1179,7 +1179,7 @@ async def run_job(
         tpu_software_version=tpu_software_version,
     )
 
-    volumes, secret_files = root.client.parse.volumes(volume)
+    volumes, secret_files, disk_volumes = root.client.parse.volumes(volume)
 
     if pass_config:
         env_name = NEURO_STEAL_CONFIG
@@ -1203,9 +1203,10 @@ async def run_job(
         http=HTTPPort(http, http_auth) if http else None,
         resources=resources,
         env=env_dict,
-        volumes=list(volumes),
+        volumes=volumes,
         secret_env=secret_env_dict,
-        secret_files=list(secret_files),
+        secret_files=secret_files,
+        disk_volumes=disk_volumes,
         tty=tty,
     )
 
