@@ -51,15 +51,15 @@ async def test_parse_volumes(make_client: _MakeClient) -> None:
             "disk://cluster/user/disk1:/disk/location4:rw",
             "disk://cluster/user/disk2:/disk/location5:ro",
         ]
-        volumes, secret_files, disk_volumes = client.parse.volumes(volumes_str)
-        assert set(volumes) == {
+        result = client.parse.volumes(volumes_str)
+        assert set(result.volumes) == {
             Volume(URL("storage://cluster/user/path/to1"), "/storage/location1", False),
             Volume(URL("storage://cluster/user/path/to2"), "/storage/location2", True),
         }
-        assert set(secret_files) == {
+        assert set(result.secret_files) == {
             SecretFile(URL("secret://cluster/user/secret1"), "/secret/location3")
         }
-        assert set(disk_volumes) == {
+        assert set(result.disk_volumes) == {
             DiskVolume(URL("disk://cluster/user/disk1"), "/disk/location4", False),
             DiskVolume(URL("disk://cluster/user/disk2"), "/disk/location5", True),
         }

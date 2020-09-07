@@ -30,6 +30,19 @@ class DiskVolume:
     read_only: bool = False
 
 
+@dataclass(frozen=True)
+class VolumeParseResult:
+    volumes: List[Volume]
+    secret_files: List[SecretFile]
+    disk_volumes: List[DiskVolume]
+
+
+@dataclass(frozen=True)
+class EnvParseResult:
+    env: Dict[str, str]
+    secret_env: Dict[str, URL]
+
+
 class Parser(metaclass=NoPublicConstructor):
     def __init__(self, config: Config) -> None:
         self._config = config
@@ -128,12 +141,13 @@ class Parser(metaclass=NoPublicConstructor):
         )
         return parser.convert_to_local_image(image)
 
-    def env(
-        self, env: Sequence[str], env_file: Sequence[str] = ()
-    ) -> Tuple[Dict[str, str], Dict[str, URL]]:
+    def envs(self, env: Sequence[str], env_file: Sequence[str] = ()) -> EnvParseResult:
         env_dict = self._build_env(env, env_file)
         secret_env_dict = self._extract_secret_env(env_dict)
-        return env_dict, secret_env_dict
+        return EnvParseResult(
+            env=env_dict,
+            secret_env=secret_env_dict,
+        )
 
     def _build_env(
         self, env: Sequence[str], env_file: Sequence[str] = ()
@@ -162,16 +176,15 @@ class Parser(metaclass=NoPublicConstructor):
                 del env_dict[name]
         return secret_env_dict
 
-    def volumes(
-        self, volume: Sequence[str]
-    ) -> Tuple[List[Volume], List[SecretFile], List[DiskVolume]]:
+    def volumes(self, volume: Sequence[str]) -> VolumeParseResult:
         input_secret_files = {vol for vol in volume if vol.startswith("secret:")}
         input_disk_volumes = {vol for vol in volume if vol.startswith("disk:")}
         input_volumes = set(volume) - input_secret_files - input_disk_volumes
-        secret_files = self._build_secret_files(input_secret_files)
-        disk_volumes = self._build_disk_volumes(input_disk_volumes)
-        vols = self._build_volumes(input_volumes)
-        return vols, secret_files, disk_volumes
+        return VolumeParseResult(
+            volumes=self._build_volumes(input_volumes),
+            secret_files=self._build_secret_files(input_secret_files),
+            disk_volumes=self._build_disk_volumes(input_disk_volumes),
+        )
 
 
 def _read_lines(env_file: str) -> Iterator[str]:
