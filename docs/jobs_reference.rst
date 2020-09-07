@@ -751,7 +751,7 @@ DiskVolume
    *Read-only* :class:`~dataclasses.dataclass` for describing mounted disk volumes
    of a container.
 
-   .. attribute:: disk_ur
+   .. attribute:: disk_uri
 
       An URI on a disk, :class:`yarl.URL`.
 
