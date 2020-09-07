@@ -56,14 +56,14 @@ Parser
 
       Parse a sequence of *env* variables and a sequence of *env_file* file names.
 
-      :param ~typing.Sequence[str] env: Sequence of env variable specification. Each
+      :param ~typing.Sequence[str] env: Sequence of *env* variable specification. Each
                                         element can be either:
-                                        - `ENV_NAME`. Current system env variable value
+                                        - `ENV_NAME`. Current system *env* variable value
                                         will be used. Defaults to empty string.
                                         - `ENV_NAME=VALUE`. Given value will be used.
 
-      :param ~typing.Sequence[str] env_file: Sequence of evn files to use. File content
-                                             processed same way as `env` parameter.
+      :param ~typing.Sequence[str] env_file: Sequence of ``.env`` files to use. File content
+                                             processed same way as *env* parameter.
 
       :return: :class:`EnvParseResult` with parsing result
 
