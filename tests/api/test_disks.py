@@ -39,14 +39,14 @@ async def test_list(
             storage=500,
             owner="user",
             status=Disk.Status.READY,
-            _cluster=cluster_config.name,
+            cluster=cluster_config.name,
         ),
         Disk(
             id="disk-2",
             storage=600,
             owner="user",
             status=Disk.Status.PENDING,
-            _cluster=cluster_config.name,
+            cluster=cluster_config.name,
         ),
     ]
 
@@ -77,7 +77,7 @@ async def test_add(
             storage=500,
             owner="user",
             status=Disk.Status.READY,
-            _cluster=cluster_config.name,
+            cluster=cluster_config.name,
         )
 
 
@@ -104,7 +104,7 @@ async def test_get(
             storage=500,
             owner="user",
             status=Disk.Status.READY,
-            _cluster=cluster_config.name,
+            cluster=cluster_config.name,
         )
 
 

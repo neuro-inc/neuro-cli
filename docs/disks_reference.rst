@@ -26,7 +26,7 @@ Disks
 
       :return: Newly created disk info (:class:`Disk`)
 
-   .. comethod:: get(disk_id: str) -> None
+   .. comethod:: get(disk_id: str) -> Disk
 
       Get a disk with id *disk_id*.
 
@@ -52,7 +52,6 @@ Disk
 
       The disk id, :class:`str`.
 
-
    .. attribute:: storage
 
       The disk capacity, in bytes, :class:`int`.
@@ -68,6 +67,10 @@ Disk
    .. attribute:: uri
 
       URI of the disk resource, :class:`yarl.URL`.
+
+   .. attribute:: cluster
+
+      Cluster disk resource belongs to, :class:`str`.
 
 Disk.Status
 ===========
