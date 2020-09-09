@@ -12,6 +12,7 @@ class DisksFormatter:
         click.style("Id", bold=True),
         click.style("Storage", bold=True),
         click.style("Uri", bold=True),
+        click.style("Status", bold=True),
     ]
 
     def __init__(self, uri_formatter: URIFormatter):
@@ -26,7 +27,7 @@ class DisksFormatter:
             storage_str = f"{disk.storage / 1024:.2f}Ki"
         else:
             storage_str = str(disk.storage)
-        return [disk.id, storage_str, self._uri_formatter(disk.uri)]
+        return [disk.id, storage_str, self._uri_formatter(disk.uri), disk.status.value]
 
     def __call__(self, disks: Sequence[Disk]) -> Iterator[str]:
         disks_info = [
