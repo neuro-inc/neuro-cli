@@ -9,7 +9,7 @@ def test_disk_formatter() -> None:
     fmtr = DiskFormatter(str)
     header_line, info_line = (click.unstyle(line).rstrip() for line in fmtr(disk))
     assert header_line.split() == ["Id", "Storage", "Uri", "Status"]
-    assert info_line.split() == ["disk", "11.93G", "disk://cluster/user/disk", "Ready"]
+    assert info_line.split() == ["disk", "11.9G", "disk://cluster/user/disk", "Ready"]
 
 
 def test_disks_formatter() -> None:
