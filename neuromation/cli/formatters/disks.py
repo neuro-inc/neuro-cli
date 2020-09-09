@@ -20,11 +20,11 @@ class DisksFormatter:
 
     def _disk_to_table_row(self, disk: Disk) -> Sequence[str]:
         if disk.storage >= 1024 ** 3:
-            storage_str = f"{disk.storage / (1024 ** 3):.2f}Gi"
+            storage_str = f"{disk.storage / (1024 ** 3):.2f}G"
         elif disk.storage >= 1024 ** 2:
-            storage_str = f"{disk.storage / (1024 ** 2):.2f}Mi"
+            storage_str = f"{disk.storage / (1024 ** 2):.2f}M"
         elif disk.storage >= 1024:
-            storage_str = f"{disk.storage / 1024:.2f}Ki"
+            storage_str = f"{disk.storage / 1024:.2f}K"
         else:
             storage_str = str(disk.storage)
         return [disk.id, storage_str, self._uri_formatter(disk.uri), disk.status.value]
