@@ -68,7 +68,7 @@ Disk
 
       URI of the disk resource, :class:`yarl.URL`.
 
-   .. attribute:: cluster
+   .. attribute:: cluster_name
 
       Cluster disk resource belongs to, :class:`str`.
 

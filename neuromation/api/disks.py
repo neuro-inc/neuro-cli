@@ -15,11 +15,11 @@ class Disk:
     storage: int  # In bytes
     owner: str
     status: "Disk.Status"
-    cluster: str
+    cluster_name: str
 
     @property
     def uri(self) -> URL:
-        return URL(f"disk://{self.cluster}/{self.owner}/{self.id}")
+        return URL(f"disk://{self.cluster_name}/{self.owner}/{self.id}")
 
     class Status(Enum):
         PENDING = "Pending"
@@ -38,7 +38,7 @@ class Disks(metaclass=NoPublicConstructor):
             storage=payload["storage"],
             owner=payload["owner"],
             status=Disk.Status(payload["status"]),
-            cluster=self._config.cluster_name,
+            cluster_name=self._config.cluster_name,
         )
 
     async def list(self) -> AsyncIterator[Disk]:
