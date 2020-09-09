@@ -3,6 +3,7 @@ from typing import Iterator, Sequence
 import click
 
 from neuromation.api import Disk
+from neuromation.cli import utils
 from neuromation.cli.formatters.ftable import table
 from neuromation.cli.formatters.utils import URIFormatter
 
@@ -19,14 +20,7 @@ class DisksFormatter:
         self._uri_formatter = uri_formatter
 
     def _disk_to_table_row(self, disk: Disk) -> Sequence[str]:
-        if disk.storage >= 1024 ** 3:
-            storage_str = f"{disk.storage / (1024 ** 3):.2f}G"
-        elif disk.storage >= 1024 ** 2:
-            storage_str = f"{disk.storage / (1024 ** 2):.2f}M"
-        elif disk.storage >= 1024:
-            storage_str = f"{disk.storage / 1024:.2f}K"
-        else:
-            storage_str = str(disk.storage)
+        storage_str = utils.format_size(disk.storage)
         return [disk.id, storage_str, self._uri_formatter(disk.uri), disk.status.value]
 
     def __call__(self, disks: Sequence[Disk]) -> Iterator[str]:

@@ -24,25 +24,25 @@ def test_disks_formatter() -> None:
     assert header_line.split() == ["Id", "Storage", "Uri", "Status"]
     assert info_lines[0].split() == [
         "disk-1",
-        "50.00G",
+        "50.0G",
         "disk://cluster/user/disk-1",
         "Pending",
     ]
     assert info_lines[1].split() == [
         "disk-2",
-        "50.00M",
+        "50.0M",
         "disk://cluster/user/disk-2",
         "Ready",
     ]
     assert info_lines[2].split() == [
         "disk-3",
-        "50.00K",
+        "50.0K",
         "disk://cluster/user/disk-3",
         "Ready",
     ]
     assert info_lines[3].split() == [
         "disk-4",
-        "50",
+        "50B",
         "disk://cluster/user/disk-4",
         "Ready",
     ]
