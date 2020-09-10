@@ -5,6 +5,18 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.9.10a1 (2020-09-10)
+==================================
+
+Features
+--------
+
+
+- Implemented disks management commands. ([#1716](https://github.com/neuromation/platform-api-clients/issues/1716))
+
+- `neuro run` allows now to specify disk volumes using `-v disk:<DISK>:<PATH>:<RW_FLAG>`. ([#1721](https://github.com/neuromation/platform-api-clients/issues/1721))
+
+
 Neuromation 20.9.3 (2020-09-03)
 ===============================
 
