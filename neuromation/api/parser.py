@@ -23,26 +23,50 @@ class Volume:
     read_only: bool = False
 
 
+@dataclass(frozen=True)
+class DiskVolume:
+    disk_uri: URL
+    container_path: str
+    read_only: bool = False
+
+
+@dataclass(frozen=True)
+class VolumeParseResult:
+    volumes: List[Volume]
+    secret_files: List[SecretFile]
+    disk_volumes: List[DiskVolume]
+
+
+@dataclass(frozen=True)
+class EnvParseResult:
+    env: Dict[str, str]
+    secret_env: Dict[str, URL]
+
+
 class Parser(metaclass=NoPublicConstructor):
     def __init__(self, config: Config) -> None:
         self._config = config
 
-    def volume(self, volume: str) -> Volume:
+    def _parse_generic_volume(
+        self, volume: str, allow_rw_spec: bool = True, resource_name: str = "volume"
+    ) -> Tuple[URL, str, bool]:
         parts = volume.split(":")
-
         read_only = False
-        if len(parts) == 4:
+        if allow_rw_spec and len(parts) == 4:
             if parts[-1] not in ["ro", "rw"]:
                 raise ValueError(f"Wrong ReadWrite/ReadOnly mode spec for '{volume}'")
             read_only = parts.pop() == "ro"
         elif len(parts) != 3:
-            raise ValueError(f"Invalid volume specification '{volume}'")
-
+            raise ValueError(f"Invalid {resource_name} specification '{volume}'")
         container_path = parts.pop()
-        storage_uri = normalize_storage_path_uri(
-            URL(":".join(parts)), self._config.username, self._config.cluster_name
-        )
+        raw_uri = URL(":".join(parts))
+        return raw_uri, container_path, read_only
 
+    def volume(self, volume: str) -> Volume:
+        raw_uri, container_path, read_only = self._parse_generic_volume(volume)
+        storage_uri = normalize_storage_path_uri(
+            raw_uri, self._config.username, self._config.cluster_name
+        )
         return Volume(
             storage_uri=storage_uri, container_path=container_path, read_only=read_only
         )
@@ -58,11 +82,10 @@ class Parser(metaclass=NoPublicConstructor):
     def _build_secret_files(self, input_volumes: Set[str]) -> List[SecretFile]:
         secret_files: List[SecretFile] = []
         for volume in input_volumes:
-            parts = volume.split(":")
-            if len(parts) != 3:
-                raise ValueError(f"Invalid secret file specification '{volume}'")
-            container_path = parts.pop()
-            secret_uri = self._parse_secret_resource(":".join(parts))
+            raw_uri, container_path, _ = self._parse_generic_volume(
+                volume, allow_rw_spec=False, resource_name="secret file"
+            )
+            secret_uri = self._parse_secret_resource(str(raw_uri))
             secret_files.append(SecretFile(secret_uri, container_path))
         return secret_files
 
@@ -72,6 +95,24 @@ class Parser(metaclass=NoPublicConstructor):
             self._config.username,
             self._config.cluster_name,
             allowed_schemes=("secret",),
+        )
+
+    def _build_disk_volumes(self, input_volumes: Set[str]) -> List[DiskVolume]:
+        disk_volumes: List[DiskVolume] = []
+        for volume in input_volumes:
+            raw_uri, container_path, read_only = self._parse_generic_volume(
+                volume, allow_rw_spec=True, resource_name="disk volume"
+            )
+            disk_uri = self._parse_disk_resource(str(raw_uri))
+            disk_volumes.append(DiskVolume(disk_uri, container_path, read_only))
+        return disk_volumes
+
+    def _parse_disk_resource(self, uri: str) -> URL:
+        return uri_from_cli(
+            uri,
+            self._config.username,
+            self._config.cluster_name,
+            allowed_schemes=("disk",),
         )
 
     def local_image(self, image: str) -> LocalImage:
@@ -100,12 +141,13 @@ class Parser(metaclass=NoPublicConstructor):
         )
         return parser.convert_to_local_image(image)
 
-    def env(
-        self, env: Sequence[str], env_file: Sequence[str] = ()
-    ) -> Tuple[Dict[str, str], Dict[str, URL]]:
+    def envs(self, env: Sequence[str], env_file: Sequence[str] = ()) -> EnvParseResult:
         env_dict = self._build_env(env, env_file)
         secret_env_dict = self._extract_secret_env(env_dict)
-        return env_dict, secret_env_dict
+        return EnvParseResult(
+            env=env_dict,
+            secret_env=secret_env_dict,
+        )
 
     def _build_env(
         self, env: Sequence[str], env_file: Sequence[str] = ()
@@ -134,12 +176,15 @@ class Parser(metaclass=NoPublicConstructor):
                 del env_dict[name]
         return secret_env_dict
 
-    def volumes(self, volume: Sequence[str]) -> Tuple[List[Volume], List[SecretFile]]:
+    def volumes(self, volume: Sequence[str]) -> VolumeParseResult:
         input_secret_files = {vol for vol in volume if vol.startswith("secret:")}
-        input_volumes = set(volume) - input_secret_files
-        secret_files = self._build_secret_files(input_secret_files)
-        vols = self._build_volumes(input_volumes)
-        return vols, secret_files
+        input_disk_volumes = {vol for vol in volume if vol.startswith("disk:")}
+        input_volumes = set(volume) - input_secret_files - input_disk_volumes
+        return VolumeParseResult(
+            volumes=self._build_volumes(input_volumes),
+            secret_files=self._build_secret_files(input_secret_files),
+            disk_volumes=self._build_disk_volumes(input_disk_volumes),
+        )
 
 
 def _read_lines(env_file: str) -> Iterator[str]:

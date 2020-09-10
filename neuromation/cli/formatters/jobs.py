@@ -146,6 +146,18 @@ class JobStatusFormatter:
             lines.append(f"{bold('Secret files')}:")
             lines.extend(f"  {i}" for i in table(rows2))
 
+        if job_status.container.disk_volumes:
+            rows3 = [
+                (
+                    disk_volume.container_path,
+                    self._format_uri(disk_volume.disk_uri),
+                    "READONLY" if disk_volume.read_only else " ",
+                )
+                for disk_volume in job_status.container.disk_volumes
+            ]
+            lines.append(f"{bold('Disk volumes')}:")
+            lines.extend(f"  {i}" for i in table(rows3))
+
         if job_status.internal_hostname:
             add("Internal Hostname", job_status.internal_hostname)
         if job_status.internal_hostname_named:

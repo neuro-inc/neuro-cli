@@ -350,6 +350,11 @@ Container
       Secrets mounted as files in a container, a :class:`~collections.abc.Sequence`
       of :class:`SecretFile` objects. Empty :class:`list` by default.
 
+   .. attribute:: disk_volumes
+
+      Disk volumes used to mount into container, a :class:`~collections.abc.Sequence`
+      of :class:`DiskVolume` objects. Empty :class:`list` by default.
+
 
 ExecInspect
 ===========
@@ -734,6 +739,31 @@ SecretFile
    .. attribute:: container_path
 
       A path on container filesystem, :class:`str`.
+
+
+DiskVolume
+==========
+
+
+.. class:: DiskVolume
+
+
+   *Read-only* :class:`~dataclasses.dataclass` for describing mounted disk volumes
+   of a container.
+
+   .. attribute:: disk_uri
+
+      An URI on a disk, :class:`yarl.URL`.
+
+   .. attribute:: container_path
+
+      A path on container filesystem, :class:`str`.
+
+   .. attribute:: read_only
+
+      ``True`` is the volume is mounted in read-only mode, ``False`` for read-write
+      (default).
+
 
 
 .. _ENTRYPOINT: https://docs.docker.com/engine/reference/builder/#entrypoint

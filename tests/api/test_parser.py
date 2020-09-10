@@ -3,7 +3,14 @@ from typing import Callable
 import pytest
 from yarl import URL
 
-from neuromation.api import Client, LocalImage, RemoteImage
+from neuromation.api import (
+    Client,
+    DiskVolume,
+    LocalImage,
+    RemoteImage,
+    SecretFile,
+    Volume,
+)
 from neuromation.api.parsing_utils import _get_url_authority
 
 
@@ -17,6 +24,45 @@ async def test_volume_from_str_fail(volume: str, make_client: _MakeClient) -> No
     async with make_client("https://example.com") as client:
         with pytest.raises(ValueError):
             client.parse.volume(volume)
+
+
+@pytest.mark.parametrize(
+    "volume",
+    [
+        "disk://",
+        "disk://foo/bar/user:/sdfdf/sdfdsf:rw:more",
+        "disk://foo/bar/user:/sdfdf/sdfdsf:rwo",
+        "secret://cluster/user/secret:/var/secret:ro",
+        "dissk://f1/f2/f3:/f1:rw",
+    ],
+)
+async def test_parse_volumes_fail(volume: str, make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        with pytest.raises(ValueError):
+            client.parse.volumes([volume])
+
+
+async def test_parse_volumes(make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        volumes_str = [
+            "storage://cluster/user/path/to1:/storage/location1:rw",
+            "storage://cluster/user/path/to2:/storage/location2:ro",
+            "secret://cluster/user/secret1:/secret/location3",
+            "disk://cluster/user/disk1:/disk/location4:rw",
+            "disk://cluster/user/disk2:/disk/location5:ro",
+        ]
+        result = client.parse.volumes(volumes_str)
+        assert set(result.volumes) == {
+            Volume(URL("storage://cluster/user/path/to1"), "/storage/location1", False),
+            Volume(URL("storage://cluster/user/path/to2"), "/storage/location2", True),
+        }
+        assert set(result.secret_files) == {
+            SecretFile(URL("secret://cluster/user/secret1"), "/secret/location3")
+        }
+        assert set(result.disk_volumes) == {
+            DiskVolume(URL("disk://cluster/user/disk1"), "/disk/location4", False),
+            DiskVolume(URL("disk://cluster/user/disk2"), "/disk/location5", True),
+        }
 
 
 async def test_parse_local(make_client: _MakeClient) -> None:

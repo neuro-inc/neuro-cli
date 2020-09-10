@@ -1156,7 +1156,8 @@ async def run_job(
         job_schedule_timeout = _parse_timedelta(schedule_timeout).total_seconds()
     log.debug(f"Job schedule timeout: {job_schedule_timeout}")
 
-    env_dict, secret_env_dict = root.client.parse.env(env, env_file)
+    env_parse_result = root.client.parse.envs(env, env_file)
+    env_dict, secret_env_dict = env_parse_result.env, env_parse_result.secret_env
     real_cmd = _parse_cmd(cmd)
 
     log.debug(f'entrypoint="{entrypoint}"')
@@ -1179,7 +1180,10 @@ async def run_job(
         tpu_software_version=tpu_software_version,
     )
 
-    volumes, secret_files = root.client.parse.volumes(volume)
+    volume_parse_result = root.client.parse.volumes(volume)
+    volumes = volume_parse_result.volumes
+    secret_files = volume_parse_result.secret_files
+    disk_volumes = volume_parse_result.disk_volumes
 
     if pass_config:
         env_name = NEURO_STEAL_CONFIG
@@ -1203,9 +1207,10 @@ async def run_job(
         http=HTTPPort(http, http_auth) if http else None,
         resources=resources,
         env=env_dict,
-        volumes=list(volumes),
+        volumes=volumes,
         secret_env=secret_env_dict,
-        secret_files=list(secret_files),
+        secret_files=secret_files,
+        disk_volumes=disk_volumes,
         tty=tty,
     )
 
