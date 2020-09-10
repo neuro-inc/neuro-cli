@@ -1134,7 +1134,7 @@ def test_job_working_dir(helper: Helper) -> None:
 @pytest.fixture
 def disk(helper: Helper) -> Iterator[str]:
     # Create disk
-    cap = helper.run_cli(["disk", "create", "1Gi"])
+    cap = helper.run_cli(["disk", "create", "1G"])
     assert cap.err == ""
     disk_id, *_ = cap.out.splitlines()[1].split()
 
