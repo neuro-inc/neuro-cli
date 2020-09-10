@@ -3,6 +3,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Any, AsyncIterator, Mapping, Optional
 
+from dateutil.parser import isoparse
 from yarl import URL
 
 from .config import Config
@@ -38,7 +39,7 @@ class Disks(metaclass=NoPublicConstructor):
     def _parse_disk_payload(self, payload: Mapping[str, Any]) -> Disk:
         last_usage_raw = payload.get("last_usage")
         if last_usage_raw is not None:
-            last_usage: Optional[datetime] = datetime.fromisoformat(last_usage_raw)
+            last_usage: Optional[datetime] = isoparse(last_usage_raw)
         else:
             last_usage = None
         return Disk(
@@ -47,7 +48,7 @@ class Disks(metaclass=NoPublicConstructor):
             owner=payload["owner"],
             status=Disk.Status(payload["status"]),
             cluster_name=self._config.cluster_name,
-            created_at=datetime.fromisoformat(payload["created_at"]),
+            created_at=isoparse(payload["created_at"]),
             last_usage=last_usage,
         )
 
