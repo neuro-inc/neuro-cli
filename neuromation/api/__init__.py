@@ -30,6 +30,7 @@ from .config_factory import (
     Factory,
 )
 from .core import DEFAULT_TIMEOUT
+from .disks import Disk, Disks
 from .errors import (
     AuthenticationError,
     AuthError,
@@ -133,6 +134,8 @@ __all__ = (
     "SecretFile",
     "PluginManager",
     "find_project_root",
+    "Disks",
+    "Disk",
 )
 
 
