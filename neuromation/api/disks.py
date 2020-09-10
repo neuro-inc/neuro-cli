@@ -1,6 +1,7 @@
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
-from typing import Any, AsyncIterator, Mapping
+from typing import Any, AsyncIterator, Mapping, Optional
 
 from yarl import URL
 
@@ -16,6 +17,8 @@ class Disk:
     owner: str
     status: "Disk.Status"
     cluster_name: str
+    created_at: datetime
+    last_usage: Optional[datetime] = None
 
     @property
     def uri(self) -> URL:
@@ -33,12 +36,19 @@ class Disks(metaclass=NoPublicConstructor):
         self._config = config
 
     def _parse_disk_payload(self, payload: Mapping[str, Any]) -> Disk:
+        last_usage_raw = payload.get("last_usage")
+        if last_usage_raw is not None:
+            last_usage: Optional[datetime] = datetime.fromisoformat(last_usage_raw)
+        else:
+            last_usage = None
         return Disk(
             id=payload["id"],
             storage=payload["storage"],
             owner=payload["owner"],
             status=Disk.Status(payload["status"]),
             cluster_name=self._config.cluster_name,
+            created_at=datetime.fromisoformat(payload["created_at"]),
+            last_usage=last_usage,
         )
 
     async def list(self) -> AsyncIterator[Disk]:

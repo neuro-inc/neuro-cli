@@ -14,7 +14,8 @@ def disk() -> None:
 
 @command()
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
-async def ls(root: Root, full_uri: bool) -> None:
+@option("--long-format", is_flag=True, help="Output all info about disk.")
+async def ls(root: Root, full_uri: bool, long_format: bool) -> None:
     """
     List disks.
     """
@@ -25,7 +26,7 @@ async def ls(root: Root, full_uri: bool) -> None:
         uri_fmtr = uri_formatter(
             username=root.client.username, cluster_name=root.client.cluster_name
         )
-    disks_fmtr = DisksFormatter(uri_fmtr)
+    disks_fmtr = DisksFormatter(uri_fmtr, long_format=long_format)
 
     disks = []
     async for disk in root.client.disks.list():

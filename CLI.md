@@ -1930,6 +1930,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\--full-uri_|Output full disk URI.|
+|_\--long-format_|Output all info about disk.|
 
 
 
@@ -1948,8 +1949,8 @@ neuro disk create [OPTIONS] STORAGE
 
 ```bash
 
-neuro disk create 10Gi
-neuro disk create 500Mi
+neuro disk create 10G
+neuro disk create 500M
 
 ```
 
