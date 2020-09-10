@@ -42,8 +42,8 @@ async def create(root: Root, storage: str) -> None:
 
     Examples:
 
-      neuro disk create 10Gi
-      neuro disk create 500Mi
+      neuro disk create 10G
+      neuro disk create 500M
     """
     disk = await root.client.disks.create(parse_memory(storage))
     disk_fmtr = DiskFormatter(str)
