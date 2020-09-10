@@ -1014,9 +1014,9 @@ def test_job_attach_tty(helper: Helper) -> None:
 
     expect = helper.pexpect(["job", "attach", job_id])
     expect.expect("========== Job is running in terminal mode =========")
-    expect.sendline("")  # prompt may be missing after the connection.
+    expect.sendline("\n")  # prompt may be missing after the connection.
     repl = REPLWrapper(expect, "# ", None)
-    ret = repl.run_command("echo abc")
+    ret = repl.run_command("echo abc\n")
     assert ret.strip() == "echo abc\r\r\nabc"
 
     helper.kill_job(job_id)
