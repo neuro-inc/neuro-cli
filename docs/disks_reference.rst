@@ -25,7 +25,7 @@ Disks
       :param int storage: storage capacity in bytes.
 
       :param ~typing.Optional[datetime.timedelta] life_span: Duration of no usage after which
-                                                             disk will be deleted. **None**
+                                                             disk will be deleted. ``None``
                                                              means no limit.
 
       :return: Newly created disk info (:class:`Disk`)
