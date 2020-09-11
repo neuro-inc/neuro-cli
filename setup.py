@@ -9,7 +9,7 @@ with open("README.md") as f:
 
 setup(
     name="neuromation",
-    version="20.9.3",
+    version="20.9.11a1",
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[

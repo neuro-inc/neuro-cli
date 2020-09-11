@@ -5,6 +5,23 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.9.11a1 (2020-09-11)
+==================================
+
+Features
+--------
+
+
+- Implemented disks management commands. ([#1716](https://github.com/neuromation/platform-api-clients/issues/1716))
+
+- `neuro run` allows now to specify disk volumes using `-v disk:<DISK>:<PATH>:<RW_FLAG>`. ([#1721](https://github.com/neuromation/platform-api-clients/issues/1721))
+
+- Added support of `created_at` and `last_usage` field of disks. Added `--long-format` option to `neuro disk ls`. ([#1729](https://github.com/neuromation/platform-api-clients/issues/1729))
+
+- Memory amount parsing now supports of both `b` and `B` suffixes for specifying decimal
+  quantities. Improved `neuro disk create` docs. ([#1731](https://github.com/neuromation/platform-api-clients/issues/1731))
+
+
 Neuromation 20.9.3 (2020-09-03)
 ===============================
 
