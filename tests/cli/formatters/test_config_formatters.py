@@ -32,11 +32,11 @@ class TestConfigFormatter:
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
-                Name       #CPU  Memory  Preemptible  GPU
-                gpu-small     7   30.0G       ×       1 x nvidia-tesla-k80
-                gpu-large     7   60.0G       ×       1 x nvidia-tesla-v100
-                cpu-small     7    2.0G       ×
-                cpu-large     7   14.0G       ×"""
+                Name       #CPU    Memory  Preemptible  GPU
+                gpu-small     7  30.0 GiB       ×       1 x nvidia-tesla-k80
+                gpu-large     7  60.0 GiB       ×       1 x nvidia-tesla-v100
+                cpu-small     7   2.0 GiB       ×
+                cpu-large     7  14.0 GiB       ×"""
         )
 
     async def test_output_for_tpu_presets(
@@ -77,14 +77,14 @@ class TestConfigFormatter:
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
-                Name         #CPU  Memory  Preemptible  GPU                    TPU
-                gpu-small       7   30.0G       ×       1 x nvidia-tesla-k80
-                gpu-large       7   60.0G       ×       1 x nvidia-tesla-v100
-                cpu-small       7    2.0G       ×
-                cpu-large       7   14.0G       ×
-                cpu-large-p     7   14.0G       √
-                tpu-small       2    2.0G       ×                              v3-8/1.14
-                hybrid          4   30.0G       ×       2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
+                Name         #CPU    Memory  Preemptible  GPU                    TPU
+                gpu-small       7  30.0 GiB       ×       1 x nvidia-tesla-k80
+                gpu-large       7  60.0 GiB       ×       1 x nvidia-tesla-v100
+                cpu-small       7   2.0 GiB       ×
+                cpu-large       7  14.0 GiB       ×
+                cpu-large-p     7  14.0 GiB       √
+                tpu-small       2   2.0 GiB       ×                              v3-8/1.14
+                hybrid          4  30.0 GiB       ×       2 x nvidia-tesla-v100  v3-64/1.14"""  # noqa: E501, ignore line length
         )
 
     async def test_output_with_jobs_available(self, root: Root) -> None:
@@ -103,11 +103,11 @@ class TestConfigFormatter:
               API URL: https://dev.neu.ro/api/v1
               Docker Registry URL: https://registry-dev.neu.ro
               Resource Presets:
-                Name       #CPU  Memory  Preemptible  GPU                    Jobs Available
-                gpu-small     7   30.0G       ×       1 x nvidia-tesla-k80
-                gpu-large     7   60.0G       ×       1 x nvidia-tesla-v100
-                cpu-small     7    2.0G       ×                                           1
-                cpu-large     7   14.0G       ×                                           2"""  # noqa: E501, ignore line
+                Name       #CPU    Memory  Preemptible  GPU                    Jobs Available
+                gpu-small     7  30.0 GiB       ×       1 x nvidia-tesla-k80
+                gpu-large     7  60.0 GiB       ×       1 x nvidia-tesla-v100
+                cpu-small     7   2.0 GiB       ×                                           1
+                cpu-large     7  14.0 GiB       ×                                           2"""  # noqa: E501, ignore line
         )
 
 

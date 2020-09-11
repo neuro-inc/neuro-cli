@@ -9,46 +9,44 @@ _T = TypeVar("_T")
 
 
 def parse_memory(memory: str) -> int:
-    """Parse string expression i.e. 16M, 16MB, etc
-    M = 1024 * 1024, MB = 1000 * 1000
+    """Parse memory string in SI format:
+    M = 10 ** 6, Mi = 2 ** 20
 
-    returns value in bytes"""
+    returns value in bytes
+    """
 
-    # Mega, Giga, Tera, etc
-    prefixes = "MGTPEZY"
-    value_error = ValueError(f"Unable parse value: {memory}")
-
-    if not memory:
-        raise value_error
-
-    pattern = r"^(?P<value>\d+)(?P<units>(kB|kb|K|k)|((?P<prefix>[{prefixes}])(?P<unit>[bB]?)))$".format(  # NOQA
-        prefixes=prefixes
-    )
-    regex = re.compile(pattern)
-    match = regex.fullmatch(memory)
-
-    if not match:
-        raise value_error
-
-    groups = match.groupdict()
-
-    value = int(groups["value"])
-    unit = groups["unit"]
-    prefix = groups["prefix"]
-    units = groups["units"]
-
-    if units == "kB" or units == "kb":
-        return value * 1000
-
-    if units == "K" or units == "k":
-        return value * 1024
-
-    # Our prefix string starts with Mega
-    # so for index 0 the power should be 2
-    power = 2 + prefixes.index(prefix)
-    multiple = 1000 if unit else 1024
-
-    return value * multiple ** power
+    suffix_to_factor = {
+        ("E",): 10 ** 18,
+        ("P",): 10 ** 15,
+        ("T",): 10 ** 12,
+        ("G",): 10 ** 9,
+        ("M",): 10 ** 6,
+        ("K", "k"): 10 ** 3,
+        ("Ei", "EiB"): 1024 ** 6,
+        ("Pi", "PiB"): 1024 ** 5,
+        ("Ti", "TiB"): 1024 ** 4,
+        ("Gi", "GiB"): 1024 ** 3,
+        ("Mi", "MiB"): 1024 ** 2,
+        ("Ki", "KiB"): 1024 ** 1,
+        ("Bytes", "B", "b"): 1,
+    }
+    result: Optional[int] = None
+    try:
+        result = int(memory)
+    except ValueError:
+        for suffixes, factor in suffix_to_factor.items():
+            if result:
+                break
+            for suffix in suffixes:
+                if memory.endswith(suffix):
+                    try:
+                        base_quantity = int(memory[: -len(suffix)])
+                    except ValueError:
+                        continue
+                    result = factor * base_quantity
+    if not result or result <= 0:
+        raise ValueError(f"Unable parse value: {memory}")
+    return result
 
 
 def to_megabytes(value: str) -> int:

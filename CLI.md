@@ -1937,7 +1937,7 @@ Name | Description|
 
 ### neuro disk create
 
-Create a disk with at least storage amount STORAGE.<br/><br/>To specify the amount, you can use the following suffixes: "kKMGTPEZY" To<br/>use decimal quantities, append "b" or "B". For example: - 1K or 1k is 1024<br/>bytes - 1Kb or 1KB is 1000 bytes - 20G is 20 * 2 ^ 30 bytes - 20Gb or 20GB<br/>is 20.000.000.000 bytes<br/><br/>Note that server can have big granularity \(for example, 1G) so it will<br/>possibly round-up the amount you requested.<br/>
+Create a disk with at least storage amount STORAGE.<br/><br/>To specify the amount, you can use the following SI suffixes: "kKMGTPE" To<br/>use decimal quantities, append "i" or "iB". For example: - 1k or 1K is 1000<br/>bytes - 1Ki or 1KiB is 1024 bytes - 20Gi or 20GiB is 20 * 2 ^ 30 bytes - 20G<br/>is 20.000.000.000 bytes<br/><br/>Note that server can have big granularity \(for example, 1Gi) so it will<br/>possibly round-up the amount you requested.<br/>
 
 **Usage:**
 
@@ -1949,8 +1949,8 @@ neuro disk create [OPTIONS] STORAGE
 
 ```bash
 
-neuro disk create 10G
-neuro disk create 500M
+neuro disk create 10Gi
+neuro disk create 500Mi
 
 ```
 

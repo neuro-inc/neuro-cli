@@ -200,21 +200,30 @@ def test_tty_progress(capsys: Any, make_root: _MakeRoot) -> None:
     assert unstyle(report) == ["'file:///abc' ..."]
 
     report.start(StorageProgressStart(src_f, dst_f, 600))
-    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [0.00%] 0B of 600B"]
+    assert unstyle(report) == [
+        "'file:///abc' ...",
+        "'file.txt' [0.00%] 0 Bytes of 600 Bytes",
+    ]
 
     report.step(StorageProgressStep(src_f, dst_f, 300, 600))
-    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [50.00%] 300B of 600B"]
+    assert unstyle(report) == [
+        "'file:///abc' ...",
+        "'file.txt' [50.00%] 300 Bytes of 600 Bytes",
+    ]
 
     report.step(StorageProgressStep(src_f, dst_f, 400, 600))
-    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [66.67%] 400B of 600B"]
+    assert unstyle(report) == [
+        "'file:///abc' ...",
+        "'file.txt' [66.67%] 400 Bytes of 600 Bytes",
+    ]
 
     report.complete(StorageProgressComplete(src_f, dst_f, 600))
-    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' 600 Bytes"]
 
     report.leave(StorageProgressLeaveDir(src, dst))
     assert unstyle(report) == [
         "'file:///abc' ...",
-        "'file.txt' 600B",
+        "'file.txt' 600 Bytes",
         "'file:///abc' DONE",
     ]
 
@@ -244,63 +253,72 @@ def test_tty_nested(make_root: _MakeRoot) -> None:
     assert unstyle(report) == ["'file:///abc' ..."]
 
     report.start(StorageProgressStart(src_f, dst_f, 600))
-    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [0.00%] 0B of 600B"]
+    assert unstyle(report) == [
+        "'file:///abc' ...",
+        "'file.txt' [0.00%] 0 Bytes of 600 Bytes",
+    ]
 
     report.step(StorageProgressStep(src_f, dst_f, 300, 600))
-    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [50.00%] 300B of 600B"]
+    assert unstyle(report) == [
+        "'file:///abc' ...",
+        "'file.txt' [50.00%] 300 Bytes of 600 Bytes",
+    ]
 
     report.step(StorageProgressStep(src_f, dst_f, 400, 600))
-    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' [66.67%] 400B of 600B"]
+    assert unstyle(report) == [
+        "'file:///abc' ...",
+        "'file.txt' [66.67%] 400 Bytes of 600 Bytes",
+    ]
 
     report.complete(StorageProgressComplete(src_f, dst_f, 600))
-    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' 600B"]
+    assert unstyle(report) == ["'file:///abc' ...", "'file.txt' 600 Bytes"]
 
     report.enter(StorageProgressEnterDir(src2, dst2))
     assert unstyle(report) == [
         "'file:///abc' ...",
-        "'file.txt' 600B",
+        "'file.txt' 600 Bytes",
         "'file:///abc/cde' ...",
     ]
 
     report.start(StorageProgressStart(src2_f, dst2_f, 800))
     assert unstyle(report) == [
         "'file:///abc' ...",
-        "'file.txt' 600B",
+        "'file.txt' 600 Bytes",
         "'file:///abc/cde' ...",
-        "'file.txt' [0.00%] 0B of 800B",
+        "'file.txt' [0.00%] 0 Bytes of 800 Bytes",
     ]
 
     report.step(StorageProgressStep(src2_f, dst2_f, 300, 800))
     assert unstyle(report) == [
         "'file:///abc' ...",
-        "'file.txt' 600B",
+        "'file.txt' 600 Bytes",
         "'file:///abc/cde' ...",
-        "'file.txt' [37.50%] 300B of 800B",
+        "'file.txt' [37.50%] 300 Bytes of 800 Bytes",
     ]
 
     report.complete(StorageProgressComplete(src2_f, dst_f, 800))
     assert unstyle(report) == [
         "'file:///abc' ...",
-        "'file.txt' 600B",
+        "'file.txt' 600 Bytes",
         "'file:///abc/cde' ...",
-        "'file.txt' 800B",
+        "'file.txt' 800 Bytes",
     ]
 
     report.leave(StorageProgressLeaveDir(src2, dst2))
     assert unstyle(report) == [
         "'file:///abc' ...",
-        "'file.txt' 600B",
+        "'file.txt' 600 Bytes",
         "'file:///abc/cde' ...",
-        "'file.txt' 800B",
+        "'file.txt' 800 Bytes",
         "'file:///abc/cde' DONE",
     ]
 
     report.leave(StorageProgressLeaveDir(src, dst))
     assert unstyle(report) == [
         "'file:///abc' ...",
-        "'file.txt' 600B",
+        "'file.txt' 600 Bytes",
         "'file:///abc/cde' ...",
-        "'file.txt' 800B",
+        "'file.txt' 800 Bytes",
         "'file:///abc/cde' DONE",
         "'file:///abc' DONE",
     ]

@@ -11,46 +11,45 @@ from neuromation.cli.parse_utils import (
 
 
 def test_parse_memory() -> None:
-    for value in ["1234", "   ", "", "-124", "M", "K", "k", "123B"]:
+    for value in ["   ", "", "-124", "-22M", "K", "k"]:
         with pytest.raises(ValueError, match=f"Unable parse value: {value}"):
             parse_memory(value)
 
-    assert parse_memory("1K") == 1024
-    assert parse_memory("2K") == 2048
-    assert parse_memory("1k") == 1024
-    assert parse_memory("2k") == 2048
-    assert parse_memory("1kB") == 1000
-    assert parse_memory("2kB") == 2000
-    assert parse_memory("1kb") == 1000
-    assert parse_memory("2kb") == 2000
+    assert parse_memory("100") == 100
+    assert parse_memory("200") == 200
 
-    assert parse_memory("42M") == 42 * 1024 ** 2
-    assert parse_memory("42MB") == 42 * 1000 ** 2
-    assert parse_memory("42Mb") == 42 * 1000 ** 2
+    assert parse_memory("1 K") == 1000
+    assert parse_memory("2  K") == 2000
+    assert parse_memory("1   k") == 1000
+    assert parse_memory("2 k") == 2000
+    assert parse_memory("1 Ki") == 1024
+    assert parse_memory("2   Ki") == 2048
+    assert parse_memory("1 KiB") == 1024
+    assert parse_memory("2 KiB") == 2048
 
-    assert parse_memory("42G") == 42 * 1024 ** 3
-    assert parse_memory("42GB") == 42 * 1000 ** 3
-    assert parse_memory("42Gb") == 42 * 1000 ** 3
+    assert parse_memory("42M") == 42 * 1000 ** 2
+    assert parse_memory("42Mi") == 42 * 1024 ** 2
+    assert parse_memory("42MiB") == 42 * 1024 ** 2
 
-    assert parse_memory("42T") == 42 * 1024 ** 4
-    assert parse_memory("42TB") == 42 * 1000 ** 4
-    assert parse_memory("42Tb") == 42 * 1000 ** 4
+    assert parse_memory("42G") == 42 * 1000 ** 3
+    assert parse_memory("42Gi") == 42 * 1024 ** 3
+    assert parse_memory("42GiB") == 42 * 1024 ** 3
 
-    assert parse_memory("42P") == 42 * 1024 ** 5
-    assert parse_memory("42PB") == 42 * 1000 ** 5
-    assert parse_memory("42Pb") == 42 * 1000 ** 5
+    assert parse_memory("42G") == 42 * 1000 ** 3
+    assert parse_memory("42Gi") == 42 * 1024 ** 3
+    assert parse_memory("42GiB") == 42 * 1024 ** 3
 
-    assert parse_memory("42E") == 42 * 1024 ** 6
-    assert parse_memory("42EB") == 42 * 1000 ** 6
-    assert parse_memory("42Eb") == 42 * 1000 ** 6
+    assert parse_memory("42T") == 42 * 1000 ** 4
+    assert parse_memory("42Ti") == 42 * 1024 ** 4
+    assert parse_memory("42TiB") == 42 * 1024 ** 4
 
-    assert parse_memory("42Z") == 42 * 1024 ** 7
-    assert parse_memory("42ZB") == 42 * 1000 ** 7
-    assert parse_memory("42Zb") == 42 * 1000 ** 7
+    assert parse_memory("42P") == 42 * 1000 ** 5
+    assert parse_memory("42Pi") == 42 * 1024 ** 5
+    assert parse_memory("42PiB") == 42 * 1024 ** 5
 
-    assert parse_memory("42Y") == 42 * 1024 ** 8
-    assert parse_memory("42YB") == 42 * 1000 ** 8
-    assert parse_memory("42Yb") == 42 * 1000 ** 8
+    assert parse_memory("42E") == 42 * 1000 ** 6
+    assert parse_memory("42Ei") == 42 * 1024 ** 6
+    assert parse_memory("42EiB") == 42 * 1024 ** 6
 
 
 def test_parse_columns_default() -> None:

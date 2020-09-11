@@ -41,20 +41,20 @@ async def create(root: Root, storage: str) -> None:
     """
     Create a disk with at least storage amount STORAGE.
 
-    To specify the amount, you can use the following suffixes: "kKMGTPEZY"
-    To use decimal quantities, append "b" or "B". For example:
-    - 1K or 1k is 1024 bytes
-    - 1Kb or 1KB is 1000 bytes
-    - 20G is 20 * 2 ^ 30 bytes
-    - 20Gb or 20GB is 20.000.000.000 bytes
+    To specify the amount, you can use the following SI suffixes: "kKMGTPE"
+    To use decimal quantities, append "i" or "iB". For example:
+    - 1k or 1K is 1000 bytes
+    - 1Ki or 1KiB is 1024 bytes
+    - 20Gi or 20GiB is 20 * 2 ^ 30 bytes
+    - 20G is 20.000.000.000 bytes
 
-    Note that server can have big granularity (for example, 1G)
+    Note that server can have big granularity (for example, 1Gi)
     so it will possibly round-up the amount you requested.
 
     Examples:
 
-      neuro disk create 10G
-      neuro disk create 500M
+      neuro disk create 10Gi
+      neuro disk create 500Mi
     """
     disk = await root.client.disks.create(parse_memory(storage))
     disk_fmtr = DiskFormatter(str)
