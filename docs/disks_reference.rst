@@ -72,6 +72,16 @@ Disk
 
       Cluster disk resource belongs to, :class:`str`.
 
+   .. attribute:: created_at
+
+      Disk creation timestamp, :class:`~datetime.datetime`.
+
+   .. attribute:: last_usage
+
+      Timestamp when disk was last attached to job, :class:`~datetime.datetime`
+      or ``None`` if disk was never used.
+
+
 Disk.Status
 ===========
 

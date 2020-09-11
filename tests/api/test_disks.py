@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Callable
 
 from aiohttp import web
@@ -14,11 +15,27 @@ async def test_list(
     make_client: _MakeClient,
     cluster_config: Cluster,
 ) -> None:
+    created_at = datetime.now() - timedelta(days=1)
+    last_usage = datetime.now()
+
     async def handler(request: web.Request) -> web.Response:
         return web.json_response(
             [
-                {"id": "disk-1", "storage": 500, "owner": "user", "status": "Ready"},
-                {"id": "disk-2", "storage": 600, "owner": "user", "status": "Pending"},
+                {
+                    "id": "disk-1",
+                    "storage": 500,
+                    "owner": "user",
+                    "status": "Ready",
+                    "created_at": created_at.isoformat(),
+                },
+                {
+                    "id": "disk-2",
+                    "storage": 600,
+                    "owner": "user",
+                    "status": "Pending",
+                    "created_at": created_at.isoformat(),
+                    "last_usage": last_usage.isoformat(),
+                },
             ]
         )
 
@@ -40,6 +57,7 @@ async def test_list(
             owner="user",
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
+            created_at=created_at,
         ),
         Disk(
             id="disk-2",
@@ -47,6 +65,8 @@ async def test_list(
             owner="user",
             status=Disk.Status.PENDING,
             cluster_name=cluster_config.name,
+            created_at=created_at,
+            last_usage=last_usage,
         ),
     ]
 
@@ -56,13 +76,21 @@ async def test_add(
     make_client: _MakeClient,
     cluster_config: Cluster,
 ) -> None:
+    created_at = datetime.now()
+
     async def handler(request: web.Request) -> web.Response:
         data = await request.json()
         assert data == {
             "storage": 500,
         }
         return web.json_response(
-            {"id": "disk-1", "storage": 500, "owner": "user", "status": "Ready"},
+            {
+                "id": "disk-1",
+                "storage": 500,
+                "owner": "user",
+                "status": "Ready",
+                "created_at": created_at.isoformat(),
+            },
         )
 
     app = web.Application()
@@ -78,6 +106,7 @@ async def test_add(
             owner="user",
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
+            created_at=created_at,
         )
 
 
@@ -86,10 +115,18 @@ async def test_get(
     make_client: _MakeClient,
     cluster_config: Cluster,
 ) -> None:
+    created_at = datetime.now()
+
     async def handler(request: web.Request) -> web.Response:
         assert request.match_info["key"] == "name"
         return web.json_response(
-            {"id": "disk-1", "storage": 500, "owner": "user", "status": "Ready"},
+            {
+                "id": "disk-1",
+                "storage": 500,
+                "owner": "user",
+                "status": "Ready",
+                "created_at": created_at.isoformat(),
+            },
         )
 
     app = web.Application()
@@ -105,6 +142,7 @@ async def test_get(
             owner="user",
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
+            created_at=created_at,
         )
 
 

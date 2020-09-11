@@ -1930,6 +1930,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\--full-uri_|Output full disk URI.|
+|_\--long-format_|Output all info about disk.|
 
 
 
