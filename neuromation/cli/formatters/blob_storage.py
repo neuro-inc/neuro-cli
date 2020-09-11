@@ -57,7 +57,7 @@ class LongBlobFormatter(BaseBlobFormatter):
     def to_columns_blob(self, file: BlobListing) -> Sequence[str]:
         date = time.strftime(TIME_FORMAT, time.localtime(file.modification_time))
         if self.human_readable:
-            size = format_size(file.size).rstrip("B")
+            size = format_size(file.size)
         else:
             size = str(file.size)
         name = self.painter.paint(str(file.uri), get_file_type(file))

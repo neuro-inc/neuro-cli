@@ -104,12 +104,12 @@ class TestBlobFormatter:
 
         formatter = LongBlobFormatter(human_readable=True, color=False)
         assert list(formatter(self.list_results)) == [
-            "    1.0 Ki 2018-01-01 14:00:00 blob:neuro-public-bucket/file1024.txt",
-            " 1000.0 Ki 2018-01-01 00:00:00 blob:neuro-public-bucket/file_bigger.txt",
-            " 240 Bytes 2018-01-02 00:00:00 blob:neuro-shared-bucket/folder2/info.txt",
-            "   0 Bytes 2018-01-02 00:00:00 blob:neuro-shared-bucket/folder2/",
-            "                               blob:neuro-public-bucket/folder1/",
-            "                               blob:neuro-shared-bucket/folder2/",
+            "    1.0 KiB 2018-01-01 14:00:00 blob:neuro-public-bucket/file1024.txt",
+            " 1000.0 KiB 2018-01-01 00:00:00 blob:neuro-public-bucket/file_bigger.txt",
+            "  240 Bytes 2018-01-02 00:00:00 blob:neuro-shared-bucket/folder2/info.txt",
+            "    0 Bytes 2018-01-02 00:00:00 blob:neuro-shared-bucket/folder2/",
+            "                                blob:neuro-public-bucket/folder1/",
+            "                                blob:neuro-shared-bucket/folder2/",
         ]
 
         assert list(formatter(self.buckets)) == [

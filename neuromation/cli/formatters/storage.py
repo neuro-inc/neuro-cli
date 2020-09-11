@@ -475,7 +475,7 @@ class LongFilesFormatter(BaseFilesFormatter):
         date = time.strftime(TIME_FORMAT, time.localtime(file.modification_time))
 
         if self.human_readable:
-            size = format_size(file.size).rstrip("B")
+            size = format_size(file.size)
         else:
             size = str(file.size)
 
