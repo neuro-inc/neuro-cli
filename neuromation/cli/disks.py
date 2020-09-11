@@ -38,7 +38,17 @@ async def ls(root: Root, full_uri: bool) -> None:
 @argument("storage")
 async def create(root: Root, storage: str) -> None:
     """
-    Create disk with storage amount STORAGE.
+    Create a disk with at least storage amount STORAGE.
+
+    To specify the amount, you can use the following suffixes: "kKMGTPEZY"
+    To use decimal quantities, append "b" or "B". For example:
+    - 1K or 1k is 1024 bytes
+    - 1Kb or 1KB is 1000 bytes
+    - 20G is 20 * 2 ^ 30 bytes
+    - 20Gb or 20GB is 20.000.000.000 bytes
+
+    Note that server can have big granularity (for example, 1G)
+    so it will possibly round-up the amount you requested.
 
     Examples:
 

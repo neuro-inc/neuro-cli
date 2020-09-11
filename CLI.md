@@ -1907,7 +1907,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro disk ls](#neuro-disk-ls)_| List disks |
-| _[neuro disk create](#neuro-disk-create)_| Create disk with storage amount STORAGE |
+| _[neuro disk create](#neuro-disk-create)_| Create a disk with at least storage amount STORAGE |
 | _[neuro disk get](#neuro-disk-get)_| Get disk DISK_ID |
 | _[neuro disk rm](#neuro-disk-rm)_| Remove disk DISK_ID |
 
@@ -1936,7 +1936,7 @@ Name | Description|
 
 ### neuro disk create
 
-Create disk with storage amount STORAGE.<br/>
+Create a disk with at least storage amount STORAGE.<br/><br/>To specify the amount, you can use the following suffixes: "kKMGTPEZY" To<br/>use decimal quantities, append "b" or "B". For example: - 1K or 1k is 1024<br/>bytes - 1Kb or 1KB is 1000 bytes - 20G is 20 * 2 ^ 30 bytes - 20Gb or 20GB<br/>is 20.000.000.000 bytes<br/><br/>Note that server can have big granularity \(for example, 1G) so it will<br/>possibly round-up the amount you requested.<br/>
 
 **Usage:**
 
@@ -1948,8 +1948,8 @@ neuro disk create [OPTIONS] STORAGE
 
 ```bash
 
-neuro disk create 10Gi
-neuro disk create 500Mi
+neuro disk create 10G
+neuro disk create 500M
 
 ```
 

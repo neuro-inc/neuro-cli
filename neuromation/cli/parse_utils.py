@@ -21,7 +21,7 @@ def parse_memory(memory: str) -> int:
     if not memory:
         raise value_error
 
-    pattern = r"^(?P<value>\d+)(?P<units>(kB|K)|((?P<prefix>[{prefixes}])(?P<unit>B?)))$".format(  # NOQA
+    pattern = r"^(?P<value>\d+)(?P<units>(kB|kb|K|k)|((?P<prefix>[{prefixes}])(?P<unit>[bB]?)))$".format(  # NOQA
         prefixes=prefixes
     )
     regex = re.compile(pattern)
@@ -37,10 +37,10 @@ def parse_memory(memory: str) -> int:
     prefix = groups["prefix"]
     units = groups["units"]
 
-    if units == "kB":
+    if units == "kB" or units == "kb":
         return value * 1000
 
-    if units == "K":
+    if units == "K" or units == "k":
         return value * 1024
 
     # Our prefix string starts with Mega
