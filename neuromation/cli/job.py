@@ -1,12 +1,11 @@
 import asyncio
 import contextlib
 import logging
-import re
 import shlex
 import sys
 import uuid
 import webbrowser
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Optional, Sequence, Set, Tuple
 
 import async_timeout
@@ -59,13 +58,19 @@ from .formatters.jobs import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
-from .parse_utils import JobColumnInfo, get_default_columns, parse_columns
+from .parse_utils import (
+    JobColumnInfo,
+    get_default_columns,
+    parse_columns,
+    parse_timedelta,
+)
 from .root import Root
 from .utils import (
     NEURO_STEAL_CONFIG,
     AsyncExitStack,
     alias,
     argument,
+    calc_life_span,
     command,
     deprecated_quiet_option,
     group,
@@ -81,9 +86,6 @@ log = logging.getLogger(__name__)
 STORAGE_MOUNTPOINT = "/var/storage"
 
 DEFAULT_JOB_LIFE_SPAN = "1d"
-REGEX_TIME_DELTA = re.compile(
-    r"^((?P<d>\d+)d)?((?P<h>\d+)h)?((?P<m>\d+)m)?((?P<s>\d+)s)?$"
-)
 
 
 TTY_OPT = option(
@@ -1147,13 +1149,15 @@ async def run_job(
     job_restart_policy = JobRestartPolicy(restart)
     log.debug(f"Job restart policy: {job_restart_policy}")
 
-    job_life_span = await calc_life_span(root.client, life_span)
+    job_life_span = await calc_life_span(
+        root.client, life_span, DEFAULT_JOB_LIFE_SPAN, "job"
+    )
     log.debug(f"Job run-time limit: {job_life_span}")
 
     if schedule_timeout is None:
         job_schedule_timeout = None
     else:
-        job_schedule_timeout = _parse_timedelta(schedule_timeout).total_seconds()
+        job_schedule_timeout = parse_timedelta(schedule_timeout).total_seconds()
     log.debug(f"Job schedule timeout: {job_schedule_timeout}")
 
     env_parse_result = root.client.parse.envs(env, env_file)
@@ -1337,49 +1341,6 @@ async def calc_columns(
                 return parse_columns(format_str)
         return get_default_columns()
     return format
-
-
-async def calc_life_span(client: Client, value: Optional[str]) -> Optional[float]:
-    async def _calc_default_life_span(client: Client) -> timedelta:
-        config = await client.config.get_user_config()
-        section = config.get("job")
-        life_span = DEFAULT_JOB_LIFE_SPAN
-        if section is not None:
-            value = section.get("life-span")
-            if value is not None:
-                life_span = value
-        return _parse_timedelta(life_span)
-
-    delta = (
-        _parse_timedelta(value)
-        if value is not None
-        else await _calc_default_life_span(client)
-    )
-    seconds = delta.total_seconds()
-    if seconds == 0:
-        return None
-    assert seconds > 0
-    return seconds
-
-
-def _parse_timedelta(value: str) -> timedelta:
-    value = value.strip()
-    err = f"Could not parse time delta '{value}'"
-    if value == "":
-        raise click.UsageError(f"{err}: Empty string not allowed")
-    if value == "0":
-        return timedelta(0)
-    match = REGEX_TIME_DELTA.search(value)
-    if match is None:
-        raise click.UsageError(
-            f"{err}: Should be like '1d2h3m4s' (some parts may be missing)."
-        )
-    return timedelta(
-        days=int(match.group("d") or 0),
-        hours=int(match.group("h") or 0),
-        minutes=int(match.group("m") or 0),
-        seconds=int(match.group("s") or 0),
-    )
 
 
 def _parse_date(value: str) -> Optional[datetime]:

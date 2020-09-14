@@ -1,10 +1,16 @@
+from datetime import timedelta
+from typing import Optional
+
 import click
 
 from .formatters.disks import DiskFormatter, DisksFormatter
 from .formatters.utils import URIFormatter, uri_formatter
 from .parse_utils import parse_memory
 from .root import Root
-from .utils import argument, command, group, option, pager_maybe
+from .utils import argument, calc_life_span, command, group, option, pager_maybe
+
+
+DEFAULT_DISK_LIFE_SPAN = "1d"
 
 
 @group()
@@ -39,7 +45,18 @@ async def ls(root: Root, full_uri: bool, long_format: bool) -> None:
 
 @command()
 @argument("storage")
-async def create(root: Root, storage: str) -> None:
+@option(
+    "--life-span",
+    type=str,
+    metavar="TIMEDELTA",
+    help=(
+        "Optional disk lifetime limit after last usage "
+        "in the format '1d2h3m4s' (some parts may be missing). "
+        "Set '0' to disable. Default value '1d' can be changed "
+        "in the user config."
+    ),
+)
+async def create(root: Root, storage: str, life_span: Optional[str] = None) -> None:
     """
     Create a disk with at least storage amount STORAGE.
 
@@ -58,7 +75,16 @@ async def create(root: Root, storage: str) -> None:
       neuro disk create 10G
       neuro disk create 500M
     """
-    disk = await root.client.disks.create(parse_memory(storage))
+    life_span_seconds = await calc_life_span(
+        root.client, life_span, DEFAULT_DISK_LIFE_SPAN, "disk"
+    )
+    disk_life_span = None
+    if life_span_seconds:
+        disk_life_span = timedelta(seconds=life_span_seconds)
+
+    disk = await root.client.disks.create(
+        parse_memory(storage), life_span=disk_life_span
+    )
     disk_fmtr = DiskFormatter(str)
     pager_maybe(disk_fmtr(disk), root.tty, root.terminal_size)
 

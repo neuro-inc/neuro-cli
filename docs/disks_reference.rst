@@ -18,11 +18,15 @@ Disks
 
       List user's disks, async iterator. Yields :class:`Disk` instances.
 
-   .. comethod:: create(storage: int) -> Disk
+   .. comethod:: create(storage: int, life_span: typing.Optional[datetime.timedelta]) -> Disk
 
       Create a disk with capacity of *storage* bytes.
 
       :param int storage: storage capacity in bytes.
+
+      :param ~typing.Optional[datetime.timedelta] life_span: Duration of no usage after which
+                                                             disk will be deleted. ``None``
+                                                             means no limit.
 
       :return: Newly created disk info (:class:`Disk`)
 
@@ -80,6 +84,11 @@ Disk
 
       Timestamp when disk was last attached to job, :class:`~datetime.datetime`
       or ``None`` if disk was never used.
+
+   .. attribute:: life_span
+
+      Max unused duration after which disk will be deleted by platform,
+      :class:`~datetime.timedelta` or ``None`` if there is no limit.
 
 
 Disk.Status

@@ -1,6 +1,9 @@
 import dataclasses
 import re
+from datetime import timedelta
 from typing import Callable, List, Mapping, Optional, TypeVar
+
+import click
 
 from .formatters.ftable import Align, ColumnWidth
 
@@ -213,3 +216,28 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
     if not ret:
         raise ValueError(f"Invalid format {fmt!r}")
     return ret
+
+
+REGEX_TIME_DELTA = re.compile(
+    r"^((?P<d>\d+)d)?((?P<h>\d+)h)?((?P<m>\d+)m)?((?P<s>\d+)s)?$"
+)
+
+
+def parse_timedelta(value: str) -> timedelta:
+    value = value.strip()
+    err = f"Could not parse time delta '{value}'"
+    if value == "":
+        raise click.UsageError(f"{err}: Empty string not allowed")
+    if value == "0":
+        return timedelta(0)
+    match = REGEX_TIME_DELTA.search(value)
+    if match is None:
+        raise click.UsageError(
+            f"{err}: Should be like '1d2h3m4s' (some parts may be missing)."
+        )
+    return timedelta(
+        days=int(match.group("d") or 0),
+        hours=int(match.group("h") or 0),
+        minutes=int(match.group("m") or 0),
+        seconds=int(match.group("s") or 0),
+    )
