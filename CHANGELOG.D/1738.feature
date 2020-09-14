@@ -1,0 +1,1 @@
+Added output to `neuro disk rm` and `neuro secret rm` when `-v` flag is set.
