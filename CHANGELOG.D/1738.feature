@@ -1,0 +1,1 @@
+Added output message to `neuro disk rm` for successful removal.
