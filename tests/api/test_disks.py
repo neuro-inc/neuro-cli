@@ -35,6 +35,7 @@ async def test_list(
                     "status": "Pending",
                     "created_at": created_at.isoformat(),
                     "last_usage": last_usage.isoformat(),
+                    "life_span": 3600,
                 },
             ]
         )
@@ -58,6 +59,7 @@ async def test_list(
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
             created_at=created_at,
+            life_span=None,
         ),
         Disk(
             id="disk-2",
@@ -67,6 +69,7 @@ async def test_list(
             cluster_name=cluster_config.name,
             created_at=created_at,
             last_usage=last_usage,
+            life_span=timedelta(hours=1),
         ),
     ]
 
@@ -82,6 +85,7 @@ async def test_add(
         data = await request.json()
         assert data == {
             "storage": 500,
+            "life_span": 3600,
         }
         return web.json_response(
             {
@@ -90,6 +94,7 @@ async def test_add(
                 "owner": "user",
                 "status": "Ready",
                 "created_at": created_at.isoformat(),
+                "life_span": 3600,
             },
         )
 
@@ -99,7 +104,7 @@ async def test_add(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        disk = await client.disks.create(500)
+        disk = await client.disks.create(500, timedelta(hours=1))
         assert disk == Disk(
             id="disk-1",
             storage=500,
@@ -107,6 +112,7 @@ async def test_add(
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
             created_at=created_at,
+            life_span=timedelta(hours=1),
         )
 
 

@@ -1,14 +1,19 @@
+from datetime import timedelta
 from pathlib import Path
 from typing import Any, Callable, Dict, NoReturn
 from unittest import mock
 
+import click
 import pytest
+import toml
 from aiohttp import web
 from yarl import URL
 
 from neuromation.api import Action, Client, JobStatus
+from neuromation.cli.parse_utils import parse_timedelta
 from neuromation.cli.root import Root
 from neuromation.cli.utils import (
+    calc_life_span,
     pager_maybe,
     parse_file_resource,
     parse_permission_action,
@@ -654,3 +659,71 @@ def test_pager_maybe_terminal_smaller() -> None:
         mock_echo_via_pager.assert_called_once()
         lines_it = mock_echo_via_pager.call_args[0][0]
         assert "".join(lines_it) == "\n".join(large_input[1:])
+
+
+async def test_calc_life_span_none_default(
+    monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        local_conf.write_text(toml.dumps({"job": {"life-span": "1d2h3m4s"}}))
+        expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+        assert (
+            await calc_life_span(client, None, "1d", "job") == expected.total_seconds()
+        )
+
+
+async def test_calc_life_span_zero(make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        assert await calc_life_span(client, "0", "1d", "job") is None
+
+
+async def test_calc_life_span_default_life_span_all_keys(
+    caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(toml.dumps({"job": {"life-span": "1d2h3m4s"}}))
+
+        expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+        assert (
+            await calc_life_span(client, None, "1d", "job") == expected.total_seconds()
+        )
+
+
+async def test_calc_default_life_span_invalid(
+    caplog: Any,
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(toml.dumps({"job": {"life-span": "invalid"}}))
+        with pytest.raises(
+            click.UsageError,
+            match="Could not parse time delta",
+        ):
+            await calc_life_span(client, None, "1d", "job")
+
+
+async def test_calc_default_life_span_default_value(
+    caplog: Any,
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
+) -> None:
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(toml.dumps({}))
+        default = parse_timedelta("1d")
+        assert (
+            await calc_life_span(client, None, "1d", "job") == default.total_seconds()
+        )

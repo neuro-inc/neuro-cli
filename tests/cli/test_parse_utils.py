@@ -1,3 +1,6 @@
+from datetime import timedelta
+
+import click
 import pytest
 
 from neuromation.cli.formatters.ftable import Align, ColumnWidth
@@ -7,6 +10,7 @@ from neuromation.cli.parse_utils import (
     get_default_columns,
     parse_columns,
     parse_memory,
+    parse_timedelta,
 )
 
 
@@ -142,3 +146,47 @@ def test_parse_columns_invalid_property() -> None:
 def test_parse_columns_ambigous() -> None:
     with pytest.raises(ValueError, match="Ambiguous column"):
         parse_columns("{c}")
+
+
+def test_parse_timedelta_valid_zero() -> None:
+    assert parse_timedelta("0") == timedelta(0)
+
+
+def test_parse_timedelta_valid_all_groups_no_spaces() -> None:
+    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+    assert parse_timedelta("1d2h3m4s") == expected
+
+
+def test_parse_timedelta_valid_all_groups_spaces_around() -> None:
+    expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
+    assert parse_timedelta("  1d2h3m4s ") == expected
+
+
+def test_parse_timedelta_valid_some_groups_1() -> None:
+    expected = timedelta(days=1, hours=2, seconds=4)
+    assert parse_timedelta("1d2h4s") == expected
+
+
+def test_parse_timedelta_valid_some_groups_2() -> None:
+    expected = timedelta(days=1, hours=1)
+    assert parse_timedelta("1d1h") == expected
+
+
+def test_parse_timedelta_valid_some_groups_3() -> None:
+    expected = timedelta(days=1)
+    assert parse_timedelta("1d") == expected
+
+
+def test_parse_timedelta_invalid_empty() -> None:
+    with pytest.raises(click.UsageError, match="Empty string not allowed"):
+        parse_timedelta("")
+
+
+def test_parse_timedelta_invalid() -> None:
+    with pytest.raises(click.UsageError, match="Should be like"):
+        parse_timedelta("invalid")
+
+
+def test_parse_timedelta_invalid_negative() -> None:
+    with pytest.raises(click.UsageError, match="Should be like"):
+        parse_timedelta("-1d")

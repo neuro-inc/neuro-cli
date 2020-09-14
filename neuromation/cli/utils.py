@@ -9,6 +9,7 @@ import re
 import shlex
 import shutil
 import sys
+from datetime import timedelta
 from typing import (
     Any,
     Awaitable,
@@ -35,6 +36,7 @@ from yarl import URL
 from neuromation.api import Action, Client, Factory, JobStatus, TagOption, Volume
 from neuromation.api.url_utils import uri_from_cli
 
+from .parse_utils import parse_timedelta
 from .root import Root
 from .stats import upload_gmp_stats
 from .version_utils import run_version_checker
@@ -623,3 +625,28 @@ def steal_config_maybe(dst_path: pathlib.Path) -> None:
             os.chmod(target, 0o600)
             f.unlink()
         src.rmdir()
+
+
+async def calc_life_span(
+    client: Client, value: Optional[str], default: str, config_section: str
+) -> Optional[float]:
+    async def _calc_default_life_span(client: Client) -> timedelta:
+        config = await client.config.get_user_config()
+        section = config.get(config_section)
+        life_span = default
+        if section is not None:
+            value = section.get("life-span")
+            if value is not None:
+                life_span = value
+        return parse_timedelta(life_span)
+
+    delta = (
+        parse_timedelta(value)
+        if value is not None
+        else await _calc_default_life_span(client)
+    )
+    seconds = delta.total_seconds()
+    if seconds == 0:
+        return None
+    assert seconds > 0
+    return seconds
