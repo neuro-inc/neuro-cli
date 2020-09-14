@@ -52,7 +52,7 @@ async def rm(root: Root, key: str) -> None:
 
     await root.client.secrets.rm(key)
     if root.verbosity > 0:
-        click.echo(f"Secret with key: '{key}' was successfully removed")
+        click.echo(f"Secret with key '{key}' was successfully removed")
 
 
 secret.add_command(ls)
