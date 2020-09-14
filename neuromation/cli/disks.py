@@ -81,7 +81,8 @@ async def rm(root: Root, disk_id: str) -> None:
     Remove disk DISK_ID.
     """
     await root.client.disks.rm(disk_id)
-    click.echo(f"Disk with id {disk_id} was successfully removed.")
+    if root.verbosity > 0:
+        click.echo(f"Disk with id: '{disk_id}' was successfully removed.")
 
 
 disk.add_command(ls)
