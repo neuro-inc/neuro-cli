@@ -3,7 +3,12 @@ from typing import Optional
 
 import click
 
-from .formatters.disks import DiskFormatter, DisksFormatter
+from .formatters.disks import (
+    BaseDisksFormatter,
+    DiskFormatter,
+    DisksFormatter,
+    SimpleDisksFormatter,
+)
 from .formatters.utils import URIFormatter, uri_formatter
 from .parse_utils import parse_memory
 from .root import Root
@@ -27,14 +32,16 @@ async def ls(root: Root, full_uri: bool, long_format: bool) -> None:
     """
     List disks.
     """
-
-    if full_uri:
-        uri_fmtr: URIFormatter = str
+    if root.quiet:
+        disks_fmtr: BaseDisksFormatter = SimpleDisksFormatter()
     else:
-        uri_fmtr = uri_formatter(
-            username=root.client.username, cluster_name=root.client.cluster_name
-        )
-    disks_fmtr = DisksFormatter(uri_fmtr, long_format=long_format)
+        if full_uri:
+            uri_fmtr: URIFormatter = str
+        else:
+            uri_fmtr = uri_formatter(
+                username=root.client.username, cluster_name=root.client.cluster_name
+            )
+        disks_fmtr = DisksFormatter(uri_fmtr, long_format=long_format)
 
     disks = []
     async for disk in root.client.disks.list():
