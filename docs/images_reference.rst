@@ -66,6 +66,24 @@ Images
                *local* is ``None`` (:class:`LocalImage`)
 
 
+   .. comethod:: ls() -> List[RemoteImage]
+
+      List images on Neuro registry available to the user.
+
+      :return: list of remote images not including tags
+               (:class:`List[RemoteImage]`)
+
+
+   .. comethod:: tags(image: RemoteImage) -> List[RemoteImage]
+
+      List image references with tags for the specified remote *image*.
+
+      :param RemoteImage image: a spec for remote image without tag on Neuro
+                                registry.
+
+      :return: list of remote images with tags (:class:`List[RemoteImage]`)
+
+
 AbstractDockerImageProgress
 ===========================
 
@@ -190,6 +208,14 @@ RemoteImage
       URL that can be used to reference this image with Docker.
 
       :param bool with_scheme: if set to True, returned URL includes scheme (`https://`), otherwise (default behavior) - scheme is omitted.
+
+    .. method:: with_tag(tag: bool) -> RemoteImage
+
+       Creates a new reference to remote image with *tag*.
+
+       :param str tag: new tag
+
+       :return: remote image with *tag*
 
     .. py:classmethod:: new_neuro_image(name: str, registry: str, *, owner: str, cluster_name: str, tag: Optional[str] = None) -> RemoteImage
 
