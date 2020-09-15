@@ -16,6 +16,10 @@ def test_create_get_list_delete(helper: Helper) -> None:
     assert cap.err == ""
     assert disk_id in cap.out
 
+    cap = helper.run_cli(["-q", "disk", "ls"])
+    assert cap.err == ""
+    assert disk_id in cap.out.splitlines()
+
     cap = helper.run_cli(["disk", "get", disk_id])
     assert cap.err == ""
     assert disk_id in cap.out

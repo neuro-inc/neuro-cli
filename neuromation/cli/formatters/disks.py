@@ -1,3 +1,4 @@
+import abc
 from typing import Iterator, Sequence
 
 import click
@@ -9,7 +10,19 @@ from neuromation.cli.formatters.jobs import format_datetime
 from neuromation.cli.formatters.utils import URIFormatter
 
 
-class DisksFormatter:
+class BaseDisksFormatter:
+    @abc.abstractmethod
+    def __call__(self, jobs: Sequence[Disk]) -> Iterator[str]:  # pragma: no cover
+        pass
+
+
+class SimpleDisksFormatter(BaseDisksFormatter):
+    def __call__(self, disks: Sequence[Disk]) -> Iterator[str]:
+        for disk in disks:
+            yield disk.id
+
+
+class DisksFormatter(BaseDisksFormatter):
     _table_header_short = [
         click.style("Id", bold=True),
         click.style("Storage", bold=True),
