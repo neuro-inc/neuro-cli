@@ -36,36 +36,37 @@ def test_disk_formatter() -> None:
 def disks_list() -> List[Disk]:
     return [
         Disk(
-            "disk-1",
-            50 * (1024 ** 3),
-            "user",
-            Disk.Status.PENDING,
-            "cluster",
-            isoparse("2017-03-04T12:28:59.759433+00:00"),
+            id="disk-1",
+            storage=50 * (1024 ** 3),
+            owner="user",
+            status=Disk.Status.PENDING,
+            cluster_name="cluster",
+            created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
+            last_usage=isoparse("2017-03-08T12:28:59.759433+00:00"),
         ),
         Disk(
-            "disk-2",
-            50 * (1024 ** 2),
-            "user",
-            Disk.Status.READY,
-            "cluster",
-            isoparse("2017-04-04T12:28:59.759433+00:00"),
+            id="disk-2",
+            storage=50 * (1024 ** 2),
+            owner="user",
+            status=Disk.Status.READY,
+            cluster_name="cluster",
+            created_at=isoparse("2017-04-04T12:28:59.759433+00:00"),
         ),
         Disk(
-            "disk-3",
-            50 * (1024 ** 1),
-            "user",
-            Disk.Status.READY,
-            "cluster",
-            isoparse("2017-05-04T12:28:59.759433+00:00"),
+            id="disk-3",
+            storage=50 * (1024 ** 1),
+            owner="user",
+            status=Disk.Status.READY,
+            cluster_name="cluster",
+            created_at=isoparse("2017-05-04T12:28:59.759433+00:00"),
         ),
         Disk(
-            "disk-4",
-            50,
-            "user",
-            Disk.Status.READY,
-            "cluster",
-            isoparse("2017-06-04T12:28:59.759433+00:00"),
+            id="disk-4",
+            storage=50,
+            owner="user",
+            status=Disk.Status.BROKEN,
+            cluster_name="cluster",
+            created_at=isoparse("2017-06-04T12:28:59.759433+00:00"),
         ),
     ]
 
@@ -91,7 +92,7 @@ def test_disks_formatter_short(disks_list: List[Disk]) -> None:
         disk-1  50.0G    disk://cluster/user/disk-1  Pending
         disk-2  50.0M    disk://cluster/user/disk-2  Ready
         disk-3  50.0K    disk://cluster/user/disk-3  Ready
-        disk-4  50B      disk://cluster/user/disk-4  Ready"""
+        disk-4  50B      disk://cluster/user/disk-4  Broken"""
     )
 
 
@@ -104,5 +105,5 @@ def test_disks_formatter_long(disks_list: List[Disk]) -> None:
         disk-1  50.0G    disk://cluster/user/disk-1  Pending  Mar 04 2017  Mar 08 2017
         disk-2  50.0M    disk://cluster/user/disk-2  Ready    Apr 04 2017
         disk-3  50.0K    disk://cluster/user/disk-3  Ready    May 04 2017
-        disk-4  50B      disk://cluster/user/disk-4  Ready    Jun 04 2017"""
+        disk-4  50B      disk://cluster/user/disk-4  Broken   Jun 04 2017"""
     )
