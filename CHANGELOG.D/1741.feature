@@ -1,0 +1,1 @@
+Command `neuro image tags` outputs now a list of tags instead of a list of images.  API: `images.ls()` returns now a list of tags instead of a list of images.  API: added method `RemoteImage.with_tag()`.

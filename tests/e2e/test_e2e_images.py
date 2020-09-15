@@ -122,24 +122,18 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     delay = 0
     t0 = time.time()
 
-    found = False
     while time.time() - t0 < 180:
         time.sleep(delay)
         # check the tag is present now
         captured = helper.run_cli(["image", "tags", image_full_str_no_tag])
-        if tag in captured.out:
-            found = True
+        if tag in captured.out.splitlines():
             break
         # Give a chance to sync remote registries
         delay = min(delay * 2 + 1, 15)
-
-    if not found:
+    else:
         raise AssertionError(
             f"Delay is reached on waiting for tag {tag} in {captured.out}"
         )
-
-    # Check again
-    assert tag in captured.out
 
     cmd = f"neuro image tags {image_full_str}"
     result = subprocess.run(

@@ -145,7 +145,7 @@ async def tags(root: Root, image: RemoteImage) -> None:
     """
 
     tags = await root.client.images.tags(image)
-    pager_maybe((str(tag) for tag in tags), root.tty, root.terminal_size)
+    pager_maybe(tags, root.tty, root.terminal_size)
 
 
 image.add_command(ls)

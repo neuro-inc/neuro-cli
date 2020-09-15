@@ -1,5 +1,5 @@
 import enum
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Optional, Tuple
 
 from yarl import URL
@@ -54,6 +54,9 @@ class RemoteImage:
         else:
             if self.owner or self.cluster_name:
                 raise ValueError("required registry")
+
+    def with_tag(self, tag: str) -> "RemoteImage":
+        return replace(self, tag=tag)
 
     def as_docker_url(self, with_scheme: bool = False) -> str:
         if _is_in_neuro_registry(self):

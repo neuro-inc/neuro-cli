@@ -886,6 +886,27 @@ class TestRemoteImage:
         image = RemoteImage(name="ubuntu", tag="v10.04", owner=None, registry=None)
         assert image.as_docker_url() == "ubuntu:v10.04"
 
+    def test_with_tag_in_neuro_registry(self) -> None:
+        image1 = RemoteImage.new_neuro_image(
+            name="ubuntu",
+            owner="me",
+            cluster_name="test-cluster",
+            registry="registry.io",
+        )
+        image2 = RemoteImage.new_neuro_image(
+            name="ubuntu",
+            tag="v10.04",
+            owner="me",
+            cluster_name="test-cluster",
+            registry="registry.io",
+        )
+        assert image1.with_tag("v10.04") == image2
+
+    def test_with_tag_not_in_neuro_registry(self) -> None:
+        image1 = RemoteImage.new_external_image(name="ubuntu")
+        image2 = RemoteImage.new_external_image(name="ubuntu", tag="v10.04")
+        assert image1.with_tag("v10.04") == image2
+
 
 @pytest.mark.usefixtures("patch_docker_host")
 class TestImages:
@@ -1227,29 +1248,7 @@ class TestRegistry:
             )
             ret = await client.images.tags(image)
 
-        assert set(ret) == {
-            RemoteImage.new_neuro_image(
-                "test",
-                tag="alpha",
-                owner="me",
-                cluster_name="test-cluster",
-                registry="reg",
-            ),
-            RemoteImage.new_neuro_image(
-                "test",
-                tag="beta",
-                owner="me",
-                cluster_name="test-cluster",
-                registry="reg",
-            ),
-            RemoteImage.new_neuro_image(
-                "test",
-                tag="gamma",
-                owner="me",
-                cluster_name="test-cluster",
-                registry="reg",
-            ),
-        }
+        assert sorted(ret) == ["alpha", "beta", "gamma"]
 
     async def test_ls_tags_chunked(
         self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
@@ -1298,29 +1297,7 @@ class TestRegistry:
             ret = await client.images.tags(image)
         assert step == 3  # All steps are passed
 
-        assert set(ret) == {
-            RemoteImage.new_neuro_image(
-                "test",
-                tag="alpha",
-                owner="me",
-                cluster_name="test-cluster",
-                registry="reg",
-            ),
-            RemoteImage.new_neuro_image(
-                "test",
-                tag="beta",
-                owner="me",
-                cluster_name="test-cluster",
-                registry="reg",
-            ),
-            RemoteImage.new_neuro_image(
-                "test",
-                tag="gamma",
-                owner="me",
-                cluster_name="test-cluster",
-                registry="reg",
-            ),
-        }
+        assert sorted(ret) == ["alpha", "beta", "gamma"]
 
     @pytest.mark.skipif(
         sys.platform == "win32", reason="aiodocker doesn't support Windows pipes yet"

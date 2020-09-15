@@ -1,7 +1,6 @@
 import contextlib
 import logging
 import re
-from dataclasses import replace
 from typing import Any, Dict, List, Optional, Set
 
 import aiodocker
@@ -172,19 +171,18 @@ class Images(metaclass=NoPublicConstructor):
         if not image.name:
             raise ValueError(err + "missing image name")
 
-    async def tags(self, image: RemoteImage) -> List[RemoteImage]:
+    async def tags(self, image: RemoteImage) -> List[str]:
         self._validate_image_for_tags(image)
         name = f"{image.owner}/{image.name}"
         auth = await self._config._registry_auth()
         url = self._registry_url / name / "tags" / "list"
-        result: List[RemoteImage] = []
+        result: List[str] = []
         while True:
             url = url.update_query(n=str(TAGS_PER_PAGE))
             async with self._core.request("GET", url, auth=auth) as resp:
                 ret = await resp.json()
                 tags = ret.get("tags", [])
-                for tag in tags:
-                    result.append(replace(image, tag=tag))
+                result.extend(tags)
                 if not tags or "next" not in resp.links:
                     break
                 url = resp.links["next"]["url"]
