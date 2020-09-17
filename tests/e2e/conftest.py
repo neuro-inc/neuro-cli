@@ -8,7 +8,7 @@ import shlex
 import subprocess
 import sys
 from collections import namedtuple
-from contextlib import suppress
+from contextlib import contextmanager, suppress
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
@@ -18,6 +18,7 @@ from typing import (
     AsyncIterator,
     Awaitable,
     Callable,
+    ContextManager,
     Dict,
     Iterator,
     List,
@@ -31,6 +32,7 @@ import aiodocker
 import aiohttp
 import pexpect
 import pytest
+import toml
 from typing_extensions import Final
 from yarl import URL
 
@@ -754,6 +756,9 @@ def _get_nmrc_path(tmp_path_factory: Any, require_admin: bool) -> Optional[Path]
                 timeout=CLIENT_TIMEOUT,
             )
         )
+        # Setup user config
+        local_conf = nmrc_path / ".neuro.toml"
+        local_conf.write_text(toml.dumps({"job": {"life-span": "10m"}}))
         return nmrc_path
     else:
         # By providing `None` we allow Helper to login using default configuration
@@ -899,3 +904,21 @@ async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Doc
         pytest.skip(f"Could not connect to Docker: {e}")
     yield client
     await client.close()
+
+
+@pytest.fixture
+def disk_factory(helper: Helper) -> Callable[[str], ContextManager[str]]:
+    @contextmanager
+    def _make_disk(storage: str) -> Iterator[str]:
+        # Create disk
+        cap = helper.run_cli(["disk", "create", storage])
+        assert cap.err == ""
+        disk_id, *_ = cap.out.splitlines()[1].split()
+
+        yield disk_id
+
+        # Remove disk
+        cap = helper.run_cli(["disk", "rm", disk_id])
+        assert cap.err == ""
+
+    return _make_disk
