@@ -4,6 +4,8 @@ from typing import Optional, Tuple
 
 from yarl import URL
 
+from .url_utils import _check_uri, _check_uri_str
+
 
 class TagOption(enum.Enum):
     ALLOW = enum.auto()
@@ -197,14 +199,14 @@ class _ImageNameParser:
     ) -> RemoteImage:
         assert self._registry is not None
         if image.startswith("image:"):
+            # Check string representation to detect also trailing "?" and "#".
+            _check_uri_str(image, "image")
             url = URL(image)
             if not url.scheme and url.path.startswith("image:"):
                 url = URL.build(
                     scheme="image",
                     host=self._default_cluster,
                     path=f"/{self._default_user}/{url.path[len('image:') :]}",
-                    fragment=url.fragment,
-                    query=url.query,
                 )
         elif image.startswith(f"{self._registry}/"):
             url = URL.build(
@@ -215,7 +217,9 @@ class _ImageNameParser:
         else:
             raise ValueError("scheme 'image:' is required for remote images")
 
-        self._check_allowed_uri_elements(url)
+        if not url.path or url.path == "/":
+            raise ValueError("no image name specified")
+        _check_uri(url)
 
         name, tag = self._split_image_name(url.path.lstrip("/"), default_tag)
         cluster_name = url.host or self._default_cluster
@@ -260,22 +264,6 @@ class _ImageNameParser:
         if tag and (":" in tag or "/" in tag):
             raise ValueError("invalid tag")
         return name, tag
-
-    def _check_allowed_uri_elements(self, url: URL) -> None:
-        if not url.path or url.path == "/":
-            raise ValueError("no image name specified")
-        if url.query:
-            raise ValueError(f"query is not allowed, found: '{url.query}'")
-        if url.fragment:
-            raise ValueError(f"fragment is not allowed, found: '{url.fragment}'")
-        if url.user:
-            raise ValueError(f"user is not allowed, found: '{url.user}'")
-        if url.password:
-            raise ValueError(f"password is not allowed, found: '{url.password}'")
-        if url.port and url.scheme == "image":
-            raise ValueError(
-                f"port is not allowed with 'image://' scheme, found: '{url.port}'"
-            )
 
 
 def _get_url_authority(url: URL) -> Optional[str]:

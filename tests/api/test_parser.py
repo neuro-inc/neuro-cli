@@ -18,7 +18,24 @@ _MakeClient = Callable[..., Client]
 
 
 @pytest.mark.parametrize(
-    "volume", ["storage:///", ":", "::::", "", "storage:///data/:/data/rest:wrong"]
+    "volume",
+    [
+        "storage:///",
+        ":",
+        "::::",
+        "",
+        "storage:///data/:/data/rest:wrong",
+        "storage://cluster/user/path:to:/storage/location",
+        "storage://cluster/user/path/to:/storage/loca:tion",
+        "storage://cluster/user/path/to#fragment:/storage/location",
+        "storage://cluster/user/path/to#:/storage/location",
+        "storage://cluster/user/path/to?key=value:/storage/location",
+        "storage://cluster/user/path/to?:/storage/location",
+        "storage://user@cluster/user/path/to:/storage/location",
+        "storage://:password@cluster/user/path/to:/storage/location",
+        "storage://:@cluster/user/path/to:/storage/location",
+        "storage://cluster:1234/user/path/to:/storage/location",
+    ],
 )
 async def test_volume_from_str_fail(volume: str, make_client: _MakeClient) -> None:
     async with make_client("https://example.com") as client:
@@ -30,9 +47,29 @@ async def test_volume_from_str_fail(volume: str, make_client: _MakeClient) -> No
     "volume",
     [
         "disk://",
-        "disk://foo/bar/user:/sdfdf/sdfdsf:rw:more",
-        "disk://foo/bar/user:/sdfdf/sdfdsf:rwo",
+        "disk://cluster/user/name:/disk/location:rw:more",
+        "disk://cluster/user/name:/disk/location:rwo",
+        "disk://cluster/user/na:me:/disk/location",
+        "disk://cluster/user/name:/disk/loca:tion",
+        "disk://cluster/user/name#fragment:/disk/location",
+        "disk://cluster/user/name#:/disk/location",
+        "disk://cluster/user/name?key=value:/disk/location",
+        "disk://cluster/user/name?:/disk/location",
+        "disk://user@cluster/user/name:/disk/location",
+        "disk://:password@cluster/user/name:/disk/location",
+        "disk://:@cluster/user/name:/disk/location",
+        "disk://cluster:1234/user/name:/disk/location",
         "secret://cluster/user/secret:/var/secret:ro",
+        "secret://cluster/user/sec:ret:/secret/location",
+        "secret://cluster/user/secret:/secret/loca:tion",
+        "secret://cluster/user/secret#fragment:/secret/location",
+        "secret://cluster/user/secret#:/secret/location",
+        "secret://cluster/user/secret?key=value:/secret/location",
+        "secret://cluster/user/secret?:/secret/location",
+        "secret://user@cluster/user/secret:/secret/location",
+        "secret://:password@cluster/user/secret:/secret/location",
+        "secret://:@cluster/user/secret:/secret/location",
+        "secret://cluster:1234/user/secret:/secret/location",
         "dissk://f1/f2/f3:/f1:rw",
     ],
 )
@@ -63,6 +100,39 @@ async def test_parse_volumes(make_client: _MakeClient) -> None:
             DiskVolume(URL("disk://cluster/user/disk1"), "/disk/location4", False),
             DiskVolume(URL("disk://cluster/user/disk2"), "/disk/location5", True),
         }
+
+
+async def test_parse_volumes_special_chars(make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        volumes_str = [
+            "storage://cluster/user/path/to%23%25%3a%3f%40%E2%82%AC:/storage/location:rw",
+            "secret://cluster/user/secret%23%25%3a%3f%40%E2%82%AC:/secret/location",
+            "disk://cluster/user/disk%23%25%3a%3f%40%E2%82%AC:/disk/location:rw",
+        ]
+        result = client.parse.volumes(volumes_str)
+        assert result.volumes == [
+            Volume(
+                URL("storage://cluster/user/path/to%23%25%3a%3f%40%E2%82%AC"),
+                "/storage/location",
+                False,
+            ),
+        ]
+        assert result.volumes[0].storage_uri.path == "/user/path/to#%:?@€"
+        assert result.secret_files == [
+            SecretFile(
+                URL("secret://cluster/user/secret%23%25%3a%3f%40%E2%82%AC"),
+                "/secret/location",
+            )
+        ]
+        assert result.secret_files[0].secret_uri.path == "/user/secret#%:?@€"
+        assert result.disk_volumes == [
+            DiskVolume(
+                URL("disk://cluster/user/disk%23%25%3a%3f%40%E2%82%AC"),
+                "/disk/location",
+                False,
+            ),
+        ]
+        assert result.disk_volumes[0].disk_uri.path == "/user/disk#%:?@€"
 
 
 async def test_parse_local(make_client: _MakeClient) -> None:

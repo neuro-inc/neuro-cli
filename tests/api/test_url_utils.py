@@ -49,6 +49,16 @@ def test_uri_from_cli_absolute_path() -> None:
     assert str(uri) == Path("/path/to/file.txt").absolute().as_uri()
 
 
+def test_uri_from_cli_relative_path_special_chars() -> None:
+    uri = uri_from_cli("path/to/file#%23:?@~", "testuser", "test-cluster")
+    assert uri.path.endswith("/path/to/file#%23:?@~")
+
+
+def test_uri_from_cli_absolute_path_special_chars() -> None:
+    uri = uri_from_cli("/path/to/file#%23:?@~", "testuser", "test-cluster")
+    assert uri.path == "/path/to/file#%23:?@~"
+
+
 def test_uri_from_cli_path_with_tilde(fake_homedir: Path) -> None:
     uri = uri_from_cli("~/path/to/file.txt", "testuser", "test-cluster")
     assert str(uri) == (fake_homedir / "path/to/file.txt").as_uri()
@@ -80,6 +90,20 @@ def test_uri_from_cli_absolute_file_uri() -> None:
     assert str(uri) == Path("/path/to/file.txt").absolute().as_uri()
 
 
+def test_uri_from_cli_relative_file_uri_special_chars() -> None:
+    uri = uri_from_cli(
+        "file:path/to/file%23%25%3f:@~%E2%82%AC", "testuser", "test-cluster"
+    )
+    assert uri.path.endswith("/path/to/file#%?:@~€")
+
+
+def test_uri_from_cli_absolute_file_uri_special_chars() -> None:
+    uri = uri_from_cli(
+        "file:/path/to/file%23%25%3f:@~%E2%82%AC", "testuser", "test-cluster"
+    )
+    assert uri.path.endswith("/path/to/file#%?:@~€")
+
+
 def test_uri_from_cli_relative_storage_uri() -> None:
     uri = uri_from_cli("storage:path/to/file.txt", "testuser", "test-cluster")
     assert str(uri) == "storage://test-cluster/testuser/path/to/file.txt"
@@ -96,6 +120,15 @@ def test_uri_from_cli_absolute_storage_uri() -> None:
     assert str(uri) == "storage://test-cluster/path/to/file.txt"
 
 
+def test_uri_from_cli_absolute_storage_uri_special_chars() -> None:
+    uri = uri_from_cli(
+        "storage://cluster/user/path/to/file%23%25%3f:@~%E2%82%AC",
+        "testuser",
+        "test-cluster",
+    )
+    assert uri.path == "/user/path/to/file#%?:@~€"
+
+
 def test_uri_from_cli_numberic_path() -> None:
     uri = uri_from_cli("256", "testuser", "test-cluster")
     assert str(uri) == Path("256").absolute().as_uri()
@@ -109,6 +142,82 @@ def test_uri_from_cli_numberic_path() -> None:
     assert str(uri) == "storage://test-cluster/testuser/256"
     uri = uri_from_cli("storage:123456", "testuser", "test-cluster")
     assert str(uri) == "storage://test-cluster/testuser/123456"
+
+
+@pytest.mark.parametrize(
+    "path_or_uri",
+    [
+        "https://cluster/user/path/to",
+        "file://cluster/user/path/to",
+        "file:/path/to#fragment",
+        "file:/path/to#",
+        "file:/path/to?key=value",
+        "file:/path/to?",
+    ],
+)
+async def test_uri_from_cli__file__fail(path_or_uri: str) -> None:
+    with pytest.raises(ValueError):
+        uri_from_cli(path_or_uri, "u", "c", allowed_schemes=("file",))
+
+
+@pytest.mark.parametrize(
+    "uri",
+    [
+        "",
+        "https://cluster/user/path/to",
+        "storage://cluster/user/path/to#fragment",
+        "storage://cluster/user/path/to#",
+        "storage://cluster/user/path/to?key=value",
+        "storage://cluster/user/path/to?",
+        "storage://user@cluster/user/path/to",
+        "storage://:password@cluster/user/path/to",
+        "storage://:@cluster/user/path/to",
+        "storage://cluster:1234/user/path/to",
+    ],
+)
+async def test_uri_from_cli__storage__fail(uri: str) -> None:
+    with pytest.raises(ValueError):
+        uri_from_cli(uri, "u", "c", allowed_schemes=("storage",))
+
+
+@pytest.mark.parametrize(
+    "uri",
+    [
+        "",
+        "https://cluster/user/image",
+        "image://cluster/user/image#fragment",
+        "image://cluster/user/image#",
+        "image://cluster/user/image?key=value",
+        "image://cluster/user/image?",
+        "image://user@cluster/user/image",
+        "image://:password@cluster/user/image",
+        "image://:@cluster/user/image",
+        "image://cluster:1234/user/image",
+    ],
+)
+async def test_uri_from_cli__image__fail(uri: str) -> None:
+    with pytest.raises(ValueError):
+        uri_from_cli(uri, "u", "c", allowed_schemes=("image",))
+
+
+@pytest.mark.parametrize(
+    "uri",
+    [
+        "",
+        "https://cluster/bucket/object",
+        "blob://cluster/bucket/object#fragment",
+        "blob://cluster/bucket/object#",
+        "blob://cluster/bucket/object?key=value",
+        "blob://cluster/bucket/object?",
+        "blob://user@cluster/bucket/object",
+        "blob://:password@cluster/bucket/object",
+        "blob://:@cluster/bucket/object",
+        "blob://cluster:1234/bucket/object",
+    ],
+)
+async def test_uri_from_cli__blob__fail(uri: str) -> None:
+    with pytest.raises(ValueError):
+        uri_from_cli(uri, "u", "c", allowed_schemes=("blob",))
 
 
 async def test_normalize_storage_path_uri_no_path(client: Client) -> None:
@@ -190,7 +299,9 @@ async def test_normalize_storage_path_uri__2_slashes(client: Client) -> None:
 
 async def test_normalize_local_path_uri__2_slashes(pwd: Path) -> None:
     url = URL("file://path/to/file.txt")
-    with pytest.raises(ValueError, match="Host part is not allowed, found 'path'"):
+    with pytest.raises(
+        ValueError, match="Host part is not allowed in file URI, found 'path'"
+    ):
         url = normalize_local_path_uri(url)
 
 
@@ -228,6 +339,25 @@ async def test_normalize_local_path_uri__4_slashes_relative() -> None:
     assert url.host is None
     assert url.path == "/path/to/file.txt"
     assert str(url) == f"file:///path/to/file.txt"
+
+
+@pytest.mark.parametrize(
+    "uri_str",
+    [
+        "",
+        "https://cluster/user/path/to",
+        "storage://cluster/user/path/to#fragment",
+        "storage://cluster/user/path/to?key=value",
+        "storage://user@cluster/user/path/to",
+        "storage://:password@cluster/user/path/to",
+        "storage://:@cluster/user/path/to",
+        "storage://cluster:1234/user/path/to",
+    ],
+)
+async def test_normalize_storage_path_uri__fail(uri_str: str) -> None:
+    uri = URL(uri_str)
+    with pytest.raises(ValueError):
+        normalize_storage_path_uri(uri, "test-user", "test-cluster")
 
 
 async def test_normalize_storage_path_uri__tilde_in_relative_path(
@@ -319,7 +449,9 @@ async def test_normalize_local_path_uri__tilde_in_host(
     client: Client, pwd: Path
 ) -> None:
     url = URL("file://~/path/to/file.txt")
-    with pytest.raises(ValueError, match=f"Host part is not allowed, found '~'"):
+    with pytest.raises(
+        ValueError, match=f"Host part is not allowed in file URI, found '~'"
+    ):
         url = normalize_local_path_uri(url)
 
 
@@ -389,3 +521,19 @@ async def test_normalize_local_path_uri__3_slashes__double(pwd: Path) -> None:
 def test_normalized_path() -> None:
     p = URL("file:///Z:/neuromation/platform-api-clients/python/setup.py")
     assert normalize_local_path_uri(p) == p
+
+
+@pytest.mark.parametrize(
+    "uri_str",
+    [
+        "",
+        "https://cluster/user/path/to",
+        "file://cluster/user/path/to",
+        "file:/path/to#fragment",
+        "file:/path/to?key=value",
+    ],
+)
+async def test_normalize_local_path_uri__fail(uri_str: str) -> None:
+    uri = URL(uri_str)
+    with pytest.raises(ValueError):
+        normalize_local_path_uri(uri)

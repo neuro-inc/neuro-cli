@@ -2,7 +2,8 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Sequence, Union
+from typing import Sequence
+from urllib.parse import quote_from_bytes
 
 from yarl import URL
 
@@ -22,19 +23,24 @@ def uri_from_cli(
         if path_or_uri.startswith("~"):
             raise ValueError(f"Cannot expand user for {path_or_uri}")
         path_or_uri = Path(path_or_uri).as_uri()
-
-    uri = URL(path_or_uri)
-    # len(uri.scheme) == 1 is a workaround for Windows path like C:/path/to.txt
-    if not uri.scheme or len(uri.scheme) == 1:
-        # Workaround for urllib.parse.urlsplit()'s strange behavior with
-        # URLs like "scheme:123".
-        if re.fullmatch(r"[a-zA-Z0-9+\-.]{2,}:[0-9]+", path_or_uri):
-            uri = URL(f"{path_or_uri}#")
-        elif "file" in allowed_schemes:
-            if re.fullmatch(r"[0-9]+", path_or_uri):
-                uri = URL(f"file:{path_or_uri}#")
-            else:
-                uri = URL(f"file:{path_or_uri}")
+        uri = URL(path_or_uri)
+    else:
+        uri = URL(path_or_uri)
+        # len(uri.scheme) == 1 is a workaround for Windows path like C:/path/to.txt
+        if not uri.scheme or len(uri.scheme) == 1:
+            # Workaround for urllib.parse.urlsplit()'s strange behavior with
+            # URLs like "scheme:123".
+            if re.fullmatch(r"[a-zA-Z0-9+\-.]{2,}:[0-9]+", path_or_uri):
+                uri = URL(f"{path_or_uri}#")
+            elif "file" in allowed_schemes:
+                path = Path(path_or_uri)
+                if path.is_absolute():
+                    uri = URL(path.as_uri())
+                elif re.fullmatch(r"[0-9]+", path_or_uri):
+                    uri = URL(f"file:{path_or_uri}#")
+                else:
+                    uri = URL("file:" + quote_from_bytes(path.as_posix().encode()))
+                path_or_uri = str(uri)
     if not uri.scheme:
         raise ValueError(
             f"URI Scheme not specified. "
@@ -45,6 +51,8 @@ def uri_from_cli(
             f"Unsupported URI scheme: {uri.scheme}. "
             f"Please specify one of {', '.join(allowed_schemes)}."
         )
+    # Check string representation to detect also trailing "?" and "#".
+    _check_uri_str(path_or_uri, uri.scheme)
     if uri.scheme == "file":
         uri = normalize_local_path_uri(uri)
     elif uri.scheme == "blob":
@@ -87,6 +95,7 @@ def normalize_blob_path_uri(uri: URL, cluster_name: str) -> URL:
         raise ValueError(
             f"Invalid storage scheme '{uri.scheme}:' (only 'blob:' is allowed)"
         )
+    _check_uri(uri)
 
     stripped_path = uri.path.lstrip("/")
     # We treat all those as same URL's:
@@ -103,9 +112,9 @@ def normalize_blob_path_uri(uri: URL, cluster_name: str) -> URL:
     return uri
 
 
-def _normalize_uri(resource: Union[URL, str], username: str, cluster_name: str) -> URL:
+def _normalize_uri(uri: URL, username: str, cluster_name: str) -> URL:
     """Normalize all other user-bound URI's like jobs, storage, images, etc."""
-    uri = resource if isinstance(resource, URL) else URL(resource)
+    _check_uri(uri)
     path = uri.path
     if (uri.host or path.lstrip("/")).startswith("~"):
         raise ValueError(f"Cannot expand user for {uri}")
@@ -129,8 +138,9 @@ def normalize_local_path_uri(uri: URL) -> URL:
         raise ValueError(
             f"Invalid local file scheme '{uri.scheme}:' (only 'file:' is allowed)"
         )
+    _check_uri(uri)
     if uri.host:
-        raise ValueError(f"Host part is not allowed, found '{uri.host}'")
+        raise ValueError(f"Host part is not allowed in file URI, found '{uri.host}'")
     if uri.path.startswith("~"):
         raise ValueError(f"Cannot expand user for {uri}")
     path = _extract_path(uri)
@@ -147,6 +157,38 @@ def _extract_path(uri: URL) -> Path:
     path = Path(uri.path)
     if sys.platform == "win32":
         # result of previous normalization
-        if re.match(r"^[/\\][A-Za-z]:[/\\]", str(path)):
+        if re.match(r"[/\\][A-Za-z]:[/\\]", str(path)):
             return Path(str(path)[1:])
     return path
+
+
+def _check_uri(uri: URL) -> None:
+    if uri.fragment:
+        raise ValueError(
+            f"Fragment part is not allowed in {uri.scheme} URI. "
+            f"Use '%23' to quote '#' in path."
+        )
+    if uri.query:
+        raise ValueError(
+            f"Query part is not allowed in {uri.scheme} URI. "
+            f"Use '%3F' to quote '?' in path."
+        )
+    if uri.user is not None:
+        raise ValueError(f"User is not allowed in {uri.scheme} URI.")
+    if uri.password is not None:
+        raise ValueError(f"Password is not allowed in {uri.scheme} URI")
+    if uri.port is not None:
+        raise ValueError(f"Port is not allowed in {uri.scheme} URI")
+
+
+def _check_uri_str(uri: str, scheme: str) -> None:
+    if "#" in uri:
+        raise ValueError(
+            f"Fragment part is not allowed in {scheme} URI. "
+            f"Use '%23' to quote '#' in path."
+        )
+    if "?" in uri:
+        raise ValueError(
+            f"Query part is not allowed in {scheme} URI. "
+            f"Use '%3F' to quote '?' in path."
+        )
