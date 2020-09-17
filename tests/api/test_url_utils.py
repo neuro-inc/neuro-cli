@@ -56,7 +56,7 @@ def test_uri_from_cli_relative_path_special_chars() -> None:
 
 def test_uri_from_cli_absolute_path_special_chars() -> None:
     uri = uri_from_cli("/path/to/file#%23:?@~", "testuser", "test-cluster")
-    assert uri.path == "/path/to/file#%23:?@~"
+    assert _extract_path(uri) == Path("/path/to/file#%23:?@~").absolute()
 
 
 def test_uri_from_cli_path_with_tilde(fake_homedir: Path) -> None:
