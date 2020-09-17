@@ -106,7 +106,7 @@ class Parser(metaclass=NoPublicConstructor):
             raw_uri, container_path, read_only = self._parse_generic_volume(
                 volume, allow_rw_spec=True, resource_name="disk volume"
             )
-            disk_uri = self._parse_disk_resource(str(raw_uri))
+            disk_uri = self._parse_disk_resource(raw_uri)
             disk_volumes.append(DiskVolume(disk_uri, container_path, read_only))
         return disk_volumes
 
