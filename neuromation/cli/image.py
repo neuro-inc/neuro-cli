@@ -1,6 +1,6 @@
 import contextlib
 import logging
-from typing import Optional
+from typing import Optional, cast
 
 import click
 
@@ -144,8 +144,10 @@ async def tags(root: Root, image: RemoteImage) -> None:
     neuro image tags image:myimage
     """
 
-    tags = await root.client.images.tags(image)
-    pager_maybe((str(tag) for tag in tags), root.tty, root.terminal_size)
+    images = await root.client.images.tags(image)
+    pager_maybe(
+        (cast(str, image.tag) for image in images), root.tty, root.terminal_size
+    )
 
 
 image.add_command(ls)
