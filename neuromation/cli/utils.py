@@ -651,7 +651,7 @@ async def calc_life_span(
         warnings.warn(
             "Zero job's life-span (--life-span=0) is deprecated "
             "and will be removed in the future neuro CLI release,"
-            "use a positive value to avoid the resource leakage",
+            "use a positive value to avoid resource leakage",
             DeprecationWarning,
             stacklevel=2,
         )

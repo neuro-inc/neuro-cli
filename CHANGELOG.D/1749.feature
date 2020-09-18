@@ -1,0 +1,1 @@
+Show a deprecation warning for `--life-span=0`.
