@@ -1979,6 +1979,7 @@ neuro disk get [OPTIONS] DISK_ID
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--full-uri_|Output full disk URI.|
 
 
 

@@ -98,12 +98,19 @@ async def create(root: Root, storage: str, life_span: Optional[str] = None) -> N
 
 @command()
 @argument("disk_id")
-async def get(root: Root, disk_id: str) -> None:
+@option("--full-uri", is_flag=True, help="Output full disk URI.")
+async def get(root: Root, disk_id: str, full_uri: bool) -> None:
     """
     Get disk DISK_ID.
     """
     disk = await root.client.disks.get(disk_id)
-    disk_fmtr = DiskFormatter(str)
+    if full_uri:
+        uri_fmtr: URIFormatter = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username, cluster_name=root.client.cluster_name
+        )
+    disk_fmtr = DiskFormatter(uri_fmtr)
     pager_maybe(disk_fmtr(disk), root.tty, root.terminal_size)
 
 
