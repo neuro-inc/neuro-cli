@@ -8,7 +8,16 @@ from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep, time
-from typing import Any, AsyncIterator, Callable, Dict, Iterator, List, Tuple
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    ContextManager,
+    Dict,
+    Iterator,
+    List,
+    Tuple,
+)
 from uuid import uuid4
 
 import aiodocker
@@ -1131,41 +1140,33 @@ def test_job_working_dir(helper: Helper) -> None:
     helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
 
 
-@pytest.fixture
-def disk(helper: Helper) -> Iterator[str]:
-    # Create disk
-    cap = helper.run_cli(["disk", "create", "1G"])
-    assert cap.err == ""
-    disk_id, *_ = cap.out.splitlines()[1].split()
-
-    yield disk_id
-
-    # Create disk
-    cap = helper.run_cli(["disk", "rm", disk_id])
-    assert cap.err == ""
-
-
 @pytest.mark.e2e
-def test_job_disk_volume(helper: Helper, disk: str) -> None:
-    bash_script = 'echo "test data" > /mnt/disk/file && cat /mnt/disk/file'
-    command = f"bash -c '{bash_script}'"
-    captured = helper.run_cli(
-        [
-            "job",
-            "run",
-            "-v",
-            f"disk:{disk}:/mnt/disk:rw",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            command,
-        ]
-    )
+def test_job_disk_volume(
+    helper: Helper, disk_factory: Callable[[str], ContextManager[str]]
+) -> None:
 
-    out = captured.out
-    match = re.match("Job ID: (.+)", out)
-    assert match is not None, captured
-    job_id = match.group(1)
+    with disk_factory("1G") as disk:
+        bash_script = 'echo "test data" > /mnt/disk/file && cat /mnt/disk/file'
+        command = f"bash -c '{bash_script}'"
+        captured = helper.run_cli(
+            [
+                "job",
+                "run",
+                "--life-span",
+                "1m",  # Avoid completed job to block disk from cleanup
+                "-v",
+                f"disk:{disk}:/mnt/disk:rw",
+                "--no-wait-start",
+                UBUNTU_IMAGE_NAME,
+                command,
+            ]
+        )
 
-    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
+        out = captured.out
+        match = re.match("Job ID: (.+)", out)
+        assert match is not None, captured
+        job_id = match.group(1)
+
+        helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
+        helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
+        helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
