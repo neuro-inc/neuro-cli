@@ -9,6 +9,7 @@ import re
 import shlex
 import shutil
 import sys
+import warnings
 from datetime import timedelta
 from typing import (
     Any,
@@ -647,6 +648,13 @@ async def calc_life_span(
     )
     seconds = delta.total_seconds()
     if seconds == 0:
+        warnings.warn(
+            "Zero job's life-span (--life-span=0) is deprecated "
+            "and will be removed in the future neuro CLI release,"
+            "use a positive value to avoid resource leakage",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         return None
     assert seconds > 0
     return seconds
