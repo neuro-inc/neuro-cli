@@ -230,10 +230,11 @@ class TestImageParser:
             "image:///ubuntu?key=value",
             "image:ubuntu?key=value",
             "image:5000?key=value",
+            "image://test-cluster/bob/ubuntu:v10.04?",
         ],
     )
     def test_parse_as_neuro_image__with_query__fail(self, url: str) -> None:
-        with pytest.raises(ValueError, match="query is not allowed"):
+        with pytest.raises(ValueError, match="Query part is not allowed in image URI"):
             self.parser.parse_as_neuro_image(url)
 
     @pytest.mark.parametrize(
@@ -244,25 +245,33 @@ class TestImageParser:
             "image:///ubuntu#fragment",
             "image:ubuntu#fragment",
             "image:5000#fragment",
+            "image://test-cluster/bob/ubuntu:v10.04#",
         ],
     )
     def test_parse_as_neuro_image__with_fragment__fail(self, url: str) -> None:
-        with pytest.raises(ValueError, match="fragment is not allowed"):
+        with pytest.raises(
+            ValueError, match="Fragment part is not allowed in image URI"
+        ):
             self.parser.parse_as_neuro_image(url)
 
     def test_parse_as_neuro_image__with_user__fail(self) -> None:
         url = "image://user@test-cluster/bob/ubuntu"
-        with pytest.raises(ValueError, match="user is not allowed"):
+        with pytest.raises(ValueError, match="User is not allowed in image URI"):
             self.parser.parse_as_neuro_image(url)
 
     def test_parse_as_neuro_image__with_password__fail(self) -> None:
         url = "image://:password@test-cluster/bob/ubuntu"
-        with pytest.raises(ValueError, match="password is not allowed"):
+        with pytest.raises(ValueError, match="Password is not allowed in image URI"):
+            self.parser.parse_as_neuro_image(url)
+
+    def test_parse_as_neuro_image__with_empty_password__fail(self) -> None:
+        url = "image://:@test-cluster/bob/ubuntu"
+        with pytest.raises(ValueError, match="Password is not allowed in image URI"):
             self.parser.parse_as_neuro_image(url)
 
     def test_parse_as_neuro_image__with_port__fail(self) -> None:
         url = "image://test-cluster:443/bob/ubuntu"
-        with pytest.raises(ValueError, match="port is not allowed"):
+        with pytest.raises(ValueError, match="Port is not allowed in image URI"):
             self.parser.parse_as_neuro_image(url)
 
     def test_parse_as_neuro_image_empty__fail(self) -> None:
@@ -578,6 +587,17 @@ class TestImageParser:
             registry="reg.neu.ro",
         )
 
+    def test_parse_as_neuro_image_with_scheme_special_chars(self) -> None:
+        image = "image://other-cluster/bob/ubuntu%23%25%3F%C3%9F:v10.04%23%25%3F%C3%9F"
+        parsed = self.parser.parse_as_neuro_image(image)
+        assert parsed == RemoteImage.new_neuro_image(
+            name="ubuntu#%?ß",
+            tag="v10.04#%?ß",
+            owner="bob",
+            cluster_name="other-cluster",
+            registry="reg.neu.ro",
+        )
+
     def test_parse_as_neuro_image_no_scheme_no_slash_no_tag_fail(self) -> None:
         image = "ubuntu"
         with pytest.raises(ValueError, match="scheme 'image:' is required"):
@@ -616,6 +636,18 @@ class TestImageParser:
     def test_parse_as_neuro_image_with_registry_prefix(self) -> None:
         image = self.parser.parse_as_neuro_image("reg.neu.ro/user/image:tag")
         assert str(image) == "image://test-cluster/user/image:tag"
+
+    def test_parse_as_neuro_image_with_registry_prefix_special_chars(self) -> None:
+        image = self.parser.parse_as_neuro_image(
+            "reg.neu.ro/user/image%23%25%3F%C3%9F:tag%23%25%3F%C3%9F"
+        )
+        assert image == RemoteImage.new_neuro_image(
+            name="image#%?ß",
+            tag="tag#%?ß",
+            owner="user",
+            cluster_name="test-cluster",
+            registry="reg.neu.ro",
+        )
 
     def test_parse_as_neuro_image_no_scheme_3_slash_with_tag_fail(self) -> None:
         image = "something/docker.io/library/ubuntu:v10.04"

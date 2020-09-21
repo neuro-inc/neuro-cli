@@ -6,7 +6,7 @@ from yarl import URL
 
 from .config import Config
 from .parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
-from .url_utils import normalize_storage_path_uri, uri_from_cli
+from .url_utils import uri_from_cli
 from .utils import NoPublicConstructor
 
 
@@ -49,7 +49,7 @@ class Parser(metaclass=NoPublicConstructor):
 
     def _parse_generic_volume(
         self, volume: str, allow_rw_spec: bool = True, resource_name: str = "volume"
-    ) -> Tuple[URL, str, bool]:
+    ) -> Tuple[str, str, bool]:
         parts = volume.split(":")
         read_only = False
         if allow_rw_spec and len(parts) == 4:
@@ -59,13 +59,16 @@ class Parser(metaclass=NoPublicConstructor):
         elif len(parts) != 3:
             raise ValueError(f"Invalid {resource_name} specification '{volume}'")
         container_path = parts.pop()
-        raw_uri = URL(":".join(parts))
+        raw_uri = ":".join(parts)
         return raw_uri, container_path, read_only
 
     def volume(self, volume: str) -> Volume:
         raw_uri, container_path, read_only = self._parse_generic_volume(volume)
-        storage_uri = normalize_storage_path_uri(
-            raw_uri, self._config.username, self._config.cluster_name
+        storage_uri = uri_from_cli(
+            raw_uri,
+            self._config.username,
+            self._config.cluster_name,
+            allowed_schemes=("storage",),
         )
         return Volume(
             storage_uri=storage_uri, container_path=container_path, read_only=read_only
@@ -85,7 +88,7 @@ class Parser(metaclass=NoPublicConstructor):
             raw_uri, container_path, _ = self._parse_generic_volume(
                 volume, allow_rw_spec=False, resource_name="secret file"
             )
-            secret_uri = self._parse_secret_resource(str(raw_uri))
+            secret_uri = self._parse_secret_resource(raw_uri)
             secret_files.append(SecretFile(secret_uri, container_path))
         return secret_files
 
@@ -103,7 +106,7 @@ class Parser(metaclass=NoPublicConstructor):
             raw_uri, container_path, read_only = self._parse_generic_volume(
                 volume, allow_rw_spec=True, resource_name="disk volume"
             )
-            disk_uri = self._parse_disk_resource(str(raw_uri))
+            disk_uri = self._parse_disk_resource(raw_uri)
             disk_volumes.append(DiskVolume(disk_uri, container_path, read_only))
         return disk_volumes
 
