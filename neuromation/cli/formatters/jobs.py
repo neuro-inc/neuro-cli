@@ -26,12 +26,12 @@ from .utils import ImageFormatter, URIFormatter, image_formatter
 
 
 COLORS = {
-    JobStatus.PENDING: "yellow",
+    JobStatus.PENDING: "cyan",
     JobStatus.RUNNING: "blue",
     JobStatus.SUCCEEDED: "green",
-    JobStatus.CANCELLED: "green",
+    JobStatus.CANCELLED: "yellow",
     JobStatus.FAILED: "red",
-    JobStatus.UNKNOWN: "yellow",
+    JobStatus.UNKNOWN: "bright_red",
 }
 
 

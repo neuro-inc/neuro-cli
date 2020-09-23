@@ -1,0 +1,1 @@
+Change the color scheme for job statuses. The yellow color is for the cancellation, cyan is for pending jobs.
