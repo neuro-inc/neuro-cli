@@ -183,14 +183,16 @@ class Parser(metaclass=NoPublicConstructor):
         )
         return parser.convert_to_local_image(image)
 
-    def env(self, env: Sequence[str]) -> Tuple[Dict[str, str], Dict[str, URL]]:
+    def env(
+        self, env: Sequence[str], env_file: Sequence[str] = ()
+    ) -> Tuple[Dict[str, str], Dict[str, URL]]:
         warnings.warn(
             "client.parse.env() method is deprecated and scheduled for removal "
             "in future Neuro CLI release, please use client.parse.envs() instead",
             DeprecationWarning,
             stacklevel=2,
         )
-        ret = self.envs(env)
+        ret = self.envs(env, env_file)
         return ret.env, ret.secret_env
 
     def envs(self, env: Sequence[str], env_file: Sequence[str] = ()) -> EnvParseResult:
