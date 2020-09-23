@@ -1,8 +1,9 @@
 import os
 import warnings
 from dataclasses import dataclass
-from typing import Dict, Iterator, List, Sequence, Set, Tuple
+from typing import Any, Dict, Iterator, List, Sequence, Set, Tuple, overload
 
+from typing_extensions import Literal
 from yarl import URL
 
 from .config import Config
@@ -33,9 +34,46 @@ class DiskVolume:
 
 @dataclass(frozen=True)
 class VolumeParseResult:
-    volumes: List[Volume]
-    secret_files: List[SecretFile]
-    disk_volumes: List[DiskVolume]
+    volumes: Sequence[Volume]
+    secret_files: Sequence[SecretFile]
+    disk_volumes: Sequence[DiskVolume]
+
+    # backward compatibility
+
+    def __len__(self) -> int:
+        warnings.warn(
+            "tuple-like access to client.parse.volumes() result is deprecated "
+            "and scheduled for removal in future Neuro CLI release. "
+            "Please access by attribute names) instead, "
+            "e.g. client.parse.volumes().secret_files",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return 2
+
+    @overload
+    def __getitem__(self, idx: Literal[0]) -> Sequence[Volume]:
+        pass
+
+    @overload
+    def __getitem__(self, idx: Literal[1]) -> Sequence[SecretFile]:
+        pass
+
+    def __getitem__(self, idx: Any) -> Any:
+        warnings.warn(
+            "tuple-like access to client.parse.volumes() result is deprecated "
+            "and scheduled for removal in future Neuro CLI release. "
+            "Please access by attribute names) instead, "
+            "e.g. client.parse.volumes().secret_files",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if idx == 0:
+            return self.volumes
+        elif idx == 1:
+            return self.secret_files
+        else:
+            raise IndexError(idx)
 
 
 @dataclass(frozen=True)
