@@ -1,1 +1,0 @@
-`neuro run` allows now to specify disk volumes using `-v disk:<DISK>:<PATH>:<RW_FLAG>`.

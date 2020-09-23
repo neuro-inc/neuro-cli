@@ -5,6 +5,40 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.9.23b1 (2020-09-23)
+==================================
+
+Features
+--------
+
+
+- Fragment, query, user, password and port parts are not allowed now in URIs (these parts were silently ignored before).
+  Fixed support of local file paths containing characters like "#", "%", ":", "?", "@" and "~". ([#1531](https://github.com/neuromation/platform-api-clients/issues/1531))
+
+- Implemented disks management commands. ([#1716](https://github.com/neuromation/platform-api-clients/issues/1716))
+
+- `neuro run` allows now to specify disk volumes using `-v disk:<DISK>:<PATH>:<RW_FLAG>`. ([#1721](https://github.com/neuromation/platform-api-clients/issues/1721))
+
+- Added support of `created_at` and `last_usage` field of disks. Added `--long-format` option to `neuro disk ls`. ([#1729](https://github.com/neuromation/platform-api-clients/issues/1729))
+
+- Memory amount parsing now supports of both `b` and `B` suffixes for specifying decimal
+  quantities. Improved `neuro disk create` docs. ([#1731](https://github.com/neuromation/platform-api-clients/issues/1731))
+
+- Added a `--life-span` argument to `neuro disk create`. Added a `life_span` argument in `client.disks.create()`. ([#1734](https://github.com/neuromation/platform-api-clients/issues/1734))
+
+- Added output to `neuro disk rm` and `neuro secret rm` when `-v` flag is set. ([#1738](https://github.com/neuromation/platform-api-clients/issues/1738))
+
+- Quite mode command `neuro -q disk ls` now prints simple list of disk ids. ([#1740](https://github.com/neuromation/platform-api-clients/issues/1740))
+
+- Command `neuro image tags` outputs now a list of tags instead of a list of images. ([#1741](https://github.com/neuromation/platform-api-clients/issues/1741))
+
+- Added support of `--full-uri` to `neuro disk get`. ([#1747](https://github.com/neuromation/platform-api-clients/issues/1747))
+
+- Show a deprecation warning for `--life-span=0`. ([#1749](https://github.com/neuromation/platform-api-clients/issues/1749))
+
+- Change the color scheme for job statuses. The yellow color is for the cancellation, cyan is for pending jobs. ([#1752](https://github.com/neuromation/platform-api-clients/issues/1752))
+
+
 Neuromation 20.9.3 (2020-09-03)
 ===============================
 
