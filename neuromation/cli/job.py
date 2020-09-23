@@ -1185,7 +1185,7 @@ async def run_job(
     )
 
     volume_parse_result = root.client.parse.volumes(volume)
-    volumes = volume_parse_result.volumes
+    volumes = list(volume_parse_result.volumes)
     secret_files = volume_parse_result.secret_files
     disk_volumes = volume_parse_result.disk_volumes
 
