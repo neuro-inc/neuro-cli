@@ -1,4 +1,5 @@
 import os
+import warnings
 from dataclasses import dataclass
 from typing import Dict, Iterator, List, Sequence, Set, Tuple
 
@@ -143,6 +144,16 @@ class Parser(metaclass=NoPublicConstructor):
             self._config.username, self._config.cluster_name, self._config.registry_url
         )
         return parser.convert_to_local_image(image)
+
+    def env(self, env: Sequence[str]) -> Tuple[Dict[str, str], Dict[str, URL]]:
+        warnings.warn(
+            "client.parse.env() method is deprecated and scheduled for removal "
+            "in future Neuro CLI release, please use client.parse.envs() instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        ret = self.envs(env)
+        return ret.env, ret.secret_env
 
     def envs(self, env: Sequence[str], env_file: Sequence[str] = ()) -> EnvParseResult:
         env_dict = self._build_env(env, env_file)
