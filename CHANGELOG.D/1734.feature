@@ -1,1 +1,0 @@
-Added a `--life-span` argument to `neuro disk create`. Added a `life_span` argument in `client.disks.create()`.

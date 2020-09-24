@@ -1,1 +1,0 @@
-Added support of `--full-uri` to `neuro disk get`.
