@@ -2,6 +2,7 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable
 from unittest import mock
+from urllib.parse import parse_qsl
 
 import pytest
 import toml
@@ -541,7 +542,7 @@ async def test_refresh_token(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient, token: str
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        req = await request.json()
+        req = dict(parse_qsl(await request.text()))
         assert req == {
             "client_id": "CLIENT-ID",
             "grant_type": "refresh_token",
