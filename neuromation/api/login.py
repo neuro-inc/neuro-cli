@@ -17,6 +17,7 @@ from typing import (
     Type,
     cast,
 )
+from urllib.parse import urlencode
 
 import aiohttp
 from aiohttp import ClientResponseError
@@ -313,7 +314,14 @@ class AuthTokenClient:
             client_id=self._client_id,
             redirect_uri=str(code.callback_url),
         )
-        async with self._client.post(self._url, json=payload) as resp:
+        async with self._client.post(
+            self._url,
+            headers={
+                "accept": "application/json",
+                "content-type": "application/x-www-form-urlencoded",
+            },
+            data=urlencode(payload),
+        ) as resp:
             try:
                 resp.raise_for_status()
             except ClientResponseError as exc:
@@ -331,7 +339,14 @@ class AuthTokenClient:
             refresh_token=token.refresh_token,
             client_id=self._client_id,
         )
-        async with self._client.post(self._url, json=payload) as resp:
+        async with self._client.post(
+            self._url,
+            headers={
+                "accept": "application/json",
+                "content-type": "application/x-www-form-urlencoded",
+            },
+            data=urlencode(payload),
+        ) as resp:
             try:
                 resp.raise_for_status()
             except ClientResponseError as exc:
