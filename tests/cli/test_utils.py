@@ -674,15 +674,6 @@ async def test_calc_life_span_none_default(
         )
 
 
-async def test_calc_life_span_zero(make_client: _MakeClient) -> None:
-    async with make_client("https://example.com") as client:
-        with pytest.warns(
-            DeprecationWarning,
-            match=r"Zero job's life-span \(--life-span=0\) is deprecated",
-        ):
-            assert await calc_life_span(client, "0", "1d", "job") is None
-
-
 async def test_calc_life_span_default_life_span_all_keys(
     caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
