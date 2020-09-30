@@ -1,6 +1,7 @@
 import asyncio
 from typing import AsyncIterator, Optional
 from unittest import mock
+from urllib.parse import parse_qsl
 
 import aiohttp
 import pytest
@@ -261,7 +262,9 @@ class _TestAuthHandler:
         raise HTTPFound(url)
 
     async def handle_token(self, request: Request) -> Response:
-        payload = await request.json()
+        assert request.headers["accept"] == "application/json"
+        assert request.headers["content-type"] == "application/x-www-form-urlencoded"
+        payload = dict(parse_qsl(await request.text()))
         grant_type = payload["grant_type"]
         if grant_type == "authorization_code":
             assert payload == dict(
