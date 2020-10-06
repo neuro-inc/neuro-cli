@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 import click
+from aiohttp.client_exceptions import ClientConnectionError
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
 from yarl import URL
@@ -31,10 +32,11 @@ async def show(root: Root) -> None:
     Print current settings.
     """
     fmt = ConfigFormatter()
-    available_jobs_counts = await root.client.jobs.get_capacity(
-        root.client.config.presets
-    )
-    click.echo(fmt(root.client.config, available_jobs_counts))
+    try:
+        jobs_capacity = await root.client.jobs.get_capacity(root.client.config.presets)
+    except ClientConnectionError:
+        jobs_capacity = {}
+    click.echo(fmt(root.client.config, jobs_capacity))
 
 
 @command()
