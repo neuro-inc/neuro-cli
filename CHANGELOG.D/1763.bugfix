@@ -1,1 +1,0 @@
-Suppress connection errors when cluster is not available in `neuro config show`.

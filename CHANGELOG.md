@@ -5,6 +5,23 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.10.7 (2020-10-07)
+================================
+
+Features
+--------
+
+
+- Made `neuro completion patch` idempotent. ([#1760](https://github.com/neuromation/platform-api-clients/issues/1760))
+
+
+Bugfixes
+--------
+
+
+- Suppress connection errors when cluster is not available in `neuro config show`. ([#1763](https://github.com/neuromation/platform-api-clients/issues/1763))
+
+
 Neuromation 20.9.24 (2020-09-24)
 ================================
 

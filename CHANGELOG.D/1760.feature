@@ -1,1 +1,0 @@
-Made `neuro completion patch` idempotent.
