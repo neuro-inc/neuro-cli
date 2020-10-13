@@ -89,6 +89,18 @@ class RemoteTaglessImageType(click.ParamType):
         return client.parse.remote_image(value, tag_option=TagOption.DENY)
 
 
+class RemoteImageType(click.ParamType):
+    name = "image"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> RemoteImage:
+        assert ctx is not None
+        root = cast(Root, ctx.obj)
+        client = root.run(root.init_client())
+        return client.parse.remote_image(value)
+
+
 class LocalRemotePortParamType(click.ParamType):
     name = "local-remote-port-pair"
 

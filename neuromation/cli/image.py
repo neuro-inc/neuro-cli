@@ -17,7 +17,7 @@ from neuromation.cli.formatters.utils import (
     uri_formatter,
 )
 
-from .click_types import RemoteTaglessImageType
+from .click_types import RemoteImageType, RemoteTaglessImageType
 from .root import Root
 from .utils import (
     argument,
@@ -150,7 +150,43 @@ async def tags(root: Root, image: RemoteImage) -> None:
     )
 
 
+@command()
+@argument("image", type=RemoteImageType())
+async def rm(root: Root, image: RemoteImage) -> None:
+    """
+    Remove image from platform registry.
+
+    Image name must be URL with image:// scheme.
+    Image names must contain tag.
+
+    Examples:
+
+    neuro image rm image://myfriend/alpine:shared
+    neuro image rm image:myimage
+    """
+    digest = await root.client.images.digest(image)
+    click.echo(f"Deleting image identified by {digest}")
+    await root.client.images.rm(image, digest)
+
+
+@command()
+@argument("image", type=RemoteImageType())
+@argument("digest")
+async def rmd(root: Root, image: RemoteImage, digest: str) -> None:
+    await root.client.images.rm(image, digest)
+
+
+@command()
+@argument("image", type=RemoteImageType())
+async def digest(root: Root, image: RemoteImage) -> None:
+    res = await root.client.images.digest(image)
+    click.echo(res)
+
+
 image.add_command(ls)
 image.add_command(push)
 image.add_command(pull)
+image.add_command(rm)
+image.add_command(rmd)
+image.add_command(digest)
 image.add_command(tags)
