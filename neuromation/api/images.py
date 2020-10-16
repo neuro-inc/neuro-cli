@@ -109,118 +109,29 @@ class Images(metaclass=NoPublicConstructor):
         assert remote.tag
         url = self._registry_url / name / "manifests" / remote.tag
         async with self._core.request(
-            "GET",
+            "HEAD",
             url,
             auth=auth,
             headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
         ) as resp:
-            """
-            Sample response
-            {
-               "schemaVersion": 2,
-               "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
-               "config": {
-                  "mediaType": "application/vnd.docker.container.image.v1+json",
-                  "size": 10118,
-                  "digest": "sha256:8d039ece80d31b10dde3c697d4ba03dabfc29d8664a2a6d4f9
-               },
-               "layers": [
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 45309934,
-                     "digest": "sha256:bc9ab73e5b14b9fbd3687a4d8c1f1360533d6ee9ffc3f5e
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 10740016,
-                     "digest": "sha256:193a6306c92af328dbd41bbbd3200a2c90802624cccfe57
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 4336053,
-                     "digest": "sha256:e5c3f8c317dc30af45021092a3d76f16ba7aa1ee5f18fec
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 50065549,
-                     "digest": "sha256:a587a86c9dcb9df6584180042becf21e36ecd8b460a7617
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 213202596,
-                     "digest": "sha256:72744d0a318b0788001cc4f5f83c6847ba4b753307fadd0
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 5744764,
-                     "digest": "sha256:6598fc9d11d10365ac9281071a87930a2382ee31d026f1b
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 20950985,
-                     "digest": "sha256:4b1d9004d467b4e710d770a881df027df7e5e7e4629f6e4
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 240,
-                     "digest": "sha256:93612f47cdc374d0b33057b9e71eac173ac469da3e1a631
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 1780802,
-                     "digest": "sha256:1bc4b4b508703799ef67a807dacce4736045e642e87bcd4
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 100,
-                     "digest": "sha256:0ddca6a54335adea4a2a50e7385a1e76519dd8b7ca32782
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 639,
-                     "digest": "sha256:7dbf5167a7cb414d1becc6e42028bc34a8c265bf7755953
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 17613054,
-                     "digest": "sha256:f62d7173e796ef811c6956b7295c4ccfb736eaf218bbad2
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 59011,
-                     "digest": "sha256:d29fe402a3713516c8eedec84b9a94b65ba453a7f54e522
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 31358,
-                     "digest": "sha256:4a7b15f8645bb72d23021d553c735c060930fb15dfd9266
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 1455,
-                     "digest": "sha256:f6d54c29d93a51bd06fc73c714c2737ee73dea5f11e252d
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 686,
-                     "digest": "sha256:faf3c662aed76d8ee8b857021dd48e287073fd8e7c2b4c8
-                  },
-                  {
-                     "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
-                     "size": 459,
-                     "digest": "sha256:b60b0cb6f684eafe3ab6d5ceb3694cc785fbf379eb76196
-                  }
-               ]
-            }
-            """
-            ret = await resp.json()
-            return ret["config"]["digest"]
+            return resp.headers["Docker-Content-Digest"]
 
     async def rm(self, remote: RemoteImage, digest: str) -> None:
         try:
             name = f"{remote.owner}/{remote.name}"
             auth = await self._config._registry_auth()
             url = self._registry_url / name / "manifests" / digest
+            async with self._core.request("DELETE", url, auth=auth) as resp:
+                assert resp
+        except DockerError as error:
+            if error.status == 404:
+                raise ValueError(f"Image {remote} was not found") from error
+
+    async def rm_blob(self, remote: RemoteImage, digest: str) -> None:
+        try:
+            name = f"{remote.owner}/{remote.name}"
+            auth = await self._config._registry_auth()
+            url = self._registry_url / name / "blobs" / digest
             print(url)
             async with self._core.request("DELETE", url, auth=auth) as resp:
                 assert resp

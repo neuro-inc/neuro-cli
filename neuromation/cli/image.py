@@ -178,6 +178,13 @@ async def rmd(root: Root, image: RemoteImage, digest: str) -> None:
 
 @command()
 @argument("image", type=RemoteImageType())
+@argument("digest")
+async def rmb(root: Root, image: RemoteImage, digest: str) -> None:
+    await root.client.images.rm_blob(image, digest)
+
+
+@command()
+@argument("image", type=RemoteImageType())
 async def digest(root: Root, image: RemoteImage) -> None:
     res = await root.client.images.digest(image)
     click.echo(res)
@@ -188,5 +195,6 @@ image.add_command(push)
 image.add_command(pull)
 image.add_command(rm)
 image.add_command(rmd)
+image.add_command(rmb)
 image.add_command(digest)
 image.add_command(tags)

@@ -41,6 +41,7 @@
 		* [neuro image pull](#neuro-image-pull)
 		* [neuro image rm](#neuro-image-rm)
 		* [neuro image rmd](#neuro-image-rmd)
+		* [neuro image rmb](#neuro-image-rmb)
 		* [neuro image digest](#neuro-image-digest)
 		* [neuro image tags](#neuro-image-tags)
 	* [neuro config](#neuro-config)
@@ -1098,6 +1099,7 @@ Name | Description|
 | _[neuro image pull](#neuro-image-pull)_| Pull an image from platform registry |
 | _[neuro image rm](#neuro-image-rm)_| Remove image from platform registry |
 | _[neuro image rmd](#neuro-image-rmd)_|  |
+| _[neuro image rmb](#neuro-image-rmb)_|  |
 | _[neuro image digest](#neuro-image-digest)_|  |
 | _[neuro image tags](#neuro-image-tags)_| List tags for image in platform registry |
 
@@ -1219,6 +1221,23 @@ Name | Description|
 
 ```bash
 neuro image rmd [OPTIONS] IMAGE DIGEST
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro image rmb
+
+**Usage:**
+
+```bash
+neuro image rmb [OPTIONS] IMAGE DIGEST
 ```
 
 **Options:**
