@@ -38,12 +38,14 @@ async def run_version_checker(client: Client, disable_check: bool) -> None:
         return
     with client.config._open_db() as db:
         _ensure_schema(db)
+        neurocli_db = _read_package(db, "neuro-cli")
         neuromation_db = _read_package(db, "neuromation")
         certifi_db = _read_package(db, "certifi")
 
-    _warn_maybe(neuromation_db, certifi_db)
+    _warn_maybe(neurocli_db, neuromation_db, certifi_db)
     inserts: List[Tuple[str, str, float, float]] = []
     await _add_record(client, "neuromation", neuromation_db, inserts)
+    await _add_record(client, "neuro-cli", neuromation_db, inserts)
     await _add_record(client, "certifi", certifi_db, inserts)
     with client.config._open_db() as db:
         db.executemany(
@@ -166,12 +168,27 @@ def _parse_version_upload_time(
 
 
 def _warn_maybe(
+    neurocli_db: Optional[Record],
     neuromation_db: Optional[Record],
     certifi_db: Optional[Record],
     *,
     certifi_warning_delay: int = 14 * 3600 * 24,
 ) -> None:
-    if neuromation_db is not None:
+
+    if neurocli_db is not None:
+        current = pkg_resources.parse_version(neuromation.__version__)
+        pypi = pkg_resources.parse_version(neurocli_db["version"])
+        if current < pypi:
+            update_command = "pip install --upgrade neuro-cli"
+            click.secho(
+                f"You are using Neuro Platform Client {current}, "
+                f"however {pypi} is available.\n"
+                f"You should consider upgrading via "
+                f"the '{update_command}' command.",
+                err=True,
+                fg="yellow",
+            )
+    elif neuromation_db is not None:
         current = pkg_resources.parse_version(neuromation.__version__)
         pypi = pkg_resources.parse_version(neuromation_db["version"])
         if current < pypi:
