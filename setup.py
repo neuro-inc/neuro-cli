@@ -21,7 +21,7 @@ setup(
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
         "yarl>=1.5.1,<1.6",
-        "multidict>=4.0,<5.0",
+        "multidict>=4.0,<6.0",
         "aiodocker>=0.18.7",
         "click>=7.0",
         "humanize>=0.5",
