@@ -1,3 +1,0 @@
-# required by aiohttp 3.6.3
-multidict<5.0
-yarl<1.6.0

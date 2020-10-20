@@ -48,11 +48,11 @@ _init-cli-help:
 
 .PHONY: update-deps
 update-deps:
-	pip install -r requirements/dev.txt -c requirements/contraints.txt
+	pip install -r requirements/dev.txt
 	touch .update-deps
 
 .update-deps: $(shell find requirements -type f)
-	pip install -r requirements/dev.txt -c requirements/contraints.txt
+	pip install -r requirements/dev.txt
 	touch .update-deps
 
 .PHONY: .e2e

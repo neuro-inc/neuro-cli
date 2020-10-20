@@ -127,18 +127,6 @@ class Images(metaclass=NoPublicConstructor):
             if error.status == 404:
                 raise ValueError(f"Image {remote} was not found") from error
 
-    async def rm_blob(self, remote: RemoteImage, digest: str) -> None:
-        try:
-            name = f"{remote.owner}/{remote.name}"
-            auth = await self._config._registry_auth()
-            url = self._registry_url / name / "blobs" / digest
-            print(url)
-            async with self._core.request("DELETE", url, auth=auth) as resp:
-                assert resp
-        except DockerError as error:
-            if error.status == 404:
-                raise ValueError(f"Image {remote} was not found") from error
-
     async def pull(
         self,
         remote: RemoteImage,

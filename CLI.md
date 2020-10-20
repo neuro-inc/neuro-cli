@@ -40,8 +40,6 @@
 		* [neuro image push](#neuro-image-push)
 		* [neuro image pull](#neuro-image-pull)
 		* [neuro image rm](#neuro-image-rm)
-		* [neuro image rmd](#neuro-image-rmd)
-		* [neuro image rmb](#neuro-image-rmb)
 		* [neuro image digest](#neuro-image-digest)
 		* [neuro image tags](#neuro-image-tags)
 	* [neuro config](#neuro-config)
@@ -1098,9 +1096,7 @@ Name | Description|
 | _[neuro image push](#neuro-image-push)_| Push an image to platform registry |
 | _[neuro image pull](#neuro-image-pull)_| Pull an image from platform registry |
 | _[neuro image rm](#neuro-image-rm)_| Remove image from platform registry |
-| _[neuro image rmd](#neuro-image-rmd)_|  |
-| _[neuro image rmb](#neuro-image-rmb)_|  |
-| _[neuro image digest](#neuro-image-digest)_|  |
+| _[neuro image digest](#neuro-image-digest)_| Get digest of an image from remote registry Image name must be URL with image://... |
 | _[neuro image tags](#neuro-image-tags)_| List tags for image in platform registry |
 
 
@@ -1189,7 +1185,7 @@ Name | Description|
 
 ### neuro image rm
 
-Remove image from platform registry.<br/><br/>Image name must be URL with image:// scheme. Image names must contain tag.<br/>
+Remove image from platform registry.<br/><br/>Image name must be URL with image:// scheme. Image name must contain tag.<br/>
 
 **Usage:**
 
@@ -1202,42 +1198,8 @@ neuro image rm [OPTIONS] IMAGE
 ```bash
 
 neuro image rm image://myfriend/alpine:shared
-neuro image rm image:myimage
+neuro image rm image:myimage:latest
 
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro image rmd
-
-**Usage:**
-
-```bash
-neuro image rmd [OPTIONS] IMAGE DIGEST
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro image rmb
-
-**Usage:**
-
-```bash
-neuro image rmb [OPTIONS] IMAGE DIGEST
 ```
 
 **Options:**
@@ -1251,10 +1213,21 @@ Name | Description|
 
 ### neuro image digest
 
+Get digest of an image from remote registry<br/><br/>Image name must be URL with image:// scheme. Image name must contain tag.<br/>
+
 **Usage:**
 
 ```bash
 neuro image digest [OPTIONS] IMAGE
+```
+
+**Examples:**
+
+```bash
+
+neuro image digest image://myfriend/alpine:shared
+neuro image digest image:myimage:latest
+
 ```
 
 **Options:**
