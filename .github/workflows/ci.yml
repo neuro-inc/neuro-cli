@@ -96,11 +96,11 @@ jobs:
     needs: unit
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.6, 3.8]
         os: [ubuntu, macos, windows]
-        exclude:
-        - os: macos
-          python-version: 3.6
+        include:
+        - python-version: 3.7
+          os: ubuntu
       fail-fast:
         false
     runs-on: ${{ matrix.os }}-latest
