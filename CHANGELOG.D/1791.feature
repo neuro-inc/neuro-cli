@@ -1,0 +1,1 @@
+Allowed to share secrets.
