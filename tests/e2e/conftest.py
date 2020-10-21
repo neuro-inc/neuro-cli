@@ -483,10 +483,7 @@ class Helper:
             raise
         out = proc.stdout
         err = proc.stderr
-        if any(
-            start in " ".join(arguments)
-            for start in ("submit", "job submit", "run", "job run")
-        ):
+        if any(run_cmd in arguments for run_cmd in ("submit", "run")):
             job_id = self.find_job_id(out)
             if job_id:
                 self._executed_jobs.append(job_id)
