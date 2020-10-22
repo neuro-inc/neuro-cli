@@ -5,6 +5,16 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.10.22 (2020-10-22)
+=================================
+
+Features
+--------
+
+
+- Allowed to share secrets. ([#1791](https://github.com/neuro-inc/platform-api-clients/issues/1791))
+
+
 Neuromation 20.10.7 (2020-10-07)
 ================================
 
