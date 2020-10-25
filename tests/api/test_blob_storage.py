@@ -213,7 +213,7 @@ async def blob_storage_server(
             "body": body,
         }
         CONTENTS[key] = blob
-        etag = hashlib.md5(blob["body"]).hexdigest()
+        etag = hashlib.md5(body).hexdigest()
 
         return web.Response(headers={"ETag": repr(etag)})
 
