@@ -21,7 +21,7 @@ def test_steal_config(
     monkeypatch: Any,
 ) -> None:
     patched_jobs_counts.return_value = {}
-    folder = shutil.move(nmrc_path, tmp_path / "orig-cfg")
+    folder = shutil.move(str(nmrc_path), str(tmp_path / "orig-cfg"))
     monkeypatch.setenv(NEURO_STEAL_CONFIG, str(folder))
     ret = run_cli(["--neuromation-config", str(tmp_path / ".neuro"), "config", "show"])
     assert ret.code == 0, ret
