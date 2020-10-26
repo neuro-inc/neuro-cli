@@ -181,6 +181,24 @@ async def blob_storage_server(
             }
         )
 
+    async def head_blob(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.match_info["bucket"] == "foo"
+
+        key = request.match_info["path"]
+        if key not in CONTENTS:
+            raise web.HTTPNotFound()
+        blob = CONTENTS[key]
+
+        resp = web.StreamResponse(status=200)
+        etag = hashlib.md5(blob["body"]).hexdigest()
+        resp.headers.update({"ETag": repr(etag)})
+        resp.last_modified = blob["last_modified"]
+        resp.content_length = len(blob["body"])
+        resp.content_type = "application/octet-stream"
+        await resp.prepare(request)
+        return resp
+
     async def get_blob(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
         assert request.match_info["bucket"] == "foo"
@@ -232,7 +250,7 @@ async def blob_storage_server(
     app = web.Application()
     app.router.add_get(BlobUrlRotes.LIST_BUCKETS, list_buckets)
     app.router.add_get(BlobUrlRotes.LIST_OBJECTS, list_blobs)
-    # HEAD will also use this
+    app.router.add_head(BlobUrlRotes.GET_OBJECT, head_blob)
     app.router.add_get(BlobUrlRotes.GET_OBJECT, get_blob)
     app.router.add_put(BlobUrlRotes.PUT_OBJECT, put_blob)
     app.router.add_delete(BlobUrlRotes.DELETE_OBJECT, delete_blob)
