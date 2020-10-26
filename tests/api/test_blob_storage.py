@@ -195,7 +195,7 @@ async def blob_storage_server(
         resp.headers.update({"ETag": repr(etag)})
         resp.last_modified = blob["last_modified"]
         resp.content_length = len(blob["body"])
-        resp.content_type = "plain/text"
+        resp.content_type = "application/octet-stream"
         await resp.prepare(request)
         await resp.write(blob["body"])
         return resp
@@ -213,7 +213,7 @@ async def blob_storage_server(
             "body": body,
         }
         CONTENTS[key] = blob
-        etag = hashlib.md5(blob["body"]).hexdigest()
+        etag = hashlib.md5(body).hexdigest()
 
         return web.Response(headers={"ETag": repr(etag)})
 
@@ -753,7 +753,7 @@ async def test_blob_storage_upload_large_file(
     local_file = local_dir / "file.txt"
 
     with local_file.open("wb") as f:
-        for i in range(1024):
+        for _ in range(1024):
             f.write(b"yncuNRzU0xhKSqIh" * (4 * 1024))
 
     progress = mock.Mock()

@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Set
 import aiodocker
 import aiohttp
 from aiodocker.exceptions import DockerError
+from yarl import URL
 
 from .abc import (
     AbstractDockerImageProgress,
@@ -160,7 +161,7 @@ class Images(metaclass=NoPublicConstructor):
                         log.warning(str(err))
                 if not repos or "next" not in resp.links:
                     break
-                url = resp.links["next"]["url"]
+                url = URL(resp.links["next"]["url"])
         return result
 
     def _validate_image_for_tags(self, image: RemoteImage) -> None:
@@ -187,7 +188,7 @@ class Images(metaclass=NoPublicConstructor):
                     result.append(replace(image, tag=tag))
                 if not tags or "next" not in resp.links:
                     break
-                url = resp.links["next"]["url"]
+                url = URL(resp.links["next"]["url"])
         return result
 
 
