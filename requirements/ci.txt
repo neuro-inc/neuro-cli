@@ -17,5 +17,5 @@ twine==3.2.0
 markdown-toc==1.2.6
 towncrier==19.2.0
 asynctest==0.13.0
-cryptography==3.1.1  # temporary pin the version until trusme fixes deprecation warning
+cryptography==3.2  # temporary pin the version until trusme fixes deprecation warning
 trustme==0.6.0
