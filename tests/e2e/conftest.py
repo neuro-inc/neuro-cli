@@ -533,6 +533,7 @@ class Helper:
         env["_NEURO_COMPLETE"] = "complete_zsh"
         env["COMP_WORDS"] = " ".join(shlex.quote(arg) for arg in args + arguments)
         env["COMP_CWORD"] = str(len(args + arguments) - 1)
+        env["NEURO_CLI_JOB_AUTOCOMPLETE_LIMIT"] = "500"
 
         proc = subprocess.run(
             "neuro",

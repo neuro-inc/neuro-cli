@@ -223,6 +223,35 @@ def test_job_filter_by_date_range(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
+def test_job_filter_by_tag(helper: Helper) -> None:
+    tags = [f"test-tag:{uuid4()}", "test-tag:common"]
+    tag_options = [key for pair in [("--tag", t) for t in tags] for key in pair]
+
+    command = "sleep 10m"
+    captured = helper.run_cli(
+        ["job", "run", *tag_options, "--no-wait-start", UBUNTU_IMAGE_NAME, command]
+    )
+    match = re.match("Job ID: (.+)", captured.out)
+    assert match is not None
+    job_id = match.group(1)
+
+    captured = helper.run_cli(["ps", "--tag", tags[0]])
+    store_out_list = captured.out.split("\n")[1:]
+    jobs = [x.split("  ")[0] for x in store_out_list]
+    assert job_id in jobs
+
+    captured = helper.run_cli(["ps", "--tag", tags[1]])
+    store_out_list = captured.out.split("\n")[1:]
+    jobs = [x.split("  ")[0] for x in store_out_list]
+    assert job_id in jobs
+
+    captured = helper.run_cli(["ps", "--tag", "test-tag:not-present"])
+    store_out_list = captured.out.split("\n")[1:]
+    jobs = [x.split("  ")[0] for x in store_out_list]
+    assert job_id not in jobs
+
+
+@pytest.mark.e2e
 def test_job_kill_non_existing(helper: Helper) -> None:
     # try to kill non existing job
     phantom_id = "not-a-job-id"
@@ -563,20 +592,20 @@ async def nginx_job_async(
         container = Container(
             image=RemoteImage.new_external_image(name="nginx", tag="latest"),
             command=command,
-            resources=Resources(20, 0.1, None, None, True, None, None),
+            resources=Resources(memory_mb=100, cpu=0.1),
         )
 
         job = await client.jobs.run(
             container, is_preemptible=False, description="test NGINX job"
         )
         try:
-            for i in range(60):
+            for i in range(300):  # Same as in helper.run_cli
                 status = await client.jobs.status(job.id)
                 if status.status == JobStatus.RUNNING:
                     break
                 await asyncio.sleep(1)
             else:
-                raise AssertionError("Cannot start NGINX job")
+                raise AssertionError(f"Cannot start NGINX job (job.id={job.id})")
             yield job.id, str(secret)
         finally:
             with suppress(Exception):
@@ -787,7 +816,15 @@ def test_job_submit_no_detach_failure(helper: Helper) -> None:
     # Run a new job
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
         helper.run_cli(
-            ["-v", "job", "run", "--http", "80", UBUNTU_IMAGE_NAME, f"exit 127"]
+            [
+                "-v",
+                "job",
+                "run",
+                "--http",
+                "80",
+                UBUNTU_IMAGE_NAME,
+                "bash -c 'exit 127'",
+            ]
         )
     assert exc_info.value.returncode == 127
 
@@ -805,7 +842,7 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
                 "--detach",
                 "--browse",
                 UBUNTU_IMAGE_NAME,
-                f"exit 123",
+                "bash -c 'exit 127'",
             ]
         )
     assert captured is None
@@ -1025,8 +1062,10 @@ def test_job_attach_tty(helper: Helper) -> None:
     expect.expect("========== Job is running in terminal mode =========")
     expect.sendline("\n")  # prompt may be missing after the connection.
     repl = REPLWrapper(expect, "# ", None)
-    ret = repl.run_command("echo abc\n")
-    assert ret.strip() == "echo abc\r\r\nabc"
+    random_token, filename = uuid4(), uuid4()
+    repl.run_command(f"echo {random_token} > {filename}.txt")
+    ret = repl.run_command(f"cat {filename}.txt")
+    assert str(random_token) in ret
 
     helper.kill_job(job_id)
 

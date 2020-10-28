@@ -1,4 +1,5 @@
 import abc
+import os
 import re
 from datetime import datetime, timedelta
 from typing import Generic, List, Optional, Sequence, Tuple, TypeVar, Union, cast
@@ -17,7 +18,7 @@ JOB_NAME_MIN_LENGTH = 3
 JOB_NAME_MAX_LENGTH = 40
 JOB_NAME_PATTERN = "^[a-z](?:-?[a-z0-9])*$"
 JOB_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
-
+JOB_LIMIT_ENV = "NEURO_CLI_JOB_AUTOCOMPLETE_LIMIT"
 
 _T = TypeVar("_T")
 
@@ -214,8 +215,9 @@ class JobType(AsyncType[str]):
         async with await root.init_client() as client:
             ret: List[Tuple[str, Optional[str]]] = []
             now = datetime.now()
+            limit = int(os.environ.get(JOB_LIMIT_ENV, 100))
             async for job in client.jobs.list(
-                since=now - timedelta(days=7), reverse=True, limit=100
+                since=now - timedelta(days=7), reverse=True, limit=limit
             ):
                 job_name = job.name or ""
                 for test in (
