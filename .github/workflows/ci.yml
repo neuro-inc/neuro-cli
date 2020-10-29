@@ -8,7 +8,7 @@ on:
     branches: [ master ]
   schedule:
     - cron:  '0 6 * * *'  # Daily 6AM UTC build
-  
+
 
 jobs:
 
@@ -156,7 +156,7 @@ jobs:
       run: |
         curl -X POST --header "Content-Type: application/json" \
            -d '{"branch":"master"}' \
-           https://circleci.com/api/v1.1/project/github/neuromation/platform-e2e/build\?circle-token\=${E2E_CIRCLECI_TOKEN}  
+           https://circleci.com/api/v1.1/project/github/neuromation/platform-e2e/build\?circle-token\=${E2E_CIRCLECI_TOKEN}
 
   deploy:
     name: Deploy

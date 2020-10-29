@@ -266,7 +266,7 @@ class GnuPainter(BasePainter):
                     state = ParseState.PS_ESCAPED_END
                     pos += 1
                 elif char == chr(0):  # pragma: no cover
-                    raise EnvironmentError("Cannot parse coloring scheme")
+                    raise OSError("Cannot parse coloring scheme")
                 else:
                     escaped = char
                     stack.append(state)
@@ -278,7 +278,7 @@ class GnuPainter(BasePainter):
                 elif char == "?":
                     escaped = chr(127)
                 else:
-                    raise EnvironmentError("Cannot parse coloring scheme")
+                    raise OSError("Cannot parse coloring scheme")
                 stack.append(state)
                 state = ParseState.PS_ESCAPED_END
                 pos += 1
@@ -322,7 +322,7 @@ class GnuPainter(BasePainter):
                     pos += 1
 
         if state == ParseState.PS_CARRET:
-            raise EnvironmentError("Cannot parse coloring scheme")
+            raise OSError("Cannot parse coloring scheme")
         if state in [ParseState.PS_HEX, ParseState.PS_OCTAL]:
             escaped = chr(num)
             state = stack.pop()

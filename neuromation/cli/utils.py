@@ -578,7 +578,7 @@ deprecated_quiet_option: Any = option(
 )
 
 if sys.version_info >= (3, 7):  # pragma: no cover
-    from contextlib import AsyncExitStack  # noqa
+    from contextlib import AsyncExitStack
 else:
     from async_exit_stack import AsyncExitStack  # noqa
 

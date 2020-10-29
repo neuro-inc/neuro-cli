@@ -3,9 +3,9 @@ config
 dataclass
 entrypoint
 filesystem
+gRPC
 globbing
 grpc
-gRPC
 iterable
 login
 namespace

@@ -21,8 +21,8 @@ class ConsoleWarningFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         if isinstance(record.msg, bytes):
             record.msg = record.msg.decode("utf-8")
-        message = super(ConsoleWarningFormatter, self).format(record)
-        return "{0}{1}".format(self.get_level_message(record), message)
+        message = super().format(record)
+        return "{}{}".format(self.get_level_message(record), message)
 
 
 class ConsoleHandler(logging.StreamHandler):

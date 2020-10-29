@@ -42,6 +42,7 @@ help:
 .PHONY: setup init
 setup init: _init-cli-help update-deps
 	rm -rf .mypy_cache
+	pre-commit install
 
 _init-cli-help:
 	cp -n CLI.in.md CLI.md
@@ -130,13 +131,15 @@ test-all: .update-deps
 		--color=$(COLOR) \
 		tests
 
+
+.PHONY: pre-commit
+pre-commit:
+	pre-commit run --all-files --show-diff-on-failure
+
 .PHONY: lint
-lint: lint-docs
+lint: pre-commit lint-docs
 	./build-tools/version.py check
-	isort --check-only --diff ${ISORT_DIRS}
-	black --check $(BLACK_DIRS)
 	mypy $(MYPY_DIRS)
-	flake8 $(FLAKE8_DIRS)
 
 .PHONY: publish-lint
 publish-lint:
@@ -144,10 +147,8 @@ publish-lint:
 
 
 .PHONY: format fmt
-format fmt:
+format fmt: pre-commit
 	./build-tools/version.py update
-	isort $(ISORT_DIRS)
-	black $(BLACK_DIRS)
 	# generate docs as the last stage to allow reformat code first
 	make docs
 
