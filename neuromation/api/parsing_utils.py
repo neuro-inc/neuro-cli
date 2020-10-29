@@ -209,11 +209,7 @@ class _ImageNameParser:
                     path=f"/{self._default_user}/{url.path[len('image:') :]}",
                 )
         elif image.startswith(f"{self._registry}/"):
-            url = URL.build(
-                scheme="image",
-                host=self._default_cluster,
-                path=image[len(self._registry) :],
-            )
+            url = URL(f"image://{self._default_cluster}{image[len(self._registry) :]}")
         else:
             raise ValueError("scheme 'image:' is required for remote images")
 

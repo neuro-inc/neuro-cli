@@ -2,7 +2,6 @@
 asynctest==0.13.0
 black==20.8b1
 cmarkgfm==0.4.2
-cryptography==3.1.1  # temporary pin the version until trusme fixes deprecation warning
 flake8==3.8.4
 isort==5.6.4
 markdown-toc==1.2.6
