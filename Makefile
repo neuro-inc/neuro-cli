@@ -42,6 +42,7 @@ help:
 .PHONY: setup init
 setup init: _init-cli-help update-deps
 	rm -rf .mypy_cache
+	pre-commit install
 
 _init-cli-help:
 	cp -n CLI.in.md CLI.md
@@ -130,26 +131,19 @@ test-all: .update-deps
 		--color=$(COLOR) \
 		tests
 
+
+.PHONY: format fmt
+format fmt:
+	pre-commit run --all-files --show-diff-on-failure
+
 .PHONY: lint
-lint: lint-docs
-	./build-tools/version.py check
-	isort --check-only --diff ${ISORT_DIRS}
-	black --check $(BLACK_DIRS)
+lint: fmt
 	mypy $(MYPY_DIRS)
-	flake8 $(FLAKE8_DIRS)
 
 .PHONY: publish-lint
 publish-lint:
 	twine check dist/*
 
-
-.PHONY: format fmt
-format fmt:
-	./build-tools/version.py update
-	isort $(ISORT_DIRS)
-	black $(BLACK_DIRS)
-	# generate docs as the last stage to allow reformat code first
-	make docs
 
 .PHONY: clean
 clean:
@@ -162,13 +156,6 @@ docs:
 	build-tools/cli-help-generator.py CLI.in.md CLI.md
 	markdown-toc -t github -h 6 CLI.md
 
-
-.PHONY: lint-docs
-lint-docs: TMP:=$(shell mktemp -d)/CLI.md
-lint-docs:
-	build-tools/cli-help-generator.py CLI.in.md ${TMP}
-	markdown-toc -t github -h 6 ${TMP}
-	diff -q ${TMP} CLI.md
 
 .PHONY: api-doc
 api-doc:

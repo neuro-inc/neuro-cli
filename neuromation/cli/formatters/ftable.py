@@ -78,8 +78,7 @@ def table(
             sum_width += 2
 
     for row in rows:
-        for line in _row(row, calc_widths, aligns, max_width, max_empty_columns):
-            yield line
+        yield from _row(row, calc_widths, aligns, max_width, max_empty_columns)
 
 
 def _row(

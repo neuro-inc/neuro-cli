@@ -25,9 +25,9 @@ from neuromation.api.errors import ConfigError
 
 
 if sys.version_info >= (3, 7):  # pragma: no cover
-    from contextlib import asynccontextmanager  # noqa
+    from contextlib import asynccontextmanager
 else:
-    from async_generator import asynccontextmanager  # noqa
+    from async_generator import asynccontextmanager
 
 _T = TypeVar("_T")
 

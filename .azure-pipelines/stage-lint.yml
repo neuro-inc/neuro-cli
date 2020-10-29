@@ -30,7 +30,7 @@ stages:
     - script: |
         make api-doc-spelling
       displayName: 'Run docs spelling'
-      
+
   - job: doc
     pool:
       vmImage: 'ubuntu-latest'
@@ -56,4 +56,3 @@ stages:
     - script: |
         make api-doc-spelling
       displayName: 'Run docs spelling'
-      

@@ -1326,7 +1326,7 @@ def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
         elif not statuses:
             statuses = defaults
 
-    return set(JobStatus(s) for s in statuses)
+    return {JobStatus(s) for s in statuses}
 
 
 async def calc_columns(

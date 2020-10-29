@@ -124,7 +124,7 @@ def translate(pat: str) -> str:
                     stuff = "^" + stuff[1:]
                 elif stuff[0] in ("^", "["):
                     stuff = "\\" + stuff
-                res = "%s[%s](?<!/)" % (res, stuff)
+                res = f"{res}[{stuff}](?<!/)"
         else:
             if c == "\\" and i < n:
                 c = pat[i]

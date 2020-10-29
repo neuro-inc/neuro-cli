@@ -197,7 +197,7 @@ def main():
 
     input_file = sys.argv[1]
     output_file = sys.argv[2]
-    with open(input_file, "r") as input:
+    with open(input_file) as input:
         with open(output_file, "w") as output:
             template = input.read()
             info = parse_command(None, cli, ["neuro"])

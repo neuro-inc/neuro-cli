@@ -349,13 +349,12 @@ class TabularJobsFormatter(BaseJobsFormatter):
                     job, self._username, image_formatter=self._image_formatter
                 ).to_list(self._columns)
             )
-        for line in table(
+        yield from table(
             rows,
             widths=[column.width for column in self._columns],
             aligns=[column.align for column in self._columns],
             max_width=self.width if self.width else None,
-        ):
-            yield line
+        )
 
 
 class ResourcesFormatter:
