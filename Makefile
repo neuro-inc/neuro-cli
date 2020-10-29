@@ -132,25 +132,18 @@ test-all: .update-deps
 		tests
 
 
-.PHONY: pre-commit
-pre-commit:
+.PHONY: format fmt
+format fmt:
 	pre-commit run --all-files --show-diff-on-failure
 
 .PHONY: lint
-lint: pre-commit lint-docs
-	./build-tools/version.py check
+lint: fmt
 	mypy $(MYPY_DIRS)
 
 .PHONY: publish-lint
 publish-lint:
 	twine check dist/*
 
-
-.PHONY: format fmt
-format fmt: pre-commit
-	./build-tools/version.py update
-	# generate docs as the last stage to allow reformat code first
-	make docs
 
 .PHONY: clean
 clean:
@@ -163,13 +156,6 @@ docs:
 	build-tools/cli-help-generator.py CLI.in.md CLI.md
 	markdown-toc -t github -h 6 CLI.md
 
-
-.PHONY: lint-docs
-lint-docs: TMP:=$(shell mktemp -d)/CLI.md
-lint-docs:
-	build-tools/cli-help-generator.py CLI.in.md ${TMP}
-	markdown-toc -t github -h 6 ${TMP}
-	diff -q ${TMP} CLI.md
 
 .PHONY: api-doc
 api-doc:

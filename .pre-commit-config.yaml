@@ -1,4 +1,16 @@
 repos:
+- repo: local
+  hooks:
+  - id: version-check
+    name: Check the package version
+    language: system
+    entry: ./build-tools/version.py update
+    pass_filenames: false
+  - id: gen-cli-docs
+    name: Generate CLI docs
+    language: system
+    entry: make docs
+    pass_filenames: false
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: 'v3.3.0'
   hooks:
