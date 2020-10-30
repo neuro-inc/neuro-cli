@@ -9,7 +9,7 @@ markdown-toc==1.2.6
 mypy==0.790
 pexpect==4.8.0
 pre-commit==2.7.1
-pytest==6.1.1
+pytest==6.1.2
 pytest-aiohttp==0.3.0
 pytest-cov==2.10.1
 pytest-timeout==1.4.2
