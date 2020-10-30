@@ -52,6 +52,9 @@ jobs:
       matrix:
         python-version: [3.6, 3.7, 3.8, 3.9]
         os: [ubuntu, macos, windows]
+        exclude:
+          - python-version: [3.7, 3.8]
+            os: [macos, windows]
       fail-fast:
         false
     runs-on: ${{ matrix.os }}-latest
