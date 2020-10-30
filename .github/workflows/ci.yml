@@ -105,11 +105,17 @@ jobs:
     needs: unit
     strategy:
       matrix:
-        python-version: [3.6, 3.8]
+        python-version: [3.6, 3.7, 3.8, 3.9]
         os: [ubuntu, macos, windows]
-        include:
-        - python-version: 3.7
-          os: ubuntu
+        exclude:
+          - python-version: 3.7
+            os: macos
+          - python-version: 3.7
+            os: windows
+          - python-version: 3.8
+            os: macos
+          - python-version: 3.8
+            os: windows
       fail-fast:
         false
     runs-on: ${{ matrix.os }}-latest
