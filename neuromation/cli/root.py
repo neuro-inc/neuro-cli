@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import logging
+import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -21,7 +22,8 @@ from typing import (
 
 import aiohttp
 import click
-from rich.console import Console
+from rich.console import Console, PagerContext
+from rich.pager import Pager
 
 from neuromation.api import Client, ConfigError, Factory, gen_trace_id
 from neuromation.api.config import _ConfigData, load_user_config
@@ -40,6 +42,23 @@ HEADER_TOKEN_PATTERN = re.compile(
 
 
 _T = TypeVar("_T")
+
+
+class MaybePager(Pager):
+    """Uses the pager installed on the system."""
+
+    def __init__(self, console: Console) -> None:
+        self._limit = console.size[1] * 2 / 3
+
+    def show(self, content: str) -> None:
+        """Use the same pager used by pydoc."""
+        # Enforce ANSI sequence handling (colors etc.)
+        os.environ["LESS"] = "-R"
+
+        if len(content.splitlines()) > self._limit:
+            click.echo_via_pager(content)
+        else:
+            print(content)
 
 
 @dataclass
@@ -259,3 +278,9 @@ class Root:
             # to a part of the screen size
             sys.stdout.write("\x1b[!p")
             sys.stdout.flush()
+
+    def pager(self) -> PagerContext:
+        return self.console.pager(MaybePager(self.console), styles=True, links=True)
+
+    def print(self, *objects: Any, **kwargs: Any) -> None:
+        self.console.print(*objects, **kwargs)

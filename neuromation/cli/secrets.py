@@ -1,10 +1,11 @@
 import pathlib
 
 import click
+from rich import box
+from rich.table import Table
 
-from .formatters.ftable import table
 from .root import Root
-from .utils import argument, command, group, pager_maybe
+from .utils import argument, command, group
 
 
 @group()
@@ -20,10 +21,12 @@ async def ls(root: Root) -> None:
     List secrets.
     """
 
-    ret = [[click.style("Key", bold=True)]]
+    table = Table(box=box.MINIMAL_HEAVY_HEAD)
+    table.add_column("KEY", style="bold")
     async for secret in root.client.secrets.list():
-        ret.append([secret.key])
-    pager_maybe(table(ret), root.tty, root.terminal_size)
+        table.add_row(secret.key)
+    with root.pager():
+        root.print(table)
 
 
 @command()
