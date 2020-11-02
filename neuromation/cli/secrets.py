@@ -1,6 +1,5 @@
 import pathlib
 
-import click
 from rich import box
 from rich.table import Table
 
@@ -55,7 +54,7 @@ async def rm(root: Root, key: str) -> None:
 
     await root.client.secrets.rm(key)
     if root.verbosity > 0:
-        click.echo(f"Secret with key '{key}' was successfully removed")
+        root.print(f"Secret with key '{key}' was successfully removed")
 
 
 secret.add_command(ls)
