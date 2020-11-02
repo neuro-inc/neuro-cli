@@ -21,6 +21,7 @@ from typing import (
 
 import aiohttp
 import click
+from rich.console import Console
 
 from neuromation.api import Client, ConfigError, Factory, gen_trace_id
 from neuromation.api.config import _ConfigData, load_user_config
@@ -45,7 +46,6 @@ _T = TypeVar("_T")
 class Root:
     color: bool
     tty: bool
-    terminal_size: Tuple[int, int]
     disable_pypi_version_check: bool
     network_timeout: float
     config_path: Path
@@ -60,10 +60,16 @@ class Root:
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None
     _runner: Runner = field(init=False)
+    console: Console = field(init=False)
 
     def __post_init__(self) -> None:
         self._runner = Runner(debug=self.verbosity >= 2)
         self._runner.__enter__()
+        self.console = Console(
+            color_system="auto" if self.color else None,
+            force_terminal=self.tty,
+            highlight=False,
+        )
 
     def close(self) -> None:
         if self._client is not None:
@@ -88,6 +94,10 @@ class Root:
     @property
     def quiet(self) -> bool:
         return self.verbosity < 0
+
+    @property
+    def terminal_size(self) -> Tuple[int, int]:
+        return self.console.size
 
     @property
     def timeout(self) -> aiohttp.ClientTimeout:
