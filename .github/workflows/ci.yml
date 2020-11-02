@@ -2,12 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
-    tags: [ 'v*' ]
+    branches: [master]
+    tags: [v*]
   pull_request:
-    branches: [ master ]
+    branches: [master]
   schedule:
-    - cron:  '0 6 * * *'  # Daily 6AM UTC build
+  - cron: 0 6 * * *       # Daily 6AM UTC build
 
 
 jobs:
@@ -29,7 +29,7 @@ jobs:
         key: pip-lint-${{ hashFiles('requirements/*.txt') }}
         path: ~/.cache/pip
         restore-keys: |
-            pip-lint-
+          pip-lint-
     - name: Install dependencies
       uses: py-actions/py-dependency-install@v2
       with:
@@ -37,6 +37,8 @@ jobs:
     - name: Run linters
       run: |
         make lint
+      env:
+        CI_LINT_RUN: 1
     - name: Install spell checker
       run: |
         sudo apt install libenchant-dev
@@ -53,16 +55,15 @@ jobs:
         python-version: [3.6, 3.7, 3.8, 3.9]
         os: [ubuntu, macos, windows]
         exclude:
-          - python-version: 3.7
-            os: macos
-          - python-version: 3.7
-            os: windows
-          - python-version: 3.8
-            os: macos
-          - python-version: 3.8
-            os: windows
-      fail-fast:
-        false
+        - python-version: 3.7
+          os: macos
+        - python-version: 3.7
+          os: windows
+        - python-version: 3.8
+          os: macos
+        - python-version: 3.8
+          os: windows
+      fail-fast: false
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 15
     steps:
@@ -79,17 +80,18 @@ jobs:
     - name: Cache PyPI
       uses: actions/cache@v2
       with:
-        key: pip-ci-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt') }}
+        key: pip-ci-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt')
+          }}
         path: ${{ steps.pip-cache.outputs.dir }}
         restore-keys: |
-            pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
+          pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
     - name: Install dependencies
       uses: py-actions/py-dependency-install@v2
       with:
         path: requirements/ci.txt
     - name: Run unittests
       env:
-        COLOR: 'yes'
+        COLOR: yes
       run: |
         make .test
     - name: Upload coverage
@@ -108,16 +110,15 @@ jobs:
         python-version: [3.6, 3.7, 3.8, 3.9]
         os: [ubuntu, macos, windows]
         exclude:
-          - python-version: 3.7
-            os: macos
-          - python-version: 3.7
-            os: windows
-          - python-version: 3.8
-            os: macos
-          - python-version: 3.8
-            os: windows
-      fail-fast:
-        false
+        - python-version: 3.7
+          os: macos
+        - python-version: 3.7
+          os: windows
+        - python-version: 3.8
+          os: macos
+        - python-version: 3.8
+          os: windows
+      fail-fast: false
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 45
     steps:
@@ -134,10 +135,11 @@ jobs:
     - name: Cache PyPI
       uses: actions/cache@v2
       with:
-        key: pip-ci-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt') }}
+        key: pip-ci-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt')
+          }}
         path: ${{ steps.pip-cache.outputs.dir }}
         restore-keys: |
-            pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
+          pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
     - name: Install dependencies
       uses: py-actions/py-dependency-install@v2
       with:
@@ -148,7 +150,7 @@ jobs:
         E2E_TOKEN: ${{ secrets.E2E_TOKEN }}
         E2E_USER_TOKEN: ${{ secrets.E2E_USER_TOKEN }}
         PYTEST_XDIST_NUM_THREADS: 16
-        COLOR: 'yes'
+        COLOR: yes
       run: |
         make .e2e
     - name: Upload coverage
