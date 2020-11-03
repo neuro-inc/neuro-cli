@@ -1,88 +1,83 @@
 import operator
-from typing import Iterable, Iterator, List
+from typing import Iterable, List
 
-import click
-from click import style
+from rich import box
+from rich.console import RenderableType, RenderGroup
+from rich.padding import Padding
+from rich.table import Table
 
 from neuromation.api.admin import _Cluster, _ClusterUser, _NodePool
 from neuromation.cli.utils import format_size
 
-from .ftable import Align, table
-
 
 class ClusterUserFormatter:
-    def __call__(self, clusters_users: Iterable[_ClusterUser]) -> List[str]:
-        headers = (click.style("Name", bold=True), click.style("Role", bold=True))
+    def __call__(self, clusters_users: Iterable[_ClusterUser]) -> RenderableType:
+        table = Table(box=box.MINIMAL_HEAVY_HEAD)
+        table.add_column("Name", style="bold")
+        table.add_column("Role")
         rows = []
 
         for user in clusters_users:
             rows.append((user.user_name, user.role.value))
         rows.sort(key=operator.itemgetter(0))
 
-        rows.insert(0, headers)
-        return list(table(rows=rows))
+        for row in rows:
+            table.add_row(*row)
+        return table
 
 
 class ClustersFormatter:
-    def __call__(self, clusters: Iterable[_Cluster]) -> List[str]:
-        out = []
+    def __call__(self, clusters: Iterable[_Cluster]) -> RenderableType:
+        out: List[RenderableType] = []
         for cluster in clusters:
             prefix = "  "
-            out.append(style(f"{cluster.name}:", bold=True))
-            out.append(
-                prefix + style("Status: ", bold=True) + cluster.status.capitalize()
-            )
+            out.append(f"[b]{cluster.name}[/b]:")
+            out.append(prefix + "[b]Status[/b]: " + cluster.status.capitalize())
             if cluster.cloud_provider:
                 cloud_provider = cluster.cloud_provider
                 if cloud_provider.type != "on_prem":
-                    out.append(
-                        prefix + style("Cloud: ", bold=True) + cloud_provider.type
-                    )
+                    out.append(prefix + "[b]Cloud[/b]: " + cloud_provider.type)
                 if cloud_provider.region:
-                    out.append(
-                        prefix + style("Region: ", bold=True) + cloud_provider.region
-                    )
+                    out.append(prefix + "[b]Region[/b]: " + cloud_provider.region)
                 if cloud_provider.zones:
                     out.append(
-                        prefix
-                        + style("Zones: ", bold=True)
-                        + ", ".join(cloud_provider.zones)
+                        prefix + "[b]Zones[/b]: " + ", ".join(cloud_provider.zones)
                     )
                 if cloud_provider.node_pools:
-                    out.append(prefix + style("Node pools:", bold=True))
-                    out.extend(
-                        _format_node_pools(cloud_provider.node_pools, prefix + "  ")
+                    out.append(prefix + "[b]Node pools[/b]:")
+                    out.append(
+                        Padding.indent(_format_node_pools(cloud_provider.node_pools), 4)
                     )
                 if cloud_provider.storage:
                     out.append(
-                        prefix
-                        + style("Storage: ", bold=True)
-                        + cloud_provider.storage.description
+                        prefix + "[b]Storage[/b]: " + cloud_provider.storage.description
                     )
-        return out
+        return RenderGroup(*out)
 
 
-def _format_node_pools(node_pools: Iterable[_NodePool], prefix: str) -> Iterator[str]:
+def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
     is_scalable = _is_scalable(node_pools)
     has_preemptible = _has_preemptible(node_pools)
     has_tpu = _has_tpu(node_pools)
     has_idle = _has_idle(node_pools)
 
-    headers = ["Machine", "CPU", "Memory"]
+    table = Table(box=box.MINIMAL_HEAVY_HEAD)
+    table.add_column("Machine", style="bold", justify="left")
+    table.add_column("CPU", justify="right")
+    table.add_column("Memory", justify="right")
     if has_preemptible:
-        headers.append("Preemptible")
-    headers.append("GPU")
+        table.add_column("Preemptible", justify="center")
+    table.add_column("GPU", justify="right")
     if has_tpu:
-        headers.append("TPU")
+        table.add_column("TPU", justify="center")
     if is_scalable:
-        headers.append("Min")
-        headers.append("Max")
+        table.add_column("Min", justify="right")
+        table.add_column("Max", justify="right")
     else:
-        headers.append("Size")
+        table.add_column("Size", justify="right")
     if has_idle:
-        headers.append("Idle")
+        table.add_column("Idle", justify="right")
 
-    rows = [headers]
     for node_pool in node_pools:
         row = [
             node_pool.machine_type,
@@ -99,22 +94,9 @@ def _format_node_pools(node_pools: Iterable[_NodePool], prefix: str) -> Iterator
         row.append(str(node_pool.max_size))
         if has_idle:
             row.append(str(node_pool.idle_size))
-        rows.append(row)
+        table.add_row(*row)
 
-    aligns = [Align.LEFT, Align.RIGHT, Align.RIGHT]
-    if has_preemptible:
-        aligns.append(Align.CENTER)
-    aligns.append(Align.RIGHT)
-    if has_tpu:
-        aligns.append(Align.CENTER)
-    aligns.append(Align.RIGHT)
-    if is_scalable:
-        aligns.append(Align.RIGHT)
-    if has_idle:
-        aligns.append(Align.RIGHT)
-
-    for line in table(rows=rows, aligns=aligns):
-        yield prefix + line
+    return table
 
 
 def _is_scalable(node_pools: Iterable[_NodePool]) -> bool:

@@ -56,7 +56,6 @@ def create_root(config_path: Path) -> Root:
     return Root(
         color=False,
         tty=False,
-        terminal_size=(80, 24),
         disable_pypi_version_check=True,
         network_timeout=60,
         config_path=config_path,

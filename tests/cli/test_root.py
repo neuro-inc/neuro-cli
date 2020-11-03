@@ -11,7 +11,6 @@ def root_uninitialized() -> Root:
     return Root(
         color=False,
         tty=False,
-        terminal_size=(80, 25),
         disable_pypi_version_check=False,
         network_timeout=60,
         config_path=Path("~/.neuro"),
