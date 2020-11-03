@@ -115,7 +115,7 @@ def _format_presets(
     table.add_column("Preemptible", justify="center")
     table.add_column("GPU", justify="left")
     if available_jobs_counts:
-        table.add_column("Jobs Available", justify="right")
+        table.add_column("Jobs Avail", justify="right")
     if has_tpu:
         table.add_column("TPU", justify="left")
 

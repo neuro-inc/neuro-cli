@@ -59,7 +59,6 @@ def make_root() -> Iterator[_MakeRoot]:
         root = Root(
             color,
             tty,
-            (80, 25),
             True,
             60,
             Path("~/.neuro"),
