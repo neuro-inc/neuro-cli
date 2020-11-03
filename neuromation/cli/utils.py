@@ -473,7 +473,7 @@ async def resolve_job(
     return id_or_name
 
 
-SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret")
+SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret", "disk")
 
 
 def parse_resource_for_sharing(uri: str, root: Root) -> URL:
