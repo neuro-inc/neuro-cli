@@ -117,15 +117,12 @@ class Images(metaclass=NoPublicConstructor):
             return resp.headers["Docker-Content-Digest"]
 
     async def rm(self, remote: RemoteImage, digest: str) -> None:
-        try:
-            name = f"{remote.owner}/{remote.name}"
-            auth = await self._config._registry_auth()
-            url = self._registry_url / name / "manifests" / digest
-            async with self._core.request("DELETE", url, auth=auth) as resp:
-                assert resp
-        except DockerError as error:
-            if error.status == 404:
-                raise ValueError(f"Image {remote} was not found") from error
+        name = f"{remote.owner}/{remote.name}"
+        auth = await self._config._registry_auth()
+        url = self._registry_url / name / "manifests" / digest
+        print(url)
+        async with self._core.request("DELETE", url, auth=auth) as resp:
+            assert resp
 
     async def pull(
         self,
