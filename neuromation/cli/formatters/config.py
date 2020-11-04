@@ -5,7 +5,6 @@ import click
 from rich import box
 from rich.console import RenderableType, RenderGroup
 from rich.padding import Padding
-from rich.rule import Rule
 from rich.table import Table
 
 from neuromation.api import Cluster, Config, Preset
@@ -25,15 +24,15 @@ class ConfigFormatter:
             show_header=False,
             show_edge=False,
         )
-        table.add_column(style="bold")
         table.add_column()
+        table.add_column(style="bold")
         table.add_row("User Name", config.username)
         table.add_row("Current Cluster", config.cluster_name)
         table.add_row("API URL", str(config.api_url))
         table.add_row("Docker Registry URL", str(config.registry_url))
 
         return RenderGroup(
-            table, Rule(), _format_presets(config.presets, available_jobs_counts)
+            table, _format_presets(config.presets, available_jobs_counts)
         )
 
 
@@ -93,7 +92,7 @@ class ClustersFormatter:
     def __call__(
         self, clusters: Iterable[Cluster], default_name: Optional[str]
     ) -> RenderableType:
-        out: List[RenderableType] = ["[b]Available clusters:[/b]"]
+        out: List[RenderableType] = ["[i]Available clusters:[/i]"]
         for cluster in clusters:
             name = cluster.name or ""
             if cluster.name == default_name:
@@ -114,7 +113,12 @@ def _format_presets(
             has_tpu = True
             break
 
-    table = Table(title="Resource Presets:", title_justify="left", box=box.SIMPLE_HEAVY)
+    table = Table(
+        title="Resource Presets:",
+        title_justify="left",
+        box=box.SIMPLE_HEAVY,
+        show_edge=False,
+    )
     table.add_column("Name", style="bold", justify="left")
     table.add_column("#CPU", justify="right")
     table.add_column("Memory", justify="right")

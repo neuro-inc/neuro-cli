@@ -227,7 +227,9 @@ async def get_clusters(root: Root) -> None:
     await root.client.config.fetch()
     fmt = ClustersFormatter()
     with root.pager():
-        fmt(root.client.config.clusters.values(), root.client.config.cluster_name)
+        root.print(
+            fmt(root.client.config.clusters.values(), root.client.config.cluster_name)
+        )
 
 
 @command()

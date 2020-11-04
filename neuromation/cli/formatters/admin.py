@@ -3,7 +3,8 @@ from typing import Iterable, List
 
 from rich import box
 from rich.console import RenderableType, RenderGroup
-from rich.padding import Padding
+from rich.rule import Rule
+from rich.styled import Styled
 from rich.table import Table
 
 from neuromation.api.admin import _Cluster, _ClusterUser, _NodePool
@@ -30,28 +31,36 @@ class ClustersFormatter:
     def __call__(self, clusters: Iterable[_Cluster]) -> RenderableType:
         out: List[RenderableType] = []
         for cluster in clusters:
-            prefix = "  "
-            out.append(f"[b]{cluster.name}[/b]:")
-            out.append(prefix + "[b]Status[/b]: " + cluster.status.capitalize())
+            table = Table(
+                title=cluster.name,
+                title_justify="left",
+                title_style="bold italic",
+                box=None,
+                show_header=False,
+                show_edge=False,
+            )
+            table.add_column()
+            table.add_column(style="bold")
+            table.add_row("Status", cluster.status.capitalize())
             if cluster.cloud_provider:
                 cloud_provider = cluster.cloud_provider
                 if cloud_provider.type != "on_prem":
-                    out.append(prefix + "[b]Cloud[/b]: " + cloud_provider.type)
+                    table.add_row("Cloud", cloud_provider.type)
                 if cloud_provider.region:
-                    out.append(prefix + "[b]Region[/b]: " + cloud_provider.region)
+                    table.add_row("Region", cloud_provider.region)
                 if cloud_provider.zones:
-                    out.append(
-                        prefix + "[b]Zones[/b]: " + ", ".join(cloud_provider.zones)
-                    )
+                    table.add_row("Zones", ", ".join(cloud_provider.zones))
                 if cloud_provider.node_pools:
-                    out.append(prefix + "[b]Node pools[/b]:")
-                    out.append(
-                        Padding.indent(_format_node_pools(cloud_provider.node_pools), 4)
+                    table.add_row(
+                        "Node pools",
+                        Styled(
+                            _format_node_pools(cloud_provider.node_pools), style="reset"
+                        ),
                     )
                 if cloud_provider.storage:
-                    out.append(
-                        prefix + "[b]Storage[/b]: " + cloud_provider.storage.description
-                    )
+                    table.add_row("Storage", cloud_provider.storage.description)
+            out.append(table)
+            out.append(Rule())
         return RenderGroup(*out)
 
 
@@ -61,7 +70,10 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
     has_tpu = _has_tpu(node_pools)
     has_idle = _has_idle(node_pools)
 
-    table = Table(box=box.MINIMAL_HEAVY_HEAD)
+    table = Table(
+        box=box.SIMPLE_HEAVY,
+        show_edge=True,
+    )
     table.add_column("Machine", style="bold", justify="left")
     table.add_column("CPU", justify="right")
     table.add_column("Memory", justify="right")
