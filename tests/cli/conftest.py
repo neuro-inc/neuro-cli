@@ -188,7 +188,7 @@ class RichComparator:
             rel_ref = self.rel(ref)
             pytest.fail(
                 f"The reference {rel_ref} doesn't exist.\n"
-                "Create it yourself or run pytest with '--rich-generate' option."
+                "Create it yourself or run pytest with '--rich-gen' option."
             )
         else:
             return ref.read_text()
