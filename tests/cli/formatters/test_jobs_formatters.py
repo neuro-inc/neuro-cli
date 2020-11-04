@@ -62,6 +62,7 @@ def job_descr_no_name() -> JobDescription:
         ),
         ssh_server=URL("ssh-auth"),
         is_preemptible=True,
+        pass_config=True,
     )
 
 
@@ -88,6 +89,7 @@ def job_descr() -> JobDescription:
         ),
         ssh_server=URL("ssh-auth"),
         is_preemptible=True,
+        pass_config=True,
     )
 
 
@@ -124,6 +126,7 @@ class TestJobStartProgress:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
             life_span=life_span,
         )
 
@@ -257,6 +260,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -312,6 +316,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -367,6 +372,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -424,6 +430,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
             life_span=1.0 * ((60 * 60 * 24 * 1) + (60 * 60 * 2) + (60 * 3) + 4),
         )
 
@@ -479,6 +486,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
             life_span=0.0,
         )
 
@@ -534,6 +542,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
             restart_policy=JobRestartPolicy.ALWAYS,
         )
 
@@ -589,6 +598,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -636,6 +646,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
+            pass_config=True,
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
@@ -680,6 +691,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
+            pass_config=True,
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
@@ -723,6 +735,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
+            pass_config=True,
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
@@ -769,6 +782,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
             internal_hostname="host.local",
         )
 
@@ -817,6 +831,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
             internal_hostname="host.local",
             internal_hostname_named="test-job--test-owner.local",
         )
@@ -868,6 +883,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
             internal_hostname="host.local",
         )
 
@@ -926,6 +942,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -1007,6 +1024,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -1084,6 +1102,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
         )
 
         status = click.unstyle(JobStatusFormatter(uri_formatter=str)(description))
@@ -1174,6 +1193,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -1264,6 +1284,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -1330,6 +1351,7 @@ class TestJobOutputFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -1481,6 +1503,7 @@ class TestSimpleJobsFormatter:
                 ),
                 ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
+                pass_config=True,
             ),
             JobDescription(
                 status=JobStatus.PENDING,
@@ -1503,6 +1526,7 @@ class TestSimpleJobsFormatter:
                 ),
                 ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
+                pass_config=True,
             ),
         ]
         formatter = SimpleJobsFormatter()
@@ -1545,6 +1569,7 @@ class TestTabularJobRow:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
+            pass_config=True,
         )
 
     def test_with_job_name(self) -> None:
@@ -1664,6 +1689,7 @@ class TestTabularJobsFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
+            pass_config=True,
         )
         formatter = TabularJobsFormatter(
             0, "owner", parse_columns(None), image_formatter=str
@@ -1717,6 +1743,7 @@ class TestTabularJobsFormatter:
                 ),
                 ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
+                pass_config=True,
             ),
             JobDescription(
                 status=JobStatus.PENDING,
@@ -1750,6 +1777,7 @@ class TestTabularJobsFormatter:
                 ),
                 ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
+                pass_config=True,
             ),
         ]
         formatter = TabularJobsFormatter(
@@ -1787,6 +1815,7 @@ class TestTabularJobsFormatter:
             ),
             ssh_server=URL("ssh-auth"),
             is_preemptible=True,
+            pass_config=True,
         )
 
         columns = parse_columns("{status;align=right;min=20;Status Code}")
@@ -1821,6 +1850,7 @@ class TestTabularJobsFormatter:
                 ),
                 ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
+                pass_config=True,
                 life_span=life_span,
             )
             for i, life_span in enumerate(life_spans, 1)
@@ -1889,6 +1919,7 @@ class TestTabularJobsFormatter:
                 ),
                 ssh_server=URL("ssh-auth"),
                 is_preemptible=False,
+                pass_config=True,
                 internal_hostname="host.local",
             )
             for i, item in enumerate(items, 1)
@@ -1932,6 +1963,7 @@ class TestTabularJobsFormatter:
                 ),
                 ssh_server=URL("ssh-auth"),
                 is_preemptible=False,
+                pass_config=True,
                 internal_hostname="host.local",
             )
             for i, working_dir in enumerate(items, 1)

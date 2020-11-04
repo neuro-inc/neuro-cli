@@ -36,6 +36,7 @@ from yarl import URL
 from neuromation.api import Action, Client, Factory, JobStatus, TagOption, Volume
 from neuromation.api.url_utils import uri_from_cli
 
+from . import asyncio_utils
 from .parse_utils import parse_timedelta
 from .root import Root
 from .stats import upload_gmp_stats
@@ -50,6 +51,8 @@ DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
 DEPRECATED_INVOKE_NOTICE = "DeprecationWarning: The command {name} is deprecated."
 
 NEURO_STEAL_CONFIG = "NEURO_STEAL_CONFIG"
+
+NEURO_PASSED_CONFIG = "NEURO_PASSED_CONFIG"
 
 
 async def _run_async_function(
@@ -612,7 +615,13 @@ def pager_maybe(
 
 
 def steal_config_maybe(dst_path: pathlib.Path) -> None:
-    if NEURO_STEAL_CONFIG in os.environ:
+    if NEURO_PASSED_CONFIG in os.environ:
+        factory = Factory(dst_path)
+        if factory.config_present:
+            return
+        passed_data = os.environ[NEURO_PASSED_CONFIG]
+        asyncio_utils.run(factory.login_with_passed_config(passed_data))
+    elif NEURO_STEAL_CONFIG in os.environ:
         src = pathlib.Path(os.environ[NEURO_STEAL_CONFIG])
         if not src.exists():
             return

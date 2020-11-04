@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import ssl
 import sys
@@ -66,6 +67,10 @@ class Factory:
     @property
     def path(self) -> Path:
         return self._path
+
+    @property
+    def config_present(self) -> bool:
+        return (self._path / "db").exists()
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         session = await _make_session(timeout, self._trace_configs)
@@ -140,6 +145,25 @@ class Factory:
             server_config, _AuthToken.create_non_expiring(token), url
         )
         self._save(config)
+
+    async def login_with_passed_config(
+        self,
+        config_data: str,
+        *,
+        timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
+    ) -> None:
+        try:
+            data = json.loads(config_data)
+            token = data["token"]
+            cluster = data["cluster"]
+            url = URL(data["url"])
+        except (ValueError, KeyError):
+            raise ConfigError(f"Data in passed config is malformed: {config_data}")
+        await self.login_with_token(token, url=url, timeout=timeout)
+        client = await self.get(timeout=timeout)
+
+        await client.config.switch_cluster(cluster)
+        await client.close()
 
     def _gen_config(
         self, server_config: _ServerConfig, token: _AuthToken, url: URL

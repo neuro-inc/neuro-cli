@@ -66,7 +66,7 @@ from .parse_utils import (
 )
 from .root import Root
 from .utils import (
-    NEURO_STEAL_CONFIG,
+    NEURO_PASSED_CONFIG,
     AsyncExitStack,
     alias,
     argument,
@@ -1190,12 +1190,9 @@ async def run_job(
     disk_volumes = volume_parse_result.disk_volumes
 
     if pass_config:
-        env_name = NEURO_STEAL_CONFIG
+        env_name = NEURO_PASSED_CONFIG
         if env_name in env_dict:
             raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
-        env_var, secret_volume = await upload_and_map_config(root)
-        env_dict[NEURO_STEAL_CONFIG] = env_var
-        volumes.append(secret_volume)
 
     if volumes:
         log.info(
@@ -1221,6 +1218,7 @@ async def run_job(
     job = await root.client.jobs.run(
         container,
         is_preemptible=preemptible,
+        pass_config=pass_config,
         name=name,
         tags=tags,
         description=description,
