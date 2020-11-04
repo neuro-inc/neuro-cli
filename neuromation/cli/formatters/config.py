@@ -5,6 +5,7 @@ import click
 from rich import box
 from rich.console import RenderableType, RenderGroup
 from rich.padding import Padding
+from rich.rule import Rule
 from rich.table import Table
 
 from neuromation.api import Cluster, Config, Preset
@@ -17,17 +18,23 @@ class ConfigFormatter:
     def __call__(
         self, config: Config, available_jobs_counts: Mapping[str, int]
     ) -> RenderableType:
-        lines: List[RenderableType] = []
-        lines.append("[b]User Configuration[/b]:")
-        lines.append(f"  [b]User Name[/b]: {config.username}")
-        lines.append(f"  [b]Current Cluster[/b]: {config.cluster_name}")
-        lines.append(f"  [b]API URL[/b]: {config.api_url}")
-        lines.append(f"  [b]Docker Registry URL[/b]: {config.registry_url}")
-        lines.append(f"  [b]Resource Presets[/b]:")
-        lines.append(
-            Padding.indent(_format_presets(config.presets, available_jobs_counts), 4)
+        table = Table(
+            title="User Configuration:",
+            title_justify="left",
+            box=None,
+            show_header=False,
+            show_edge=False,
         )
-        return RenderGroup(*lines)
+        table.add_column(style="bold")
+        table.add_column()
+        table.add_row("User Name", config.username)
+        table.add_row("Current Cluster", config.cluster_name)
+        table.add_row("API URL", str(config.api_url))
+        table.add_row("Docker Registry URL", str(config.registry_url))
+
+        return RenderGroup(
+            table, Rule(), _format_presets(config.presets, available_jobs_counts)
+        )
 
 
 class QuotaInfoFormatter:
@@ -93,8 +100,7 @@ class ClustersFormatter:
                 name = f"[u]{name}[/u]"
             pre = "* " if cluster.name == default_name else "  "
             out.append(pre + "[b]Name[/b]: " + name)
-            out.append("  [b]Presets[/b]:")
-            out.append(Padding.indent(_format_presets(cluster.presets, None), 4))
+            out.append(Padding.indent(_format_presets(cluster.presets, None), 2))
         return RenderGroup(*out)
 
 
@@ -108,7 +114,7 @@ def _format_presets(
             has_tpu = True
             break
 
-    table = Table(box=box.MINIMAL_HEAVY_HEAD)
+    table = Table(title="Resource Presets:", title_justify="left", box=box.SIMPLE_HEAVY)
     table.add_column("Name", style="bold", justify="left")
     table.add_column("#CPU", justify="right")
     table.add_column("Memory", justify="right")
