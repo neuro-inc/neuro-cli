@@ -120,7 +120,6 @@ class Images(metaclass=NoPublicConstructor):
         name = f"{remote.owner}/{remote.name}"
         auth = await self._config._registry_auth()
         url = self._registry_url / name / "manifests" / digest
-        print(url)
         async with self._core.request("DELETE", url, auth=auth) as resp:
             assert resp
 
