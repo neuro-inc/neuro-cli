@@ -193,11 +193,11 @@ class RichComparator:
                 "Create it yourself or run pytest with '--rich-gen' option."
             )
         else:
-            return ref.read_text()
+            return ref.read_text(encoding="utf8")
 
     def write_file(self, ref: Path, buf: str) -> None:
         ref.parent.mkdir(parents=True, exist_ok=True)
-        ref.write_text(buf)
+        ref.write_text(buf, encoding="utf8")
 
     def write_ref(self, ref: Path, buf: str) -> bool:
         if ref.exists():
