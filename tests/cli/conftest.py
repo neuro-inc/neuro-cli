@@ -2,9 +2,10 @@ import asyncio
 import logging
 from collections import namedtuple
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, List
+from typing import Any, AsyncIterator, Callable, List, Optional
 
 import pytest
+from rich.console import Console, RenderableType
 from yarl import URL
 
 import neuromation
@@ -122,3 +123,117 @@ def run_cli(
 @pytest.fixture()
 def click_tty_emulation(monkeypatch: Any) -> None:
     monkeypatch.setattr("click._compat.isatty", lambda stream: True)
+
+
+def pytest_addoption(parser: Any, pluginmanager: Any) -> None:
+    parser.addoption(
+        "--rich-gen",
+        default=False,
+        action="store_true",
+        help="Regenerate rich_cmp references from captured texts",
+    )
+
+
+class RichComparator:
+    def __init__(self, config: Any) -> None:
+        self._regen = config.getoption("--rich-gen")
+        self._config = config
+        self._reporter = config.pluginmanager.getplugin("terminalreporter")
+        assert self._reporter is not None
+        self._cwd = Path.cwd()
+        self._missing_refs: List[Path] = []
+        self._written_refs: List[Path] = []
+
+    def mkref(self, request: Any) -> Path:
+        folder = Path(request.fspath).parent
+        basename = request.function.__qualname__ + ".ascii"
+        return folder / "ascii" / basename
+
+    def check(self, ref: Path, buf: str) -> None:
+        __tracebackhide__ = True
+
+        if self._regen:
+            rel_ref = self.write_ref(ref, buf)
+            if rel_ref is not None:
+                pytest.fail(
+                    f"Regenerate '{rel_ref}', "
+                    "please restart tests without --rich-gen option."
+                )
+        orig = self.read_ref(ref)
+        assert buf == orig
+
+    def read_ref(self, ref: Path) -> str:
+        __tracebackhide__ = True
+        if not ref.exists():
+            if not self._regen:
+                rel_ref = ref.relative_to(Path.cwd())
+                pytest.fail(
+                    f"Original reference {rel_ref} doesn't exist.\n"
+                    "Create it yourself or run pytest with '--rich-generate' option."
+                )
+        else:
+            return ref.read_text()
+
+    def write_ref(self, ref: Path, buf: str) -> Optional[Path]:
+        if ref.exists():
+            orig = ref.read_text()
+            if orig == buf:
+                return None
+        ref.parent.mkdir(parents=True, exist_ok=True)
+        ref.write_text(buf)
+        rel_ref = ref.relative_to(self._cwd)
+        if self._reporter.verbosity > 0:
+            self._reporter.write_line(f"Regenerate {rel_ref}", yellow=True)
+        self._written_refs.append(rel_ref)
+        return rel_ref
+
+    def summary(self) -> None:
+        if self._reporter.verbosity == 0:
+            if self._written_refs:
+                self._reporter.write_line("Regenerated files:", yellow=True)
+                for fname in self._written_refs:
+                    self._reporter.write_line(f"  {fname}", yellow=True)
+
+
+# run after terminalreporter/capturemanager are configured
+@pytest.hookimpl(trylast=True)
+def pytest_configure(config: Any) -> None:
+    comparator = RichComparator(config)
+    config.pluginmanager.register(comparator, "rich-comparator")
+
+
+def pytest_terminal_summary(terminalreporter: Any) -> None:
+    config = terminalreporter.config
+    comparator = config.pluginmanager.getplugin("rich-comparator")
+    comparator.summary()
+
+
+@pytest.fixture
+def rich_cmp(request: Any) -> Callable[..., None]:
+    def comparator(
+        src: RenderableType,
+        ref: Optional[Path] = None,
+        *,
+        color: bool = True,
+        tty: bool = True,
+    ) -> None:
+        __tracebackhide__ = True
+        plugin = request.config.pluginmanager.getplugin("rich-comparator")
+        console = Console(
+            width=80,
+            height=24,
+            force_terminal=tty,
+            color_system="auto" if color else None,
+            record=True,
+            highlighter=None,
+        )
+        with console.capture() as capture:
+            console.print(src)
+        buf = capture.get()
+
+        if ref is None:
+            ref = plugin.mkref(request)
+
+        plugin.check(ref, buf)
+
+    return comparator
