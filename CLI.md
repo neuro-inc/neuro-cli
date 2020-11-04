@@ -39,6 +39,8 @@
 		* [neuro image ls](#neuro-image-ls)
 		* [neuro image push](#neuro-image-push)
 		* [neuro image pull](#neuro-image-pull)
+		* [neuro image rm](#neuro-image-rm)
+		* [neuro image digest](#neuro-image-digest)
 		* [neuro image tags](#neuro-image-tags)
 	* [neuro config](#neuro-config)
 		* [neuro config login](#neuro-config-login)
@@ -1093,6 +1095,8 @@ Name | Description|
 | _[neuro image ls](#neuro-image-ls)_| List images |
 | _[neuro image push](#neuro-image-push)_| Push an image to platform registry |
 | _[neuro image pull](#neuro-image-pull)_| Pull an image from platform registry |
+| _[neuro image rm](#neuro-image-rm)_| Remove image from platform registry |
+| _[neuro image digest](#neuro-image-digest)_| Get digest of an image from remote registry Image name must be URL with image://... |
 | _[neuro image tags](#neuro-image-tags)_| List tags for image in platform registry |
 
 
@@ -1175,6 +1179,62 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
+
+
+
+
+### neuro image rm
+
+Remove image from platform registry.<br/><br/>Image name must be URL with image:// scheme. Image name must contain tag.<br/>
+
+**Usage:**
+
+```bash
+neuro image rm [OPTIONS] IMAGE
+```
+
+**Examples:**
+
+```bash
+
+neuro image rm image://myfriend/alpine:shared
+neuro image rm image:myimage:latest
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro image digest
+
+Get digest of an image from remote registry<br/><br/>Image name must be URL with image:// scheme. Image name must contain tag.<br/>
+
+**Usage:**
+
+```bash
+neuro image digest [OPTIONS] IMAGE
+```
+
+**Examples:**
+
+```bash
+
+neuro image digest image://myfriend/alpine:shared
+neuro image digest image:myimage:latest
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
 
 
 

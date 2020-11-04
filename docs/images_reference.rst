@@ -65,6 +65,26 @@ Images
       :return: *local* image if explicitly specified, calculated remote image if
                *local* is ``None`` (:class:`LocalImage`)
 
+   .. comethod:: digest(image: RemoteImage) -> str
+
+      Get digest of an image in Neuro registry.
+
+      :param RemoteImage image: a spec for remote image on Neuro
+                                 registry.
+
+
+      :return: string representing image digest
+
+   .. comethod:: rm(image: RemoteImage, digest: str) -> str
+
+      Delete remote image specified by given reference and digest from Neuro registry.
+
+      :param RemoteImage image: a spec for remote image on Neuro
+                                 registry.
+
+      :param str digest: remote image digest, which can be obtained via `digest` method.
+
+
 
    .. comethod:: ls() -> List[RemoteImage]
 
