@@ -316,6 +316,7 @@ def rich_cmp(request: Any) -> Callable[..., None]:
             color_system="auto" if color else None,
             record=True,
             highlighter=None,
+            legacy_windows=False,
         )
         with console.capture() as capture:
             console.print(src)
