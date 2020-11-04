@@ -194,6 +194,34 @@ def test_image_ls(helper: Helper, image: str, tag: str) -> None:
 
 
 @pytest.mark.e2e
+def test_images_delete(
+    helper: Helper,
+    image: str,
+    tag: str,
+) -> None:
+    image_no_tag = image.replace(f":{tag}", "")
+    image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image_no_tag}"
+
+    captured = helper.run_cli(["image", "ls", "-l", "--full-uri"])
+    print("\n")
+    print(f"== {image_full_str} ==")
+    print(captured.out)
+    print("=" * 20)
+    matching_lines = [
+        line for line in captured.out.splitlines() if image_full_str == line.split()[0]
+    ]
+    assert len(matching_lines) == 1
+
+    helper.run_cli(["image", "rm", image])
+
+    captured = helper.run_cli(["image", "ls", "-l", "--full-uri"])
+    matching_lines = [
+        line for line in captured.out.splitlines() if image == line.split()[0]
+    ]
+    assert len(matching_lines) == 0
+
+
+@pytest.mark.e2e
 def test_images_push_with_specified_name(
     helper: Helper,
     image: str,

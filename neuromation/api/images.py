@@ -104,6 +104,26 @@ class Images(metaclass=NoPublicConstructor):
             raise  # pragma: no cover
         return remote
 
+    async def digest(self, remote: RemoteImage) -> str:
+        name = f"{remote.owner}/{remote.name}"
+        auth = await self._config._registry_auth()
+        assert remote.tag
+        url = self._registry_url / name / "manifests" / remote.tag
+        async with self._core.request(
+            "HEAD",
+            url,
+            auth=auth,
+            headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
+        ) as resp:
+            return resp.headers["Docker-Content-Digest"]
+
+    async def rm(self, remote: RemoteImage, digest: str) -> None:
+        name = f"{remote.owner}/{remote.name}"
+        auth = await self._config._registry_auth()
+        url = self._registry_url / name / "manifests" / digest
+        async with self._core.request("DELETE", url, auth=auth) as resp:
+            assert resp
+
     async def pull(
         self,
         remote: RemoteImage,
