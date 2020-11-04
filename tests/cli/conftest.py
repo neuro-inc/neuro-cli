@@ -142,7 +142,9 @@ class Guard:
     arg: str
     path: Path
 
-    def __eq__(self, other: "Guard") -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Guard):
+            return NotImplemented
         return self.arg == other.arg
 
 
