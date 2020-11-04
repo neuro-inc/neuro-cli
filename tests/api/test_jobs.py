@@ -2237,7 +2237,7 @@ async def test_port_forward_logs_error(
     async with make_client(srv.make_url("/")) as client:
         async with client.jobs.port_forward("job-id", port, 12345):
             reader, writer = await asyncio.open_connection("127.0.0.1", port)
-            writer.write("boom".encode("ascii"))
+            writer.write(b"boom")
             await writer.drain()
             await asyncio.sleep(0.1)
 

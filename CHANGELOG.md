@@ -5,6 +5,26 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.10.30 (2020-10-30)
+=================================
+
+Features
+--------
+
+
+- Bump ``aiohttp`` to >= 3.7.2 in the library requirements, drop transient dependencies ``multidict`` and ``yarl``. Support Python 3.8 and Python 3.9 ([#1802](https://github.com/neuro-inc/platform-api-clients/issues/1802))
+
+
+Neuromation 20.10.22 (2020-10-22)
+=================================
+
+Features
+--------
+
+
+- Allowed to share secrets. ([#1791](https://github.com/neuro-inc/platform-api-clients/issues/1791))
+
+
 Neuromation 20.10.7 (2020-10-07)
 ================================
 

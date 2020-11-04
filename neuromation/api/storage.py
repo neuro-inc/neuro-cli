@@ -121,7 +121,10 @@ class Storage(metaclass=NoPublicConstructor):
 
     def _set_time_diff(self, request_time: float, resp: aiohttp.ClientResponse) -> None:
         response_time = time.time()
-        server_timetuple = parsedate(resp.headers.get("Date"))
+        str_date = resp.headers.get("Date")
+        if not str_date:
+            return
+        server_timetuple = parsedate(str_date)
         if not server_timetuple:
             return
         server_time = datetime.datetime(

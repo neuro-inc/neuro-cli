@@ -62,4 +62,3 @@ stages:
       displayName: 'Upload coverage reports'
       env:
         CODECOV_TOKEN: $(codecov.token)
-

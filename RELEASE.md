@@ -6,7 +6,7 @@
 * Run `make format`.
 * Run `towncrier` to update `CHANGELOG.md`.
 * Open `CHANGELOG.md`, make sure that the generated file content looks good. Fix it if needed.
-* Regenerate site docs. 
+* Regenerate site docs.
   * You need a clone of https://github.com/neuromation/platform-web project sibling to this repo.
   * Run `./build-tools/site-help-generator.py`. The tool regenerates files in `platform-web/docs`.
   * Verify and manually edit docs generated on the previous step.

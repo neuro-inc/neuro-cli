@@ -39,7 +39,7 @@ class Runner:
         assert self._started
         assert not self._stopped
         if not asyncio.iscoroutine(main):
-            raise ValueError("a coroutine was expected, got {!r}".format(main))
+            raise ValueError(f"a coroutine was expected, got {main!r}")
         main_task = self._loop.create_task(main)
 
         if sys.version_info <= (3, 7):

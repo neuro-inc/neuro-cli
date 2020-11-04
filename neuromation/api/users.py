@@ -80,7 +80,7 @@ class Users(metaclass=NoPublicConstructor):
             #  TODO: server part contain TODO record for returning more then
             #  HTTPCreated, this part must me refactored then
             if resp.status != HTTPCreated.status_code:
-                raise ClientError("Server return unexpected result.")  # NOQA
+                raise ClientError("Server return unexpected result.")
         return None
 
     async def revoke(self, user: str, uri: URL) -> None:
@@ -92,9 +92,7 @@ class Users(metaclass=NoPublicConstructor):
             #  TODO: server part contain TODO record for returning more then
             #  HTTPNoContent, this part must me refactored then
             if resp.status != HTTPNoContent.status_code:
-                raise ClientError(
-                    f"Server return unexpected result: {resp.status}."
-                )  # NOQA
+                raise ClientError(f"Server return unexpected result: {resp.status}.")
         return None
 
     async def add(self, role_name: str) -> None:
@@ -104,9 +102,7 @@ class Users(metaclass=NoPublicConstructor):
             "POST", url, json={"name": role_name}, auth=auth
         ) as resp:
             if resp.status != HTTPCreated.status_code:
-                raise ClientError(
-                    f"Server return unexpected result: {resp.status}."
-                )  # NOQA
+                raise ClientError(f"Server return unexpected result: {resp.status}.")
         return None
 
     async def remove(self, role_name: str) -> None:
@@ -114,9 +110,7 @@ class Users(metaclass=NoPublicConstructor):
         auth = await self._config._api_auth()
         async with self._core.request("DELETE", url, auth=auth) as resp:
             if resp.status != HTTPNoContent.status_code:
-                raise ClientError(
-                    f"Server return unexpected result: {resp.status}."
-                )  # NOQA
+                raise ClientError(f"Server return unexpected result: {resp.status}.")
         return None
 
     def _get_user_url(self, user: str) -> URL:

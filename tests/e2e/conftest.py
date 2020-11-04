@@ -483,10 +483,7 @@ class Helper:
             raise
         out = proc.stdout
         err = proc.stderr
-        if any(
-            start in " ".join(arguments)
-            for start in ("submit", "job submit", "run", "job run")
-        ):
+        if any(run_cmd in arguments for run_cmd in ("submit", "run")):
             job_id = self.find_job_id(out)
             if job_id:
                 self._executed_jobs.append(job_id)
@@ -536,6 +533,7 @@ class Helper:
         env["_NEURO_COMPLETE"] = "complete_zsh"
         env["COMP_WORDS"] = " ".join(shlex.quote(arg) for arg in args + arguments)
         env["COMP_CWORD"] = str(len(args + arguments) - 1)
+        env["NEURO_CLI_JOB_AUTOCOMPLETE_LIMIT"] = "500"
 
         proc = subprocess.run(
             "neuro",

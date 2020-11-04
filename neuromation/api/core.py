@@ -76,9 +76,7 @@ class _Core:
         db: sqlite3.Connection,
     ) -> None:
         for cookie in _load_cookies(db):
-            self._session.cookie_jar.update_cookies(
-                {cookie.key: cookie}  # type: ignore
-            )
+            self._session.cookie_jar.update_cookies({cookie.key: cookie})
 
     def _save_cookies(self, db: sqlite3.Connection) -> None:
         to_save = []

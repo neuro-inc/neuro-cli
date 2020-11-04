@@ -19,13 +19,13 @@ TEST_IMAGE_NAME = "e2e-banana-image"
 
 
 def parse_docker_ls_output(docker_ls_output: Any) -> Set[str]:
-    return set(
+    return {
         repo_tag
         for info in docker_ls_output
         if info["RepoTags"] is not None
         for repo_tag in info["RepoTags"]
         if repo_tag
-    )
+    }
 
 
 @pytest.fixture()

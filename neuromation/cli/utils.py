@@ -473,7 +473,7 @@ async def resolve_job(
     return id_or_name
 
 
-SHARE_SCHEMES = ("storage", "image", "job", "blob", "role")
+SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret", "disk")
 
 
 def parse_resource_for_sharing(uri: str, root: Root) -> URL:
@@ -578,7 +578,7 @@ deprecated_quiet_option: Any = option(
 )
 
 if sys.version_info >= (3, 7):  # pragma: no cover
-    from contextlib import AsyncExitStack  # noqa
+    from contextlib import AsyncExitStack
 else:
     from async_exit_stack import AsyncExitStack  # noqa
 
