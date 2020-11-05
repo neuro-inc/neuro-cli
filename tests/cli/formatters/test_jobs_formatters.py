@@ -60,7 +60,6 @@ def job_descr_no_name() -> JobDescription:
             image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
             resources=Resources(16, 0.1, 0, None, False, None, None),
         ),
-        ssh_server=URL("ssh-auth"),
         is_preemptible=True,
     )
 
@@ -86,7 +85,6 @@ def job_descr() -> JobDescription:
             image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
             resources=Resources(16, 0.1, 0, None, False, None, None),
         ),
-        ssh_server=URL("ssh-auth"),
         is_preemptible=True,
     )
 
@@ -122,7 +120,6 @@ class TestJobStartProgress:
                 image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
             life_span=life_span,
         )
@@ -255,7 +252,6 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -310,7 +306,6 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -365,7 +360,6 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -422,7 +416,6 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
             life_span=1.0 * ((60 * 60 * 24 * 1) + (60 * 60 * 2) + (60 * 3) + 4),
         )
@@ -477,7 +470,6 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
             life_span=0.0,
         )
@@ -532,7 +524,6 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
             restart_policy=JobRestartPolicy.ALWAYS,
         )
@@ -587,7 +578,6 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -634,7 +624,6 @@ class TestJobOutputFormatter:
                 image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
             cluster_name="default",
@@ -678,7 +667,6 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 tty=True,
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
             cluster_name="default",
@@ -721,7 +709,6 @@ class TestJobOutputFormatter:
                 command="test-command",
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
             owner="owner",
             cluster_name="default",
@@ -767,7 +754,6 @@ class TestJobOutputFormatter:
                 image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
             internal_hostname="host.local",
         )
@@ -815,7 +801,6 @@ class TestJobOutputFormatter:
                 image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
             internal_hostname="host.local",
             internal_hostname_named="test-job--test-owner.local",
@@ -866,7 +851,6 @@ class TestJobOutputFormatter:
                 image=RemoteImage.new_external_image(name="test-image"),
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
             internal_hostname="host.local",
         )
@@ -924,7 +908,6 @@ class TestJobOutputFormatter:
                 http=HTTPPort(port=80, requires_auth=True),
                 env={"ENV_NAME_1": "__value1__", "ENV_NAME_2": "**value2**"},
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -1005,7 +988,6 @@ class TestJobOutputFormatter:
                     ),
                 ],
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -1082,7 +1064,6 @@ class TestJobOutputFormatter:
                     ),
                 ],
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -1172,7 +1153,6 @@ class TestJobOutputFormatter:
                     "ENV_NAME_3": URL("secret://othercluster/otheruser/secret6"),
                 },
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -1262,7 +1242,6 @@ class TestJobOutputFormatter:
                     ),
                 ],
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -1328,7 +1307,6 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=False,
         )
 
@@ -1479,7 +1457,6 @@ class TestSimpleJobsFormatter:
                     image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                 ),
-                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
             ),
             JobDescription(
@@ -1501,7 +1478,6 @@ class TestSimpleJobsFormatter:
                     image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                 ),
-                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
             ),
         ]
@@ -1543,7 +1519,6 @@ class TestTabularJobRow:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 command="ls",
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
         )
 
@@ -1662,7 +1637,6 @@ class TestTabularJobsFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 command="c",
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
         )
         formatter = TabularJobsFormatter(
@@ -1715,7 +1689,6 @@ class TestTabularJobsFormatter:
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                     command="ls -la /some/path",
                 ),
-                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
             ),
             JobDescription(
@@ -1748,7 +1721,6 @@ class TestTabularJobsFormatter:
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                     command="ls -la /some/path",
                 ),
-                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
             ),
         ]
@@ -1785,7 +1757,6 @@ class TestTabularJobsFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
                 command="c",
             ),
-            ssh_server=URL("ssh-auth"),
             is_preemptible=True,
         )
 
@@ -1819,7 +1790,6 @@ class TestTabularJobsFormatter:
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                     command="c",
                 ),
-                ssh_server=URL("ssh-auth"),
                 is_preemptible=True,
                 life_span=life_span,
             )
@@ -1887,7 +1857,6 @@ class TestTabularJobsFormatter:
                     image=RemoteImage.new_external_image(name="test-image"),
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                 ),
-                ssh_server=URL("ssh-auth"),
                 is_preemptible=False,
                 internal_hostname="host.local",
             )
@@ -1930,7 +1899,6 @@ class TestTabularJobsFormatter:
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                     working_dir=working_dir,
                 ),
-                ssh_server=URL("ssh-auth"),
                 is_preemptible=False,
                 internal_hostname="host.local",
             )
