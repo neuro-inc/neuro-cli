@@ -13,7 +13,7 @@ setup(
     install_requires=[
         "aiohttp>=3.7.2",
         "yarl>=1.6.2",
-        'dataclasses>=0.5; python_version<"3.7"',
+        'dataclasses>=0.7; python_version<"3.7"',
         "pyyaml>=3.0",
         'async-generator>=1.5; python_version<"3.7"',
         'async-exit-stack>=1.0.1; python_version<"3.7"',
