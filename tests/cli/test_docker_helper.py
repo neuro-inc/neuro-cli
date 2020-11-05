@@ -134,7 +134,7 @@ class TestCli:
         json_path = path / "config.json"
         capture = run_cli(["config", "docker", "--docker-config", str(path)])
         assert not capture.err
-        assert str(json_path) in capture.out
+        assert str(json_path) in capture.out.replace("\n", "")  # strip rich wrapping
         assert config.clusters[config.cluster_name].registry_url.host in capture.out
 
 

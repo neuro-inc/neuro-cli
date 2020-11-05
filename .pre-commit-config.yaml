@@ -42,6 +42,7 @@ repos:
     exclude: "^CLI[.]md$"
   - id: requirements-txt-fixer
   - id: trailing-whitespace
+    exclude: "[.]ref$"
   - id: check-symlinks
   - id: debug-statements
 # Another entry is required to apply file-contents-sorter to another file
