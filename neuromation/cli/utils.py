@@ -617,7 +617,7 @@ def pager_maybe(
 def steal_config_maybe(dst_path: pathlib.Path) -> None:
     if NEURO_PASSED_CONFIG in os.environ:
         factory = Factory(dst_path)
-        if factory.config_present:
+        if factory.is_config_present:
             return
         passed_data = os.environ[NEURO_PASSED_CONFIG]
         asyncio_utils.run(factory.login_with_passed_config(passed_data))

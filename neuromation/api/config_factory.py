@@ -69,7 +69,7 @@ class Factory:
         return self._path
 
     @property
-    def config_present(self) -> bool:
+    def is_config_present(self) -> bool:
         return (self._path / "db").exists()
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
