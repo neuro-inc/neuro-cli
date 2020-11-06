@@ -58,7 +58,20 @@ class DisksFormatter(BaseDisksFormatter):
 
 class DiskFormatter:
     def __init__(self, uri_formatter: URIFormatter) -> None:
-        self._disks_formatter = DisksFormatter(uri_formatter, long_format=True)
+        self._uri_formatter = uri_formatter
 
     def __call__(self, disk: Disk) -> RenderableType:
-        return self._disks_formatter([disk])
+        table = Table(
+            box=None,
+            show_header=False,
+            show_edge=False,
+        )
+        table.add_column()
+        table.add_column(style="bold")
+        table.add_row("Id", disk.id)
+        table.add_row("Storage", utils.format_size(disk.storage))
+        table.add_row("Uri", self._uri_formatter(disk.uri))
+        table.add_row("Status", disk.status.value)
+        table.add_row("Created at", format_datetime(disk.created_at))
+        table.add_row("Last used", format_datetime(disk.last_usage))
+        return table
