@@ -1,6 +1,6 @@
 import contextlib
 import logging
-from typing import Optional, cast
+from typing import Optional
 
 import click
 
@@ -19,14 +19,7 @@ from neuromation.cli.formatters.utils import (
 
 from .click_types import RemoteImageType, RemoteTaglessImageType
 from .root import Root
-from .utils import (
-    argument,
-    command,
-    deprecated_quiet_option,
-    group,
-    option,
-    pager_maybe,
-)
+from .utils import argument, command, deprecated_quiet_option, group, option
 
 
 log = logging.getLogger(__name__)
@@ -59,7 +52,7 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
 
     """
 
-    progress = DockerImageProgress.create(tty=root.tty, quiet=root.quiet)
+    progress = DockerImageProgress.create(console=root.console, quiet=root.quiet)
     local_obj = root.client.parse.local_image(local_image)
     if remote_image is not None:
         remote_obj: Optional[RemoteImage] = root.client.parse.remote_image(remote_image)
@@ -69,7 +62,7 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
         result_remote_image = await root.client.images.push(
             local_obj, remote_obj, progress=progress
         )
-    click.echo(result_remote_image)
+    root.print(result_remote_image)
 
 
 @command()
@@ -91,7 +84,7 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 
     """
 
-    progress = DockerImageProgress.create(tty=root.tty, quiet=root.quiet)
+    progress = DockerImageProgress.create(console=root.console, quiet=root.quiet)
     remote_obj = root.client.parse.remote_image(remote_image)
     if local_image is not None:
         local_obj: Optional[LocalImage] = root.client.parse.local_image(local_image)
@@ -101,7 +94,7 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
         result_local_image = await root.client.images.pull(
             remote_obj, local_obj, progress=progress
         )
-    click.echo(result_local_image)
+    root.print(result_local_image)
 
 
 @command()
@@ -127,7 +120,8 @@ async def ls(root: Root, format_long: bool, full_uri: bool) -> None:
         formatter = LongImagesFormatter(image_formatter=image_fmtr)
     else:
         formatter = ShortImagesFormatter(image_formatter=image_fmtr)
-    pager_maybe(formatter(images), root.tty, root.terminal_size)
+    with root.pager():
+        root.print(formatter(images))
 
 
 @command()
@@ -145,9 +139,10 @@ async def tags(root: Root, image: RemoteImage) -> None:
     """
 
     images = await root.client.images.tags(image)
-    pager_maybe(
-        (cast(str, image.tag) for image in images), root.tty, root.terminal_size
-    )
+    with root.pager():
+        # TODO: Use table here
+        for image in images:
+            root.print(image.tag)
 
 
 @command()
@@ -184,7 +179,7 @@ async def digest(root: Root, image: RemoteImage) -> None:
     neuro image digest image:myimage:latest
     """
     res = await root.client.images.digest(image)
-    click.echo(res)
+    root.print(res)
 
 
 image.add_command(ls)

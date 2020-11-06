@@ -88,6 +88,7 @@ class Root:
             color_system="auto" if self.color else None,
             force_terminal=self.tty,
             highlight=False,
+            log_path=False,
         )
 
     def close(self) -> None:

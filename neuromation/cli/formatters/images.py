@@ -1,9 +1,9 @@
 import abc
 from typing import Dict, Iterable
 
-import click
 from rich import box
-from rich.console import RenderableType
+from rich.console import Console, RenderableType
+from rich.progress import BarColumn, DownloadColumn, Progress, TextColumn
 from rich.table import Table
 
 from neuromation.api import (
@@ -18,20 +18,20 @@ from neuromation.api.abc import (
     ImageCommitStarted,
     ImageProgressSave,
 )
-from neuromation.cli.printer import StreamPrinter, TTYPrinter
+from neuromation.cli.printer import StreamPrinter
 
 from .utils import ImageFormatter
 
 
 class DockerImageProgress(AbstractDockerImageProgress):
     @classmethod
-    def create(cls, tty: bool, quiet: bool) -> "DockerImageProgress":
+    def create(cls, console: Console, quiet: bool) -> "DockerImageProgress":
         if quiet:
             progress: DockerImageProgress = QuietDockerImageProgress()
-        elif tty:
-            progress = DetailedDockerImageProgress()
+        elif console.is_terminal:
+            progress = DetailedDockerImageProgress(console)
         else:
-            progress = StreamDockerImageProgress()
+            progress = StreamDockerImageProgress(console)
         return progress
 
     @abc.abstractmethod
@@ -66,50 +66,75 @@ class QuietDockerImageProgress(DockerImageProgress):
 
 
 class DetailedDockerImageProgress(DockerImageProgress):
-    def __init__(self) -> None:
+    def __init__(self, console: Console) -> None:
         self._mapping: Dict[str, int] = {}
-        self._printer = TTYPrinter()
+        self._progress = Progress(
+            TextColumn("[progress.description]{task.fields[layer]}"),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            DownloadColumn(),
+            console=console,
+            auto_refresh=False,
+        )
+        self._progress.start()
 
     def push(self, data: ImageProgressPush) -> None:
-        src = click.style(str(data.src), bold=True)
-        dst = click.style(str(data.dst), bold=True)
-        self._printer.print(f"Pushing image {src} => {dst}")
+        self._progress.log(f"Pushing image [b]{data.src}[/b] => [b]{data.dst}[/b]")
 
     def pull(self, data: ImageProgressPull) -> None:
-        src = click.style(str(data.src), bold=True)
-        dst = click.style(str(data.dst), bold=True)
-        self._printer.print(f"Pulling image {src} => {dst}")
+        self._progress.log(f"Pulling image [b]{data.src}[/b] => [b]{data.dst}[/b]")
 
     def step(self, data: ImageProgressStep) -> None:
         if data.layer_id:
-            if data.layer_id in self._mapping.keys():
-                lineno = self._mapping[data.layer_id]
-                self._printer.print(data.message, lineno)
+            if data.status in ("Layer already exists", "Download complete"):
+                current = 100.0
+                total = 100.0
             else:
-                self._mapping[data.layer_id] = self._printer.total_lines
-                self._printer.print(data.message)
+                current = float(data.current) if data.current is not None else None
+                total = float(data.total) if data.total is not None else None
+            # self._progress.print(data.layer_id, current, total)
+            layer = data.layer_id
+            if layer in self._mapping.keys():
+                task = self._mapping[layer]
+            else:
+                task = self._progress.add_task(layer, layer=layer)
+                self._mapping[layer] = task
+
+            self._progress.update(
+                task,
+                description=data.status,
+                visible=True,
+                completed=current,
+                total=total,
+                refresh=True,
+            )
+            for word in ("complete", "pushed", "already"):
+                if word in data.status.lower():
+                    self._progress.stop_task(task)
+            # self._progress.refresh()
         else:
-            self._printer.print(data.message)
+            self._console.log(data.message)
 
     def save(self, data: ImageProgressSave) -> None:
-        job = click.style(str(data.job), bold=True)
-        dst = click.style(str(data.dst), bold=True)
-        self._printer.print(f"Saving {job} -> {dst}")
+        self._console.print(f"Saving [b]{data.job}[/b] -> [b]{data.dst}[/b]")
 
     def commit_started(self, data: ImageCommitStarted) -> None:
-        img = click.style(str(data.target_image), bold=True)
-        self._printer.print(f"Creating image {img} image from the job container")
+        self._console.log(
+            f"Creating image [b]{data.target_image}[/b] image from the job container"
+        )
 
     def commit_finished(self, data: ImageCommitFinished) -> None:
-        self._printer.print("Image created")
+        self._console.log("Image created")
 
     def close(self) -> None:
-        self._printer.close()
+        self._progress.stop()
 
 
 class StreamDockerImageProgress(DockerImageProgress):
-    def __init__(self) -> None:
+    def __init__(self, console: Console) -> None:
         self._printer = StreamPrinter()
+        self._console = console
 
     def push(self, data: ImageProgressPush) -> None:
         self._printer.print(f"Using local image '{data.src}'")
