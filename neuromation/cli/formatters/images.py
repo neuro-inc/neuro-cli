@@ -2,6 +2,9 @@ import abc
 from typing import Dict, Iterable
 
 import click
+from rich import box
+from rich.console import RenderableType
+from rich.table import Table
 
 from neuromation.api import (
     AbstractDockerImageProgress,
@@ -17,7 +20,6 @@ from neuromation.api.abc import (
 )
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 
-from .ftable import table
 from .utils import ImageFormatter
 
 
@@ -144,28 +146,26 @@ class BaseImagesFormatter:
         self._format_image = image_formatter
 
     @abc.abstractmethod
-    def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
+    def __call__(self, images: Iterable[RemoteImage]) -> RenderableType:
         raise NotImplementedError
 
 
 class ShortImagesFormatter(BaseImagesFormatter):
-    def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
-        return (
-            click.style(self._format_image(image), underline=True) for image in images
-        )
+    def __call__(self, images: Iterable[RemoteImage]) -> RenderableType:
+        table = Table.grid()
+        table.add_column("", style="underline")
+        for image in images:
+            table.add_row(self._format_image(image))
+        return table
 
 
 class LongImagesFormatter(BaseImagesFormatter):
-    def __call__(self, images: Iterable[RemoteImage]) -> Iterable[str]:
-        header = [
-            click.style("Neuro URL", bold=True),
-            click.style("Docker URL", bold=True),
-        ]
-        rows = [
-            [
-                click.style(self._format_image(image), underline=True),
-                click.style(image.as_docker_url(with_scheme=True), underline=True),
-            ]
-            for image in images
-        ]
-        return table([header] + rows)
+    def __call__(self, images: Iterable[RemoteImage]) -> RenderableType:
+        table = Table(box=box.SIMPLE_HEAVY)
+        table.add_column("Neuro URL", style="underline")
+        table.add_column("Docker URL", style="underline")
+        for image in images:
+            table.add_row(
+                self._format_image(image), image.as_docker_url(with_scheme=True)
+            )
+        return table
