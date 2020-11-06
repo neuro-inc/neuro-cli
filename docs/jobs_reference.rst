@@ -251,7 +251,7 @@ Jobs
                                  details.
 
       :param bool pass_config: a flag that specifies that platform should pass
-                                 config data to job. This allows to api and cli
+                                 config data to job. This allows to API and CLI
                                  from the inside of the job. See
                                  :meth:`Factory.login_with_passed_config` for details.
 
