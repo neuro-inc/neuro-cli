@@ -18,7 +18,6 @@ from neuromation.api.abc import (
     ImageCommitStarted,
     ImageProgressSave,
 )
-from neuromation.cli.printer import StreamPrinter
 
 from .utils import ImageFormatter
 
@@ -133,37 +132,36 @@ class DetailedDockerImageProgress(DockerImageProgress):
 
 class StreamDockerImageProgress(DockerImageProgress):
     def __init__(self, console: Console) -> None:
-        self._printer = StreamPrinter()
         self._console = console
 
     def push(self, data: ImageProgressPush) -> None:
-        self._printer.print(f"Using local image '{data.src}'")
-        self._printer.print(f"Using remote image '{data.dst}'")
-        self._printer.print("Pushing image...")
+        self._console.print(f"Using local image '{data.src}'")
+        self._console.print(f"Using remote image '{data.dst}'")
+        self._console.print("Pushing image...")
 
     def pull(self, data: ImageProgressPull) -> None:
-        self._printer.print(f"Using remote image '{data.src}'")
-        self._printer.print(f"Using local image '{data.dst}'")
-        self._printer.print("Pulling image...")
+        self._console.print(f"Using remote image '{data.src}'")
+        self._console.print(f"Using local image '{data.dst}'")
+        self._console.print("Pulling image...")
 
     def step(self, data: ImageProgressStep) -> None:
         if data.layer_id:
-            self._printer.tick()
+            self._console.print(".", end="")
         else:
-            self._printer.print(data.message)
+            self._console.print(data.message)
 
     def save(self, data: ImageProgressSave) -> None:
-        self._printer.print(f"Saving job '{data.job}' to image '{data.dst}'...")
+        self._console.print(f"Saving job '{data.job}' to image '{data.dst}'...")
 
     def commit_started(self, data: ImageCommitStarted) -> None:
-        self._printer.print(f"Using remote image '{data.target_image}'")
-        self._printer.print(f"Creating image from the job container...")
+        self._console.print(f"Using remote image '{data.target_image}'")
+        self._console.print(f"Creating image from the job container...")
 
     def commit_finished(self, data: ImageCommitFinished) -> None:
-        self._printer.print("Image created")
+        self._console.print("Image created")
 
     def close(self) -> None:
-        self._printer.close()
+        pass
 
 
 class BaseImagesFormatter:
