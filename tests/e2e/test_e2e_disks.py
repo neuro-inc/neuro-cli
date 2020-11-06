@@ -40,11 +40,11 @@ def test_delete_multiple_disks(
     try:
         cap = helper.run_cli(["disk", "create", "1G"])
         assert cap.err == ""
-        disk_id_1, *_ = cap.out.splitlines()[1].split()
+        disk_id_1 = cap.out.splitlines()[0].split()[1]
 
         cap = helper.run_cli(["disk", "create", "1G"])
         assert cap.err == ""
-        disk_id_2, *_ = cap.out.splitlines()[1].split()
+        disk_id_2 = cap.out.splitlines()[0].split()[1]
 
         assert disk_id_1 and disk_id_2
         cap = helper.run_cli(["disk", "rm", disk_id_1, disk_id_2])
