@@ -1,4 +1,4 @@
-from typing import Callable, ContextManager
+from typing import Callable, ContextManager, Optional
 
 import pytest
 
@@ -35,7 +35,8 @@ def test_create_get_list_delete(
 def test_delete_multiple_disks(
     helper: Helper, disk_factory: Callable[[str], ContextManager[str]]
 ) -> None:
-    disk_id_1, disk_id_2 = None, None
+    disk_id_1: Optional[str] = None
+    disk_id_2: Optional[str] = None
     try:
         cap = helper.run_cli(["disk", "create", "1G"])
         assert cap.err == ""
@@ -45,6 +46,7 @@ def test_delete_multiple_disks(
         assert cap.err == ""
         disk_id_2, *_ = cap.out.splitlines()[1].split()
 
+        assert disk_id_1 and disk_id_2
         cap = helper.run_cli(["disk", "rm", disk_id_1, disk_id_2])
         assert cap.err == ""
 
@@ -56,7 +58,7 @@ def test_delete_multiple_disks(
     except Exception as e:
         try:
             if disk_id_2 is not None:
-                helper.run_cli(["disk", "rm", disk_id_1])
+                helper.run_cli(["disk", "rm", disk_id_2])
         finally:
             if disk_id_1 is not None:
                 helper.run_cli(["disk", "rm", disk_id_1])
