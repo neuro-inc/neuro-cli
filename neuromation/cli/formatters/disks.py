@@ -44,7 +44,9 @@ class DisksFormatter(BaseDisksFormatter):
     def __call__(self, disks: Sequence[Disk]) -> RenderableType:
         disks = sorted(disks, key=operator.attrgetter("id"))
         table = Table(box=box.SIMPLE_HEAVY)
-        table.add_column("Id", style="bold")
+        # make sure that the first columnt is fully expanded
+        width = len("disk-06bed296-8b27-4aa8-9e2a-f3c47b41c807")
+        table.add_column("Id", style="bold", width=width)
         table.add_column("Storage")
         table.add_column("Uri")
         table.add_column("Status")
