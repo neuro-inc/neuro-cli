@@ -1,5 +1,6 @@
-                                                                                
- [1m [0m[1mId  [0m[1m [0m [1m [0m[1mStorage[0m[1m [0m [1m [0m[1mUri                   [0m[1m [0m [1m [0m[1mStatus[0m[1m [0m [1m [0m[1mCreated at [0m[1m [0m [1m [0m[1mLast used  [0m[1m [0m 
- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
- [1m [0m[1mdisk[0m[1m [0m  11.9G     disk://cluster/user/d…   Ready    Mar 04 2017   Apr 04 2017  
-                                                                                
+ Id         [1m [0m[1mdisk                    [0m[1m [0m
+ Storage    [1m [0m[1m11.9G                   [0m[1m [0m
+ Uri        [1m [0m[1mdisk://cluster/user/disk[0m[1m [0m
+ Status     [1m [0m[1mReady                   [0m[1m [0m
+ Created at [1m [0m[1mMar 04 2017             [0m[1m [0m
+ Last used  [1m [0m[1mApr 04 2017             [0m[1m [0m
