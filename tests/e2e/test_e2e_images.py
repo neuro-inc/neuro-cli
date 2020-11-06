@@ -212,7 +212,7 @@ def test_images_delete(
     ]
     assert len(matching_lines) == 1
 
-    helper.run_cli(["image", "rm", image])
+    helper.run_cli(["image", "rm", image_full_str])
 
     captured = helper.run_cli(["image", "ls", "-l", "--full-uri"])
     matching_lines = [
