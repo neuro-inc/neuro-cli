@@ -24,7 +24,7 @@ def test_print_options(helper: Helper) -> None:
 def test_print_config(helper: Helper) -> None:
     captured = helper.run_cli(["config", "show"])
     assert not captured.err
-    assert "API URL: https://dev.neu.ro/api/v1" in captured.out
+    assert "https://dev.neu.ro/api/v1" in captured.out
 
 
 @pytest.mark.e2e

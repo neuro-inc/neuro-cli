@@ -1,51 +1,52 @@
 import operator
-from typing import Iterable, Iterator, List, Mapping, Optional
+from typing import Iterable, List, Mapping, Optional
 
 import click
-from click import style
+from rich import box
+from rich.console import RenderableType, RenderGroup
+from rich.padding import Padding
+from rich.table import Table
 
 from neuromation.api import Cluster, Config, Preset
 from neuromation.api.admin import _Quota
 from neuromation.api.quota import _QuotaInfo
 from neuromation.cli.utils import format_size
 
-from .ftable import Align, table
-
 
 class ConfigFormatter:
-    def __call__(self, config: Config, available_jobs_counts: Mapping[str, int]) -> str:
-        lines = []
-        lines.append(style("User Configuration", bold=True) + ":")
-        lines.append("  " + style("User Name", bold=True) + f": {config.username}")
-        lines.append(
-            "  " + style("Current Cluster", bold=True) + f": {config.cluster_name}"
+    def __call__(
+        self, config: Config, available_jobs_counts: Mapping[str, int]
+    ) -> RenderableType:
+        table = Table(
+            title="User Configuration:",
+            title_justify="left",
+            box=None,
+            show_header=False,
+            show_edge=False,
         )
-        lines.append("  " + style("API URL", bold=True) + f": {config.api_url}")
-        lines.append(
-            "  " + style("Docker Registry URL", bold=True) + f": {config.registry_url}"
+        table.add_column()
+        table.add_column(style="bold")
+        table.add_row("User Name", config.username)
+        table.add_row("Current Cluster", config.cluster_name)
+        table.add_row("API URL", str(config.api_url))
+        table.add_row("Docker Registry URL", str(config.registry_url))
+
+        return RenderGroup(
+            table, _format_presets(config.presets, available_jobs_counts)
         )
-        lines.append("  " + style("Resource Presets", bold=True) + f":")
-        lines.extend(_format_presets(config.presets, available_jobs_counts, "    "))
-        return "\n".join(lines)
 
 
 class QuotaInfoFormatter:
     QUOTA_NOT_SET = "infinity"
 
-    def __call__(self, quota: _QuotaInfo) -> str:
+    def __call__(self, quota: _QuotaInfo) -> RenderableType:
         gpu_details = self._format_quota_details(
             quota.gpu_time_spent, quota.gpu_time_limit, quota.gpu_time_left
         )
         cpu_details = self._format_quota_details(
             quota.cpu_time_spent, quota.cpu_time_limit, quota.cpu_time_left
         )
-        return (
-            f"{style('GPU:', bold=True)}"
-            f" {gpu_details}"
-            "\n"
-            f"{style('CPU:', bold=True)}"
-            f" {cpu_details}"
-        )
+        return RenderGroup(f"[b]GPU:[/b] {gpu_details}", f"[b]CPU[/b]: {cpu_details}")
 
     def _format_quota_details(
         self, time_spent: float, time_limit: float, time_left: float
@@ -71,17 +72,13 @@ class QuotaInfoFormatter:
 class QuotaFormatter:
     QUOTA_NOT_SET = "infinity"
 
-    def __call__(self, quota: _Quota) -> str:
+    def __call__(self, quota: _Quota) -> RenderableType:
         gpu_details = self._format_quota_details(quota.total_gpu_run_time_minutes)
         non_gpu_details = self._format_quota_details(
             quota.total_non_gpu_run_time_minutes
         )
-        return (
-            f"{style('GPU:', bold=True)}"
-            f" {gpu_details}"
-            "\n"
-            f"{style('CPU:', bold=True)}"
-            f" {non_gpu_details}"
+        return RenderGroup(
+            f"[b]GPU[/b]: {gpu_details}", f"[b]CPU[/b]: {non_gpu_details}"
         )
 
     def _format_quota_details(self, run_time_minutes: Optional[int]) -> str:
@@ -94,39 +91,43 @@ class QuotaFormatter:
 class ClustersFormatter:
     def __call__(
         self, clusters: Iterable[Cluster], default_name: Optional[str]
-    ) -> List[str]:
-        out = [style("Available clusters:", bold=True)]
+    ) -> RenderableType:
+        out: List[RenderableType] = ["[i]Available clusters:[/i]"]
         for cluster in clusters:
             name = cluster.name or ""
             if cluster.name == default_name:
-                name = style(name, underline=True)
+                name = f"[u]{name}[/u]"
             pre = "* " if cluster.name == default_name else "  "
-            out.append(pre + style("Name: ", bold=True) + name)
-            out.append(style("  Presets:", bold=True))
-            out.extend(_format_presets(cluster.presets, None, "    "))
-        return out
+            out.append(pre + "[b]Name[/b]: " + name)
+            out.append(Padding.indent(_format_presets(cluster.presets, None), 2))
+        return RenderGroup(*out)
 
 
 def _format_presets(
     presets: Mapping[str, Preset],
     available_jobs_counts: Optional[Mapping[str, int]],
-    prefix: str,
-) -> Iterator[str]:
+) -> Table:
     has_tpu = False
     for preset in presets.values():
         if preset.tpu_type:
             has_tpu = True
             break
 
-    rows = []
-    headers = ["Name", "#CPU", "Memory", "Preemptible", "GPU"]
+    table = Table(
+        title="Resource Presets:",
+        title_justify="left",
+        box=box.SIMPLE_HEAVY,
+        show_edge=False,
+    )
+    table.add_column("Name", style="bold", justify="left")
+    table.add_column("#CPU", justify="right")
+    table.add_column("Memory", justify="right")
+    table.add_column("Preemptible", justify="center")
+    table.add_column("GPU", justify="left")
     if available_jobs_counts:
-        headers.append("Jobs Available")
-    # TODO: support ANSI styles in headers
-    # headers = [style(name, bold=True) for name in headers]
-    rows.append(headers)
+        table.add_column("Jobs Avail", justify="right")
     if has_tpu:
-        headers.append("TPU")
+        table.add_column("TPU", justify="left")
 
     for name, preset in presets.items():
         gpu = ""
@@ -151,19 +152,16 @@ def _format_presets(
                 row.append(str(available_jobs_counts[name]))
             else:
                 row.append("")
-        rows.append(row)
-    aligns = [Align.LEFT, Align.RIGHT, Align.RIGHT, Align.CENTER, Align.LEFT]
-    if available_jobs_counts:
-        aligns.append(Align.RIGHT)
-    for line in table(rows=rows, aligns=aligns):
-        yield prefix + line
+        table.add_row(*row)
+
+    return table
 
 
 class AliasesFormatter:
-    def __call__(self, aliases: Iterable[click.Command]) -> Iterator[str]:
-        rows = [["Alias", "Description"]]
+    def __call__(self, aliases: Iterable[click.Command]) -> Table:
+        table = Table(box=box.MINIMAL_HEAVY_HEAD)
+        table.add_column("Alias", style="bold")
+        table.add_column("Description")
         for alias in sorted(aliases, key=operator.attrgetter("name")):
-            rows.append(
-                [click.style(alias.name, bold=True), alias.get_short_help_str()]
-            )
-        return table(rows)
+            table.add_row(alias.name, alias.get_short_help_str())
+        return table

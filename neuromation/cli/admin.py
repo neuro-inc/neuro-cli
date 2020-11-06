@@ -13,7 +13,7 @@ from neuromation.api.admin import _ClusterUserRoleType
 from .formatters.admin import ClustersFormatter, ClusterUserFormatter
 from .formatters.config import QuotaFormatter
 from .root import Root
-from .utils import argument, command, group, option, pager_maybe
+from .utils import argument, command, group, option
 
 
 @group()
@@ -28,11 +28,8 @@ async def get_clusters(root: Root) -> None:
     """
     fmt = ClustersFormatter()
     clusters = await root.client._admin.list_clusters()
-    pager_maybe(
-        fmt(clusters.values()),
-        root.tty,
-        root.terminal_size,
-    )
+    with root.pager():
+        root.print(fmt(clusters.values()))
 
 
 @command()
@@ -244,7 +241,8 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     """
     fmt = ClusterUserFormatter()
     clusters = await root.client._admin.list_cluster_users(cluster_name)
-    pager_maybe(fmt(clusters), root.tty, root.terminal_size)
+    with root.pager():
+        root.print(fmt(clusters))
 
 
 @command()
@@ -343,11 +341,11 @@ async def set_user_quota(
         cluster_name, user_name, gpu_value_minutes, non_gpu_value_minutes
     )
     fmt = QuotaFormatter()
-    click.echo(
-        f"New quotas for {click.style(user_with_quota.user_name, underline=True)} "
-        f"on cluster {click.style(cluster_name, underline=True)}:"
+    root.print(
+        f"New quotas for [u]{user_with_quota.user_name}[/u] "
+        f"on cluster [u]{cluster_name}[/u]:"
     )
-    click.echo(fmt(user_with_quota.quota))
+    root.print(fmt(user_with_quota.quota))
 
 
 @command()
@@ -386,11 +384,11 @@ async def add_user_quota(
         additional_non_gpu_value_minutes,
     )
     fmt = QuotaFormatter()
-    click.echo(
-        f"New quotas for {click.style(user_with_quota.user_name, underline=True)} "
-        f"on cluster {click.style(cluster_name, underline=True)}:"
+    root.print(
+        f"New quotas for [u]{user_with_quota.user_name}[/u] "
+        f"on cluster [u]{cluster_name}[/u]:"
     )
-    click.echo(fmt(user_with_quota.quota))
+    root.print(fmt(user_with_quota.quota))
 
 
 admin.add_command(get_clusters)

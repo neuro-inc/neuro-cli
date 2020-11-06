@@ -1,4 +1,6 @@
-import textwrap
+from typing import Callable
+
+from rich.console import RenderableType
 
 from neuromation.api.admin import (
     _CloudProvider,
@@ -11,8 +13,11 @@ from neuromation.api.admin import (
 from neuromation.cli.formatters.admin import ClustersFormatter, ClusterUserFormatter
 
 
+RichCmp = Callable[[RenderableType], None]
+
+
 class TestClusterUserFormatter:
-    def test_cluster_list(self) -> None:
+    def test_cluster_list(self, rich_cmp: RichCmp) -> None:
         formatter = ClusterUserFormatter()
         users = [
             _ClusterUser(user_name="denis", role=_ClusterUserRoleType("admin")),
@@ -20,14 +25,7 @@ class TestClusterUserFormatter:
             _ClusterUser(user_name="ivan", role=_ClusterUserRoleType("user")),
             _ClusterUser(user_name="alex", role=_ClusterUserRoleType("user")),
         ]
-        expected_out = [
-            "\x1b[1mName\x1b[0m    \x1b[1mRole\x1b[0m   ",
-            "alex    user   ",
-            "andrew  manager",
-            "denis   admin  ",
-            "ivan    user   ",
-        ]
-        assert formatter(users) == expected_out
+        rich_cmp(formatter(users))
 
 
 class TestClustersFormatter:
@@ -52,17 +50,12 @@ class TestClustersFormatter:
             is_tpu_enabled=is_tpu_enabled,
         )
 
-    def test_cluster_list(self) -> None:
+    def test_cluster_list(self, rich_cmp: RichCmp) -> None:
         formatter = ClustersFormatter()
         clusters = [_Cluster(name="default", status="deployed")]
-        expected_out = textwrap.dedent(
-            """\
-            \x1b[1mdefault:\x1b[0m
-              \x1b[1mStatus: \x1b[0mDeployed"""
-        )
-        assert "\n".join(formatter(clusters)) == expected_out
+        rich_cmp(formatter(clusters))
 
-    def test_cluster_with_on_prem_cloud_provider_list(self) -> None:
+    def test_cluster_with_on_prem_cloud_provider_list(self, rich_cmp: RichCmp) -> None:
         formatter = ClustersFormatter()
         clusters = [
             _Cluster(
@@ -77,14 +70,9 @@ class TestClustersFormatter:
                 ),
             ),
         ]
-        expected_out = textwrap.dedent(
-            """\
-            \x1b[1mon-prem:\x1b[0m
-              \x1b[1mStatus: \x1b[0mDeployed"""
-        )
-        assert "\n".join(formatter(clusters)) == expected_out
+        rich_cmp(formatter(clusters))
 
-    def test_cluster_with_cloud_provider_storage_list(self) -> None:
+    def test_cluster_with_cloud_provider_storage_list(self, rich_cmp: RichCmp) -> None:
         formatter = ClustersFormatter()
         clusters = [
             _Cluster(
@@ -99,19 +87,10 @@ class TestClustersFormatter:
                 ),
             )
         ]
-        expected_out = textwrap.dedent(
-            """\
-            \x1b[1mdefault:\x1b[0m
-              \x1b[1mStatus: \x1b[0mDeployed
-              \x1b[1mCloud: \x1b[0mgcp
-              \x1b[1mRegion: \x1b[0mus-central1
-              \x1b[1mZones: \x1b[0mus-central1-a, us-central1-c
-              \x1b[1mStorage: \x1b[0mFilestore"""
-        )
-        assert "\n".join(formatter(clusters)) == expected_out
+        rich_cmp(formatter(clusters))
 
     def test_cluster_with_cloud_provider_with_minimum_node_pool_properties_list(
-        self,
+        self, rich_cmp: RichCmp
     ) -> None:
         formatter = ClustersFormatter()
         clusters = [
@@ -130,19 +109,10 @@ class TestClustersFormatter:
                 ),
             )
         ]
-        expected_out = textwrap.dedent(
-            f"""\
-            \x1b[1mdefault:\x1b[0m
-              \x1b[1mStatus: \x1b[0mDeployed
-              \x1b[1mNode pools:\x1b[0m
-                Machine       CPU  Memory                   GPU  Size
-                n1-highmem-8  7.0   45.0G                           2
-                n1-highmem-8  7.0   45.0G  1 x nvidia-tesla-k80     2"""  # noqa: E501, ignore line length
-        )
-        assert "\n".join(formatter(clusters)) == expected_out
+        rich_cmp(formatter(clusters))
 
     def test_cluster_with_cloud_provider_with_maximum_node_pool_properties_list(
-        self,
+        self, rich_cmp: RichCmp
     ) -> None:
         formatter = ClustersFormatter()
         clusters = [
@@ -163,15 +133,4 @@ class TestClustersFormatter:
                 ),
             )
         ]
-        expected_out = textwrap.dedent(
-            f"""\
-            \x1b[1mdefault:\x1b[0m
-              \x1b[1mStatus: \x1b[0mDeployed
-              \x1b[1mCloud: \x1b[0mgcp
-              \x1b[1mRegion: \x1b[0mus-central1
-              \x1b[1mNode pools:\x1b[0m
-                Machine       CPU  Memory  Preemptible  GPU  TPU  Min  Max  Idle
-                n1-highmem-8  7.0   45.0G       √             √     1    2     1
-                n1-highmem-8  7.0   45.0G       ×             ×     1    2     0"""
-        )
-        assert "\n".join(formatter(clusters)) == expected_out
+        rich_cmp(formatter(clusters))

@@ -463,8 +463,6 @@ async def test_status_failed(
         "id": "job-id",
         "description": "This is job description, not a history description",
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "history": {
             "created_at": "2018-08-29T12:23:13.981621+00:00",
             "started_at": "2018-08-29T12:23:15.988054+00:00",
@@ -517,7 +515,7 @@ async def test_status_failed(
         assert ret == _job_description_from_api(JSON, client.parse)
 
 
-async def test_status_with_ssh_and_http(
+async def test_status_with_http(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
@@ -525,8 +523,6 @@ async def test_status_with_ssh_and_http(
         "id": "job-id",
         "description": "This is job description, not a history description",
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "history": {
             "created_at": "2018-08-29T12:23:13.981621+00:00",
             "started_at": "2018-08-29T12:23:15.988054+00:00",
@@ -587,8 +583,6 @@ async def test_status_with_tpu(
         "id": "job-id",
         "description": "This is job description, not a history description",
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "history": {
             "created_at": "2018-08-29T12:23:13.981621+00:00",
             "started_at": "2018-08-29T12:23:15.988054+00:00",
@@ -673,8 +667,6 @@ async def test_job_run(
             },
         },
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "is_preemptible": False,
         "pass_config": False,
     }
@@ -773,8 +765,6 @@ async def test_job_run_with_name_and_description(
             },
         },
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "is_preemptible": False,
         "pass_config": False,
     }
@@ -879,8 +869,6 @@ async def test_job_run_with_tags(
             },
         },
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "is_preemptible": False,
         "pass_config": False,
     }
@@ -983,8 +971,6 @@ async def test_job_run_no_volumes(
             },
         },
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "is_preemptible": False,
         "pass_config": False,
     }
@@ -1065,8 +1051,6 @@ async def test_job_run_with_relative_volume_uris(
             },
         },
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "is_preemptible": False,
         "pass_config": False,
     }
@@ -1171,8 +1155,6 @@ async def test_job_run_with_secret_uris(
             },
         },
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "is_preemptible": False,
         "pass_config": False,
     }
@@ -1278,8 +1260,6 @@ async def test_job_run_with_disk_volume_uris(
             ],
         },
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "is_preemptible": False,
         "pass_config": False,
     }
@@ -1367,8 +1347,6 @@ async def test_job_run_preemptible(
         "is_preemptible": True,
         "pass_config": False,
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -1470,8 +1448,6 @@ async def test_job_run_schedule_timeout(
             },
         },
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "is_preemptible": False,
         "pass_config": False,
         "schedule_timeout": 5,
@@ -1546,8 +1522,6 @@ async def test_job_run_tpu(
             },
         },
         "http_url": "http://my_host:8889",
-        "ssh_server": "ssh://my_host.ssh:22",
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "is_preemptible": False,
         "pass_config": False,
     }
@@ -1654,7 +1628,6 @@ def create_job_response(
             "started_at": "2018-09-25T12:28:59.759433+00:00",
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
-        "ssh_auth_server": "ssh://my_host.ssh:22",
         "container": {
             "image": image,
             "command": "submit-command",

@@ -59,7 +59,6 @@ def make_root() -> Iterator[_MakeRoot]:
         root = Root(
             color,
             tty,
-            (80, 25),
             True,
             60,
             Path("~/.neuro"),
@@ -71,6 +70,8 @@ def make_root() -> Iterator[_MakeRoot]:
             skip_gmp_stats=True,
             show_traceback=False,
         )
+        root.console._width = 80
+        root.console._height = 25
         return root
 
     yield make

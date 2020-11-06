@@ -148,7 +148,6 @@ class JobDescription:
     tags: Sequence[str] = ()
     description: Optional[str] = None
     http_url: URL = URL()
-    ssh_server: URL = URL()
     internal_hostname: Optional[str] = None
     internal_hostname_named: Optional[str] = None
     restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER
@@ -755,7 +754,6 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
     )
     http_url = URL(res.get("http_url", ""))
     http_url_named = URL(res.get("http_url_named", ""))
-    ssh_server = URL(res.get("ssh_server", ""))
     internal_hostname = res.get("internal_hostname", None)
     internal_hostname_named = res.get("internal_hostname_named", None)
     restart_policy = JobRestartPolicy(res.get("restart_policy", JobRestartPolicy.NEVER))
@@ -776,7 +774,6 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         tags=tags,
         description=description,
         http_url=http_url_named or http_url,
-        ssh_server=ssh_server,
         internal_hostname=internal_hostname,
         internal_hostname_named=internal_hostname_named,
         uri=URL(res["uri"]),

@@ -12,13 +12,13 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
 from yarl import URL
 
-from neuromation.api import DEFAULT_API_URL, Client, ConfigError
+from neuromation.api import DEFAULT_API_URL, ConfigError
 from neuromation.cli.formatters.config import ClustersFormatter, QuotaInfoFormatter
 
 from .alias import list_aliases
 from .formatters.config import AliasesFormatter, ConfigFormatter
 from .root import Root
-from .utils import argument, command, group, option, pager_maybe
+from .utils import argument, command, group, option
 
 
 @group()
@@ -36,7 +36,7 @@ async def show(root: Root) -> None:
         jobs_capacity = await root.client.jobs.get_capacity(root.client.config.presets)
     except ClientConnectionError:
         jobs_capacity = {}
-    click.echo(fmt(root.client.config, jobs_capacity))
+    root.print(fmt(root.client.config, jobs_capacity))
 
 
 @command()
@@ -44,7 +44,7 @@ async def show_token(root: Root) -> None:
     """
     Print current authorization token.
     """
-    click.echo(await root.client.config.token())
+    root.print(await root.client.config.token())
 
 
 @command()
@@ -62,7 +62,7 @@ async def show_quota(root: Root, user: Optional[str]) -> None:
         )
     cluster_quota = quotas[cluster_name]
     fmt = QuotaInfoFormatter()
-    click.echo(fmt(cluster_quota))
+    root.print(fmt(cluster_quota))
 
 
 @command()
@@ -72,15 +72,15 @@ async def add_quota(root: Root) -> None:
     """
     user_name = root.client.config.username
     cluster_name = root.client.config.cluster_name
-    click.echo(
+    root.print(
         f"In order to increase your quota, please navigate to "
         f"https://neuro.payments.com/{user_name}/{cluster_name}?pay=usd100"
     )
 
 
-def _print_welcome(url: URL) -> None:
-    click.echo(f"Logged into {url}")
-    click.echo(
+def _print_welcome(root: Root, url: URL) -> None:
+    root.print(f"Logged into {url}")
+    root.print(
         "Read the docs at https://docs.neu.ro or run `neuro --help` "
         "to see the reference"
     )
@@ -104,9 +104,9 @@ async def login(root: Root, url: URL) -> None:
         await root.factory.login(_show_browser, url=url, timeout=root.timeout)
     except (ConfigError, FileExistsError):
         await root.factory.logout()
-        click.echo("You were successfully logged out.")
+        root.print("You were successfully logged out.")
         await root.factory.login(_show_browser, url=url, timeout=root.timeout)
-    _print_welcome(url)
+    _print_welcome(root, url)
 
 
 @command(init_client=False)
@@ -123,9 +123,9 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
         await root.factory.login_with_token(token, url=url, timeout=root.timeout)
     except ConfigError:
         await root.factory.logout(_show_browser)
-        click.echo("You were successfully logged out.")
+        root.print("You were successfully logged out.")
         await root.factory.login_with_token(token, url=url, timeout=root.timeout)
-    _print_welcome(url)
+    _print_welcome(root, url)
 
 
 @command(init_client=False)
@@ -146,8 +146,8 @@ async def login_headless(root: Root, url: URL) -> None:
 
     async def login_callback(url: URL) -> str:
         session: PromptSession[str] = PromptSession()
-        click.echo(f"Open {url} in a browser")
-        click.echo("Put the code displayed in a browser after successful login")
+        root.print(f"Open {url} in a browser")
+        root.print("Put the code displayed in a browser after successful login")
         with patch_stdout():
             auth_code = await session.prompt_async("Code (empty for exit)-> ")
         if not auth_code:
@@ -158,9 +158,9 @@ async def login_headless(root: Root, url: URL) -> None:
         await root.factory.login_headless(login_callback, url=url, timeout=root.timeout)
     except ConfigError:
         await root.factory.logout()
-        click.echo("You were successfully logged out.")
+        root.print("You were successfully logged out.")
         await root.factory.login_headless(login_callback, url=url, timeout=root.timeout)
-    _print_welcome(url)
+    _print_welcome(root, url)
 
 
 @command(init_client=False)
@@ -169,7 +169,7 @@ async def logout(root: Root) -> None:
     Log out.
     """
     await root.factory.logout(_show_browser)
-    click.echo("Logged out")
+    root.print("Logged out")
 
 
 @command(init_client=False)
@@ -178,7 +178,7 @@ async def aliases(root: Root) -> None:
     List available command aliases.
     """
     aliases = await list_aliases(root)
-    click.echo("\n".join(AliasesFormatter()(aliases)))
+    root.print(AliasesFormatter()(aliases))
 
 
 @command(name="docker")
@@ -213,10 +213,8 @@ async def docker(root: Root, docker_config: str) -> None:
     with json_path.open("w", encoding="utf-8") as file2:
         json.dump(payload, file2, indent=2)
 
-    json_path_str = f"{json_path}"
-    registry_str = click.style(f"{registry}", bold=True)
-    click.echo(f"Configuration file {json_path_str} updated.")
-    click.echo(f"You can use docker client with neuro registry: {registry_str}")
+    root.print(f"Configuration file {json_path} updated.")
+    root.print(f"You can use docker client with neuro registry: [b]{registry}[/b]")
 
 
 @command()
@@ -225,14 +223,13 @@ async def get_clusters(root: Root) -> None:
     Fetch and display the list of available clusters.
 
     """
-    click.secho("Fetch the list of available clusters...", dim=True)
+    root.print("[dim]Fetch the list of available clusters...")
     await root.client.config.fetch()
     fmt = ClustersFormatter()
-    pager_maybe(
-        fmt(root.client.config.clusters.values(), root.client.config.cluster_name),
-        root.tty,
-        root.terminal_size,
-    )
+    with root.pager():
+        root.print(
+            fmt(root.client.config.clusters.values(), root.client.config.cluster_name)
+        )
 
 
 @command()
@@ -244,7 +241,7 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
     name is omitted (default).
 
     """
-    click.secho("Fetch the list of available clusters...", dim=True)
+    root.print("[dim]Fetch the list of available clusters...")
     await root.client.config.fetch()
     if cluster_name is None:
         if not root.tty:
@@ -252,40 +249,32 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
                 "Interactive mode is disabled for non-TTY mode, "
                 "please specify the CLUSTER_NAME"
             )
-        real_cluster_name = await prompt_cluster(root.client)
+        real_cluster_name = await prompt_cluster(root)
     else:
         real_cluster_name = cluster_name
     await root.client.config.switch_cluster(real_cluster_name)
-    click.echo(
-        "The current cluster is " + click.style(real_cluster_name, underline=True)
-    )
+    root.print(f"The current cluster is [u]{real_cluster_name}[/u]")
 
 
 async def prompt_cluster(
-    client: Client, *, session: Optional[PromptSession[str]] = None
+    root: Root, *, session: Optional[PromptSession[str]] = None
 ) -> str:
     if session is None:
         session = PromptSession()
-    clusters = client.config.clusters
+    clusters = root.client.config.clusters
     while True:
         fmt = ClustersFormatter()
-        click.echo("\n".join(fmt(clusters.values(), client.config.cluster_name)))
+        root.print(fmt(clusters.values(), root.client.config.cluster_name))
         with patch_stdout():
             answer = await session.prompt_async(
-                f"Select cluster to switch [{client.config.cluster_name}]: "
+                f"Select cluster to switch [{root.client.config.cluster_name}]: "
             )
         answer = answer.strip()
         if not answer:
-            answer = client.config.cluster_name
+            answer = root.client.config.cluster_name
         if answer not in clusters:
-            click.echo(
-                " ".join(
-                    [
-                        "Selected cluster",
-                        click.style(answer, underline=True),
-                        "doesn't exist, please try again.",
-                    ]
-                )
+            root.print(
+                f"Selected cluster [u]{answer}[/u] doesn't exist, please try again."
             )
         else:
             return answer

@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import logging
+import os
 import re
 import sys
 from dataclasses import dataclass, field
@@ -21,6 +22,8 @@ from typing import (
 
 import aiohttp
 import click
+from rich.console import Console, PagerContext
+from rich.pager import Pager
 
 from neuromation.api import Client, ConfigError, Factory, gen_trace_id
 from neuromation.api.config import _ConfigData, load_user_config
@@ -41,11 +44,27 @@ HEADER_TOKEN_PATTERN = re.compile(
 _T = TypeVar("_T")
 
 
+class MaybePager(Pager):
+    """Uses the pager installed on the system."""
+
+    def __init__(self, console: Console) -> None:
+        self._limit = console.size[1] * 2 / 3
+
+    def show(self, content: str) -> None:
+        """Use the same pager used by pydoc."""
+        # Enforce ANSI sequence handling (colors etc.)
+        os.environ["LESS"] = "-R"
+
+        if len(content.splitlines()) > self._limit:
+            click.echo_via_pager(content)
+        else:
+            print(content)
+
+
 @dataclass
 class Root:
     color: bool
     tty: bool
-    terminal_size: Tuple[int, int]
     disable_pypi_version_check: bool
     network_timeout: float
     config_path: Path
@@ -60,10 +79,16 @@ class Root:
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None
     _runner: Runner = field(init=False)
+    console: Console = field(init=False)
 
     def __post_init__(self) -> None:
         self._runner = Runner(debug=self.verbosity >= 2)
         self._runner.__enter__()
+        self.console = Console(
+            color_system="auto" if self.color else None,
+            force_terminal=self.tty,
+            highlight=False,
+        )
 
     def close(self) -> None:
         if self._client is not None:
@@ -88,6 +113,10 @@ class Root:
     @property
     def quiet(self) -> bool:
         return self.verbosity < 0
+
+    @property
+    def terminal_size(self) -> Tuple[int, int]:
+        return self.console.size
 
     @property
     def timeout(self) -> aiohttp.ClientTimeout:
@@ -249,3 +278,9 @@ class Root:
             # to a part of the screen size
             sys.stdout.write("\x1b[!p")
             sys.stdout.flush()
+
+    def pager(self) -> PagerContext:
+        return self.console.pager(MaybePager(self.console), styles=True, links=True)
+
+    def print(self, *objects: Any, **kwargs: Any) -> None:
+        self.console.print(*objects, **kwargs)

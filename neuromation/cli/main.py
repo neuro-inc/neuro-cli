@@ -2,7 +2,6 @@ import asyncio
 import io
 import logging
 import os
-import shutil
 import sys
 import warnings
 from pathlib import Path
@@ -174,7 +173,6 @@ class MainGroup(Group):
             verbosity=verbosity,
             color=real_color,
             tty=tty,
-            terminal_size=shutil.get_terminal_size(),
             disable_pypi_version_check=kwargs["disable_pypi_version_check"],
             network_timeout=kwargs["network_timeout"],
             config_path=Path(kwargs["neuromation_config"]),

@@ -1,4 +1,3 @@
-import re
 import subprocess
 
 import pytest
@@ -27,11 +26,8 @@ def test_get_cluster_users(helper: Helper) -> None:
     captured = helper.run_cli(["admin", "get-cluster-users"])
     assert captured.err == ""
 
-    header, *users = [re.split(" +", row.strip()) for row in captured.out.split("\n")]
-
-    assert header == ["Name", "Role"]
-    for name, role in users:
-        assert role in ["admin", "manager", "user"]
+    for role in ["admin", "manager", "user"]:
+        assert role in captured.out
 
 
 @pytest.mark.e2e
