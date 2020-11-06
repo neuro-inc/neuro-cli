@@ -1,8 +1,6 @@
 from datetime import timedelta
 from typing import Optional
 
-import click
-
 from .formatters.disks import (
     BaseDisksFormatter,
     DiskFormatter,
@@ -12,7 +10,7 @@ from .formatters.disks import (
 from .formatters.utils import URIFormatter, uri_formatter
 from .parse_utils import parse_memory
 from .root import Root
-from .utils import argument, calc_life_span, command, group, option, pager_maybe
+from .utils import argument, calc_life_span, command, group, option
 
 
 DEFAULT_DISK_LIFE_SPAN = "1d"
@@ -47,7 +45,8 @@ async def ls(root: Root, full_uri: bool, long_format: bool) -> None:
     async for disk in root.client.disks.list():
         disks.append(disk)
 
-    pager_maybe(disks_fmtr(disks), root.tty, root.terminal_size)
+    with root.pager():
+        root.print(disks_fmtr(disks))
 
 
 @command()
@@ -93,7 +92,8 @@ async def create(root: Root, storage: str, life_span: Optional[str] = None) -> N
         parse_memory(storage), life_span=disk_life_span
     )
     disk_fmtr = DiskFormatter(str)
-    pager_maybe(disk_fmtr(disk), root.tty, root.terminal_size)
+    with root.pager():
+        root.print(disk_fmtr(disk))
 
 
 @command()
@@ -111,7 +111,8 @@ async def get(root: Root, disk_id: str, full_uri: bool) -> None:
             username=root.client.username, cluster_name=root.client.cluster_name
         )
     disk_fmtr = DiskFormatter(uri_fmtr)
-    pager_maybe(disk_fmtr(disk), root.tty, root.terminal_size)
+    with root.pager():
+        root.print(disk_fmtr(disk))
 
 
 @command()
@@ -122,7 +123,7 @@ async def rm(root: Root, disk_id: str) -> None:
     """
     await root.client.disks.rm(disk_id)
     if root.verbosity > 0:
-        click.echo(f"Disk with id '{disk_id}' was successfully removed.")
+        root.print(f"Disk with id '{disk_id}' was successfully removed.")
 
 
 disk.add_command(ls)
