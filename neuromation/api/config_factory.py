@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import json
 import os
 import ssl
@@ -24,6 +25,7 @@ from .utils import _ContextManager
 
 DEFAULT_CONFIG_PATH = "~/.neuro"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
+PASS_CONFIG_ENV_NAME = "NEURO_PASSED_CONFIG"
 DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")
 
 
@@ -73,6 +75,8 @@ class Factory:
         return (self._path / "db").exists()
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
+        if not self.is_config_present and PASS_CONFIG_ENV_NAME in os.environ:
+            await self.login_with_passed_config(timeout=timeout)
         session = await _make_session(timeout, self._trace_configs)
         try:
             client = Client._create(session, self._path, self._trace_id)
@@ -148,12 +152,19 @@ class Factory:
 
     async def login_with_passed_config(
         self,
-        config_data: str,
+        config_data: Optional[str] = None,
         *,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
+        if config_data is None:
+            try:
+                config_data = os.environ[PASS_CONFIG_ENV_NAME]
+            except KeyError:
+                raise ConfigError(
+                    f"Config env variable {PASS_CONFIG_ENV_NAME} " "is not present"
+                )
         try:
-            data = json.loads(config_data)
+            data = json.loads(base64.b64decode(config_data).decode())
             token = data["token"]
             cluster = data["cluster"]
             url = URL(data["url"])

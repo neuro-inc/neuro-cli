@@ -57,7 +57,6 @@ from .utils import (
     option,
     pager_maybe,
     print_help,
-    steal_config_maybe,
 )
 
 
@@ -168,7 +167,6 @@ class MainGroup(Group):
                 option = "--hide-token" if kwargs["hide_token"] else "--no-hide-token"
                 raise click.UsageError(f"{option} requires --trace")
             hide_token_bool = kwargs["hide_token"]
-        steal_config_maybe(Path(kwargs["neuromation_config"]))
         root = Root(
             verbosity=verbosity,
             color=real_color,

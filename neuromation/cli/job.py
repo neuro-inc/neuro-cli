@@ -14,6 +14,7 @@ from dateutil.parser import isoparse
 from yarl import URL
 
 from neuromation.api import (
+    PASS_CONFIG_ENV_NAME,
     AuthorizationError,
     Client,
     Container,
@@ -66,8 +67,6 @@ from .parse_utils import (
 )
 from .root import Root
 from .utils import (
-    NEURO_PASSED_CONFIG,
-    NEURO_STEAL_CONFIG,
     AsyncExitStack,
     alias,
     argument,
@@ -1191,16 +1190,9 @@ async def run_job(
     disk_volumes = volume_parse_result.disk_volumes
 
     if pass_config:
-        env_name = NEURO_PASSED_CONFIG
+        env_name = PASS_CONFIG_ENV_NAME
         if env_name in env_dict:
             raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
-        # Logic below is deprecated, only used to support images with old client
-        env_name = NEURO_STEAL_CONFIG
-        if env_name in env_dict:
-            raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
-        env_var, secret_volume = await upload_and_map_config(root)
-        env_dict[NEURO_STEAL_CONFIG] = env_var
-        volumes.append(secret_volume)
 
     if volumes:
         log.info(

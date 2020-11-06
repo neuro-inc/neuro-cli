@@ -1,3 +1,5 @@
+import base64
+import json
 import os
 import sys
 from pathlib import Path
@@ -12,7 +14,7 @@ from yarl import URL
 
 import neuromation
 import neuromation.api.config_factory
-from neuromation.api import Cluster, ConfigError, Factory
+from neuromation.api import PASS_CONFIG_ENV_NAME, Cluster, ConfigError, Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData
 from neuromation.api.errors import AuthException
 from tests import _TestServerFactory
@@ -258,6 +260,101 @@ class TestLoginWithToken:
             )
         nmrc_path = tmp_home / ".neuro"
         assert not Path(nmrc_path).exists(), "Config file not written after login "
+
+
+class TestLoginPassedConfig:
+    @pytest.fixture()
+    def make_conf_data(self, mock_for_login: _TestServer) -> Callable[[str], str]:
+        def _make_config(token: str) -> str:
+            data = {
+                "token": token,
+                "cluster": "default",
+                "url": str(mock_for_login.make_url("/")),
+            }
+            return base64.b64encode(json.dumps(data).encode()).decode()
+
+        return _make_config
+
+    @pytest.fixture()
+    def set_conf_to_env(
+        self, monkeypatch: Any, make_conf_data: Callable[[str], str]
+    ) -> Callable[[str], None]:
+        def _set_env(token: str) -> None:
+            config_data = make_conf_data(token)
+            monkeypatch.setenv(PASS_CONFIG_ENV_NAME, config_data)
+
+        return _set_env
+
+    async def test_login_with_passed_config_already_logged(
+        self, set_conf_to_env: Callable[[str], None], config_dir: Path
+    ) -> None:
+        set_conf_to_env("tokenstr")
+        with pytest.raises(ConfigError, match=r"already exists"):
+            await Factory().login_with_passed_config()
+
+    async def test_auto_login(
+        self, tmp_home: Path, set_conf_to_env: Callable[[str], None]
+    ) -> None:
+        set_conf_to_env("tokenstr")
+        client = await Factory().get()
+        await client.close()
+        nmrc_path = tmp_home / ".neuro"
+        assert Path(nmrc_path).exists(), "Config file not written after login "
+
+    async def test_auto_login_fail(
+        self, tmp_home: Path, set_conf_to_env: Callable[[str], None]
+    ) -> None:
+        set_conf_to_env("incorrect")
+        with pytest.raises(AuthException):
+            await Factory().get()
+        nmrc_path = tmp_home / ".neuro"
+        assert not Path(nmrc_path).exists(), "Config file not written after login "
+
+    async def test_normal_login(
+        self, tmp_home: Path, set_conf_to_env: Callable[[str], None]
+    ) -> None:
+        set_conf_to_env("tokenstr")
+        await Factory().login_with_passed_config()
+        nmrc_path = tmp_home / ".neuro"
+        assert Path(nmrc_path).exists(), "Config file not written after login "
+
+    async def test_normal_login_direct_token(
+        self, tmp_home: Path, make_conf_data: Callable[[str], str]
+    ) -> None:
+        token_data = make_conf_data("tokenstr")
+        await Factory().login_with_passed_config(token_data)
+        nmrc_path = tmp_home / ".neuro"
+        assert Path(nmrc_path).exists(), "Config file not written after login "
+
+    async def test_incorrect_token(
+        self, tmp_home: Path, set_conf_to_env: Callable[[str], None]
+    ) -> None:
+        set_conf_to_env("incorrect")
+        with pytest.raises(AuthException):
+            await Factory().login_with_passed_config()
+        nmrc_path = tmp_home / ".neuro"
+        assert not Path(nmrc_path).exists(), "Config file written after bad login "
+
+    async def test_bad_data(
+        self,
+        tmp_home: Path,
+        monkeypatch: Any,
+    ) -> None:
+        monkeypatch.setenv(PASS_CONFIG_ENV_NAME, "something")
+        with pytest.raises(ConfigError):
+            await Factory().login_with_passed_config()
+        nmrc_path = tmp_home / ".neuro"
+        assert not Path(nmrc_path).exists(), "Config file written after bad login "
+
+    async def test_no_data(
+        self,
+        tmp_home: Path,
+        monkeypatch: Any,
+    ) -> None:
+        with pytest.raises(ConfigError):
+            await Factory().login_with_passed_config()
+        nmrc_path = tmp_home / ".neuro"
+        assert not Path(nmrc_path).exists(), "Config file written after bad login "
 
 
 class TestHeadlessLogin:
