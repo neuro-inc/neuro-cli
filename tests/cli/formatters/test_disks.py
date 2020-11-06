@@ -1,7 +1,5 @@
-import textwrap
-from typing import List
+from typing import Any, List
 
-import click
 import pytest
 from dateutil.parser import isoparse
 
@@ -13,7 +11,7 @@ from neuromation.cli.formatters.disks import (
 )
 
 
-def test_disk_formatter() -> None:
+def test_disk_formatter(rich_cmp: Any) -> None:
     disk = Disk(
         "disk",
         int(11.93 * (1024 ** 3)),
@@ -24,12 +22,7 @@ def test_disk_formatter() -> None:
         isoparse("2017-04-04T12:28:59.759433+00:00"),
     )
     fmtr = DiskFormatter(str)
-    result = "\n".join(click.unstyle(line).rstrip() for line in fmtr(disk))
-    assert result == textwrap.dedent(
-        f"""\
-        Id    Storage  Uri                       Status  Created at   Last used
-        disk  11.9G    disk://cluster/user/disk  Ready   Mar 04 2017  Apr 04 2017"""
-    )
+    rich_cmp(fmtr(disk))
 
 
 @pytest.fixture
@@ -71,39 +64,16 @@ def disks_list() -> List[Disk]:
     ]
 
 
-def test_disks_formatter_simple(disks_list: List[Disk]) -> None:
+def test_disks_formatter_simple(disks_list: List[Disk], rich_cmp: Any) -> None:
     fmtr = SimpleDisksFormatter()
-    result = "\n".join(click.unstyle(line).rstrip() for line in fmtr(disks_list))
-    assert result == textwrap.dedent(
-        f"""\
-        disk-1
-        disk-2
-        disk-3
-        disk-4"""
-    )
+    rich_cmp(fmtr(disks_list))
 
 
-def test_disks_formatter_short(disks_list: List[Disk]) -> None:
+def test_disks_formatter_short(disks_list: List[Disk], rich_cmp: Any) -> None:
     fmtr = DisksFormatter(str)
-    result = "\n".join(click.unstyle(line).rstrip() for line in fmtr(disks_list))
-    assert result == textwrap.dedent(
-        f"""\
-        Id      Storage  Uri                         Status
-        disk-1  50.0G    disk://cluster/user/disk-1  Pending
-        disk-2  50.0M    disk://cluster/user/disk-2  Ready
-        disk-3  50.0K    disk://cluster/user/disk-3  Ready
-        disk-4  50B      disk://cluster/user/disk-4  Broken"""
-    )
+    rich_cmp(fmtr(disks_list))
 
 
-def test_disks_formatter_long(disks_list: List[Disk]) -> None:
+def test_disks_formatter_long(disks_list: List[Disk], rich_cmp: Any) -> None:
     fmtr = DisksFormatter(str, long_format=True)
-    result = "\n".join(click.unstyle(line).rstrip() for line in fmtr(disks_list))
-    assert result == textwrap.dedent(
-        f"""\
-        Id      Storage  Uri                         Status   Created at   Last used
-        disk-1  50.0G    disk://cluster/user/disk-1  Pending  Mar 04 2017  Mar 08 2017
-        disk-2  50.0M    disk://cluster/user/disk-2  Ready    Apr 04 2017
-        disk-3  50.0K    disk://cluster/user/disk-3  Ready    May 04 2017
-        disk-4  50B      disk://cluster/user/disk-4  Broken   Jun 04 2017"""
-    )
+    rich_cmp(fmtr(disks_list))

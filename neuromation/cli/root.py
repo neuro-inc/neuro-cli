@@ -48,14 +48,14 @@ class MaybePager(Pager):
     """Uses the pager installed on the system."""
 
     def __init__(self, console: Console) -> None:
+        self._console = console
         self._limit = console.size[1] * 2 / 3
 
     def show(self, content: str) -> None:
         """Use the same pager used by pydoc."""
-        # Enforce ANSI sequence handling (colors etc.)
-        os.environ["LESS"] = "-R"
-
-        if len(content.splitlines()) > self._limit:
+        if self._console.is_terminal and len(content.splitlines()) > self._limit:
+            # Enforce ANSI sequence handling (colors etc.)
+            os.environ["LESS"] = "-R"
             click.echo_via_pager(content)
         else:
             print(content)

@@ -911,8 +911,7 @@ def disk_factory(helper: Helper) -> Callable[[str], ContextManager[str]]:
         # Create disk
         cap = helper.run_cli(["disk", "create", storage])
         assert cap.err == ""
-        disk_id, *_ = cap.out.splitlines()[1].split()
-
+        disk_id = cap.out.splitlines()[0].split()[1]
         yield disk_id
 
         # Remove disk

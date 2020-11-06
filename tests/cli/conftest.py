@@ -170,14 +170,7 @@ class RichComparator:
         __tracebackhide__ = True
 
         if self._regen:
-            regen = self.write_ref(ref, buf)
-            if regen:
-                rel_ref = self.rel(ref)
-                pytest.fail(
-                    f"Regenerated {rel_ref}, "
-                    "please restart tests without --rich-gen option.",
-                    pytrace=False,
-                )
+            self.write_ref(ref, buf)
         else:
             orig = self.read_ref(ref)
             tmp = ref.with_suffix(".orig")
