@@ -199,7 +199,7 @@ class RichComparator:
 
     def write_file(self, ref: Path, buf: str) -> None:
         ref.parent.mkdir(parents=True, exist_ok=True)
-        ref.write_text(buf.strip(), encoding="utf8")
+        ref.write_text(buf.strip() + "\n", encoding="utf8")
 
     def write_ref(self, ref: Path, buf: str) -> bool:
         if ref.exists():
