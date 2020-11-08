@@ -186,7 +186,12 @@ class RichComparator:
             orig = self.read_ref(ref)
             tmp = ref.with_suffix(".orig")
             self.write_file(tmp, buf)
-            assert Guard(buf, tmp) == Guard(orig, ref)
+            # reading from file is important, fil writer replaces \r with \n
+            actual = self.read_file(tmp)
+            assert Guard(actual, tmp) == Guard(orig, ref)
+
+    def read_file(self, ref: Path) -> str:
+        return ref.read_text(encoding="utf8")
 
     def read_ref(self, ref: Path) -> str:
         __tracebackhide__ = True
@@ -197,7 +202,7 @@ class RichComparator:
                 "Create it yourself or run pytest with '--rich-gen' option."
             )
         else:
-            return ref.read_text(encoding="utf8")
+            return self.read_file(ref)
 
     def write_file(self, ref: Path, buf: str) -> None:
         ref.parent.mkdir(parents=True, exist_ok=True)

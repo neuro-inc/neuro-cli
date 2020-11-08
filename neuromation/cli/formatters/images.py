@@ -1,5 +1,6 @@
 import abc
-from typing import Dict, Iterable, Optional
+from types import TracebackType
+from typing import Dict, Iterable, Optional, Type
 
 from rich import box
 from rich.console import Console, RenderableType
@@ -36,6 +37,17 @@ class DockerImageProgress(AbstractDockerImageProgress):
     @abc.abstractmethod
     def close(self) -> None:  # pragma: no cover
         pass
+
+    def __enter__(self) -> "DockerImageProgress":
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Type[BaseException],
+        exc_val: BaseException,
+        exc_tb: TracebackType,
+    ) -> None:
+        self.close()
 
     def _shorten_container_hash(self, container: str) -> str:
         return container[:12]
