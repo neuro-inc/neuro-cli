@@ -128,15 +128,6 @@ def click_tty_emulation(monkeypatch: Any) -> None:
     monkeypatch.setattr("click._compat.isatty", lambda stream: True)
 
 
-def pytest_addoption(parser: Any, pluginmanager: Any) -> None:
-    parser.addoption(
-        "--rich-gen",
-        default=False,
-        action="store_true",
-        help="Regenerate rich_cmp references from captured texts",
-    )
-
-
 @dataclasses.dataclass(eq=False)
 class Guard:
     arg: str
