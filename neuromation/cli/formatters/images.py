@@ -119,8 +119,8 @@ class DetailedDockerImageProgress(DockerImageProgress):
                 task = self._progress.add_task(
                     layer=layer,
                     description=data.status,
-                    completed=current,
-                    total=total,
+                    completed=current,  # type: ignore
+                    total=total,  # type: ignore
                 )
                 self._mapping[layer] = task
 
