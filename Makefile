@@ -116,7 +116,6 @@ e2e-sumo: .update-deps .e2e-sumo
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--color=$(COLOR) \
-		-vvv
 		$(PYTEST_ARGS) \
 		tests
 

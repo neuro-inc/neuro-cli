@@ -108,22 +108,22 @@ class DetailedDockerImageProgress(DockerImageProgress):
             layer = data.layer_id
             if layer in self._mapping.keys():
                 task = self._mapping[layer]
+                self._progress.update(
+                    task,
+                    description=data.status,
+                    completed=current,
+                    total=total,
+                    refresh=True,
+                )
             else:
-                task = self._progress.add_task(layer, layer=layer)
+                task = self._progress.add_task(
+                    layer=layer,
+                    description=data.status,
+                    completed=current,
+                    total=total,
+                )
                 self._mapping[layer] = task
 
-            self._progress.update(
-                task,
-                description=data.status,
-                visible=True,
-                completed=current,
-                total=total,
-                refresh=True,
-            )
-            for word in ("complete", "pushed", "already"):
-                if word in data.status.lower():
-                    self._progress.stop_task(task)
-            # self._progress.refresh()
         else:
             self._progress.log(data.message)
 
