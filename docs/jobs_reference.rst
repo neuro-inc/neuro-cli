@@ -561,6 +561,10 @@ JobStatusHistory
       Exit code for container's process (:class:`int`) or ``None`` if the job was not
       started or is still running.
 
+   .. attribute:: restarts
+
+      Number of container's restarts, :class:`int`.
+
    .. attribute:: created_at
 
       Job creation timestamp, :class:`~datetime.datetime` or ``None``.

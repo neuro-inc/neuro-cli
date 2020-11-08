@@ -121,6 +121,7 @@ class JobStatusFormatter:
             add("Preemptible", "True")
         if job_status.restart_policy != JobRestartPolicy.NEVER:
             add("Restart policy", job_status.restart_policy)
+            add("Restarts", str(job_status.history.restarts))
         if job_status.life_span is not None:
             add("Life span", format_life_span(job_status.life_span))
 
