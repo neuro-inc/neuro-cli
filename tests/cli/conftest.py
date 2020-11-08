@@ -180,6 +180,8 @@ class RichComparator:
         else:
             self._checked_refs.add(ref)
 
+        buf = buf.strip()
+
         if self._regen:
             self.write_ref(ref, buf)
         else:
@@ -191,7 +193,7 @@ class RichComparator:
             assert Guard(actual, tmp) == Guard(orig, ref)
 
     def read_file(self, ref: Path) -> str:
-        return ref.read_text(encoding="utf8")
+        return ref.read_text(encoding="utf8").strip()
 
     def read_ref(self, ref: Path) -> str:
         __tracebackhide__ = True
@@ -206,7 +208,7 @@ class RichComparator:
 
     def write_file(self, ref: Path, buf: str) -> None:
         ref.parent.mkdir(parents=True, exist_ok=True)
-        ref.write_text(buf, encoding="utf8")
+        ref.write_text(buf.strip(), encoding="utf8")
 
     def write_ref(self, ref: Path, buf: str) -> bool:
         if ref.exists():

@@ -220,14 +220,18 @@ def _try_parse_image_progress_step(
     if "id" in obj and obj["id"] != target_image_tag:
         progress = obj.get("progress")
         detail = obj.get("progressDetail")
+
         if progress is not None:
             message = f"{obj['id']}: {obj['status']} {obj['progress']}"
+        else:
+            message = f"{obj['id']}: {obj['status']}"
+
         if detail is not None:
             current = detail.get("current")
             total = detail.get("total")
         else:
-            message = f"{obj['id']}: {obj['status']}"
             current = total = None
+
         return ImageProgressStep(message, obj["id"], obj["status"], current, total)
     return None
 
