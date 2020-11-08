@@ -1,9 +1,9 @@
 import abc
-from typing import Dict, Iterable
+from typing import Dict, Iterable, Optional
 
 from rich import box
 from rich.console import Console, RenderableType
-from rich.progress import BarColumn, DownloadColumn, Progress, TextColumn
+from rich.progress import BarColumn, DownloadColumn, Progress, TaskID, TextColumn
 from rich.table import Table
 
 from neuromation.api import (
@@ -66,7 +66,7 @@ class QuietDockerImageProgress(DockerImageProgress):
 
 class DetailedDockerImageProgress(DockerImageProgress):
     def __init__(self, console: Console) -> None:
-        self._mapping: Dict[str, int] = {}
+        self._mapping: Dict[str, TaskID] = {}
         self._progress = Progress(
             TextColumn("[progress.description]{task.fields[layer]}"),
             TextColumn("[progress.description]{task.description}"),
@@ -87,8 +87,8 @@ class DetailedDockerImageProgress(DockerImageProgress):
     def step(self, data: ImageProgressStep) -> None:
         if data.layer_id:
             if data.status in ("Layer already exists", "Download complete"):
-                current = 100.0
-                total = 100.0
+                current: Optional[float] = 100.0
+                total: Optional[float] = 100.0
             else:
                 current = float(data.current) if data.current is not None else None
                 total = float(data.total) if data.total is not None else None
@@ -113,18 +113,18 @@ class DetailedDockerImageProgress(DockerImageProgress):
                     self._progress.stop_task(task)
             # self._progress.refresh()
         else:
-            self._console.log(data.message)
+            self._progress.log(data.message)
 
     def save(self, data: ImageProgressSave) -> None:
-        self._console.print(f"Saving [b]{data.job}[/b] -> [b]{data.dst}[/b]")
+        self._progress.print(f"Saving [b]{data.job}[/b] -> [b]{data.dst}[/b]")
 
     def commit_started(self, data: ImageCommitStarted) -> None:
-        self._console.log(
+        self._progress.log(
             f"Creating image [b]{data.target_image}[/b] image from the job container"
         )
 
     def commit_finished(self, data: ImageCommitFinished) -> None:
-        self._console.log("Image created")
+        self._progress.log("Image created")
 
     def close(self) -> None:
         self._progress.stop()

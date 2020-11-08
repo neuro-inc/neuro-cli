@@ -1,5 +1,7 @@
 from typing import Any
 
+from rich.console import Console
+
 from neuromation.api import (
     ImageProgressPull,
     ImageProgressPush,
@@ -13,68 +15,83 @@ from neuromation.api.abc import (
     ImageProgressSave,
 )
 from neuromation.cli.formatters.images import DockerImageProgress
-from neuromation.cli.printer import CSI
+
+
+def new_console(tty: bool, color: bool = True) -> Console:
+    # console doesn't accept the time source,
+    # using the real time in tests is not reliable
+    return Console(
+        width=80,
+        height=24,
+        force_terminal=tty,
+        color_system="auto" if color else None,
+        record=True,
+        highlighter=None,
+        legacy_windows=False,
+        log_path=False,
+        log_time=False,
+    )
 
 
 class TestDockerImageProgress:
-    def test_quiet_pull(self, capfd: Any) -> None:
-        formatter = DockerImageProgress.create(tty=True, quiet=True)
+    def test_quiet_pull(self, rich_cmp: Any) -> None:
+        console = new_console(tty=True)
+        formatter = DockerImageProgress.create(console, quiet=True)
         formatter.pull(
             ImageProgressPull(
                 RemoteImage.new_external_image(name="input"), LocalImage("output")
             )
         )
-        formatter.step(ImageProgressStep("message1", "layer1"))
+        rich_cmp(console, index=0)
+        formatter.step(ImageProgressStep("message1", "layer1", "status", 1, 100))
+        rich_cmp(console, index=1)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert out == ""
+        rich_cmp(console, index=2)
 
-    def test_quiet_push(self, capfd: Any) -> None:
-        formatter = DockerImageProgress.create(tty=True, quiet=True)
+    def test_quiet_push(self, rich_cmp: Any) -> None:
+        console = new_console(tty=True)
+        formatter = DockerImageProgress.create(console, quiet=True)
         formatter.push(
             ImageProgressPush(
                 LocalImage("output"), RemoteImage.new_external_image(name="input")
             )
         )
-        formatter.step(ImageProgressStep("message1", "layer1"))
+        rich_cmp(console, index=0)
+        formatter.step(ImageProgressStep("message1", "layer1", "status", 1, 100))
+        rich_cmp(console, index=1)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert out == ""
+        rich_cmp(console, index=2)
 
-    def test_quiet_save(self, capfd: Any) -> None:
-        formatter = DockerImageProgress.create(tty=True, quiet=True)
+    def test_quiet_save(self, rich_cmp: Any) -> None:
+        console = new_console(tty=True)
+        formatter = DockerImageProgress.create(console, quiet=True)
         formatter.save(
             ImageProgressSave("job-id", RemoteImage.new_external_image(name="output"))
         )
+        rich_cmp(console)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert out == ""
 
-    def test_quiet_commit_started(self, capfd: Any) -> None:
-        formatter = DockerImageProgress.create(tty=True, quiet=True)
+    def test_quiet_commit_started(self, rich_cmp: Any) -> None:
+        console = new_console(tty=True)
+        formatter = DockerImageProgress.create(console, quiet=True)
         formatter.commit_started(
             ImageCommitStarted(
                 job_id="job-id", target_image=RemoteImage.new_external_image("img")
             )
         )
+        rich_cmp(console)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert out == ""
 
-    def test_quiet_commit_finished(self, capfd: Any) -> None:
-        formatter = DockerImageProgress.create(tty=True, quiet=True)
+    def test_quiet_commit_finished(self, rich_cmp: Any) -> None:
+        console = new_console(tty=True)
+        formatter = DockerImageProgress.create(console, quiet=True)
         formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
+        rich_cmp(console)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert out == ""
 
-    def test_no_tty_pull(self, capfd: Any, click_tty_emulation: Any) -> None:
-        formatter = DockerImageProgress.create(tty=False, quiet=False)
+    def test_no_tty_pull(self, rich_cmp: Any) -> None:
+        console = new_console(tty=False)
+        formatter = DockerImageProgress.create(console, quiet=False)
         formatter.pull(
             ImageProgressPull(
                 RemoteImage.new_neuro_image(
@@ -87,20 +104,17 @@ class TestDockerImageProgress:
                 LocalImage("input", "latest"),
             )
         )
-        formatter.step(ImageProgressStep("message1", "layer1"))
-        formatter.step(ImageProgressStep("message2", "layer1"))
+        rich_cmp(console, index=0)
+        formatter.step(ImageProgressStep("message1", "layer1", "status1", 1, 100))
+        rich_cmp(console, index=1)
+        formatter.step(ImageProgressStep("message2", "layer1", "status2", 30, 100))
+        rich_cmp(console, index=2)
 
         formatter.close()
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "input:latest" in out
-        assert "image://test-cluster/bob/output:stream" in out
-        assert "message1" not in out
-        assert "message2" not in out
-        assert CSI not in out
 
-    def test_no_tty_push(self, capfd: Any, click_tty_emulation: Any) -> None:
-        formatter = DockerImageProgress.create(tty=False, quiet=False)
+    def test_no_tty_push(self, rich_cmp: Any) -> None:
+        console = new_console(tty=False)
+        formatter = DockerImageProgress.create(console, quiet=False)
         formatter.push(
             ImageProgressPush(
                 LocalImage("input", "latest"),
@@ -113,20 +127,17 @@ class TestDockerImageProgress:
                 ),
             )
         )
-        formatter.step(ImageProgressStep("message1", "layer1"))
-        formatter.step(ImageProgressStep("message2", "layer1"))
+        rich_cmp(console, index=0)
+        formatter.step(ImageProgressStep("message1", "layer1", "status1", 1, 100))
+        rich_cmp(console, index=1)
+        formatter.step(ImageProgressStep("message2", "layer1", "status2", 30, 100))
+        rich_cmp(console, index=2)
 
         formatter.close()
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "input:latest" in out
-        assert "image://test-cluster/bob/output:stream" in out
-        assert "message1" not in out
-        assert "message2" not in out
-        assert CSI not in out
 
-    def test_no_tty_save(self, capfd: Any) -> None:
-        formatter = DockerImageProgress.create(tty=False, quiet=False)
+    def test_no_tty_save(self, rich_cmp: Any) -> None:
+        console = new_console(tty=False)
+        formatter = DockerImageProgress.create(console, quiet=False)
         formatter.save(
             ImageProgressSave(
                 "job-id",
@@ -139,16 +150,12 @@ class TestDockerImageProgress:
                 ),
             )
         )
+        rich_cmp(console)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert (
-            "Saving job 'job-id' to image 'image://test-cluster/bob/output:stream'"
-            in out
-        )
-        assert err == ""
 
-    def test_no_tty_commit_started(self, capfd: Any) -> None:
-        formatter = DockerImageProgress.create(tty=False, quiet=False)
+    def test_no_tty_commit_started(self, rich_cmp: Any) -> None:
+        console = new_console(tty=False)
+        formatter = DockerImageProgress.create(console, quiet=False)
         formatter.commit_started(
             ImageCommitStarted(
                 job_id="job-id",
@@ -161,22 +168,19 @@ class TestDockerImageProgress:
                 ),
             )
         )
+        rich_cmp(console)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert "Using remote image 'image://test-cluster/bob/output:stream'" in out
-        assert f"Creating image from the job container..." in out
-        assert err == ""
 
-    def test_no_tty_commit_finished(self, capfd: Any) -> None:
-        formatter = DockerImageProgress.create(tty=False, quiet=False)
+    def test_no_tty_commit_finished(self, rich_cmp: Any) -> None:
+        console = new_console(tty=False)
+        formatter = DockerImageProgress.create(console, quiet=False)
         formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
+        rich_cmp(console)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert out.startswith("Image created")
-        assert err == ""
 
-    def test_tty_pull(self, capfd: Any, click_tty_emulation: Any) -> None:
-        formatter = DockerImageProgress.create(tty=True, quiet=False)
+    def test_tty_pull(self, rich_cmp: Any) -> None:
+        console = new_console(tty=True)
+        formatter = DockerImageProgress.create(console, quiet=False)
         formatter.pull(
             ImageProgressPull(
                 RemoteImage.new_neuro_image(
@@ -189,19 +193,16 @@ class TestDockerImageProgress:
                 LocalImage("input", "latest"),
             )
         )
-        formatter.step(ImageProgressStep("message1", "layer1"))
-        formatter.step(ImageProgressStep("message2", "layer1"))
+        rich_cmp(console, index=0)
+        formatter.step(ImageProgressStep("message1", "layer1", "status1", 1, 100))
+        rich_cmp(console, index=1)
+        formatter.step(ImageProgressStep("message2", "layer1", "status2", 30, 100))
+        rich_cmp(console, index=2)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "input:latest" in out
-        assert "image://test-cluster/bob/output:stream" in out
-        assert "message1" in out
-        assert "message2" in out
-        assert CSI in out
 
-    def test_tty_push(self, capfd: Any, click_tty_emulation: Any) -> None:
-        formatter = DockerImageProgress.create(tty=True, quiet=False)
+    def test_tty_push(self, rich_cmp: Any) -> None:
+        console = new_console(tty=True)
+        formatter = DockerImageProgress.create(console, quiet=False)
         formatter.push(
             ImageProgressPush(
                 LocalImage("input", "latest"),
@@ -214,19 +215,16 @@ class TestDockerImageProgress:
                 ),
             )
         )
-        formatter.step(ImageProgressStep("message1", "layer1"))
-        formatter.step(ImageProgressStep("message2", "layer1"))
+        rich_cmp(console, index=0)
+        formatter.step(ImageProgressStep("message1", "layer1", "status1", 1, 100))
+        rich_cmp(console, index=1)
+        formatter.step(ImageProgressStep("message2", "layer1", "status2", 30, 100))
+        rich_cmp(console, index=2)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "input:latest" in out
-        assert "image://test-cluster/bob/output:stream" in out
-        assert "message1" in out
-        assert "message2" in out
-        assert CSI in out
 
-    def test_tty_save(self, capfd: Any, click_tty_emulation: Any) -> None:
-        formatter = DockerImageProgress.create(tty=True, quiet=False)
+    def test_tty_save(self, rich_cmp: Any) -> None:
+        console = new_console(tty=True)
+        formatter = DockerImageProgress.create(console, quiet=False)
         formatter.save(
             ImageProgressSave(
                 "job-id",
@@ -239,31 +237,23 @@ class TestDockerImageProgress:
                 ),
             )
         )
+        rich_cmp(console)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "job-id" in out
-        assert "image://test-cluster/bob/output:stream" in out
-        assert CSI in out
 
-    def test_tty_commit_started(self, capfd: Any, click_tty_emulation: Any) -> None:
-        formatter = DockerImageProgress.create(tty=True, quiet=False)
+    def test_tty_commit_started(self, rich_cmp: Any) -> None:
+        console = new_console(tty=True)
+        formatter = DockerImageProgress.create(console, quiet=False)
         formatter.commit_started(
             ImageCommitStarted(
                 job_id="job-id", target_image=RemoteImage.new_external_image(name="img")
             )
         )
+        rich_cmp(console)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "img" in out
-        assert CSI in out
 
-    def test_tty_commit_finished(self, capfd: Any, click_tty_emulation: Any) -> None:
-        formatter = DockerImageProgress.create(tty=True, quiet=False)
+    def test_tty_commit_finished(self, rich_cmp: Any) -> None:
+        console = new_console(tty=True)
+        formatter = DockerImageProgress.create(console, quiet=False)
         formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
+        rich_cmp(console)
         formatter.close()
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert out.startswith("Image created")
-        assert CSI not in out  # no styled strings

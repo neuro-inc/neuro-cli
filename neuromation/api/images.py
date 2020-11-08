@@ -219,11 +219,12 @@ def _try_parse_image_progress_step(
     # from pprint import pprint; pprint(obj)
     if "id" in obj and obj["id"] != target_image_tag:
         progress = obj.get("progress")
-        progressDetail = obj.get("progressDetail")
+        detail = obj.get("progressDetail")
         if progress is not None:
             message = f"{obj['id']}: {obj['status']} {obj['progress']}"
-            current = progressDetail.get("current")
-            total = progressDetail.get("total")
+        if detail is not None:
+            current = detail.get("current")
+            total = detail.get("total")
         else:
             message = f"{obj['id']}: {obj['status']}"
             current = total = None

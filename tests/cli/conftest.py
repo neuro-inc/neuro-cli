@@ -4,7 +4,7 @@ import logging
 from collections import namedtuple
 from difflib import ndiff
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, List, Optional
+from typing import Any, AsyncIterator, Callable, List, Optional, Set, Union
 
 import click
 import pytest
@@ -155,12 +155,15 @@ class RichComparator:
         self._reporter = config.pluginmanager.getplugin("terminalreporter")
         assert self._reporter is not None
         self._cwd = Path.cwd()
-        self._missing_refs: List[Path] = []
         self._written_refs: List[Path] = []
+        self._checked_refs: Set[Path] = set()
 
-    def mkref(self, request: Any) -> Path:
+    def mkref(self, request: Any, index: Optional[int]) -> Path:
         folder = Path(request.fspath).parent
-        basename = request.function.__qualname__ + ".ref"
+        basename = request.function.__qualname__
+        if index is not None:
+            basename += "_" + str(index)
+        basename += ".ref"
         return folder / "ascii" / basename
 
     def rel(self, ref: Path) -> Path:
@@ -168,6 +171,14 @@ class RichComparator:
 
     def check(self, ref: Path, buf: str) -> None:
         __tracebackhide__ = True
+
+        if ref in self._checked_refs:
+            pytest.fail(
+                "{self.rel(ref)} is already checked. "
+                "Hint: use index when generating refs automatically"
+            )
+        else:
+            self._checked_refs.add(ref)
 
         if self._regen:
             regen = self.write_ref(ref, buf)
@@ -301,29 +312,33 @@ def pytest_terminal_summary(terminalreporter: Any) -> None:
 @pytest.fixture
 def rich_cmp(request: Any) -> Callable[..., None]:
     def comparator(
-        src: RenderableType,
+        src: Union[RenderableType, Console],
         ref: Optional[Path] = None,
         *,
         color: bool = True,
         tty: bool = True,
+        index: Optional[int] = 0,
     ) -> None:
         __tracebackhide__ = True
         plugin = request.config.pluginmanager.getplugin("rich-comparator")
-        console = Console(
-            width=80,
-            height=24,
-            force_terminal=tty,
-            color_system="auto" if color else None,
-            record=True,
-            highlighter=None,
-            legacy_windows=False,
-        )
-        with console.capture() as capture:
-            console.print(src)
-        buf = capture.get()
+        if isinstance(src, Console):
+            buf = src.export_text(clear=True, styles=True)
+        else:
+            console = Console(
+                width=80,
+                height=24,
+                force_terminal=tty,
+                color_system="auto" if color else None,
+                record=True,
+                highlighter=None,
+                legacy_windows=False,
+            )
+            with console.capture() as capture:
+                console.print(src)
+            buf = capture.get()
 
         if ref is None:
-            ref = plugin.mkref(request)
+            ref = plugin.mkref(request, index)
 
         plugin.check(ref, buf)
 
