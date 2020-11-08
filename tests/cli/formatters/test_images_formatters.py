@@ -21,7 +21,7 @@ def new_console(tty: bool, color: bool = True) -> Console:
     # console doesn't accept the time source,
     # using the real time in tests is not reliable
     return Console(
-        width=80,
+        width=160,
         height=24,
         force_terminal=tty,
         color_system="auto" if color else None,

@@ -203,7 +203,7 @@ class RichComparator:
 
     def write_ref(self, ref: Path, buf: str) -> bool:
         if ref.exists():
-            orig = ref.read_text()
+            orig = ref.read_text().strip()
             if orig == buf:
                 return False
         self.write_file(ref, buf)
