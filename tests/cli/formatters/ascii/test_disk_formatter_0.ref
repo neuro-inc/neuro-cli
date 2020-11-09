@@ -1,6 +1,6 @@
-Id         [1m [0m[1mdisk                    [0m[1m [0m
- Storage    [1m [0m[1m11.9G                   [0m[1m [0m
- Uri        [1m [0m[1mdisk://cluster/user/disk[0m[1m [0m
- Status     [1m [0m[1mReady                   [0m[1m [0m
- Created at [1m [0m[1mMar 04 2017             [0m[1m [0m
- Last used  [1m [0m[1mApr 04 2017             [0m[1m [0m
+Id          disk                     
+ Storage     11.9G                    
+ Uri         disk://cluster/user/disk 
+ Status      Ready                    
+ Created at  Mar 04 2017              
+ Last used   Apr 04 2017

@@ -2,12 +2,12 @@ import asyncio
 import dataclasses
 import io
 import logging
-import os
 from collections import namedtuple
 from difflib import ndiff
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable, DefaultDict, List, Optional, Set, Union
 
+import click
 import pytest
 from rich.console import Console, RenderableType
 from yarl import URL
@@ -181,6 +181,7 @@ class RichComparator:
             self._checked_refs.add(ref)
 
         buf = buf.strip()
+        buf = click.unstyle(buf)
 
         if self._regen:
             self.write_ref(ref, buf)
@@ -235,8 +236,8 @@ class RichComparator:
         # https://github.com/pytest-dev/pytest/blob/master/src/_pytest/assertion/util.py#L200-L245 plus a few extra lines with additional instructions.  # noqa
         explanation: List[str] = []
 
-        left = ascii(lft.arg)
-        right = ascii(rgt.arg)
+        left = lft.arg
+        right = rgt.arg
 
         if self._reporter.verbosity < 1:
             i = 0  # just in case left or right has zero length
@@ -278,12 +279,8 @@ class RichComparator:
             for line in ndiff(right.splitlines(keepends), left.splitlines(keepends))
         ]
         explanation.append("")
-        if os.environ["CI"]:
-            explanation.append(f"Act: {left}")
-            explanation.append(f"Ref: {right}")
-        else:
-            explanation.append(f"'cat {self.rel(lft.path)}' to see the test output.")
-            explanation.append(f"'cat {self.rel(rgt.path)}' to see the reference.")
+        explanation.append(f"'cat {self.rel(lft.path)}' to see the test output.")
+        explanation.append(f"'cat {self.rel(rgt.path)}' to see the reference.")
         explanation.append(
             f"Use 'pytest ... --rich-gen' to regenerate reference files "
             "from values calculated by tests"

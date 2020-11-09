@@ -1,12 +1,12 @@
-[3mUser Configuration:                               [0m
- User Name           [1m [0m[1muser                       [0m[1m [0m
- Current Cluster     [1m [0m[1mdefault                    [0m[1m [0m
- API URL             [1m [0m[1mhttps://dev.neu.ro/api/v1  [0m[1m [0m
- Docker Registry URL [1m [0m[1mhttps://registry-dev.neu.ro[0m[1m [0m
-[3mResource Presets:                                                [0m
-[1m [0m[1mName     [0m[1m [0m [1m [0m[1m#CPU[0m[1m [0m [1m [0m[1mMemory[0m[1m [0m [1m [0m[1mPreemptible[0m[1m [0m [1m [0m[1mGPU                  [0m[1m [0m
+User Configuration:                               
+ User Name            user                        
+ Current Cluster      default                     
+ API URL              https://dev.neu.ro/api/v1   
+ Docker Registry URL  https://registry-dev.neu.ro 
+Resource Presets:                                                
+ Name        #CPU   Memory   Preemptible   GPU                   
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[1m [0m[1mgpu-small[0m[1m [0m     7    30.0G        ×        1 x nvidia-tesla-k80  
-[1m [0m[1mgpu-large[0m[1m [0m     7    60.0G        ×        1 x nvidia-tesla-v100 
-[1m [0m[1mcpu-small[0m[1m [0m     7     2.0G        ×                              
-[1m [0m[1mcpu-large[0m[1m [0m     7    14.0G        ×
+ gpu-small      7    30.0G        ×        1 x nvidia-tesla-k80  
+ gpu-large      7    60.0G        ×        1 x nvidia-tesla-v100 
+ cpu-small      7     2.0G        ×                              
+ cpu-large      7    14.0G        ×
