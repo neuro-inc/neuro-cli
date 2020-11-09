@@ -200,7 +200,11 @@ def test_images_delete(
 
     helper.run_cli(["image", "rm", image_full_str])
 
-    captured = helper.run_cli(["image", "ls", "-l", "--full-uri"])
+    for _ in range(10):
+        captured = helper.run_cli(["-q", "image", "ls", "-l", "--full-uri"])
+        if image_full_str_no_tag in captured.out:
+            time.sleep(5)
+
     assert image_full_str_no_tag not in captured.out
 
 
