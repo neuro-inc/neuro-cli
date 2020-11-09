@@ -2,13 +2,15 @@ import abc
 import datetime
 import itertools
 import sys
-import textwrap
 import time
 from dataclasses import dataclass
 from typing import Iterable, Iterator, List, Optional
 
 import humanize
 from click import secho, style, unstyle
+from rich.console import RenderableType
+from rich.styled import Styled
+from rich.table import Table
 
 from neuromation.api import (
     JobDescription,
@@ -70,115 +72,142 @@ def format_timedelta(delta: datetime.timedelta) -> str:
 
 
 class JobStatusFormatter:
-    def __init__(self, uri_formatter: URIFormatter, width: int = 0) -> None:
+    def __init__(self, uri_formatter: URIFormatter) -> None:
         self._format_uri = uri_formatter
-        self._width = width
         self._format_image = image_formatter(uri_formatter=uri_formatter)
 
-    def __call__(self, job_status: JobDescription) -> str:
+    def __call__(self, job_status: JobDescription) -> RenderableType:
         assert job_status.history is not None
-        lines = []
 
-        def add(descr: str, value: str) -> None:
-            lines.append(f"{bold(descr)}: {value}")
-
-        add("Job", job_status.id)
+        table = Table(box=None, show_header=False, show_edge=False)
+        table.add_column()
+        table.add_column(style="bold")
+        table.add_row("Job", job_status.id)
         if job_status.name:
-            add("Name", job_status.name)
+            table.add_row("Name", job_status.name)
         if job_status.tags:
             text = ", ".join(job_status.tags)
-            indent = len("Tags: ")
-            if self._width > indent:
-                width = self._width - indent
-                text = textwrap.fill(
-                    text, width=width, break_long_words=False, break_on_hyphens=False
-                )
-                if "\n" in text:
-                    text = textwrap.indent(text, " " * indent).lstrip()
-            add("Tags", text)
-        add("Owner", job_status.owner or "")
-        add("Cluster", job_status.cluster_name)
+            table.add_row("Tags", text)
+        table.add_row("Owner", job_status.owner or "")
+        table.add_row("Cluster", job_status.cluster_name)
         if job_status.description:
-            add("Description", job_status.description)
+            table.add_row("Description", job_status.description)
         status_str = format_job_status(job_status.status)
         if job_status.history.reason and job_status.status in [
             JobStatus.FAILED,
             JobStatus.PENDING,
         ]:
             status_str += f" ({job_status.history.reason})"
-        add("Status", status_str)
-        add("Image", self._format_image(job_status.container.image))
+        table.add_row("Status", status_str)
+        table.add_row("Image", self._format_image(job_status.container.image))
 
         if job_status.container.entrypoint:
-            add("Entrypoint", job_status.container.entrypoint)
+            table.add_row("Entrypoint", job_status.container.entrypoint)
         if job_status.container.command:
-            add("Command", job_status.container.command)
+            table.add_row("Command", job_status.container.command)
         if job_status.container.working_dir:
-            add("Working dir", job_status.container.working_dir)
-        resource_formatter = ResourcesFormatter()
-        lines.append(resource_formatter(job_status.container.resources))
-        if job_status.is_preemptible:
-            add("Preemptible", "True")
-        if job_status.restart_policy != JobRestartPolicy.NEVER:
-            add("Restart policy", job_status.restart_policy)
-            add("Restarts", str(job_status.history.restarts))
-        if job_status.life_span is not None:
-            add("Life span", format_life_span(job_status.life_span))
+            table.add_row("Working dir", job_status.container.working_dir)
 
-        add("TTY", str(job_status.container.tty))
+        resources = Table(box=None, show_header=False, show_edge=False)
+        resources.add_column()
+        resources.add_column(style="bold", justify="right")
+        resources.add_row(
+            "Memory", format_size(job_status.container.resources.memory_mb * 1024 ** 2)
+        )
+        resources.add_row("CPU", f"{job_status.container.resources.cpu:0.1f}")
+        if job_status.container.resources.gpu:
+            resources.add_row(
+                "GPU",
+                f"{job_status.container.resources.gpu:0.1f} x "
+                f"{job_status.container.resources.gpu_model}",
+            )
+
+        if job_status.container.resources.tpu_type:
+            resources.add_row(
+                "TPU",
+                f"{job_status.container.resources.tpu_type}/"
+                "{job_status.container.resources.tpu_software_version}",
+            )
+
+        if job_status.container.resources.shm:
+            resources.add_row("Extended SHM space", "True")
+
+        table.add_row("Resources", Styled(resources, style="reset"))
+
+        if job_status.is_preemptible:
+            table.add_row("Preemptible", "True")
+        if job_status.restart_policy != JobRestartPolicy.NEVER:
+            table.add_row("Restart policy", job_status.restart_policy)
+            table.add_row("Restarts", str(job_status.history.restarts))
+        if job_status.life_span is not None:
+            table.add_row("Life span", format_life_span(job_status.life_span))
+
+        table.add_row("TTY", str(job_status.container.tty))
 
         if job_status.container.volumes:
-            rows = [
-                (
+            volumes = Table(box=None, show_header=False, show_edge=False)
+            volumes.add_column("")
+            volumes.add_column("")
+            volumes.add_column("")
+            for volume in job_status.container.volumes:
+                volumes.add_row(
                     volume.container_path,
                     self._format_uri(volume.storage_uri),
                     "READONLY" if volume.read_only else " ",
                 )
-                for volume in job_status.container.volumes
-            ]
-            lines.append(f"{bold('Volumes')}:")
-            lines.extend(f"  {i}" for i in table(rows))
+            table.add_row("Volumes", Styled(volumes, style="reset"))
 
         if job_status.container.secret_files:
-            rows2 = [
-                (secret_file.container_path, self._format_uri(secret_file.secret_uri))
-                for secret_file in job_status.container.secret_files
-            ]
-            lines.append(f"{bold('Secret files')}:")
-            lines.extend(f"  {i}" for i in table(rows2))
+            secret_files = Table(box=None, show_header=False, show_edge=False)
+            secret_files.add_column("")
+            secret_files.add_column("")
+            for secret_file in job_status.container.secret_files:
+                secret_files.add_row(
+                    secret_file.container_path, self._format_uri(secret_file.secret_uri)
+                )
+            table.add_row("Secret files", Styled(secret_files, style="reset"))
 
         if job_status.container.disk_volumes:
-            rows3 = [
-                (
+            disk_volumes = Table(box=None, show_header=False, show_edge=False)
+            disk_volumes.add_column("")
+            disk_volumes.add_column("")
+            disk_volumes.add_column("")
+            for disk_volume in job_status.container.disk_volumes:
+                disk_volumes.add_row(
                     disk_volume.container_path,
                     self._format_uri(disk_volume.disk_uri),
                     "READONLY" if disk_volume.read_only else " ",
                 )
-                for disk_volume in job_status.container.disk_volumes
-            ]
-            lines.append(f"{bold('Disk volumes')}:")
-            lines.extend(f"  {i}" for i in table(rows3))
+            table.add_row("Disk volumes", Styled(disk_volumes, style="reset"))
 
         if job_status.internal_hostname:
-            add("Internal Hostname", job_status.internal_hostname)
+            table.add_row("Internal Hostname", job_status.internal_hostname)
         if job_status.internal_hostname_named:
-            add("Internal Hostname Named", job_status.internal_hostname_named)
+            table.add_row("Internal Hostname Named", job_status.internal_hostname_named)
         if job_status.http_url:
-            add("Http URL", str(job_status.http_url))
+            table.add_row("Http URL", str(job_status.http_url))
         if job_status.container.http:
-            add("Http port", str(job_status.container.http.port))
-            add("Http authentication", str(job_status.container.http.requires_auth))
+            table.add_row("Http port", str(job_status.container.http.port))
+            table.add_row(
+                "Http authentication", str(job_status.container.http.requires_auth)
+            )
         if job_status.container.env:
-            lines.append(f"{bold('Environment')}:")
+            environment = Table(box=None, show_header=False, show_edge=False)
+            environment.add_column("")
+            environment.add_column("")
             for key, value in job_status.container.env.items():
-                lines.append(f"  {key}={value}")
+                environment.add_row(key, value)
+            table.add_row("Environment", Styled(environment, style="reset"))
         if job_status.container.secret_env:
-            lines.append(f"{bold('Secret environment')}:")
+            secret_env = Table(box=None, show_header=False, show_edge=False)
+            secret_env.add_column("")
+            secret_env.add_column("")
             for key, uri in job_status.container.secret_env.items():
-                lines.append(f"  {key}={self._format_uri(uri)}")
+                secret_env.add_row(key, self._format_uri(uri))
+            table.add_row("Secret environment", Styled(secret_env, style="reset"))
 
         assert job_status.history.created_at is not None
-        add("Created", job_status.history.created_at.isoformat())
+        table.add_row("Created", job_status.history.created_at.isoformat())
         if job_status.status in [
             JobStatus.RUNNING,
             JobStatus.FAILED,
@@ -186,20 +215,18 @@ class JobStatusFormatter:
             JobStatus.CANCELLED,
         ]:
             assert job_status.history.started_at is not None
-            add("Started", job_status.history.started_at.isoformat())
+            table.add_row("Started", job_status.history.started_at.isoformat())
         if job_status.status in [
             JobStatus.CANCELLED,
             JobStatus.FAILED,
             JobStatus.SUCCEEDED,
         ]:
             assert job_status.history.finished_at is not None
-            add("Finished", job_status.history.finished_at.isoformat())
-            add("Exit code", str(job_status.history.exit_code))
+            table.add_row("Finished", job_status.history.finished_at.isoformat())
+            table.add_row("Exit code", str(job_status.history.exit_code))
         if job_status.status == JobStatus.FAILED and job_status.history.description:
-            lines.append(bold("=== Description ==="))
-            lines.append(job_status.history.description)
-            lines.append("===================")
-        return "\n".join(lines)
+            table.add_row("Description", job_status.history.description)
+        return table
 
 
 def format_life_span(life_span: Optional[float]) -> str:
@@ -359,26 +386,11 @@ class TabularJobsFormatter(BaseJobsFormatter):
 
 
 class ResourcesFormatter:
-    def __call__(self, resources: Resources) -> str:
+    def __call__(self, resources: Resources) -> Table:
         lines = []
 
         def add(descr: str, value: str) -> None:
             lines.append(f"{bold(descr)}: {value}")
-
-        add("Memory", format_size(resources.memory_mb * 1024 ** 2))
-        add("CPU", f"{resources.cpu:0.1f}")
-        if resources.gpu:
-            add("GPU", f"{resources.gpu:0.1f} x {resources.gpu_model}")
-
-        if resources.tpu_type:
-            add("TPU", f"{resources.tpu_type}/{resources.tpu_software_version}")
-
-        additional = []
-        if resources.shm:
-            additional.append("Extended SHM space")
-
-        if additional:
-            add("Additional", ",".join(additional))
 
         indent = "  "
         return f"{bold('Resources')}:\n" + indent + f"\n{indent}".join(lines)

@@ -702,11 +702,7 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
         uri_fmtr = uri_formatter(
             username=root.client.username, cluster_name=root.client.cluster_name
         )
-    if root.tty:
-        width = root.terminal_size[0]
-    else:
-        width = 0
-    click.echo(JobStatusFormatter(uri_formatter=uri_fmtr, width=width)(res))
+    root.print(JobStatusFormatter(uri_formatter=uri_fmtr)(res))
 
 
 @command()
