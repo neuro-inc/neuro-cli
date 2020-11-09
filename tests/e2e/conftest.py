@@ -30,6 +30,7 @@ from uuid import uuid4 as uuid
 
 import aiodocker
 import aiohttp
+import click
 import pexpect
 import pytest
 import toml
@@ -481,8 +482,8 @@ class Helper:
             log.error(f"Last stdout: '{proc.stdout}'")
             log.error(f"Last stderr: '{proc.stderr}'")
             raise
-        out = proc.stdout
-        err = proc.stderr
+        out = click.unstyle(proc.stdout)
+        err = click.unstyle(proc.stderr)
         if any(run_cmd in arguments for run_cmd in ("submit", "run")):
             job_id = self.find_job_id(out)
             if job_id:
