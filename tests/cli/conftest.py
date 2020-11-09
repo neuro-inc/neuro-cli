@@ -1,10 +1,11 @@
 import asyncio
 import dataclasses
+import io
 import logging
 from collections import namedtuple
 from difflib import ndiff
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, List, Optional, Set, Union
+from typing import Any, AsyncIterator, Callable, DefaultDict, List, Optional, Set, Union
 
 import click
 import pytest
@@ -148,6 +149,7 @@ class RichComparator:
         self._cwd = Path.cwd()
         self._written_refs: List[Path] = []
         self._checked_refs: Set[Path] = set()
+        self._file_pos = DefaultDict[io.StringIO, int](int)
 
     def mkref(self, request: Any, index: Optional[int]) -> Path:
         folder = Path(request.fspath).parent
@@ -159,6 +161,13 @@ class RichComparator:
 
     def rel(self, ref: Path) -> Path:
         return ref.relative_to(self._cwd)
+
+    def check_io(self, ref: Path, file: io.StringIO) -> None:
+        __tracebackhide__ = True
+        tmp = file.getvalue()
+        buf = tmp[self._file_pos[file] :]
+        self._file_pos[file] = len(tmp)
+        self.check(ref, buf)
 
     def check(self, ref: Path, buf: str) -> None:
         __tracebackhide__ = True
@@ -312,25 +321,28 @@ def rich_cmp(request: Any) -> Callable[..., None]:
     ) -> None:
         __tracebackhide__ = True
         plugin = request.config.pluginmanager.getplugin("rich-comparator")
-        if isinstance(src, Console):
-            buf = src.export_text(clear=True, styles=True)
-        else:
-            console = Console(
-                width=80,
-                height=24,
-                force_terminal=tty,
-                color_system="auto" if color else None,
-                record=True,
-                highlighter=None,
-                legacy_windows=False,
-            )
-            with console.capture() as capture:
-                console.print(src)
-            buf = capture.get()
-
         if ref is None:
             ref = plugin.mkref(request, index)
 
-        plugin.check(ref, buf)
+        if isinstance(src, io.StringIO):
+            plugin.check_io(ref, src)
+        else:
+            if isinstance(src, Console):
+                buf = src.export_text(clear=True, styles=True)
+            else:
+                console = Console(
+                    width=80,
+                    height=24,
+                    force_terminal=tty,
+                    color_system="auto" if color else None,
+                    record=True,
+                    highlighter=None,
+                    legacy_windows=False,
+                )
+                with console.capture() as capture:
+                    console.print(src)
+                buf = capture.get()
+
+            plugin.check(ref, buf)
 
     return comparator

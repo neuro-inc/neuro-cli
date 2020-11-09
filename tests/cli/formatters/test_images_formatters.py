@@ -1,5 +1,6 @@
+import io
 import time
-from typing import Any
+from typing import Any, Optional
 
 from rich.console import Console
 
@@ -18,10 +19,13 @@ from neuromation.api.abc import (
 from neuromation.cli.formatters.images import DockerImageProgress
 
 
-def new_console(tty: bool, color: bool = True) -> Console:
+def new_console(
+    *, tty: bool, color: bool = True, file: Optional[io.StringIO] = None
+) -> Console:
     # console doesn't accept the time source,
     # using the real time in tests is not reliable
     return Console(
+        file=file,
         width=160,
         height=24,
         force_terminal=tty,
@@ -168,7 +172,8 @@ class TestDockerImageProgress:
             rich_cmp(console)
 
     def test_tty_pull(self, rich_cmp: Any) -> None:
-        console = new_console(tty=True)
+        file = io.StringIO()
+        console = new_console(tty=True, file=file)
         with DockerImageProgress.create(console, quiet=False) as formatter:
             formatter.pull(
                 ImageProgressPull(
@@ -182,16 +187,17 @@ class TestDockerImageProgress:
                     LocalImage("input", "latest"),
                 )
             )
-            rich_cmp(console, index=0)
+            rich_cmp(file, index=0)
             formatter.step(ImageProgressStep("message1", "layer1", "status1", 1, 100))
             time.sleep(0.1)
-            rich_cmp(console, index=1)
+            rich_cmp(file, index=1)
             formatter.step(ImageProgressStep("message2", "layer1", "status2", 30, 100))
             time.sleep(0.1)
-            rich_cmp(console, index=2)
+            rich_cmp(file, index=2)
 
     def test_tty_push(self, rich_cmp: Any) -> None:
-        console = new_console(tty=True)
+        file = io.StringIO()
+        console = new_console(tty=True, file=file)
         with DockerImageProgress.create(console, quiet=False) as formatter:
             formatter.push(
                 ImageProgressPush(
@@ -205,13 +211,13 @@ class TestDockerImageProgress:
                     ),
                 )
             )
-            rich_cmp(console, index=0)
+            rich_cmp(file, index=0)
             formatter.step(ImageProgressStep("message1", "layer1", "status1", 1, 100))
             time.sleep(0.1)
-            rich_cmp(console, index=1)
+            rich_cmp(file, index=1)
             formatter.step(ImageProgressStep("message2", "layer1", "status2", 30, 100))
             time.sleep(0.1)
-            rich_cmp(console, index=2)
+            rich_cmp(file, index=2)
 
     def test_tty_save(self, rich_cmp: Any) -> None:
         console = new_console(tty=True)
