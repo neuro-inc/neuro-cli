@@ -201,7 +201,9 @@ def test_images_delete(
 ) -> None:
     image_no_tag = image.replace(f":{tag}", "")
     image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
-    image_full_str_no_tag = f"image://{helper.cluster_name}/{helper.username}/{image_no_tag}"
+    image_full_str_no_tag = (
+        f"image://{helper.cluster_name}/{helper.username}/{image_no_tag}"
+    )
 
     captured = helper.run_cli(["image", "ls", "-l", "--full-uri"])
     print("\n")
@@ -209,7 +211,9 @@ def test_images_delete(
     print(captured.out)
     print("=" * 20)
     matching_lines = [
-        line for line in captured.out.splitlines() if image_full_str_no_tag == line.split()[0]
+        line
+        for line in captured.out.splitlines()
+        if image_full_str_no_tag == line.split()[0]
     ]
     assert len(matching_lines) == 1
 
