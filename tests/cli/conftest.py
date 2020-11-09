@@ -279,8 +279,8 @@ class RichComparator:
         ]
         explanation.append("")
         if os.environ["CI"]:
-            explanation.append(f"Act: {lft.arg!a}")
-            explanation.append(f"Ref: {rgt.arg!a}")
+            explanation.append(f"Act: {left}")
+            explanation.append(f"Ref: {right}")
         else:
             explanation.append(f"'cat {self.rel(lft.path)}' to see the test output.")
             explanation.append(f"'cat {self.rel(rgt.path)}' to see the reference.")
