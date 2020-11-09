@@ -8,7 +8,6 @@ from difflib import ndiff
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable, DefaultDict, List, Optional, Set, Union
 
-import click
 import pytest
 from rich.console import Console, RenderableType
 from yarl import URL
@@ -236,8 +235,8 @@ class RichComparator:
         # https://github.com/pytest-dev/pytest/blob/master/src/_pytest/assertion/util.py#L200-L245 plus a few extra lines with additional instructions.  # noqa
         explanation: List[str] = []
 
-        left = click.unstyle(lft.arg)
-        right = click.unstyle(rgt.arg)
+        left = lft.arg.ascii()
+        right = rgt.arg.ascii()
 
         if self._reporter.verbosity < 1:
             i = 0  # just in case left or right has zero length
