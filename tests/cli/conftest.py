@@ -327,25 +327,25 @@ def rich_cmp(request: Any) -> Callable[..., None]:
 
         if isinstance(src, io.StringIO):
             plugin.check_io(ref, src)
-        elif isinstance(src, Console) and isinstance(src.file, io.StringIO):
-            plugin.check_io(ref, src.file)
-        else:
-            if isinstance(src, Console):
-                buf = src.export_text(clear=True, styles=True)
+        elif isinstance(src, Console):
+            if isinstance(src.file, io.StringIO):
+                plugin.check_io(ref, src.file)
             else:
-                console = Console(
-                    width=80,
-                    height=24,
-                    force_terminal=tty,
-                    color_system="auto" if color else None,
-                    record=True,
-                    highlighter=None,
-                    legacy_windows=False,
-                )
-                with console.capture() as capture:
-                    console.print(src)
-                buf = capture.get()
-
-            plugin.check(ref, buf)
+                buf = src.export_text(clear=True, styles=True)
+                plugin.check(ref, buf)
+        else:
+            file = io.StringIO()
+            console = Console(
+                file=file,
+                width=80,
+                height=24,
+                force_terminal=tty,
+                color_system="auto" if color else None,
+                record=True,
+                highlighter=None,
+                legacy_windows=False,
+            )
+            console.print(src)
+            plugin.check_io(ref, file)
 
     return comparator
