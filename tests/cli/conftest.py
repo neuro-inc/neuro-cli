@@ -2,6 +2,7 @@ import asyncio
 import dataclasses
 import io
 import logging
+import os
 from collections import namedtuple
 from difflib import ndiff
 from pathlib import Path
@@ -278,8 +279,12 @@ class RichComparator:
             for line in ndiff(right.splitlines(keepends), left.splitlines(keepends))
         ]
         explanation.append("")
-        explanation.append(f"'cat {self.rel(lft.path)}' to see the test output.")
-        explanation.append(f"'cat {self.rel(rgt.path)}' to see the reference.")
+        if os.environ["CI"]:
+            explanation.append(f"Act: {left}")
+            explanation.append(f"Ref: {right}")
+        else:
+            explanation.append(f"'cat {self.rel(lft.path)}' to see the test output.")
+            explanation.append(f"'cat {self.rel(rgt.path)}' to see the reference.")
         explanation.append(
             f"Use 'pytest ... --rich-gen' to regenerate reference files "
             "from values calculated by tests"
@@ -326,6 +331,8 @@ def rich_cmp(request: Any) -> Callable[..., None]:
 
         if isinstance(src, io.StringIO):
             plugin.check_io(ref, src)
+        elif isinstance(src, Console) and isinstance(src.file, io.StringIO):
+            plugin.check_io(ref, src.file)
         else:
             if isinstance(src, Console):
                 buf = src.export_text(clear=True, styles=True)
