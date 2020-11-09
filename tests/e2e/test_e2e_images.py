@@ -205,6 +205,8 @@ def test_images_delete(
         f"image://{helper.cluster_name}/{helper.username}/{image_no_tag}"
     )
 
+    helper.run_cli(["image", "push", image])
+
     captured = helper.run_cli(["image", "ls", "-l", "--full-uri"])
     print("\n")
     print(f"== {image_full_str_no_tag} ==")
