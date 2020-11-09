@@ -9,6 +9,7 @@ from neuromation.cli.formatters.images import (
     BaseImagesFormatter,
     DockerImageProgress,
     LongImagesFormatter,
+    QuietImagesFormatter,
     ShortImagesFormatter,
 )
 from neuromation.cli.formatters.utils import (
@@ -116,7 +117,9 @@ async def ls(root: Root, format_long: bool, full_uri: bool) -> None:
         )
         image_fmtr = image_formatter(uri_formatter=uri_fmtr)
     formatter: BaseImagesFormatter
-    if format_long:
+    if root.quiet:
+        formatter = QuietImagesFormatter(image_formatter=image_fmtr)
+    elif format_long:
         formatter = LongImagesFormatter(image_formatter=image_fmtr)
     else:
         formatter = ShortImagesFormatter(image_formatter=image_fmtr)

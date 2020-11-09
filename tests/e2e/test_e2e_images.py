@@ -2,7 +2,7 @@ import asyncio
 import re
 import subprocess
 import time
-import urllib.parse
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, AsyncIterator, Set
 from uuid import uuid4 as uuid
@@ -76,7 +76,7 @@ def test_images_complete_lifecycle(
     # Check if image available on registry
     captured = helper.run_cli(["image", "ls", "--full-uri"])
 
-    image_urls = [URL(line) for line in captured.out.splitlines() if line]
+    image_urls = [URL(line.strip()) for line in captured.out.splitlines() if line]
     for url in image_urls:
         assert url.scheme == "image"
     image_url_without_tag = image_url.with_path(image_url.path.replace(f":{tag}", ""))
@@ -165,32 +165,20 @@ def test_image_ls(helper: Helper, image: str, tag: str) -> None:
 
     # check ls short mode
     captured = helper.run_cli(["image", "ls"])
-    assert image_short_str_no_tag in captured.out.splitlines()
+    assert image_short_str_no_tag in [
+        line.strip() for line in captured.out.splitlines()
+    ]
 
     captured = helper.run_cli(["image", "ls", "--full-uri"])
-    assert image_full_str_no_tag in captured.out.splitlines()
+    assert image_full_str_no_tag in [line.strip() for line in captured.out.splitlines()]
 
     # check ls long mode
     captured = helper.run_cli(["image", "ls", "-l"])
-    matching_lines = [
-        line
-        for line in captured.out.splitlines()
-        if image_short_str_no_tag == line.split()[0]
-    ]
-    assert len(matching_lines) == 1
-
-    image_full_https_str_no_tag = f"/{helper.username}/{image}".replace(f":{tag}", "")
-    actual_https_url = urllib.parse.urlparse(matching_lines[0].split()[1])
-    assert actual_https_url.scheme == "https"
-    assert actual_https_url.path == image_full_https_str_no_tag
-
-    captured = helper.run_cli(["image", "ls", "-l", "--full-uri"])
-    matching_lines = [
-        line
-        for line in captured.out.splitlines()
-        if image_full_str_no_tag == line.split()[0]
-    ]
-    assert len(matching_lines) == 1
+    for line in captured.out.splitlines():
+        if image_short_str_no_tag in line:
+            break
+    else:
+        assert False, f"Not found {image_short_str_no_tag} in {captured.out}"
 
 
 @pytest.mark.e2e
@@ -208,28 +196,16 @@ def test_images_delete(
     helper.run_cli(["image", "push", image])
 
     captured = helper.run_cli(["image", "ls", "-l", "--full-uri"])
-    print("\n")
-    print(f"== {image_full_str_no_tag} ==")
-    print(captured.out)
-    print("=" * 20)
-    matching_lines = [
-        line
-        for line in captured.out.splitlines()
-        if image_full_str_no_tag == line.split()[0]
-    ]
-    assert len(matching_lines) == 1
+    assert image_full_str_no_tag in captured.out
 
     helper.run_cli(["image", "rm", image_full_str])
 
     captured = helper.run_cli(["image", "ls", "-l", "--full-uri"])
-    matching_lines = [
-        line for line in captured.out.splitlines() if image == line.split()[0]
-    ]
-    assert len(matching_lines) == 0
+    assert image_full_str_no_tag not in captured.out
 
 
 @pytest.mark.e2e
-def test_images_push_with_specified_name(
+async def test_images_push_with_specified_name(
     helper: Helper,
     image: str,
     tag: str,
@@ -245,19 +221,26 @@ def test_images_push_with_specified_name(
     captured = helper.run_cli(["image", "push", image, f"image:{pushed_no_tag}:{tag}"])
     # stderr has "Used image ..." lines
     # assert not captured.err
-    image_pushed_full_str = (
-        f"image://{helper.cluster_name}/{helper.username}/{pushed_no_tag}:{tag}"
-    )
-    assert captured.out.endswith(image_pushed_full_str)
-    image_url_without_tag = image_pushed_full_str.replace(f":{tag}", "")
+    async with helper.client() as client:
+        image_pushed_full_str = (
+            f"image://{client.config.cluster_name}/"
+            f"{client.config.username}/{pushed_no_tag}:{tag}"
+        )
+        assert captured.out.endswith(image_pushed_full_str)
 
     # Check if image available on registry
-    captured = helper.run_cli(["image", "ls", "--full-uri"])
-    image_urls = captured.out.splitlines()
-    assert image_url_without_tag in image_urls
+    docker_ls_output = await docker.images.list()
+    local_images = parse_docker_ls_output(docker_ls_output)
+    assert pulled not in local_images
+
+    async with helper.client() as client:
+        image_pushed_full = client.parse.remote_image(image_pushed_full_str)
+        image_url_without_tag = replace(image_pushed_full, tag=None)
+        imgs = await client.images.ls()
+        assert image_url_without_tag in imgs
 
     # check locally
-    docker_ls_output = loop.run_until_complete(docker.images.list())
+    docker_ls_output = await docker.images.list()
     local_images = parse_docker_ls_output(docker_ls_output)
     assert pulled not in local_images
 
@@ -267,13 +250,13 @@ def test_images_push_with_specified_name(
     # assert not captured.err
     assert captured.out.endswith(pulled)
     # check locally
-    docker_ls_output = loop.run_until_complete(docker.images.list())
+    docker_ls_output = await docker.images.list()
     local_images = parse_docker_ls_output(docker_ls_output)
     assert pulled in local_images
 
     # TODO (A.Yushkovskiy): delete the pushed image in GCR
     # delete locally
-    loop.run_until_complete(docker.images.delete(pulled, force=True))
+    await docker.images.delete(pulled, force=True)
 
 
 @pytest.mark.e2e

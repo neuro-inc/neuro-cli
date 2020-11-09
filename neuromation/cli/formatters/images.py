@@ -102,7 +102,7 @@ class DetailedDockerImageProgress(DockerImageProgress):
             else:
                 current = float(data.current) if data.current is not None else None
                 total = float(data.total) if data.total is not None else None
-            # self._progress.print(data.layer_id, current, total)
+
             layer = data.layer_id
             if layer in self._mapping.keys():
                 task = self._mapping[layer]
@@ -181,6 +181,15 @@ class BaseImagesFormatter:
     @abc.abstractmethod
     def __call__(self, images: Iterable[RemoteImage]) -> RenderableType:
         raise NotImplementedError
+
+
+class QuietImagesFormatter(BaseImagesFormatter):
+    def __call__(self, images: Iterable[RemoteImage]) -> RenderableType:
+        table = Table.grid()
+        table.add_column("")
+        for image in images:
+            table.add_row(self._format_image(image))
+        return table
 
 
 class ShortImagesFormatter(BaseImagesFormatter):

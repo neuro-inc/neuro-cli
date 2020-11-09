@@ -216,7 +216,6 @@ def _try_parse_image_progress_step(
     obj: Dict[str, Any], target_image_tag: Optional[str]
 ) -> Optional[ImageProgressStep]:
     _raise_on_error_chunk(obj)
-    # from pprint import pprint; pprint(obj)
     if "id" in obj and obj["id"] != target_image_tag:
         progress = obj.get("progress")
         detail = obj.get("progressDetail")
