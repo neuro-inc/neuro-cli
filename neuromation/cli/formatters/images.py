@@ -9,18 +9,16 @@ from rich.table import Table
 
 from neuromation.api import (
     AbstractDockerImageProgress,
+    ImageCommitFinished,
+    ImageCommitStarted,
     ImageProgressPull,
     ImageProgressPush,
+    ImageProgressSave,
     ImageProgressStep,
     RemoteImage,
 )
-from neuromation.api.abc import (
-    ImageCommitFinished,
-    ImageCommitStarted,
-    ImageProgressSave,
-)
 
-from .utils import ImageFormatter, bold
+from .utils import ImageFormatter, assemble, bold
 
 
 class DockerImageProgress(AbstractDockerImageProgress):
@@ -91,10 +89,14 @@ class DetailedDockerImageProgress(DockerImageProgress):
         self._progress.start()
 
     def push(self, data: ImageProgressPush) -> None:
-        self._progress.log("Pushing image", bold(data.src), "=>", bold(data.dst))
+        self._progress.log(
+            assemble("Pushing image", bold(data.src), "=>", bold(data.dst))
+        )
 
     def pull(self, data: ImageProgressPull) -> None:
-        self._progress.log("Pulling image", bold(data.src), "=>", bold(data.dst))
+        self._progress.log(
+            assemble("Pulling image", bold(data.src), "=>", bold(data.dst))
+        )
 
     def step(self, data: ImageProgressStep) -> None:
         if data.layer_id:
@@ -119,8 +121,8 @@ class DetailedDockerImageProgress(DockerImageProgress):
                 task = self._progress.add_task(
                     layer=layer,
                     description=data.status,
-                    completed=current,  # type: ignore
-                    total=total,  # type: ignore
+                    completed=current or 0,  # type: ignore
+                    total=total or 100,  # type: ignore
                 )
                 self._mapping[layer] = task
 
@@ -128,11 +130,15 @@ class DetailedDockerImageProgress(DockerImageProgress):
             self._progress.log(data.message)
 
     def save(self, data: ImageProgressSave) -> None:
-        self._progress.print("Saving", bold(data.job), "=>", bold(data.dst))
+        self._progress.log(assemble("Saving", bold(data.job), "=>", bold(data.dst)))
 
     def commit_started(self, data: ImageCommitStarted) -> None:
         self._progress.log(
-            "Creating image", bold(data.target_image), "image from the job container"
+            assemble(
+                "Creating image",
+                bold(data.target_image),
+                "image from the job container",
+            )
         )
 
     def commit_finished(self, data: ImageCommitFinished) -> None:
