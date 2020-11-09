@@ -76,9 +76,9 @@ def test_images_complete_lifecycle(
     # Check if image available on registry
     captured = helper.run_cli(["image", "ls", "--full-uri"])
 
-    image_urls = [URL(line.strip()) for line in captured.out.splitlines() if line]
+    image_urls = [URL(line.strip()) for line in captured.out.splitlines()[2:] if line]
     for url in image_urls:
-        assert url.scheme == "image"
+        assert url.scheme == "image", url
     image_url_without_tag = image_url.with_path(image_url.path.replace(f":{tag}", ""))
     assert image_url_without_tag in image_urls
 
