@@ -115,6 +115,7 @@ class JobStatusHistory:
     status: JobStatus
     reason: str
     description: str
+    restarts: int
     created_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
@@ -743,6 +744,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         # Forward-compatible support for CANCELLED status
         status=_calc_status(res["history"].get("status", "unknown")),
         reason=res["history"].get("reason", ""),
+        restarts=res["history"].get("restarts", 0),
         description=res["history"].get("description", ""),
         created_at=_parse_datetime(res["history"].get("created_at")),
         started_at=_parse_datetime(res["history"].get("started_at")),
