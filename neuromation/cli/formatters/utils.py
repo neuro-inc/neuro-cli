@@ -80,4 +80,4 @@ def apply_styling(txt: str) -> str:
 
 
 def bold(s: str) -> Text:
-    return Text(s, style="bold", overflow="ignore")
+    return Text(s, style="bold", overflow="ignore", end="", no_wrap=True)
