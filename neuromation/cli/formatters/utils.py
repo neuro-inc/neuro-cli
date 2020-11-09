@@ -1,9 +1,8 @@
 import re
-from typing import Any, Callable, List, Union
+from typing import Callable
 from uuid import uuid4
 
 import click
-from rich.text import Text
 from yarl import URL
 
 from neuromation.api import RemoteImage
@@ -77,26 +76,3 @@ def apply_styling(txt: str) -> str:
     for key, value in REPLACES.items():
         txt = txt.replace(key, value)
     return txt
-
-
-def bold(s: Any) -> Text:
-    return Text(str(s), style="bold")
-
-
-def span(s: Any) -> Text:
-    return Text(str(s))
-
-
-def assemble(*text: Union[Text, str]) -> Text:
-    lst: List[Text] = []
-    first = True
-    for item in text:
-        if first:
-            first = False
-        else:
-            lst.append(Text(" "))
-        if isinstance(item, Text):
-            lst.append(item)
-        else:
-            lst.append(span(item))
-    return Text.assemble(*lst, overflow="ellipsis")
