@@ -1,3 +1,4 @@
+import time
 from typing import Any
 
 from rich.console import Console
@@ -183,8 +184,10 @@ class TestDockerImageProgress:
             )
             rich_cmp(console, index=0)
             formatter.step(ImageProgressStep("message1", "layer1", "status1", 1, 100))
+            time.sleep(0.5)
             rich_cmp(console, index=1)
             formatter.step(ImageProgressStep("message2", "layer1", "status2", 30, 100))
+            time.sleep(0.5)
             rich_cmp(console, index=2)
 
     def test_tty_push(self, rich_cmp: Any) -> None:
@@ -204,8 +207,10 @@ class TestDockerImageProgress:
             )
             rich_cmp(console, index=0)
             formatter.step(ImageProgressStep("message1", "layer1", "status1", 1, 100))
+            time.sleep(0.5)
             rich_cmp(console, index=1)
             formatter.step(ImageProgressStep("message2", "layer1", "status2", 30, 100))
+            time.sleep(0.5)
             rich_cmp(console, index=2)
 
     def test_tty_save(self, rich_cmp: Any) -> None:
