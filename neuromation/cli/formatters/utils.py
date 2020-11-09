@@ -1,5 +1,5 @@
 import re
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Union
 from uuid import uuid4
 
 import click
@@ -87,7 +87,7 @@ def span(s: Any) -> Text:
     return Text(str(s))
 
 
-def assemble(*text: Text) -> Text:
+def assemble(*text: Union[Text, str]) -> Text:
     lst: List[Text] = []
     first = True
     for item in text:
