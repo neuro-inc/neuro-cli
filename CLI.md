@@ -2051,7 +2051,7 @@ Remove disk DISK_ID.
 **Usage:**
 
 ```bash
-neuro disk rm [OPTIONS] DISK_ID
+neuro disk rm [OPTIONS] DISK_IDS...
 ```
 
 **Options:**

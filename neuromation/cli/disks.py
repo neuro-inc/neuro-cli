@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Optional
+from typing import Optional, Sequence
 
 from .formatters.disks import (
     BaseDisksFormatter,
@@ -116,14 +116,15 @@ async def get(root: Root, disk_id: str, full_uri: bool) -> None:
 
 
 @command()
-@argument("disk_id")
-async def rm(root: Root, disk_id: str) -> None:
+@argument("disk_ids", nargs=-1, required=True)
+async def rm(root: Root, disk_ids: Sequence[str]) -> None:
     """
     Remove disk DISK_ID.
     """
-    await root.client.disks.rm(disk_id)
-    if root.verbosity > 0:
-        root.print(f"Disk with id '{disk_id}' was successfully removed.")
+    for disk_id in disk_ids:
+        await root.client.disks.rm(disk_id)
+        if root.verbosity > 0:
+            root.print(f"Disk with id '{disk_id}' was successfully removed.")
 
 
 disk.add_command(ls)
