@@ -93,7 +93,7 @@ jobs:
       env:
         COLOR: yes
       run: |
-        make .test
+        make .test PYTEST_ARGS=-vvv
     - name: Upload coverage
       uses: codecov/codecov-action@v1
       with:

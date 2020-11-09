@@ -1,7 +1,7 @@
 import asyncio
 from dataclasses import replace
 from pathlib import Path
-from typing import Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 import aiohttp
 import aiohttp.pytest_plugin
@@ -14,6 +14,15 @@ from neuromation.api import Client, Cluster, Preset
 from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData, _save
 from neuromation.api.tracing import _make_trace_config
 from neuromation.cli.asyncio_utils import setup_child_watcher
+
+
+def pytest_addoption(parser: Any, pluginmanager: Any) -> None:
+    parser.addoption(
+        "--rich-gen",
+        default=False,
+        action="store_true",
+        help="Regenerate rich_cmp references from captured texts",
+    )
 
 
 setup_child_watcher()

@@ -30,6 +30,7 @@ from uuid import uuid4 as uuid
 
 import aiodocker
 import aiohttp
+import click
 import pexpect
 import pytest
 import toml
@@ -39,6 +40,7 @@ from yarl import URL
 from neuromation.api import (
     Action,
     AuthorizationError,
+    Client,
     Config,
     Container,
     FileStatusType,
@@ -50,6 +52,7 @@ from neuromation.api import (
     get as api_get,
     login_with_token,
 )
+from neuromation.api.utils import asynccontextmanager
 from neuromation.cli.asyncio_utils import run
 from neuromation.cli.utils import resolve_job
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
@@ -481,15 +484,15 @@ class Helper:
             log.error(f"Last stdout: '{proc.stdout}'")
             log.error(f"Last stderr: '{proc.stderr}'")
             raise
-        out = proc.stdout
-        err = proc.stderr
+        out = click.unstyle(proc.stdout)
+        err = click.unstyle(proc.stderr)
         if any(run_cmd in arguments for run_cmd in ("submit", "run")):
             job_id = self.find_job_id(out)
             if job_id:
                 self._executed_jobs.append(job_id)
         out = out.strip()
         err = err.strip()
-        if verbosity > 0:
+        if verbosity > 3:
             print(f"neuro stdout: {out}")
             print(f"neuro stderr: {err}")
         return SysCap(out, err)
@@ -715,6 +718,11 @@ class Helper:
                 URL("file:" + str(tmp_path)),
             )
             assert self.hash_hex(tmp_path) == checksum, "checksum test failed for {url}"
+
+    @asynccontextmanager
+    async def client(self) -> AsyncIterator[Client]:
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            yield client
 
 
 # Cache at the session level to reduce amount of relogins.

@@ -58,7 +58,7 @@ update-deps:
 
 .PHONY: .e2e
 .e2e:
-	pytest \
+	COLUMNS=160 LINES=75 pytest \
 	    -n ${PYTEST_XDIST_NUM_THREADS} \
 		-m "e2e" \
 		--cov=neuromation \

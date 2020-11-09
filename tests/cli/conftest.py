@@ -1,10 +1,11 @@
 import asyncio
 import dataclasses
+import io
 import logging
 from collections import namedtuple
 from difflib import ndiff
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, List, Optional
+from typing import Any, AsyncIterator, Callable, DefaultDict, List, Optional, Set, Union
 
 import click
 import pytest
@@ -128,15 +129,6 @@ def click_tty_emulation(monkeypatch: Any) -> None:
     monkeypatch.setattr("click._compat.isatty", lambda stream: True)
 
 
-def pytest_addoption(parser: Any, pluginmanager: Any) -> None:
-    parser.addoption(
-        "--rich-gen",
-        default=False,
-        action="store_true",
-        help="Regenerate rich_cmp references from captured texts",
-    )
-
-
 @dataclasses.dataclass(eq=False)
 class Guard:
     arg: str
@@ -155,19 +147,41 @@ class RichComparator:
         self._reporter = config.pluginmanager.getplugin("terminalreporter")
         assert self._reporter is not None
         self._cwd = Path.cwd()
-        self._missing_refs: List[Path] = []
         self._written_refs: List[Path] = []
+        self._checked_refs: Set[Path] = set()
+        self._file_pos = DefaultDict[io.StringIO, int](int)
 
-    def mkref(self, request: Any) -> Path:
+    def mkref(self, request: Any, index: Optional[int]) -> Path:
         folder = Path(request.fspath).parent
-        basename = request.function.__qualname__ + ".ref"
+        basename = request.function.__qualname__
+        if index is not None:
+            basename += "_" + str(index)
+        basename += ".ref"
         return folder / "ascii" / basename
 
     def rel(self, ref: Path) -> Path:
         return ref.relative_to(self._cwd)
 
+    def check_io(self, ref: Path, file: io.StringIO) -> None:
+        __tracebackhide__ = True
+        tmp = file.getvalue()
+        buf = tmp[self._file_pos[file] :]
+        self._file_pos[file] = len(tmp)
+        self.check(ref, buf)
+
     def check(self, ref: Path, buf: str) -> None:
         __tracebackhide__ = True
+
+        if ref in self._checked_refs:
+            pytest.fail(
+                "{self.rel(ref)} is already checked. "
+                "Hint: use index when generating refs automatically"
+            )
+        else:
+            self._checked_refs.add(ref)
+
+        buf = buf.strip()
+        buf = click.unstyle(buf)
 
         if self._regen:
             self.write_ref(ref, buf)
@@ -175,7 +189,12 @@ class RichComparator:
             orig = self.read_ref(ref)
             tmp = ref.with_suffix(".orig")
             self.write_file(tmp, buf)
-            assert Guard(buf, tmp) == Guard(orig, ref)
+            # reading from file is important, fil writer replaces \r with \n
+            actual = self.read_file(tmp)
+            assert Guard(actual, tmp) == Guard(orig, ref)
+
+    def read_file(self, ref: Path) -> str:
+        return ref.read_text(encoding="utf8").strip()
 
     def read_ref(self, ref: Path) -> str:
         __tracebackhide__ = True
@@ -186,15 +205,15 @@ class RichComparator:
                 "Create it yourself or run pytest with '--rich-gen' option."
             )
         else:
-            return ref.read_text(encoding="utf8")
+            return self.read_file(ref)
 
     def write_file(self, ref: Path, buf: str) -> None:
         ref.parent.mkdir(parents=True, exist_ok=True)
-        ref.write_text(buf, encoding="utf8")
+        ref.write_text(buf.strip() + "\n", encoding="utf8")
 
     def write_ref(self, ref: Path, buf: str) -> bool:
         if ref.exists():
-            orig = ref.read_text()
+            orig = ref.read_text().strip()
             if orig == buf:
                 return False
         self.write_file(ref, buf)
@@ -217,8 +236,8 @@ class RichComparator:
         # https://github.com/pytest-dev/pytest/blob/master/src/_pytest/assertion/util.py#L200-L245 plus a few extra lines with additional instructions.  # noqa
         explanation: List[str] = []
 
-        left = click.unstyle(lft.arg)
-        right = click.unstyle(rgt.arg)
+        left = lft.arg
+        right = rgt.arg
 
         if self._reporter.verbosity < 1:
             i = 0  # just in case left or right has zero length
@@ -294,30 +313,39 @@ def pytest_terminal_summary(terminalreporter: Any) -> None:
 @pytest.fixture
 def rich_cmp(request: Any) -> Callable[..., None]:
     def comparator(
-        src: RenderableType,
+        src: Union[RenderableType, Console],
         ref: Optional[Path] = None,
         *,
         color: bool = True,
         tty: bool = True,
+        index: Optional[int] = 0,
     ) -> None:
         __tracebackhide__ = True
         plugin = request.config.pluginmanager.getplugin("rich-comparator")
-        console = Console(
-            width=80,
-            height=24,
-            force_terminal=tty,
-            color_system="auto" if color else None,
-            record=True,
-            highlighter=None,
-            legacy_windows=False,
-        )
-        with console.capture() as capture:
-            console.print(src)
-        buf = capture.get()
-
         if ref is None:
-            ref = plugin.mkref(request)
+            ref = plugin.mkref(request, index)
 
-        plugin.check(ref, buf)
+        if isinstance(src, io.StringIO):
+            plugin.check_io(ref, src)
+        elif isinstance(src, Console):
+            if isinstance(src.file, io.StringIO):
+                plugin.check_io(ref, src.file)
+            else:
+                buf = src.export_text(clear=True, styles=True)
+                plugin.check(ref, buf)
+        else:
+            file = io.StringIO()
+            console = Console(
+                file=file,
+                width=80,
+                height=24,
+                force_terminal=tty,
+                color_system="auto" if color else None,
+                record=True,
+                highlighter=None,
+                legacy_windows=False,
+            )
+            console.print(src)
+            plugin.check_io(ref, file)
 
     return comparator
