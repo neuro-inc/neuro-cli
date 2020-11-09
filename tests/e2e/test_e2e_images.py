@@ -33,15 +33,16 @@ def tag() -> str:
     return str(uuid())
 
 
-async def generate_image(docker: aiodocker.Docker, tag: str) -> str:
+async def generate_image(
+    docker: aiodocker.Docker, tag: str, name: str = TEST_IMAGE_NAME
+) -> str:
     image_archive = Path(__file__).parent / "assets/echo-tag.tar"
     # TODO use random image name here
-    image_name = f"{TEST_IMAGE_NAME}:{tag}"
+    image_name = f"{name}:{tag}"
     with image_archive.open(mode="r+b") as fileobj:
-        result = await docker.images.build(
+        await docker.images.build(
             fileobj=fileobj, tag=image_name, buildargs={"TAG": tag}, encoding="identity"
         )
-        print(result)
 
     return image_name
 
@@ -182,30 +183,27 @@ def test_image_ls(helper: Helper, image: str, tag: str) -> None:
 
 
 @pytest.mark.e2e
-def test_images_delete(
+async def test_images_delete(
     helper: Helper,
-    image: str,
-    tag: str,
+    docker: aiodocker.Docker,
 ) -> None:
-    image_no_tag = image.replace(f":{tag}", "")
-    image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
-    image_full_str_no_tag = (
-        f"image://{helper.cluster_name}/{helper.username}/{image_no_tag}"
-    )
+    name = f"test-{uuid()}"
+    await generate_image(docker, name=name, tag="latest")
+    img_name = f"image:{name}"
 
-    helper.run_cli(["image", "push", image])
+    helper.run_cli(["image", "push", name + ":latest"])
 
-    captured = helper.run_cli(["image", "ls", "-l", "--full-uri"])
-    assert image_full_str_no_tag in captured.out
+    captured = helper.run_cli(["-q", "image", "ls"])
+    assert img_name in captured.out
 
-    helper.run_cli(["image", "rm", image_full_str])
+    helper.run_cli(["image", "rm", img_name])
 
     for _ in range(10):
-        captured = helper.run_cli(["-q", "image", "ls", "-l", "--full-uri"])
-        if image_full_str_no_tag in captured.out:
+        captured = helper.run_cli(["-q", "image", "ls"])
+        if img_name in captured.out:
             time.sleep(5)
 
-    assert image_full_str_no_tag not in captured.out
+    assert img_name not in captured.out
 
 
 @pytest.mark.e2e
