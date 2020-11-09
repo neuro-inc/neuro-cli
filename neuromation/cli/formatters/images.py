@@ -185,8 +185,8 @@ class BaseImagesFormatter:
 
 class ShortImagesFormatter(BaseImagesFormatter):
     def __call__(self, images: Iterable[RemoteImage]) -> RenderableType:
-        table = Table.grid()
-        table.add_column("", style="underline")
+        table = Table(box=box.SIMPLE_HEAVY)
+        table.add_column("Neuro URL", style="bold")
         for image in images:
             table.add_row(self._format_image(image))
         return table
@@ -195,8 +195,8 @@ class ShortImagesFormatter(BaseImagesFormatter):
 class LongImagesFormatter(BaseImagesFormatter):
     def __call__(self, images: Iterable[RemoteImage]) -> RenderableType:
         table = Table(box=box.SIMPLE_HEAVY)
-        table.add_column("Neuro URL", style="underline")
-        table.add_column("Docker URL", style="underline")
+        table.add_column("Neuro URL", style="bold")
+        table.add_column("Docker URL")
         for image in images:
             table.add_row(
                 self._format_image(image), image.as_docker_url(with_scheme=True)
