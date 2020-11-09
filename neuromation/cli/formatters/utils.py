@@ -3,6 +3,7 @@ from typing import Callable
 from uuid import uuid4
 
 import click
+from rich.text import Text
 from yarl import URL
 
 from neuromation.api import RemoteImage
@@ -76,3 +77,7 @@ def apply_styling(txt: str) -> str:
     for key, value in REPLACES.items():
         txt = txt.replace(key, value)
     return txt
+
+
+def bold(s: str) -> Text:
+    return Text(s, style="bold", overflow="ignore")

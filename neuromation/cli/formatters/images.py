@@ -20,7 +20,7 @@ from neuromation.api.abc import (
     ImageProgressSave,
 )
 
-from .utils import ImageFormatter
+from .utils import ImageFormatter, bold
 
 
 class DockerImageProgress(AbstractDockerImageProgress):
@@ -91,10 +91,10 @@ class DetailedDockerImageProgress(DockerImageProgress):
         self._progress.start()
 
     def push(self, data: ImageProgressPush) -> None:
-        self._progress.log(f"Pushing image [b]{data.src}[/b] => [b]{data.dst}[/b]")
+        self._progress.log("Pushing image", bold(data.src), "=>", bold(data.dst))
 
     def pull(self, data: ImageProgressPull) -> None:
-        self._progress.log(f"Pulling image [b]{data.src}[/b] => [b]{data.dst}[/b]")
+        self._progress.log("Pulling image", bold(data.src), "=>", bold(data.dst))
 
     def step(self, data: ImageProgressStep) -> None:
         if data.layer_id:
@@ -128,11 +128,11 @@ class DetailedDockerImageProgress(DockerImageProgress):
             self._progress.log(data.message)
 
     def save(self, data: ImageProgressSave) -> None:
-        self._progress.print(f"Saving [b]{data.job}[/b] -> [b]{data.dst}[/b]")
+        self._progress.print("Saving", bold(data.job), "=>", bold(data.dst))
 
     def commit_started(self, data: ImageCommitStarted) -> None:
         self._progress.log(
-            f"Creating image [b]{data.target_image}[/b] image from the job container"
+            "Creating image", bold(data.target_image), "image from the job container"
         )
 
     def commit_finished(self, data: ImageCommitFinished) -> None:
