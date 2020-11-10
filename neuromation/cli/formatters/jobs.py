@@ -12,13 +12,7 @@ from rich.console import RenderableType
 from rich.styled import Styled
 from rich.table import Table
 
-from neuromation.api import (
-    JobDescription,
-    JobRestartPolicy,
-    JobStatus,
-    JobTelemetry,
-    Resources,
-)
+from neuromation.api import JobDescription, JobRestartPolicy, JobStatus, JobTelemetry
 from neuromation.cli.parse_utils import JobColumnInfo
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
@@ -383,17 +377,6 @@ class TabularJobsFormatter(BaseJobsFormatter):
             aligns=[column.align for column in self._columns],
             max_width=self.width if self.width else None,
         )
-
-
-class ResourcesFormatter:
-    def __call__(self, resources: Resources) -> Table:
-        lines = []
-
-        def add(descr: str, value: str) -> None:
-            lines.append(f"{bold(descr)}: {value}")
-
-        indent = "  "
-        return f"{bold('Resources')}:\n" + indent + f"\n{indent}".join(lines)
 
 
 class JobStartProgress:
