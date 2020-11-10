@@ -5,6 +5,22 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.11.10 (2020-11-10)
+=================================
+
+Features
+--------
+
+
+- Add `neuro image rm` command for removing images from remote registries ([#1770](https://github.com/neuro-inc/platform-api-clients/issues/1770))
+
+- Allowed to share disks. ([#1811](https://github.com/neuro-inc/platform-api-clients/issues/1811))
+
+- Added support of multiple disk removal: `neuro disk rm disk-id-1 disk-id-2` works properly now. ([#1821](https://github.com/neuro-inc/platform-api-clients/issues/1821))
+
+- Added displaying of restarts count for restartable jobs. Added `restarts` field to `JobStatusHistory`. ([#1822](https://github.com/neuro-inc/platform-api-clients/issues/1822))
+
+
 Neuromation 20.10.30 (2020-10-30)
 =================================
 
