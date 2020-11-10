@@ -1,5 +1,6 @@
 import asyncio
 import asyncio.subprocess
+import errno
 import hashlib
 import logging
 import os
@@ -857,7 +858,14 @@ def _tmp_bucket_create(
 def tmp_bucket(_tmp_bucket_create: Tuple[str, Helper]) -> Iterator[str]:
     tmpbucketname, helper = _tmp_bucket_create
     yield tmpbucketname
-    helper.cleanup_bucket(tmpbucketname)
+    try:
+        helper.cleanup_bucket(tmpbucketname)
+    except aiohttp.ClientOSError as exc:
+        if exc.errno == errno.ETIMEDOUT:
+            # Try next time
+            pass
+        else:
+            raise
 
 
 @pytest.fixture
