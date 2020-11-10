@@ -86,7 +86,9 @@ class QuotaFormatter:
             f"[b]CPU[/b]: {non_gpu_details}",
         )
 
-    def _format_quota_details(self, quota: Optional[int], *, is_minutes=True) -> str:
+    def _format_quota_details(
+        self, quota: Optional[int], *, is_minutes: bool = True
+    ) -> str:
         if quota is None:
             return self.QUOTA_NOT_SET
         elif is_minutes:
