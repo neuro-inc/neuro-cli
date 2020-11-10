@@ -218,6 +218,7 @@ class Jobs(metaclass=NoPublicConstructor):
         tags: Sequence[str] = (),
         description: Optional[str] = None,
         is_preemptible: bool = False,
+        wait_for_jobs_quota: bool = False,
         schedule_timeout: Optional[float] = None,
         restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
         life_span: Optional[float] = None,
@@ -239,6 +240,8 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["restart_policy"] = str(restart_policy)
         if life_span is not None:
             payload["max_run_time_minutes"] = int(life_span // 60)
+        if wait_for_jobs_quota:
+            payload["wait_for_jobs_quota"] = wait_for_jobs_quota
         payload["cluster_name"] = self._config.cluster_name
         auth = await self._config._api_auth()
         async with self._core.request("POST", url, json=payload, auth=auth) as resp:

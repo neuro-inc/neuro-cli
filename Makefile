@@ -4,7 +4,7 @@ ISORT_DIRS := neuromation tests build-tools setup.py
 BLACK_DIRS := $(ISORT_DIRS)
 MYPY_DIRS :=  neuromation tests
 FLAKE8_DIRS := $(ISORT_DIRS)
-PYTEST_ARGS=
+PYTEST_ARGS= --rich-gen
 
 PYTEST_XDIST_NUM_THREADS ?= auto
 COLOR ?= auto

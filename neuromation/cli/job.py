@@ -271,6 +271,12 @@ def job() -> None:
     help="Upload neuro config to the job",
 )
 @option(
+    "--wait-for-job-quota/--no-wait-for-job-quota",
+    default=False,
+    show_default=True,
+    help="Wait for total running jobs quota",
+)
+@option(
     "--port-forward",
     type=LOCAL_REMOTE_PORT,
     multiple=True,
@@ -312,6 +318,7 @@ async def submit(
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
+    wait_for_jobs_quota: bool,
     browse: bool,
     detach: bool,
     tty: Optional[bool],
@@ -364,6 +371,7 @@ async def submit(
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
+        wait_for_jobs_quota=wait_for_jobs_quota,
         browse=browse,
         detach=detach,
         tty=tty,
@@ -973,6 +981,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Upload neuro config to the job",
 )
 @option(
+    "--wait-for-job-quota/--no-wait-for-job-quota",
+    default=False,
+    show_default=True,
+    help="Wait for total running jobs quota",
+)
+@option(
     "--port-forward",
     type=LOCAL_REMOTE_PORT,
     multiple=True,
@@ -1008,6 +1022,7 @@ async def run(
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
+    wait_for_jobs_quota: bool,
     port_forward: List[Tuple[int, int]],
     browse: bool,
     detach: bool,
@@ -1071,6 +1086,7 @@ async def run(
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
+        wait_for_jobs_quota=wait_for_jobs_quota,
         browse=browse,
         detach=detach,
         tty=tty,
@@ -1125,6 +1141,7 @@ async def run_job(
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
+    wait_for_jobs_quota: bool,
     browse: bool,
     detach: bool,
     tty: bool,
@@ -1221,6 +1238,7 @@ async def run_job(
     job = await root.client.jobs.run(
         container,
         is_preemptible=preemptible,
+        wait_for_jobs_quota=wait_for_jobs_quota,
         name=name,
         tags=tags,
         description=description,
