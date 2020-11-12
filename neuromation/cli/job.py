@@ -981,7 +981,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Upload neuro config to the job",
 )
 @option(
-    "--wait-for-job-quota/--no-wait-for-job-quota",
+    "--wait-for-jobs-quota/--no-wait-for-jobs-quota",
     default=False,
     show_default=True,
     help="Wait for total running jobs quota",
