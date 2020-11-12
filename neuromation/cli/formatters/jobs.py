@@ -373,17 +373,17 @@ class TabularJobsFormatter(BaseJobsFormatter):
             column.title,
             style="bold",
             justify=column.justify,
-            width=column.width.width,
-            min_width=column.width.min,
-            max_width=column.width.max,
+            width=column.width,
+            min_width=column.min_width,
+            max_width=column.max_width,
         )
         for column in self._columns[1:]:
             table.add_column(
                 column.title,
                 justify=column.justify,
-                width=column.width.width,
-                min_width=column.width.min,
-                max_width=column.width.max,
+                width=column.width,
+                min_width=column.min_width,
+                max_width=column.max_width,
             )
 
         for job in jobs:
