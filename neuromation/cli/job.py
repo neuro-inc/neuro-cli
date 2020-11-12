@@ -11,6 +11,7 @@ from typing import List, Optional, Sequence, Set, Tuple
 import async_timeout
 import click
 from dateutil.parser import isoparse
+from rich.table import Table
 from yarl import URL
 
 from neuromation.api import (
@@ -75,7 +76,6 @@ from .utils import (
     deprecated_quiet_option,
     group,
     option,
-    pager_maybe,
     resolve_job,
     volume_to_verbose_str,
 )
@@ -664,16 +664,13 @@ async def ls(
     if root.quiet:
         formatter: BaseJobsFormatter = SimpleJobsFormatter()
     else:
-        if wide or not root.tty:
-            width = 0
-        else:
-            width = root.terminal_size[0]
         image_fmtr = image_formatter(uri_formatter=uri_fmtr)
         formatter = TabularJobsFormatter(
-            width, root.client.username, format, image_formatter=image_fmtr
+            root.client.username, format, image_formatter=image_fmtr
         )
 
-    pager_maybe(formatter([job async for job in jobs]), root.tty, root.terminal_size)
+    with root.pager():
+        root.print(formatter([job async for job in jobs]))
 
 
 @command()
@@ -711,7 +708,12 @@ async def tags(root: Root) -> None:
     List all tags submitted by the user.
     """
     res = await root.client.jobs.tags()
-    pager_maybe(res, root.tty, root.terminal_size)
+    table = Table.grid()
+    table.add_column("")
+    for item in res:
+        table.add_row(item)
+    with root.pager():
+        root.print(table)
 
 
 @command()

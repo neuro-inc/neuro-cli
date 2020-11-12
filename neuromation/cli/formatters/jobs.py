@@ -4,10 +4,11 @@ import itertools
 import sys
 import time
 from dataclasses import dataclass
-from typing import Iterable, Iterator, List, Optional
+from typing import Iterable, List, Optional
 
 import humanize
 from click import secho, style, unstyle
+from rich import box
 from rich.console import RenderableType
 from rich.styled import Styled
 from rich.table import Table
@@ -17,7 +18,6 @@ from neuromation.cli.parse_utils import JobColumnInfo
 from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
 
-from .ftable import table
 from .utils import ImageFormatter, URIFormatter, image_formatter
 
 
@@ -43,6 +43,11 @@ def bold(text: str) -> str:
 
 def format_job_status(status: JobStatus) -> str:
     return style(status.value, fg=COLORS.get(status, "reset"))
+
+
+def fmt_status(status: JobStatus) -> str:
+    color = COLORS.get(status, "none")
+    return f"[{color}]{status.value}[/{color}]"
 
 
 def format_timedelta(delta: datetime.timedelta) -> str:
@@ -286,16 +291,17 @@ class JobTelemetryFormatter:
 
 class BaseJobsFormatter:
     @abc.abstractmethod
-    def __call__(
-        self, jobs: Iterable[JobDescription]
-    ) -> Iterator[str]:  # pragma: no cover
+    def __call__(self, jobs: Iterable[JobDescription]) -> RenderableType:
         pass
 
 
 class SimpleJobsFormatter(BaseJobsFormatter):
-    def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
+    def __call__(self, jobs: Iterable[JobDescription]) -> RenderableType:
+        table = Table.grid()
+        table.add_column("")
         for job in jobs:
-            yield job.id
+            table.add_row(job.id)
+        return table
 
 
 @dataclass(frozen=True)
@@ -328,10 +334,10 @@ class TabularJobRow:
             when = job.history.finished_at
         assert when is not None
         return cls(
-            id=bold(job.id),
+            id=job.id,
             name=job.name if job.name else "",
             tags=",".join(job.tags),
-            status=format_job_status(job.status),
+            status=fmt_status(job.status),
             when=format_datetime(when),
             created=format_datetime(job.history.created_at),
             started=format_datetime(job.history.started_at),
@@ -352,31 +358,41 @@ class TabularJobRow:
 class TabularJobsFormatter(BaseJobsFormatter):
     def __init__(
         self,
-        width: int,
         username: str,
         columns: List[JobColumnInfo],
         image_formatter: ImageFormatter,
     ) -> None:
-        self.width = width
         self._username = username
         self._columns = columns
         self._image_formatter = image_formatter
 
-    def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
-        rows: List[List[str]] = []
-        rows.append([bold(column.title) for column in self._columns])
+    def __call__(self, jobs: Iterable[JobDescription]) -> RenderableType:
+        table = Table(box=box.SIMPLE_HEAVY)
+        column = self._columns[0]
+        table.add_column(
+            column.title,
+            style="bold",
+            justify=column.justify,
+            width=column.width.width,
+            min_width=column.width.min,
+            max_width=column.width.max,
+        )
+        for column in self._columns[1:]:
+            table.add_column(
+                column.title,
+                justify=column.justify,
+                width=column.width.width,
+                min_width=column.width.min,
+                max_width=column.width.max,
+            )
+
         for job in jobs:
-            rows.append(
-                TabularJobRow.from_job(
+            table.add_row(
+                *TabularJobRow.from_job(
                     job, self._username, image_formatter=self._image_formatter
                 ).to_list(self._columns)
             )
-        yield from table(
-            rows,
-            widths=[column.width for column in self._columns],
-            aligns=[column.align for column in self._columns],
-            max_width=self.width if self.width else None,
-        )
+        return table
 
 
 class JobStartProgress:

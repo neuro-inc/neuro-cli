@@ -4,6 +4,7 @@ from datetime import timedelta
 from typing import Callable, List, Mapping, Optional, TypeVar
 
 import click
+from rich.console import JustifyMethod
 
 from .formatters.ftable import Align, ColumnWidth
 
@@ -62,6 +63,7 @@ def to_megabytes(value: str) -> int:
 class JobColumnInfo:
     id: str
     title: str
+    justify: Optional[JustifyMethod]
     align: Align
     width: ColumnWidth
 
@@ -70,21 +72,23 @@ class JobColumnInfo:
 # structures.
 
 COLUMNS = [
-    JobColumnInfo("id", "ID", Align.LEFT, ColumnWidth()),
-    JobColumnInfo("name", "NAME", Align.LEFT, ColumnWidth(max=40)),
-    JobColumnInfo("tags", "TAGS", Align.LEFT, ColumnWidth(max=40)),
-    JobColumnInfo("status", "STATUS", Align.LEFT, ColumnWidth(max=10)),
-    JobColumnInfo("when", "WHEN", Align.LEFT, ColumnWidth(max=15)),
-    JobColumnInfo("created", "CREATED", Align.LEFT, ColumnWidth(max=15)),
-    JobColumnInfo("started", "STARTED", Align.LEFT, ColumnWidth(max=15)),
-    JobColumnInfo("finished", "FINISHED", Align.LEFT, ColumnWidth(max=15)),
-    JobColumnInfo("image", "IMAGE", Align.LEFT, ColumnWidth(max=40)),
-    JobColumnInfo("owner", "OWNER", Align.LEFT, ColumnWidth(max=25)),
-    JobColumnInfo("cluster_name", "CLUSTER", Align.LEFT, ColumnWidth(max=15)),
-    JobColumnInfo("description", "DESCRIPTION", Align.LEFT, ColumnWidth(max=50)),
-    JobColumnInfo("command", "COMMAND", Align.LEFT, ColumnWidth(max=100)),
-    JobColumnInfo("life_span", "LIFE-SPAN", Align.LEFT, ColumnWidth()),
-    JobColumnInfo("workdir", "WORKDIR", Align.LEFT, ColumnWidth()),
+    JobColumnInfo("id", "ID", "left", Align.LEFT, ColumnWidth()),
+    JobColumnInfo("name", "NAME", "left", Align.LEFT, ColumnWidth(max=40)),
+    JobColumnInfo("tags", "TAGS", "left", Align.LEFT, ColumnWidth(max=40)),
+    JobColumnInfo("status", "STATUS", "left", Align.LEFT, ColumnWidth(max=10)),
+    JobColumnInfo("when", "WHEN", "left", Align.LEFT, ColumnWidth(max=15)),
+    JobColumnInfo("created", "CREATED", "left", Align.LEFT, ColumnWidth(max=15)),
+    JobColumnInfo("started", "STARTED", "left", Align.LEFT, ColumnWidth(max=15)),
+    JobColumnInfo("finished", "FINISHED", "left", Align.LEFT, ColumnWidth(max=15)),
+    JobColumnInfo("image", "IMAGE", "left", Align.LEFT, ColumnWidth(max=40)),
+    JobColumnInfo("owner", "OWNER", "left", Align.LEFT, ColumnWidth(max=25)),
+    JobColumnInfo("cluster_name", "CLUSTER", "left", Align.LEFT, ColumnWidth(max=15)),
+    JobColumnInfo(
+        "description", "DESCRIPTION", "left", Align.LEFT, ColumnWidth(max=50)
+    ),
+    JobColumnInfo("command", "COMMAND", "left", Align.LEFT, ColumnWidth(max=100)),
+    JobColumnInfo("life_span", "LIFE-SPAN", "left", Align.LEFT, ColumnWidth()),
+    JobColumnInfo("workdir", "WORKDIR", "left", Align.LEFT, ColumnWidth()),
 ]
 
 COLUMNS_DEFAULT_IGNORE = {
@@ -144,6 +148,15 @@ def _get(
             raise ValueError(f"Invalid property {name}: {val!r} of format {fmt!r}")
 
 
+def _justify(arg: Optional[str]) -> Optional[JustifyMethod]:
+    if not arg:
+        return None
+    ALLOWED = ("left", "right", "center", "full")
+    if arg not in ALLOWED:
+        raise ValueError(f"Unknown align {arg}, allowed {ALLOWED}")
+    return arg  # type: ignore
+
+
 def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
     # Column format is "{id[;field=val][;title]}",
     # columns are separated by commas or spaces
@@ -187,6 +200,8 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
         align = _get(groups, "align", fmt, Align, default.align)
         assert align is not None
 
+        justify = _get(groups, "align", fmt, _justify, default.justify)
+
         width_min = _get(groups, "min", fmt, int, None)
         width_max = _get(groups, "max", fmt, int, None)
         if width_max is not None:
@@ -209,6 +224,7 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
         info = JobColumnInfo(
             id=default.id,  # canonical name
             title=title,
+            justify=justify,
             align=align,
             width=ColumnWidth(width_min, width_max, width),
         )
