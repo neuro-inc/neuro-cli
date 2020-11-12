@@ -94,25 +94,32 @@ def retries(
     msg: str, attempts: int = 10, logger: Callable[[str], None] = log.info
 ) -> Iterator[AsyncContextManager[None]]:
     sleeptime = 0.0
+    init_attempts = attempts
     while attempts:
 
         @asynccontextmanager
-        async def retry() -> AsyncIterator[None]:
+        async def gen_func() -> AsyncIterator[None]:
             nonlocal attempts
-            if attempts:
-                try:
-                    yield
-                except aiohttp.ClientError as err:
-                    logger(f"{msg}: {err}.  Retry...")
-                    await asyncio.sleep(sleeptime)
-                else:
-                    attempts = 0
-            else:
+            try:
                 yield
+            except aiohttp.ClientError as err:
+                if not attempts:
+                    raise
+                logger(f"{msg}: {err}.  Retry...")
+                await asyncio.sleep(sleeptime)
+            else:
+                attempts = 0
+
+        def reset() -> None:
+            nonlocal attempts, sleeptime
+            attempts = init_attempts
+            sleeptime = 0.0
 
         sleeptime += 0.1
         attempts -= 1
-        yield retry()
+        iterator = gen_func()
+        iterator.reset = reset  # type: ignore
+        yield iterator
 
 
 def flat(sql: str) -> str:

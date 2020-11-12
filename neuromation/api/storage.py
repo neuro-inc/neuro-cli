@@ -17,6 +17,7 @@ from typing import (
     Any,
     AsyncIterator,
     Awaitable,
+    BinaryIO,
     Callable,
     Dict,
     Iterable,
@@ -30,8 +31,6 @@ from typing import (
 import aiohttp
 import attr
 from yarl import URL
-
-from neuromation.api.utils import QueuedCall, queue_calls
 
 from .abc import (
     AbstractDeleteProgress,
@@ -58,7 +57,13 @@ from .url_utils import (
     normalize_storage_path_uri,
 )
 from .users import Action
-from .utils import NoPublicConstructor, retries
+from .utils import (
+    NoPublicConstructor,
+    QueuedCall,
+    asynccontextmanager,
+    queue_calls,
+    retries,
+)
 
 
 log = logging.getLogger(__name__)
@@ -277,6 +282,24 @@ class Storage(metaclass=NoPublicConstructor):
         ) as resp:
             resp  # resp.status == 201
 
+    async def write(self, uri: URL, data: bytes, offset: int) -> None:
+        if not data:
+            raise ValueError("empty data")
+        path = self._uri_to_path(uri)
+        url = self._config.storage_url / path
+        url = url.with_query(op="WRITE")
+        timeout = attr.evolve(self._core.timeout, sock_read=None)
+        auth = await self._config._api_auth()
+        headers = {
+            "Content-Range": f"bytes {offset}-{offset + len(data) - 1}/"
+            f"{offset + len(data)}"
+        }
+
+        async with self._core.request(
+            "PATCH", url, data=data, timeout=timeout, auth=auth, headers=headers
+        ) as resp:
+            resp  # resp.status == 200
+
     async def stat(self, uri: URL) -> FileStatus:
         uri = self._normalize_uri(uri)
         url = self._config.storage_url / self._uri_to_path(uri, normalized=True)
@@ -293,13 +316,40 @@ class Storage(metaclass=NoPublicConstructor):
                 self._config.cluster_name, res["FileStatus"]
             )
 
-    async def open(self, uri: URL) -> AsyncIterator[bytes]:
+    async def open(
+        self, uri: URL, offset: int = 0, size: Optional[int] = None
+    ) -> AsyncIterator[bytes]:
         url = self._config.storage_url / self._uri_to_path(uri)
         url = url.with_query(op="OPEN")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         auth = await self._config._api_auth()
+        if offset < 0:
+            raise ValueError("offset should be >= 0")
+        if size is None:
+            if offset:
+                partial = True
+                headers = {"Range": f"bytes={offset}-"}
+            else:
+                partial = False
+                headers = {}
+        elif size > 0:
+            partial = True
+            headers = {"Range": f"bytes={offset}-{offset + size - 1}"}
+        elif not size:
+            return
+        else:
+            raise ValueError("size should be >= 0")
 
-        async with self._core.request("GET", url, timeout=timeout, auth=auth) as resp:
+        async with self._core.request(
+            "GET", url, timeout=timeout, auth=auth, headers=headers
+        ) as resp:
+            if partial:
+                if resp.status != aiohttp.web.HTTPPartialContent.status_code:
+                    raise RuntimeError(f"Unexpected status code {resp.status}")
+                rng = _parse_content_range(resp.headers.get("Content-Range"))
+                if rng.start != offset:
+                    raise RuntimeError("Invalid header Content-Range")
+
             async for data in resp.content.iter_any():
                 yield data
 
@@ -374,26 +424,20 @@ class Storage(metaclass=NoPublicConstructor):
 
     # high-level helpers
 
-    async def _iterate_file(
+    @asynccontextmanager
+    async def _open_file_read(
         self,
         src: Path,
         dst: URL,
         *,
         progress: _AsyncAbstractFileProgress,
-    ) -> AsyncIterator[bytes]:
-        loop = asyncio.get_event_loop()
+    ) -> AsyncIterator[Tuple[BinaryIO, int]]:
         src_url = URL(src.as_uri())
         async with self._file_sem:
             with src.open("rb") as stream:
                 size = os.stat(stream.fileno()).st_size
                 await progress.start(StorageProgressStart(src_url, dst, size))
-                chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
-                pos = len(chunk)
-                while chunk:
-                    await progress.step(StorageProgressStep(src_url, dst, pos, size))
-                    yield chunk
-                    chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
-                    pos += len(chunk)
+                yield stream, size
                 await progress.complete(StorageProgressComplete(src_url, dst, size))
 
     async def upload_file(
@@ -461,12 +505,29 @@ class Storage(metaclass=NoPublicConstructor):
         *,
         progress: _AsyncAbstractFileProgress,
     ) -> None:
-        for retry in retries(f"Fail to upload {dst}"):
-            async with retry:
-                await self.create(
-                    dst,
-                    self._iterate_file(src_path, dst, progress=progress),
-                )
+        src = URL(src_path.as_uri())
+        async with self._open_file_read(src_path, dst, progress=progress) as (
+            stream,
+            size,
+        ):
+            loop = asyncio.get_event_loop()
+            chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
+            for retry in retries(f"Fail to upload {dst}"):
+                async with retry:
+                    await self.create(dst, chunk)
+
+            if not chunk:
+                return
+            pos = 0
+            while True:
+                pos += len(chunk)
+                await progress.step(StorageProgressStep(src, dst, pos, size))
+                chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
+                if not chunk:
+                    break
+                for retry in retries(f"Fail to upload {dst}"):
+                    async with retry:
+                        await self.write(dst, chunk, pos)
 
     async def upload_dir(
         self,
@@ -642,16 +703,23 @@ class Storage(metaclass=NoPublicConstructor):
         loop = asyncio.get_event_loop()
         async with self._file_sem:
             await progress.start(StorageProgressStart(src, dst, size))
-            for retry in retries(f"Fail to download {src}"):
-                async with retry:
-                    with dst_path.open("wb") as stream:
-                        pos = 0
-                        async for chunk in self.open(src):
+            pos = 0
+            with dst_path.open("wb") as stream:
+                for retry in retries(f"Fail to download {src}"):
+                    pos = stream.tell()
+                    if pos >= size:
+                        break
+                    async with retry:
+                        it = self.open(src, offset=pos)
+                        async for chunk in it:
                             pos += len(chunk)
                             await progress.step(
                                 StorageProgressStep(src, dst, pos, size)
                             )
                             await loop.run_in_executor(None, stream.write, chunk)
+                            if chunk:
+                                retry.reset()  # type: ignore
+
             await progress.complete(StorageProgressComplete(src, dst, size))
 
     async def download_dir(
@@ -798,6 +866,19 @@ def _file_status_from_api_stat(cluster_name: str, values: Dict[str, Any]) -> Fil
         permission=Action(values["permission"]),
         uri=base_uri / values["path"].lstrip("/"),
     )
+
+
+def _parse_content_range(rng_str: Optional[str]) -> slice:
+    if rng_str is None:
+        raise RuntimeError("Missed header Content-Range")
+    m = re.fullmatch(r"bytes (\d+)-(\d+)/(\d+|\*)", rng_str)
+    if not m:
+        raise RuntimeError("Invalid header Content-Range")
+    start = int(m[1])
+    end = int(m[2])
+    if end < start:
+        raise RuntimeError("Invalid header Content-Range" + rng_str)
+    return slice(start, end + 1)
 
 
 ProgressQueueItem = Optional[Tuple[Callable[[Any], None], Any]]

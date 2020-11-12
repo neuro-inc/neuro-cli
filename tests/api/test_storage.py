@@ -24,6 +24,7 @@ from neuromation.api import (
     StorageProgressStep,
 )
 from neuromation.api.abc import StorageProgressDelete
+from neuromation.api.storage import _parse_content_range
 from tests import _RawTestServerFactory, _TestServerFactory
 
 
@@ -74,8 +75,39 @@ async def storage_server(
             content = await request.read()
             local_path.write_bytes(content)
             return web.Response(status=201)
+
+        elif op == "WRITE":
+            rng = _parse_content_range(request.headers.get("Content-Range"))
+            content = await request.read()
+            assert rng.stop - rng.start == len(content)
+            with open(local_path, "r+b") as f:
+                f.seek(rng.start)
+                f.write(content)
+            return web.Response(status=200)
+
         elif op == "OPEN":
-            return web.Response(body=local_path.read_bytes())
+            rng = request.http_range
+            content = local_path.read_bytes()
+            response = web.StreamResponse()
+            start, stop, _ = rng.indices(len(content))
+            if not (rng.start is rng.stop is None):
+                if start >= stop:
+                    raise RuntimeError
+                response.set_status(web.HTTPPartialContent.status_code)
+                response.headers[
+                    "Content-Range"
+                ] = f"bytes {start}-{stop-1}/{len(content)}"
+                response.content_length = stop - start
+            await response.prepare(request)
+            chunk_size = 200
+            if stop - start > chunk_size:
+                await response.write(content[start : start + chunk_size])
+                raise RuntimeError
+            else:
+                await response.write(content[start:stop])
+                await response.write_eof()
+                return response
+
         elif op == "GETFILESTATUS":
             if not local_path.exists():
                 raise web.HTTPNotFound()
@@ -91,6 +123,7 @@ async def storage_server(
                     }
                 }
             )
+
         elif op == "MKDIRS":
             try:
                 local_path.mkdir(parents=True, exist_ok=True)
@@ -100,6 +133,7 @@ async def storage_server(
                     content_type="application/json",
                 )
             return web.Response(status=201)
+
         elif op == "LISTSTATUS":
             if not local_path.exists():
                 raise web.HTTPNotFound()
@@ -116,6 +150,7 @@ async def storage_server(
                     }
                 )
             return await make_listiter_response(request, ret)
+
         else:
             raise web.HTTPInternalServerError(text=f"Unsupported operation {op}")
 
@@ -741,6 +776,27 @@ async def test_storage_create(
         await client.storage.create(URL("storage:file"), gen())
 
 
+async def test_storage_write(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/file"
+        assert request.query == {"op": "WRITE"}
+        rng = _parse_content_range(request.headers.get("Content-Range"))
+        assert rng == slice(4, 9)
+        content = await request.read()
+        assert content == b"01234"
+        return web.Response(status=200)
+
+    app = web.Application()
+    app.router.add_patch("/storage/user/file", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.write(URL("storage:file"), b"01234", 4)
+
+
 async def test_storage_stats(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -787,18 +843,6 @@ async def test_storage_open(
             for i in range(5):
                 await resp.write(str(i).encode("ascii"))
             return resp
-        elif request.query["op"] == "GETFILESTATUS":
-            return web.json_response(
-                {
-                    "FileStatus": {
-                        "path": "file",
-                        "type": "FILE",
-                        "length": 5,
-                        "modificationTime": 3456,
-                        "permission": "read",
-                    }
-                }
-            )
         else:
             raise AssertionError(f"Unknown operation {request.query['op']}")
 
@@ -812,6 +856,80 @@ async def test_storage_open(
         async for chunk in client.storage.open(URL("storage:file")):
             buf.extend(chunk)
         assert buf == b"01234"
+
+
+async def test_storage_open_partial_read(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert request.path == "/storage/user/file"
+        if request.query["op"] == "OPEN":
+            rng = request.http_range
+            data = b"ababahalamaha"
+            start, stop, _ = rng.indices(len(data))
+            return web.Response(
+                status=web.HTTPPartialContent.status_code,
+                headers={"Content-Range": f"bytes {start}-{stop-1}/{len(data)}"},
+                body=data[start:stop],
+            )
+        else:
+            raise AssertionError(f"Unknown operation {request.query['op']}")
+
+    app = web.Application()
+    app.router.add_get("/storage/user/file", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        buf = bytearray()
+        async for chunk in client.storage.open(URL("storage:file"), 5):
+            buf.extend(chunk)
+        assert buf == b"halamaha"
+
+        buf = bytearray()
+        async for chunk in client.storage.open(URL("storage:file"), 5, 4):
+            buf.extend(chunk)
+        assert buf == b"hala"
+
+        buf = bytearray()
+        async for chunk in client.storage.open(URL("storage:file"), 5, 20):
+            buf.extend(chunk)
+        assert buf == b"halamaha"
+
+        buf = bytearray()
+        async for chunk in client.storage.open(URL("storage:file"), 5, 0):
+            buf.extend(chunk)
+        assert buf == b""
+
+
+async def test_storage_open_unsupported_partial_read(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert request.path == "/storage/user/file"
+        if request.query["op"] == "OPEN":
+            resp = web.StreamResponse()
+            await resp.prepare(request)
+            for i in range(5):
+                await resp.write(str(i).encode("ascii"))
+            return resp
+        else:
+            raise AssertionError(f"Unknown operation {request.query['op']}")
+
+    app = web.Application()
+    app.router.add_get("/storage/user/file", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        buf = bytearray()
+        async for chunk in client.storage.open(URL("storage:file"), 0):
+            buf.extend(chunk)
+        assert buf == b"01234"
+
+        with pytest.raises(RuntimeError):
+            async for chunk in client.storage.open(URL("storage:file"), 5):
+                pass
 
 
 async def test_storage_open_directory(
