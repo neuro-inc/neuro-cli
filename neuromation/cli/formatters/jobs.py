@@ -272,21 +272,21 @@ class JobTelemetryFormatter:
             ]
         )
 
-    def __call__(self, info: JobTelemetry) -> str:
+    def __call__(self, info: JobTelemetry) -> RenderableType:
         timestamp = self._format_timestamp(info.timestamp)
+        table = Table(box=box.SIMPLE_HEAVY)
+        table.add_column("TIMESTAMP", justify="right", width=24)
+        table.add_column("CPU", justify="right", width=15)
+        table.add_column("MEMORY (MB)", justify="right", width=15)
+        table.add_column("GPU (%)", justify="right", width=15)
+        table.add_column("GPU_MEMORY (MB)", justify="right", width=15)
+
         cpu = f"{info.cpu:.3f}"
         mem = f"{info.memory:.3f}"
         gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "0"
         gpu_mem = f"{info.gpu_memory:.3f}" if info.gpu_memory else "0"
-        return "\t".join(
-            [
-                timestamp.ljust(self.col_len["timestamp"]),
-                cpu.ljust(self.col_len["cpu"]),
-                mem.ljust(self.col_len["memory"]),
-                gpu.ljust(self.col_len["gpu"]),
-                gpu_mem.ljust(self.col_len["gpu_memory"]),
-            ]
-        )
+        table.add_row(timestamp, cpu, mem, gpu, gpu_mem)
+        return table
 
 
 class BaseJobsFormatter:

@@ -942,45 +942,16 @@ class TestJobOutputFormatter:
 
 
 class TestJobTelemetryFormatter:
-    def _format(
-        self, timestamp: str, cpu: str, mem: str, gpu: str, gpu_mem: str
-    ) -> str:
-        return "\t".join(
-            [
-                f"{timestamp:<24}",
-                f"{cpu:<15}",
-                f"{mem:<15}",
-                f"{gpu:<15}",
-                f"{gpu_mem:<15}",
-            ]
-        )
-
-    def test_format_header_line(self) -> None:
-        line = JobTelemetryFormatter().header()
-        assert line == self._format(
-            timestamp="TIMESTAMP",
-            cpu="CPU",
-            mem="MEMORY (MB)",
-            gpu="GPU (%)",
-            gpu_mem="GPU_MEMORY (MB)",
-        )
-
-    def test_format_telemetry_line_no_gpu(self) -> None:
-        formatter = JobTelemetryFormatter()
+    def test_format_telemetry_line_no_gpu(self, rich_cmp: Any) -> None:
         # NOTE: the timestamp_str encodes the local timezone
         timestamp = 1_517_248_466.238_723_6
-        timestamp_str = formatter._format_timestamp(timestamp)
         telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
-        line = JobTelemetryFormatter()(telemetry)
-        assert line == self._format(
-            timestamp=timestamp_str, cpu="0.123", mem="256.123", gpu="0", gpu_mem="0"
-        )
+        rich_cmp(JobTelemetryFormatter()(telemetry))
 
-    def test_format_telemetry_line_with_gpu(self) -> None:
+    def test_format_telemetry_line_with_gpu(self, rich_cmp: Any) -> None:
         formatter = JobTelemetryFormatter()
         # NOTE: the timestamp_str encodes the local timezone
         timestamp = 1_517_248_466
-        timestamp_str = formatter._format_timestamp(timestamp)
         telemetry = JobTelemetry(
             cpu=0.12345,
             memory=256.1234,
@@ -988,14 +959,7 @@ class TestJobTelemetryFormatter:
             gpu_duty_cycle=99,
             gpu_memory=64.5,
         )
-        line = formatter(telemetry)
-        assert line == self._format(
-            timestamp=timestamp_str,
-            cpu="0.123",
-            mem="256.123",
-            gpu="99",
-            gpu_mem=f"64.500",
-        )
+        rich_cmp(formatter(telemetry))
 
 
 class TestJobStatusFormatter:
