@@ -248,29 +248,13 @@ def format_datetime(when: Optional[datetime.datetime]) -> str:
 
 
 class JobTelemetryFormatter:
-    def __init__(self) -> None:
-        self.col_len = {
-            "timestamp": 24,
-            "cpu": 15,
-            "memory": 15,
-            "gpu": 15,
-            "gpu_memory": 15,
-        }
+    def __init__(self, tz: Optional[datetime.timezone] = None) -> None:
+        self._tz = tz
 
     def _format_timestamp(self, timestamp: float) -> str:
         # NOTE: ctime returns time wrt timezone
-        return str(time.ctime(timestamp))
-
-    def header(self) -> str:
-        return "\t".join(
-            [
-                "TIMESTAMP".ljust(self.col_len["timestamp"]),
-                "CPU".ljust(self.col_len["cpu"]),
-                "MEMORY (MB)".ljust(self.col_len["memory"]),
-                "GPU (%)".ljust(self.col_len["gpu"]),
-                "GPU_MEMORY (MB)".ljust(self.col_len["gpu_memory"]),
-            ]
-        )
+        dt = datetime.datetime.fromtimestamp(timestamp, tz=self._tz)
+        return dt.ctime()
 
     def __call__(self, info: JobTelemetry) -> RenderableType:
         timestamp = self._format_timestamp(info.timestamp)
