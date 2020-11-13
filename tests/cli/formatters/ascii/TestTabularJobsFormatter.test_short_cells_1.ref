@@ -1,0 +1,4 @@
+ID   NAME   STATUS   WHEN       IMAGE   OWNER   CLUSTER   DESCRIP…   COMMAND  
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+  j    name   failed   a second   i:l     alice   dc        d          c        
+                       ago

@@ -193,7 +193,7 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
         title = _get(groups, "title", fmt, str, default.title)
         assert title is not None
 
-        justify: JustifyMethod = _get(groups, "align", fmt, _justify, default.justify)
+        justify: JustifyMethod = _get(groups, "align", fmt, _justify, default.justify)  # type: ignore  # noqa
 
         min_width = _get(groups, "min", fmt, int, None)
         max_width = _get(groups, "max", fmt, int, None)

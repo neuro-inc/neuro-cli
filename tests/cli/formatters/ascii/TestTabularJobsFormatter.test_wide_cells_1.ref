@@ -1,0 +1,10 @@
+ID       NAME    STATUS   WHEN     IMAGE    OWNER   CLUST…   DESCR…   COMMA…  
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+  job-7…   name1   failed   Sep 25   some-…   alice   defau…   some     ls -la  
+                            2017                               descr…   /some…  
+                                                               long             
+                                                               long             
+                                                               long             
+                                                               long             
+  job-7…   name2   pendi…   Sep 25   image…   alice   defau…   some     ls -la  
+                            2017                               descr…   /some…
