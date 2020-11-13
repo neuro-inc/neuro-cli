@@ -49,6 +49,11 @@ def calc_diff(dcmp: "dircmp[str]", *, pre: str = "") -> List[Tuple[str, str]]:
 
 
 @pytest.fixture
+def small_block_size(monkeypatch: Any) -> None:
+    monkeypatch.setattr(neuromation.api.storage, "READ_SIZE", 300)
+
+
+@pytest.fixture
 def storage_path(tmp_path: Path) -> Path:
     ret = tmp_path / "storage"
     ret.mkdir()
@@ -986,7 +991,10 @@ async def test_storage_upload_dir_doesnt_exist(make_client: _MakeClient) -> None
 
 
 async def test_storage_upload_not_a_file(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    small_block_size: None,
 ) -> None:
     file_path = Path(os.devnull).absolute()
     target_path = storage_path / "file.txt"
@@ -1008,7 +1016,10 @@ async def test_storage_upload_not_a_file(
 
 
 async def test_storage_upload_regular_file_to_existing_file_target(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    small_block_size: None,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
     file_size = file_path.stat().st_size
@@ -1034,7 +1045,10 @@ async def test_storage_upload_regular_file_to_existing_file_target(
 
 
 async def test_storage_upload_regular_file_to_existing_dir(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    small_block_size: None,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
     folder = storage_path / "folder"
@@ -1048,7 +1062,10 @@ async def test_storage_upload_regular_file_to_existing_dir(
 
 
 async def test_storage_upload_regular_file_to_existing_file(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    small_block_size: None,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
     folder = storage_path / "folder"
@@ -1067,7 +1084,10 @@ async def test_storage_upload_regular_file_to_existing_file(
 
 
 async def test_storage_upload_regular_file_to_existing_dir_with_trailing_slash(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    small_block_size: None,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
     folder = storage_path / "folder"
@@ -1081,7 +1101,10 @@ async def test_storage_upload_regular_file_to_existing_dir_with_trailing_slash(
 
 
 async def test_storage_upload_regular_file_to_existing_non_dir(
-    storage_server: Any, make_client: _MakeClient, storage_path: Path
+    storage_server: Any,
+    make_client: _MakeClient,
+    storage_path: Path,
+    small_block_size: None,
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
     path = storage_path / "file"
@@ -1095,7 +1118,7 @@ async def test_storage_upload_regular_file_to_existing_non_dir(
 
 
 async def test_storage_upload_regular_file_to_not_existing(
-    storage_server: Any, make_client: _MakeClient
+    storage_server: Any, make_client: _MakeClient, small_block_size: None
 ) -> None:
     file_path = DATA_FOLDER / "file.txt"
 
@@ -1341,6 +1364,7 @@ async def test_storage_upload_file_update(
     tmp_path: Path,
     storage_path: Path,
     zero_time_threshold: None,
+    small_block_size: None,
 ) -> None:
     storage_file = storage_path / "file.txt"
     local_file = tmp_path / "file.txt"
