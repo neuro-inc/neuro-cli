@@ -67,7 +67,7 @@ async def test_reset(caplog: Any) -> None:
         async with retry:
             count += 1
             if count in (3, 5):
-                retry.reset()  # type: ignore
+                retry.reset()
             if count <= 6:
                 raise aiohttp.ClientError("Ouch!")
 

@@ -718,7 +718,7 @@ class Storage(metaclass=NoPublicConstructor):
                             )
                             await loop.run_in_executor(None, stream.write, chunk)
                             if chunk:
-                                retry.reset()  # type: ignore
+                                retry.reset()
 
             await progress.complete(StorageProgressComplete(src, dst, size))
 
