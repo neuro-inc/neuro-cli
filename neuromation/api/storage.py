@@ -17,7 +17,6 @@ from typing import (
     Any,
     AsyncIterator,
     Awaitable,
-    BinaryIO,
     Callable,
     Dict,
     Iterable,
@@ -57,13 +56,7 @@ from .url_utils import (
     normalize_storage_path_uri,
 )
 from .users import Action
-from .utils import (
-    NoPublicConstructor,
-    QueuedCall,
-    asynccontextmanager,
-    queue_calls,
-    retries,
-)
+from .utils import NoPublicConstructor, QueuedCall, queue_calls, retries
 
 
 log = logging.getLogger(__name__)
@@ -421,22 +414,6 @@ class Storage(metaclass=NoPublicConstructor):
 
     # high-level helpers
 
-    @asynccontextmanager
-    async def _open_file_read(
-        self,
-        src: Path,
-        dst: URL,
-        *,
-        progress: _AsyncAbstractFileProgress,
-    ) -> AsyncIterator[Tuple[BinaryIO, int]]:
-        src_url = URL(src.as_uri())
-        async with self._file_sem:
-            with src.open("rb") as stream:
-                size = os.stat(stream.fileno()).st_size
-                await progress.start(StorageProgressStart(src_url, dst, size))
-                yield stream, size
-                await progress.complete(StorageProgressComplete(src_url, dst, size))
-
     async def upload_file(
         self,
         src: URL,
@@ -503,28 +480,29 @@ class Storage(metaclass=NoPublicConstructor):
         progress: _AsyncAbstractFileProgress,
     ) -> None:
         src = URL(src_path.as_uri())
-        async with self._open_file_read(src_path, dst, progress=progress) as (
-            stream,
-            size,
-        ):
-            loop = asyncio.get_event_loop()
-            chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
-            for retry in retries(f"Fail to upload {dst}"):
-                async with retry:
-                    await self.create(dst, chunk)
+        loop = asyncio.get_event_loop()
+        async with self._file_sem:
+            with src_path.open("rb") as stream:
+                size = os.stat(stream.fileno()).st_size
+                await progress.start(StorageProgressStart(src, dst, size))
 
-            if not chunk:
-                return
-            pos = 0
-            while True:
-                pos += len(chunk)
-                await progress.step(StorageProgressStep(src, dst, pos, size))
                 chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
-                if not chunk:
-                    break
                 for retry in retries(f"Fail to upload {dst}"):
                     async with retry:
-                        await self.write(dst, chunk, pos)
+                        await self.create(dst, chunk)
+
+                pos = 0
+                while chunk:
+                    pos += len(chunk)
+                    await progress.step(StorageProgressStep(src, dst, pos, size))
+                    chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
+                    if not chunk:
+                        break
+                    for retry in retries(f"Fail to upload {dst}"):
+                        async with retry:
+                            await self.write(dst, chunk, pos)
+
+                await progress.complete(StorageProgressComplete(src, dst, size))
 
     async def upload_dir(
         self,
