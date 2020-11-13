@@ -946,10 +946,12 @@ class TestJobTelemetryFormatter:
         # NOTE: the timestamp_str encodes the local timezone
         timestamp = 1_517_248_466.238_723_6
         telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
-        rich_cmp(JobTelemetryFormatter()(telemetry))
+        # Use utc timezone in test for stable constant result
+        rich_cmp(JobTelemetryFormatter(timezone.utc)(telemetry))
 
     def test_format_telemetry_line_with_gpu(self, rich_cmp: Any) -> None:
-        formatter = JobTelemetryFormatter()
+        # Use utc timezone in test for stable constant result
+        formatter = JobTelemetryFormatter(timezone.utc)
         # NOTE: the timestamp_str encodes the local timezone
         timestamp = 1_517_248_466
         telemetry = JobTelemetry(
