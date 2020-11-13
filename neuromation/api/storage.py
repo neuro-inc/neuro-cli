@@ -290,10 +290,7 @@ class Storage(metaclass=NoPublicConstructor):
         url = url.with_query(op="WRITE")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         auth = await self._config._api_auth()
-        headers = {
-            "Content-Range": f"bytes {offset}-{offset + len(data) - 1}/"
-            f"{offset + len(data)}"
-        }
+        headers = {"Content-Range": f"bytes {offset}-{offset + len(data) - 1}/*"}
 
         async with self._core.request(
             "PATCH", url, data=data, timeout=timeout, auth=auth, headers=headers
