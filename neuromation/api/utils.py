@@ -28,6 +28,8 @@ if sys.version_info >= (3, 7):  # pragma: no cover
 else:
     from async_generator import asynccontextmanager
 
+# Silence flake8 warning:
+#   'async_generator.asynccontextmanager' imported but unused
 asynccontextmanager
 
 _T = TypeVar("_T")
