@@ -1194,6 +1194,17 @@ async def run_job(
         if env_name in env_dict:
             raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
 
+        # The following code is compatibility layer with old images
+        # TODO: remove this and upload_and_map_config function
+        old_env_name = "NEURO_STEAL_CONFIG"
+        if old_env_name in env_dict:
+            raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
+
+        env_var, secret_volume = await upload_and_map_config(root)
+        env_dict[old_env_name] = env_var
+        volumes.append(secret_volume)
+        # End of compatibility layer
+
     if volumes:
         log.info(
             "Using volumes: \n"
