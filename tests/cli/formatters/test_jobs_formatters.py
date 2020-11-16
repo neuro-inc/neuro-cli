@@ -1,4 +1,5 @@
 import io
+import itertools
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Optional
 
@@ -209,7 +210,12 @@ class TestJobStartProgress:
             progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
             rich_cmp(console)
 
-    def test_tty_step(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    def test_tty_step(
+        self, rich_cmp: Any, new_console: _NewConsole, monkeypatch: Any
+    ) -> None:
+        monkeypatch.setattr(
+            JobStartProgress, "time_factory", itertools.count(10).__next__
+        )
         console = new_console(tty=True, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
             progress.step(self.make_job(JobStatus.PENDING, ""))

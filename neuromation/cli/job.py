@@ -1221,15 +1221,14 @@ async def run_job(
         life_span=job_life_span,
         schedule_timeout=job_schedule_timeout,
     )
-    progress = JobStartProgress.create(console=root.console, quiet=root.quiet)
-    progress.begin(job)
-    try:
+    with JobStartProgress.create(console=root.console, quiet=root.quiet) as progress:
+        progress.begin(job)
         while wait_start and job.status == JobStatus.PENDING:
             await asyncio.sleep(0.2)
             job = await root.client.jobs.status(job.id)
             progress.step(job)
-    finally:
         progress.end(job)
+
     # Even if we detached, but the job has failed to start
     # (most common reason - no resources), the command fails
     if job.status == JobStatus.FAILED:
