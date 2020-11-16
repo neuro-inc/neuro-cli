@@ -3,7 +3,7 @@ Job                  test-job
  Owner                test-user                        
  Cluster              default                          
  Description          test job description             
- Status               failed (ErrorReason)      
+ Status               failed (ErrorReason)             
  Image                test-image                       
  Command              test-command                     
  Resources             Memory  16.0M                   

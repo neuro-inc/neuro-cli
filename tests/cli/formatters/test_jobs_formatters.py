@@ -1,9 +1,10 @@
+import io
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
-import click
 import pytest
 from dateutil.parser import isoparse
+from rich.console import Console
 from yarl import URL
 
 from neuromation.api import (
@@ -32,11 +33,34 @@ from neuromation.cli.formatters.jobs import (
 )
 from neuromation.cli.formatters.utils import image_formatter, uri_formatter
 from neuromation.cli.parse_utils import parse_columns
-from neuromation.cli.printer import CSI
 
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
 TEST_JOB_NAME = "test-job-name"
+
+_NewConsole = Callable[..., Console]
+
+
+@pytest.fixture
+def new_console() -> _NewConsole:
+    def factory(*, tty: bool, color: bool = True) -> Console:
+        file = io.StringIO()
+        # console doesn't accept the time source,
+        # using the real time in tests is not reliable
+        return Console(
+            file=file,
+            width=160,
+            height=24,
+            force_terminal=tty,
+            color_system="auto" if color else None,
+            record=True,
+            highlighter=None,
+            legacy_windows=False,
+            log_path=False,
+            log_time=False,
+        )
+
+    return factory
 
 
 @pytest.fixture
@@ -134,106 +158,77 @@ class TestJobStartProgress:
             life_span=life_span,
         )
 
-    def strip(self, text: str) -> str:
-        return click.unstyle(text).strip()
-
-    def test_quiet(self, capfd: Any) -> None:
+    def test_quiet(self, rich_cmp: Any, new_console: _NewConsole) -> None:
         job = self.make_job(JobStatus.PENDING, "")
-        progress = JobStartProgress.create(tty=True, color=True, quiet=True)
-        progress.begin(job)
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert out == "test-job\n"
-        progress.step(job)
-        progress.end(job)
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert out == ""
+        console = new_console(tty=True, color=True)
+        with JobStartProgress.create(console, quiet=True) as progress:
+            progress.begin(job)
+            rich_cmp(console, index=0)
+            progress.step(job)
+            rich_cmp(console, index=1)
+            progress.end(job)
+            rich_cmp(console, index=2)
 
-    def test_no_tty_begin(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
-        progress.begin(self.make_job(JobStatus.PENDING, ""))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "test-job" in out
-        assert CSI not in out
+    def test_no_tty_begin(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.begin(self.make_job(JobStatus.PENDING, ""))
+            rich_cmp(console)
 
-    def test_no_tty_begin_with_name(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
-        progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "test-job" in out
-        assert "job-name" in out
-        assert CSI not in out
+    def test_no_tty_begin_with_name(
+        self, rich_cmp: Any, new_console: _NewConsole
+    ) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
+            rich_cmp(console)
 
-    def test_no_tty_step(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
-        progress.step(self.make_job(JobStatus.PENDING, ""))
-        progress.step(self.make_job(JobStatus.PENDING, ""))
-        progress.step(self.make_job(JobStatus.RUNNING, "reason"))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "pending" in out
-        assert "running" in out
-        assert "reason (ErrorDesc)" in out
-        assert out.count("pending") == 1
-        assert CSI not in out
+    def test_no_tty_step(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.step(self.make_job(JobStatus.PENDING, ""))
+            progress.step(self.make_job(JobStatus.PENDING, ""))
+            progress.step(self.make_job(JobStatus.RUNNING, "reason"))
+            rich_cmp(console)
 
-    def test_no_tty_end(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
-        progress.end(self.make_job(JobStatus.RUNNING, ""))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert out == ""
+    def test_no_tty_end(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.end(self.make_job(JobStatus.RUNNING, ""))
+            rich_cmp(console)
 
-    def test_tty_begin(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress.begin(self.make_job(JobStatus.PENDING, ""))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "test-job" in out
-        assert CSI in out
+    def test_tty_begin(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=True, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.begin(self.make_job(JobStatus.PENDING, ""))
+            rich_cmp(console)
 
-    def test_tty_begin_with_name(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "test-job" in out
-        assert "job-name" in out
-        assert CSI in out
+    def test_tty_begin_with_name(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=True, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
+            rich_cmp(console)
 
-    def test_tty_step(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress.step(self.make_job(JobStatus.PENDING, ""))
-        progress.step(self.make_job(JobStatus.PENDING, ""))
-        progress.step(self.make_job(JobStatus.RUNNING, "reason"))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "pending" in out
-        assert "running" in out
-        assert "reason" in out
-        assert "(ErrorDesc)" in out
-        assert out.count("pending") != 1
-        assert CSI in out
+    def test_tty_step(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=True, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.step(self.make_job(JobStatus.PENDING, ""))
+            progress.step(self.make_job(JobStatus.PENDING, ""))
+            progress.step(self.make_job(JobStatus.RUNNING, "reason"))
+            rich_cmp(console)
 
-    def test_tty_end(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress.end(self.make_job(JobStatus.RUNNING, ""))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "http://local.host.test/" in out
-        assert CSI in out
+    def test_tty_end(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=True, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.end(self.make_job(JobStatus.RUNNING, ""))
+            rich_cmp(console)
 
-    def test_tty_end_with_life_span(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress.end(self.make_job(JobStatus.RUNNING, "", life_span=24 * 3600))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "http://local.host.test/" in out
-        assert "The job will die in a day." in out
-        assert CSI in out
+    def test_tty_end_with_life_span(
+        self, rich_cmp: Any, new_console: _NewConsole
+    ) -> None:
+        console = new_console(tty=True, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.end(self.make_job(JobStatus.RUNNING, "", life_span=24 * 3600))
 
 
 class TestJobOutputFormatter:
@@ -942,26 +937,48 @@ class TestJobOutputFormatter:
 
 
 class TestJobTelemetryFormatter:
-    def test_format_telemetry_line_no_gpu(self, rich_cmp: Any) -> None:
-        # NOTE: the timestamp_str encodes the local timezone
-        timestamp = 1_517_248_466.238_723_6
-        telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
-        # Use utc timezone in test for stable constant result
-        rich_cmp(JobTelemetryFormatter(timezone.utc)(telemetry))
+    # Use utc timezone in test for stable constant result
 
-    def test_format_telemetry_line_with_gpu(self, rich_cmp: Any) -> None:
-        # Use utc timezone in test for stable constant result
-        formatter = JobTelemetryFormatter(timezone.utc)
-        # NOTE: the timestamp_str encodes the local timezone
-        timestamp = 1_517_248_466
-        telemetry = JobTelemetry(
-            cpu=0.12345,
-            memory=256.1234,
-            timestamp=timestamp,
-            gpu_duty_cycle=99,
-            gpu_memory=64.5,
-        )
-        rich_cmp(formatter(telemetry))
+    def test_format_telemetry_line_no_gpu(
+        self, rich_cmp: Any, new_console: _NewConsole
+    ) -> None:
+        console = new_console(tty=True, color=True)
+        with JobTelemetryFormatter(console, timezone.utc) as fmt:
+            timestamp = 1_517_248_466.238_723_6
+            telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
+            # Use utc timezone in test for stable constant result
+            fmt.update(telemetry)
+            rich_cmp(console)
+
+    def test_format_telemetry_seq(
+        self, rich_cmp: Any, new_console: _NewConsole
+    ) -> None:
+        console = new_console(tty=True, color=True)
+        with JobTelemetryFormatter(console, timezone.utc) as fmt:
+            timestamp = 1_517_248_466.238_723_6
+            telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
+            fmt.update(telemetry)
+            rich_cmp(console, index=0)
+            timestamp = 1_517_248_467.238_723_6
+            telemetry = JobTelemetry(cpu=0.23456, memory=128.123, timestamp=timestamp)
+            fmt.update(telemetry)
+            rich_cmp(console, index=1)
+
+    def test_format_telemetry_line_with_gpu(
+        self, rich_cmp: Any, new_console: _NewConsole
+    ) -> None:
+        console = new_console(tty=True, color=True)
+        with JobTelemetryFormatter(console, timezone.utc) as fmt:
+            timestamp = 1_517_248_466
+            telemetry = JobTelemetry(
+                cpu=0.12345,
+                memory=256.1234,
+                timestamp=timestamp,
+                gpu_duty_cycle=99,
+                gpu_memory=64.5,
+            )
+            fmt.update(telemetry)
+            rich_cmp(console)
 
 
 class TestJobStatusFormatter:

@@ -529,7 +529,7 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
         },
     )
     status = await root.client.jobs.status(id)
-    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
+    progress = JobStartProgress.create(console=root.console, quiet=root.quiet)
     while status.status == JobStatus.PENDING:
         await asyncio.sleep(0.2)
         status = await root.client.jobs.status(id)
@@ -742,18 +742,13 @@ async def top(root: Root, job: str, timeout: float) -> None:
     """
     Display GPU/CPU/Memory usage.
     """
-    formatter = JobTelemetryFormatter()
-    id = await resolve_job(
-        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
-    )
-    print_header = True
-    async with async_timeout.timeout(timeout if timeout else None):
-        async for res in root.client.jobs.top(id):
-            if print_header:
-                click.echo(formatter.header())
-                print_header = False
-            line = formatter(res)
-            click.echo(f"\r{line}", nl=False)
+    with JobTelemetryFormatter(root.console) as formatter:
+        id = await resolve_job(
+            job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
+        )
+        async with async_timeout.timeout(timeout if timeout else None):
+            async for res in root.client.jobs.top(id):
+                formatter.update(res)
 
 
 @command()
@@ -1226,13 +1221,15 @@ async def run_job(
         life_span=job_life_span,
         schedule_timeout=job_schedule_timeout,
     )
-    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
+    progress = JobStartProgress.create(console=root.console, quiet=root.quiet)
     progress.begin(job)
-    while wait_start and job.status == JobStatus.PENDING:
-        await asyncio.sleep(0.2)
-        job = await root.client.jobs.status(job.id)
-        progress.step(job)
-    progress.end(job)
+    try:
+        while wait_start and job.status == JobStatus.PENDING:
+            await asyncio.sleep(0.2)
+            job = await root.client.jobs.status(job.id)
+            progress.step(job)
+    finally:
+        progress.end(job)
     # Even if we detached, but the job has failed to start
     # (most common reason - no resources), the command fails
     if job.status == JobStatus.FAILED:

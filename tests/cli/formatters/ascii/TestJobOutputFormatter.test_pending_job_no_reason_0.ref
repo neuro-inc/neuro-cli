@@ -2,7 +2,7 @@ Job          test-job
  Owner        owner                            
  Cluster      default                          
  Description  test job description             
- Status       pending                   
+ Status       pending                          
  Image        test-image                       
  Command      test-command                     
  Resources     Memory  16.0M                   

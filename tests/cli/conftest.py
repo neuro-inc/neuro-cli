@@ -174,7 +174,7 @@ class RichComparator:
 
         if ref in self._checked_refs:
             pytest.fail(
-                "{self.rel(ref)} is already checked. "
+                f"{self.rel(ref)} is already checked. "
                 "Hint: use index when generating refs automatically"
             )
         else:
