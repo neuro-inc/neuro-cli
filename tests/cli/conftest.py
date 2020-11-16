@@ -153,11 +153,27 @@ class RichComparator:
 
     def mkref(self, request: Any, index: Optional[int]) -> Path:
         folder = Path(request.fspath).parent
-        basename = request.node.name
+        basename = request.function.__qualname__
+        if hasattr(request.node, "callspec"):
+            parametrize_id = request.node.callspec.id
+            # Some characters are forbidden in FS path (on Windows)
+            bad_to_good = {
+                "/": "#forward_slash#",
+                "\\": "#back_slash#",
+                "<": "#less#",
+                ">": "#more#",
+                ":": "#colon#",
+                '"': "#double_qoute#",
+                "|": "#vertical_bar#",
+                "?": "#question_mark#",
+                "*": "#star#",
+            }
+            for bad, good in bad_to_good.items():
+                parametrize_id = parametrize_id.replace(bad, good)
+            # On windows, some characters are forbidden
+            basename += f"[{parametrize_id}]"
         if index is not None:
             basename += "_" + str(index)
-        if request.cls:
-            basename = f"{request.cls.__name__}.{basename}"
         basename += ".ref"
         return folder / "ascii" / basename
 
