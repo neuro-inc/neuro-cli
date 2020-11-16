@@ -53,7 +53,13 @@ from neuromation.api import (
     get as api_get,
     login_with_token,
 )
-from neuromation.api.utils import asynccontextmanager
+
+
+if sys.version_info >= (3, 7):  # pragma: no cover
+    from contextlib import asynccontextmanager
+else:
+    from async_generator import asynccontextmanager
+
 from neuromation.cli.asyncio_utils import run
 from neuromation.cli.utils import resolve_job
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
