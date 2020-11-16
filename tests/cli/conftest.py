@@ -153,9 +153,11 @@ class RichComparator:
 
     def mkref(self, request: Any, index: Optional[int]) -> Path:
         folder = Path(request.fspath).parent
-        basename = request.function.__qualname__
+        basename = request.node.name
         if index is not None:
             basename += "_" + str(index)
+        if request.cls:
+            basename = f"{request.cls.__name__}.{basename}"
         basename += ".ref"
         return folder / "ascii" / basename
 
@@ -349,3 +351,28 @@ def rich_cmp(request: Any) -> Callable[..., None]:
             plugin.check_io(ref, file)
 
     return comparator
+
+
+NewConsole = Callable[..., Console]
+
+
+@pytest.fixture
+def new_console() -> NewConsole:
+    def factory(*, tty: bool, color: bool = True) -> Console:
+        file = io.StringIO()
+        # console doesn't accept the time source,
+        # using the real time in tests is not reliable
+        return Console(
+            file=file,
+            width=160,
+            height=24,
+            force_terminal=tty,
+            color_system="auto" if color else None,
+            record=True,
+            highlighter=None,
+            legacy_windows=False,
+            log_path=False,
+            log_time=False,
+        )
+
+    return factory

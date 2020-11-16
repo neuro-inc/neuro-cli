@@ -5,6 +5,8 @@ from itertools import chain
 from typing import List, Optional, Sequence, Tuple, Union, cast
 
 import click
+from rich.markup import escape as rich_escape
+from rich.text import Text
 from yarl import URL
 
 from neuromation.api import FileStatusType, IllegalArgumentError, ResourceNotFound
@@ -25,7 +27,6 @@ from .utils import (
     command,
     group,
     option,
-    pager_maybe,
     parse_blob_or_file_resource,
     parse_blob_resource,
 )
@@ -94,16 +95,16 @@ async def ls(
     if not uris:
         # List Buckets instead of blobs in bucket
         buckets = await blob_storage.list_buckets()
-        pager_maybe(formatter(buckets), root.tty, root.terminal_size)
+        with root.pager():
+            root.print(formatter(buckets))
     else:
         for uri in uris:
             bucket_name, key = blob_storage._extract_bucket_and_key(uri)
             short_uri = blob_storage.make_url(bucket_name, key)
             if root.verbosity > 0:
-                painter = get_painter(root.color, quote=True)
-                curi = painter.paint(str(short_uri), FileStatusType.DIRECTORY)
-                click.echo(f"List of {curi}:")
-
+                painter = get_painter(root.color)
+                uri_text = painter.paint(str(short_uri), FileStatusType.DIRECTORY)
+                root.print(Text.assemble("List of ", uri_text, ":"))
             try:
                 blobs, prefixes = await blob_storage.list_blobs(
                     bucket_name=bucket_name,
@@ -116,7 +117,8 @@ async def ls(
                 errors = True
             else:
                 items = sorted(items, key=sorter.key())
-                pager_maybe(formatter(items), root.tty, root.terminal_size)
+                with root.pager():
+                    root.print(formatter(items))
 
     if errors:
         sys.exit(EX_OSFILE)
@@ -140,12 +142,12 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
             )
 
         if root.verbosity > 0:
-            painter = get_painter(root.color, quote=True)
-            curi = painter.paint(str(short_uri), FileStatusType.FILE)
-            click.echo(f"Using pattern {curi}:")
+            painter = get_painter(root.color)
+            uri_text = painter.paint(str(short_uri), FileStatusType.FILE)
+            root.print(Text.assemble("Using pattern ", uri_text, ":"))
 
         async for blob in blob_storage.glob_blobs(bucket_name, pattern):
-            click.echo(blob.uri)
+            root.print(rich_escape(str(blob.uri)))
 
 
 @command()
@@ -302,42 +304,39 @@ async def cp(
         assert dst
 
         progress_blob = create_storage_progress(root, show_progress)
-        progress_blob.begin(src, dst)
-
-        try:
-            if src.scheme == "file" and dst.scheme == "blob":
-                if recursive and await _is_dir(root, src):
-                    await root.client.blob_storage.upload_dir(
-                        src,
-                        dst,
-                        filter=file_filter.match,
-                        ignore_file_names=frozenset(ignore_file_names),
-                        progress=progress_blob,
-                    )
+        with progress_blob.begin(src, dst):
+            try:
+                if src.scheme == "file" and dst.scheme == "blob":
+                    if recursive and await _is_dir(root, src):
+                        await root.client.blob_storage.upload_dir(
+                            src,
+                            dst,
+                            filter=file_filter.match,
+                            ignore_file_names=frozenset(ignore_file_names),
+                            progress=progress_blob,
+                        )
+                    else:
+                        await root.client.blob_storage.upload_file(
+                            src, dst, progress=progress_blob
+                        )
+                elif src.scheme == "blob" and dst.scheme == "file":
+                    if recursive and await _is_dir(root, src):
+                        await root.client.blob_storage.download_dir(
+                            src, dst, filter=file_filter.match, progress=progress_blob
+                        )
+                    else:
+                        await root.client.blob_storage.download_file(
+                            src, dst, progress=progress_blob
+                        )
                 else:
-                    await root.client.blob_storage.upload_file(
-                        src, dst, progress=progress_blob
+                    raise RuntimeError(
+                        f"Copy operation of the file with scheme '{src.scheme}'"
+                        f" to the file with scheme '{dst.scheme}'"
+                        f" is not supported"
                     )
-            elif src.scheme == "blob" and dst.scheme == "file":
-                if recursive and await _is_dir(root, src):
-                    await root.client.blob_storage.download_dir(
-                        src, dst, filter=file_filter.match, progress=progress_blob
-                    )
-                else:
-                    await root.client.blob_storage.download_file(
-                        src, dst, progress=progress_blob
-                    )
-            else:
-                raise RuntimeError(
-                    f"Copy operation of the file with scheme '{src.scheme}'"
-                    f" to the file with scheme '{dst.scheme}'"
-                    f" is not supported"
-                )
-        except (OSError, ResourceNotFound, IllegalArgumentError) as error:
-            log.error(f"cannot copy {src} to {dst}: {error}")
-            errors = True
-
-        progress_blob.end()
+            except (OSError, ResourceNotFound, IllegalArgumentError) as error:
+                log.error(f"cannot copy {src} to {dst}: {error}")
+                errors = True
 
     if errors:
         sys.exit(EX_OSFILE)
@@ -360,9 +359,9 @@ async def _expand(
     for path in paths:
         uri = parse_blob_or_file_resource(path, root)
         if root.verbosity > 0:
-            painter = get_painter(root.color, quote=True)
-            curi = painter.paint(str(uri), FileStatusType.FILE)
-            click.echo(f"Expand {curi}")
+            painter = get_painter(root.color)
+            uri_text = painter.paint(str(uri), FileStatusType.FILE)
+            root.print(Text.assemble("Expand", uri_text))
         uri_path = str(_extract_path(uri))
         if glob and globmodule.has_magic(uri_path):
             if uri.scheme == "blob":

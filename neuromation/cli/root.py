@@ -58,7 +58,7 @@ class MaybePager(Pager):
             os.environ["LESS"] = "-R"
             click.echo_via_pager(content)
         else:
-            print(content)
+            print(content, end="")
 
 
 @dataclass
@@ -85,6 +85,13 @@ class Root:
         self._runner = Runner(debug=self.verbosity >= 2)
         self._runner.__enter__()
         self.console = Console(
+            color_system="auto" if self.color else None,
+            force_terminal=self.tty,
+            highlight=False,
+            log_path=False,
+        )
+        self.err_console = Console(
+            file=sys.stderr,
             color_system="auto" if self.color else None,
             force_terminal=self.tty,
             highlight=False,
@@ -283,5 +290,8 @@ class Root:
     def pager(self) -> PagerContext:
         return self.console.pager(MaybePager(self.console), styles=True, links=True)
 
-    def print(self, *objects: Any, **kwargs: Any) -> None:
-        self.console.print(*objects, **kwargs)
+    def print(self, *objects: Any, err: bool = False, **kwargs: Any) -> None:
+        if err:
+            self.err_console.print(*objects, **kwargs)
+        else:
+            self.console.print(*objects, **kwargs)
