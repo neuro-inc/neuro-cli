@@ -106,6 +106,10 @@ def test_progress_factory_percent(make_root: _MakeRoot) -> None:
     progress.end()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Windows does not supports UNIX-like permissions",
+)
 @pytest.mark.parametrize(
     "color,tty,verbose,show_progress",
     product((False, True), repeat=4),
@@ -153,6 +157,10 @@ def test_progress(
     rich_cmp(root.console, index=7)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Windows does not supports UNIX-like permissions",
+)
 @pytest.mark.parametrize(
     "color,tty,verbose,show_progress",
     product((False, True), repeat=4),
@@ -178,6 +186,10 @@ def test_fail(
     rich_cmp(root.console, index=2)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Windows does not supports UNIX-like permissions",
+)
 @pytest.mark.parametrize(
     "color,tty,verbose,show_progress",
     product((False, True), repeat=4),
