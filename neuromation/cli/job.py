@@ -271,7 +271,7 @@ def job() -> None:
     help="Upload neuro config to the job",
 )
 @option(
-    "--wait-for-job-quota/--no-wait-for-job-quota",
+    "--wait-for-seat/--no-wait-for-seat",
     default=False,
     show_default=True,
     help="Wait for total running jobs quota",
@@ -318,7 +318,7 @@ async def submit(
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
-    wait_for_jobs_quota: bool,
+    wait_for_seat: bool,
     browse: bool,
     detach: bool,
     tty: Optional[bool],
@@ -371,7 +371,7 @@ async def submit(
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
-        wait_for_jobs_quota=wait_for_jobs_quota,
+        wait_for_jobs_quota=wait_for_seat,
         browse=browse,
         detach=detach,
         tty=tty,
@@ -981,7 +981,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Upload neuro config to the job",
 )
 @option(
-    "--wait-for-jobs-quota/--no-wait-for-jobs-quota",
+    "--wait-for-seat/--no-wait-for-seat",
     default=False,
     show_default=True,
     help="Wait for total running jobs quota",
@@ -1022,7 +1022,7 @@ async def run(
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
-    wait_for_jobs_quota: bool,
+    wait_for_seat: bool,
     port_forward: List[Tuple[int, int]],
     browse: bool,
     detach: bool,
@@ -1086,7 +1086,7 @@ async def run(
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
-        wait_for_jobs_quota=wait_for_jobs_quota,
+        wait_for_jobs_quota=wait_for_seat,
         browse=browse,
         detach=detach,
         tty=tty,
