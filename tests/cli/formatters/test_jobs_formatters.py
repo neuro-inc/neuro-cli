@@ -1,5 +1,6 @@
 import io
 import itertools
+import sys
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Optional
 
@@ -211,6 +212,9 @@ class TestJobStartProgress:
             progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
             rich_cmp(console)
 
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="On Windows spinner uses another characters set"
+    )
     def test_tty_step(
         self, rich_cmp: Any, new_console: _NewConsole, monkeypatch: Any
     ) -> None:
