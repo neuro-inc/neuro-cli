@@ -123,6 +123,7 @@ class TestJobStartProgress:
         *,
         name: Optional[str] = None,
         life_span: Optional[float] = None,
+        description: str = "ErrorDesc",
     ) -> JobDescription:
         return JobDescription(
             name=name,
@@ -136,7 +137,7 @@ class TestJobStartProgress:
             history=JobStatusHistory(
                 status=status,
                 reason=reason,
-                description="ErrorDesc",
+                description=description,
                 restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -218,9 +219,9 @@ class TestJobStartProgress:
         )
         console = new_console(tty=True, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
-            progress.step(self.make_job(JobStatus.PENDING, ""))
-            progress.step(self.make_job(JobStatus.PENDING, ""))
-            progress.step(self.make_job(JobStatus.RUNNING, "reason"))
+            progress.step(self.make_job(JobStatus.PENDING, "Pulling", description=""))
+            progress.step(self.make_job(JobStatus.PENDING, "Pulling", description=""))
+            progress.step(self.make_job(JobStatus.RUNNING, "reason", description=""))
             rich_cmp(console)
 
     def test_tty_end(self, rich_cmp: Any, new_console: _NewConsole) -> None:
