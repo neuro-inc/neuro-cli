@@ -49,7 +49,13 @@ from .url_utils import (
     normalize_secret_uri,
     normalize_storage_path_uri,
 )
-from .utils import NoPublicConstructor, asynccontextmanager
+from .utils import NoPublicConstructor
+
+
+if sys.version_info >= (3, 7):  # pragma: no cover
+    from contextlib import asynccontextmanager
+else:
+    from async_generator import asynccontextmanager
 
 
 log = logging.getLogger(__name__)

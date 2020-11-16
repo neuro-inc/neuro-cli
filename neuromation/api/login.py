@@ -4,6 +4,7 @@ import base64
 import errno
 import hashlib
 import secrets
+import sys
 import time
 from dataclasses import dataclass, field
 from typing import (
@@ -36,7 +37,12 @@ from jose import JWTError, jwt
 from yarl import URL
 
 from .errors import AuthException
-from .utils import asynccontextmanager
+
+
+if sys.version_info >= (3, 7):  # pragma: no cover
+    from contextlib import asynccontextmanager
+else:
+    from async_generator import asynccontextmanager
 
 
 def urlsafe_unpadded_b64encode(payload: bytes) -> str:
