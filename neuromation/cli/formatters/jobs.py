@@ -2,27 +2,25 @@ import abc
 import datetime
 import itertools
 import sys
-import textwrap
 import time
 from dataclasses import dataclass
-from typing import Iterable, Iterator, List, Optional
+from types import TracebackType
+from typing import Iterable, List, Optional, Tuple, Type
 
 import humanize
-from click import secho, style, unstyle
+from rich import box
+from rich.console import Console, ConsoleRenderable, RenderableType, RenderHook
+from rich.control import Control
+from rich.live_render import LiveRender
+from rich.styled import Styled
+from rich.table import Table
+from rich.text import Text
 
-from neuromation.api import (
-    JobDescription,
-    JobRestartPolicy,
-    JobStatus,
-    JobTelemetry,
-    Resources,
-)
+from neuromation.api import JobDescription, JobRestartPolicy, JobStatus, JobTelemetry
 from neuromation.cli.parse_utils import JobColumnInfo
-from neuromation.cli.printer import StreamPrinter, TTYPrinter
 from neuromation.cli.utils import format_size
 
-from .ftable import table
-from .utils import ImageFormatter, URIFormatter, image_formatter
+from .utils import ImageFormatter, URIFormatter, image_formatter, no, yes
 
 
 COLORS = {
@@ -42,12 +40,9 @@ else:
     SPINNER = itertools.cycle("◢◣◤◥")
 
 
-def bold(text: str) -> str:
-    return style(text, bold=True)
-
-
-def format_job_status(status: JobStatus) -> str:
-    return style(status.value, fg=COLORS.get(status, "reset"))
+def fmt_status(status: JobStatus) -> str:
+    color = COLORS.get(status, "none")
+    return f"[{color}]{status.value}[/{color}]"
 
 
 def format_timedelta(delta: datetime.timedelta) -> str:
@@ -71,115 +66,142 @@ def format_timedelta(delta: datetime.timedelta) -> str:
 
 
 class JobStatusFormatter:
-    def __init__(self, uri_formatter: URIFormatter, width: int = 0) -> None:
+    def __init__(self, uri_formatter: URIFormatter) -> None:
         self._format_uri = uri_formatter
-        self._width = width
         self._format_image = image_formatter(uri_formatter=uri_formatter)
 
-    def __call__(self, job_status: JobDescription) -> str:
+    def __call__(self, job_status: JobDescription) -> RenderableType:
         assert job_status.history is not None
-        lines = []
 
-        def add(descr: str, value: str) -> None:
-            lines.append(f"{bold(descr)}: {value}")
-
-        add("Job", job_status.id)
+        table = Table(box=None, show_header=False, show_edge=False)
+        table.add_column()
+        table.add_column(style="bold")
+        table.add_row("Job", job_status.id)
         if job_status.name:
-            add("Name", job_status.name)
+            table.add_row("Name", job_status.name)
         if job_status.tags:
             text = ", ".join(job_status.tags)
-            indent = len("Tags: ")
-            if self._width > indent:
-                width = self._width - indent
-                text = textwrap.fill(
-                    text, width=width, break_long_words=False, break_on_hyphens=False
-                )
-                if "\n" in text:
-                    text = textwrap.indent(text, " " * indent).lstrip()
-            add("Tags", text)
-        add("Owner", job_status.owner or "")
-        add("Cluster", job_status.cluster_name)
+            table.add_row("Tags", text)
+        table.add_row("Owner", job_status.owner or "")
+        table.add_row("Cluster", job_status.cluster_name)
         if job_status.description:
-            add("Description", job_status.description)
-        status_str = format_job_status(job_status.status)
+            table.add_row("Description", job_status.description)
+        status_str = fmt_status(job_status.status)
         if job_status.history.reason and job_status.status in [
             JobStatus.FAILED,
             JobStatus.PENDING,
         ]:
             status_str += f" ({job_status.history.reason})"
-        add("Status", status_str)
-        add("Image", self._format_image(job_status.container.image))
+        table.add_row("Status", status_str)
+        table.add_row("Image", self._format_image(job_status.container.image))
 
         if job_status.container.entrypoint:
-            add("Entrypoint", job_status.container.entrypoint)
+            table.add_row("Entrypoint", job_status.container.entrypoint)
         if job_status.container.command:
-            add("Command", job_status.container.command)
+            table.add_row("Command", job_status.container.command)
         if job_status.container.working_dir:
-            add("Working dir", job_status.container.working_dir)
-        resource_formatter = ResourcesFormatter()
-        lines.append(resource_formatter(job_status.container.resources))
-        if job_status.is_preemptible:
-            add("Preemptible", "True")
-        if job_status.restart_policy != JobRestartPolicy.NEVER:
-            add("Restart policy", job_status.restart_policy)
-            add("Restarts", str(job_status.history.restarts))
-        if job_status.life_span is not None:
-            add("Life span", format_life_span(job_status.life_span))
+            table.add_row("Working dir", job_status.container.working_dir)
 
-        add("TTY", str(job_status.container.tty))
+        resources = Table(box=None, show_header=False, show_edge=False)
+        resources.add_column()
+        resources.add_column(style="bold", justify="right")
+        resources.add_row(
+            "Memory", format_size(job_status.container.resources.memory_mb * 1024 ** 2)
+        )
+        resources.add_row("CPU", f"{job_status.container.resources.cpu:0.1f}")
+        if job_status.container.resources.gpu:
+            resources.add_row(
+                "GPU",
+                f"{job_status.container.resources.gpu:0.1f} x "
+                f"{job_status.container.resources.gpu_model}",
+            )
+
+        if job_status.container.resources.tpu_type:
+            resources.add_row(
+                "TPU",
+                f"{job_status.container.resources.tpu_type}/"
+                "{job_status.container.resources.tpu_software_version}",
+            )
+
+        if job_status.container.resources.shm:
+            resources.add_row("Extended SHM space", "True")
+
+        table.add_row("Resources", Styled(resources, style="reset"))
+
+        if job_status.is_preemptible:
+            table.add_row("Preemptible", "True")
+        if job_status.restart_policy != JobRestartPolicy.NEVER:
+            table.add_row("Restart policy", job_status.restart_policy.value)
+            table.add_row("Restarts", str(job_status.history.restarts))
+        if job_status.life_span is not None:
+            table.add_row("Life span", format_life_span(job_status.life_span))
+
+        table.add_row("TTY", str(job_status.container.tty))
 
         if job_status.container.volumes:
-            rows = [
-                (
+            volumes = Table(box=None, show_header=False, show_edge=False)
+            volumes.add_column("")
+            volumes.add_column("")
+            volumes.add_column("")
+            for volume in job_status.container.volumes:
+                volumes.add_row(
                     volume.container_path,
                     self._format_uri(volume.storage_uri),
                     "READONLY" if volume.read_only else " ",
                 )
-                for volume in job_status.container.volumes
-            ]
-            lines.append(f"{bold('Volumes')}:")
-            lines.extend(f"  {i}" for i in table(rows))
+            table.add_row("Volumes", Styled(volumes, style="reset"))
 
         if job_status.container.secret_files:
-            rows2 = [
-                (secret_file.container_path, self._format_uri(secret_file.secret_uri))
-                for secret_file in job_status.container.secret_files
-            ]
-            lines.append(f"{bold('Secret files')}:")
-            lines.extend(f"  {i}" for i in table(rows2))
+            secret_files = Table(box=None, show_header=False, show_edge=False)
+            secret_files.add_column("")
+            secret_files.add_column("")
+            for secret_file in job_status.container.secret_files:
+                secret_files.add_row(
+                    secret_file.container_path, self._format_uri(secret_file.secret_uri)
+                )
+            table.add_row("Secret files", Styled(secret_files, style="reset"))
 
         if job_status.container.disk_volumes:
-            rows3 = [
-                (
+            disk_volumes = Table(box=None, show_header=False, show_edge=False)
+            disk_volumes.add_column("")
+            disk_volumes.add_column("")
+            disk_volumes.add_column("")
+            for disk_volume in job_status.container.disk_volumes:
+                disk_volumes.add_row(
                     disk_volume.container_path,
                     self._format_uri(disk_volume.disk_uri),
                     "READONLY" if disk_volume.read_only else " ",
                 )
-                for disk_volume in job_status.container.disk_volumes
-            ]
-            lines.append(f"{bold('Disk volumes')}:")
-            lines.extend(f"  {i}" for i in table(rows3))
+            table.add_row("Disk volumes", Styled(disk_volumes, style="reset"))
 
         if job_status.internal_hostname:
-            add("Internal Hostname", job_status.internal_hostname)
+            table.add_row("Internal Hostname", job_status.internal_hostname)
         if job_status.internal_hostname_named:
-            add("Internal Hostname Named", job_status.internal_hostname_named)
+            table.add_row("Internal Hostname Named", job_status.internal_hostname_named)
         if job_status.http_url:
-            add("Http URL", str(job_status.http_url))
+            table.add_row("Http URL", str(job_status.http_url))
         if job_status.container.http:
-            add("Http port", str(job_status.container.http.port))
-            add("Http authentication", str(job_status.container.http.requires_auth))
+            table.add_row("Http port", str(job_status.container.http.port))
+            table.add_row(
+                "Http authentication", str(job_status.container.http.requires_auth)
+            )
         if job_status.container.env:
-            lines.append(f"{bold('Environment')}:")
+            environment = Table(box=None, show_header=False, show_edge=False)
+            environment.add_column("")
+            environment.add_column("")
             for key, value in job_status.container.env.items():
-                lines.append(f"  {key}={value}")
+                environment.add_row(key, value)
+            table.add_row("Environment", Styled(environment, style="reset"))
         if job_status.container.secret_env:
-            lines.append(f"{bold('Secret environment')}:")
+            secret_env = Table(box=None, show_header=False, show_edge=False)
+            secret_env.add_column("")
+            secret_env.add_column("")
             for key, uri in job_status.container.secret_env.items():
-                lines.append(f"  {key}={self._format_uri(uri)}")
+                secret_env.add_row(key, self._format_uri(uri))
+            table.add_row("Secret environment", Styled(secret_env, style="reset"))
 
         assert job_status.history.created_at is not None
-        add("Created", job_status.history.created_at.isoformat())
+        table.add_row("Created", job_status.history.created_at.isoformat())
         if job_status.status in [
             JobStatus.RUNNING,
             JobStatus.SUSPENDED,
@@ -188,20 +210,18 @@ class JobStatusFormatter:
             JobStatus.CANCELLED,
         ]:
             assert job_status.history.started_at is not None
-            add("Started", job_status.history.started_at.isoformat())
+            table.add_row("Started", job_status.history.started_at.isoformat())
         if job_status.status in [
             JobStatus.CANCELLED,
             JobStatus.FAILED,
             JobStatus.SUCCEEDED,
         ]:
             assert job_status.history.finished_at is not None
-            add("Finished", job_status.history.finished_at.isoformat())
-            add("Exit code", str(job_status.history.exit_code))
+            table.add_row("Finished", job_status.history.finished_at.isoformat())
+            table.add_row("Exit code", str(job_status.history.exit_code))
         if job_status.status == JobStatus.FAILED and job_status.history.description:
-            lines.append(bold("=== Description ==="))
-            lines.append(job_status.history.description)
-            lines.append("===================")
-        return "\n".join(lines)
+            table.add_row("Description", job_status.history.description)
+        return table
 
 
 def format_life_span(life_span: Optional[float]) -> str:
@@ -223,60 +243,81 @@ def format_datetime(when: Optional[datetime.datetime]) -> str:
         return humanize.naturaldate(when.astimezone())
 
 
-class JobTelemetryFormatter:
-    def __init__(self) -> None:
-        self.col_len = {
-            "timestamp": 24,
-            "cpu": 15,
-            "memory": 15,
-            "gpu": 15,
-            "gpu_memory": 15,
-        }
+class JobTelemetryFormatter(RenderHook):
+    def __init__(
+        self, console: Console, tz: Optional[datetime.timezone] = None
+    ) -> None:
+        self._tz = tz
+        self._console = console
+        self._live_render = LiveRender(Table.grid())
 
     def _format_timestamp(self, timestamp: float) -> str:
         # NOTE: ctime returns time wrt timezone
-        return str(time.ctime(timestamp))
+        dt = datetime.datetime.fromtimestamp(timestamp, tz=self._tz)
+        return dt.ctime()
 
-    def header(self) -> str:
-        return "\t".join(
-            [
-                "TIMESTAMP".ljust(self.col_len["timestamp"]),
-                "CPU".ljust(self.col_len["cpu"]),
-                "MEMORY (MB)".ljust(self.col_len["memory"]),
-                "GPU (%)".ljust(self.col_len["gpu"]),
-                "GPU_MEMORY (MB)".ljust(self.col_len["gpu_memory"]),
-            ]
-        )
-
-    def __call__(self, info: JobTelemetry) -> str:
+    def update(self, info: JobTelemetry) -> None:
         timestamp = self._format_timestamp(info.timestamp)
+        table = Table(box=box.SIMPLE_HEAVY)
+        table.add_column("TIMESTAMP", justify="right", width=24)
+        table.add_column("CPU", justify="right", width=15)
+        table.add_column("MEMORY (MB)", justify="right", width=15)
+        table.add_column("GPU (%)", justify="right", width=15)
+        table.add_column("GPU_MEMORY (MB)", justify="right", width=15)
+
         cpu = f"{info.cpu:.3f}"
         mem = f"{info.memory:.3f}"
         gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "0"
         gpu_mem = f"{info.gpu_memory:.3f}" if info.gpu_memory else "0"
-        return "\t".join(
-            [
-                timestamp.ljust(self.col_len["timestamp"]),
-                cpu.ljust(self.col_len["cpu"]),
-                mem.ljust(self.col_len["memory"]),
-                gpu.ljust(self.col_len["gpu"]),
-                gpu_mem.ljust(self.col_len["gpu_memory"]),
+        table.add_row(timestamp, cpu, mem, gpu, gpu_mem)
+        if self._console.is_terminal:
+            self._live_render.set_renderable(table)
+            with self._console:
+                self._console.print(Control(""))
+        else:
+            self._console.print(table)
+
+    def process_renderables(
+        self, renderables: List[ConsoleRenderable]
+    ) -> List[ConsoleRenderable]:
+        """Process renderables to restore cursor and display progress."""
+        if self._console.is_terminal:
+            renderables = [
+                self._live_render.position_cursor(),
+                *renderables,
+                self._live_render,
             ]
-        )
+        return renderables
+
+    def __enter__(self) -> "JobTelemetryFormatter":
+        self._console.show_cursor(False)
+        self._console.push_render_hook(self)
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Type[BaseException],
+        exc_val: BaseException,
+        exc_tb: TracebackType,
+    ) -> None:
+        self._console.line()
+        self._console.show_cursor(True)
+        self._console.pop_render_hook()
 
 
 class BaseJobsFormatter:
     @abc.abstractmethod
-    def __call__(
-        self, jobs: Iterable[JobDescription]
-    ) -> Iterator[str]:  # pragma: no cover
+    def __call__(self, jobs: Iterable[JobDescription]) -> RenderableType:
         pass
 
 
 class SimpleJobsFormatter(BaseJobsFormatter):
-    def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
+    def __call__(self, jobs: Iterable[JobDescription]) -> RenderableType:
+        table = Table.grid()
+        table.add_column("")
         for job in jobs:
-            yield job.id
+            table.add_row(job.id)
+        return table
 
 
 @dataclass(frozen=True)
@@ -309,10 +350,10 @@ class TabularJobRow:
             when = job.history.finished_at
         assert when is not None
         return cls(
-            id=bold(job.id),
+            id=job.id,
             name=job.name if job.name else "",
             tags=",".join(job.tags),
-            status=format_job_status(job.status),
+            status=fmt_status(job.status),
             when=format_datetime(when),
             created=format_datetime(job.history.created_at),
             started=format_datetime(job.history.started_at),
@@ -333,69 +374,53 @@ class TabularJobRow:
 class TabularJobsFormatter(BaseJobsFormatter):
     def __init__(
         self,
-        width: int,
         username: str,
         columns: List[JobColumnInfo],
         image_formatter: ImageFormatter,
     ) -> None:
-        self.width = width
         self._username = username
         self._columns = columns
         self._image_formatter = image_formatter
 
-    def __call__(self, jobs: Iterable[JobDescription]) -> Iterator[str]:
-        rows: List[List[str]] = []
-        rows.append([bold(column.title) for column in self._columns])
+    def __call__(self, jobs: Iterable[JobDescription]) -> RenderableType:
+        table = Table(box=box.SIMPLE_HEAVY)
+        column = self._columns[0]
+        table.add_column(
+            column.title,
+            style="bold",
+            justify=column.justify,
+            width=column.width,
+            min_width=column.min_width,
+            max_width=column.max_width,
+        )
+        for column in self._columns[1:]:
+            table.add_column(
+                column.title,
+                justify=column.justify,
+                width=column.width,
+                min_width=column.min_width,
+                max_width=column.max_width,
+            )
+
         for job in jobs:
-            rows.append(
-                TabularJobRow.from_job(
+            table.add_row(
+                *TabularJobRow.from_job(
                     job, self._username, image_formatter=self._image_formatter
                 ).to_list(self._columns)
             )
-        yield from table(
-            rows,
-            widths=[column.width for column in self._columns],
-            aligns=[column.align for column in self._columns],
-            max_width=self.width if self.width else None,
-        )
-
-
-class ResourcesFormatter:
-    def __call__(self, resources: Resources) -> str:
-        lines = []
-
-        def add(descr: str, value: str) -> None:
-            lines.append(f"{bold(descr)}: {value}")
-
-        add("Memory", format_size(resources.memory_mb * 1024 ** 2))
-        add("CPU", f"{resources.cpu:0.1f}")
-        if resources.gpu:
-            add("GPU", f"{resources.gpu:0.1f} x {resources.gpu_model}")
-
-        if resources.tpu_type:
-            add("TPU", f"{resources.tpu_type}/{resources.tpu_software_version}")
-
-        additional = []
-        if resources.shm:
-            additional.append("Extended SHM space")
-
-        if additional:
-            add("Additional", ",".join(additional))
-
-        indent = "  "
-        return f"{bold('Resources')}:\n" + indent + f"\n{indent}".join(lines)
+        return table
 
 
 class JobStartProgress:
     time_factory = staticmethod(time.monotonic)
 
     @classmethod
-    def create(cls, tty: bool, color: bool, quiet: bool) -> "JobStartProgress":
+    def create(cls, console: Console, quiet: bool) -> "JobStartProgress":
         if quiet:
             return JobStartProgress()
-        elif tty:
-            return DetailedJobStartProgress(color)
-        return StreamJobStartProgress()
+        elif console.is_terminal:
+            return DetailedJobStartProgress(console)
+        return StreamJobStartProgress(console)
 
     def begin(self, job: JobDescription) -> None:
         # Quiet mode
@@ -420,54 +445,60 @@ class JobStartProgress:
             return f"({description})"
         return ""
 
+    def __enter__(self) -> "JobStartProgress":
+        return self
 
-class DetailedJobStartProgress(JobStartProgress):
-    def __init__(self, color: bool):
+    def __exit__(
+        self,
+        exc_type: Type[BaseException],
+        exc_val: BaseException,
+        exc_tb: TracebackType,
+    ) -> None:
+        pass
+
+
+class DetailedJobStartProgress(JobStartProgress, RenderHook):
+    def __init__(self, console: Console) -> None:
         self._time = self.time_factory()
-        self._color = color
         self._prev = ""
+        self._console = console
         self._spinner = SPINNER
-        self._printer = TTYPrinter()
-        self._lineno = 0
+        self._live_render = LiveRender(Text())
 
     def begin(self, job: JobDescription) -> None:
-        self._printer.print(style("√ ", fg="green") + bold("Job ID") + f": {job.id} ")
+        self._console.print(f"{yes()} [b]Job ID[/b]: {job.id}")
         if job.name:
-            self._printer.print(
-                style("√ ", fg="green") + bold("Name") + f": {job.name}"
-            )
+            self._console.print(f"{yes()} [b]Name[/b]: {job.name}")
 
     def step(self, job: JobDescription) -> None:
         new_time = self.time_factory()
         dt = new_time - self._time
-        msg = "Status: " + format_job_status(job.status)
+        msg = "Status: " + fmt_status(job.status)
         reason = self._get_status_reason_message(job)
         if reason:
-            msg += " " + bold(reason)
+            msg += f" [b]{reason}[/b]"
         description = self._get_status_description_message(job)
         if description:
             msg += " " + description
 
         if job.status == JobStatus.PENDING:
-            msg = style("- ", fg="yellow") + msg
+            msg = f"[yellow]-[/yellow] {msg}"
         elif job.status == JobStatus.FAILED:
-            msg = style("× ", fg="red") + msg
+            msg = f"{no()} {msg}"
         else:
             # RUNNING or SUCCEDED
-            msg = style("√ ", fg="green") + msg
+            msg = f"{yes()} {msg}"
 
-        if not self._color:
-            msg = unstyle(msg)
         if msg != self._prev:
             if self._prev:
-                self._printer.print(self._prev, lineno=self._lineno)
+                self._console.print(self._prev)
             self._prev = msg
-            self._lineno = self._printer.total_lines
-            self._printer.print(msg)
         else:
-            self._printer.print(
-                f"{msg} {next(self._spinner)} [{dt:.1f} sec]", lineno=self._lineno
-            )
+            msg = f"{msg} {next(self._spinner)} [{dt:.1f} sec]"
+
+        self._live_render.set_renderable(Text.from_markup(msg))
+        with self._console:
+            self._console.print(Control(""))
 
     def end(self, job: JobDescription) -> None:
         out = []
@@ -475,29 +506,52 @@ class DetailedJobStartProgress(JobStartProgress):
         if job.status != JobStatus.FAILED:
             http_url = job.http_url
             if http_url:
-                out.append(style("√ ", fg="green") + bold("Http URL") + f": {http_url}")
+                out.append(f"{yes()} [b]Http URL[/b]: {http_url}")
             if job.life_span:
                 limit = humanize.naturaldelta(datetime.timedelta(seconds=job.life_span))
                 out.append(
-                    style("√ ", fg="green")
-                    + style(
-                        f"The job will die in {limit}. ",
-                        fg="yellow",
-                    )
-                    + "See --life-span option documentation for details.",
+                    f"{yes()} [yellow]The job will die in {limit}.[/yellow] "
+                    "See --life-span option documentation for details.",
                 )
-            self._printer.print("\n".join(out))
+            self._console.print("\n".join(out))
+
+    def process_renderables(
+        self, renderables: List[ConsoleRenderable]
+    ) -> List[ConsoleRenderable]:
+        """Process renderables to restore cursor and display progress."""
+        if self._console.is_terminal:
+            renderables = [
+                self._live_render.position_cursor(),
+                *renderables,
+                self._live_render,
+            ]
+        return renderables
+
+    def __enter__(self) -> "JobStartProgress":
+        self._console.show_cursor(False)
+        self._console.push_render_hook(self)
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Type[BaseException],
+        exc_val: BaseException,
+        exc_tb: TracebackType,
+    ) -> None:
+        self._console.line()
+        self._console.show_cursor(True)
+        self._console.pop_render_hook()
 
 
 class StreamJobStartProgress(JobStartProgress):
-    def __init__(self) -> None:
-        self._printer = StreamPrinter()
+    def __init__(self, console: Console) -> None:
+        self._console = console
         self._prev = ""
 
     def begin(self, job: JobDescription) -> None:
-        self._printer.print(f"Job ID: {job.id}")
+        self._console.print(f"Job ID: {job.id}")
         if job.name:
-            self._printer.print(f"Name: {job.name}")
+            self._console.print(f"Name: {job.name}")
 
     def step(self, job: JobDescription) -> None:
         msg = f"Status: {job.status}"
@@ -512,10 +566,8 @@ class StreamJobStartProgress(JobStartProgress):
             msg += "\n"
 
         if msg != self._prev:
-            self._printer.print(msg)
+            self._console.print(msg)
             self._prev = msg
-        else:
-            self._printer.tick()
 
     def end(self, job: JobDescription) -> None:
         pass
@@ -526,12 +578,12 @@ class JobStopProgress:
     time_factory = staticmethod(time.monotonic)
 
     @classmethod
-    def create(cls, tty: bool, color: bool, quiet: bool) -> "JobStopProgress":
+    def create(cls, console: Console, quiet: bool) -> "JobStopProgress":
         if quiet:
             return JobStopProgress()
-        elif tty:
-            return DetailedJobStopProgress(color)
-        return StreamJobStopProgress()
+        elif console.is_terminal:
+            return DetailedJobStopProgress(console)
+        return StreamJobStopProgress(console)
 
     def __init__(self) -> None:
         self._time = self.time_factory()
@@ -558,34 +610,53 @@ class JobStopProgress:
     def timeout(self, job: JobDescription) -> None:
         pass
 
+    def __enter__(self) -> "JobStopProgress":
+        return self
 
-class DetailedJobStopProgress(JobStopProgress):
-    def __init__(self, color: bool):
+    def __exit__(
+        self,
+        exc_type: Type[BaseException],
+        exc_val: BaseException,
+        exc_tb: TracebackType,
+    ) -> None:
+        pass
+
+
+class DetailedJobStopProgress(JobStopProgress, RenderHook):
+    def __init__(self, console: Console) -> None:
         super().__init__()
-        self._color = color
+        self._console = console
         self._spinner = SPINNER
-        self._printer = TTYPrinter()
-        self._lineno = 0
+        self._live_render = LiveRender(Text())
+
+    def _hint(self, hints: Iterable[Tuple[str, str]]) -> None:
+        for title, hint in hints:
+            self._console.print(f"[dim][yellow]{title}:")
+            self._console.print(f"[dim]  {hint}")
 
     def detach(self, job: JobDescription) -> None:
-        secho()
-        secho("× Terminal was detached but job is still running", fg="red")
-        secho("Re-attach to job:", dim=True, fg="yellow")
-        secho(f"  neuro attach {job.id}", dim=True)
-        secho("Check job status:", dim=True, fg="yellow")
-        secho(f"  neuro status {job.id}", dim=True)
-        secho("Kill job:", dim=True, fg="yellow")
-        secho(f"  neuro kill {job.id}", dim=True)
-        secho("Fetch job logs:", dim=True, fg="yellow")
-        secho(f"  neuro logs {job.id}", dim=True)
+        self._console.line()
+        self._console.print(
+            f"{no()} [red]Terminal was detached but job is still running"
+        )
+        self._hint(
+            [
+                ("Re-attach to job", f"neuro attach {job.id}"),
+                ("Check job status", f"neuro status {job.id}"),
+                ("Kill job", f"neuro attach {job.id}"),
+                ("Fetch job logs", f"neuro logs {job.id}"),
+            ]
+        )
 
     def kill(self, job: JobDescription) -> None:
-        secho()
-        secho("× Job was killed", fg="red")
-        secho("Get job status:", dim=True, fg="yellow")
-        secho(f"  neuro status {job.id}", dim=True)
-        secho("Fetch job logs:", dim=True, fg="yellow")
-        secho(f"  neuro logs {job.id}", dim=True)
+        self._console.line()
+        self._console.print(f"{no()} [red]Job was killed")
+        self._hint(
+            [
+                ("Get job status", f"neuro status {job.id}"),
+                ("Fetch job logs", f"neuro logs {job.id}"),
+            ]
+        )
 
     def tick(self, job: JobDescription) -> None:
         new_time = self.time_factory()
@@ -593,51 +664,77 @@ class DetailedJobStopProgress(JobStopProgress):
 
         if job.status == JobStatus.RUNNING:
             msg = (
-                style("-", fg="yellow")
+                "[yellow]-[/yellow]"
                 + f" Wait for stop {next(self._spinner)} [{dt:.1f} sec]"
             )
         else:
-            msg = style("√", fg="green") + " Stopped"
+            msg = yes() + " Stopped"
 
-        if not self._color:
-            msg = unstyle(msg)
-        self._printer.print(
-            msg,
-            lineno=self._lineno,
-        )
+        self._live_render.set_renderable(Text.from_markup(msg))
+        with self._console:
+            self._console.print(Control(""))
 
     def timeout(self, job: JobDescription) -> None:
-        secho()
-        secho("× Warning !!!", fg="red")
-        secho(
-            "× The attached session was disconnected but the job is still alive.",
-            fg="red",
+        self._console.line()
+        self._console.print("[red]× Warning !!!")
+        self._console.print(
+            f"{no()} [red]"
+            "The attached session was disconnected but the job is still alive.",
         )
-        secho("Reconnect to the job:", dim=True, fg="yellow")
-        secho(f"  neuro attach {job.id}", dim=True)
-        secho("Terminate the job:", dim=True, fg="yellow")
-        secho(f"  neuro kill {job.id}", dim=True)
+        self._hint(
+            [
+                ("Reconnect to the job", f"neuro attach {job.id}"),
+                ("Terminate the job", f"neuro kill {job.id}"),
+            ]
+        )
+
+    def process_renderables(
+        self, renderables: List[ConsoleRenderable]
+    ) -> List[ConsoleRenderable]:
+        """Process renderables to restore cursor and display progress."""
+        if self._console.is_terminal:
+            renderables = [
+                self._live_render.position_cursor(),
+                *renderables,
+                self._live_render,
+            ]
+        return renderables
+
+    def __enter__(self) -> "JobStopProgress":
+        self._console.show_cursor(False)
+        self._console.push_render_hook(self)
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Type[BaseException],
+        exc_val: BaseException,
+        exc_tb: TracebackType,
+    ) -> None:
+        self._console.line()
+        self._console.show_cursor(True)
+        self._console.pop_render_hook()
 
 
 class StreamJobStopProgress(JobStopProgress):
-    def __init__(self) -> None:
+    def __init__(self, console: Console) -> None:
         super().__init__()
-        self._printer = StreamPrinter()
-        self._printer.print("Wait for stopping")
+        self._console = console
+        self._console.print("Wait for stopping")
 
     def detach(self, job: JobDescription) -> None:
         pass
 
     def kill(self, job: JobDescription) -> None:
-        self._printer.print("Job was killed")
+        self._console.print("Job was killed")
 
     def tick(self, job: JobDescription) -> None:
-        self._printer.tick()
+        pass
 
     def timeout(self, job: JobDescription) -> None:
-        self._printer.print("")
-        self._printer.print("Warning !!!")
-        self._printer.print(
+        self._console.print("")
+        self._console.print("Warning !!!")
+        self._console.print(
             "The attached session was disconnected but the job is still alive."
         )
 
@@ -647,12 +744,12 @@ class ExecStopProgress:
     time_factory = staticmethod(time.monotonic)
 
     @classmethod
-    def create(cls, tty: bool, color: bool, quiet: bool) -> "ExecStopProgress":
+    def create(cls, console: Console, quiet: bool) -> "ExecStopProgress":
         if quiet:
             return ExecStopProgress()
-        elif tty:
-            return DetailedExecStopProgress(color)
-        return StreamExecStopProgress()
+        elif console.is_terminal:
+            return DetailedExecStopProgress(console)
+        return StreamExecStopProgress(console)
 
     def __init__(self) -> None:
         self._time = self.time_factory()
@@ -673,14 +770,24 @@ class ExecStopProgress:
     def timeout(self) -> None:
         pass
 
+    def __enter__(self) -> "ExecStopProgress":
+        return self
 
-class DetailedExecStopProgress(ExecStopProgress):
-    def __init__(self, color: bool):
+    def __exit__(
+        self,
+        exc_type: Type[BaseException],
+        exc_val: BaseException,
+        exc_tb: TracebackType,
+    ) -> None:
+        pass
+
+
+class DetailedExecStopProgress(ExecStopProgress, RenderHook):
+    def __init__(self, console: Console) -> None:
         super().__init__()
-        self._color = color
+        self._console = console
         self._spinner = SPINNER
-        self._printer = TTYPrinter()
-        self._lineno = 0
+        self._live_render = LiveRender(Text())
 
     def tick(self, running: bool) -> None:
         new_time = self.time_factory()
@@ -688,40 +795,65 @@ class DetailedExecStopProgress(ExecStopProgress):
 
         if running:
             msg = (
-                style("-", fg="yellow")
+                "[yellow]-[/yellow]"
                 + f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
             )
         else:
-            msg = style("√", fg="green") + " Stopped"
+            msg = yes() + " Stopped"
 
-        self._printer.print(
-            msg,
-            lineno=self._lineno,
-        )
+        self._live_render.set_renderable(Text.from_markup(msg))
+        with self._console:
+            self._console.print(Control(""))
 
     def timeout(self) -> None:
-        secho()
-        secho("× Warning !!!", fg="red")
-        secho(
-            "× The attached session was disconnected "
+        self._console.line()
+        self._console.print(f"{no()} [red]Warning !!!")
+        self._console.print(
+            f"{no()} [red]The attached session was disconnected "
             "but the exec process is still alive.",
-            fg="red",
         )
+
+    def process_renderables(
+        self, renderables: List[ConsoleRenderable]
+    ) -> List[ConsoleRenderable]:
+        """Process renderables to restore cursor and display progress."""
+        if self._console.is_terminal:
+            renderables = [
+                self._live_render.position_cursor(),
+                *renderables,
+                self._live_render,
+            ]
+        return renderables
+
+    def __enter__(self) -> "ExecStopProgress":
+        self._console.show_cursor(False)
+        self._console.push_render_hook(self)
+        return self
+
+    def __exit__(
+        self,
+        exc_type: Type[BaseException],
+        exc_val: BaseException,
+        exc_tb: TracebackType,
+    ) -> None:
+        self._console.line()
+        self._console.show_cursor(True)
+        self._console.pop_render_hook()
 
 
 class StreamExecStopProgress(ExecStopProgress):
-    def __init__(self) -> None:
+    def __init__(self, console: Console) -> None:
         super().__init__()
-        self._printer = StreamPrinter()
-        self._printer.print("Wait for stopping")
+        self._console = console
+        self._console.print("Wait for stopping")
 
     def tick(self, running: bool) -> None:
-        self._printer.tick()
+        pass
 
     def timeout(self) -> None:
-        print()
-        print("Warning !!!")
-        print(
+        self._console.print()
+        self._console.print("Warning !!!")
+        self._console.print(
             "The attached session was disconnected "
             "but the exec process is still alive."
         )

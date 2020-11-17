@@ -4,8 +4,7 @@ from datetime import timedelta
 from typing import Callable, List, Mapping, Optional, TypeVar
 
 import click
-
-from .formatters.ftable import Align, ColumnWidth
+from rich.console import JustifyMethod
 
 
 _T = TypeVar("_T")
@@ -62,29 +61,33 @@ def to_megabytes(value: str) -> int:
 class JobColumnInfo:
     id: str
     title: str
-    align: Align
-    width: ColumnWidth
+    justify: JustifyMethod = "default"
+    width: Optional[int] = None
+    min_width: Optional[int] = None
+    max_width: Optional[int] = None
 
 
 # Note: please keep the help for format specs in sync with the following data
 # structures.
 
 COLUMNS = [
-    JobColumnInfo("id", "ID", Align.LEFT, ColumnWidth()),
-    JobColumnInfo("name", "NAME", Align.LEFT, ColumnWidth(max=40)),
-    JobColumnInfo("tags", "TAGS", Align.LEFT, ColumnWidth(max=40)),
-    JobColumnInfo("status", "STATUS", Align.LEFT, ColumnWidth(max=10)),
-    JobColumnInfo("when", "WHEN", Align.LEFT, ColumnWidth(max=15)),
-    JobColumnInfo("created", "CREATED", Align.LEFT, ColumnWidth(max=15)),
-    JobColumnInfo("started", "STARTED", Align.LEFT, ColumnWidth(max=15)),
-    JobColumnInfo("finished", "FINISHED", Align.LEFT, ColumnWidth(max=15)),
-    JobColumnInfo("image", "IMAGE", Align.LEFT, ColumnWidth(max=40)),
-    JobColumnInfo("owner", "OWNER", Align.LEFT, ColumnWidth(max=25)),
-    JobColumnInfo("cluster_name", "CLUSTER", Align.LEFT, ColumnWidth(max=15)),
-    JobColumnInfo("description", "DESCRIPTION", Align.LEFT, ColumnWidth(max=50)),
-    JobColumnInfo("command", "COMMAND", Align.LEFT, ColumnWidth(max=100)),
-    JobColumnInfo("life_span", "LIFE-SPAN", Align.LEFT, ColumnWidth()),
-    JobColumnInfo("workdir", "WORKDIR", Align.LEFT, ColumnWidth()),
+    JobColumnInfo(
+        "id", "ID", "left", width=len("job-28040560-2a21-428e-a7c0-44c809490b53")
+    ),
+    JobColumnInfo("name", "NAME", "left", max_width=40),
+    JobColumnInfo("tags", "TAGS", "left", max_width=40),
+    JobColumnInfo("status", "STATUS", "left", max_width=10),
+    JobColumnInfo("when", "WHEN", "left", max_width=15),
+    JobColumnInfo("created", "CREATED", "left", max_width=15),
+    JobColumnInfo("started", "STARTED", "left", max_width=15),
+    JobColumnInfo("finished", "FINISHED", "left", max_width=15),
+    JobColumnInfo("image", "IMAGE", "left", max_width=40),
+    JobColumnInfo("owner", "OWNER", "left", max_width=25),
+    JobColumnInfo("cluster_name", "CLUSTER", "left", max_width=15),
+    JobColumnInfo("description", "DESCRIPTION", "left", max_width=50),
+    JobColumnInfo("command", "COMMAND", "left", max_width=100),
+    JobColumnInfo("life_span", "LIFE-SPAN", "left"),
+    JobColumnInfo("workdir", "WORKDIR", "left"),
 ]
 
 COLUMNS_DEFAULT_IGNORE = {
@@ -144,6 +147,13 @@ def _get(
             raise ValueError(f"Invalid property {name}: {val!r} of format {fmt!r}")
 
 
+def _justify(arg: str) -> JustifyMethod:
+    ALLOWED = ("left", "right", "center", "full")
+    if arg not in ALLOWED:
+        raise ValueError(f"Unknown align {arg}, allowed {ALLOWED}")
+    return arg  # type: ignore
+
+
 def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
     # Column format is "{id[;field=val][;title]}",
     # columns are separated by commas or spaces
@@ -184,33 +194,20 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
                 raise ValueError(f"Unknown column {id!r} in format {fmt!r}")
         title = _get(groups, "title", fmt, str, default.title)
         assert title is not None
-        align = _get(groups, "align", fmt, Align, default.align)
-        assert align is not None
 
-        width_min = _get(groups, "min", fmt, int, None)
-        width_max = _get(groups, "max", fmt, int, None)
-        if width_max is not None:
-            if width_min is not None and width_min > width_max:
-                width_min = width_max
-        else:
-            if (
-                width_min is not None
-                and default.width.max is not None
-                and default.width.max < width_min
-            ):
-                width_max = width_min
-            else:
-                width_max = default.width.max
+        justify: JustifyMethod = _get(groups, "align", fmt, _justify, default.justify)  # type: ignore  # noqa
 
-        width = _get(groups, "width", fmt, int, None)
-        if width is not None:
-            width_min = width_max = width
+        min_width = _get(groups, "min", fmt, int, default.min_width)
+        max_width = _get(groups, "max", fmt, int, default.max_width)
+        width = _get(groups, "width", fmt, int, default.width)
 
         info = JobColumnInfo(
             id=default.id,  # canonical name
             title=title,
-            align=align,
-            width=ColumnWidth(width_min, width_max, width),
+            justify=justify,
+            width=width,
+            min_width=min_width,
+            max_width=max_width,
         )
         ret.append(info)
     if not ret:

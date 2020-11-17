@@ -5,7 +5,6 @@ cmarkgfm==0.4.2
 flake8==3.8.4
 isort==5.6.4
 markdown-toc==1.2.6
-
 mypy==0.790
 pexpect==4.8.0
 pre-commit==2.8.2
@@ -14,6 +13,7 @@ pytest-aiohttp==0.3.0
 pytest-cov==2.10.1
 pytest-timeout==1.4.2
 pytest-xdist==2.1.0
+re-assert==1.1.0
 setuptools==50.3.2
 towncrier==19.2.0
 trustme==0.6.0

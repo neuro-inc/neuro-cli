@@ -312,6 +312,13 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
 @argument("cluster_name", required=True, type=str)
 @argument("user_name", required=True, type=str)
 @option(
+    "-j",
+    "--jobs",
+    metavar="AMOUNT",
+    type=int,
+    help="Maximum running jobs quota",
+)
+@option(
     "-g",
     "--gpu",
     metavar="AMOUNT",
@@ -329,6 +336,7 @@ async def set_user_quota(
     root: Root,
     cluster_name: str,
     user_name: str,
+    jobs: Optional[int],
     gpu: Optional[str],
     non_gpu: Optional[str],
 ) -> None:
@@ -338,7 +346,11 @@ async def set_user_quota(
     gpu_value_minutes = _parse_quota_value(gpu, allow_infinity=True)
     non_gpu_value_minutes = _parse_quota_value(non_gpu, allow_infinity=True)
     user_with_quota = await root.client._admin.set_user_quota(
-        cluster_name, user_name, gpu_value_minutes, non_gpu_value_minutes
+        cluster_name=cluster_name,
+        user_name=user_name,
+        total_running_jobs=jobs,
+        gpu_value_minutes=gpu_value_minutes,
+        non_gpu_value_minutes=non_gpu_value_minutes,
     )
     fmt = QuotaFormatter()
     root.print(

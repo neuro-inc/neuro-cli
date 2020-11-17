@@ -231,6 +231,7 @@ Jobs
                      tags: Sequence[str] = (), \
                      description: Optional[str] = None, \
                      is_preemptible: bool = False, \
+                     wait_for_jobs_quota: bool = False, \
                      schedule_timeout: Optional[float] = None, \
                      life_span: Optional[float] = None, \
                  ) -> JobDescription
@@ -248,6 +249,10 @@ Jobs
       :param bool is_preemtible: a flag that specifies is the job is *preemptible* or
                                  not, see :ref:`Preemption <job-preemption>` for
                                  details.
+
+      :param bool wait_for_jobs_quota: when this flat is set, job will wait for another
+                                       job to stop instead of failing immediately
+                                       because of total running jobs quota.
 
       :param float schedule_timeout: minimal timeout to wait before reporting that job
                                      cannot be scheduled because the lack of computation

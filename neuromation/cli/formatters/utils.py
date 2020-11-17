@@ -76,3 +76,11 @@ def apply_styling(txt: str) -> str:
     for key, value in REPLACES.items():
         txt = txt.replace(key, value)
     return txt
+
+
+def yes() -> str:
+    return "[green]√[/green]"
+
+
+def no() -> str:
+    return "[red]×[/red]"

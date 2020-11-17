@@ -25,6 +25,7 @@ class _ClusterUser:
 
 @dataclass(frozen=True)
 class _Quota:
+    total_running_jobs: Optional[int]
     total_gpu_run_time_minutes: Optional[int]
     total_non_gpu_run_time_minutes: Optional[int]
 
@@ -131,8 +132,9 @@ class _Admin(metaclass=NoPublicConstructor):
         self,
         cluster_name: str,
         user_name: str,
-        gpu_value_minutes: Optional[float],
-        non_gpu_value_minutes: Optional[float],
+        total_running_jobs: Optional[int],
+        gpu_value_minutes: Optional[int],
+        non_gpu_value_minutes: Optional[int],
     ) -> _ClusterUserWithQuota:
         url = (
             self._config.admin_url
@@ -144,6 +146,7 @@ class _Admin(metaclass=NoPublicConstructor):
         )
         payload = {
             "quota": {
+                "total_running_jobs": total_running_jobs,
                 "total_gpu_run_time_minutes": gpu_value_minutes,
                 "total_non_gpu_run_time_minutes": non_gpu_value_minutes,
             },
@@ -209,6 +212,7 @@ def _cluster_user_with_quota_from_api(
         user_name=user_name,
         role=_ClusterUserRoleType(payload["role"]),
         quota=_Quota(
+            quota_dict.get("total_running_jobs"),
             quota_dict.get("total_gpu_run_time_minutes"),
             quota_dict.get("total_non_gpu_run_time_minutes"),
         ),
