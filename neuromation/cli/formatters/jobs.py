@@ -130,7 +130,7 @@ class JobStatusFormatter:
         if job_status.is_preemptible:
             table.add_row("Preemptible", "True")
         if job_status.restart_policy != JobRestartPolicy.NEVER:
-            table.add_row("Restart policy", job_status.restart_policy)
+            table.add_row("Restart policy", job_status.restart_policy.value)
             table.add_row("Restarts", str(job_status.history.restarts))
         if job_status.life_span is not None:
             table.add_row("Life span", format_life_span(job_status.life_span))
@@ -268,10 +268,12 @@ class JobTelemetryFormatter(RenderHook):
         gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "0"
         gpu_mem = f"{info.gpu_memory:.3f}" if info.gpu_memory else "0"
         table.add_row(timestamp, cpu, mem, gpu, gpu_mem)
-
-        self._live_render.set_renderable(table)
-        with self._console:
-            self._console.print(Control(""))
+        if self._console.is_terminal:
+            self._live_render.set_renderable(table)
+            with self._console:
+                self._console.print(Control(""))
+        else:
+            self._console.print(table)
 
     def process_renderables(
         self, renderables: List[ConsoleRenderable]

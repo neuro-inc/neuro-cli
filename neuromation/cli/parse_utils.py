@@ -71,7 +71,9 @@ class JobColumnInfo:
 # structures.
 
 COLUMNS = [
-    JobColumnInfo("id", "ID", "left"),
+    JobColumnInfo(
+        "id", "ID", "left", width=len("job-28040560-2a21-428e-a7c0-44c809490b53")
+    ),
     JobColumnInfo("name", "NAME", "left", max_width=40),
     JobColumnInfo("tags", "TAGS", "left", max_width=40),
     JobColumnInfo("status", "STATUS", "left", max_width=10),
