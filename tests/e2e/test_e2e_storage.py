@@ -680,11 +680,11 @@ def test_tree(helper: Helper, data: _Data, tmp_path: Path) -> None:
 
     expected = textwrap.dedent(
         f"""\
-         '{helper.tmpstorage}'
-         ├── 'bar'
-         ├── 'folder'
-         │   └── 'baz'
-         └── 'foo'
+         {helper.tmpstorage}
+         ├── bar
+         ├── folder
+         │   └── baz
+         └── foo
 
          1 directories, 3 files"""
     )
