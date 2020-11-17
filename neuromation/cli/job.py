@@ -556,7 +556,7 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     "--owner",
     multiple=True,
     help="Filter out jobs by owner (multiple option). "
-    "Supports `ME` option to filter by current users username.",
+    "Supports `ME` option to filter by the current user.",
     secure=True,
 )
 @option("-n", "--name", metavar="NAME", help="Filter out jobs by name.", secure=True)
