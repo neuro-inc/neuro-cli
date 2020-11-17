@@ -169,6 +169,24 @@ class Storage(metaclass=NoPublicConstructor):
             >= self._max_time_diff + TIME_THRESHOLD + 1.0
         )
 
+    def _check_upload(
+        self, local: os.stat_result, remote: FileStatus, continue_: bool
+    ) -> Optional[int]:
+        if not self._is_local_modified(local, remote):
+            return None
+        if continue_ and self._is_remote_partial(local, remote):
+            return remote.size
+        return 0
+
+    def _check_download(
+        self, local: os.stat_result, remote: FileStatus, continue_: bool
+    ) -> Optional[int]:
+        if not self._is_remote_modified(local, remote):
+            return None
+        if continue_ and self._is_local_partial(local, remote):
+            return local.st_size
+        return 0
+
     async def ls(self, uri: URL) -> AsyncIterator[FileStatus]:
         uri = self._normalize_uri(uri)
         url = self._config.storage_url / self._uri_to_path(uri, normalized=True)
@@ -460,7 +478,7 @@ class Storage(metaclass=NoPublicConstructor):
                 raise
             # Ignore stat errors for device files like NUL or CON on Windows.
             # See https://bugs.python.org/issue37074
-        offset = 0
+        offset: Optional[int] = 0
         try:
             dst_stat = await self.stat(dst)
             if dst_stat.is_dir():
@@ -486,10 +504,9 @@ class Storage(metaclass=NoPublicConstructor):
                     pass
                 else:
                     if S_ISREG(src_stat.st_mode):
-                        if not self._is_local_modified(src_stat, dst_stat):
-                            return
-                        if continue_ and self._is_remote_partial(src_stat, dst_stat):
-                            offset = dst_stat.size
+                        offset = self._check_upload(src_stat, dst_stat, continue_)
+        if offset is None:
+            return
 
         async_progress: _AsyncAbstractFileProgress
         queue, async_progress = queue_calls(progress)
@@ -630,13 +647,13 @@ class Storage(metaclass=NoPublicConstructor):
                 log.debug(f"Skip {child_rel_path}")
                 continue
             if child.is_file():
-                offset = 0
+                offset: Optional[int] = 0
                 if (update or continue_) and name in dst_files:
-                    src_stat = child.stat()
-                    if not self._is_local_modified(src_stat, dst_files[name]):
-                        continue
-                    if continue_ and self._is_remote_partial(src_stat, dst_files[name]):
-                        offset = dst_files[name].size
+                    offset = self._check_upload(
+                        child.stat(), dst_files[name], continue_
+                    )
+                if offset is None:
+                    continue
                 tasks.append(
                     self._upload_file(
                         src_path / name, dst / name, offset, progress=progress
@@ -687,7 +704,7 @@ class Storage(metaclass=NoPublicConstructor):
         src_stat = await self.stat(src)
         if not src_stat.is_file():
             raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
-        offset = 0
+        offset: Optional[int] = 0
         if update or continue_:
             try:
                 dst_stat = path.stat()
@@ -695,10 +712,10 @@ class Storage(metaclass=NoPublicConstructor):
                 pass
             else:
                 if S_ISREG(dst_stat.st_mode):
-                    if not self._is_remote_modified(dst_stat, src_stat):
-                        return
-                    if continue_ and self._is_local_partial(dst_stat, src_stat):
-                        offset = dst_stat.st_size
+                    offset = self._check_download(dst_stat, src_stat, continue_)
+        if offset is None:
+            return
+
         async_progress: _AsyncAbstractFileProgress
         queue, async_progress = queue_calls(progress)
         await run_progress(
@@ -813,13 +830,13 @@ class Storage(metaclass=NoPublicConstructor):
                 log.debug(f"Skip {child_rel_path}")
                 continue
             if child.is_file():
-                offset = 0
+                offset: Optional[int] = 0
                 if (update or continue_) and name in dst_files:
-                    dst_stat = dst_files[name].stat()
-                    if not self._is_remote_modified(dst_stat, child):
-                        continue
-                    if continue_ and self._is_local_partial(dst_stat, child):
-                        offset = dst_stat.st_size
+                    offset = self._check_download(
+                        dst_files[name].stat(), child, continue_
+                    )
+                if offset is None:
+                    continue
                 tasks.append(
                     self._download_file(
                         src / name,
