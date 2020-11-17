@@ -413,9 +413,9 @@ async def test_set_user_quota(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/api/v1")) as client:
-        await client._admin.set_user_quota("default", "ivan", 100, 200)
-        await client._admin.set_user_quota("neuro", "user2", None, None)
-        await client._admin.set_user_quota("neuro-ai", "user3", 150, None)
+        await client._admin.set_user_quota("default", "ivan", 10, 100, 200)
+        await client._admin.set_user_quota("neuro", "user2", None, None, None)
+        await client._admin.set_user_quota("neuro-ai", "user3", None, 150, None)
         assert requested_cluster_users == [
             ("default", "ivan"),
             ("neuro", "user2"),
@@ -424,6 +424,7 @@ async def test_set_user_quota(
         assert len(requested_payloads) == 3
         assert {
             "quota": {
+                "total_running_jobs": 10,
                 "total_gpu_run_time_minutes": 100,
                 "total_non_gpu_run_time_minutes": 200,
             },

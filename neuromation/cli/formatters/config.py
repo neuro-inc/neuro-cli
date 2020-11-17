@@ -73,19 +73,28 @@ class QuotaFormatter:
     QUOTA_NOT_SET = "infinity"
 
     def __call__(self, quota: _Quota) -> RenderableType:
+        jobs_details = self._format_quota_details(
+            quota.total_running_jobs, is_minutes=False
+        )
         gpu_details = self._format_quota_details(quota.total_gpu_run_time_minutes)
         non_gpu_details = self._format_quota_details(
             quota.total_non_gpu_run_time_minutes
         )
         return RenderGroup(
-            f"[b]GPU[/b]: {gpu_details}", f"[b]CPU[/b]: {non_gpu_details}"
+            f"[b]Jobs[/b]: {jobs_details}",
+            f"[b]GPU[/b]: {gpu_details}",
+            f"[b]CPU[/b]: {non_gpu_details}",
         )
 
-    def _format_quota_details(self, run_time_minutes: Optional[int]) -> str:
-        if run_time_minutes is None:
+    def _format_quota_details(
+        self, quota: Optional[int], *, is_minutes: bool = True
+    ) -> str:
+        if quota is None:
             return self.QUOTA_NOT_SET
+        elif is_minutes:
+            return f"{quota}m"
         else:
-            return f"{run_time_minutes}m"
+            return str(quota)
 
 
 class ClustersFormatter:
