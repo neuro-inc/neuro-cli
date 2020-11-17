@@ -90,6 +90,16 @@ class Root:
             highlight=False,
             log_path=False,
         )
+        if not self.console.is_terminal or self.console.is_dumb_terminal:
+            # resize with wider width to prevent wrapping/cropping
+            self.console = Console(
+                color_system="auto" if self.color else None,
+                force_terminal=self.tty,
+                highlight=False,
+                log_path=False,
+                width=2048,
+            )
+
         self.err_console = Console(
             file=sys.stderr,
             color_system="auto" if self.color else None,
@@ -97,6 +107,16 @@ class Root:
             highlight=False,
             log_path=False,
         )
+        if not self.err_console.is_terminal or self.err_console.is_dumb_terminal:
+            # resize with wider width to prevent wrapping/cropping
+            self.err_console = Console(
+                file=sys.stderr,
+                color_system="auto" if self.color else None,
+                force_terminal=self.tty,
+                highlight=False,
+                log_path=False,
+                width=2048,
+            )
 
     def close(self) -> None:
         if self._client is not None:

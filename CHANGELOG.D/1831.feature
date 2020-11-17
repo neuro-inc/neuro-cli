@@ -1,0 +1,1 @@
+When the connection is lost during transferring files `neuro cp` retries now only sending and retrieving new data instead of starting file operation from the start. Added optional parameters *offset* and *size* in method `storage.open()` for partial reading. Added method `storage.write()` for overwriting the part of the file.

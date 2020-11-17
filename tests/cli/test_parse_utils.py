@@ -3,7 +3,6 @@ from datetime import timedelta
 import click
 import pytest
 
-from neuromation.cli.formatters.ftable import Align, ColumnWidth
 from neuromation.cli.parse_utils import (
     COLUMNS_MAP,
     JobColumnInfo,
@@ -65,18 +64,24 @@ def test_parse_columns_default() -> None:
 
 def test_parse_columns_short() -> None:
     ci = COLUMNS_MAP["id"]
-    assert parse_columns("{id}") == [JobColumnInfo("id", ci.title, ci.align, ci.width)]
+    assert parse_columns("{id}") == [
+        JobColumnInfo("id", ci.title, ci.justify, ci.width, ci.min_width, ci.max_width)
+    ]
 
 
 def test_parse_columns_id() -> None:
     ci = COLUMNS_MAP["id"]
-    assert parse_columns("id") == [JobColumnInfo("id", ci.title, ci.align, ci.width)]
+    assert parse_columns("id") == [
+        JobColumnInfo("id", ci.title, ci.justify, ci.width, ci.min_width, ci.max_width)
+    ]
 
 
 def test_parse_columns_partial() -> None:
     ci = COLUMNS_MAP["description"]
     assert parse_columns("{DESC}") == [
-        JobColumnInfo("description", ci.title, ci.align, ci.width)
+        JobColumnInfo(
+            "description", ci.title, ci.justify, ci.width, ci.min_width, ci.max_width
+        )
     ]
 
 
@@ -84,8 +89,12 @@ def test_parse_columns_sep() -> None:
     ci1 = COLUMNS_MAP["id"]
     ci2 = COLUMNS_MAP["name"]
     expected = [
-        JobColumnInfo("id", ci1.title, ci1.align, ci1.width),
-        JobColumnInfo("name", ci2.title, ci2.align, ci2.width),
+        JobColumnInfo(
+            "id", ci1.title, ci1.justify, ci1.width, ci1.min_width, ci1.max_width
+        ),
+        JobColumnInfo(
+            "name", ci2.title, ci2.justify, ci2.width, ci2.min_width, ci2.max_width
+        ),
     ]
     assert parse_columns("{id}{name}") == expected
     assert parse_columns("{id} {name}") == expected
@@ -104,27 +113,29 @@ def test_parse_columns_sep() -> None:
 def test_parse_columns_title_with_spaces() -> None:
     ci = COLUMNS_MAP["id"]
     assert parse_columns("{id;NEW TITLE}") == [
-        JobColumnInfo("id", "NEW TITLE", ci.align, ci.width)
+        JobColumnInfo(
+            "id", "NEW TITLE", ci.justify, ci.width, ci.min_width, ci.max_width
+        )
     ]
 
 
 def test_parse_columns_props_full() -> None:
-    assert parse_columns("{id;max=30;min=5;align=center;NEW_TITLE}") == [
-        JobColumnInfo("id", "NEW_TITLE", Align.CENTER, ColumnWidth(5, 30))
+    assert parse_columns("{name;max=30;min=5;align=center;NEW_TITLE}") == [
+        JobColumnInfo("name", "NEW_TITLE", "center", min_width=5, max_width=30)
     ]
 
 
 def test_parse_columns_props_subset() -> None:
     ci = COLUMNS_MAP["name"]
     assert parse_columns("{name;align=center;max=20}") == [
-        JobColumnInfo("name", ci.title, Align.CENTER, ColumnWidth(None, 20))
+        JobColumnInfo("name", ci.title, "center", max_width=20)
     ]
 
 
 def test_parse_columns_props_width() -> None:
     ci = COLUMNS_MAP["id"]
     assert parse_columns("{id;max=30;min=5;width=10}") == [
-        JobColumnInfo("id", ci.title, ci.align, ColumnWidth(10, 10, 10))
+        JobColumnInfo("id", ci.title, ci.justify, width=10, min_width=5, max_width=30)
     ]
 
 

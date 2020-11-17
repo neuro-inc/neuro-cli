@@ -15,4 +15,4 @@ rich==9.2.0
 toml==0.10.2
 typing_extensions==3.7.4.3
 wcwidth==0.2.5
-yarl==1.6.2
+yarl==1.6.3
