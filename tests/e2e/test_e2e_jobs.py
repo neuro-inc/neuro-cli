@@ -108,7 +108,7 @@ def test_job_run(helper: Helper) -> None:
 
     # Check it is in a running,pending job list now
     captured = helper.run_cli(
-        ["job", "ls", "--status", "running", "--status", "pending", "--format", "{id}"]
+        ["-q", "job", "ls", "--status", "running", "--status", "pending"]
     )
     Matches(job_id) == captured.out
 
@@ -116,7 +116,7 @@ def test_job_run(helper: Helper) -> None:
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     # Check that it is in a running job list
-    captured = helper.run_cli(["job", "ls", "--status", "running", "--format", "{id}"])
+    captured = helper.run_cli(["-q", "job", "ls", "--status", "running"])
     Matches(job_id) == captured.out
 
     helper.kill_job(job_id, wait=False)
@@ -125,7 +125,7 @@ def test_job_run(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_job_description(helper: Helper) -> None:
     # Remember original running jobs
-    captured = helper.run_cli(["job", "ls", "--status", "running", "--format", "{id}"])
+    captured = helper.run_cli(["-q", "job", "ls", "--status", "running"])
     description = str(uuid4())
     # Run a new job
     command = "bash -c 'sleep 15m; false'"
@@ -177,7 +177,7 @@ def test_job_tags(helper: Helper) -> None:
     assert match is not None
     job_id = match.group(1)
 
-    captured = helper.run_cli(["ps", "--format", "{id}", *tag_options])
+    captured = helper.run_cli(["-q", "ps", *tag_options])
     assert job_id in captured.out
 
     captured = helper.run_cli(["job", "tags"])
@@ -196,27 +196,19 @@ def test_job_filter_by_date_range(helper: Helper) -> None:
     now = datetime.now()
     delta = timedelta(minutes=10)
 
-    captured = helper.run_cli(
-        ["ps", "--format", "{id}", "--since", (now - delta).isoformat()]
-    )
+    captured = helper.run_cli(["-q", "ps", "--since", (now - delta).isoformat()])
     jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id in jobs
 
-    captured = helper.run_cli(
-        ["ps", "--format", "{id}", "--since", (now + delta).isoformat()]
-    )
+    captured = helper.run_cli(["-q", "ps", "--since", (now + delta).isoformat()])
     jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id not in jobs
 
-    captured = helper.run_cli(
-        ["ps", "--format", "{id}", "--until", (now - delta).isoformat()]
-    )
+    captured = helper.run_cli(["-q", "ps", "--until", (now - delta).isoformat()])
     jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id not in jobs
 
-    captured = helper.run_cli(
-        ["ps", "--format", "{id}", "--until", (now + delta).isoformat()]
-    )
+    captured = helper.run_cli(["-q", "ps", "--until", (now + delta).isoformat()])
     jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id in jobs
 
@@ -234,17 +226,15 @@ def test_job_filter_by_tag(helper: Helper) -> None:
     assert match is not None
     job_id = match.group(1)
 
-    captured = helper.run_cli(["ps", "--format", "{id}", "--tag", tags[0]])
+    captured = helper.run_cli(["-q", "ps", "--tag", tags[0]])
     jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id in jobs
 
-    captured = helper.run_cli(["ps", "--format", "{id}", "--tag", tags[1]])
+    captured = helper.run_cli(["-q", "ps", "--tag", tags[1]])
     jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id in jobs
 
-    captured = helper.run_cli(
-        ["ps", "--format", "{id}", "--tag", "test-tag:not-present"]
-    )
+    captured = helper.run_cli(["-q", "ps", "--tag", "test-tag:not-present"])
     jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id not in jobs
 
