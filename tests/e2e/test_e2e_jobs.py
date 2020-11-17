@@ -887,7 +887,7 @@ def test_e2e_job_top(helper: Helper) -> None:
     print("... done")
     t0 = time()
     returncode = -1
-    delay = 1
+    delay = 1.0
 
     while returncode and time() - t0 < 3 * 60:
         try:

@@ -197,24 +197,9 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
 
         justify: JustifyMethod = _get(groups, "align", fmt, _justify, default.justify)  # type: ignore  # noqa
 
-        min_width = _get(groups, "min", fmt, int, None)
-        max_width = _get(groups, "max", fmt, int, None)
-        if max_width is not None:
-            if min_width is not None and min_width > max_width:
-                min_width = max_width
-        else:
-            if (
-                min_width is not None
-                and default.max_width is not None
-                and default.max_width < min_width
-            ):
-                max_width = min_width
-            else:
-                max_width = default.max_width
-
-        width = _get(groups, "width", fmt, int, None)
-        if width is not None:
-            min_width = max_width = width
+        min_width = _get(groups, "min", fmt, int, default.min_width)
+        max_width = _get(groups, "max", fmt, int, default.max_width)
+        width = _get(groups, "width", fmt, int, default.width)
 
         info = JobColumnInfo(
             id=default.id,  # canonical name

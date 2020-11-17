@@ -1,4 +1,4 @@
-ID      WORKDIR       
- ━━━━━━━━━━━━━━━━━━━━━━ 
-  job-1                 
-  job-2   /working/dir
+ID                                         WORKDIR       
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+  job-1                                                    
+  job-2                                      /working/dir

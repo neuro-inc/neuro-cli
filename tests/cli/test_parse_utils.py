@@ -120,8 +120,8 @@ def test_parse_columns_title_with_spaces() -> None:
 
 
 def test_parse_columns_props_full() -> None:
-    assert parse_columns("{id;max=30;min=5;align=center;NEW_TITLE}") == [
-        JobColumnInfo("id", "NEW_TITLE", "center", min_width=5, max_width=30)
+    assert parse_columns("{name;max=30;min=5;align=center;NEW_TITLE}") == [
+        JobColumnInfo("name", "NEW_TITLE", "center", min_width=5, max_width=30)
     ]
 
 
@@ -135,7 +135,7 @@ def test_parse_columns_props_subset() -> None:
 def test_parse_columns_props_width() -> None:
     ci = COLUMNS_MAP["id"]
     assert parse_columns("{id;max=30;min=5;width=10}") == [
-        JobColumnInfo("id", ci.title, ci.justify, width=10, min_width=10, max_width=10)
+        JobColumnInfo("id", ci.title, ci.justify, width=10, min_width=5, max_width=30)
     ]
 
 
