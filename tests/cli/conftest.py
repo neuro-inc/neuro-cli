@@ -154,6 +154,24 @@ class RichComparator:
     def mkref(self, request: Any, index: Optional[int]) -> Path:
         folder = Path(request.fspath).parent
         basename = request.function.__qualname__
+        if hasattr(request.node, "callspec"):
+            parametrize_id = request.node.callspec.id
+            # Some characters are forbidden in FS path (on Windows)
+            bad_to_good = {
+                "/": "#forward_slash#",
+                "\\": "#back_slash#",
+                "<": "#less#",
+                ">": "#more#",
+                ":": "#colon#",
+                '"': "#double_qoute#",
+                "|": "#vertical_bar#",
+                "?": "#question_mark#",
+                "*": "#star#",
+            }
+            for bad, good in bad_to_good.items():
+                parametrize_id = parametrize_id.replace(bad, good)
+            # On windows, some characters are forbidden
+            basename += f"[{parametrize_id}]"
         if index is not None:
             basename += "_" + str(index)
         basename += ".ref"
@@ -349,3 +367,28 @@ def rich_cmp(request: Any) -> Callable[..., None]:
             plugin.check_io(ref, file)
 
     return comparator
+
+
+NewConsole = Callable[..., Console]
+
+
+@pytest.fixture
+def new_console() -> NewConsole:
+    def factory(*, tty: bool, color: bool = True) -> Console:
+        file = io.StringIO()
+        # console doesn't accept the time source,
+        # using the real time in tests is not reliable
+        return Console(
+            file=file,
+            width=160,
+            height=24,
+            force_terminal=tty,
+            color_system="auto" if color else None,
+            record=True,
+            highlighter=None,
+            legacy_windows=False,
+            log_path=False,
+            log_time=False,
+        )
+
+    return factory

@@ -1,9 +1,5 @@
-import io
 import time
-from typing import Any, Callable
-
-import pytest
-from rich.console import Console
+from typing import Any
 
 from neuromation.api import (
     ImageProgressPull,
@@ -18,35 +14,11 @@ from neuromation.api.abc import (
     ImageProgressSave,
 )
 from neuromation.cli.formatters.images import DockerImageProgress
-
-
-_NewConsole = Callable[..., Console]
-
-
-@pytest.fixture
-def new_console() -> _NewConsole:
-    def factory(*, tty: bool, color: bool = True) -> Console:
-        file = io.StringIO()
-        # console doesn't accept the time source,
-        # using the real time in tests is not reliable
-        return Console(
-            file=file,
-            width=160,
-            height=24,
-            force_terminal=tty,
-            color_system="auto" if color else None,
-            record=True,
-            highlighter=None,
-            legacy_windows=False,
-            log_path=False,
-            log_time=False,
-        )
-
-    return factory
+from tests.cli.conftest import NewConsole
 
 
 class TestDockerImageProgress:
-    def test_quiet_pull(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    def test_quiet_pull(self, rich_cmp: Any, new_console: NewConsole) -> None:
         console = new_console(tty=True)
         with DockerImageProgress.create(console, quiet=True) as formatter:
             formatter.pull(
@@ -58,7 +30,7 @@ class TestDockerImageProgress:
             formatter.step(ImageProgressStep("message1", "layer1", "status", 1, 100))
             rich_cmp(console, index=1)
 
-    def test_quiet_push(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    def test_quiet_push(self, rich_cmp: Any, new_console: NewConsole) -> None:
         console = new_console(tty=True)
         with DockerImageProgress.create(console, quiet=True) as formatter:
             formatter.push(
@@ -70,7 +42,7 @@ class TestDockerImageProgress:
             formatter.step(ImageProgressStep("message1", "layer1", "status", 1, 100))
             rich_cmp(console, index=1)
 
-    def test_quiet_save(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    def test_quiet_save(self, rich_cmp: Any, new_console: NewConsole) -> None:
         console = new_console(tty=True)
         with DockerImageProgress.create(console, quiet=True) as formatter:
             formatter.save(
@@ -80,9 +52,7 @@ class TestDockerImageProgress:
             )
             rich_cmp(console)
 
-    def test_quiet_commit_started(
-        self, rich_cmp: Any, new_console: _NewConsole
-    ) -> None:
+    def test_quiet_commit_started(self, rich_cmp: Any, new_console: NewConsole) -> None:
         console = new_console(tty=True)
         with DockerImageProgress.create(console, quiet=True) as formatter:
             formatter.commit_started(
@@ -93,14 +63,14 @@ class TestDockerImageProgress:
             rich_cmp(console)
 
     def test_quiet_commit_finished(
-        self, rich_cmp: Any, new_console: _NewConsole
+        self, rich_cmp: Any, new_console: NewConsole
     ) -> None:
         console = new_console(tty=True)
         with DockerImageProgress.create(console, quiet=True) as formatter:
             formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
             rich_cmp(console)
 
-    def test_no_tty_pull(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    def test_no_tty_pull(self, rich_cmp: Any, new_console: NewConsole) -> None:
         console = new_console(tty=False)
         with DockerImageProgress.create(console, quiet=False) as formatter:
             formatter.pull(
@@ -121,7 +91,7 @@ class TestDockerImageProgress:
             formatter.step(ImageProgressStep("message2", "layer1", "status2", 30, 100))
             rich_cmp(console, index=2)
 
-    def test_no_tty_push(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    def test_no_tty_push(self, rich_cmp: Any, new_console: NewConsole) -> None:
         console = new_console(tty=False)
         with DockerImageProgress.create(console, quiet=False) as formatter:
             formatter.push(
@@ -142,7 +112,7 @@ class TestDockerImageProgress:
             formatter.step(ImageProgressStep("message2", "layer1", "status2", 30, 100))
             rich_cmp(console, index=2)
 
-    def test_no_tty_save(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    def test_no_tty_save(self, rich_cmp: Any, new_console: NewConsole) -> None:
         console = new_console(tty=False)
         with DockerImageProgress.create(console, quiet=False) as formatter:
             formatter.save(
@@ -160,7 +130,7 @@ class TestDockerImageProgress:
             rich_cmp(console)
 
     def test_no_tty_commit_started(
-        self, rich_cmp: Any, new_console: _NewConsole
+        self, rich_cmp: Any, new_console: NewConsole
     ) -> None:
         console = new_console(tty=False)
         with DockerImageProgress.create(console, quiet=False) as formatter:
@@ -179,14 +149,14 @@ class TestDockerImageProgress:
             rich_cmp(console)
 
     def test_no_tty_commit_finished(
-        self, rich_cmp: Any, new_console: _NewConsole
+        self, rich_cmp: Any, new_console: NewConsole
     ) -> None:
         console = new_console(tty=False)
         with DockerImageProgress.create(console, quiet=False) as formatter:
             formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
             rich_cmp(console)
 
-    def test_tty_pull(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    def test_tty_pull(self, rich_cmp: Any, new_console: NewConsole) -> None:
         console = new_console(tty=True)
         with DockerImageProgress.create(console, quiet=False) as formatter:
             formatter.pull(
@@ -209,7 +179,7 @@ class TestDockerImageProgress:
             time.sleep(0.3)
             rich_cmp(console, index=2)
 
-    def test_tty_push(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    def test_tty_push(self, rich_cmp: Any, new_console: NewConsole) -> None:
         console = new_console(tty=True)
         with DockerImageProgress.create(console, quiet=False) as formatter:
             formatter.push(
@@ -232,7 +202,7 @@ class TestDockerImageProgress:
             time.sleep(0.3)
             rich_cmp(console, index=2)
 
-    def test_tty_save(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    def test_tty_save(self, rich_cmp: Any, new_console: NewConsole) -> None:
         console = new_console(tty=True)
         with DockerImageProgress.create(console, quiet=False) as formatter:
             formatter.save(
@@ -249,7 +219,7 @@ class TestDockerImageProgress:
             )
             rich_cmp(console)
 
-    def test_tty_commit_started(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    def test_tty_commit_started(self, rich_cmp: Any, new_console: NewConsole) -> None:
         console = new_console(tty=True)
         with DockerImageProgress.create(console, quiet=False) as formatter:
             formatter.commit_started(
@@ -260,7 +230,7 @@ class TestDockerImageProgress:
             )
             rich_cmp(console)
 
-    def test_tty_commit_finished(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    def test_tty_commit_finished(self, rich_cmp: Any, new_console: NewConsole) -> None:
         console = new_console(tty=True)
         with DockerImageProgress.create(console, quiet=False) as formatter:
             formatter.commit_finished(ImageCommitFinished(job_id="job-id"))
