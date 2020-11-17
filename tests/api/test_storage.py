@@ -1392,6 +1392,52 @@ async def test_storage_upload_file_update(
     assert storage_file.read_bytes() == b"xxx"
 
 
+async def test_storage_upload_file_continue(
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    zero_time_threshold: None,
+    small_block_size: None,
+) -> None:
+    storage_file = storage_path / "file.txt"
+    local_file = tmp_path / "file.txt"
+    src = URL(local_file.as_uri())
+    dst = URL("storage:file.txt")
+
+    # No destination file
+    assert not storage_file.exists()
+    local_file.write_bytes(b"content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_file(src, dst, continue_=True)
+    assert storage_file.read_bytes() == b"content"
+
+    # Source file is newer
+    local_file.write_bytes(b"new content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_file(src, dst, continue_=True)
+    assert storage_file.read_bytes() == b"new content"
+
+    # Destination file is newer, same size
+    await asyncio.sleep(5)
+    storage_file.write_bytes(b"old content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_file(src, dst, continue_=True)
+    assert storage_file.read_bytes() == b"old content"
+
+    # Destination file is shorter
+    storage_file.write_bytes(b"old")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_file(src, dst, continue_=True)
+    assert storage_file.read_bytes() == b"old content"
+
+    # Destination file is longer
+    storage_file.write_bytes(b"old long content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_file(src, dst, continue_=True)
+    assert storage_file.read_bytes() == b"new content"
+
+
 async def test_storage_upload_dir_update(
     storage_server: Any,
     make_client: _MakeClient,
@@ -1427,6 +1473,54 @@ async def test_storage_upload_dir_update(
     assert storage_file.read_bytes() == b"xxx"
 
 
+async def test_storage_upload_dir_continue(
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    zero_time_threshold: None,
+    small_block_size: None,
+) -> None:
+    storage_file = storage_path / "folder" / "nested" / "file.txt"
+    local_dir = tmp_path / "folder"
+    local_file = local_dir / "nested" / "file.txt"
+    local_file.parent.mkdir(parents=True)
+    src = URL(local_dir.as_uri())
+    dst = URL("storage:folder")
+
+    # No destination file
+    assert not storage_file.exists()
+    local_file.write_bytes(b"content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_dir(src, dst, continue_=True)
+    assert storage_file.read_bytes() == b"content"
+
+    # Source file is newer
+    local_file.write_bytes(b"new content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_dir(src, dst, continue_=True)
+    assert storage_file.read_bytes() == b"new content"
+
+    # Destination file is newer, same size
+    await asyncio.sleep(5)
+    storage_file.write_bytes(b"old content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_dir(src, dst, continue_=True)
+    assert storage_file.read_bytes() == b"old content"
+
+    # Destination file is shorter
+    storage_file.write_bytes(b"old")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_dir(src, dst, continue_=True)
+    assert storage_file.read_bytes() == b"old content"
+
+    # Destination file is longer
+    storage_file.write_bytes(b"old long content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.upload_dir(src, dst, continue_=True)
+    assert storage_file.read_bytes() == b"new content"
+
+
 async def test_storage_download_file_update(
     storage_server: Any,
     make_client: _MakeClient,
@@ -1458,6 +1552,52 @@ async def test_storage_download_file_update(
             URL("storage:file.txt"), URL(local_file.as_uri()), update=True
         )
     assert local_file.read_bytes() == b"xxx"
+
+
+async def test_storage_download_file_continue(
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    zero_time_threshold: None,
+    small_block_size: None,
+) -> None:
+    storage_file = storage_path / "file.txt"
+    local_file = tmp_path / "file.txt"
+    src = URL("storage:file.txt")
+    dst = URL(local_file.as_uri())
+
+    # No destination file
+    assert not local_file.exists()
+    storage_file.write_bytes(b"content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_file(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"content"
+
+    # Source file is newer
+    storage_file.write_bytes(b"new content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_file(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"new content"
+
+    # Destination file is newer, same size
+    await asyncio.sleep(2)
+    local_file.write_bytes(b"old content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_file(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"old content"
+
+    # Destination file is shorter
+    local_file.write_bytes(b"old")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_file(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"old content"
+
+    # Destination file is longer
+    local_file.write_bytes(b"old long content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_file(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"new content"
 
 
 async def test_storage_download_dir_update(
@@ -1493,6 +1633,53 @@ async def test_storage_download_dir_update(
             URL("storage:folder"), URL(local_dir.as_uri()), update=True
         )
     assert local_file.read_bytes() == b"xxx"
+
+
+async def test_storage_download_dir_continue(
+    storage_server: Any,
+    make_client: _MakeClient,
+    tmp_path: Path,
+    storage_path: Path,
+    zero_time_threshold: None,
+) -> None:
+    storage_file = storage_path / "folder" / "nested" / "file.txt"
+    local_dir = tmp_path / "folder"
+    local_file = local_dir / "nested" / "file.txt"
+    storage_file.parent.mkdir(parents=True)
+    src = URL("storage:folder")
+    dst = URL(local_dir.as_uri())
+
+    # No destination file
+    assert not local_file.exists()
+    storage_file.write_bytes(b"content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_dir(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"content"
+
+    # Source file is newer
+    storage_file.write_bytes(b"new content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_dir(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"new content"
+
+    # Destination file is newer, same size
+    await asyncio.sleep(2)
+    local_file.write_bytes(b"old content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_dir(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"old content"
+
+    # Destination file is shorter
+    local_file.write_bytes(b"old")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_dir(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"old content"
+
+    # Destination file is longer
+    local_file.write_bytes(b"old long content")
+    async with make_client(storage_server.make_url("/")) as client:
+        await client.storage.download_dir(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"new content"
 
 
 async def test_storage_upload_dir_with_ignore_file_names(

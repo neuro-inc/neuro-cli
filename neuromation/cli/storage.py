@@ -278,6 +278,12 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     help="Copy only when the SOURCE file is newer than the destination file "
     "or when the destination file is missing.",
 )
+@option(
+    "--continue",
+    "continue_",
+    is_flag=True,
+    help="Continue copying partially-copied files.",
+)
 @filter_option(
     "--exclude",
     "filters",
@@ -316,6 +322,7 @@ async def cp(
     target_directory: Optional[str],
     no_target_directory: bool,
     update: bool,
+    continue_: bool,
     filters: Optional[Tuple[Tuple[bool, str], ...]],
     exclude_from_files: str,
     progress: bool,
@@ -421,13 +428,18 @@ async def cp(
                         src,
                         dst,
                         update=update,
+                        continue_=continue_,
                         filter=file_filter.match,
                         ignore_file_names=frozenset(ignore_file_names),
                         progress=progress_obj,
                     )
                 else:
                     await root.client.storage.upload_file(
-                        src, dst, update=update, progress=progress_obj
+                        src,
+                        dst,
+                        update=update,
+                        continue_=continue_,
+                        progress=progress_obj,
                     )
             elif src.scheme == "storage" and dst.scheme == "file":
                 if recursive and await _is_dir(root, src):
@@ -435,12 +447,17 @@ async def cp(
                         src,
                         dst,
                         update=update,
+                        continue_=continue_,
                         filter=file_filter.match,
                         progress=progress_obj,
                     )
                 else:
                     await root.client.storage.download_file(
-                        src, dst, update=update, progress=progress_obj
+                        src,
+                        dst,
+                        update=update,
+                        continue_=continue_,
+                        progress=progress_obj,
                     )
             else:
                 raise RuntimeError(
