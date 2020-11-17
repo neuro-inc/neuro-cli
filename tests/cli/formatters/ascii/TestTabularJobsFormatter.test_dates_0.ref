@@ -1,0 +1,14 @@
+ID                                         STA…   WHEN   CRE…   STAR…   FIN…  
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+  job-1                                      pen…   Sep    Sep                  
+                                                    25     25                   
+                                                    2018   2018                 
+  job-2                                      run…   Sep    Sep    Sep           
+                                                    25     25     25            
+                                                    2018   2018   2018          
+  job-3                                      fai…   Sep    Sep    Sep     Sep   
+                                                    26     25     25      26    
+                                                    2018   2018   2018    2018  
+  job-4                                      fai…   12     3      20      12    
+                                                    sec…   hou…   minu…   sec…  
+                                                    ago    ago    ago     ago

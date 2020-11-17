@@ -11,6 +11,7 @@ from typing import List, Optional, Sequence, Set, Tuple
 import async_timeout
 import click
 from dateutil.parser import isoparse
+from rich.table import Table
 from yarl import URL
 
 from neuromation.api import (
@@ -75,7 +76,6 @@ from .utils import (
     deprecated_quiet_option,
     group,
     option,
-    pager_maybe,
     resolve_job,
     volume_to_verbose_str,
 )
@@ -529,7 +529,7 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
         },
     )
     status = await root.client.jobs.status(id)
-    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
+    progress = JobStartProgress.create(console=root.console, quiet=root.quiet)
     while status.status == JobStatus.PENDING:
         await asyncio.sleep(0.2)
         status = await root.client.jobs.status(id)
@@ -664,16 +664,13 @@ async def ls(
     if root.quiet:
         formatter: BaseJobsFormatter = SimpleJobsFormatter()
     else:
-        if wide or not root.tty:
-            width = 0
-        else:
-            width = root.terminal_size[0]
         image_fmtr = image_formatter(uri_formatter=uri_fmtr)
         formatter = TabularJobsFormatter(
-            width, root.client.username, format, image_formatter=image_fmtr
+            root.client.username, format, image_formatter=image_fmtr
         )
 
-    pager_maybe(formatter([job async for job in jobs]), root.tty, root.terminal_size)
+    with root.pager():
+        root.print(formatter([job async for job in jobs]))
 
 
 @command()
@@ -702,11 +699,7 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
         uri_fmtr = uri_formatter(
             username=root.client.username, cluster_name=root.client.cluster_name
         )
-    if root.tty:
-        width = root.terminal_size[0]
-    else:
-        width = 0
-    click.echo(JobStatusFormatter(uri_formatter=uri_fmtr, width=width)(res))
+    root.print(JobStatusFormatter(uri_formatter=uri_fmtr)(res))
 
 
 @command()
@@ -715,7 +708,12 @@ async def tags(root: Root) -> None:
     List all tags submitted by the user.
     """
     res = await root.client.jobs.tags()
-    pager_maybe(res, root.tty, root.terminal_size)
+    table = Table.grid()
+    table.add_column("")
+    for item in res:
+        table.add_row(item)
+    with root.pager():
+        root.print(table)
 
 
 @command()
@@ -744,18 +742,13 @@ async def top(root: Root, job: str, timeout: float) -> None:
     """
     Display GPU/CPU/Memory usage.
     """
-    formatter = JobTelemetryFormatter()
-    id = await resolve_job(
-        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
-    )
-    print_header = True
-    async with async_timeout.timeout(timeout if timeout else None):
-        async for res in root.client.jobs.top(id):
-            if print_header:
-                click.echo(formatter.header())
-                print_header = False
-            line = formatter(res)
-            click.echo(f"\r{line}", nl=False)
+    with JobTelemetryFormatter(root.console) as formatter:
+        id = await resolve_job(
+            job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
+        )
+        async with async_timeout.timeout(timeout if timeout else None):
+            async for res in root.client.jobs.top(id):
+                formatter.update(res)
 
 
 @command()
@@ -1228,13 +1221,14 @@ async def run_job(
         life_span=job_life_span,
         schedule_timeout=job_schedule_timeout,
     )
-    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
-    progress.begin(job)
-    while wait_start and job.status == JobStatus.PENDING:
-        await asyncio.sleep(0.2)
-        job = await root.client.jobs.status(job.id)
-        progress.step(job)
-    progress.end(job)
+    with JobStartProgress.create(console=root.console, quiet=root.quiet) as progress:
+        progress.begin(job)
+        while wait_start and job.status == JobStatus.PENDING:
+            await asyncio.sleep(0.2)
+            job = await root.client.jobs.status(job.id)
+            progress.step(job)
+        progress.end(job)
+
     # Even if we detached, but the job has failed to start
     # (most common reason - no resources), the command fails
     if job.status == JobStatus.FAILED:
