@@ -696,7 +696,7 @@ class TTYProgress(BaseStorageProgress):
     def begin(self, src: URL, dst: URL) -> StorageProgressContextManager:
         src_label = self.fmt_url(src, FileStatusType.DIRECTORY)
         dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY)
-        self._progress.log(Text.assemble("Coping ", src_label, " => ", dst_label))
+        self._progress.log(Text.assemble("Copying ", src_label, " => ", dst_label))
         return super().begin(src, dst)
 
     def end(self) -> None:
@@ -713,7 +713,7 @@ class TTYProgress(BaseStorageProgress):
     def start(self, data: StorageProgressStart) -> None:
         fmt_src = self.fmt_url(data.src, FileStatusType.FILE)
         fmt_name = self.fmt_str(data.src.name, FileStatusType.FILE)
-        self._progress.log(Text.assemble("Coping: ", fmt_src))
+        self._progress.log(Text.assemble("Copying: ", fmt_src))
         task_id = self._progress.add_task(
             description=data.src.name,
             total=data.size,
