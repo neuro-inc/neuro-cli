@@ -27,6 +27,7 @@ from .utils import ImageFormatter, URIFormatter, image_formatter
 
 COLORS = {
     JobStatus.PENDING: "cyan",
+    JobStatus.SUSPENDED: "magenta",
     JobStatus.RUNNING: "blue",
     JobStatus.SUCCEEDED: "green",
     JobStatus.CANCELLED: "yellow",
@@ -181,6 +182,7 @@ class JobStatusFormatter:
         add("Created", job_status.history.created_at.isoformat())
         if job_status.status in [
             JobStatus.RUNNING,
+            JobStatus.SUSPENDED,
             JobStatus.FAILED,
             JobStatus.SUCCEEDED,
             JobStatus.CANCELLED,
