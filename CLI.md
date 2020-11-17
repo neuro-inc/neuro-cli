@@ -2173,7 +2173,7 @@ Name | Description|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
-|_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by current users username.|
+|_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_--since DATE_|Show jobs created after a specific date \(including).|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
@@ -2706,4 +2706,5 @@ neuro acl grant job:///my_job_id alice write
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+
 
