@@ -81,7 +81,7 @@ class JobStatus(str, enum.Enum):
     PENDING: a job is being created and scheduled. This includes finding (and
     possibly waiting for) sufficient amount of resources, pulling an image
     from a registry etc.
-    SUSPENDED: a preemptible job is paused to allow other jobs run.
+    SUSPENDED: a preemptible job is paused to allow other jobs to run.
     RUNNING: a job is being run.
     SUCCEEDED: a job terminated with the 0 exit code.
     CANCELLED: a running job was manually terminated/deleted.
