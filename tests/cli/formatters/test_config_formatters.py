@@ -154,6 +154,7 @@ class TestQuotaInfoFormatter:
 class TestQuotaFormatter:
     def test_output(self, rich_cmp: RichCmp) -> None:
         quota = _Quota(
+            total_running_jobs=10,
             total_gpu_run_time_minutes=321,
             total_non_gpu_run_time_minutes=123,
         )
@@ -162,27 +163,46 @@ class TestQuotaFormatter:
 
     def test_output_no_quota(self, rich_cmp: RichCmp) -> None:
         quota = _Quota(
-            total_non_gpu_run_time_minutes=None, total_gpu_run_time_minutes=None
+            total_running_jobs=None,
+            total_non_gpu_run_time_minutes=None,
+            total_gpu_run_time_minutes=None,
         )
         out = QuotaFormatter()(quota)
         rich_cmp(out)
 
     def test_output_only_gpu(self, rich_cmp: RichCmp) -> None:
         quota = _Quota(
-            total_gpu_run_time_minutes=9923, total_non_gpu_run_time_minutes=None
+            total_running_jobs=None,
+            total_gpu_run_time_minutes=9923,
+            total_non_gpu_run_time_minutes=None,
         )
         out = QuotaFormatter()(quota)
         rich_cmp(out)
 
     def test_output_only_cpu(self, rich_cmp: RichCmp) -> None:
         quota = _Quota(
-            total_non_gpu_run_time_minutes=3256, total_gpu_run_time_minutes=None
+            total_running_jobs=None,
+            total_non_gpu_run_time_minutes=3256,
+            total_gpu_run_time_minutes=None,
+        )
+        out = QuotaFormatter()(quota)
+        rich_cmp(out)
+
+    def test_output_only_jobs(self, rich_cmp: RichCmp) -> None:
+        quota = _Quota(
+            total_running_jobs=10,
+            total_non_gpu_run_time_minutes=None,
+            total_gpu_run_time_minutes=None,
         )
         out = QuotaFormatter()(quota)
         rich_cmp(out)
 
     def test_output_zeroes(self, rich_cmp: RichCmp) -> None:
-        quota = _Quota(total_gpu_run_time_minutes=0, total_non_gpu_run_time_minutes=0)
+        quota = _Quota(
+            total_running_jobs=0,
+            total_gpu_run_time_minutes=0,
+            total_non_gpu_run_time_minutes=0,
+        )
         out = QuotaFormatter()(quota)
         rich_cmp(out)
 

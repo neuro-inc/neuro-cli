@@ -1,0 +1,6 @@
+Id                                          Storage   Uri            Status   
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+  disk-1                                      50.0G     disk://clus…   Pending  
+  disk-2                                      50.0M     disk://clus…   Ready    
+  disk-3                                      50.0K     disk://clus…   Ready    
+  disk-4                                      50B       disk://clus…   Broken

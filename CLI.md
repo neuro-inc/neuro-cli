@@ -357,6 +357,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-g, --gpu AMOUNT_|GPU quota value in hours \(h) or minutes \(m).|
+|_\-j, --jobs AMOUNT_|Maximum running jobs quota|
 |_\-n, --non-gpu AMOUNT_|Non-GPU quota value in hours \(h) or minutes \(m).|
 
 
@@ -472,6 +473,7 @@ Name | Description|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files.|
+|_\--wait-for-seat / --no-wait-for-seat_|Wait for total running jobs quota  \[default: False]|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\-w, --workdir TEXT_|Working directory inside the container|
 
@@ -2051,7 +2053,7 @@ Remove disk DISK_ID.
 **Usage:**
 
 ```bash
-neuro disk rm [OPTIONS] DISK_ID
+neuro disk rm [OPTIONS] DISK_IDS...
 ```
 
 **Options:**
@@ -2134,6 +2136,7 @@ Name | Description|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files.|
+|_\--wait-for-seat / --no-wait-for-seat_|Wait for total running jobs quota  \[default: False]|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\-w, --workdir TEXT_|Working directory inside the container|
 

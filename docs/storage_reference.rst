@@ -138,14 +138,35 @@ Storage
       :param ~typing.AsyncIterator[bytes] data: asynchronous iterator used as data
                                                 provider for file content.
 
-   .. comethod:: open(uri: URL) -> AsyncIterator[bytes]
+   .. comethod:: write(uri: URL, data: bytes, offset: int) -> None
+
+      Overwrite the part of existing file on storage under *uri* name.
+
+      :param ~yarl.URL uri: storage path of remote file, e.g.
+                            ``yarl.URL("storage:folder/file.txt")``.
+
+      :param bytes data: data to be written. Must be non-empty.
+
+      :param int offset: position in file from which to write.
+
+   .. comethod:: open(uri: URL, offset: int = 0, size: Optional[int] = None) -> AsyncIterator[bytes]
       :async-for:
 
-      Get the content of remove file *uri* as asynchronous iterator, e.g.::
+      Get the content of remote file *uri* or its fragment as asynchronous iterator, e.g.::
 
          file = yarl.URL("storage:folder/file.txt")
          async for data in client.storage.open(file):
              print(data)
+
+      :param ~yarl.URL uri: storage path of remote file, e.g.
+                            ``yarl.URL("storage:folder/file.txt")``.
+
+      :param int offset: Position in file from which to read.
+
+      :param int size: Maximal size of the read data.  If ``None`` read to the end of the file.
+
+      :param ~typing.AsyncIterator[bytes] data: asynchronous iterator used for
+                                                retrieving the file content.
 
    .. rubric:: Copy operations
 

@@ -232,6 +232,7 @@ Jobs
                      description: Optional[str] = None, \
                      is_preemptible: bool = False, \
                      pass_config: bool = False, \
+                     wait_for_jobs_quota: bool = False, \
                      schedule_timeout: Optional[float] = None, \
                      life_span: Optional[float] = None, \
                  ) -> JobDescription
@@ -254,6 +255,10 @@ Jobs
                                  config data to job. This allows to API and CLI
                                  from the inside of the job. See
                                  :meth:`Factory.login_with_passed_config` for details.
+
+      :param bool wait_for_jobs_quota: when this flat is set, job will wait for another
+                                       job to stop instead of failing immediately
+                                       because of total running jobs quota.
 
       :param float schedule_timeout: minimal timeout to wait before reporting that job
                                      cannot be scheduled because the lack of computation
@@ -519,6 +524,10 @@ JobStatus
 
       Job is running now.
 
+   .. attribute:: SUSPENDED
+
+      Preemptible job is paused to allow other jobs to run.
+
    .. attribute:: SUCCEEDED
 
       Job is finished successfully.
@@ -534,6 +543,38 @@ JobStatus
    .. attribute:: UNKNOWN
 
       Invalid (or unknown) status code, should be never returned from server.
+
+   Also some shortcuts are available:
+
+   .. method:: items() -> Set[JobStatus]
+
+      Returns all statuses except :attr:`~JobStatus.UNKNOWN`.
+
+   .. method:: active_items() -> Set[JobStatus]
+
+      Returns all statuses that are not final:
+      :attr:`~JobStatus.PENDING`, :attr:`~JobStatus.SUSPENDED` and :attr:`~JobStatus.RUNNING`.
+
+   .. method:: finished_items() -> Set[JobStatus]
+
+      Returns all statuses that are final:
+      :attr:`~JobStatus.SUCCEEDED`, :attr:`~JobStatus.CANCELLED` and :attr:`~JobStatus.FAILED`.
+
+   Each enum value has next :class:`bool` fields:
+
+   .. attribute:: is_pending
+
+      Job is waiting to become running. ``True`` for :attr:`~JobStatus.PENDING` and
+      :attr:`~JobStatus.SUSPENDED` states.
+
+   .. attribute:: is_running
+
+      Job is running now. ``True`` for :attr:`~JobStatus.RUNNING` state.
+
+   .. attribute:: is_finished
+
+      Job completed execution. ``True`` for
+      :attr:`~JobStatus.SUCCEEDED`, :attr:`~JobStatus.CANCELLED` and :attr:`~JobStatus.FAILED`
 
 
 JobStatusHistory
@@ -571,6 +612,10 @@ JobStatusHistory
 
       Exit code for container's process (:class:`int`) or ``None`` if the job was not
       started or is still running.
+
+   .. attribute:: restarts
+
+      Number of container's restarts, :class:`int`.
 
    .. attribute:: created_at
 

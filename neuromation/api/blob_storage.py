@@ -5,6 +5,7 @@ import hashlib
 import itertools
 import logging
 import re
+import sys
 import time
 from dataclasses import dataclass
 from email.utils import parsedate
@@ -48,7 +49,13 @@ from .file_filter import FileFilter, translate
 from .storage import _always, _has_magic, _magic_check, run_concurrently, run_progress
 from .url_utils import _extract_path, normalize_blob_path_uri, normalize_local_path_uri
 from .users import Action
-from .utils import NoPublicConstructor, asynccontextmanager, queue_calls, retries
+from .utils import NoPublicConstructor, queue_calls, retries
+
+
+if sys.version_info >= (3, 7):  # pragma: no cover
+    from contextlib import asynccontextmanager
+else:
+    from async_generator import asynccontextmanager
 
 
 log = logging.getLogger(__name__)

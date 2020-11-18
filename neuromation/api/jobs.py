@@ -16,6 +16,7 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
+    Set,
     Union,
 )
 
@@ -49,7 +50,13 @@ from .url_utils import (
     normalize_secret_uri,
     normalize_storage_path_uri,
 )
-from .utils import NoPublicConstructor, asynccontextmanager
+from .utils import NoPublicConstructor
+
+
+if sys.version_info >= (3, 7):  # pragma: no cover
+    from contextlib import asynccontextmanager
+else:
+    from async_generator import asynccontextmanager
 
 
 log = logging.getLogger(__name__)
@@ -74,6 +81,7 @@ class JobStatus(str, enum.Enum):
     PENDING: a job is being created and scheduled. This includes finding (and
     possibly waiting for) sufficient amount of resources, pulling an image
     from a registry etc.
+    SUSPENDED: a preemptible job is paused to allow other jobs to run.
     RUNNING: a job is being run.
     SUCCEEDED: a job terminated with the 0 exit code.
     CANCELLED: a running job was manually terminated/deleted.
@@ -81,11 +89,36 @@ class JobStatus(str, enum.Enum):
     """
 
     PENDING = "pending"
+    SUSPENDED = "suspended"
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     CANCELLED = "cancelled"
     UNKNOWN = "unknown"  # invalid status code, a default value is status is not sent
+
+    @property
+    def is_pending(self) -> bool:
+        return self in (self.PENDING, self.SUSPENDED)
+
+    @property
+    def is_running(self) -> bool:
+        return self == self.RUNNING
+
+    @property
+    def is_finished(self) -> bool:
+        return self in (self.SUCCEEDED, self.FAILED, self.CANCELLED)
+
+    @classmethod
+    def items(cls) -> Set["JobStatus"]:
+        return {item for item in cls if item != cls.UNKNOWN}
+
+    @classmethod
+    def active_items(cls) -> Set["JobStatus"]:
+        return {item for item in cls.items() if not item.is_finished}
+
+    @classmethod
+    def finished_items(cls) -> Set["JobStatus"]:
+        return {item for item in cls.items() if item.is_finished}
 
 
 @dataclass(frozen=True)
@@ -115,6 +148,7 @@ class JobStatusHistory:
     status: JobStatus
     reason: str
     description: str
+    restarts: int
     created_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
@@ -219,6 +253,7 @@ class Jobs(metaclass=NoPublicConstructor):
         description: Optional[str] = None,
         is_preemptible: bool = False,
         pass_config: bool = False,
+        wait_for_jobs_quota: bool = False,
         schedule_timeout: Optional[float] = None,
         restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
         life_span: Optional[float] = None,
@@ -241,6 +276,8 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["restart_policy"] = str(restart_policy)
         if life_span is not None:
             payload["max_run_time_minutes"] = int(life_span // 60)
+        if wait_for_jobs_quota:
+            payload["wait_for_jobs_quota"] = wait_for_jobs_quota
         payload["cluster_name"] = self._config.cluster_name
         auth = await self._config._api_auth()
         async with self._core.request("POST", url, json=payload, auth=auth) as resp:
@@ -746,6 +783,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         # Forward-compatible support for CANCELLED status
         status=_calc_status(res["history"].get("status", "unknown")),
         reason=res["history"].get("reason", ""),
+        restarts=res["history"].get("restarts", 0),
         description=res["history"].get("description", ""),
         created_at=_parse_datetime(res["history"].get("created_at")),
         started_at=_parse_datetime(res["history"].get("started_at")),

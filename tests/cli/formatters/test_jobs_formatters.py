@@ -1,9 +1,12 @@
+import io
+import itertools
+import sys
 from datetime import datetime, timedelta, timezone
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
-import click
 import pytest
 from dateutil.parser import isoparse
+from rich.console import Console
 from yarl import URL
 
 from neuromation.api import (
@@ -25,7 +28,6 @@ from neuromation.cli.formatters.jobs import (
     JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
-    ResourcesFormatter,
     SimpleJobsFormatter,
     TabularJobRow,
     TabularJobsFormatter,
@@ -33,11 +35,34 @@ from neuromation.cli.formatters.jobs import (
 )
 from neuromation.cli.formatters.utils import image_formatter, uri_formatter
 from neuromation.cli.parse_utils import parse_columns
-from neuromation.cli.printer import CSI
 
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
 TEST_JOB_NAME = "test-job-name"
+
+_NewConsole = Callable[..., Console]
+
+
+@pytest.fixture
+def new_console() -> _NewConsole:
+    def factory(*, tty: bool, color: bool = True) -> Console:
+        file = io.StringIO()
+        # console doesn't accept the time source,
+        # using the real time in tests is not reliable
+        return Console(
+            file=file,
+            width=160,
+            height=24,
+            force_terminal=tty,
+            color_system="auto" if color else None,
+            record=True,
+            highlighter=None,
+            legacy_windows=False,
+            log_path=False,
+            log_time=False,
+        )
+
+    return factory
 
 
 @pytest.fixture
@@ -52,6 +77,7 @@ def job_descr_no_name() -> JobDescription:
             status=JobStatus.PENDING,
             reason="ErrorReason",
             description="ErrorDesc",
+            restarts=0,
             created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
             started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
             finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -78,6 +104,7 @@ def job_descr() -> JobDescription:
             status=JobStatus.PENDING,
             reason="ErrorReason",
             description="ErrorDesc",
+            restarts=0,
             created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
             started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
             finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -99,6 +126,7 @@ class TestJobStartProgress:
         *,
         name: Optional[str] = None,
         life_span: Optional[float] = None,
+        description: str = "ErrorDesc",
     ) -> JobDescription:
         return JobDescription(
             name=name,
@@ -112,7 +140,8 @@ class TestJobStartProgress:
             history=JobStatusHistory(
                 status=status,
                 reason=reason,
-                description="ErrorDesc",
+                description=description,
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -120,117 +149,104 @@ class TestJobStartProgress:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(
+                    16,
+                    0.1,
+                    4,
+                    "nvidia-tesla-p4",
+                    True,
+                    tpu_type="v2-8",
+                    tpu_software_version="1.14",
+                ),
             ),
             is_preemptible=False,
             pass_config=True,
             life_span=life_span,
         )
 
-    def strip(self, text: str) -> str:
-        return click.unstyle(text).strip()
-
-    def test_quiet(self, capfd: Any) -> None:
+    def test_quiet(self, rich_cmp: Any, new_console: _NewConsole) -> None:
         job = self.make_job(JobStatus.PENDING, "")
-        progress = JobStartProgress.create(tty=True, color=True, quiet=True)
-        progress.begin(job)
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert out == "test-job\n"
-        progress.step(job)
-        progress.end(job)
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert out == ""
+        console = new_console(tty=True, color=True)
+        with JobStartProgress.create(console, quiet=True) as progress:
+            progress.begin(job)
+            rich_cmp(console, index=0)
+            progress.step(job)
+            rich_cmp(console, index=1)
+            progress.end(job)
+            rich_cmp(console, index=2)
 
-    def test_no_tty_begin(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
-        progress.begin(self.make_job(JobStatus.PENDING, ""))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "test-job" in out
-        assert CSI not in out
+    def test_no_tty_begin(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.begin(self.make_job(JobStatus.PENDING, ""))
+            rich_cmp(console)
 
-    def test_no_tty_begin_with_name(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
-        progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "test-job" in out
-        assert "job-name" in out
-        assert CSI not in out
+    def test_no_tty_begin_with_name(
+        self, rich_cmp: Any, new_console: _NewConsole
+    ) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
+            rich_cmp(console)
 
-    def test_no_tty_step(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
-        progress.step(self.make_job(JobStatus.PENDING, ""))
-        progress.step(self.make_job(JobStatus.PENDING, ""))
-        progress.step(self.make_job(JobStatus.RUNNING, "reason"))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "pending" in out
-        assert "running" in out
-        assert "reason (ErrorDesc)" in out
-        assert out.count("pending") == 1
-        assert CSI not in out
+    def test_no_tty_step(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.step(self.make_job(JobStatus.PENDING, ""))
+            progress.step(self.make_job(JobStatus.PENDING, ""))
+            progress.step(self.make_job(JobStatus.RUNNING, "reason"))
+            rich_cmp(console)
 
-    def test_no_tty_end(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=False, color=True, quiet=False)
-        progress.end(self.make_job(JobStatus.RUNNING, ""))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert out == ""
+    def test_no_tty_end(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.end(self.make_job(JobStatus.RUNNING, ""))
+            rich_cmp(console)
 
-    def test_tty_begin(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress.begin(self.make_job(JobStatus.PENDING, ""))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "test-job" in out
-        assert CSI in out
+    def test_tty_begin(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=True, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.begin(self.make_job(JobStatus.PENDING, ""))
+            rich_cmp(console)
 
-    def test_tty_begin_with_name(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "test-job" in out
-        assert "job-name" in out
-        assert CSI in out
+    def test_tty_begin_with_name(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=True, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
+            rich_cmp(console)
 
-    def test_tty_step(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress.step(self.make_job(JobStatus.PENDING, ""))
-        progress.step(self.make_job(JobStatus.PENDING, ""))
-        progress.step(self.make_job(JobStatus.RUNNING, "reason"))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "pending" in out
-        assert "running" in out
-        assert "reason" in out
-        assert "(ErrorDesc)" in out
-        assert out.count("pending") != 1
-        assert CSI in out
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="On Windows spinner uses another characters set"
+    )
+    def test_tty_step(
+        self, rich_cmp: Any, new_console: _NewConsole, monkeypatch: Any
+    ) -> None:
+        monkeypatch.setattr(
+            JobStartProgress, "time_factory", itertools.count(10).__next__
+        )
+        console = new_console(tty=True, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.step(self.make_job(JobStatus.PENDING, "Pulling", description=""))
+            progress.step(self.make_job(JobStatus.PENDING, "Pulling", description=""))
+            progress.step(self.make_job(JobStatus.RUNNING, "reason", description=""))
+            rich_cmp(console)
 
-    def test_tty_end(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress.end(self.make_job(JobStatus.RUNNING, ""))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "http://local.host.test/" in out
-        assert CSI in out
+    def test_tty_end(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=True, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.end(self.make_job(JobStatus.RUNNING, ""))
+            rich_cmp(console)
 
-    def test_tty_end_with_life_span(self, capfd: Any, click_tty_emulation: Any) -> None:
-        progress = JobStartProgress.create(tty=True, color=True, quiet=False)
-        progress.end(self.make_job(JobStatus.RUNNING, "", life_span=24 * 3600))
-        out, err = capfd.readouterr()
-        assert err == ""
-        assert "http://local.host.test/" in out
-        assert "The job will die in a day." in out
-        assert CSI in out
+    def test_tty_end_with_life_span(
+        self, rich_cmp: Any, new_console: _NewConsole
+    ) -> None:
+        console = new_console(tty=True, color=True)
+        with JobStartProgress.create(console, quiet=False) as progress:
+            progress.end(self.make_job(JobStatus.RUNNING, "", life_span=24 * 3600))
 
 
 class TestJobOutputFormatter:
-    def test_job_with_name(self) -> None:
+    def test_job_with_name(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -244,6 +260,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -260,32 +277,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Name: test-job-name\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: test-image\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 123\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_job_with_tags(self) -> None:
+    def test_job_with_tags(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -299,6 +293,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -315,32 +310,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Tags: tag1, tag2, tag3\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: test-image\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 123\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_job_with_tags_wrap_tags(self) -> None:
+    def test_job_with_tags_wrap_tags(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -354,6 +326,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -370,35 +343,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(
-            JobStatusFormatter(uri_formatter=uri_fmtr, width=50)(description)
-        )
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Tags: long-tag-1, long-tag-2, long-tag-3,\n"
-            "      long-tag-4\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: test-image\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 123\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_job_with_life_span_with_value(self) -> None:
+    def test_job_with_life_span_with_value(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -411,6 +358,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -428,32 +376,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: test-image\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "Life span: 1d2h3m4s\n"
-            "TTY: False\n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 123\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_job_with_life_span_without_value(self) -> None:
+    def test_job_with_life_span_without_value(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -466,6 +391,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -483,32 +409,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: test-image\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "Life span: no limit\n"
-            "TTY: False\n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 123\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_job_with_restart_policy(self) -> None:
+    def test_job_with_restart_policy(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -521,6 +424,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=4,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -538,32 +442,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: test-image\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "Restart policy: always\n"
-            "TTY: False\n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 123\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_pending_job(self) -> None:
+    def test_pending_job(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -576,6 +457,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -592,31 +474,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: test-image\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 321\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_pending_job_no_reason(self) -> None:
+    def test_pending_job_no_reason(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.PENDING,
             id="test-job",
@@ -625,6 +485,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="",
                 description="",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=None,
                 finished_at=None,
@@ -642,24 +503,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Owner: owner\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: pending\n"
-            "Image: test-image\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "Preemptible: True\n"
-            "TTY: False\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00"
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_pending_job_with_reason(self) -> None:
+    def test_pending_job_with_reason(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.PENDING,
             id="test-job",
@@ -668,6 +514,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
                 description="",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=None,
                 finished_at=None,
@@ -686,24 +533,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Owner: owner\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: pending (ContainerCreating)\n"
-            "Image: test-image\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "Preemptible: True\n"
-            "TTY: True\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00"
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_pending_job_no_description(self) -> None:
+    def test_pending_job_no_description(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.PENDING,
             id="test-job",
@@ -712,6 +544,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
                 description="",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=None,
                 finished_at=None,
@@ -729,23 +562,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Owner: owner\n"
-            "Cluster: default\n"
-            "Status: pending (ContainerCreating)\n"
-            "Image: test-image\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "Preemptible: True\n"
-            "TTY: False\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00"
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_running_job(self) -> None:
+    def test_running_job(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
@@ -757,6 +576,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.RUNNING,
                 reason="ContainerRunning",
                 description="",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
                 finished_at=None,
@@ -773,26 +593,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: running\n"
-            "Image: test-image\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Internal Hostname: host.local\n"
-            "Http URL: http://local.host.test/\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:24.759433+00:00"
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_running_named_job(self) -> None:
+    def test_running_named_job(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
@@ -805,6 +608,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.RUNNING,
                 reason="ContainerRunning",
                 description="",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
                 finished_at=None,
@@ -822,28 +626,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Name: test-job\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: running\n"
-            "Image: test-image\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Internal Hostname: host.local\n"
-            "Internal Hostname Named: test-job--test-owner.local\n"
-            "Http URL: http://local.host.test/\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:24.759433+00:00"
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_job_with_entrypoint(self) -> None:
+    def test_job_with_entrypoint(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
@@ -855,6 +640,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.RUNNING,
                 reason="ContainerRunning",
                 description="",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
                 finished_at=None,
@@ -872,27 +658,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: running\n"
-            "Image: test-image\n"
-            "Entrypoint: /usr/bin/make\n"
-            "Command: test\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Internal Hostname: host.local\n"
-            "Http URL: http://local.host.test/\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:24.759433+00:00"
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_job_with_environment(self) -> None:
+    def test_job_with_environment(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -906,6 +674,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -929,35 +698,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Name: test-job-name\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: image:test-image:sometag\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Environment:\n"
-            "  ENV_NAME_1=__value1__\n"
-            "  ENV_NAME_2=**value2**\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 123\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_job_with_volumes_short(self) -> None:
+    def test_job_with_volumes_short(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -971,6 +714,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -1010,36 +754,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Name: test-job-name\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: image:test-image:sometag\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Volumes:\n"
-            "  /mnt/_ro_  storage:/otheruser/_ro_              READONLY\n"
-            "  /mnt/rw    storage:rw                                   \n"
-            "  /mnt/ro    storage://othercluster/otheruser/ro  READONLY\n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 123\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_job_with_volumes_long(self) -> None:
+    def test_job_with_volumes_long(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -1053,6 +770,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -1086,35 +804,9 @@ class TestJobOutputFormatter:
             pass_config=True,
         )
 
-        status = click.unstyle(JobStatusFormatter(uri_formatter=str)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Name: test-job-name\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: image://test-cluster/test-user/test-image:sometag\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Volumes:\n"
-            "  /mnt/ro  storage://test-cluster/otheruser/ro  READONLY\n"
-            "  /mnt/rw  storage://test-cluster/test-user/rw          \n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 123\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=str)(description))
 
-    def test_job_with_secrets_short(self) -> None:
+    def test_job_with_secrets_short(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -1128,6 +820,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -1177,44 +870,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Name: test-job-name\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: image:test-image:sometag\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Volumes:\n"
-            "  /mnt/rw  storage:rw   \n"
-            "Secret files:\n"
-            "  /var/run/secret1  secret:secret1                         \n"
-            "  /var/run/secret2  secret:/otheruser/secret2              \n"
-            "  /var/run/secret3  secret://othercluster/otheruser/secret3\n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Environment:\n"
-            "  ENV_NAME_0=somevalue\n"
-            "Secret environment:\n"
-            "  ENV_NAME_1=secret:secret4\n"
-            "  ENV_NAME_2=secret:/otheruser/secret5\n"
-            "  ENV_NAME_3=secret://othercluster/otheruser/secret6\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 123\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_job_with_disk_volumes_short(self) -> None:
+    def test_job_with_disk_volumes_short(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -1228,6 +886,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -1267,36 +926,9 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Name: test-job-name\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: image:test-image:sometag\n"
-            "Command: test-command\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Disk volumes:\n"
-            "  /mnt/disk1  disk:disk1                           READONLY\n"
-            "  /mnt/disk2  disk:/otheruser/disk2                        \n"
-            "  /mnt/disk3  disk://othercluster/otheruser/disk3          \n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 123\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
-    def test_job_with_working_dir(self) -> None:
+    def test_job_with_working_dir(self, rich_cmp: Any) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -1310,6 +942,7 @@ class TestJobOutputFormatter:
                 status=JobStatus.PENDING,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -1333,88 +966,52 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
-        status = click.unstyle(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
-        resource_formatter = ResourcesFormatter()
-        resource = click.unstyle(resource_formatter(description.container.resources))
-        assert (
-            status == "Job: test-job\n"
-            "Name: test-job-name\n"
-            "Owner: test-user\n"
-            "Cluster: default\n"
-            "Description: test job description\n"
-            "Status: failed (ErrorReason)\n"
-            "Image: image:test-image:sometag\n"
-            "Command: test-command\n"
-            "Working dir: /working/dir\n"
-            f"{resource}\n"
-            "TTY: False\n"
-            "Http URL: http://local.host.test/\n"
-            "Http port: 80\n"
-            "Http authentication: True\n"
-            "Created: 2018-09-25T12:28:21.298672+00:00\n"
-            "Started: 2018-09-25T12:28:59.759433+00:00\n"
-            "Finished: 2018-09-25T12:28:59.759433+00:00\n"
-            "Exit code: 123\n"
-            "=== Description ===\n"
-            "ErrorDesc\n==================="
-        )
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
 
 class TestJobTelemetryFormatter:
-    def _format(
-        self, timestamp: str, cpu: str, mem: str, gpu: str, gpu_mem: str
-    ) -> str:
-        return "\t".join(
-            [
-                f"{timestamp:<24}",
-                f"{cpu:<15}",
-                f"{mem:<15}",
-                f"{gpu:<15}",
-                f"{gpu_mem:<15}",
-            ]
-        )
+    # Use utc timezone in test for stable constant result
 
-    def test_format_header_line(self) -> None:
-        line = JobTelemetryFormatter().header()
-        assert line == self._format(
-            timestamp="TIMESTAMP",
-            cpu="CPU",
-            mem="MEMORY (MB)",
-            gpu="GPU (%)",
-            gpu_mem="GPU_MEMORY (MB)",
-        )
+    def test_format_telemetry_line_no_gpu(
+        self, rich_cmp: Any, new_console: _NewConsole
+    ) -> None:
+        console = new_console(tty=True, color=True)
+        with JobTelemetryFormatter(console, timezone.utc) as fmt:
+            timestamp = 1_517_248_466.238_723_6
+            telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
+            # Use utc timezone in test for stable constant result
+            fmt.update(telemetry)
+            rich_cmp(console)
 
-    def test_format_telemetry_line_no_gpu(self) -> None:
-        formatter = JobTelemetryFormatter()
-        # NOTE: the timestamp_str encodes the local timezone
-        timestamp = 1_517_248_466.238_723_6
-        timestamp_str = formatter._format_timestamp(timestamp)
-        telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
-        line = JobTelemetryFormatter()(telemetry)
-        assert line == self._format(
-            timestamp=timestamp_str, cpu="0.123", mem="256.123", gpu="0", gpu_mem="0"
-        )
+    def test_format_telemetry_seq(
+        self, rich_cmp: Any, new_console: _NewConsole
+    ) -> None:
+        console = new_console(tty=True, color=True)
+        with JobTelemetryFormatter(console, timezone.utc) as fmt:
+            timestamp = 1_517_248_466.238_723_6
+            telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
+            fmt.update(telemetry)
+            rich_cmp(console, index=0)
+            timestamp = 1_517_248_467.238_723_6
+            telemetry = JobTelemetry(cpu=0.23456, memory=128.123, timestamp=timestamp)
+            fmt.update(telemetry)
+            rich_cmp(console, index=1)
 
-    def test_format_telemetry_line_with_gpu(self) -> None:
-        formatter = JobTelemetryFormatter()
-        # NOTE: the timestamp_str encodes the local timezone
-        timestamp = 1_517_248_466
-        timestamp_str = formatter._format_timestamp(timestamp)
-        telemetry = JobTelemetry(
-            cpu=0.12345,
-            memory=256.1234,
-            timestamp=timestamp,
-            gpu_duty_cycle=99,
-            gpu_memory=64.5,
-        )
-        line = formatter(telemetry)
-        assert line == self._format(
-            timestamp=timestamp_str,
-            cpu="0.123",
-            mem="256.123",
-            gpu="99",
-            gpu_mem=f"64.500",
-        )
+    def test_format_telemetry_line_with_gpu(
+        self, rich_cmp: Any, new_console: _NewConsole
+    ) -> None:
+        console = new_console(tty=True, color=True)
+        with JobTelemetryFormatter(console, timezone.utc) as fmt:
+            timestamp = 1_517_248_466
+            telemetry = JobTelemetry(
+                cpu=0.12345,
+                memory=256.1234,
+                timestamp=timestamp,
+                gpu_duty_cycle=99,
+                gpu_memory=64.5,
+            )
+            fmt.update(telemetry)
+            rich_cmp(console)
 
 
 class TestJobStatusFormatter:
@@ -1454,12 +1051,11 @@ class TestJobStatusFormatter:
 
 
 class TestSimpleJobsFormatter:
-    def test_empty(self) -> None:
+    def test_empty(self, rich_cmp: Any) -> None:
         formatter = SimpleJobsFormatter()
-        result = [item for item in formatter([])]
-        assert result == []
+        rich_cmp(formatter([]))
 
-    def test_list(self) -> None:
+    def test_list(self, rich_cmp: Any) -> None:
         jobs = [
             JobDescription(
                 status=JobStatus.PENDING,
@@ -1471,6 +1067,7 @@ class TestSimpleJobsFormatter:
                     status=JobStatus.PENDING,
                     reason="ErrorReason",
                     description="ErrorDesc",
+                    restarts=0,
                     created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                     started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                     finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -1493,6 +1090,7 @@ class TestSimpleJobsFormatter:
                     status=JobStatus.FAILED,
                     reason="ErrorReason",
                     description="ErrorDesc",
+                    restarts=0,
                     created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                     started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                     finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -1506,11 +1104,7 @@ class TestSimpleJobsFormatter:
             ),
         ]
         formatter = SimpleJobsFormatter()
-        result = [item for item in formatter(jobs)]
-        assert result == [
-            "job-42687e7c-6c76-4857-a6a7-1166f8295391",
-            "job-cf33bd55-9e3b-4df7-a894-9c148a908a66",
-        ]
+        rich_cmp(formatter(jobs))
 
 
 class TestTabularJobRow:
@@ -1534,6 +1128,7 @@ class TestTabularJobRow:
                 status=status,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2017-01-02T12:28:21.298672+00:00"),
                 started_at=isoparse("2017-02-03T12:28:59.759433+00:00"),
                 finished_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
@@ -1564,20 +1159,22 @@ class TestTabularJobRow:
         assert row.name == ""
 
     @pytest.mark.parametrize(
-        "status,date",
+        "status,date,color",
         [
-            (JobStatus.PENDING, "Jan 02 2017"),
-            (JobStatus.RUNNING, "Feb 03 2017"),
-            (JobStatus.FAILED, "Mar 04 2017"),
-            (JobStatus.SUCCEEDED, "Mar 04 2017"),
-            (JobStatus.CANCELLED, "Mar 04 2017"),
+            (JobStatus.PENDING, "Jan 02 2017", "cyan"),
+            (JobStatus.RUNNING, "Feb 03 2017", "blue"),
+            (JobStatus.FAILED, "Mar 04 2017", "red"),
+            (JobStatus.SUCCEEDED, "Mar 04 2017", "green"),
+            (JobStatus.CANCELLED, "Mar 04 2017", "yellow"),
         ],
     )
-    def test_status_date_relation(self, status: JobStatus, date: str) -> None:
+    def test_status_date_relation(
+        self, status: JobStatus, date: str, color: str
+    ) -> None:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(status), "owner", image_formatter=str
         )
-        assert click.unstyle(row.status) == f"{status}"
+        assert row.status == f"[{color}]{status}[/{color}]"
         assert row.when == date
 
     def test_image_from_registry_parsing_short(self) -> None:
@@ -1623,24 +1220,18 @@ class TestTabularJobsFormatter:
         "bob", "test-cluster", URL("https://registry-test.neu.ro")
     )
 
-    def test_empty(self) -> None:
+    def test_empty(self, rich_cmp: Any) -> None:
         formatter = TabularJobsFormatter(
-            0, "owner", parse_columns(None), image_formatter=str
+            "owner", parse_columns(None), image_formatter=str
         )
-        result = [click.unstyle(item) for item in formatter([])]
-        assert result == ["  ".join(self.columns)]
-
-    def test_width_cutting(self) -> None:
-        formatter = TabularJobsFormatter(
-            10, "owner", parse_columns(None), image_formatter=str
-        )
-        result = [click.unstyle(item) for item in formatter([])]
-        assert result == ["  ".join(self.columns)[:10]]
+        rich_cmp(formatter([]))
 
     @pytest.mark.parametrize(
-        "owner_name,owner_printed", [("owner", "<you>"), ("alice", "alice")]
+        "idx,owner_name,owner_printed", [(0, "owner", "<you>"), (1, "alice", "alice")]
     )
-    def test_short_cells(self, owner_name: str, owner_printed: str) -> None:
+    def test_short_cells(
+        self, idx: int, owner_name: str, owner_printed: str, rich_cmp: Any
+    ) -> None:
         job = JobDescription(
             status=JobStatus.FAILED,
             id="j",
@@ -1653,6 +1244,7 @@ class TestTabularJobsFormatter:
                 status=JobStatus.FAILED,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
@@ -1666,28 +1258,16 @@ class TestTabularJobsFormatter:
             pass_config=True,
         )
         formatter = TabularJobsFormatter(
-            0, "owner", parse_columns(None), image_formatter=str
+            "owner", parse_columns(None), image_formatter=str
         )
-        result = [click.unstyle(item.rstrip()) for item in formatter([job])]
-        assert result in [
-            [
-                "ID  NAME  STATUS  WHEN  IMAGE  OWNER  CLUSTER  DESCRIPTION  COMMAND",
-                f"j   name  failed  now   i:l    {owner_printed}  dc       d            c",  # noqa: E501
-            ],
-            [
-                "ID  NAME  STATUS  WHEN          IMAGE  OWNER  CLUSTER  DESCRIPTION  COMMAND",  # noqa: E501
-                f"j   name  failed  a second ago  i:l    {owner_printed}  dc       d            c",  # noqa: E501
-            ],
-            [
-                "ID  NAME  STATUS  WHEN           IMAGE  OWNER  CLUSTER  DESCRIPTION  COMMAND",  # noqa: E501
-                f"j   name  failed  2 seconds ago  i:l    {owner_printed}  dc       d            c",  # noqa: E501
-            ],
-        ]
+        rich_cmp(formatter([job]), index=idx)
 
     @pytest.mark.parametrize(
-        "owner_name,owner_printed", [("owner", "<you>"), ("alice", "alice")]
+        "idx,owner_name,owner_printed", [(0, "owner", "<you>"), (1, "alice", "alice")]
     )
-    def test_wide_cells(self, owner_name: str, owner_printed: str) -> None:
+    def test_wide_cells(
+        self, idx: int, owner_name: str, owner_printed: str, rich_cmp: Any
+    ) -> None:
         jobs = [
             JobDescription(
                 status=JobStatus.FAILED,
@@ -1704,6 +1284,7 @@ class TestTabularJobsFormatter:
                     status=JobStatus.FAILED,
                     reason="ErrorReason",
                     description="ErrorDesc",
+                    restarts=0,
                     created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                     started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                     finished_at=isoparse("2017-09-25T12:28:59.759433+00:00"),
@@ -1733,6 +1314,7 @@ class TestTabularJobsFormatter:
                     status=JobStatus.PENDING,
                     reason="",
                     description="",
+                    restarts=0,
                     created_at=isoparse("2017-09-25T12:28:21.298672+00:00"),
                     started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                     finished_at=isoparse("2017-09-25T12:28:59.759433+00:00"),
@@ -1753,17 +1335,11 @@ class TestTabularJobsFormatter:
             ),
         ]
         formatter = TabularJobsFormatter(
-            0, "owner", parse_columns(None), image_formatter=str
+            "owner", parse_columns(None), image_formatter=str
         )
-        result = [click.unstyle(item.rstrip()) for item in formatter(jobs)]
-        assert result == [
-            f"ID                                        NAME   STATUS   WHEN         IMAGE                                     OWNER  CLUSTER  DESCRIPTION                           COMMAND",  # noqa: E501
-            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c82  name1  failed   Sep 25 2017  some-image-name:with-long-tag             {owner_printed}  default  some description long long long long  ls -la /some/path",  # noqa: E501
-            f"job-7ee153a7-249c-4be9-965a-ba3eafb67c84  name2  pending  Sep 25 2017  image://test-cluster/bob/some-image-      {owner_printed}  default  some description                      ls -la /some/path",  # noqa: E501
-            f"                                                                       name:with-long-tag",  # noqa: E501
-        ]
+        rich_cmp(formatter(jobs), index=idx)
 
-    def test_custom_columns(self) -> None:
+    def test_custom_columns(self, rich_cmp: Any) -> None:
         job = JobDescription(
             status=JobStatus.FAILED,
             id="j",
@@ -1776,6 +1352,7 @@ class TestTabularJobsFormatter:
                 status=JobStatus.FAILED,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                 finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
@@ -1790,12 +1367,10 @@ class TestTabularJobsFormatter:
         )
 
         columns = parse_columns("{status;align=right;min=20;Status Code}")
-        formatter = TabularJobsFormatter(0, "owner", columns, image_formatter=str)
-        result = [click.unstyle(item.rstrip()) for item in formatter([job])]
+        formatter = TabularJobsFormatter("owner", columns, image_formatter=str)
+        rich_cmp(formatter([job]))
 
-        assert result == ["         Status Code", "              failed"]
-
-    def test_life_span(self) -> None:
+    def test_life_span(self, rich_cmp: Any) -> None:
         life_spans = [None, 0, 7 * 24 * 3600, 12345]
         jobs = [
             JobDescription(
@@ -1810,6 +1385,7 @@ class TestTabularJobsFormatter:
                     status=JobStatus.FAILED,
                     reason="ErrorReason",
                     description="ErrorDesc",
+                    restarts=0,
                     created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                     started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                     finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
@@ -1827,23 +1403,16 @@ class TestTabularJobsFormatter:
         ]
 
         columns = parse_columns("id life_span")
-        formatter = TabularJobsFormatter(100, "owner", columns, image_formatter=str)
-        result = [click.unstyle(item.rstrip()) for item in formatter(jobs)]
+        formatter = TabularJobsFormatter("owner", columns, image_formatter=str)
+        rich_cmp(formatter(jobs))
 
-        assert result == [
-            "ID     LIFE-SPAN",
-            "job-1",
-            "job-2  no limit",
-            "job-3  7d",
-            "job-4  3h25m45s",
-        ]
-
-    def test_dates(self) -> None:
+    def test_dates(self, rich_cmp: Any) -> None:
         items = [
             JobStatusHistory(
                 status=JobStatus.PENDING,
                 reason="ContainerCreating",
                 description="",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=None,
                 finished_at=None,
@@ -1852,6 +1421,7 @@ class TestTabularJobsFormatter:
                 status=JobStatus.RUNNING,
                 reason="ContainerRunning",
                 description="",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
                 finished_at=None,
@@ -1860,6 +1430,7 @@ class TestTabularJobsFormatter:
                 status=JobStatus.FAILED,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
                 finished_at=isoparse("2018-09-26T12:28:59.759433+00:00"),
@@ -1868,6 +1439,7 @@ class TestTabularJobsFormatter:
                 status=JobStatus.FAILED,
                 reason="ErrorReason",
                 description="ErrorDesc",
+                restarts=0,
                 created_at=datetime.now(timezone.utc) - timedelta(seconds=12345),
                 started_at=datetime.now(timezone.utc) - timedelta(seconds=1234),
                 finished_at=datetime.now(timezone.utc) - timedelta(seconds=12),
@@ -1895,18 +1467,10 @@ class TestTabularJobsFormatter:
         ]
 
         columns = parse_columns("id status when created started finished")
-        formatter = TabularJobsFormatter(100, "test-user", columns, image_formatter=str)
-        result = [click.unstyle(item.rstrip()) for item in formatter(jobs)]
+        formatter = TabularJobsFormatter("test-user", columns, image_formatter=str)
+        rich_cmp(formatter(jobs))
 
-        assert result == [
-            "ID     STATUS   WHEN            CREATED      STARTED         FINISHED",
-            "job-1  pending  Sep 25 2018     Sep 25 2018",
-            "job-2  running  Sep 25 2018     Sep 25 2018  Sep 25 2018",
-            "job-3  failed   Sep 26 2018     Sep 25 2018  Sep 25 2018     Sep 26 2018",
-            "job-4  failed   12 seconds ago  3 hours ago  20 minutes ago  12 seconds ago",  # noqa: E501
-        ]
-
-    def test_working_dir(self) -> None:
+    def test_working_dir(self, rich_cmp: Any) -> None:
         items = [None, "/working/dir"]
         jobs = [
             JobDescription(
@@ -1920,6 +1484,7 @@ class TestTabularJobsFormatter:
                     status=JobStatus.FAILED,
                     reason="ErrorReason",
                     description="ErrorDesc",
+                    restarts=0,
                     created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                     started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
                     finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
@@ -1938,83 +1503,5 @@ class TestTabularJobsFormatter:
         ]
 
         columns = parse_columns("id workdir")
-        formatter = TabularJobsFormatter(100, "test-user", columns, image_formatter=str)
-        result = [click.unstyle(item.rstrip()) for item in formatter(jobs)]
-
-        assert result == [
-            "ID     WORKDIR",
-            "job-1",
-            "job-2  /working/dir",
-        ]
-
-
-class TestResourcesFormatter:
-    def test_tiny_container(self) -> None:
-        resources = Resources(
-            cpu=0.1,
-            gpu=0,
-            gpu_model=None,
-            memory_mb=16,
-            shm=False,
-            tpu_type=None,
-            tpu_software_version=None,
-        )
-        resource_formatter = ResourcesFormatter()
-        assert click.unstyle(resource_formatter(resources)) == (
-            "Resources:\n" "  Memory: 16.0M\n" "  CPU: 0.1"
-        )
-
-    def test_gpu_container(self) -> None:
-        resources = Resources(
-            cpu=2,
-            gpu=1,
-            gpu_model="nvidia-tesla-p4",
-            memory_mb=1024,
-            shm=False,
-            tpu_type=None,
-            tpu_software_version=None,
-        )
-        resource_formatter = ResourcesFormatter()
-        assert click.unstyle(resource_formatter(resources)) == (
-            "Resources:\n"
-            "  Memory: 1.0G\n"
-            "  CPU: 2.0\n"
-            "  GPU: 1.0 x nvidia-tesla-p4"
-        )
-
-    def test_shm_container(self) -> None:
-        resources = Resources(
-            cpu=0.1,
-            gpu=0,
-            gpu_model=None,
-            memory_mb=16,
-            shm=True,
-            tpu_type=None,
-            tpu_software_version=None,
-        )
-        resource_formatter = ResourcesFormatter()
-        assert click.unstyle(resource_formatter(resources)) == (
-            "Resources:\n"
-            "  Memory: 16.0M\n"
-            "  CPU: 0.1\n"
-            "  Additional: Extended SHM space"
-        )
-
-    def test_tpu_container(self) -> None:
-        resources = Resources(
-            cpu=0.1,
-            gpu=0,
-            gpu_model=None,
-            memory_mb=16,
-            shm=True,
-            tpu_type="v2-8",
-            tpu_software_version="1.14",
-        )
-        resource_formatter = ResourcesFormatter()
-        assert click.unstyle(resource_formatter(resources=resources)) == (
-            "Resources:\n"
-            "  Memory: 16.0M\n"
-            "  CPU: 0.1\n"
-            "  TPU: v2-8/1.14\n"
-            "  Additional: Extended SHM space"
-        )
+        formatter = TabularJobsFormatter("test-user", columns, image_formatter=str)
+        rich_cmp(formatter(jobs))

@@ -216,12 +216,22 @@ def _try_parse_image_progress_step(
     obj: Dict[str, Any], target_image_tag: Optional[str]
 ) -> Optional[ImageProgressStep]:
     _raise_on_error_chunk(obj)
-    if "id" in obj.keys() and obj["id"] != target_image_tag:
-        if "progress" in obj.keys():
+    if "id" in obj and obj["id"] != target_image_tag:
+        progress = obj.get("progress")
+        detail = obj.get("progressDetail")
+
+        if progress is not None:
             message = f"{obj['id']}: {obj['status']} {obj['progress']}"
         else:
             message = f"{obj['id']}: {obj['status']}"
-        return ImageProgressStep(message, obj["id"])
+
+        if detail is not None:
+            current = detail.get("current")
+            total = detail.get("total")
+        else:
+            current = total = None
+
+        return ImageProgressStep(message, obj["id"], obj["status"], current, total)
     return None
 
 

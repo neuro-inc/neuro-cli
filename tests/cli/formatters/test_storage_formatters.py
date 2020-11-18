@@ -1,7 +1,6 @@
 import time
 from typing import Any, List
 
-import click
 import pytest
 from yarl import URL
 
@@ -15,7 +14,6 @@ from neuromation.cli.formatters.storage import (
     GnuPainter,
     LongFilesFormatter,
     NonePainter,
-    QuotedPainter,
     SimpleFilesFormatter,
     VerticalColumnsFilesFormatter,
     get_painter,
@@ -23,7 +21,7 @@ from neuromation.cli.formatters.storage import (
 
 
 class TestNonePainter:
-    def test_simple(self) -> None:
+    def test_simple(self, rich_cmp: Any) -> None:
         painter = NonePainter()
         file = FileStatus(
             "File1",
@@ -33,33 +31,7 @@ class TestNonePainter:
             Action.READ,
             uri=URL("storage://default/user/File1"),
         )
-        assert painter.paint(file.name, file.type) == file.name
-
-
-class TestQuotedPainter:
-    def test_simple(self) -> None:
-        painter = QuotedPainter()
-        file = FileStatus(
-            "File1",
-            2048,
-            FileStatusType.FILE,
-            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            Action.READ,
-            uri=URL("storage://default/userFile1"),
-        )
-        assert painter.paint(file.name, file.type) == "'File1'"
-
-    def test_has_quote(self) -> None:
-        painter = QuotedPainter()
-        file = FileStatus(
-            "File1'2",
-            2048,
-            FileStatusType.FILE,
-            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            Action.READ,
-            uri=URL("storage://default/userFile'2"),
-        )
-        assert painter.paint(file.name, file.type) == '''"File1'2"'''
+        rich_cmp(painter.paint(file.name, file.type))
 
 
 class TestGnuPainter:
@@ -183,7 +155,17 @@ class TestGnuPainter:
         with pytest.raises(EnvironmentError):
             GnuPainter(escaped + "=1;2")
 
-    def test_coloring(self) -> None:
+    @pytest.mark.parametrize(
+        "ls_colors",
+        [
+            "di=32;41:fi=0;44:no=0;46",
+            "di=32;41:no=0;46",
+            "no=0;46",
+            "*.text=0;46",
+            "*.txt=0;46",
+        ],
+    )
+    def test_coloring(self, rich_cmp: Any, ls_colors: str) -> None:
         file = FileStatus(
             "test.txt",
             1024,
@@ -200,62 +182,9 @@ class TestGnuPainter:
             Action.WRITE,
             uri=URL("storage://default/usertmp"),
         )
-        painter = GnuPainter("di=32;41:fi=0;44:no=0;46")
-        assert painter.paint(file.name, file.type) == "\x1b[0;44mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder.type) == "\x1b[32;41mtmp\x1b[0m"
-
-        painter = GnuPainter("di=32;41:no=0;46")
-        assert painter.paint(file.name, file.type) == "\x1b[0;46mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder.type) == "\x1b[32;41mtmp\x1b[0m"
-
-        painter = GnuPainter("no=0;46")
-        assert painter.paint(file.name, file.type) == "\x1b[0;46mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder.type) == "\x1b[01;34mtmp\x1b[0m"
-
-        painter = GnuPainter("*.text=0;46")
-        assert painter.paint(file.name, file.type) == "test.txt"
-        assert painter.paint(folder.name, folder.type) == "\x1b[01;34mtmp\x1b[0m"
-
-        painter = GnuPainter("*.txt=0;46")
-        assert painter.paint(file.name, file.type) == "\x1b[0;46mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder.type) == "\x1b[01;34mtmp\x1b[0m"
-
-    def test_coloring_underline(self) -> None:
-        file = FileStatus(
-            "test.txt",
-            1024,
-            FileStatusType.FILE,
-            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            Action.READ,
-            uri=URL("storage://default/usertest.txt"),
-        )
-        folder = FileStatus(
-            "tmp",
-            0,
-            FileStatusType.DIRECTORY,
-            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            Action.WRITE,
-            uri=URL("storage://default/usertmp"),
-        )
-        painter = GnuPainter("di=32;41:fi=0;44:no=0;46", underline=True)
-        assert painter.paint(file.name, file.type) == "\x1b[0;44m\x1b[4mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder.type) == "\x1b[32;41m\x1b[4mtmp\x1b[0m"
-
-        painter = GnuPainter("di=32;41:no=0;46", underline=True)
-        assert painter.paint(file.name, file.type) == "\x1b[0;46m\x1b[4mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder.type) == "\x1b[32;41m\x1b[4mtmp\x1b[0m"
-
-        painter = GnuPainter("no=0;46", underline=True)
-        assert painter.paint(file.name, file.type) == "\x1b[0;46m\x1b[4mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder.type) == "\x1b[01;34m\x1b[4mtmp\x1b[0m"
-
-        painter = GnuPainter("*.text=0;46", underline=True)
-        assert painter.paint(file.name, file.type) == "\x1b[4mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder.type) == "\x1b[01;34m\x1b[4mtmp\x1b[0m"
-
-        painter = GnuPainter("*.txt=0;46", underline=True)
-        assert painter.paint(file.name, file.type) == "\x1b[0;46m\x1b[4mtest.txt\x1b[0m"
-        assert painter.paint(folder.name, folder.type) == "\x1b[01;34m\x1b[4mtmp\x1b[0m"
+        painter = GnuPainter(ls_colors)
+        rich_cmp(painter.paint(file.name, file.type), index=0)
+        rich_cmp(painter.paint(folder.name, folder.type), index=1)
 
 
 class TestBSDPainter:
@@ -263,7 +192,10 @@ class TestBSDPainter:
         painter = BSDPainter("exfxcxdxbxegedabagacad")
         assert painter._colors[BSDAttributes.DIRECTORY] == "ex"
 
-    def test_coloring(self) -> None:
+    @pytest.mark.parametrize(
+        "ls_colors", ["exfxcxdxbxegedabagacad", "Eafxcxdxbxegedabagacad"]
+    )
+    def test_coloring(self, ls_colors: str, rich_cmp: Any) -> None:
         file = FileStatus(
             "test.txt",
             1024,
@@ -280,48 +212,9 @@ class TestBSDPainter:
             Action.WRITE,
             uri=URL("storage://default/usertmp"),
         )
-        painter = BSDPainter("exfxcxdxbxegedabagacad")
-        assert painter.paint(file.name, file.type) == "test.txt"
-        assert painter.paint(folder.name, folder.type) == click.style("tmp", fg="blue")
-
-        painter = BSDPainter("Eafxcxdxbxegedabagacad")
-        assert painter.paint(file.name, file.type) == "test.txt"
-        assert painter.paint(folder.name, folder.type) == click.style(
-            "tmp", fg="blue", bg="black", bold=True
-        )
-
-    def test_coloring_underline(self) -> None:
-        file = FileStatus(
-            "test.txt",
-            1024,
-            FileStatusType.FILE,
-            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            Action.READ,
-            uri=URL("storage://default/usertest.txt"),
-        )
-        folder = FileStatus(
-            "tmp",
-            0,
-            FileStatusType.DIRECTORY,
-            int(time.mktime(time.strptime("2018-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
-            Action.WRITE,
-            uri=URL("storage://default/usertmp"),
-        )
-        painter = BSDPainter("exfxcxdxbxegedabagacad", underline=True)
-        assert painter.paint(file.name, file.type) == click.style(
-            "test.txt", underline=True
-        )
-        assert painter.paint(folder.name, folder.type) == click.style(
-            "tmp", fg="blue", underline=True
-        )
-
-        painter = BSDPainter("Eafxcxdxbxegedabagacad", underline=True)
-        assert painter.paint(file.name, file.type) == click.style(
-            "test.txt", underline=True
-        )
-        assert painter.paint(folder.name, folder.type) == click.style(
-            "tmp", fg="blue", bg="black", bold=True, underline=True
-        )
+        painter = BSDPainter(ls_colors)
+        rich_cmp(painter.paint(file.name, file.type), index=0)
+        rich_cmp(painter.paint(folder.name, folder.type), index=1)
 
 
 class TestPainterFactory:
@@ -397,54 +290,18 @@ class TestFilesFormatter:
     ]
     files_and_folders = files + folders
 
-    def test_simple_formatter(self) -> None:
-        formatter = SimpleFilesFormatter(color=False)
-        assert list(formatter(self.files_and_folders)) == [
-            f"{file.name}" for file in self.files_and_folders
-        ]
-
-    def test_long_formatter(self) -> None:
-        formatter = LongFilesFormatter(human_readable=False, color=False)
-        assert list(formatter(self.files_and_folders)) == [
-            "-r    2048 2018-01-01 03:00:00 File1",
-            "-r    1024 2018-10-10 13:10:10 File2",
-            "-r 1024001 2019-02-02 05:02:02 File3 with space",
-            "dm       0 2017-03-03 06:03:03 Folder1",
-            "dm       0 2017-03-03 06:03:02 1Folder with space",
-        ]
-
-        formatter = LongFilesFormatter(human_readable=True, color=False)
-        assert list(formatter(self.files_and_folders)) == [
-            "-r    2.0K 2018-01-01 03:00:00 File1",
-            "-r    1.0K 2018-10-10 13:10:10 File2",
-            "-r 1000.0K 2019-02-02 05:02:02 File3 with space",
-            "dm       0 2017-03-03 06:03:03 Folder1",
-            "dm       0 2017-03-03 06:03:02 1Folder with space",
-        ]
-
-    def test_column_formatter(self) -> None:
-        formatter = VerticalColumnsFilesFormatter(width=40, color=False)
-        assert list(formatter(self.files_and_folders)) == [
-            "File1             Folder1",
-            "File2             1Folder with space",
-            "File3 with space",
-        ]
-
-        formatter = VerticalColumnsFilesFormatter(width=36, color=False)
-        assert list(formatter(self.files_and_folders)) == [
-            "File1             Folder1",
-            "File2             1Folder with space",
-            "File3 with space",
-        ]
-
-        formatter = VerticalColumnsFilesFormatter(width=1, color=False)
-        assert list(formatter(self.files_and_folders)) == [
-            "File1",
-            "File2",
-            "File3 with space",
-            "Folder1",
-            "1Folder with space",
-        ]
+    @pytest.mark.parametrize(
+        "formatter",
+        [
+            (SimpleFilesFormatter(color=False)),
+            (VerticalColumnsFilesFormatter(width=100, color=False)),
+            (LongFilesFormatter(human_readable=False, color=False)),
+        ],
+    )
+    def test_formatter_with_files_and_folders(
+        self, formatter: BaseFilesFormatter, rich_cmp: Any
+    ) -> None:
+        rich_cmp(formatter(self.files_and_folders))
 
     @pytest.mark.parametrize(
         "formatter",
@@ -454,9 +311,11 @@ class TestFilesFormatter:
             (LongFilesFormatter(human_readable=False, color=False)),
         ],
     )
-    def test_formatter_with_empty_files(self, formatter: BaseFilesFormatter) -> None:
+    def test_formatter_with_empty_files(
+        self, formatter: BaseFilesFormatter, rich_cmp: Any
+    ) -> None:
         files: List[FileStatus] = []
-        assert [] == list(formatter(files))
+        rich_cmp(formatter(files))
 
     def test_sorter(self) -> None:
         sorter = FilesSorter.NAME

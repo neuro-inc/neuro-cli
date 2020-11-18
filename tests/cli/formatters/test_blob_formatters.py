@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Union, cast
+from typing import Any, List, Union, cast
 
 import pytest
 
@@ -69,54 +69,7 @@ class TestBlobFormatter:
     list_results: List[ListResult] = cast(List[ListResult], blobs) + cast(
         List[ListResult], folders
     )
-
-    def test_simple_formatter(self) -> None:
-        formatter = SimpleBlobFormatter(color=False)
-        assert list(formatter(self.list_results)) == [
-            "blob:neuro-public-bucket/file1024.txt",
-            "blob:neuro-public-bucket/file_bigger.txt",
-            "blob:neuro-shared-bucket/folder2/info.txt",
-            "blob:neuro-shared-bucket/folder2/",
-            "blob:neuro-public-bucket/folder1/",
-            "blob:neuro-shared-bucket/folder2/",
-        ]
-        assert list(formatter(self.buckets)) == [
-            "blob:neuro-my-bucket",
-            "blob:neuro-public-bucket",
-            "blob:neuro-shared-bucket",
-        ]
-
-    def test_long_formatter(self) -> None:
-        formatter = LongBlobFormatter(human_readable=False, color=False)
-        assert list(formatter(self.list_results)) == [
-            "    1024 2018-01-01 14:00:00 blob:neuro-public-bucket/file1024.txt",
-            " 1024001 2018-01-01 00:00:00 blob:neuro-public-bucket/file_bigger.txt",
-            "     240 2018-01-02 00:00:00 blob:neuro-shared-bucket/folder2/info.txt",
-            "       0 2018-01-02 00:00:00 blob:neuro-shared-bucket/folder2/",
-            "                             blob:neuro-public-bucket/folder1/",
-            "                             blob:neuro-shared-bucket/folder2/",
-        ]
-        assert list(formatter(self.buckets)) == [
-            "m  2018-01-01 03:00:00 blob:neuro-my-bucket",
-            "r  2018-01-01 13:01:05 blob:neuro-public-bucket",
-            "w  2018-01-01 17:02:04 blob:neuro-shared-bucket",
-        ]
-
-        formatter = LongBlobFormatter(human_readable=True, color=False)
-        assert list(formatter(self.list_results)) == [
-            "    1.0K 2018-01-01 14:00:00 blob:neuro-public-bucket/file1024.txt",
-            " 1000.0K 2018-01-01 00:00:00 blob:neuro-public-bucket/file_bigger.txt",
-            "     240 2018-01-02 00:00:00 blob:neuro-shared-bucket/folder2/info.txt",
-            "       0 2018-01-02 00:00:00 blob:neuro-shared-bucket/folder2/",
-            "                             blob:neuro-public-bucket/folder1/",
-            "                             blob:neuro-shared-bucket/folder2/",
-        ]
-
-        assert list(formatter(self.buckets)) == [
-            "m  2018-01-01 03:00:00 blob:neuro-my-bucket",
-            "r  2018-01-01 13:01:05 blob:neuro-public-bucket",
-            "w  2018-01-01 17:02:04 blob:neuro-shared-bucket",
-        ]
+    files: List[ListResult] = []
 
     @pytest.mark.parametrize(
         "formatter",
@@ -125,6 +78,8 @@ class TestBlobFormatter:
             (LongBlobFormatter(human_readable=False, color=False)),
         ],
     )
-    def test_formatter_with_empty_files(self, formatter: BaseBlobFormatter) -> None:
-        files: List[LsResult] = []
-        assert [] == list(formatter(files))
+    def test_long_formatter(self, rich_cmp: Any, formatter: BaseBlobFormatter) -> None:
+        formatter = LongBlobFormatter(human_readable=False, color=False)
+        rich_cmp(formatter(self.list_results), index=0)
+        rich_cmp(formatter(self.buckets), index=1)
+        rich_cmp(formatter(self.files), index=2)

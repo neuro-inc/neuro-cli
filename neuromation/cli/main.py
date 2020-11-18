@@ -512,6 +512,13 @@ cli.add_command(alias(share.grant, "share", help=share.grant.help, deprecated=Fa
 cli.topics = topics
 
 
+def _err_to_str(err: Exception) -> str:
+    result = str(err)
+    if result == "":
+        result = type(err).__name__
+    return result
+
+
 def main(args: Optional[List[str]] = None) -> None:
     try:
         with warnings.catch_warnings():
@@ -531,34 +538,34 @@ def main(args: Optional[List[str]] = None) -> None:
         sys.exit(EX_TIMEOUT)
 
     except neuromation.api.errors.IllegalArgumentError as error:
-        LOG_ERROR(f"Illegal argument(s) ({error})")
+        LOG_ERROR(f"Illegal argument(s) ({_err_to_str(error)})")
         sys.exit(EX_DATAERR)
 
     except neuromation.api.errors.ResourceNotFound as error:
-        LOG_ERROR(f"{error}")
+        LOG_ERROR(f"{_err_to_str(error)}")
         sys.exit(EX_OSFILE)
 
     except neuromation.api.errors.AuthenticationError as error:
-        LOG_ERROR(f"Cannot authenticate ({error})")
+        LOG_ERROR(f"Cannot authenticate ({_err_to_str(error)})")
         sys.exit(EX_NOPERM)
     except neuromation.api.errors.AuthorizationError as error:
-        LOG_ERROR(f"Not enough permissions ({error})")
+        LOG_ERROR(f"Not enough permissions ({_err_to_str(error)})")
         sys.exit(EX_NOPERM)
 
     except neuromation.api.errors.ClientError as error:
-        LOG_ERROR(f"Application error ({error})")
+        LOG_ERROR(f"Application error ({_err_to_str(error)})")
         sys.exit(EX_SOFTWARE)
 
     except neuromation.api.errors.ServerNotAvailable as error:
-        LOG_ERROR(f"Application error ({error})")
+        LOG_ERROR(f"Application error ({_err_to_str(error)})")
         sys.exit(EX_PLATFORMERROR)
 
     except ConfigError as error:
-        LOG_ERROR(f"{error}")
+        LOG_ERROR(f"{_err_to_str(error)}")
         sys.exit(EX_SOFTWARE)
 
     except aiohttp.ClientError as error:
-        LOG_ERROR(f"Connection error ({error})")
+        LOG_ERROR(f"Connection error ({_err_to_str(error)})")
         sys.exit(EX_IOERR)
 
     except DockerError as error:
@@ -566,23 +573,23 @@ def main(args: Optional[List[str]] = None) -> None:
         sys.exit(EX_PROTOCOL)
 
     except NotImplementedError as error:
-        LOG_ERROR(f"{error}")
+        LOG_ERROR(f"{_err_to_str(error)}")
         sys.exit(EX_SOFTWARE)
 
     except FileNotFoundError as error:
-        LOG_ERROR(f"File not found ({error})")
+        LOG_ERROR(f"File not found ({_err_to_str(error)})")
         sys.exit(EX_OSFILE)
 
     except NotADirectoryError as error:
-        LOG_ERROR(f"{error}")
+        LOG_ERROR(f"{_err_to_str(error)}")
         sys.exit(EX_OSFILE)
 
     except PermissionError as error:
-        LOG_ERROR(f"Cannot access file ({error})")
+        LOG_ERROR(f"Cannot access file ({_err_to_str(error)})")
         sys.exit(EX_NOPERM)
 
     except OSError as error:
-        LOG_ERROR(f"I/O Error ({error})")
+        LOG_ERROR(f"I/O Error ({_err_to_str(error)})")
         sys.exit(EX_IOERR)
 
     except asyncio.CancelledError:
@@ -594,12 +601,12 @@ def main(args: Optional[List[str]] = None) -> None:
         sys.exit(130)
 
     except ValueError as e:
-        LOG_ERROR(e)
+        LOG_ERROR(_err_to_str(e))
         sys.exit(127)
 
     except SystemExit:
         raise
 
     except Exception as e:
-        LOG_ERROR(f"{e}")
+        LOG_ERROR(f"{_err_to_str(e)}")
         sys.exit(1)

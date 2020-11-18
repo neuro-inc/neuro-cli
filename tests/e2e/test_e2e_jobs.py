@@ -25,6 +25,7 @@ import aiohttp
 import pytest
 from aiohttp.test_utils import unused_port
 from pexpect.replwrap import REPLWrapper
+from re_assert import Matches
 from yarl import URL
 
 from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
@@ -107,28 +108,24 @@ def test_job_run(helper: Helper) -> None:
 
     # Check it is in a running,pending job list now
     captured = helper.run_cli(
-        ["job", "ls", "--status", "running", "--status", "pending"]
+        ["-q", "job", "ls", "--status", "running", "--status", "pending"]
     )
-    store_out_list = captured.out.split("\n")[1:]
-    jobs_updated = [x.split("  ")[0] for x in store_out_list]
-    assert job_id in jobs_updated
+    Matches(job_id) == captured.out
 
     # Wait until the job is running
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
 
     # Check that it is in a running job list
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
-    store_out = captured.out
-    assert job_id in store_out
-    # Check that the command is in the list
-    assert "bash -c 'sleep 10m; false'" in store_out
+    captured = helper.run_cli(["-q", "job", "ls", "--status", "running"])
+    Matches(job_id) == captured.out
+
     helper.kill_job(job_id, wait=False)
 
 
 @pytest.mark.e2e
 def test_job_description(helper: Helper) -> None:
     # Remember original running jobs
-    captured = helper.run_cli(["job", "ls", "--status", "running"])
+    captured = helper.run_cli(["-q", "job", "ls", "--status", "running"])
     description = str(uuid4())
     # Run a new job
     command = "bash -c 'sleep 15m; false'"
@@ -145,7 +142,7 @@ def test_job_description(helper: Helper) -> None:
             command,
         ]
     )
-    match = re.match("Job ID: (.+)", captured.out)
+    match = re.match(r"Job ID:?\s+(.+)", captured.out)
     assert match is not None
     job_id = match.group(1)
 
@@ -180,13 +177,11 @@ def test_job_tags(helper: Helper) -> None:
     assert match is not None
     job_id = match.group(1)
 
-    captured = helper.run_cli(["ps", *tag_options])
-    store_out_list = captured.out.split("\n")[1:]
-    jobs = [x.split("  ")[0] for x in store_out_list]
-    assert job_id in jobs
+    captured = helper.run_cli(["-q", "ps", *tag_options])
+    assert job_id in captured.out
 
     captured = helper.run_cli(["job", "tags"])
-    tags_listed = captured.out.split("\n")
+    tags_listed = [tag.strip() for tag in captured.out.split("\n")]
     assert set(tags) <= set(tags_listed)
 
 
@@ -201,24 +196,20 @@ def test_job_filter_by_date_range(helper: Helper) -> None:
     now = datetime.now()
     delta = timedelta(minutes=10)
 
-    captured = helper.run_cli(["ps", "--since", (now - delta).isoformat()])
-    store_out_list = captured.out.split("\n")[1:]
-    jobs = [x.split("  ")[0] for x in store_out_list]
+    captured = helper.run_cli(["-q", "ps", "--since", (now - delta).isoformat()])
+    jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id in jobs
 
-    captured = helper.run_cli(["ps", "--since", (now + delta).isoformat()])
-    store_out_list = captured.out.split("\n")[1:]
-    jobs = [x.split("  ")[0] for x in store_out_list]
+    captured = helper.run_cli(["-q", "ps", "--since", (now + delta).isoformat()])
+    jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id not in jobs
 
-    captured = helper.run_cli(["ps", "--until", (now - delta).isoformat()])
-    store_out_list = captured.out.split("\n")[1:]
-    jobs = [x.split("  ")[0] for x in store_out_list]
+    captured = helper.run_cli(["-q", "ps", "--until", (now - delta).isoformat()])
+    jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id not in jobs
 
-    captured = helper.run_cli(["ps", "--until", (now + delta).isoformat()])
-    store_out_list = captured.out.split("\n")[1:]
-    jobs = [x.split("  ")[0] for x in store_out_list]
+    captured = helper.run_cli(["-q", "ps", "--until", (now + delta).isoformat()])
+    jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id in jobs
 
 
@@ -235,19 +226,16 @@ def test_job_filter_by_tag(helper: Helper) -> None:
     assert match is not None
     job_id = match.group(1)
 
-    captured = helper.run_cli(["ps", "--tag", tags[0]])
-    store_out_list = captured.out.split("\n")[1:]
-    jobs = [x.split("  ")[0] for x in store_out_list]
+    captured = helper.run_cli(["-q", "ps", "--tag", tags[0]])
+    jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id in jobs
 
-    captured = helper.run_cli(["ps", "--tag", tags[1]])
-    store_out_list = captured.out.split("\n")[1:]
-    jobs = [x.split("  ")[0] for x in store_out_list]
+    captured = helper.run_cli(["-q", "ps", "--tag", tags[1]])
+    jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id in jobs
 
-    captured = helper.run_cli(["ps", "--tag", "test-tag:not-present"])
-    store_out_list = captured.out.split("\n")[1:]
-    jobs = [x.split("  ")[0] for x in store_out_list]
+    captured = helper.run_cli(["-q", "ps", "--tag", "test-tag:not-present"])
+    jobs = {x.strip() for x in captured.out.split("\n")}
     assert job_id not in jobs
 
 
@@ -752,7 +740,7 @@ def test_job_run_exit_code(helper: Helper) -> None:
     # Verify exit code is returned
     captured = helper.run_cli(["job", "status", job_id])
     store_out = captured.out
-    assert "Exit code: 101" in store_out
+    Matches(r"Exit code\s+101") == store_out
 
 
 @pytest.mark.e2e
@@ -850,17 +838,6 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_run_with_tty(helper: Helper) -> None:
-    command = "test -t 0"
-    job_id = helper.run_job_and_wait_state(
-        UBUNTU_IMAGE_NAME, command, wait_state=JobStatus.SUCCEEDED, tty=True
-    )
-
-    captured = helper.run_cli(["job", "status", job_id])
-    assert "TTY: True" in captured.out
-
-
-@pytest.mark.e2e
 def test_job_run_volume_all(helper: Helper) -> None:
     root_mountpoint = "/var/neuro"
     cmd = " && ".join(
@@ -900,21 +877,25 @@ def test_e2e_job_top(helper: Helper) -> None:
     print("... done")
     t0 = time()
     returncode = -1
-    delay = 15.0
+    delay = 1.0
 
     while returncode and time() - t0 < 3 * 60:
         try:
-            print("Try job top")
+            print("Try job top", delay)
             capture = helper.run_cli(["job", "top", job_id, "--timeout", str(delay)])
         except subprocess.CalledProcessError as ex:
             stdout = ex.output
             stderr = ex.stderr
             returncode = ex.returncode
+            print("FAILED", returncode)
+            print(stdout)
+            print(stderr)
         else:
             stdout = capture.out
             stderr = capture.err
             returncode = 0
 
+        print("STDOUT", stdout)
         if "TIMESTAMP" in stdout and "MEMORY (MB)" in stdout:
             # got response from job top telemetery
             returncode = 0
@@ -931,40 +912,9 @@ def test_e2e_job_top(helper: Helper) -> None:
         f"stdout = {stdout}\nstdderr = {stderr}"
     )
 
-    helper.kill_job(job_id, wait=False)
+    helper.kill_job(job_id, wait=True)
 
-    try:
-        header, *lines = split_non_empty_parts(stdout, sep="\n")
-    except ValueError:
-        assert False, f"cannot unpack\n{stdout}\n{stderr}"
-    header_parts = split_non_empty_parts(header, sep="\t")
-    assert header_parts == [
-        "TIMESTAMP",
-        "CPU",
-        "MEMORY (MB)",
-        "GPU (%)",
-        "GPU_MEMORY (MB)",
-    ]
-
-    for line in lines:
-        line_parts = split_non_empty_parts(line, sep="\t")
-        timestamp_pattern_parts = [
-            ("weekday", "[A-Z][a-z][a-z]"),
-            ("month", "[A-Z][a-z][a-z]"),
-            ("day", r"\d+"),
-            ("day", r"\d\d:\d\d:\d\d"),
-            ("year", r"\d{4}"),
-        ]
-        timestamp_pattern = r"\s+".join([part[1] for part in timestamp_pattern_parts])
-        expected_parts = [
-            ("timestamp", timestamp_pattern),
-            ("cpu", r"\d.\d\d\d"),
-            ("memory", r"\d.\d\d\d"),
-            ("gpu", "0"),
-            ("gpu memory", "0"),
-        ]
-        for actual, (descr, pattern) in zip(line_parts, expected_parts):
-            assert re.match(pattern, actual) is not None, f"error in matching {descr}"
+    # the "top" command formatter is tested by unit-tests
 
 
 @pytest.mark.e2e
@@ -984,8 +934,8 @@ def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
     job_id = captured.out
     request.addfinalizer(lambda: helper.kill_job(job_id, wait=False))
 
-    captured = helper.run_cli(["job", "status", job_id])
-    assert "Restart policy: on-failure" in captured.out.splitlines()
+    captured = helper.run_cli(["--color", "no", "job", "status", job_id])
+    assert "on-failure" in captured.out
 
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
     sleep(1)

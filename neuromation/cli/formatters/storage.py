@@ -5,14 +5,28 @@ import operator
 import os
 import sys
 import time
+from abc import ABC
 from dataclasses import dataclass
 from fnmatch import fnmatch
-from math import ceil
 from time import monotonic
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple
+from types import TracebackType
+from typing import Any, Dict, Iterator, List, Sequence, Type
 
-import click
-from click import style, unstyle
+from rich.ansi import AnsiDecoder
+from rich.columns import Columns
+from rich.console import RenderableType
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    GetTimeCallable,
+    Progress,
+    TaskID,
+    TextColumn,
+    TransferSpeedColumn,
+)
+from rich.style import Style
+from rich.table import Table
+from rich.text import Text
 from yarl import URL
 
 from neuromation.api import (
@@ -30,7 +44,6 @@ from neuromation.api import (
     StorageProgressStep,
 )
 from neuromation.api.url_utils import _extract_path
-from neuromation.cli.printer import TTYPrinter
 from neuromation.cli.root import Root
 from neuromation.cli.utils import format_size
 
@@ -97,28 +110,19 @@ class ParseState(enum.Enum):
 
 class BasePainter(abc.ABC):
     @abc.abstractmethod
-    def paint(self, label: str, type: FileStatusType) -> str:  # pragma: no cover
+    def paint(self, label: str, type: FileStatusType) -> Text:  # pragma: no cover
         pass
 
 
 class NonePainter(BasePainter):
-    def paint(self, label: str, type: FileStatusType) -> str:
-        return label
-
-
-class QuotedPainter(BasePainter):
-    def paint(self, label: str, type: FileStatusType) -> str:
-        if "'" not in label:
-            return "'" + label + "'"
-        else:
-            return '"' + label + '"'
+    def paint(self, label: str, type: FileStatusType) -> Text:
+        return Text(label)
 
 
 class GnuPainter(BasePainter):
-    def __init__(self, ls_colors: str, *, underline: bool = False):
+    def __init__(self, ls_colors: str):
         self._defaults()
         self._parse_ls_colors(ls_colors)
-        self._underline = underline
 
     def _defaults(self) -> None:
         self.color_indicator: Dict[GnuIndicators, str] = {
@@ -337,7 +341,7 @@ class GnuPainter(BasePainter):
         if state == ParseState.PS_RIGHT and len(right):
             process(left, right)
 
-    def paint(self, label: str, type: FileStatusType) -> str:
+    def paint(self, label: str, type: FileStatusType) -> Text:
         mapping = {
             FileStatusType.FILE: self.color_indicator[GnuIndicators.FILE],
             FileStatusType.DIRECTORY: self.color_indicator[GnuIndicators.DIR],
@@ -351,28 +355,21 @@ class GnuPainter(BasePainter):
                     color = value
                     break
         if color:
-            if self._underline:
-                underline = (
+            # If formatted text contains newlines for some reason,
+            # painter should escape them
+            return Text("\\n").join(
+                AnsiDecoder().decode(
                     self.color_indicator[GnuIndicators.LEFT]
-                    + "4"
+                    + color
+                    + self.color_indicator[GnuIndicators.RIGHT]
+                    + label
+                    + self.color_indicator[GnuIndicators.LEFT]
+                    + self.color_indicator[GnuIndicators.RESET]
                     + self.color_indicator[GnuIndicators.RIGHT]
                 )
-            else:
-                underline = ""
-            return (
-                self.color_indicator[GnuIndicators.LEFT]
-                + color
-                + self.color_indicator[GnuIndicators.RIGHT]
-                + underline
-                + label
-                + self.color_indicator[GnuIndicators.LEFT]
-                + self.color_indicator[GnuIndicators.RESET]
-                + self.color_indicator[GnuIndicators.RIGHT]
             )
-        if self._underline:
-            return style(label, underline=self._underline)
         else:
-            return label
+            return Text(label)
 
 
 class BSDAttributes(enum.Enum):
@@ -390,8 +387,7 @@ class BSDAttributes(enum.Enum):
 
 
 class BSDPainter(BasePainter):
-    def __init__(self, lscolors: str, *, underline: bool = False):
-        self._underline = underline
+    def __init__(self, lscolors: str):
         self._parse_lscolors(lscolors)
 
     def _parse_lscolors(self, lscolors: str) -> None:
@@ -402,7 +398,7 @@ class BSDPainter(BasePainter):
             self._colors[attr] = parts[num]
             num += 1
 
-    def paint(self, label: str, type: FileStatusType) -> str:
+    def paint(self, label: str, type: FileStatusType) -> Text:
         color = ""
         if type == FileStatusType.DIRECTORY:
             color = self._colors[BSDAttributes.DIRECTORY]
@@ -425,36 +421,30 @@ class BSDPainter(BasePainter):
                     bold = True
             if color[1] in char_to_color.keys():
                 bg = char_to_color[color[1]]
-            if self._underline:
-                underline: Optional[bool] = True
-            else:
-                underline = None
-            if fg or bg or bold or underline:
-                return style(label, fg=fg, bg=bg, bold=bold, underline=underline)
-        if self._underline:
-            return style(label, underline=self._underline)
-        return label
+            if fg or bg or bold:
+                return Text(
+                    label,
+                    style=Style(color=fg, bgcolor=bg, bold=bold),
+                )
+        return Text(label)
 
 
-def get_painter(color: bool, *, quote: bool = False) -> BasePainter:
+def get_painter(color: bool) -> BasePainter:
     if color:
         ls_colors = os.getenv("LS_COLORS")
         if ls_colors:
-            return GnuPainter(ls_colors, underline=quote)
+            return GnuPainter(ls_colors)
         lscolors = os.getenv("LSCOLORS")
         if lscolors:
-            return BSDPainter(lscolors, underline=quote)
-    if quote:
-        return QuotedPainter()
-    else:
-        return NonePainter()
+            return BSDPainter(lscolors)
+    return NonePainter()
 
 
 class BaseFilesFormatter:
     @abc.abstractmethod
     def __call__(
         self, files: Sequence[FileStatus]
-    ) -> Iterator[str]:  # pragma: no cover
+    ) -> RenderableType:  # pragma: no cover
         pass
 
 
@@ -467,7 +457,7 @@ class LongFilesFormatter(BaseFilesFormatter):
         self.human_readable = human_readable
         self.painter = get_painter(color)
 
-    def _columns_for_file(self, file: FileStatus) -> Sequence[str]:
+    def _columns_for_file(self, file: FileStatus) -> Sequence[RenderableType]:
 
         type = self.file_types_mapping[file.type]
         permission = self.permissions_mapping[file.permission]
@@ -481,35 +471,28 @@ class LongFilesFormatter(BaseFilesFormatter):
 
         name = self.painter.paint(file.name, file.type)
 
-        return [f"{type}{permission}", f"{size}", f"{date}", f"{name}"]
+        return [f"{type}{permission}", f"{size}", f"{date}", name]
 
-    def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
-        if not files:
-            return
-        table = [self._columns_for_file(file) for file in files]
-        widths = [0 for _ in table[0]]
-        for row in table:
-            for x in range(len(row)):
-                cell_width = len(unstyle(row[x]))
-                if widths[x] < cell_width:
-                    widths[x] = cell_width
-        for row in table:
-            line = []
-            for x in range(len(row)):
-                if x == len(row) - 1:
-                    line.append(row[x])
-                else:
-                    line.append(row[x].rjust(widths[x]))
-            yield " ".join(line)
+    def __call__(self, files: Sequence[FileStatus]) -> RenderableType:
+        table = Table.grid(padding=(0, 2))
+        table.add_column()  # Type/Permissions
+        table.add_column(justify="right")  # Size
+        table.add_column()  # Date
+        table.add_column()  # Filename
+
+        for file in files:
+            table.add_row(*self._columns_for_file(file))
+        return table
 
 
 class SimpleFilesFormatter(BaseFilesFormatter):
     def __init__(self, color: bool):
         self.painter = get_painter(color)
 
-    def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
-        for file in files:
-            yield self.painter.paint(file.name, file.type)
+    def __call__(self, files: Sequence[FileStatus]) -> RenderableType:
+        return Text("\n").join(
+            self.painter.paint(file.name, file.type) for file in files
+        )
 
 
 class VerticalColumnsFilesFormatter(BaseFilesFormatter):
@@ -517,36 +500,18 @@ class VerticalColumnsFilesFormatter(BaseFilesFormatter):
         self.width = width
         self.painter = get_painter(color)
 
-    def __call__(self, files: Sequence[FileStatus]) -> Iterator[str]:
+    def __call__(self, files: Sequence[FileStatus]) -> RenderableType:
         if not files:
-            return
+            return ""
         items = [self.painter.paint(file.name, file.type) for file in files]
-        widths = [len(unstyle(item)) for item in items]
-        # let`s check how many columns we can use
-        test_count = 1
-        while True:
-            test_columns = chunks(widths, ceil(len(items) / test_count))
-            test_columns_widths = [max(column) for column in test_columns]
-            test_total_width = sum(test_columns_widths) + 2 * (len(test_columns) - 1)
-            if test_count == 1 or test_total_width <= self.width:
-                count = test_count
-                columns_widths = test_columns_widths
-                if test_total_width == self.width:
-                    break
-
-            if test_total_width >= self.width or len(test_columns) == len(items):
-                break
-            test_count = test_count + 1
-
-        rows = transpose(chunks(items, ceil(len(items) / count)))
-        for row in rows:
-            formatted_row = []
-            for i in range(len(row)):
-                formatted = row[i]
-                if i < len(row) - 1:
-                    formatted = formatted.ljust(columns_widths[i])
-                formatted_row.append(formatted)
-            yield "  ".join(formatted_row)
+        column_width = max(len(item) for item in items) + 1
+        return Columns(
+            [self.painter.paint(file.name, file.type) for file in files],
+            align="left",
+            column_first=True,
+            width=column_width,
+            padding=0,
+        )
 
 
 class FilesSorter(str, enum.Enum):
@@ -571,9 +536,10 @@ class FilesSorter(str, enum.Enum):
 
 class DeleteProgress(AbstractDeleteProgress):
     def __init__(self, root: Root) -> None:
-        self.painter = get_painter(root.color, quote=True)
+        self._root = root
+        self.painter = get_painter(root.color)
 
-    def fmt_url(self, url: URL, type: FileStatusType) -> str:
+    def fmt_url(self, url: URL, type: FileStatusType) -> Text:
         return self.painter.paint(str(url), type)
 
     def delete(self, data: StorageProgressDelete) -> None:
@@ -581,21 +547,44 @@ class DeleteProgress(AbstractDeleteProgress):
             data.uri,
             FileStatusType.DIRECTORY if data.is_dir else FileStatusType.FILE,
         )
-        click.echo(f"Removed: {url_label}")
+        self._root.print(f"Removed: {url_label}")
 
 
-class BaseStorageProgress(AbstractRecursiveFileProgress):
-    @abc.abstractmethod
-    def begin(self, src: URL, dst: URL) -> None:  # pragma: no cover
-        pass
+class StorageProgressContextManager:
+    def __init__(self, progress: "BaseStorageProgress"):
+        self._progress = progress
+
+    def begin(self, src: URL, dst: URL) -> "BaseStorageProgress":
+        self._progress.begin(src, dst)
+        return self._progress
+
+    def __enter__(self) -> "BaseStorageProgress":
+        return self._progress
+
+    def __exit__(
+        self,
+        exc_type: Type[BaseException],
+        exc_val: BaseException,
+        exc_tb: TracebackType,
+    ) -> None:
+        self._progress.end()
+
+
+class BaseStorageProgress(AbstractRecursiveFileProgress, ABC):
+    def begin(
+        self, src: URL, dst: URL
+    ) -> StorageProgressContextManager:  # pragma: no cover
+        return StorageProgressContextManager(self)
 
     def end(self) -> None:  # pragma: no cover
         pass
 
 
-def create_storage_progress(root: Root, show_progress: bool) -> BaseStorageProgress:
+def create_storage_progress(
+    root: Root, show_progress: bool, *, get_time: GetTimeCallable = time.monotonic
+) -> BaseStorageProgress:
     if show_progress:
-        return TTYProgress(root)
+        return TTYProgress(root, get_time=get_time)
     else:
         return StreamProgress(root)
 
@@ -610,18 +599,20 @@ def format_url(url: URL) -> str:
 
 class StreamProgress(BaseStorageProgress):
     def __init__(self, root: Root) -> None:
-        self.painter = get_painter(root.color, quote=True)
+        self.painter = get_painter(root.color)
         self.verbose = root.verbosity > 0
+        self._root = root
 
-    def fmt_url(self, url: URL, type: FileStatusType) -> str:
+    def fmt_url(self, url: URL, type: FileStatusType) -> Text:
         label = format_url(url)
         return self.painter.paint(label, type)
 
-    def begin(self, src: URL, dst: URL) -> None:
+    def begin(self, src: URL, dst: URL) -> StorageProgressContextManager:
         if self.verbose:
             src_label = self.fmt_url(src, FileStatusType.DIRECTORY)
             dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY)
-            click.echo(f"Copy {src_label} -> {dst_label}")
+            self._root.print(f"Copy {src_label} -> {dst_label}")
+        return super().begin(src, dst)
 
     def start(self, data: StorageProgressStart) -> None:
         pass
@@ -631,7 +622,7 @@ class StreamProgress(BaseStorageProgress):
             return
         src = self.fmt_url(data.src, FileStatusType.FILE)
         dst = self.fmt_url(data.dst, FileStatusType.FILE)
-        click.echo(f"{src} -> {dst}")
+        self._root.print(f"{src} -> {dst}")
 
     def step(self, data: StorageProgressStep) -> None:
         pass
@@ -641,7 +632,7 @@ class StreamProgress(BaseStorageProgress):
             return
         src = self.fmt_url(data.src, FileStatusType.FILE)
         dst = self.fmt_url(data.dst, FileStatusType.FILE)
-        click.echo(f"{src} -> {dst}")
+        self._root.print(f"{src} -> {dst}")
 
     def leave(self, data: StorageProgressLeaveDir) -> None:
         pass
@@ -649,9 +640,8 @@ class StreamProgress(BaseStorageProgress):
     def fail(self, data: StorageProgressFail) -> None:
         src = self.fmt_url(data.src, FileStatusType.FILE)
         dst = self.fmt_url(data.dst, FileStatusType.FILE)
-        click.echo(
-            click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
-            err=True,
+        self._root.print(
+            f"[red]Failure:[/] {src} -> {dst} \\[{data.message}]", err=True
         )
 
 
@@ -660,174 +650,96 @@ class TTYProgress(BaseStorageProgress):
     FLUSH_INTERVAL = 0.2
     time_factory = staticmethod(monotonic)
 
-    def __init__(self, root: Root) -> None:
-        self.painter = get_painter(root.color, quote=True)
-        self.printer = TTYPrinter()
-        self.half_width = (root.terminal_size[0] - 10) // 2
-        self.full_width = root.terminal_size[0] - 20
-        self.lines: List[Tuple[URL, bool, str]] = []
-        self.cur_dir: Optional[URL] = None
-        self.verbose = root.verbosity > 0
-        self.first_line = self.last_line = 0
-        self.last_update_time = self.time_factory()
+    def __init__(
+        self, root: Root, *, get_time: GetTimeCallable = time.monotonic
+    ) -> None:
+        self.painter = get_painter(root.color)
+        self._root = root
+        self._mapping: Dict[URL, TaskID] = {}
+        self._progress = Progress(
+            TextColumn("[progress.description]{task.fields[filename]}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            DownloadColumn(),
+            TransferSpeedColumn(),
+            console=root.console,
+            auto_refresh=True,
+            transient=True,
+            get_time=get_time,
+        )
+        self._progress.start()
 
-    def fmt_url(self, url: URL, type: FileStatusType, *, half: bool) -> str:
-        label = str(url)
-        if half:
-            width = self.half_width
-        else:
-            width = self.full_width
-        while len(label) > width:
-            parts = list(url.parts)
-            if len(parts) < 2:
+    def _refresh(self) -> None:
+        height = self._root.terminal_size[1]
+        # If terminal is to small, we cannot show all tasks.
+        # Moreover, scroll will be also broken, so the
+        # only solution is just to hide some tasks.
+        to_hide = len(self._progress.task_ids) - height + 2
+        hidden = sum(1 for task in self._progress.tasks if not task.visible)
+        for task in self._progress.tasks:
+            if to_hide < hidden and not task.visible:
+                self._progress.update(task.id, visible=True)
+                hidden -= 1
+            if to_hide > hidden and task.visible:
+                self._progress.update(task.id, visible=False)
+                hidden += 1
+            if to_hide == hidden:
                 break
-            if parts[0] == "/":
-                if len(parts) < 3:
-                    slash = "/"
-                    break
-                slash, first, second, *last = parts
-                if first == "...":
-                    if last:
-                        parts = ["..."] + last
-                    else:
-                        break
-                else:
-                    parts = ["...", second] + last
-            else:
-                slash = ""
-                # len(parts) > 1 always
-                first, second, *last = parts
-                if first == "...":
-                    if last:
-                        parts = ["..."] + last
-                    else:
-                        break
-                else:
-                    parts = ["...", second] + last
-            if url.host or slash:
-                pre = f"//{url.host or ''}{slash}"
-            else:
-                pre = ""
-            url = URL(f"{url.scheme}:{pre}{'/'.join(parts)}")
-            label = str(url)
-        return self.fmt_str(label, type)
+        self._progress.refresh()
 
-    def fmt_str(self, label: str, type: FileStatusType) -> str:
+    def fmt_url(self, url: URL, type: FileStatusType) -> Text:
+        return self.fmt_str(format_url(url), type)
+
+    def fmt_str(self, label: str, type: FileStatusType) -> Text:
         return self.painter.paint(label, type)
 
-    def fmt_size(self, size: int) -> str:
-        return format_size(size)
-
-    def begin(self, src: URL, dst: URL) -> None:
-        if self.verbose:
-            click.echo("Copy")
-            click.echo(self.fmt_str(str(src), FileStatusType.DIRECTORY))
-            click.echo("=>")
-            click.echo(self.fmt_str(str(dst), FileStatusType.DIRECTORY))
-        else:
-            src_label = self.fmt_url(src, FileStatusType.DIRECTORY, half=True)
-            dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY, half=True)
-            click.echo(f"Copy {src_label} => {dst_label}")
+    def begin(self, src: URL, dst: URL) -> StorageProgressContextManager:
+        src_label = self.fmt_url(src, FileStatusType.DIRECTORY)
+        dst_label = self.fmt_url(dst, FileStatusType.DIRECTORY)
+        self._progress.log(Text.assemble("Copying ", src_label, " => ", dst_label))
+        return super().begin(src, dst)
 
     def end(self) -> None:
-        self.flush()
+        self._progress.stop()
 
     def enter(self, data: StorageProgressEnterDir) -> None:
-        self._enter_dir(data.src)
-
-    def _enter_dir(self, src: URL) -> None:
-        fmt_src = self.fmt_url(src, FileStatusType.DIRECTORY, half=False)
-        self.append(src, f"{fmt_src} ...", is_dir=True)
-        self.cur_dir = src
+        fmt_src = self.fmt_url(data.src, FileStatusType.DIRECTORY)
+        self._progress.log(Text.assemble("Starting copying directory ", fmt_src))
 
     def leave(self, data: StorageProgressLeaveDir) -> None:
-        src = self.fmt_url(data.src, FileStatusType.DIRECTORY, half=False)
-        if self.lines and self.lines[-1][0] == data.src:
-            self.lines.pop()
-        self.append(data.src, f"{src} DONE", is_dir=True)
-        self.flush()
-        self.cur_dir = None
+        fmt_src = self.fmt_url(data.src, FileStatusType.DIRECTORY)
+        self._progress.log(Text.assemble("Finished copying directory ", fmt_src))
 
     def start(self, data: StorageProgressStart) -> None:
-        src = self.fmt_str(data.src.name, FileStatusType.FILE)
-        progress = 0
-        current = self.fmt_size(0)
-        total = self.fmt_size(data.size)
-        self._append_file(data.src, f"{src} [{progress:.2f}%] {current} of {total}")
-
-    def complete(self, data: StorageProgressComplete) -> None:
-        src = self.fmt_str(data.src.name, FileStatusType.FILE)
-        total = self.fmt_size(data.size)
-        self.replace(data.src, f"{src} {total}")
+        fmt_src = self.fmt_url(data.src, FileStatusType.FILE)
+        fmt_name = self.fmt_str(data.src.name, FileStatusType.FILE)
+        self._progress.log(Text.assemble("Copying: ", fmt_src))
+        task_id = self._progress.add_task(
+            description=data.src.name,
+            total=data.size,
+            filename=fmt_name,
+        )
+        self._mapping[data.src] = task_id
+        self._refresh()
 
     def step(self, data: StorageProgressStep) -> None:
-        src = self.fmt_str(data.src.name, FileStatusType.FILE)
-        progress = 100 * data.current / data.size if data.size else 100
-        current = self.fmt_size(data.current)
-        total = self.fmt_size(data.size)
-        self.replace(data.src, f"{src} [{progress:.2f}%] {current} of {total}")
+        task_id = self._mapping[data.src]
+        self._progress.update(task_id, completed=data.current)
+        self._refresh()
+
+    def complete(self, data: StorageProgressComplete) -> None:
+        fmt_src = self.fmt_url(data.src, FileStatusType.FILE)
+        self._progress.log(Text.assemble("Copied: ", fmt_src))
+        task_id = self._mapping[data.src]
+        self._progress.remove_task(task_id)
+        self._refresh()
 
     def fail(self, data: StorageProgressFail) -> None:
-        self.flush()
         src = self.fmt_str(str(data.src), FileStatusType.FILE)
         dst = self.fmt_str(str(data.dst), FileStatusType.FILE)
-        click.echo(
-            click.style("Failure:", fg="red") + f" {src} -> {dst} [{data.message}]",
-            err=True,
+        self._root.print(
+            f"[red]Failure:[/red] {src} -> {dst} \\[{data.message}]", err=True
         )
-        # clear lines to sync with writing to stderr
-        self.lines = []
-        self.last_line = 0
-
-    def _append_file(self, key: URL, msg: str) -> None:
-        parent = key.parent
-        if self.cur_dir is not None and self.cur_dir != parent:
-            self._enter_dir(parent)
-        self.append(key, msg)
-
-    def append(self, key: URL, msg: str, is_dir: bool = False) -> None:
-        self.lines.append((key, is_dir, msg))
-        if len(self.lines) > self.HEIGHT:
-            if not self.lines[0][1]:
-                # top line is not a dir, drop it.
-                del self.lines[0]
-            elif self.lines[1][1]:
-                # second line is a dir, drop the first line.
-                del self.lines[0]
-            else:
-                # there is a file line under a dir line, drop the file line.
-                del self.lines[1]
-            self.first_line = 0
-        self.last_line = len(self.lines)
-        self.maybe_flush()
-
-    def replace(self, key: URL, msg: str) -> None:
-        for i in range(len(self.lines))[::-1]:
-            line = self.lines[i]
-            if line[0] == key:
-                self.lines[i] = (key, False, msg)
-                self.first_line = min(self.first_line, i)
-                self.last_line = max(self.last_line, i + 1)
-                self.maybe_flush()
-                break
-        else:
-            self._append_file(key, msg)
-
-    def maybe_flush(self) -> None:
-        if (
-            len(self.lines) < self.HEIGHT
-            or self.time_factory() >= self.last_update_time + self.FLUSH_INTERVAL
-        ):
-            self.flush()
-
-    def flush(self) -> None:
-        text = "\n".join(
-            msg for _, _, msg in self.lines[self.first_line : self.last_line]
-        )
-        self.printer.print(text, self.first_line)
-        self.first_line = len(self.lines)
-        self.last_line = 0
-        self.last_update_time = self.time_factory()
 
 
 @dataclass(frozen=True)
@@ -848,7 +760,7 @@ class TreeFormatter:
         self._ident: List[bool] = []
         self._numdirs = 0
         self._numfiles = 0
-        self._painter = get_painter(color, quote=True)
+        self._painter = get_painter(color)
         if sys.platform != "win32":
             self._delims = self.ANSI_DELIMS
         else:
@@ -861,32 +773,37 @@ class TreeFormatter:
             self._size_func = self._none
         self._key = FilesSorter(sort).key()
 
-    def __call__(self, tree: Tree) -> List[str]:
+    def __call__(self, tree: Tree) -> Text:
         ret = self.listdir(tree)
-        ret.append("")
-        ret.append(f"{self._numdirs} directories, {self._numfiles} files")
+        ret.append(f"\n{self._numdirs} directories, {self._numfiles} files")
         return ret
 
-    def listdir(self, tree: Tree) -> List[str]:
-        ret = []
+    def listdir(self, tree: Tree) -> Text:
+        ret = Text()
         items = sorted(tree.folders + tree.files, key=self._key)  # type: ignore
         ret.append(
-            self.pre()
-            + self._size_func(tree.size)
-            + self._painter.paint(tree.name, FileStatusType.DIRECTORY)
+            Text.assemble(
+                self.pre(),
+                self._size_func(tree.size),
+                self._painter.paint(tree.name, FileStatusType.DIRECTORY),
+                "\n",
+            )
         )
         for num, item in enumerate(items):
             if isinstance(item, Tree):
                 self._numdirs += 1
                 with self.ident(num == len(items) - 1):
-                    ret.extend(self.listdir(item))
+                    ret.append(self.listdir(item))
             else:
                 self._numfiles += 1
                 with self.ident(num == len(items) - 1):
                     ret.append(
-                        self.pre()
-                        + self._size_func(item.size)
-                        + self._painter.paint(item.name, FileStatusType.FILE)
+                        Text.assemble(
+                            self.pre(),
+                            self._size_func(item.size),
+                            self._painter.paint(item.name, FileStatusType.FILE),
+                            "\n",
+                        )
                     )
         return ret
 
