@@ -82,8 +82,7 @@ class Config(metaclass=NoPublicConstructor):
 
     @property
     def presets(self) -> Mapping[str, Preset]:
-        cluster = self._config_data.clusters[self._config_data.cluster_name]
-        return MappingProxyType(cluster.presets)
+        return MappingProxyType(self._cluster.presets)
 
     @property
     def clusters(self) -> Mapping[str, Cluster]:
@@ -91,8 +90,32 @@ class Config(metaclass=NoPublicConstructor):
 
     @property
     def cluster_name(self) -> str:
-        name = self._config_data.cluster_name
+        name = self._get_user_cluster_name()
+        if name is None:
+            name = self._config_data.cluster_name
         return name
+
+    def _get_user_cluster_name(self) -> Optional[str]:
+        config = self._get_user_config()
+        section = config.get("job")
+        if section is not None:
+            return section.get("cluster-name")
+        return None
+
+    @property
+    def _cluster(self) -> Cluster:
+        try:
+            return self._config_data.clusters[self.cluster_name]
+        except KeyError:
+            if self._get_user_cluster_name() is None:
+                tip = "Please logout and login again."
+            else:
+                tip = "Please edit local user config file or logout and login again."
+            raise RuntimeError(
+                f"Cluster {self.cluster_name} doesn't exist in "
+                f"a list of available clusters "
+                f"{list(self._config_data.clusters)}. {tip}"
+            ) from None
 
     async def _fetch_config(self) -> _ServerConfig:
         token = await self.token()
@@ -128,6 +151,11 @@ class Config(metaclass=NoPublicConstructor):
         _save(self._config_data, self._path)
 
     async def switch_cluster(self, name: str) -> None:
+        if self._get_user_cluster_name() is not None:
+            raise RuntimeError(
+                "Cannot switch the project cluster. "
+                "Please edit the '.neuro.toml' file."
+            )
         if name not in self.clusters:
             raise RuntimeError(
                 f"Cluster {name} doesn't exist in "
@@ -150,35 +178,29 @@ class Config(metaclass=NoPublicConstructor):
 
     @property
     def monitoring_url(self) -> URL:
-        cluster = self._config_data.clusters[self._config_data.cluster_name]
-        return cluster.monitoring_url
+        return self._cluster.monitoring_url
 
     @property
     def blob_storage_url(self) -> URL:
-        cluster = self._config_data.clusters[self._config_data.cluster_name]
         # XXX: Updata properly the API to return Object storage as separate URL
-        return URL(str(cluster.storage_url).replace("/storage", "/blob"))
+        return URL(str(self._cluster.storage_url).replace("/storage", "/blob"))
 
     @property
     def storage_url(self) -> URL:
-        cluster = self._config_data.clusters[self._config_data.cluster_name]
-        return cluster.storage_url
+        return self._cluster.storage_url
 
     @property
     def registry_url(self) -> URL:
-        cluster = self._config_data.clusters[self._config_data.cluster_name]
-        return cluster.registry_url
+        return self._cluster.registry_url
 
     @property
     def secrets_url(self) -> URL:
-        cluster = self._config_data.clusters[self._config_data.cluster_name]
-        return cluster.secrets_url
+        return self._cluster.secrets_url
 
     @property
     def disk_api_url(self) -> URL:
-        cluster = self._config_data.clusters[self._config_data.cluster_name]
         # XXX: Update properly the API to return Object storage as separate URL
-        return URL(str(cluster.secrets_url).replace("/secrets", "/disk"))
+        return URL(str(self._cluster.secrets_url).replace("/secrets", "/disk"))
 
     async def token(self) -> str:
         token = self._config_data.auth_token
@@ -210,7 +232,10 @@ class Config(metaclass=NoPublicConstructor):
         ).decode("ascii")
 
     async def get_user_config(self) -> Mapping[str, Any]:
-        return await load_user_config(self._path)
+        return load_user_config(self._path)
+
+    def _get_user_config(self) -> Mapping[str, Any]:
+        return load_user_config(self._path)
 
     @contextlib.contextmanager
     def _open_db(self) -> Iterator[sqlite3.Connection]:
@@ -218,7 +243,7 @@ class Config(metaclass=NoPublicConstructor):
             yield db
 
 
-async def load_user_config(path: Path) -> Mapping[str, Any]:
+def load_user_config(path: Path) -> Mapping[str, Any]:
     # TODO: search in several locations (HOME+curdir),
     # merge found configs
     filename = path / "user.toml"
@@ -228,14 +253,14 @@ async def load_user_config(path: Path) -> Mapping[str, Any]:
     elif not filename.is_file():
         raise ConfigError(f"User config {filename} should be a regular file")
     else:
-        config = _load_file(filename)
+        config = _load_file(filename, allow_cluster_name=False)
     try:
         project_root = find_project_root()
     except ConfigError:
         return config
     else:
         filename = project_root / ".neuro.toml"
-        local_config = _load_file(filename)
+        local_config = _load_file(filename, allow_cluster_name=True)
         return _merge_user_configs(config, local_config)
 
 
@@ -575,7 +600,9 @@ def _check_section(
 
 
 def _validate_user_config(
-    config: Mapping[str, Any], filename: Union[str, "os.PathLike[str]"]
+    config: Mapping[str, Any],
+    filename: Union[str, "os.PathLike[str]"],
+    allow_cluster_name: bool = False,
 ) -> None:
     # This was a hard decision.
     # Config structure should be validated to generate meaningful error messages.
@@ -588,6 +615,16 @@ def _validate_user_config(
     plugin_manager = PluginManager()
     plugin_manager.config.define_str("job", "ps-format")
     plugin_manager.config.define_str("job", "life-span")
+    if allow_cluster_name:
+        plugin_manager.config.define_str("job", "cluster-name")
+    else:
+        if "cluster-name" in config.get("job", {}):
+            raise ConfigError(
+                f"{filename}: cluster name is not allowed in global user "
+                f"config file, use 'neuro config switch-cluster' for "
+                f"changing the default cluster name"
+            )
+
     plugin_manager.config.define_str_list("storage", "cp-exclude")
     plugin_manager.config.define_str_list("storage", "cp-exclude-from-files")
     for entry_point in pkg_resources.iter_entry_points("neuro_api"):
@@ -606,7 +643,7 @@ def _validate_user_config(
         if not isinstance(value, dict):
             raise ConfigError(
                 f"{filename}: invalid alias command type {type(value)}, "
-                "'run neuro help aliases' for getting info about specifying "
+                "run 'neuro help aliases' for getting info about specifying "
                 "aliases in config files"
             )
         _validate_alias(key, value, filename)
@@ -619,12 +656,12 @@ def _validate_alias(
     pass
 
 
-def _load_file(filename: Path) -> Mapping[str, Any]:
+def _load_file(filename: Path, allow_cluster_name: bool) -> Mapping[str, Any]:
     try:
         config = toml.load(filename)
     except ValueError as exc:
         raise ConfigError(f"{filename}: {exc}")
-    _validate_user_config(config, filename)
+    _validate_user_config(config, filename, allow_cluster_name=allow_cluster_name)
     return config
 
 

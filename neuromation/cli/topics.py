@@ -160,6 +160,12 @@ async def user_config() -> None:
 
       A section for `neuro job` command group settings.
 
+    **cluster-name**
+
+      The name of active cluster which overrides global cluster name set by
+      `neuro config switch-cluster`.  Can only be specified in **local**
+       configuration file.
+
     **ps-format**
 
       Default value for `neuro ps --format=XXX` option.
