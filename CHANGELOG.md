@@ -5,6 +5,36 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.11.18 (2020-11-18)
+=================================
+
+Features
+--------
+
+
+- Moved pass_config option to API. Now it uses config completely encoded into ENV variable. ([#1814](https://github.com/neuro-inc/platform-api-clients/issues/1814))
+
+- Added support of max running jobs quota. The `neuro admin set-user-quota -j <count>` command configures
+  this quota for user. By default, a new job cannot be created after the quota is reached, but the `--wait-for-seat`
+  flag allows creating a job that will wait for another job to stop. ([#1827](https://github.com/neuro-inc/platform-api-clients/issues/1827))
+
+- When the connection is lost during transferring files `neuro cp` retries now only sending and retrieving new data instead of starting file operation from the start. Added optional parameters *offset* and *size* in method `storage.open()` for partial reading. Added method `storage.write()` for overwriting the part of the file. ([#1831](https://github.com/neuro-inc/platform-api-clients/issues/1831))
+
+- Added option `--continue` for command `neuro cp`.
+  It specified, copy only the part of the source file
+  past the end of the destination file and append it
+  to the destination file if the destination file is
+  newer and not longer than the source file.
+  Otherwise copy the whole file.
+  Added corresponding keyword-only boolean parameter `continue_` to the API. ([#1841](https://github.com/neuro-inc/platform-api-clients/issues/1841))
+
+- Add support of `SUSPENDED` job status. ([#1844](https://github.com/neuro-inc/platform-api-clients/issues/1844))
+
+- Added support of `neuro ps --owner ME`. This allows to filter current users jobs. ([#1845](https://github.com/neuro-inc/platform-api-clients/issues/1845))
+
+- The active cluster name can now be specified in local configuration file. ([#1846](https://github.com/neuro-inc/platform-api-clients/issues/1846))
+
+
 Neuromation 20.11.10 (2020-11-10)
 =================================
 
