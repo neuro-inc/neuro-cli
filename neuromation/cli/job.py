@@ -418,7 +418,9 @@ async def exec(
     """
     real_cmd = _parse_cmd(cmd)
     job = await resolve_job(
-        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
+        job,
+        client=root.client,
+        status=JobStatus.active_items(),
     )
     if tty is None:
         tty = root.tty
@@ -471,7 +473,9 @@ async def port_forward(
             err=True,
         )
     job_id = await resolve_job(
-        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
+        job,
+        client=root.client,
+        status=JobStatus.active_items(),
     )
     async with AsyncExitStack() as stack:
         for local_port, job_port in local_remote_port:
@@ -500,13 +504,7 @@ async def logs(root: Root, job: str) -> None:
     id = await resolve_job(
         job,
         client=root.client,
-        status={
-            JobStatus.PENDING,
-            JobStatus.RUNNING,
-            JobStatus.SUCCEEDED,
-            JobStatus.CANCELLED,
-            JobStatus.FAILED,
-        },
+        status=JobStatus.items(),
     )
     await process_logs(root, id, None)
 
@@ -528,17 +526,11 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     id = await resolve_job(
         job,
         client=root.client,
-        status={
-            JobStatus.PENDING,
-            JobStatus.RUNNING,
-            JobStatus.SUCCEEDED,
-            JobStatus.CANCELLED,
-            JobStatus.FAILED,
-        },
+        status=JobStatus.items(),
     )
     status = await root.client.jobs.status(id)
     progress = JobStartProgress.create(console=root.console, quiet=root.quiet)
-    while status.status == JobStatus.PENDING:
+    while status.status.is_pending:
         await asyncio.sleep(0.2)
         status = await root.client.jobs.status(id)
         progress.step(status)
@@ -691,13 +683,7 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
     id = await resolve_job(
         job,
         client=root.client,
-        status={
-            JobStatus.PENDING,
-            JobStatus.RUNNING,
-            JobStatus.SUCCEEDED,
-            JobStatus.CANCELLED,
-            JobStatus.FAILED,
-        },
+        status=JobStatus.items(),
     )
     res = await root.client.jobs.status(id)
     uri_fmtr: URIFormatter
@@ -730,9 +716,7 @@ async def browse(root: Root, job: str) -> None:
     """
     Opens a job's URL in a web browser.
     """
-    id = await resolve_job(
-        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
-    )
+    id = await resolve_job(job, client=root.client, status=JobStatus.active_items())
     res = await root.client.jobs.status(id)
     await browse_job(root, res)
 
@@ -751,9 +735,7 @@ async def top(root: Root, job: str, timeout: float) -> None:
     Display GPU/CPU/Memory usage.
     """
     with JobTelemetryFormatter(root.console) as formatter:
-        id = await resolve_job(
-            job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
-        )
+        id = await resolve_job(job, client=root.client, status=JobStatus.active_items())
         async with async_timeout.timeout(timeout if timeout else None):
             async for res in root.client.jobs.top(id):
                 formatter.update(res)
@@ -774,13 +756,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
     id = await resolve_job(
         job,
         client=root.client,
-        status={
-            JobStatus.PENDING,
-            JobStatus.RUNNING,
-            JobStatus.SUCCEEDED,
-            JobStatus.CANCELLED,
-            JobStatus.FAILED,
-        },
+        status=JobStatus.items(),
     )
     progress = DockerImageProgress.create(console=root.console, quiet=root.quiet)
     with contextlib.closing(progress):
@@ -797,7 +773,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     errors = []
     for job in jobs:
         job_resolved = await resolve_job(
-            job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
+            job, client=root.client, status=JobStatus.active_items()
         )
         try:
             await root.client.jobs.kill(job_resolved)
@@ -1311,7 +1287,7 @@ async def browse_job(root: Root, job: JobDescription) -> None:
 
 
 def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
-    defaults = {"running", "pending"}
+    defaults = {item.value for item in JobStatus.active_items()}
     statuses = set(status)
 
     if "all" in statuses:

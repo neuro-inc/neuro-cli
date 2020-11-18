@@ -193,13 +193,7 @@ class Helper:
             return await resolve_job(
                 job_name,
                 client=client,
-                status={
-                    JobStatus.PENDING,
-                    JobStatus.RUNNING,
-                    JobStatus.SUCCEEDED,
-                    JobStatus.CANCELLED,
-                    JobStatus.FAILED,
-                },
+                status=JobStatus.items(),
             )
 
     @run_async
@@ -626,14 +620,14 @@ class Helper:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             id = await resolve_job(
-                id_or_name, client=client, status={JobStatus.PENDING, JobStatus.RUNNING}
+                id_or_name, client=client, status=JobStatus.active_items()
             )
             with suppress(ResourceNotFound, IllegalArgumentError):
                 await client.jobs.kill(id)
                 if wait:
                     while True:
                         stat = await client.jobs.status(id)
-                        if stat.status not in (JobStatus.PENDING, JobStatus.RUNNING):
+                        if stat.status.is_finished:
                             break
 
     kill_job = run_async(akill_job)
