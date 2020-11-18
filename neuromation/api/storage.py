@@ -129,25 +129,63 @@ class Storage(metaclass=NoPublicConstructor):
             *server_timetuple[:6], tzinfo=datetime.timezone.utc
         ).timestamp()
         # Remove 1 because server time has been truncated
-        # and can be up to 1 second less than the actulal value
+        # and can be up to 1 second less than the actual value.
         self._min_time_diff = request_time - server_time - 1.0
         self._max_time_diff = response_time - server_time
 
     def _is_local_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
+        # Have different size or local is newer.
         return (
             local.st_size != remote.size
             or local.st_mtime - remote.modification_time
             > self._min_time_diff - TIME_THRESHOLD
         )
 
+    def _is_remote_partial(self, local: os.stat_result, remote: FileStatus) -> bool:
+        # Remote is smaller and newer.
+        return (
+            local.st_size > remote.size
+            and local.st_mtime - remote.modification_time
+            <= self._min_time_diff - TIME_THRESHOLD
+        )
+
     def _is_remote_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
+        # Have different size or remote is newer.
         # Add 1 because remote.modification_time has been truncated
-        # and can be up to 1 second less than the actulal value
+        # and can be up to 1 second less than the actual value.
         return (
             local.st_size != remote.size
             or local.st_mtime - remote.modification_time
             < self._max_time_diff + TIME_THRESHOLD + 1.0
         )
+
+    def _is_local_partial(self, local: os.stat_result, remote: FileStatus) -> bool:
+        # Local is smaller and newer.
+        # Add 1 because remote.modification_time has been truncated
+        # and can be up to 1 second less than the actual value.
+        return (
+            local.st_size < remote.size
+            and local.st_mtime - remote.modification_time
+            >= self._max_time_diff + TIME_THRESHOLD + 1.0
+        )
+
+    def _check_upload(
+        self, local: os.stat_result, remote: FileStatus, continue_: bool
+    ) -> Optional[int]:
+        if not self._is_local_modified(local, remote):
+            return None
+        if continue_ and self._is_remote_partial(local, remote):
+            return remote.size
+        return 0
+
+    def _check_download(
+        self, local: os.stat_result, remote: FileStatus, continue_: bool
+    ) -> Optional[int]:
+        if not self._is_remote_modified(local, remote):
+            return None
+        if continue_ and self._is_local_partial(local, remote):
+            return local.st_size
+        return 0
 
     async def ls(self, uri: URL) -> AsyncIterator[FileStatus]:
         uri = self._normalize_uri(uri)
@@ -420,6 +458,7 @@ class Storage(metaclass=NoPublicConstructor):
         dst: URL,
         *,
         update: bool = False,
+        continue_: bool = False,
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
@@ -439,6 +478,7 @@ class Storage(metaclass=NoPublicConstructor):
                 raise
             # Ignore stat errors for device files like NUL or CON on Windows.
             # See https://bugs.python.org/issue37074
+        offset: Optional[int] = 0
         try:
             dst_stat = await self.stat(dst)
             if dst_stat.is_dir():
@@ -457,25 +497,28 @@ class Storage(metaclass=NoPublicConstructor):
                     errno.ENOTDIR, "Not a directory", str(dst.parent)
                 )
         else:
-            if update:
+            if update or continue_:
                 try:
                     src_stat = path.stat()
                 except OSError:
                     pass
                 else:
-                    if S_ISREG(src_stat.st_mode) and not self._is_local_modified(
-                        src_stat, dst_stat
-                    ):
-                        return
+                    if S_ISREG(src_stat.st_mode):
+                        offset = self._check_upload(src_stat, dst_stat, continue_)
+        if offset is None:
+            return
 
         async_progress: _AsyncAbstractFileProgress
         queue, async_progress = queue_calls(progress)
-        await run_progress(queue, self._upload_file(path, dst, progress=async_progress))
+        await run_progress(
+            queue, self._upload_file(path, dst, offset, progress=async_progress)
+        )
 
     async def _upload_file(
         self,
         src_path: Path,
         dst: URL,
+        offset: int,
         *,
         progress: _AsyncAbstractFileProgress,
     ) -> None:
@@ -486,21 +529,25 @@ class Storage(metaclass=NoPublicConstructor):
                 size = os.stat(stream.fileno()).st_size
                 await progress.start(StorageProgressStart(src, dst, size))
 
-                chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
-                for retry in retries(f"Fail to upload {dst}"):
-                    async with retry:
-                        await self.create(dst, chunk)
-
-                pos = 0
-                while chunk:
-                    pos += len(chunk)
-                    await progress.step(StorageProgressStep(src, dst, pos, size))
+                if offset:
+                    stream.seek(offset)
+                else:
                     chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
-                    if not chunk:
-                        break
                     for retry in retries(f"Fail to upload {dst}"):
                         async with retry:
-                            await self.write(dst, chunk, pos)
+                            await self.create(dst, chunk)
+                    offset = len(chunk)
+
+                if offset:
+                    while True:
+                        await progress.step(StorageProgressStep(src, dst, offset, size))
+                        chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
+                        if not chunk:
+                            break
+                        for retry in retries(f"Fail to upload {dst}"):
+                            async with retry:
+                                await self.write(dst, chunk, offset)
+                        offset += len(chunk)
 
                 await progress.complete(StorageProgressComplete(src, dst, size))
 
@@ -510,6 +557,7 @@ class Storage(metaclass=NoPublicConstructor):
         dst: URL,
         *,
         update: bool = False,
+        continue_: bool = False,
         filter: Optional[Callable[[str], Awaitable[bool]]] = None,
         ignore_file_names: AbstractSet[str] = frozenset(),
         progress: Optional[AbstractRecursiveFileProgress] = None,
@@ -535,6 +583,7 @@ class Storage(metaclass=NoPublicConstructor):
                 dst,
                 "",
                 update=update,
+                continue_=continue_,
                 filter=filter,
                 ignore_file_names=ignore_file_names,
                 progress=async_progress,
@@ -549,6 +598,7 @@ class Storage(metaclass=NoPublicConstructor):
         rel_path: str,
         *,
         update: bool,
+        continue_: bool,
         filter: Callable[[str], Awaitable[bool]],
         ignore_file_names: AbstractSet[str],
         progress: _AsyncAbstractRecursiveFileProgress,
@@ -556,7 +606,7 @@ class Storage(metaclass=NoPublicConstructor):
         tasks = []
         try:
             exists = False
-            if update:
+            if update or continue_:
                 try:
                     for retry in retries(f"Fail to list {dst}"):
                         async with retry:
@@ -567,7 +617,7 @@ class Storage(metaclass=NoPublicConstructor):
                             }
                     exists = True
                 except ResourceNotFound:
-                    update = False
+                    update = continue_ = False
             if not exists:
                 for retry in retries(f"Fail to create {dst}"):
                     async with retry:
@@ -597,14 +647,17 @@ class Storage(metaclass=NoPublicConstructor):
                 log.debug(f"Skip {child_rel_path}")
                 continue
             if child.is_file():
-                if (
-                    update
-                    and name in dst_files
-                    and not self._is_local_modified(child.stat(), dst_files[name])
-                ):
+                offset: Optional[int] = 0
+                if (update or continue_) and name in dst_files:
+                    offset = self._check_upload(
+                        child.stat(), dst_files[name], continue_
+                    )
+                if offset is None:
                     continue
                 tasks.append(
-                    self._upload_file(src_path / name, dst / name, progress=progress)
+                    self._upload_file(
+                        src_path / name, dst / name, offset, progress=progress
+                    )
                 )
             elif child.is_dir():
                 tasks.append(
@@ -614,6 +667,7 @@ class Storage(metaclass=NoPublicConstructor):
                         dst / name,
                         child_rel_path,
                         update=update,
+                        continue_=continue_,
                         filter=filter,
                         ignore_file_names=ignore_file_names,
                         progress=progress,
@@ -639,6 +693,7 @@ class Storage(metaclass=NoPublicConstructor):
         dst: URL,
         *,
         update: bool = False,
+        continue_: bool = False,
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         src = normalize_storage_path_uri(
@@ -649,21 +704,25 @@ class Storage(metaclass=NoPublicConstructor):
         src_stat = await self.stat(src)
         if not src_stat.is_file():
             raise IsADirectoryError(errno.EISDIR, "Is a directory", str(src))
-        if update:
+        offset: Optional[int] = 0
+        if update or continue_:
             try:
                 dst_stat = path.stat()
             except OSError:
                 pass
             else:
-                if S_ISREG(dst_stat.st_mode) and not self._is_remote_modified(
-                    dst_stat, src_stat
-                ):
-                    return
+                if S_ISREG(dst_stat.st_mode):
+                    offset = self._check_download(dst_stat, src_stat, continue_)
+        if offset is None:
+            return
+
         async_progress: _AsyncAbstractFileProgress
         queue, async_progress = queue_calls(progress)
         await run_progress(
             queue,
-            self._download_file(src, dst, path, src_stat.size, progress=async_progress),
+            self._download_file(
+                src, dst, path, src_stat.size, offset, progress=async_progress
+            ),
         )
 
     async def _download_file(
@@ -672,14 +731,16 @@ class Storage(metaclass=NoPublicConstructor):
         dst: URL,
         dst_path: Path,
         size: int,
+        offset: int,
         *,
         progress: _AsyncAbstractFileProgress,
     ) -> None:
         loop = asyncio.get_event_loop()
         async with self._file_sem:
             await progress.start(StorageProgressStart(src, dst, size))
-            pos = 0
-            with dst_path.open("wb") as stream:
+            with dst_path.open("rb+" if offset else "wb") as stream:
+                if offset:
+                    stream.seek(offset)
                 for retry in retries(f"Fail to download {src}"):
                     pos = stream.tell()
                     if pos >= size:
@@ -703,6 +764,7 @@ class Storage(metaclass=NoPublicConstructor):
         dst: URL,
         *,
         update: bool = False,
+        continue_: bool = False,
         filter: Optional[Callable[[str], Awaitable[bool]]] = None,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
@@ -724,6 +786,7 @@ class Storage(metaclass=NoPublicConstructor):
                 path,
                 "",
                 update=update,
+                continue_=continue_,
                 filter=filter,
                 progress=async_progress,
             ),
@@ -737,13 +800,14 @@ class Storage(metaclass=NoPublicConstructor):
         rel_path: str,
         *,
         update: bool,
+        continue_: bool,
         filter: Callable[[str], Awaitable[bool]],
         progress: _AsyncAbstractRecursiveFileProgress,
     ) -> None:
         dst_path.mkdir(parents=True, exist_ok=True)
         await progress.enter(StorageProgressEnterDir(src, dst))
         tasks = []
-        if update:
+        if update or continue_:
             loop = asyncio.get_event_loop()
             async with self._file_sem:
                 dst_files = await loop.run_in_executor(
@@ -766,11 +830,12 @@ class Storage(metaclass=NoPublicConstructor):
                 log.debug(f"Skip {child_rel_path}")
                 continue
             if child.is_file():
-                if (
-                    update
-                    and name in dst_files
-                    and not self._is_remote_modified(dst_files[name].stat(), child)
-                ):
+                offset: Optional[int] = 0
+                if (update or continue_) and name in dst_files:
+                    offset = self._check_download(
+                        dst_files[name].stat(), child, continue_
+                    )
+                if offset is None:
                     continue
                 tasks.append(
                     self._download_file(
@@ -778,6 +843,7 @@ class Storage(metaclass=NoPublicConstructor):
                         dst / name,
                         dst_path / name,
                         child.size,
+                        offset,
                         progress=progress,
                     )
                 )
@@ -789,6 +855,7 @@ class Storage(metaclass=NoPublicConstructor):
                         dst_path / name,
                         child_rel_path,
                         update=update,
+                        continue_=continue_,
                         filter=filter,
                         progress=progress,
                     )
