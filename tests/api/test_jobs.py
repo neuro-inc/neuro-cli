@@ -764,6 +764,7 @@ async def test_job_run_with_wait_for_quota(
         },
         "http_url": "http://my_host:8889",
         "is_preemptible": False,
+        "pass_config": False,
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -782,6 +783,7 @@ async def test_job_run_with_wait_for_quota(
             },
             "is_preemptible": False,
             "wait_for_jobs_quota": True,
+            "pass_config": False,
             "cluster_name": "default",
         }
 
