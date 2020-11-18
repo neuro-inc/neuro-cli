@@ -581,10 +581,14 @@ class BaseStorageProgress(AbstractRecursiveFileProgress, ABC):
 
 
 def create_storage_progress(
-    root: Root, show_progress: bool, *, get_time: GetTimeCallable = time.monotonic
+    root: Root,
+    show_progress: bool,
+    *,
+    get_time: GetTimeCallable = time.monotonic,
+    auto_refresh: bool = True,  # only disabled in test
 ) -> BaseStorageProgress:
     if show_progress:
-        return TTYProgress(root, get_time=get_time)
+        return TTYProgress(root, get_time=get_time, auto_refresh=auto_refresh)
     else:
         return StreamProgress(root)
 
@@ -651,7 +655,11 @@ class TTYProgress(BaseStorageProgress):
     time_factory = staticmethod(monotonic)
 
     def __init__(
-        self, root: Root, *, get_time: GetTimeCallable = time.monotonic
+        self,
+        root: Root,
+        *,
+        get_time: GetTimeCallable = time.monotonic,
+        auto_refresh: bool = True,
     ) -> None:
         self.painter = get_painter(root.color)
         self._root = root
@@ -663,7 +671,7 @@ class TTYProgress(BaseStorageProgress):
             DownloadColumn(),
             TransferSpeedColumn(),
             console=root.console,
-            auto_refresh=True,
+            auto_refresh=auto_refresh,
             transient=True,
             get_time=get_time,
         )

@@ -124,7 +124,9 @@ def test_progress(
     time_ctl: TimeCtl,
 ) -> None:
     root = make_root(color, tty, verbose)
-    report = create_storage_progress(root, show_progress, get_time=time_ctl.get_time)
+    report = create_storage_progress(
+        root, show_progress, get_time=time_ctl.get_time, auto_refresh=False
+    )
     src = URL("file:///abc")
     dst = URL("storage:xyz")
 
@@ -175,7 +177,9 @@ def test_fail(
     time_ctl: TimeCtl,
 ) -> None:
     root = make_root(color, tty, verbose)
-    report = create_storage_progress(root, show_progress, get_time=time_ctl.get_time)
+    report = create_storage_progress(
+        root, show_progress, get_time=time_ctl.get_time, auto_refresh=False
+    )
     src = URL("file:///abc")
     dst = URL("storage:xyz")
     with report.begin(src, dst):
@@ -204,7 +208,9 @@ def test_nested(
     time_ctl: TimeCtl,
 ) -> None:
     root = make_root(color, tty, verbose)
-    report = create_storage_progress(root, show_progress, get_time=time_ctl.get_time)
+    report = create_storage_progress(
+        root, show_progress, get_time=time_ctl.get_time, auto_refresh=False
+    )
     src = URL("file:///abc")
     dst = URL("storage:xyz")
     src_f = URL("file:///abc/file.txt")

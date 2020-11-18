@@ -346,7 +346,7 @@ def rich_cmp(request: Any) -> Callable[..., None]:
         if isinstance(src, io.StringIO):
             plugin.check_io(ref, src)
         elif isinstance(src, Console):
-            if isinstance(src.file, io.StringIO):
+            if not isinstance(src.file, io.StringIO):
                 plugin.check_io(ref, src.file)
             else:
                 buf = src.export_text(clear=True, styles=True)
