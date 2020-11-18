@@ -355,7 +355,7 @@ def rich_cmp(request: Any) -> Callable[..., None]:
             file = io.StringIO()
             console = Console(
                 file=file,
-                width=80,
+                width=160,
                 height=24,
                 force_terminal=tty,
                 color_system="auto" if color else None,
