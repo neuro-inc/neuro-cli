@@ -1,0 +1,6 @@
+1024  2018-01-01 14:00:00  blob:neuro-public-bucket/file1024.txt    
+  1024001  2018-01-01 00:00:00  blob:neuro-public-bucket/file_bigger.txt 
+      240  2018-01-02 00:00:00  blob:neuro-shared-bucket/folder2/info.txt
+        0  2018-01-02 00:00:00  blob:neuro-shared-bucket/folder2/        
+                                blob:neuro-public-bucket/folder1/        
+                                blob:neuro-shared-bucket/folder2/

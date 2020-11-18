@@ -16,6 +16,7 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
+    Set,
     Union,
 )
 
@@ -80,6 +81,7 @@ class JobStatus(str, enum.Enum):
     PENDING: a job is being created and scheduled. This includes finding (and
     possibly waiting for) sufficient amount of resources, pulling an image
     from a registry etc.
+    SUSPENDED: a preemptible job is paused to allow other jobs to run.
     RUNNING: a job is being run.
     SUCCEEDED: a job terminated with the 0 exit code.
     CANCELLED: a running job was manually terminated/deleted.
@@ -87,11 +89,36 @@ class JobStatus(str, enum.Enum):
     """
 
     PENDING = "pending"
+    SUSPENDED = "suspended"
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
     CANCELLED = "cancelled"
     UNKNOWN = "unknown"  # invalid status code, a default value is status is not sent
+
+    @property
+    def is_pending(self) -> bool:
+        return self in (self.PENDING, self.SUSPENDED)
+
+    @property
+    def is_running(self) -> bool:
+        return self == self.RUNNING
+
+    @property
+    def is_finished(self) -> bool:
+        return self in (self.SUCCEEDED, self.FAILED, self.CANCELLED)
+
+    @classmethod
+    def items(cls) -> Set["JobStatus"]:
+        return {item for item in cls if item != cls.UNKNOWN}
+
+    @classmethod
+    def active_items(cls) -> Set["JobStatus"]:
+        return {item for item in cls.items() if not item.is_finished}
+
+    @classmethod
+    def finished_items(cls) -> Set["JobStatus"]:
+        return {item for item in cls.items() if item.is_finished}
 
 
 @dataclass(frozen=True)
@@ -224,6 +251,7 @@ class Jobs(metaclass=NoPublicConstructor):
         tags: Sequence[str] = (),
         description: Optional[str] = None,
         is_preemptible: bool = False,
+        wait_for_jobs_quota: bool = False,
         schedule_timeout: Optional[float] = None,
         restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
         life_span: Optional[float] = None,
@@ -245,6 +273,8 @@ class Jobs(metaclass=NoPublicConstructor):
             payload["restart_policy"] = str(restart_policy)
         if life_span is not None:
             payload["max_run_time_minutes"] = int(life_span // 60)
+        if wait_for_jobs_quota:
+            payload["wait_for_jobs_quota"] = wait_for_jobs_quota
         payload["cluster_name"] = self._config.cluster_name
         auth = await self._config._api_auth()
         async with self._core.request("POST", url, json=payload, auth=auth) as resp:

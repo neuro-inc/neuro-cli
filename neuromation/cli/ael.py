@@ -104,13 +104,13 @@ async def process_exec(root: Root, job: str, cmd: str, tty: bool) -> NoReturn:
         root.soft_reset_tty()
 
     info = await root.client.jobs.exec_inspect(job, exec_id)
-    progress = ExecStopProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
-    while info.running:
-        await asyncio.sleep(0.2)
-        info = await root.client.jobs.exec_inspect(job, exec_id)
-        if not progress(info.running):
-            sys.exit(EX_IOERR)
-    sys.exit(info.exit_code)
+    with ExecStopProgress.create(console=root.console, quiet=root.quiet) as progress:
+        while info.running:
+            await asyncio.sleep(0.2)
+            info = await root.client.jobs.exec_inspect(job, exec_id)
+            if not progress(info.running):
+                sys.exit(EX_IOERR)
+        sys.exit(info.exit_code)
 
 
 async def _exec_tty(root: Root, job: str, exec_id: str) -> None:
@@ -210,33 +210,35 @@ async def process_attach(
             else:
                 action = await _attach_non_tty(root, job.id, logs)
 
-            progress = JobStopProgress.create(
-                tty=root.tty, color=root.color, quiet=root.quiet
-            )
-            if action == InterruptAction.KILL:
-                progress.kill(job)
-                sys.exit(128 + signal.SIGINT)
-            elif action == InterruptAction.DETACH:
-                progress.detach(job)
-                sys.exit(0)
+            with JobStopProgress.create(
+                console=root.console,
+                quiet=root.quiet,
+            ) as progress:
+                if action == InterruptAction.KILL:
+                    progress.kill(job)
+                    sys.exit(128 + signal.SIGINT)
+                elif action == InterruptAction.DETACH:
+                    progress.detach(job)
+                    sys.exit(0)
         finally:
             root.soft_reset_tty()
 
         # The class pins the current time in counstructor,
         # that's why we need to initialize
         # it AFTER the disconnection from attached session.
-        progress = JobStopProgress.create(
-            tty=root.tty, color=root.color, quiet=root.quiet
-        )
-        job = await root.client.jobs.status(job.id)
-        while job.status == JobStatus.RUNNING:
-            await asyncio.sleep(0.2)
+        with JobStopProgress.create(
+            console=root.console,
+            quiet=root.quiet,
+        ) as progress:
             job = await root.client.jobs.status(job.id)
-            if not progress.step(job):
-                sys.exit(EX_IOERR)
-        if job.status == JobStatus.FAILED:
-            sys.exit(job.history.exit_code or EX_PLATFORMERROR)
-        sys.exit(job.history.exit_code)
+            while job.status == JobStatus.RUNNING:
+                await asyncio.sleep(0.2)
+                job = await root.client.jobs.status(job.id)
+                if not progress.step(job):
+                    sys.exit(EX_IOERR)
+            if job.status == JobStatus.FAILED:
+                sys.exit(job.history.exit_code or EX_PLATFORMERROR)
+            sys.exit(job.history.exit_code)
 
 
 async def _attach_tty(root: Root, job: str, logs: bool) -> InterruptAction:
