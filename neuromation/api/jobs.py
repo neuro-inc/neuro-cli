@@ -148,7 +148,7 @@ class JobStatusHistory:
     status: JobStatus
     reason: str
     description: str
-    restarts: int
+    restarts: int = 0
     created_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
