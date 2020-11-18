@@ -4,7 +4,6 @@ import inspect
 import itertools
 import logging
 import os
-import pathlib
 import re
 import shlex
 import shutil
@@ -33,7 +32,7 @@ import humanize
 from click.types import convert_type
 from yarl import URL
 
-from neuromation.api import Action, Client, Factory, JobStatus, TagOption, Volume
+from neuromation.api import Action, Client, JobStatus, TagOption, Volume
 from neuromation.api.url_utils import uri_from_cli
 
 from .parse_utils import parse_timedelta
@@ -48,8 +47,6 @@ _T = TypeVar("_T")
 
 DEPRECATED_HELP_NOTICE = " " + click.style("(DEPRECATED)", fg="red")
 DEPRECATED_INVOKE_NOTICE = "DeprecationWarning: The command {name} is deprecated."
-
-NEURO_STEAL_CONFIG = "NEURO_STEAL_CONFIG"
 
 
 async def _run_async_function(
@@ -609,22 +606,6 @@ def pager_maybe(
         click.echo_via_pager(
             itertools.chain(["\n".join(handled)], (f"\n{line}" for line in lines_it))
         )
-
-
-def steal_config_maybe(dst_path: pathlib.Path) -> None:
-    if NEURO_STEAL_CONFIG in os.environ:
-        src = pathlib.Path(os.environ[NEURO_STEAL_CONFIG])
-        if not src.exists():
-            return
-        dst = Factory(dst_path).path
-        dst.mkdir(mode=0o700)
-        for f in src.iterdir():
-            target = dst / f.name
-            shutil.copy(f, target)
-            # forbid access to other users
-            os.chmod(target, 0o600)
-            f.unlink()
-        src.rmdir()
 
 
 async def calc_life_span(

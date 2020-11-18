@@ -231,6 +231,7 @@ Jobs
                      tags: Sequence[str] = (), \
                      description: Optional[str] = None, \
                      is_preemptible: bool = False, \
+                     pass_config: bool = False, \
                      wait_for_jobs_quota: bool = False, \
                      schedule_timeout: Optional[float] = None, \
                      life_span: Optional[float] = None, \
@@ -249,6 +250,11 @@ Jobs
       :param bool is_preemtible: a flag that specifies is the job is *preemptible* or
                                  not, see :ref:`Preemption <job-preemption>` for
                                  details.
+
+      :param bool pass_config: a flag that specifies that platform should pass
+                                 config data to job. This allows to API and CLI
+                                 from the inside of the job. See
+                                 :meth:`Factory.login_with_passed_config` for details.
 
       :param bool wait_for_jobs_quota: when this flat is set, job will wait for another
                                        job to stop instead of failing immediately
@@ -458,6 +464,11 @@ JobDescription
 
       Is the job is *preemptible* or not, see :ref:`Preemption <job-preemption>` for
       details.
+
+   .. attribute:: pass_config
+
+      Is config data is passed by platform, see :meth:`Factory.login_with_passed_config`
+      for details.
 
    .. attribute:: name
 

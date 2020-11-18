@@ -91,6 +91,12 @@ Config Factory
 
       .. versionadded:: 20.2.25
 
+   .. attribute:: is_config_present
+
+      ``True`` if config files are present under :attr:`path`, ``False`` otherwise.
+
+      Read-only :class:`bool` property.
+
    .. comethod:: get(*, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client
 
       Read configuration previously created by *login methods* and return a client
@@ -136,7 +142,7 @@ Config Factory
       :param aiohttp.ClientTimeout timeout: optional timeout for HTTP operations, see
                                             also :ref:`timeouts`.
 
-    .. comethod:: login_headless( \
+   .. comethod:: login_headless( \
                       get_auth_code_cb: Callable[[URL], Awaitable[str]], \
                       *, \
                       url: URL = DEFAULT_API_URL, \
@@ -167,21 +173,36 @@ Config Factory
       :param aiohttp.ClientTimeout timeout: optional timeout for HTTP operations, see
                                             also :ref:`timeouts`.
 
-    .. comethod:: login_with_token( \
+   .. comethod:: login_with_token( \
                       token: str, \
                       *, \
                       url: URL = DEFAULT_API_URL, \
                       timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT, \
                   ) -> None
 
-       Log into Neuro Platform using previously acquired token.  The method is
-       deprecated and not recommended to use.  Provided tokens will be revoked
-       eventually.
+      Log into Neuro Platform using previously acquired token.  The method is
+      deprecated and not recommended to use.  Provided tokens will be revoked
+      eventually.
 
-       :param str token: authorization token.
+      :param str token: authorization token.
 
-       :param ~yarl.URL url: Neuro Platform API URL,
-                             ``URL("https://staging.neu.ro/api/v1")`` by default.
+      :param ~yarl.URL url: Neuro Platform API URL,
+                            ``URL("https://staging.neu.ro/api/v1")`` by default.
+
+      :param aiohttp.ClientTimeout timeout: optional timeout for HTTP operations, see
+                                            also :ref:`timeouts`.
+
+   .. comethod:: login_with_passed_config( \
+                      config_data: Optional[str] = None, \
+                      *, \
+                      timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT, \
+                  ) -> None
+
+       Log into Neuro Platform using config data passed by platform. Use this only
+       to login from the job that was started with ``pass_config=True``. Inside such
+       job, `config_data` is available under ``NEURO_PASSED_CONFIG`` environment variable.
+
+       :param str config_data: config data passed by platform.
 
        :param aiohttp.ClientTimeout timeout: optional timeout for HTTP operations, see
                                              also :ref:`timeouts`.

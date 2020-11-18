@@ -49,6 +49,7 @@ def _job_entry(job_id: str) -> Dict[str, Any]:
         },
         "ssh_auth_server": "ssh://nobody@ssh-auth-dev.neu.ro:22",
         "is_preemptible": True,
+        "pass_config": False,
         "name": "job-name",
         "internal_hostname": "job-id.default",
         "internal_hostname_named": "job-name--job-owner.default",

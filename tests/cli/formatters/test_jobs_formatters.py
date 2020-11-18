@@ -87,6 +87,7 @@ def job_descr_no_name() -> JobDescription:
             resources=Resources(16, 0.1, 0, None, False, None, None),
         ),
         is_preemptible=True,
+        pass_config=True,
     )
 
 
@@ -113,6 +114,7 @@ def job_descr() -> JobDescription:
             resources=Resources(16, 0.1, 0, None, False, None, None),
         ),
         is_preemptible=True,
+        pass_config=True,
     )
 
 
@@ -158,6 +160,7 @@ class TestJobStartProgress:
                 ),
             ),
             is_preemptible=False,
+            pass_config=True,
             life_span=life_span,
         )
 
@@ -270,6 +273,7 @@ class TestJobOutputFormatter:
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -302,6 +306,7 @@ class TestJobOutputFormatter:
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -334,6 +339,7 @@ class TestJobOutputFormatter:
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -365,6 +371,7 @@ class TestJobOutputFormatter:
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             is_preemptible=False,
+            pass_config=True,
             life_span=1.0 * ((60 * 60 * 24 * 1) + (60 * 60 * 2) + (60 * 3) + 4),
         )
 
@@ -397,6 +404,7 @@ class TestJobOutputFormatter:
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             is_preemptible=False,
+            pass_config=True,
             life_span=0.0,
         )
 
@@ -429,6 +437,7 @@ class TestJobOutputFormatter:
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             is_preemptible=False,
+            pass_config=True,
             restart_policy=JobRestartPolicy.ALWAYS,
         )
 
@@ -461,6 +470,7 @@ class TestJobOutputFormatter:
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -486,6 +496,7 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             is_preemptible=True,
+            pass_config=True,
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
@@ -515,6 +526,7 @@ class TestJobOutputFormatter:
                 tty=True,
             ),
             is_preemptible=True,
+            pass_config=True,
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
@@ -543,6 +555,7 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             is_preemptible=True,
+            pass_config=True,
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
@@ -575,6 +588,7 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             is_preemptible=False,
+            pass_config=True,
             internal_hostname="host.local",
         )
 
@@ -606,6 +620,7 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             is_preemptible=False,
+            pass_config=True,
             internal_hostname="host.local",
             internal_hostname_named="test-job--test-owner.local",
         )
@@ -638,6 +653,7 @@ class TestJobOutputFormatter:
                 resources=Resources(16, 0.1, 0, None, False, None, None),
             ),
             is_preemptible=False,
+            pass_config=True,
             internal_hostname="host.local",
         )
 
@@ -678,6 +694,7 @@ class TestJobOutputFormatter:
                 env={"ENV_NAME_1": "__value1__", "ENV_NAME_2": "**value2**"},
             ),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -733,6 +750,7 @@ class TestJobOutputFormatter:
                 ],
             ),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -783,6 +801,7 @@ class TestJobOutputFormatter:
                 ],
             ),
             is_preemptible=False,
+            pass_config=True,
         )
 
         rich_cmp(JobStatusFormatter(uri_formatter=str)(description))
@@ -847,6 +866,7 @@ class TestJobOutputFormatter:
                 },
             ),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -902,6 +922,7 @@ class TestJobOutputFormatter:
                 ],
             ),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -941,6 +962,7 @@ class TestJobOutputFormatter:
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             is_preemptible=False,
+            pass_config=True,
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -1055,6 +1077,7 @@ class TestSimpleJobsFormatter:
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                 ),
                 is_preemptible=True,
+                pass_config=True,
             ),
             JobDescription(
                 status=JobStatus.PENDING,
@@ -1077,6 +1100,7 @@ class TestSimpleJobsFormatter:
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                 ),
                 is_preemptible=True,
+                pass_config=True,
             ),
         ]
         formatter = SimpleJobsFormatter()
@@ -1115,6 +1139,7 @@ class TestTabularJobRow:
                 command="ls",
             ),
             is_preemptible=True,
+            pass_config=True,
         )
 
     def test_with_job_name(self) -> None:
@@ -1230,6 +1255,7 @@ class TestTabularJobsFormatter:
                 command="c",
             ),
             is_preemptible=True,
+            pass_config=True,
         )
         formatter = TabularJobsFormatter(
             "owner", parse_columns(None), image_formatter=str
@@ -1271,6 +1297,7 @@ class TestTabularJobsFormatter:
                     command="ls -la /some/path",
                 ),
                 is_preemptible=True,
+                pass_config=True,
             ),
             JobDescription(
                 status=JobStatus.PENDING,
@@ -1304,6 +1331,7 @@ class TestTabularJobsFormatter:
                     command="ls -la /some/path",
                 ),
                 is_preemptible=True,
+                pass_config=True,
             ),
         ]
         formatter = TabularJobsFormatter(
@@ -1335,6 +1363,7 @@ class TestTabularJobsFormatter:
                 command="c",
             ),
             is_preemptible=True,
+            pass_config=True,
         )
 
         columns = parse_columns("{status;align=right;min=20;Status Code}")
@@ -1367,6 +1396,7 @@ class TestTabularJobsFormatter:
                     command="c",
                 ),
                 is_preemptible=True,
+                pass_config=True,
                 life_span=life_span,
             )
             for i, life_span in enumerate(life_spans, 1)
@@ -1430,6 +1460,7 @@ class TestTabularJobsFormatter:
                     resources=Resources(16, 0.1, 0, None, False, None, None),
                 ),
                 is_preemptible=False,
+                pass_config=True,
                 internal_hostname="host.local",
             )
             for i, item in enumerate(items, 1)
@@ -1465,6 +1496,7 @@ class TestTabularJobsFormatter:
                     working_dir=working_dir,
                 ),
                 is_preemptible=False,
+                pass_config=True,
                 internal_hostname="host.local",
             )
             for i, working_dir in enumerate(items, 1)

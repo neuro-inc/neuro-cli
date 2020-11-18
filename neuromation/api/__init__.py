@@ -30,6 +30,7 @@ from .config_factory import (
     CONFIG_ENV_NAME,
     DEFAULT_API_URL,
     DEFAULT_CONFIG_PATH,
+    PASS_CONFIG_ENV_NAME,
     Factory,
 )
 from .core import DEFAULT_TIMEOUT
@@ -72,6 +73,7 @@ __all__ = (
     "DEFAULT_API_URL",
     "DEFAULT_CONFIG_PATH",
     "CONFIG_ENV_NAME",
+    "PASS_CONFIG_ENV_NAME",
     "Jobs",
     "JobDescription",
     "JobRestartPolicy",

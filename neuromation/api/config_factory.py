@@ -1,4 +1,6 @@
 import asyncio
+import base64
+import json
 import os
 import ssl
 import sys
@@ -23,6 +25,7 @@ from .utils import _ContextManager
 
 DEFAULT_CONFIG_PATH = "~/.neuro"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
+PASS_CONFIG_ENV_NAME = "NEURO_PASSED_CONFIG"
 DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")
 
 
@@ -67,7 +70,13 @@ class Factory:
     def path(self) -> Path:
         return self._path
 
+    @property
+    def is_config_present(self) -> bool:
+        return (self._path / "db").exists()
+
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
+        if not self.is_config_present and PASS_CONFIG_ENV_NAME in os.environ:
+            await self.login_with_passed_config(timeout=timeout)
         session = await _make_session(timeout, self._trace_configs)
         try:
             client = Client._create(session, self._path, self._trace_id)
@@ -140,6 +149,32 @@ class Factory:
             server_config, _AuthToken.create_non_expiring(token), url
         )
         self._save(config)
+
+    async def login_with_passed_config(
+        self,
+        config_data: Optional[str] = None,
+        *,
+        timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
+    ) -> None:
+        if config_data is None:
+            try:
+                config_data = os.environ[PASS_CONFIG_ENV_NAME]
+            except KeyError:
+                raise ConfigError(
+                    f"Config env variable {PASS_CONFIG_ENV_NAME} " "is not present"
+                )
+        try:
+            data = json.loads(base64.b64decode(config_data).decode())
+            token = data["token"]
+            cluster = data["cluster"]
+            url = URL(data["url"])
+        except (ValueError, KeyError):
+            raise ConfigError(f"Data in passed config is malformed: {config_data}")
+        await self.login_with_token(token, url=url, timeout=timeout)
+        client = await self.get(timeout=timeout)
+
+        await client.config.switch_cluster(cluster)
+        await client.close()
 
     def _gen_config(
         self, server_config: _ServerConfig, token: _AuthToken, url: URL

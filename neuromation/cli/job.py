@@ -15,6 +15,7 @@ from rich.table import Table
 from yarl import URL
 
 from neuromation.api import (
+    PASS_CONFIG_ENV_NAME,
     AuthorizationError,
     Client,
     Container,
@@ -67,7 +68,6 @@ from .parse_utils import (
 )
 from .root import Root
 from .utils import (
-    NEURO_STEAL_CONFIG,
     AsyncExitStack,
     alias,
     argument,
@@ -1180,12 +1180,20 @@ async def run_job(
     disk_volumes = volume_parse_result.disk_volumes
 
     if pass_config:
-        env_name = NEURO_STEAL_CONFIG
+        env_name = PASS_CONFIG_ENV_NAME
         if env_name in env_dict:
             raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
+
+        # The following code is compatibility layer with old images
+        # TODO: remove this and upload_and_map_config function
+        old_env_name = "NEURO_STEAL_CONFIG"
+        if old_env_name in env_dict:
+            raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
+
         env_var, secret_volume = await upload_and_map_config(root)
-        env_dict[NEURO_STEAL_CONFIG] = env_var
+        env_dict[old_env_name] = env_var
         volumes.append(secret_volume)
+        # End of compatibility layer
 
     if volumes:
         log.info(
@@ -1211,6 +1219,7 @@ async def run_job(
     job = await root.client.jobs.run(
         container,
         is_preemptible=preemptible,
+        pass_config=pass_config,
         wait_for_jobs_quota=wait_for_jobs_quota,
         name=name,
         tags=tags,

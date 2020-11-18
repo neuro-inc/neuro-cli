@@ -471,6 +471,7 @@ async def test_status_failed(
             "description": "Not enough coffee",
         },
         "is_preemptible": True,
+        "pass_config": False,
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-id",
@@ -530,6 +531,7 @@ async def test_status_with_http(
             "description": "Everything is fine",
         },
         "is_preemptible": True,
+        "pass_config": False,
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-id",
@@ -589,6 +591,7 @@ async def test_status_with_tpu(
             "description": "Everything is fine",
         },
         "is_preemptible": True,
+        "pass_config": False,
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-id",
@@ -665,6 +668,7 @@ async def test_job_run(
         },
         "http_url": "http://my_host:8889",
         "is_preemptible": False,
+        "pass_config": False,
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -695,6 +699,7 @@ async def test_job_run(
                 ],
             },
             "is_preemptible": False,
+            "pass_config": False,
             "cluster_name": "default",
         }
 
@@ -759,6 +764,7 @@ async def test_job_run_with_wait_for_quota(
         },
         "http_url": "http://my_host:8889",
         "is_preemptible": False,
+        "pass_config": False,
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -777,6 +783,7 @@ async def test_job_run_with_wait_for_quota(
             },
             "is_preemptible": False,
             "wait_for_jobs_quota": True,
+            "pass_config": False,
             "cluster_name": "default",
         }
 
@@ -833,6 +840,7 @@ async def test_job_run_with_name_and_description(
         },
         "http_url": "http://my_host:8889",
         "is_preemptible": False,
+        "pass_config": False,
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -863,6 +871,7 @@ async def test_job_run_with_name_and_description(
                 ],
             },
             "is_preemptible": False,
+            "pass_config": False,
             "name": "test-job-name",
             "description": "job description",
             "cluster_name": "default",
@@ -935,6 +944,7 @@ async def test_job_run_with_tags(
         },
         "http_url": "http://my_host:8889",
         "is_preemptible": False,
+        "pass_config": False,
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -965,6 +975,7 @@ async def test_job_run_with_tags(
                 ],
             },
             "is_preemptible": False,
+            "pass_config": False,
             "tags": ["t1", "t2", "t3"],
             "cluster_name": "default",
         }
@@ -1035,6 +1046,7 @@ async def test_job_run_no_volumes(
         },
         "http_url": "http://my_host:8889",
         "is_preemptible": False,
+        "pass_config": False,
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -1053,6 +1065,7 @@ async def test_job_run_no_volumes(
                 },
             },
             "is_preemptible": False,
+            "pass_config": False,
             "name": "test-job-name",
             "description": "job description",
             "cluster_name": "default",
@@ -1113,6 +1126,7 @@ async def test_job_run_with_relative_volume_uris(
         },
         "http_url": "http://my_host:8889",
         "is_preemptible": False,
+        "pass_config": False,
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -1148,6 +1162,7 @@ async def test_job_run_with_relative_volume_uris(
                 ],
             },
             "is_preemptible": False,
+            "pass_config": False,
             "cluster_name": "default",
         }
 
@@ -1215,6 +1230,7 @@ async def test_job_run_with_secret_uris(
         },
         "http_url": "http://my_host:8889",
         "is_preemptible": False,
+        "pass_config": False,
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -1248,6 +1264,7 @@ async def test_job_run_with_secret_uris(
                 ],
             },
             "is_preemptible": False,
+            "pass_config": False,
             "cluster_name": "default",
         }
 
@@ -1318,6 +1335,7 @@ async def test_job_run_with_disk_volume_uris(
         },
         "http_url": "http://my_host:8889",
         "is_preemptible": False,
+        "pass_config": False,
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -1343,6 +1361,7 @@ async def test_job_run_with_disk_volume_uris(
                 ],
             },
             "is_preemptible": False,
+            "pass_config": False,
             "cluster_name": "default",
         }
 
@@ -1400,6 +1419,7 @@ async def test_job_run_preemptible(
             },
         },
         "is_preemptible": True,
+        "pass_config": False,
         "http_url": "http://my_host:8889",
     }
 
@@ -1431,6 +1451,7 @@ async def test_job_run_preemptible(
                 ],
             },
             "is_preemptible": True,
+            "pass_config": False,
             "name": "test-job-name",
             "description": "job description",
             "cluster_name": "default",
@@ -1502,6 +1523,7 @@ async def test_job_run_schedule_timeout(
         },
         "http_url": "http://my_host:8889",
         "is_preemptible": False,
+        "pass_config": False,
         "schedule_timeout": 5,
     }
 
@@ -1520,6 +1542,7 @@ async def test_job_run_schedule_timeout(
                 },
             },
             "is_preemptible": False,
+            "pass_config": False,
             "schedule_timeout": 5,
             "cluster_name": "default",
         }
@@ -1574,6 +1597,7 @@ async def test_job_run_tpu(
         },
         "http_url": "http://my_host:8889",
         "is_preemptible": False,
+        "pass_config": False,
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -1592,6 +1616,7 @@ async def test_job_run_tpu(
                 },
             },
             "is_preemptible": False,
+            "pass_config": False,
             "schedule_timeout": 5,
             "cluster_name": "default",
         }
@@ -1633,6 +1658,7 @@ async def test_job_run_with_tty(
                 "tty": True,
             },
             "is_preemptible": False,
+            "pass_config": False,
             "cluster_name": "default",
         }
 
@@ -1687,6 +1713,7 @@ def create_job_response(
             },
         },
         "is_preemptible": True,
+        "pass_config": False,
         "owner": owner,
         "cluster_name": "default",
         "uri": f"job://default/{owner}/{id}",
@@ -2138,6 +2165,7 @@ async def test_job_run_life_span(
                 "command": "submit-command",
             },
             "is_preemptible": False,
+            "pass_config": False,
             "max_run_time_minutes": 10,
             "cluster_name": "default",
         }
@@ -2170,6 +2198,7 @@ async def test_job_run_restart_policy(
                 "command": "submit-command",
             },
             "is_preemptible": False,
+            "pass_config": False,
             "restart_policy": "always",
             "cluster_name": "default",
         }
@@ -2205,6 +2234,7 @@ async def test_job_run_working_dir(
                 "working_dir": "/working/dir",
             },
             "is_preemptible": False,
+            "pass_config": False,
             "cluster_name": "default",
         }
         result = create_job_response("job-id-1", "running")

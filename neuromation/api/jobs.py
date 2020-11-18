@@ -176,6 +176,7 @@ class JobDescription:
     history: JobStatusHistory
     container: Container
     is_preemptible: bool
+    pass_config: bool
     uri: URL
     name: Optional[str] = None
     tags: Sequence[str] = ()
@@ -251,6 +252,7 @@ class Jobs(metaclass=NoPublicConstructor):
         tags: Sequence[str] = (),
         description: Optional[str] = None,
         is_preemptible: bool = False,
+        pass_config: bool = False,
         wait_for_jobs_quota: bool = False,
         schedule_timeout: Optional[float] = None,
         restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
@@ -260,6 +262,7 @@ class Jobs(metaclass=NoPublicConstructor):
         payload: Dict[str, Any] = {
             "container": _container_to_api(container, self._config),
             "is_preemptible": is_preemptible,
+            "pass_config": pass_config,
         }
         if name:
             payload["name"] = name
@@ -804,6 +807,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         history=history,
         container=container,
         is_preemptible=res["is_preemptible"],
+        pass_config=res["pass_config"],
         name=name,
         tags=tags,
         description=description,

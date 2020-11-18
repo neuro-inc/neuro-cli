@@ -753,7 +753,7 @@ def test_pass_config(helper: Helper) -> None:
             "--no-wait-start",
             "--pass-config",
             UBUNTU_IMAGE_NAME,
-            'bash -c "sleep 15 && test -f $(NEURO_STEAL_CONFIG)/db"',
+            'bash -c "sleep 15 && [ ! -z NEURO_PASSED_CONFIG ]"',
         ]
     )
     job_id = captured.out
