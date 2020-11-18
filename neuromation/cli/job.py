@@ -555,7 +555,8 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     "-o",
     "--owner",
     multiple=True,
-    help="Filter out jobs by owner (multiple option).",
+    help="Filter out jobs by owner (multiple option). "
+    "Supports `ME` option to filter by the current user.",
     secure=True,
 )
 @option("-n", "--name", metavar="NAME", help="Filter out jobs by name.", secure=True)
@@ -640,6 +641,9 @@ async def ls(
 
     statuses = calc_statuses(status, all)
     owners = set(owner)
+    if "ME" in owners:
+        owners.remove("ME")
+        owners.add(root.client.config.username)
     tags = set(tag)
     jobs = root.client.jobs.list(
         statuses=statuses,

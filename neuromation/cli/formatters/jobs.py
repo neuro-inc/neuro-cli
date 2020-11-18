@@ -359,7 +359,7 @@ class TabularJobRow:
             started=format_datetime(job.history.started_at),
             finished=format_datetime(job.history.finished_at),
             image=image_formatter(job.container.image),
-            owner=("<you>" if job.owner == username else job.owner),
+            owner=("YOU" if job.owner == username else job.owner),
             description=job.description if job.description else "",
             cluster_name=job.cluster_name,
             command=job.container.command if job.container.command else "",
