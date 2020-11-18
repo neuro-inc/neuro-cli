@@ -1,6 +1,6 @@
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Dict
 from unittest import mock
 from urllib.parse import parse_qsl
 
@@ -92,6 +92,10 @@ class TestUserConfigValidators:
         ):
             _validate_user_config({"storage": {"cp-exclude": [1, 2]}}, "file.cfg")
 
+    def test_not_allowed_cluster_name(self) -> None:
+        with pytest.raises(ConfigError, match=r"file.cfg: cluster name is not allowed"):
+            _validate_user_config({"job": {"cluster-name": "another"}}, "file.cfg")
+
 
 async def test_get_user_config_empty(make_client: _MakeClient) -> None:
     async with make_client("https://example.com") as client:
@@ -125,6 +129,91 @@ async def test_get_user_config_from_local(
         assert await client.config.get_user_config() == {
             "alias": {"pss": {"cmd": "job ps --short"}}
         }
+
+
+@pytest.fixture
+def multiple_clusters_config() -> Dict[str, Cluster]:
+    return {
+        "default": Cluster(
+            name="default",
+            registry_url=URL("https://registry-dev.neu.ro"),
+            storage_url=URL("https://storage-dev.neu.ro"),
+            users_url=URL("https://users-dev.neu.ro"),
+            monitoring_url=URL("https://jobs-dev.neu.ro"),
+            secrets_url=URL("https://secrets-dev.neu.ro"),
+            presets={"cpu-small": Preset(cpu=1, memory_mb=2 * 1024)},
+        ),
+        "another": Cluster(
+            name="another",
+            registry_url=URL("https://registry2-dev.neu.ro"),
+            storage_url=URL("https://storage2-dev.neu.ro"),
+            users_url=URL("https://users2-dev.neu.ro"),
+            monitoring_url=URL("https://jobs2-dev.neu.ro"),
+            secrets_url=URL("https://secrets2-dev.neu.ro"),
+            presets={"cpu-large": Preset(cpu=7, memory_mb=14 * 1024)},
+        ),
+    }
+
+
+async def test_get_cluster_name_from_local(
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
+    multiple_clusters_config: Dict[str, Cluster],
+) -> None:
+    async with make_client(
+        "https://example.org", clusters=multiple_clusters_config
+    ) as client:
+        proj_dir = tmp_path / "project"
+        local_dir = proj_dir / "folder"
+        local_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.chdir(local_dir)
+        assert client.config.cluster_name == "default"
+        assert client.config.registry_url == URL("https://registry-dev.neu.ro")
+        assert client.config.storage_url == URL("https://storage-dev.neu.ro")
+        assert client.config.monitoring_url == URL("https://jobs-dev.neu.ro")
+        assert client.config.secrets_url == URL("https://secrets-dev.neu.ro")
+        assert client.config.presets == {"cpu-small": Preset(cpu=1, memory_mb=2 * 1024)}
+
+        local_conf = proj_dir / ".neuro.toml"
+        local_conf.write_text(toml.dumps({"job": {"cluster-name": "another"}}))
+        assert client.config.cluster_name == "another"
+        assert client.config.registry_url == URL("https://registry2-dev.neu.ro")
+        assert client.config.storage_url == URL("https://storage2-dev.neu.ro")
+        assert client.config.monitoring_url == URL("https://jobs2-dev.neu.ro")
+        assert client.config.secrets_url == URL("https://secrets2-dev.neu.ro")
+        assert client.config.presets == {
+            "cpu-large": Preset(cpu=7, memory_mb=14 * 1024)
+        }
+
+
+async def test_get_cluster_name_from_local_invalid_cluster(
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
+    multiple_clusters_config: Dict[str, Cluster],
+) -> None:
+    async with make_client("https://example.org") as client:
+        proj_dir = tmp_path / "project"
+        local_dir = proj_dir / "folder"
+        local_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.chdir(local_dir)
+        assert client.config.cluster_name == "default"
+
+        local_conf = proj_dir / ".neuro.toml"
+        local_conf.write_text(toml.dumps({"job": {"cluster-name": "another"}}))
+        assert client.config.cluster_name == "another"
+        match = "Cluster another doesn't exist.*Please edit local user config file"
+        with pytest.raises(RuntimeError, match=match):
+            client.config.registry_url
+        with pytest.raises(RuntimeError, match=match):
+            client.config.storage_url
+        with pytest.raises(RuntimeError, match=match):
+            client.config.monitoring_url
+        with pytest.raises(RuntimeError, match=match):
+            client.config.secrets_url
+        with pytest.raises(RuntimeError, match=match):
+            client.config.presets
 
 
 async def test_username(
@@ -336,97 +425,43 @@ async def test_fetch_dropped_selected_cluster(
 
 
 async def test_switch_clusters(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+    make_client: _MakeClient, multiple_clusters_config: Dict[str, Cluster]
 ) -> None:
-    # the test returns the same as for valid answer but the cluster name is different
-    JSON = {
-        "auth_url": "https://dev-neuromation.auth0.com/authorize",
-        "token_url": "https://dev-neuromation.auth0.com/oauth/token",
-        "logout_url": "https://dev-neuromation.auth0.com/v2/logout",
-        "client_id": "this_is_client_id",
-        "audience": "https://platform.dev.neuromation.io",
-        "headless_callback_url": "https://dev.neu.ro/oauth/show-code",
-        "success_redirect_url": "https://platform.neuromation.io",
-        "clusters": [
-            {
-                "name": "default",
-                "registry_url": "https://registry-dev.neu.ro",
-                "storage_url": "https://storage-dev.neu.ro",
-                "users_url": "https://users-dev.neu.ro",
-                "monitoring_url": "https://jobs-dev.neu.ro",
-                "secrets_url": "https://secrets-dev.neu.ro",
-                "resource_presets": [
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
-                ],
-            },
-            {
-                "name": "another",
-                "registry_url": "https://registry2-dev.neu.ro",
-                "storage_url": "https://storage2-dev.neu.ro",
-                "users_url": "https://users2-dev.neu.ro",
-                "monitoring_url": "https://jobs2-dev.neu.ro",
-                "secrets_url": "https://secrets-dev.neu.ro",
-                "resource_presets": [
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
-                ],
-            },
-        ],
-    }
-
-    async def handler(request: web.Request) -> web.Response:
-        return web.json_response(JSON)
-
-    app = web.Application()
-    app.add_routes([web.get("/config", handler)])
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        await client.config.fetch()
+    async with make_client(
+        "https://example.org", clusters=multiple_clusters_config
+    ) as client:
         assert client.config.cluster_name == "default"
         await client.config.switch_cluster("another")
         assert client.config.cluster_name == "another"
 
 
-async def test_switch_clusters_unknown(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
-) -> None:
-    # the test returns the same as for valid answer but the cluster name is different
-    JSON = {
-        "auth_url": "https://dev-neuromation.auth0.com/authorize",
-        "token_url": "https://dev-neuromation.auth0.com/oauth/token",
-        "logout_url": "https://dev-neuromation.auth0.com/v2/logout",
-        "client_id": "this_is_client_id",
-        "audience": "https://platform.dev.neuromation.io",
-        "headless_callback_url": "https://dev.neu.ro/oauth/show-code",
-        "success_redirect_url": "https://platform.neuromation.io",
-        "clusters": [
-            {
-                "name": "default",
-                "registry_url": "https://registry-dev.neu.ro",
-                "storage_url": "https://storage-dev.neu.ro",
-                "users_url": "https://users-dev.neu.ro",
-                "monitoring_url": "https://jobs-dev.neu.ro",
-                "secrets_url": "https://secrets-dev.neu.ro",
-                "resource_presets": [
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
-                ],
-            }
-        ],
-    }
-
-    async def handler(request: web.Request) -> web.Response:
-        return web.json_response(JSON)
-
-    app = web.Application()
-    app.add_routes([web.get("/config", handler)])
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        await client.config.fetch()
+async def test_switch_clusters_unknown(make_client: _MakeClient) -> None:
+    async with make_client("https://example.org") as client:
         assert client.config.cluster_name == "default"
         with pytest.raises(RuntimeError, match="Cluster another doesn't exist"):
             await client.config.switch_cluster("another")
         assert client.config.cluster_name == "default"
+
+
+async def test_switch_clusters_local(
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
+    multiple_clusters_config: Dict[str, Cluster],
+) -> None:
+    async with make_client(
+        "https://example.org", clusters=multiple_clusters_config
+    ) as client:
+        proj_dir = tmp_path / "project"
+        local_dir = proj_dir / "folder"
+        local_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.chdir(local_dir)
+        local_conf = proj_dir / ".neuro.toml"
+        local_conf.write_text(toml.dumps({"job": {"cluster-name": "another"}}))
+        assert client.config.cluster_name == "another"
+        with pytest.raises(RuntimeError, match=r"\.neuro\.toml"):
+            await client.config.switch_cluster("default")
+        assert client.config.cluster_name == "another"
 
 
 async def test_check_server_mismatch_clusters(

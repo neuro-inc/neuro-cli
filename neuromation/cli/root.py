@@ -184,7 +184,7 @@ class Root:
         try:
             client = await self.init_client()
         except ConfigError:
-            return await load_user_config(self.config_path.expanduser())
+            return load_user_config(self.config_path.expanduser())
         else:
             return await client.config.get_user_config()
 
