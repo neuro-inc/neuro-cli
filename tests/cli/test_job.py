@@ -85,7 +85,11 @@ def test_calc_statuses__not_contains_all__all_statuses_false(
 def test_calc_statuses__check_defaults__all_statuses_false(
     capsys: Any, caplog: Any
 ) -> None:
-    assert calc_statuses([], all=False) == {JobStatus.PENDING, JobStatus.RUNNING}
+    assert calc_statuses([], all=False) == {
+        JobStatus.PENDING,
+        JobStatus.RUNNING,
+        JobStatus.SUSPENDED,
+    }
     std = capsys.readouterr()
     assert not std.out
     assert not std.err

@@ -11,6 +11,7 @@ from typing import List, Optional, Sequence, Set, Tuple
 import async_timeout
 import click
 from dateutil.parser import isoparse
+from rich.table import Table
 from yarl import URL
 
 from neuromation.api import (
@@ -75,7 +76,6 @@ from .utils import (
     deprecated_quiet_option,
     group,
     option,
-    pager_maybe,
     resolve_job,
     volume_to_verbose_str,
 )
@@ -271,6 +271,12 @@ def job() -> None:
     help="Upload neuro config to the job",
 )
 @option(
+    "--wait-for-seat/--no-wait-for-seat",
+    default=False,
+    show_default=True,
+    help="Wait for total running jobs quota",
+)
+@option(
     "--port-forward",
     type=LOCAL_REMOTE_PORT,
     multiple=True,
@@ -312,6 +318,7 @@ async def submit(
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
+    wait_for_seat: bool,
     browse: bool,
     detach: bool,
     tty: Optional[bool],
@@ -364,6 +371,7 @@ async def submit(
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
+        wait_for_jobs_quota=wait_for_seat,
         browse=browse,
         detach=detach,
         tty=tty,
@@ -410,7 +418,9 @@ async def exec(
     """
     real_cmd = _parse_cmd(cmd)
     job = await resolve_job(
-        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
+        job,
+        client=root.client,
+        status=JobStatus.active_items(),
     )
     if tty is None:
         tty = root.tty
@@ -463,7 +473,9 @@ async def port_forward(
             err=True,
         )
     job_id = await resolve_job(
-        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
+        job,
+        client=root.client,
+        status=JobStatus.active_items(),
     )
     async with AsyncExitStack() as stack:
         for local_port, job_port in local_remote_port:
@@ -492,13 +504,7 @@ async def logs(root: Root, job: str) -> None:
     id = await resolve_job(
         job,
         client=root.client,
-        status={
-            JobStatus.PENDING,
-            JobStatus.RUNNING,
-            JobStatus.SUCCEEDED,
-            JobStatus.CANCELLED,
-            JobStatus.FAILED,
-        },
+        status=JobStatus.items(),
     )
     await process_logs(root, id, None)
 
@@ -520,17 +526,11 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     id = await resolve_job(
         job,
         client=root.client,
-        status={
-            JobStatus.PENDING,
-            JobStatus.RUNNING,
-            JobStatus.SUCCEEDED,
-            JobStatus.CANCELLED,
-            JobStatus.FAILED,
-        },
+        status=JobStatus.items(),
     )
     status = await root.client.jobs.status(id)
-    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
-    while status.status == JobStatus.PENDING:
+    progress = JobStartProgress.create(console=root.console, quiet=root.quiet)
+    while status.status.is_pending:
         await asyncio.sleep(0.2)
         status = await root.client.jobs.status(id)
         progress.step(status)
@@ -664,16 +664,13 @@ async def ls(
     if root.quiet:
         formatter: BaseJobsFormatter = SimpleJobsFormatter()
     else:
-        if wide or not root.tty:
-            width = 0
-        else:
-            width = root.terminal_size[0]
         image_fmtr = image_formatter(uri_formatter=uri_fmtr)
         formatter = TabularJobsFormatter(
-            width, root.client.username, format, image_formatter=image_fmtr
+            root.client.username, format, image_formatter=image_fmtr
         )
 
-    pager_maybe(formatter([job async for job in jobs]), root.tty, root.terminal_size)
+    with root.pager():
+        root.print(formatter([job async for job in jobs]))
 
 
 @command()
@@ -686,13 +683,7 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
     id = await resolve_job(
         job,
         client=root.client,
-        status={
-            JobStatus.PENDING,
-            JobStatus.RUNNING,
-            JobStatus.SUCCEEDED,
-            JobStatus.CANCELLED,
-            JobStatus.FAILED,
-        },
+        status=JobStatus.items(),
     )
     res = await root.client.jobs.status(id)
     uri_fmtr: URIFormatter
@@ -702,11 +693,7 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
         uri_fmtr = uri_formatter(
             username=root.client.username, cluster_name=root.client.cluster_name
         )
-    if root.tty:
-        width = root.terminal_size[0]
-    else:
-        width = 0
-    click.echo(JobStatusFormatter(uri_formatter=uri_fmtr, width=width)(res))
+    root.print(JobStatusFormatter(uri_formatter=uri_fmtr)(res))
 
 
 @command()
@@ -715,7 +702,12 @@ async def tags(root: Root) -> None:
     List all tags submitted by the user.
     """
     res = await root.client.jobs.tags()
-    pager_maybe(res, root.tty, root.terminal_size)
+    table = Table.grid()
+    table.add_column("")
+    for item in res:
+        table.add_row(item)
+    with root.pager():
+        root.print(table)
 
 
 @command()
@@ -724,9 +716,7 @@ async def browse(root: Root, job: str) -> None:
     """
     Opens a job's URL in a web browser.
     """
-    id = await resolve_job(
-        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
-    )
+    id = await resolve_job(job, client=root.client, status=JobStatus.active_items())
     res = await root.client.jobs.status(id)
     await browse_job(root, res)
 
@@ -744,18 +734,11 @@ async def top(root: Root, job: str, timeout: float) -> None:
     """
     Display GPU/CPU/Memory usage.
     """
-    formatter = JobTelemetryFormatter()
-    id = await resolve_job(
-        job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
-    )
-    print_header = True
-    async with async_timeout.timeout(timeout if timeout else None):
-        async for res in root.client.jobs.top(id):
-            if print_header:
-                click.echo(formatter.header())
-                print_header = False
-            line = formatter(res)
-            click.echo(f"\r{line}", nl=False)
+    with JobTelemetryFormatter(root.console) as formatter:
+        id = await resolve_job(job, client=root.client, status=JobStatus.active_items())
+        async with async_timeout.timeout(timeout if timeout else None):
+            async for res in root.client.jobs.top(id):
+                formatter.update(res)
 
 
 @command()
@@ -773,13 +756,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
     id = await resolve_job(
         job,
         client=root.client,
-        status={
-            JobStatus.PENDING,
-            JobStatus.RUNNING,
-            JobStatus.SUCCEEDED,
-            JobStatus.CANCELLED,
-            JobStatus.FAILED,
-        },
+        status=JobStatus.items(),
     )
     progress = DockerImageProgress.create(console=root.console, quiet=root.quiet)
     with contextlib.closing(progress):
@@ -796,7 +773,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     errors = []
     for job in jobs:
         job_resolved = await resolve_job(
-            job, client=root.client, status={JobStatus.PENDING, JobStatus.RUNNING}
+            job, client=root.client, status=JobStatus.active_items()
         )
         try:
             await root.client.jobs.kill(job_resolved)
@@ -973,6 +950,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Upload neuro config to the job",
 )
 @option(
+    "--wait-for-seat/--no-wait-for-seat",
+    default=False,
+    show_default=True,
+    help="Wait for total running jobs quota",
+)
+@option(
     "--port-forward",
     type=LOCAL_REMOTE_PORT,
     multiple=True,
@@ -1008,6 +991,7 @@ async def run(
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
+    wait_for_seat: bool,
     port_forward: List[Tuple[int, int]],
     browse: bool,
     detach: bool,
@@ -1071,6 +1055,7 @@ async def run(
         description=description,
         wait_start=wait_start,
         pass_config=pass_config,
+        wait_for_jobs_quota=wait_for_seat,
         browse=browse,
         detach=detach,
         tty=tty,
@@ -1125,6 +1110,7 @@ async def run_job(
     description: Optional[str],
     wait_start: bool,
     pass_config: bool,
+    wait_for_jobs_quota: bool,
     browse: bool,
     detach: bool,
     tty: bool,
@@ -1221,6 +1207,7 @@ async def run_job(
     job = await root.client.jobs.run(
         container,
         is_preemptible=preemptible,
+        wait_for_jobs_quota=wait_for_jobs_quota,
         name=name,
         tags=tags,
         description=description,
@@ -1228,13 +1215,14 @@ async def run_job(
         life_span=job_life_span,
         schedule_timeout=job_schedule_timeout,
     )
-    progress = JobStartProgress.create(tty=root.tty, color=root.color, quiet=root.quiet)
-    progress.begin(job)
-    while wait_start and job.status == JobStatus.PENDING:
-        await asyncio.sleep(0.2)
-        job = await root.client.jobs.status(job.id)
-        progress.step(job)
-    progress.end(job)
+    with JobStartProgress.create(console=root.console, quiet=root.quiet) as progress:
+        progress.begin(job)
+        while wait_start and job.status == JobStatus.PENDING:
+            await asyncio.sleep(0.2)
+            job = await root.client.jobs.status(job.id)
+            progress.step(job)
+        progress.end(job)
+
     # Even if we detached, but the job has failed to start
     # (most common reason - no resources), the command fails
     if job.status == JobStatus.FAILED:
@@ -1299,7 +1287,7 @@ async def browse_job(root: Root, job: JobDescription) -> None:
 
 
 def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
-    defaults = {"running", "pending"}
+    defaults = {item.value for item in JobStatus.active_items()}
     statuses = set(status)
 
     if "all" in statuses:

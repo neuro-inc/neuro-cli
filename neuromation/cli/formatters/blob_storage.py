@@ -1,6 +1,10 @@
 import abc
 import time
-from typing import Iterator, Sequence, Union
+from typing import Sequence, Union
+
+from rich.console import RenderableType
+from rich.table import Table
+from rich.text import Text
 
 from neuromation.api import (
     Action,
@@ -11,7 +15,6 @@ from neuromation.api import (
 )
 from neuromation.cli.utils import format_size
 
-from ..text_helper import StyledTextHelper
 from .storage import TIME_FORMAT, get_painter
 
 
@@ -29,7 +32,7 @@ class BaseBlobFormatter:
     @abc.abstractmethod
     def __call__(
         self, files: Sequence[BlobListings]
-    ) -> Iterator[str]:  # pragma: no cover
+    ) -> RenderableType:  # pragma: no cover
         pass
 
 
@@ -40,57 +43,49 @@ class LongBlobFormatter(BaseBlobFormatter):
         self.human_readable = human_readable
         self.painter = get_painter(color)
 
-    def to_columns(self, file: BlobListings) -> Sequence[str]:
+    def to_row(self, file: BlobListings) -> Sequence[RenderableType]:
         if isinstance(file, BucketListing):
-            return self.to_columns_bucket(file)
+            return self.to_row_bucket(file)
         elif isinstance(file, BlobListing):
-            return self.to_columns_blob(file)
+            return self.to_row_blob(file)
         else:
-            return self.to_columns_prefix(file)
+            return self.to_row_prefix(file)
 
-    def to_columns_bucket(self, file: BucketListing) -> Sequence[str]:
+    def to_row_bucket(self, file: BucketListing) -> Sequence[RenderableType]:
         permission = self.permissions_mapping[file.permission]
         date = time.strftime(TIME_FORMAT, time.localtime(file.creation_time))
         name = self.painter.paint(str(file.uri), get_file_type(file))
-        return [f"{permission}", f"", f"{date}", f"{name}"]
+        return [f"{permission}", f"", f"{date}", name]
 
-    def to_columns_blob(self, file: BlobListing) -> Sequence[str]:
+    def to_row_blob(self, file: BlobListing) -> Sequence[RenderableType]:
         date = time.strftime(TIME_FORMAT, time.localtime(file.modification_time))
         if self.human_readable:
             size = format_size(file.size).rstrip("B")
         else:
             size = str(file.size)
         name = self.painter.paint(str(file.uri), get_file_type(file))
-        return ["", f"{size}", f"{date}", f"{name}"]
+        return ["", f"{size}", f"{date}", name]
 
-    def to_columns_prefix(self, file: PrefixListing) -> Sequence[str]:
+    def to_row_prefix(self, file: PrefixListing) -> Sequence[RenderableType]:
         name = self.painter.paint(str(file.uri), get_file_type(file))
-        return ["", "", "", f"{name}"]
+        return ["", "", "", name]
 
-    def __call__(self, files: Sequence[BlobListings]) -> Iterator[str]:
-        if not files:
-            return
-        table = [self.to_columns(file) for file in files]
-        widths = [0 for _ in table[0]]
-        for row in table:
-            for x in range(len(row)):
-                cell_width = StyledTextHelper.width(row[x])
-                if widths[x] < cell_width:
-                    widths[x] = cell_width
-        for row in table:
-            line = []
-            for x in range(len(row)):
-                if x == len(row) - 1:
-                    line.append(row[x])
-                else:
-                    line.append(StyledTextHelper.rjust(row[x], widths[x]))
-            yield " ".join(line)
+    def __call__(self, files: Sequence[BlobListings]) -> RenderableType:
+        table = Table.grid(padding=(0, 2))
+        table.add_column()  # Type/Permissions
+        table.add_column(justify="right")  # Size
+        table.add_column()  # Date
+        table.add_column()  # Filename
+        for file in files:
+            table.add_row(*self.to_row(file))
+        return table
 
 
 class SimpleBlobFormatter(BaseBlobFormatter):
     def __init__(self, color: bool):
         self.painter = get_painter(color)
 
-    def __call__(self, files: Sequence[BlobListings]) -> Iterator[str]:
-        for file in files:
-            yield self.painter.paint(str(file.uri), get_file_type(file))
+    def __call__(self, files: Sequence[BlobListings]) -> RenderableType:
+        return Text("\n").join(
+            self.painter.paint(str(file.uri), get_file_type(file)) for file in files
+        )
