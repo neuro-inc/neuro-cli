@@ -2,6 +2,7 @@ import asyncio
 import io
 import logging
 import os
+import shutil
 import sys
 import warnings
 from pathlib import Path
@@ -167,6 +168,17 @@ class MainGroup(Group):
                 option = "--hide-token" if kwargs["hide_token"] else "--no-hide-token"
                 raise click.UsageError(f"{option} requires --trace")
             hide_token_bool = kwargs["hide_token"]
+
+        # The following code is compatibility layer with old images
+        # New client doesn't make use of NEURO_STEAL_CONFIG, but
+        # it is better to remove it from storage
+        # TODO: remove this and upload_and_map_config function
+        if "NEURO_STEAL_CONFIG" in os.environ:
+            path = Path(os.environ["NEURO_STEAL_CONFIG"])
+            if path.exists():
+                shutil.rmtree(path)
+        # End of compatibility layer
+
         root = Root(
             verbosity=verbosity,
             color=real_color,
