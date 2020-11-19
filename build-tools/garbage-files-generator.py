@@ -67,9 +67,7 @@ def generate_data(
                     files_count_z[name_length * level : name_length * (level + 1)]
                 )
 
-            folder_path = reduce(
-                lambda parent, child: parent / child, (OUTPUT_FOLDER, *split_path)
-            )
+            folder_path = OUTPUT_FOLDER.joinpath(*split_path)
 
             folder_path.mkdir(parents=True, exist_ok=True)
             folders_counter += 1
