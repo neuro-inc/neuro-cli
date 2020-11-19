@@ -42,6 +42,11 @@ def generate_data(
         f"which in total: {total_size} bytes."
     )
 
+    buffer_size = min(file_size_bytes, 16 * 2 ** 20)  # 16MB at max
+    garbage = bytearray(os.urandom(buffer_size))
+    write_iterations = file_size_bytes // buffer_size
+    tail_size = file_size_bytes % buffer_size
+
     OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
 
     created_files = 0
@@ -49,6 +54,9 @@ def generate_data(
     with Progress() as progress:
         data_gen_task = progress.add_task(
             "[green]Generating data...", total=files_count
+        )
+        file_gen_task = progress.add_task(
+            f"[cyan]Generating file...", total=write_iterations
         )
         while created_files < files_count:
             files_count_z = str(folders_counter).zfill(name_length * tree_depth)
@@ -71,12 +79,20 @@ def generate_data(
                     file_name = str(i).zfill(name_length)
                     full_file_name = folder_path / file_name
                     with full_file_name.open("wb") as file:
-                        file.write(os.urandom(file_size_bytes))
+                        for iteration in range(write_iterations):
+                            file.write(garbage)
+                            progress.update(
+                                file_gen_task,
+                                completed=iteration,
+                                description=f"[cyan]Writing file {full_file_name}...",
+                            )
+                        if tail_size != 0:
+                            file.write(garbage[:tail_size])
                     created_files += 1
                     progress.advance(data_gen_task)
                 else:
                     break
-        logging.info("Data generation completed.")
+    logging.info("Data generation completed.")
 
 
 def _parse_args() -> argparse.Namespace:
