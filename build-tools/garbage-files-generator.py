@@ -8,19 +8,13 @@ import pathlib
 import re
 from functools import reduce
 
+from rich.progress import Progress
+
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)-8s - %(filename)s:%(lineno)d |> %(message)s",
 )
-
-try:
-    import tqdm
-except ImportError:
-    tqdm = None
-    logging.warning(
-        f"tqdm library is not available, progress bar will not be displayed."
-    )
 
 
 OUTPUT_FOLDER = pathlib.Path("./data")
@@ -63,41 +57,40 @@ def generate_data(
             f" The resulting dataset will be {resulting_size} bytes"
             f" ({round(resulting_size / total_size, 2)} times larger)."
         )
-    if tqdm is not None:
-        progress_bar = tqdm.tqdm(total=files_count)
 
     created_files = 0
     folders_counter = 0
-    while created_files < files_count:
-        files_count_z = str(folders_counter).zfill(name_length * tree_depth)
+    with Progress() as progress:
+        data_gen_task = progress.add_task(
+            "[green]Generating data...", total=files_count
+        )
+        while created_files < files_count:
+            files_count_z = str(folders_counter).zfill(name_length * tree_depth)
 
-        split_path = []
-        for level in range(tree_depth):
-            split_path.append(
-                files_count_z[name_length * level : name_length * (level + 1)]
+            split_path = []
+            for level in range(tree_depth):
+                split_path.append(
+                    files_count_z[name_length * level : name_length * (level + 1)]
+                )
+
+            folder_path = reduce(
+                lambda parent, child: parent / child, (OUTPUT_FOLDER, *split_path)
             )
 
-        folder_path = reduce(
-            lambda parent, child: parent / child, (OUTPUT_FOLDER, *split_path)
-        )
+            folder_path.mkdir(parents=True, exist_ok=True)
+            folders_counter += 1
 
-        folder_path.mkdir(parents=True, exist_ok=True)
-        folders_counter += 1
-
-        for i in range(branching_factor):
-            if created_files < files_count:
-                file_name = str(i).zfill(name_length)
-                full_file_name = folder_path / file_name
-                with full_file_name.open("wb") as file:
-                    file.write(os.urandom(file_size_bytes))
-                created_files += 1
-                if tqdm is not None:
-                    progress_bar.update(1)
-            else:
-                break
-    if tqdm is not None:
-        progress_bar.close()
-    logging.info("Data generation completed.")
+            for i in range(branching_factor):
+                if created_files < files_count:
+                    file_name = str(i).zfill(name_length)
+                    full_file_name = folder_path / file_name
+                    with full_file_name.open("wb") as file:
+                        file.write(os.urandom(file_size_bytes))
+                    created_files += 1
+                    progress.advance(data_gen_task)
+                else:
+                    break
+        logging.info("Data generation completed.")
 
 
 def _parse_args() -> argparse.Namespace:
