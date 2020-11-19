@@ -6,7 +6,6 @@ import math
 import os
 import pathlib
 import re
-from functools import reduce
 
 from rich.progress import Progress
 
@@ -43,7 +42,7 @@ def generate_data(
     )
 
     buffer_size = min(file_size_bytes, 16 * 2 ** 20)  # 16MB at max
-    garbage = bytearray(os.urandom(buffer_size))
+    garbage = os.urandom(buffer_size)
     write_iterations = file_size_bytes // buffer_size
     tail_size = file_size_bytes % buffer_size
 
@@ -106,9 +105,7 @@ def _parse_size(size: str) -> int:
     units = {"B": 1, "KB": 2 ** 10, "MB": 2 ** 20, "GB": 2 ** 30, "TB": 2 ** 40}
     size = size.upper()
     # print("parsing size ", size)
-    if not re.match(r" ", size):
-        size = re.sub(r"([KMGT]?B)", r" \1", size)
-    number, unit = [string.strip() for string in size.split()]
+    number, unit = re.fullmatch(r"(\d*)([KMGT]?B)", size.strip()).groups()
     return int(float(number) * units[unit])
 
 

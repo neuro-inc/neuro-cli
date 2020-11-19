@@ -357,6 +357,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-g, --gpu AMOUNT_|GPU quota value in hours \(h) or minutes \(m).|
+|_\-j, --jobs AMOUNT_|Maximum running jobs quota|
 |_\-n, --non-gpu AMOUNT_|Non-GPU quota value in hours \(h) or minutes \(m).|
 
 
@@ -472,6 +473,7 @@ Name | Description|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files.|
+|_\--wait-for-seat / --no-wait-for-seat_|Wait for total running jobs quota  \[default: False]|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\-w, --workdir TEXT_|Working directory inside the container|
 
@@ -511,7 +513,7 @@ Name | Description|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
-|_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
+|_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_--since DATE_|Show jobs created after a specific date \(including).|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
@@ -893,6 +895,7 @@ neuro cp storage:results/*.out .
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--continue_|Continue copying partially-copied files.|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
 |_--exclude_|Exclude files and directories that match the specified pattern.|
 |_--include_|Don't exclude files and directories that match the specified pattern.|
@@ -2134,6 +2137,7 @@ Name | Description|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files.|
+|_\--wait-for-seat / --no-wait-for-seat_|Wait for total running jobs quota  \[default: False]|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\-w, --workdir TEXT_|Working directory inside the container|
 
@@ -2173,7 +2177,7 @@ Name | Description|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
-|_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option).|
+|_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_--since DATE_|Show jobs created after a specific date \(including).|
 |_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
@@ -2464,6 +2468,7 @@ neuro cp storage:results/*.out .
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--continue_|Continue copying partially-copied files.|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
 |_--exclude_|Exclude files and directories that match the specified pattern.|
 |_--include_|Don't exclude files and directories that match the specified pattern.|
