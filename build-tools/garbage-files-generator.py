@@ -43,20 +43,6 @@ def generate_data(
     )
 
     OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
-    fs_stats = os.statvfs(OUTPUT_FOLDER)
-    if file_size_bytes < 10 * fs_stats.f_frsize:
-        resulting_size = (
-            files_count
-            * fs_stats.f_frsize
-            * math.ceil(file_size_bytes / fs_stats.f_frsize)
-        )
-        logging.warning(
-            f"Host OS file system block size is"
-            f" comparable to the resulting file size:"
-            f" {fs_stats.f_frsize} vs {file_size_bytes} (bytes)."
-            f" The resulting dataset will be {resulting_size} bytes"
-            f" ({round(resulting_size / total_size, 2)} times larger)."
-        )
 
     created_files = 0
     folders_counter = 0
