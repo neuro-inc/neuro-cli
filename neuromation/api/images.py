@@ -117,6 +117,20 @@ class Images(metaclass=NoPublicConstructor):
         ) as resp:
             return resp.headers["Docker-Content-Digest"]
 
+    async def size(self, remote: RemoteImage) -> int:
+        name = f"{remote.owner}/{remote.name}"
+        auth = await self._config._registry_auth()
+        assert remote.tag
+        url = self._registry_url / name / "manifests" / remote.tag
+        async with self._core.request(
+                "GET",
+                url,
+                auth=auth,
+                headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
+        ) as resp:
+            data = await resp.json()
+            return sum([layer["size"] for layer in data["layers"]])
+
     async def rm(self, remote: RemoteImage, digest: str) -> None:
         name = f"{remote.owner}/{remote.name}"
         auth = await self._config._registry_auth()

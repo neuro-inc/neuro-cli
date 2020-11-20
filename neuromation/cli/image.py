@@ -3,6 +3,9 @@ import logging
 from typing import Optional
 
 import click
+from rich import box
+from rich.progress import Progress
+from rich.table import Table
 
 from neuromation.api import LocalImage, RemoteImage
 from neuromation.cli.formatters.images import (
@@ -20,8 +23,8 @@ from neuromation.cli.formatters.utils import (
 
 from .click_types import RemoteImageType, RemoteTaglessImageType
 from .root import Root
-from .utils import argument, command, deprecated_quiet_option, group, option
-
+from .utils import argument, command, deprecated_quiet_option, group, option, \
+    format_size
 
 log = logging.getLogger(__name__)
 
@@ -128,8 +131,9 @@ async def ls(root: Root, format_long: bool, full_uri: bool) -> None:
 
 
 @command()
+@option("-s", "print_size", is_flag=True, help="Print tag sizes.")
 @argument("image", type=RemoteTaglessImageType())
-async def tags(root: Root, image: RemoteImage) -> None:
+async def tags(root: Root, print_size:bool, image: RemoteImage) -> None:
     """
     List tags for image in platform registry.
 
@@ -142,10 +146,25 @@ async def tags(root: Root, image: RemoteImage) -> None:
     """
 
     images = await root.client.images.tags(image)
+    table = Table(box=box.SIMPLE_HEAVY)
+    table.add_column("Tag", style="bold")
+    if print_size:
+        table.add_column("Size")
     with root.pager():
-        # TODO: Use table here
-        for image in images:
-            root.print(image.tag)
+        with Progress() as progress:
+            if print_size:
+                task = progress.add_task("Getting image sizes...", total=len(images))
+            for image in images:
+                if print_size:
+                    table.add_row(
+                        str(image), format_size(await root.client.images.size(image))
+                    )
+                    progress.update(task, advance=1)
+                else:
+                    table.add_row(
+                        str(image)
+                    )
+        root.print(table)
 
 
 @command()
@@ -165,6 +184,24 @@ async def rm(root: Root, image: RemoteImage) -> None:
     digest = await root.client.images.digest(image)
     click.echo(f"Deleting image identified by {digest}")
     await root.client.images.rm(image, digest)
+
+
+@command()
+@argument("image", type=RemoteImageType())
+async def size(root: Root, image: RemoteImage) -> None:
+    """
+    Get image size
+
+    Image name must be URL with image:// scheme.
+    Image name must contain tag.
+
+    Examples:
+
+    neuro image size image://myfriend/alpine:shared
+    neuro image size image:myimage:latest
+    """
+    size = await root.client.images.size(image)
+    click.echo(format_size(size))
 
 
 @command()
@@ -189,5 +226,6 @@ image.add_command(ls)
 image.add_command(push)
 image.add_command(pull)
 image.add_command(rm)
+image.add_command(size)
 image.add_command(digest)
 image.add_command(tags)
