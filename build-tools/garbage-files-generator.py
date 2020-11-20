@@ -105,7 +105,7 @@ def _parse_size(size: str) -> int:
     units = {"B": 1, "KB": 2 ** 10, "MB": 2 ** 20, "GB": 2 ** 30, "TB": 2 ** 40}
     size = size.upper()
     # print("parsing size ", size)
-    number, unit = re.fullmatch(r"(\d+(?:\.\d*))([KMGT]?B)", size.strip()).groups()
+    number, unit = re.fullmatch(r"(\d+(?:\.\d*)?)([KMGT]?B)", size.strip()).groups()
     return int(float(number) * units[unit])
 
 
