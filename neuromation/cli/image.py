@@ -23,8 +23,15 @@ from neuromation.cli.formatters.utils import (
 
 from .click_types import RemoteImageType, RemoteTaglessImageType
 from .root import Root
-from .utils import argument, command, deprecated_quiet_option, group, option, \
-    format_size
+from .utils import (
+    argument,
+    command,
+    deprecated_quiet_option,
+    format_size,
+    group,
+    option,
+)
+
 
 log = logging.getLogger(__name__)
 
@@ -133,7 +140,7 @@ async def ls(root: Root, format_long: bool, full_uri: bool) -> None:
 @command()
 @option("-s", "print_size", is_flag=True, help="Print tag sizes.")
 @argument("image", type=RemoteTaglessImageType())
-async def tags(root: Root, print_size:bool, image: RemoteImage) -> None:
+async def tags(root: Root, print_size: bool, image: RemoteImage) -> None:
     """
     List tags for image in platform registry.
 
@@ -161,9 +168,7 @@ async def tags(root: Root, print_size:bool, image: RemoteImage) -> None:
                     )
                     progress.update(task, advance=1)
                 else:
-                    table.add_row(
-                        str(image)
-                    )
+                    table.add_row(str(image))
         root.print(table)
 
 

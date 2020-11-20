@@ -123,10 +123,10 @@ class Images(metaclass=NoPublicConstructor):
         assert remote.tag
         url = self._registry_url / name / "manifests" / remote.tag
         async with self._core.request(
-                "GET",
-                url,
-                auth=auth,
-                headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
+            "GET",
+            url,
+            auth=auth,
+            headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
         ) as resp:
             data = await resp.json()
             return sum([layer["size"] for layer in data["layers"]])
