@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Mapping, Optional
 
 from neuromation.api.config import Config
 from neuromation.api.core import _Core
+from neuromation.api.server_cfg import Preset
 from neuromation.api.utils import NoPublicConstructor
 
 
@@ -98,6 +99,17 @@ class _Admin(metaclass=NoPublicConstructor):
         url = url.with_query(start_deployment="true")
         async with self._core.request("PUT", url, auth=auth, json=config) as resp:
             resp
+
+    async def update_cluster_resource_presets(
+        self, name: str, presets: Mapping[str, Preset]
+    ) -> None:
+        url = self._config.api_url / "clusters" / name / "orchestrator/resource_presets"
+        auth = await self._config._api_auth()
+        payload = [
+            _serialize_resource_preset(name, preset) for name, preset in presets.items()
+        ]
+        async with self._core.request("PUT", url, auth=auth, json=payload):
+            pass
 
     async def list_cluster_users(
         self, cluster_name: Optional[str] = None
@@ -264,3 +276,22 @@ def _node_pool_from_api(payload: Dict[str, Any]) -> _NodePool:
 
 def _storage_from_api(payload: Dict[str, Any]) -> _Storage:
     return _Storage(description=payload["description"])
+
+
+def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
+    result: Dict[str, Any] = {
+        "name": name,
+        "cpu": preset.cpu,
+        "memory_mb": preset.memory_mb,
+        "is_preemptible": preset.is_preemptible,
+        "is_preemptible_node_required": preset.is_preemptible_node_required,
+    }
+    if preset.gpu:
+        result["gpu"] = preset.gpu
+        result["gpu_model"] = preset.gpu_model
+    if preset.tpu_type and preset.tpu_software_version:
+        result["tpu"] = {
+            "type": preset.tpu_type,
+            "software_version": preset.tpu_software_version,
+        }
+    return result

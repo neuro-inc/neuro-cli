@@ -3,6 +3,7 @@ from typing import Any, Callable, List, Mapping
 from unittest import mock
 
 from neuromation.api.admin import _Admin, _ClusterUser, _ClusterUserRoleType
+from neuromation.api.server_cfg import Preset
 
 from .conftest import SysCapWithCode
 
@@ -66,3 +67,104 @@ def test_show_cluster_config_options(run_cli: _RunCli) -> None:
         assert not capture.err
 
         assert json.loads(capture.out) == sample_data
+
+
+def test_update_resource_preset(run_cli: _RunCli) -> None:
+    with mock.patch.object(_Admin, "update_cluster_resource_presets") as mocked:
+
+        async def update_cluster_resource_presets(
+            cluster_name: str, presets: Mapping[str, Preset]
+        ) -> None:
+            assert cluster_name == "default"
+            assert "cpu-micro" in presets
+            assert presets["cpu-micro"] == Preset(
+                cpu=0.1,
+                memory_mb=100,
+                gpu=1,
+                gpu_model="nvidia-tesla-k80",
+                tpu_type="v2-8",
+                tpu_software_version="1.14",
+                is_preemptible=True,
+                is_preemptible_node_required=True,
+            )
+
+        mocked.side_effect = update_cluster_resource_presets
+        capture = run_cli(
+            [
+                "admin",
+                "update-resource-preset",
+                "default",
+                "cpu-micro",
+                "-c",
+                "0.1",
+                "-m",
+                "100M",
+                "-g",
+                "1",
+                "--gpu-model",
+                "nvidia-tesla-k80",
+                "--tpu-type",
+                "v2-8",
+                "--tpu-sw-version",
+                "1.14",
+                "-p",
+                "--preemptible-node",
+            ]
+        )
+        assert capture.code == 0
+
+
+def test_update_resource_preset_print_result(run_cli: _RunCli) -> None:
+    with mock.patch.object(_Admin, "update_cluster_resource_presets") as mocked:
+
+        async def update_cluster_resource_presets(
+            cluster_name: str, presets: Mapping[str, Preset]
+        ) -> None:
+            pass
+
+        mocked.side_effect = update_cluster_resource_presets
+        capture = run_cli(["admin", "update-resource-preset", "default", "cpu-micro"])
+        assert not capture.err
+        assert capture.out == "Updated resource preset cpu-micro in cluster default"
+
+        # Same with quiet mode
+        capture = run_cli(
+            ["-q", "admin", "update-resource-preset", "default", "cpu-micro"]
+        )
+        assert not capture.err
+        assert not capture.out
+
+
+def test_remove_resource_preset_print_result(run_cli: _RunCli) -> None:
+    with mock.patch.object(_Admin, "update_cluster_resource_presets") as mocked:
+
+        async def update_cluster_resource_presets(
+            cluster_name: str, presets: Mapping[str, Preset]
+        ) -> None:
+            pass
+
+        mocked.side_effect = update_cluster_resource_presets
+        capture = run_cli(["admin", "remove-resource-preset", "default", "cpu-small"])
+        assert not capture.err
+        assert capture.out == "Removed resource preset cpu-small from cluster default"
+
+        # Same with quiet mode
+        capture = run_cli(
+            ["-q", "admin", "remove-resource-preset", "default", "cpu-small"]
+        )
+        assert not capture.err
+        assert not capture.out
+
+
+def test_remove_resource_preset_not_exists(run_cli: _RunCli) -> None:
+    with mock.patch.object(_Admin, "update_cluster_resource_presets") as mocked:
+
+        async def update_cluster_resource_presets(
+            cluster_name: str, presets: Mapping[str, Preset]
+        ) -> None:
+            pass
+
+        mocked.side_effect = update_cluster_resource_presets
+        capture = run_cli(["admin", "remove-resource-preset", "default", "unknown"])
+        assert capture.code
+        assert "Preset 'unknown' not found" in capture.err
