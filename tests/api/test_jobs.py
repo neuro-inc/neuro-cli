@@ -471,6 +471,7 @@ async def test_status_failed(
             "description": "Not enough coffee",
         },
         "is_preemptible": True,
+        "is_preemptible_node_required": True,
         "pass_config": False,
         "owner": "owner",
         "cluster_name": "default",
@@ -513,6 +514,7 @@ async def test_status_failed(
         ret = await client.jobs.status("job-id")
 
         assert ret == _job_description_from_api(JSON, client.parse)
+        assert ret.is_preemptible_node_required
 
 
 async def test_status_with_http(
@@ -636,6 +638,97 @@ async def test_status_with_tpu(
         assert ret == _job_description_from_api(JSON, client.parse)
         assert ret.container.resources.tpu_type == "v3-8"
         assert ret.container.resources.tpu_software_version == "1.14"
+
+
+async def test_job_run_from_preset(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 1.0,
+                "memory_mb": 16384,
+                "gpu": 1,
+                "shm": False,
+                "gpu_model": "nvidia-tesla-p4",
+            },
+        },
+        "http_url": "http://my_host:8889",
+        "is_preemptible": False,
+        "pass_config": False,
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "command": "submit-command",
+                "http": {"port": 8181, "requires_auth": True},
+                "resources": {
+                    "shm": True,
+                },
+                "volumes": [
+                    {
+                        "src_storage_uri": "storage://test-user/path_read_only",
+                        "dst_path": "/container/read_only",
+                        "read_only": True,
+                    },
+                    {
+                        "src_storage_uri": "storage://test-user/path_read_write",
+                        "dst_path": "/container/path_read_write",
+                        "read_only": False,
+                    },
+                ],
+            },
+            "pass_config": False,
+            "cluster_name": "default",
+            "preset_name": "cpu-small",
+        }
+
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        volumes: List[Volume] = [
+            Volume(
+                URL("storage://test-user/path_read_only"), "/container/read_only", True
+            ),
+            Volume(
+                URL("storage://test-user/path_read_write"),
+                "/container/path_read_write",
+                False,
+            ),
+        ]
+        ret = await client.jobs.run_from_preset(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            command="submit-command",
+            volumes=volumes,
+            http=HTTPPort(8181),
+            shm=True,
+            preset_name="cpu-small",
+        )
+
+        assert ret == _job_description_from_api(JSON, client.parse)
 
 
 async def test_job_run(

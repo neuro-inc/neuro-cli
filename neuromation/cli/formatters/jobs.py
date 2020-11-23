@@ -101,6 +101,8 @@ class JobStatusFormatter:
             table.add_row("Command", job_status.container.command)
         if job_status.container.working_dir:
             table.add_row("Working dir", job_status.container.working_dir)
+        if job_status.preset_name:
+            table.add_row("Preset", job_status.preset_name)
 
         resources = Table(box=None, show_header=False, show_edge=False)
         resources.add_column()
@@ -130,6 +132,8 @@ class JobStatusFormatter:
 
         if job_status.is_preemptible:
             table.add_row("Preemptible", "True")
+        if job_status.is_preemptible_node_required:
+            table.add_row("Preemptible Node", "True")
         if job_status.restart_policy != JobRestartPolicy.NEVER:
             table.add_row("Restart policy", job_status.restart_policy.value)
             table.add_row("Restarts", str(job_status.history.restarts))

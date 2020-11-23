@@ -186,6 +186,8 @@ class JobDescription:
     internal_hostname_named: Optional[str] = None
     restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER
     life_span: Optional[float] = None
+    preset_name: Optional[str] = None
+    is_preemptible_node_required: bool = False
 
 
 @dataclass(frozen=True)
@@ -259,26 +261,85 @@ class Jobs(metaclass=NoPublicConstructor):
         life_span: Optional[float] = None,
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
-        payload: Dict[str, Any] = {
-            "container": _container_to_api(container, self._config),
-            "is_preemptible": is_preemptible,
-            "pass_config": pass_config,
-        }
-        if name:
-            payload["name"] = name
-        if tags:
-            payload["tags"] = tags
-        if description:
-            payload["description"] = description
-        if schedule_timeout:
-            payload["schedule_timeout"] = schedule_timeout
-        if restart_policy != JobRestartPolicy.NEVER:
-            payload["restart_policy"] = str(restart_policy)
-        if life_span is not None:
-            payload["max_run_time_minutes"] = int(life_span // 60)
-        if wait_for_jobs_quota:
-            payload["wait_for_jobs_quota"] = wait_for_jobs_quota
-        payload["cluster_name"] = self._config.cluster_name
+        payload = _job_to_api(
+            config=self._config,
+            image=container.image,
+            entrypoint=container.entrypoint,
+            command=container.command,
+            working_dir=container.working_dir,
+            http=container.http,
+            env=container.env,
+            volumes=container.volumes,
+            secret_env=container.secret_env,
+            secret_files=container.secret_files,
+            disk_volumes=container.disk_volumes,
+            tty=container.tty,
+            name=name,
+            tags=tags,
+            description=description,
+            pass_config=pass_config,
+            wait_for_jobs_quota=wait_for_jobs_quota,
+            schedule_timeout=schedule_timeout,
+            restart_policy=restart_policy,
+            life_span=life_span,
+        )
+        payload["container"]["resources"] = _resources_to_api(container.resources)
+        payload["is_preemptible"] = is_preemptible
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, json=payload, auth=auth) as resp:
+            res = await resp.json()
+            return _job_description_from_api(res, self._parse)
+
+    async def run_from_preset(
+        self,
+        *,
+        image: RemoteImage,
+        preset_name: str,
+        entrypoint: Optional[str] = None,
+        command: Optional[str] = None,
+        working_dir: Optional[str] = None,
+        http: Optional[HTTPPort] = None,
+        env: Optional[Mapping[str, str]] = None,
+        volumes: Sequence[Volume] = (),
+        secret_env: Optional[Mapping[str, URL]] = None,
+        secret_files: Sequence[SecretFile] = (),
+        disk_volumes: Sequence[DiskVolume] = (),
+        tty: bool = False,
+        shm: bool = False,
+        name: Optional[str] = None,
+        tags: Sequence[str] = (),
+        description: Optional[str] = None,
+        pass_config: bool = False,
+        wait_for_jobs_quota: bool = False,
+        schedule_timeout: Optional[float] = None,
+        restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
+        life_span: Optional[float] = None,
+    ) -> JobDescription:
+        url = (self._config.api_url / "jobs").with_query("from_preset")
+        payload = _job_to_api(
+            config=self._config,
+            image=image,
+            entrypoint=entrypoint,
+            command=command,
+            working_dir=working_dir,
+            http=http,
+            env=env,
+            volumes=volumes,
+            secret_env=secret_env,
+            secret_files=secret_files,
+            disk_volumes=disk_volumes,
+            tty=tty,
+            shm=shm,
+            name=name,
+            preset_name=preset_name,
+            tags=tags,
+            description=description,
+            pass_config=pass_config,
+            wait_for_jobs_quota=wait_for_jobs_quota,
+            schedule_timeout=schedule_timeout,
+            restart_policy=restart_policy,
+            life_span=life_span,
+        )
         auth = await self._config._api_auth()
         async with self._core.request("POST", url, json=payload, auth=auth) as resp:
             res = await resp.json()
@@ -729,37 +790,112 @@ def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
     )
 
 
-def _container_to_api(container: Container, config: Config) -> Dict[str, Any]:
+def _job_to_api(
+    config: Config,
+    image: RemoteImage,
+    entrypoint: Optional[str] = None,
+    command: Optional[str] = None,
+    working_dir: Optional[str] = None,
+    http: Optional[HTTPPort] = None,
+    env: Optional[Mapping[str, str]] = None,
+    volumes: Sequence[Volume] = (),
+    secret_env: Optional[Mapping[str, URL]] = None,
+    secret_files: Sequence[SecretFile] = (),
+    disk_volumes: Sequence[DiskVolume] = (),
+    tty: bool = False,
+    shm: bool = False,
+    name: Optional[str] = None,
+    preset_name: Optional[str] = None,
+    tags: Sequence[str] = (),
+    description: Optional[str] = None,
+    pass_config: bool = False,
+    wait_for_jobs_quota: bool = False,
+    schedule_timeout: Optional[float] = None,
+    restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
+    life_span: Optional[float] = None,
+) -> Dict[str, Any]:
     primitive: Dict[str, Any] = {
-        "image": _as_repo_str(container.image),
-        "resources": _resources_to_api(container.resources),
+        "container": _container_to_api(
+            config=config,
+            image=image,
+            entrypoint=entrypoint,
+            command=command,
+            working_dir=working_dir,
+            http=http,
+            env=env,
+            volumes=volumes,
+            secret_env=secret_env,
+            secret_files=secret_files,
+            disk_volumes=disk_volumes,
+            tty=tty,
+            shm=shm,
+        ),
+        "pass_config": pass_config,
     }
-    if container.entrypoint:
-        primitive["entrypoint"] = container.entrypoint
-    if container.command:
-        primitive["command"] = container.command
-    if container.working_dir:
-        primitive["working_dir"] = container.working_dir
-    if container.http:
-        primitive["http"] = _http_port_to_api(container.http)
-    if container.env:
-        primitive["env"] = container.env
-    if container.volumes:
-        primitive["volumes"] = [_volume_to_api(v, config) for v in container.volumes]
-    if container.secret_env:
+    if name:
+        primitive["name"] = name
+    if preset_name:
+        primitive["preset_name"] = preset_name
+    if tags:
+        primitive["tags"] = tags
+    if description:
+        primitive["description"] = description
+    if schedule_timeout:
+        primitive["schedule_timeout"] = schedule_timeout
+    if restart_policy != JobRestartPolicy.NEVER:
+        primitive["restart_policy"] = str(restart_policy)
+    if life_span is not None:
+        primitive["max_run_time_minutes"] = int(life_span // 60)
+    if wait_for_jobs_quota:
+        primitive["wait_for_jobs_quota"] = wait_for_jobs_quota
+    primitive["cluster_name"] = config.cluster_name
+    return primitive
+
+
+def _container_to_api(
+    config: Config,
+    image: RemoteImage,
+    entrypoint: Optional[str] = None,
+    command: Optional[str] = None,
+    working_dir: Optional[str] = None,
+    http: Optional[HTTPPort] = None,
+    env: Optional[Mapping[str, str]] = None,
+    volumes: Sequence[Volume] = (),
+    secret_env: Optional[Mapping[str, URL]] = None,
+    secret_files: Sequence[SecretFile] = (),
+    disk_volumes: Sequence[DiskVolume] = (),
+    tty: bool = False,
+    shm: bool = False,
+) -> Dict[str, Any]:
+    primitive: Dict[str, Any] = {"image": _as_repo_str(image)}
+    if shm:
+        primitive["resources"] = {"shm": shm}
+    if entrypoint:
+        primitive["entrypoint"] = entrypoint
+    if command:
+        primitive["command"] = command
+    if working_dir:
+        primitive["working_dir"] = working_dir
+    if http:
+        primitive["http"] = _http_port_to_api(http)
+    if env:
+        primitive["env"] = env
+    if volumes:
+        primitive["volumes"] = [_volume_to_api(v, config) for v in volumes]
+    if secret_env:
         primitive["secret_env"] = {
             k: str(normalize_secret_uri(v, config.username, config.cluster_name))
-            for k, v in container.secret_env.items()
+            for k, v in secret_env.items()
         }
-    if container.secret_files:
+    if secret_files:
         primitive["secret_volumes"] = [
-            _secret_file_to_api(v, config) for v in container.secret_files
+            _secret_file_to_api(v, config) for v in secret_files
         ]
-    if container.disk_volumes:
+    if disk_volumes:
         primitive["disk_volumes"] = [
-            _disk_volume_to_api(v, config) for v in container.disk_volumes
+            _disk_volume_to_api(v, config) for v in disk_volumes
         ]
-    if container.tty:
+    if tty:
         primitive["tty"] = True
     return primitive
 
@@ -807,6 +943,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         history=history,
         container=container,
         is_preemptible=res["is_preemptible"],
+        is_preemptible_node_required=res.get("is_preemptible_node_required", False),
         pass_config=res["pass_config"],
         name=name,
         tags=tags,
@@ -817,6 +954,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         uri=URL(res["uri"]),
         restart_policy=restart_policy,
         life_span=life_span,
+        preset_name=res.get("preset_name"),
     )
 
 
