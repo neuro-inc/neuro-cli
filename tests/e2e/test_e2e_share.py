@@ -35,63 +35,63 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
 
     captured = helper.run_cli(["-v", "acl", "list", "--full-uri"])
     assert captured.err == ""
-    result = captured.out.splitlines()
-    assert (
-        f"storage://{helper.cluster_name}/{helper.username} manage" in result
-        or f"storage://{helper.cluster_name} manage" in result
-    )
-    assert f"user://{helper.username} read" in result
+    result = [line.split() for line in captured.out.splitlines()]
+    assert [
+        f"storage://{helper.cluster_name}/{helper.username}",
+        "manage",
+    ] in result or [f"storage://{helper.cluster_name}", "manage"] in result
+    assert [f"user://{helper.username}", "read"] in result
 
     captured = helper.run_cli(
         ["-v", "acl", "list", "--full-uri", "--scheme", "storage"]
     )
     assert captured.err == ""
-    result = captured.out.splitlines()
-    assert (
-        f"storage://{helper.cluster_name}/{helper.username} manage" in result
-        or f"storage://{helper.cluster_name} manage" in result
-    )
+    result = [line.split() for line in captured.out.splitlines()]
+    assert [
+        f"storage://{helper.cluster_name}/{helper.username}",
+        "manage",
+    ] in result or [f"storage://{helper.cluster_name}", "manage"] in result
     for line in result:
-        assert line.startswith("storage://")
+        assert line[0].startswith("storage://"), line
 
     captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "storage:"])
     assert captured.err == ""
-    result = captured.out.splitlines()
-    assert (
-        f"storage://{helper.cluster_name}/{helper.username} manage" in result
-        or f"storage://{helper.cluster_name} manage" in result
-    )
+    result = [line.split() for line in captured.out.splitlines()]
+    assert [
+        f"storage://{helper.cluster_name}/{helper.username}",
+        "manage",
+    ] in result or [f"storage://{helper.cluster_name}", "manage"] in result
     for line in result:
-        assert line.startswith("storage://")
+        assert line[0].startswith("storage://"), line
 
     captured = helper.run_cli(["-v", "acl", "list", "--full-uri", uri])
     assert captured.err == ""
-    assert captured.out.strip() == f"{uri} manage"
+    assert captured.out.split() == [uri, "manage"]
 
     captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared"])
     assert captured.err == ""
-    result = captured.out.splitlines()
-    assert f"{uri} read {another_test_user}" in result
-    assert f"{uri2} write {another_test_user}" in result
+    result = [line.split() for line in captured.out.splitlines()]
+    assert [uri, "read", another_test_user] in result
+    assert [uri2, "write", another_test_user] in result
     for line in result:
-        assert not line.endswith(f" {helper.username}")
+        assert line[2] != helper.username, line
 
     captured = helper.run_cli(
         ["-v", "acl", "list", "--full-uri", "--shared", "--scheme", "storage"]
     )
     assert captured.err == ""
-    result = captured.out.splitlines()
-    assert f"{uri} read {another_test_user}" in result
-    assert f"{uri2} write {another_test_user}" in result
+    result = [line.split() for line in captured.out.splitlines()]
+    assert [uri, "read", another_test_user] in result
+    assert [uri2, "write", another_test_user] in result
     for line in result:
-        assert line.startswith(f"storage://{helper.cluster_name}")
-        assert not line.endswith(f" {helper.username}")
+        assert line[0].startswith(f"storage://{helper.cluster_name}"), line
+        assert line[2] != helper.username, line
 
     captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared", uri])
     assert captured.err == ""
-    result = captured.out.splitlines()
+    result = [line.split() for line in captured.out.splitlines()]
     assert sorted(result) == sorted(
-        [f"{uri} read {another_test_user}", f"{uri2} write {another_test_user}"]
+        [[uri, "read", another_test_user], [uri2, "write", another_test_user]]
     )
 
     captured = helper.run_cli(["-v", "acl", "revoke", uri, another_test_user])
@@ -104,12 +104,12 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
 
     captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared"])
     assert captured.err == ""
-    result = captured.out.splitlines()
-    assert f"{uri} read {another_test_user}" not in result
-    assert f"{uri2} write {another_test_user}" not in result
+    result = [line.split() for line in captured.out.splitlines()]
+    assert [uri, "read", another_test_user] not in result
+    assert [uri2, "write", another_test_user] not in result
     for line in result:
-        assert not line.startswith("{uri} ")
-        assert not line.startswith("{uri2} ")
+        assert line[0] != uri, line
+        assert line[0] != uri2, line
 
     captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared", uri])
     assert captured.err == ""
@@ -161,12 +161,12 @@ def test_grant_image_with_tag_fails(request: Any, helper: Helper) -> None:
 def test_list_role(request: Any, helper: Helper) -> None:
     captured = helper.run_cli(["acl", "list", "-s", "role"])
     assert captured.err == ""
-    result = captured.out.splitlines()
+    result = [line.split() for line in captured.out.splitlines()]
     self_role_uri = f"role://{helper.username}"
     role = helper.username
     for line in result:
-        uri, *_ = line.split()
-        assert uri.startswith("role://")
+        uri = line[0]
+        assert uri.startswith("role://"), line
         if not uri.startswith(self_role_uri):
             role = uri[len("role://") :]
     print(f"Test using role {role!r}")
@@ -208,14 +208,14 @@ def test_add_grant_remove_role(request: Any, helper: Helper) -> None:
 
         captured = helper.run_cli(["acl", "list", "--full-uri", "-u", role_name])
         assert captured.err == ""
-        result = captured.out.splitlines()
-        assert f"{uri} read" in result
+        result = [line.split() for line in captured.out.splitlines()]
+        assert [uri, "read"] in result
 
         captured = helper.run_cli(["acl", "list", "--full-uri", "-u", "public"])
         assert captured.err == ""
-        result = captured.out.splitlines()
-        assert f"role://{role_name} read" in result
-        assert f"{uri} read" in result
+        result = [line.split() for line in captured.out.splitlines()]
+        assert [f"role://{role_name}", "read"] in result
+        assert [f"{uri}", "read"] in result
 
     finally:
         captured = helper.run_cli(["acl", "remove-role", role_name])
@@ -230,6 +230,6 @@ def test_add_grant_remove_role(request: Any, helper: Helper) -> None:
 
     captured = helper.run_cli(["acl", "list", "--full-uri", "-u", "public"])
     assert captured.err == ""
-    result = captured.out.splitlines()
-    assert f"role://{role_name} read" in result
-    assert f"{uri} read" not in result
+    result = [line.split() for line in captured.out.splitlines()]
+    assert [f"role://{role_name}", "read"] in result
+    assert [uri, "read"] not in result
