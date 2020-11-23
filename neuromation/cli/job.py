@@ -18,13 +18,11 @@ from neuromation.api import (
     PASS_CONFIG_ENV_NAME,
     AuthorizationError,
     Client,
-    Container,
     HTTPPort,
     JobDescription,
     JobRestartPolicy,
     JobStatus,
     RemoteImage,
-    Resources,
     Volume,
 )
 from neuromation.cli.formatters.images import DockerImageProgress
@@ -40,18 +38,10 @@ from .click_types import (
     JOB_COLUMNS,
     JOB_NAME,
     LOCAL_REMOTE_PORT,
-    MEGABYTE,
     PRESET,
     ImageType,
 )
 from .const import EX_PLATFORMERROR
-from .defaults import (
-    GPU_MODELS,
-    JOB_CPU_NUMBER,
-    JOB_GPU_MODEL,
-    JOB_GPU_NUMBER,
-    JOB_MEMORY_AMOUNT,
-)
 from .formatters.jobs import (
     BaseJobsFormatter,
     JobStartProgress,
