@@ -672,7 +672,6 @@ class TTYProgress(BaseStorageProgress):
             TransferSpeedColumn(),
             console=root.console,
             auto_refresh=auto_refresh,
-            transient=True,
             get_time=get_time,
         )
         self._progress.start()
@@ -708,6 +707,8 @@ class TTYProgress(BaseStorageProgress):
         return super().begin(src, dst)
 
     def end(self) -> None:
+        # Clean terminal if there is no files in progress
+        self._progress.transient = not self._progress.task_ids
         self._progress.stop()
 
     def enter(self, data: StorageProgressEnterDir) -> None:
