@@ -190,15 +190,30 @@ async def blob_storage_server(
             raise web.HTTPNotFound()
         blob = CONTENTS[key]
 
+        rng = request.http_range
+        content = blob["body"]
         resp = web.StreamResponse(status=200)
         etag = hashlib.md5(blob["body"]).hexdigest()
         resp.headers.update({"ETag": repr(etag)})
         resp.last_modified = blob["last_modified"]
-        resp.content_length = len(blob["body"])
+        start, stop, _ = rng.indices(len(content))
+        if not (rng.start is rng.stop is None):
+            if start >= stop:
+                raise RuntimeError
+            resp.set_status(web.HTTPPartialContent.status_code)
+            resp.headers["Content-Range"] = f"bytes {start}-{stop-1}/{len(content)}"
+        resp.content_length = stop - start
         resp.content_type = "application/octet-stream"
         await resp.prepare(request)
         if request.method != "HEAD":
             await resp.write(blob["body"])
+            chunk_size = 200
+            if stop - start > chunk_size:
+                await resp.write(content[start : start + chunk_size])
+                raise RuntimeError
+            else:
+                await resp.write(content[start:stop])
+                await resp.write_eof()
         return resp
 
     async def put_blob(request: web.Request) -> web.Response:
@@ -582,6 +597,93 @@ async def test_blob_storage_fetch_blob(
         async for data in client.blob_storage.fetch_blob(bucket_name, key=key):
             buf += data
         assert buf == body
+
+
+async def test_blob_storage_fetch_blob_partial_read(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    bucket_name = "foo"
+    key = "text.txt"
+    mtime1 = datetime.now()
+    body = b"ababahalamaha"
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.path == f"/blob/o/{bucket_name}/{key}"
+        assert request.match_info == {"bucket": bucket_name, "path": key}
+        rng = request.http_range
+        start, stop, _ = rng.indices(len(body))
+        resp = web.StreamResponse(status=web.HTTPPartialContent.status_code)
+        resp.headers["ETag"] = '"12312908asd"'
+        resp.headers["Content-Range"] = f"bytes {start}-{stop-1}/{len(body)}"
+        resp.last_modified = mtime1
+        resp.content_length = stop - start
+        resp.content_type = "plain/text"
+        await resp.prepare(request)
+        await resp.write(body[start:stop])
+        return resp
+
+    app = web.Application()
+    app.router.add_get(BlobUrlRotes.GET_OBJECT, handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        buf = bytearray()
+        async for chunk in client.blob_storage.fetch_blob(bucket_name, key, 5):
+            buf.extend(chunk)
+        assert buf == b"halamaha"
+
+        buf = bytearray()
+        async for chunk in client.blob_storage.fetch_blob(bucket_name, key, 5, 4):
+            buf.extend(chunk)
+        assert buf == b"hala"
+
+        buf = bytearray()
+        async for chunk in client.blob_storage.fetch_blob(bucket_name, key, 5, 20):
+            buf.extend(chunk)
+        assert buf == b"halamaha"
+
+        with pytest.raises(ValueError):
+            async for chunk in client.blob_storage.fetch_blob(bucket_name, key, 5, 0):
+                pass
+
+
+async def test_blob_storage_fetch_blob_unsupported_partial_read(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    bucket_name = "foo"
+    key = "text.txt"
+    mtime1 = datetime.now()
+    body = b"ababahalamaha"
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.path == f"/blob/o/{bucket_name}/{key}"
+        assert request.match_info == {"bucket": bucket_name, "path": key}
+        resp = web.StreamResponse(status=200)
+        resp.headers.update({"ETag": '"12312908asd"'})
+        resp.last_modified = mtime1
+        resp.content_length = len(body)
+        resp.content_type = "plain/text"
+        await resp.prepare(request)
+        await resp.write(body)
+        return resp
+
+    app = web.Application()
+    app.router.add_get(BlobUrlRotes.GET_OBJECT, handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        buf = b""
+        async for data in client.blob_storage.fetch_blob(bucket_name, key):
+            buf += data
+        assert buf == body
+
+        with pytest.raises(RuntimeError):
+            async for data in client.blob_storage.fetch_blob(bucket_name, key, 5):
+                pass
 
 
 async def test_blob_storage_put_blob(

@@ -46,7 +46,14 @@ from .config import Config
 from .core import _Core
 from .errors import ResourceNotFound
 from .file_filter import FileFilter, translate
-from .storage import _always, _has_magic, _magic_check, run_concurrently, run_progress
+from .storage import (
+    _always,
+    _has_magic,
+    _magic_check,
+    _parse_content_range,
+    run_concurrently,
+    run_progress,
+)
 from .url_utils import _extract_path, normalize_blob_path_uri, normalize_local_path_uri
 from .users import Action
 from .utils import NoPublicConstructor, queue_calls, retries
@@ -337,19 +344,47 @@ class BlobStorage(metaclass=NoPublicConstructor):
             return _blob_status_from_response(bucket_name, key, resp)
 
     @asynccontextmanager
-    async def get_blob(self, bucket_name: str, key: str) -> AsyncIterator[Blob]:
+    async def get_blob(
+        self, bucket_name: str, key: str, offset: int = 0, size: Optional[int] = None
+    ) -> AsyncIterator[Blob]:
         """Return blob status and body stream of the blob"""
         url = self._config.blob_storage_url / "o" / bucket_name / key
         auth = await self._config._api_auth()
 
         timeout = attr.evolve(self._core.timeout, sock_read=None)
-        async with self._core.request("GET", url, timeout=timeout, auth=auth) as resp:
+        if offset < 0:
+            raise ValueError("offset should be >= 0")
+        if size is None:
+            if offset:
+                partial = True
+                headers = {"Range": f"bytes={offset}-"}
+            else:
+                partial = False
+                headers = {}
+        elif size > 0:
+            partial = True
+            headers = {"Range": f"bytes={offset}-{offset + size - 1}"}
+        else:
+            raise ValueError("size should be > 0")
+
+        async with self._core.request(
+            "GET", url, timeout=timeout, auth=auth, headers=headers
+        ) as resp:
+            if partial:
+                if resp.status != aiohttp.web.HTTPPartialContent.status_code:
+                    raise RuntimeError(f"Unexpected status code {resp.status}")
+                rng = _parse_content_range(resp.headers.get("Content-Range"))
+                if rng.start != offset:
+                    raise RuntimeError("Invalid header Content-Range")
+
             stats = _blob_status_from_response(bucket_name, key, resp)
             yield Blob(resp, stats)
 
-    async def fetch_blob(self, bucket_name: str, key: str) -> AsyncIterator[bytes]:
+    async def fetch_blob(
+        self, bucket_name: str, key: str, offset: int = 0, size: Optional[int] = None
+    ) -> AsyncIterator[bytes]:
         """Return only bytes data of the blob"""
-        async with self.get_blob(bucket_name, key) as blob:
+        async with self.get_blob(bucket_name, key, offset=offset, size=size) as blob:
             async for data in blob.body_stream.iter_any():
                 yield data
 
@@ -673,19 +708,24 @@ class BlobStorage(metaclass=NoPublicConstructor):
         loop = asyncio.get_event_loop()
         async with self._file_sem:
             await progress.start(StorageProgressStart(src, dst, size))
-            for retry in retries(f"Fail to download {src}"):
-                async with retry:
-                    with dst_path.open("wb") as stream:
+            with dst_path.open("wb") as stream:
+                for retry in retries(f"Fail to download {src}"):
+                    pos = stream.tell()
+                    if pos >= size:
+                        break
+                    async with retry:
                         pos = 0
                         bucket_name, key = self._extract_bucket_and_key(src)
                         async for chunk in self.fetch_blob(
-                            bucket_name=bucket_name, key=key
+                            bucket_name=bucket_name, key=key, offset=pos
                         ):
                             pos += len(chunk)
                             await progress.step(
                                 StorageProgressStep(src, dst, pos, size)
                             )
                             await loop.run_in_executor(None, stream.write, chunk)
+                            if chunk:
+                                retry.reset()
             await progress.complete(StorageProgressComplete(src, dst, size))
 
     async def download_dir(
