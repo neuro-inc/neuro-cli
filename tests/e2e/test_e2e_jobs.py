@@ -164,6 +164,7 @@ def test_job_description(helper: Helper) -> None:
     helper.kill_job(job_id, wait=False)
 
 
+@pytest.mark.skip(reason="'neuro job tags' is slow and will be deprecated")
 @pytest.mark.e2e
 def test_job_tags(helper: Helper) -> None:
     tags = [f"test-tag:{uuid4()}", "test-tag:common"]
