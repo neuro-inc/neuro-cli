@@ -640,7 +640,7 @@ async def test_status_with_tpu(
         assert ret.container.resources.tpu_software_version == "1.14"
 
 
-async def test_job_run_from_preset(
+async def test_job_start(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     JSON = {
@@ -676,26 +676,24 @@ async def test_job_run_from_preset(
     async def handler(request: web.Request) -> web.Response:
         data = await request.json()
         assert data == {
-            "container": {
-                "image": "submit-image-name",
-                "command": "submit-command",
-                "http": {"port": 8181, "requires_auth": True},
-                "resources": {
-                    "shm": True,
-                },
-                "volumes": [
-                    {
-                        "src_storage_uri": "storage://test-user/path_read_only",
-                        "dst_path": "/container/read_only",
-                        "read_only": True,
-                    },
-                    {
-                        "src_storage_uri": "storage://test-user/path_read_write",
-                        "dst_path": "/container/path_read_write",
-                        "read_only": False,
-                    },
-                ],
+            "image": "submit-image-name",
+            "command": "submit-command",
+            "http": {"port": 8181, "requires_auth": True},
+            "resources": {
+                "shm": True,
             },
+            "volumes": [
+                {
+                    "src_storage_uri": "storage://test-user/path_read_only",
+                    "dst_path": "/container/read_only",
+                    "read_only": True,
+                },
+                {
+                    "src_storage_uri": "storage://test-user/path_read_write",
+                    "dst_path": "/container/path_read_write",
+                    "read_only": False,
+                },
+            ],
             "pass_config": False,
             "cluster_name": "default",
             "preset_name": "cpu-small",
@@ -719,7 +717,7 @@ async def test_job_run_from_preset(
                 False,
             ),
         ]
-        ret = await client.jobs.run_from_preset(
+        ret = await client.jobs.start(
             image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
             volumes=volumes,

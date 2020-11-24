@@ -263,6 +263,17 @@ class Jobs(metaclass=NoPublicConstructor):
         url = self._config.api_url / "jobs"
         payload = _job_to_api(
             config=self._config,
+            name=name,
+            tags=tags,
+            description=description,
+            pass_config=pass_config,
+            wait_for_jobs_quota=wait_for_jobs_quota,
+            schedule_timeout=schedule_timeout,
+            restart_policy=restart_policy,
+            life_span=life_span,
+        )
+        payload["container"] = _container_to_api(
+            config=self._config,
             image=container.image,
             entrypoint=container.entrypoint,
             command=container.command,
@@ -274,14 +285,6 @@ class Jobs(metaclass=NoPublicConstructor):
             secret_files=container.secret_files,
             disk_volumes=container.disk_volumes,
             tty=container.tty,
-            name=name,
-            tags=tags,
-            description=description,
-            pass_config=pass_config,
-            wait_for_jobs_quota=wait_for_jobs_quota,
-            schedule_timeout=schedule_timeout,
-            restart_policy=restart_policy,
-            life_span=life_span,
         )
         payload["container"]["resources"] = _resources_to_api(container.resources)
         payload["is_preemptible"] = is_preemptible
@@ -290,7 +293,7 @@ class Jobs(metaclass=NoPublicConstructor):
             res = await resp.json()
             return _job_description_from_api(res, self._parse)
 
-    async def run_from_preset(
+    async def start(
         self,
         *,
         image: RemoteImage,
@@ -316,7 +319,7 @@ class Jobs(metaclass=NoPublicConstructor):
         life_span: Optional[float] = None,
     ) -> JobDescription:
         url = (self._config.api_url / "jobs").with_query("from_preset")
-        payload = _job_to_api(
+        container_payload = _container_to_api(
             config=self._config,
             image=image,
             entrypoint=entrypoint,
@@ -330,6 +333,9 @@ class Jobs(metaclass=NoPublicConstructor):
             disk_volumes=disk_volumes,
             tty=tty,
             shm=shm,
+        )
+        payload = _job_to_api(
+            config=self._config,
             name=name,
             preset_name=preset_name,
             tags=tags,
@@ -340,6 +346,7 @@ class Jobs(metaclass=NoPublicConstructor):
             restart_policy=restart_policy,
             life_span=life_span,
         )
+        payload.update(**container_payload)
         auth = await self._config._api_auth()
         async with self._core.request("POST", url, json=payload, auth=auth) as resp:
             res = await resp.json()
@@ -790,68 +797,6 @@ def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
     )
 
 
-def _job_to_api(
-    config: Config,
-    image: RemoteImage,
-    entrypoint: Optional[str] = None,
-    command: Optional[str] = None,
-    working_dir: Optional[str] = None,
-    http: Optional[HTTPPort] = None,
-    env: Optional[Mapping[str, str]] = None,
-    volumes: Sequence[Volume] = (),
-    secret_env: Optional[Mapping[str, URL]] = None,
-    secret_files: Sequence[SecretFile] = (),
-    disk_volumes: Sequence[DiskVolume] = (),
-    tty: bool = False,
-    shm: bool = False,
-    name: Optional[str] = None,
-    preset_name: Optional[str] = None,
-    tags: Sequence[str] = (),
-    description: Optional[str] = None,
-    pass_config: bool = False,
-    wait_for_jobs_quota: bool = False,
-    schedule_timeout: Optional[float] = None,
-    restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
-    life_span: Optional[float] = None,
-) -> Dict[str, Any]:
-    primitive: Dict[str, Any] = {
-        "container": _container_to_api(
-            config=config,
-            image=image,
-            entrypoint=entrypoint,
-            command=command,
-            working_dir=working_dir,
-            http=http,
-            env=env,
-            volumes=volumes,
-            secret_env=secret_env,
-            secret_files=secret_files,
-            disk_volumes=disk_volumes,
-            tty=tty,
-            shm=shm,
-        ),
-        "pass_config": pass_config,
-    }
-    if name:
-        primitive["name"] = name
-    if preset_name:
-        primitive["preset_name"] = preset_name
-    if tags:
-        primitive["tags"] = tags
-    if description:
-        primitive["description"] = description
-    if schedule_timeout:
-        primitive["schedule_timeout"] = schedule_timeout
-    if restart_policy != JobRestartPolicy.NEVER:
-        primitive["restart_policy"] = str(restart_policy)
-    if life_span is not None:
-        primitive["max_run_time_minutes"] = int(life_span // 60)
-    if wait_for_jobs_quota:
-        primitive["wait_for_jobs_quota"] = wait_for_jobs_quota
-    primitive["cluster_name"] = config.cluster_name
-    return primitive
-
-
 def _container_to_api(
     config: Config,
     image: RemoteImage,
@@ -956,6 +901,39 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         life_span=life_span,
         preset_name=res.get("preset_name"),
     )
+
+
+def _job_to_api(
+    config: Config,
+    name: Optional[str] = None,
+    preset_name: Optional[str] = None,
+    tags: Sequence[str] = (),
+    description: Optional[str] = None,
+    pass_config: bool = False,
+    wait_for_jobs_quota: bool = False,
+    schedule_timeout: Optional[float] = None,
+    restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
+    life_span: Optional[float] = None,
+) -> Dict[str, Any]:
+    primitive: Dict[str, Any] = {"pass_config": pass_config}
+    if name:
+        primitive["name"] = name
+    if preset_name:
+        primitive["preset_name"] = preset_name
+    if tags:
+        primitive["tags"] = tags
+    if description:
+        primitive["description"] = description
+    if schedule_timeout:
+        primitive["schedule_timeout"] = schedule_timeout
+    if restart_policy != JobRestartPolicy.NEVER:
+        primitive["restart_policy"] = str(restart_policy)
+    if life_span is not None:
+        primitive["max_run_time_minutes"] = int(life_span // 60)
+    if wait_for_jobs_quota:
+        primitive["wait_for_jobs_quota"] = wait_for_jobs_quota
+    primitive["cluster_name"] = config.cluster_name
+    return primitive
 
 
 def _job_telemetry_from_api(value: Dict[str, Any]) -> JobTelemetry:

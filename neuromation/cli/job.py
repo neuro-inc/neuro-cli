@@ -748,7 +748,6 @@ async def run(
         click.echo(
             "-p/-P option is deprecated and ignored. Use corresponding presets instead."
         )
-    job_preset = root.client.config.presets[preset]
     log.info(f"Using preset '{preset}': {job_preset}")
     if tty is None:
         tty = root.tty
@@ -893,7 +892,7 @@ async def run_job(
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
 
-    job = await root.client.jobs.run_from_preset(
+    job = await root.client.jobs.start(
         image=image,
         preset_name=preset,
         entrypoint=entrypoint,
