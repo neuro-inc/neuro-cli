@@ -3,7 +3,6 @@ import logging
 from dataclasses import replace
 from typing import Optional
 
-import click
 from rich.progress import Progress
 
 from neuromation.api import LocalImage, RemoteImage
