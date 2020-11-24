@@ -206,8 +206,7 @@ async def blob_storage_server(
         resp.content_type = "application/octet-stream"
         await resp.prepare(request)
         if request.method != "HEAD":
-            await resp.write(blob["body"])
-            chunk_size = 200
+            chunk_size = max(len(content) * 2 // 5, 200)
             if stop - start > chunk_size:
                 await resp.write(content[start : start + chunk_size])
                 raise RuntimeError

@@ -714,7 +714,6 @@ class BlobStorage(metaclass=NoPublicConstructor):
                     if pos >= size:
                         break
                     async with retry:
-                        pos = 0
                         bucket_name, key = self._extract_bucket_and_key(src)
                         async for chunk in self.fetch_blob(
                             bucket_name=bucket_name, key=key, offset=pos
