@@ -1,22 +1,13 @@
 #!/usr/bin/env python
 
 import argparse
-import logging
 import math
 import os
 import pathlib
 import re
 
+from rich.console import Console
 from rich.progress import Progress
-
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)-8s - %(filename)s:%(lineno)d |> %(message)s",
-)
-
-
-OUTPUT_FOLDER = pathlib.Path("./data")
 
 
 def main():
@@ -25,6 +16,7 @@ def main():
         args.total_size,
         args.files_count,
         args.branching_factor,
+        args.output_dir,
     )
 
 
@@ -32,11 +24,13 @@ def generate_data(
     total_size: int,
     files_count: int,
     branching_factor: int,
+    output_dir: pathlib.Path,
 ):
     file_size_bytes = math.ceil(total_size / files_count)
     tree_depth = math.floor(math.log(files_count, branching_factor))
     name_length = len(str(branching_factor))
-    logging.info(
+    console = Console()
+    console.log(
         f"Generating {files_count} files {file_size_bytes} bytes each, "
         f"which in total: {total_size} bytes."
     )
@@ -46,7 +40,7 @@ def generate_data(
     write_iterations = file_size_bytes // buffer_size
     tail_size = file_size_bytes % buffer_size
 
-    OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True)
 
     created_files = 0
     folders_counter = 0
@@ -66,7 +60,7 @@ def generate_data(
                     files_count_z[name_length * level : name_length * (level + 1)]
                 )
 
-            folder_path = OUTPUT_FOLDER.joinpath(*split_path)
+            folder_path = output_dir.joinpath(*split_path)
 
             folder_path.mkdir(parents=True, exist_ok=True)
             folders_counter += 1
@@ -89,7 +83,7 @@ def generate_data(
                     progress.advance(data_gen_task)
                 else:
                     break
-    logging.info("Data generation completed.")
+    console.log("Data generation completed.")
 
 
 def _parse_args() -> argparse.Namespace:
@@ -98,6 +92,9 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("files_count", type=int)
     parser.add_argument("total_size", type=_parse_size)
     parser.add_argument("--branching-factor", type=int, default=100)
+    parser.add_argument(
+        "--output-dir", type=_parse_dir_path, default=pathlib.Path("./data")
+    )
     return parser.parse_args()
 
 
@@ -107,6 +104,13 @@ def _parse_size(size: str) -> int:
     # print("parsing size ", size)
     number, unit = re.fullmatch(r"(\d+(?:\.\d*)?)([KMGT]?B)", size.strip()).groups()
     return int(float(number) * units[unit])
+
+
+def _parse_dir_path(path: str) -> pathlib.Path:
+    if not os.path.exists(path):
+        return pathlib.Path(path)
+    else:
+        raise argparse.ArgumentTypeError(f"{path} already exists, could not overwrite.")
 
 
 if __name__ == "__main__":
