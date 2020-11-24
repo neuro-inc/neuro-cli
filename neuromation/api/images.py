@@ -22,7 +22,7 @@ from .config import Config
 from .core import _Core
 from .errors import AuthorizationError
 from .parser import Parser
-from .parsing_utils import LocalImage, RemoteImage, TagOption, _as_repo_str
+from .parsing_utils import LocalImage, RemoteImage, Tag, TagOption, _as_repo_str
 from .utils import NoPublicConstructor
 
 
@@ -130,6 +130,21 @@ class Images(metaclass=NoPublicConstructor):
         ) as resp:
             data = await resp.json()
             return sum([layer["size"] for layer in data["layers"]])
+
+    async def tag_info(self, remote: RemoteImage) -> Tag:
+        name = f"{remote.owner}/{remote.name}"
+        auth = await self._config._registry_auth()
+        assert remote.tag
+        url = self._registry_url / name / "manifests" / remote.tag
+        async with self._core.request(
+            "GET",
+            url,
+            auth=auth,
+            headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
+        ) as resp:
+            data = await resp.json()
+            size = sum([layer["size"] for layer in data["layers"]])
+            return Tag(name=remote.tag, size=size)
 
     async def rm(self, remote: RemoteImage, digest: str) -> None:
         name = f"{remote.owner}/{remote.name}"

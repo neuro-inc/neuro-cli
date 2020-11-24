@@ -1287,7 +1287,7 @@ neuro image tags [OPTIONS] IMAGE
 ```bash
 
 neuro image tags image://myfriend/alpine
-neuro image tags image:myimage
+neuro image tags -l image:myimage
 
 ```
 
@@ -1296,7 +1296,7 @@ neuro image tags image:myimage
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_-s_|Print tag sizes.|
+|_-l_|List in long format, with image sizes.|
 
 
 

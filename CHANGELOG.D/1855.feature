@@ -1,1 +1,1 @@
-Add `-s` option to `neuro image tags` to print sizes of corresponding images
+Add `-l` option to `neuro image tags` for long output format

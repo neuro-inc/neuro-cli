@@ -18,6 +18,8 @@ from neuromation.api import (
     RemoteImage,
 )
 
+from ...api.parsing_utils import Tag
+from ..utils import format_size
 from .utils import ImageFormatter
 
 
@@ -210,4 +212,34 @@ class LongImagesFormatter(BaseImagesFormatter):
             table.add_row(
                 self._format_image(image), image.as_docker_url(with_scheme=True)
             )
+        return table
+
+
+class BaseTagsFormatter:
+    def _build_table_for(self, image: RemoteImage) -> Table:
+        table = Table(box=box.SIMPLE_HEAVY, title=f"Tags for {str(image)}")
+        table.add_column("Tag", style="bold")
+        return table
+
+    @abc.abstractmethod
+    def __call__(self, image: RemoteImage, tags: Iterable[Tag]) -> RenderableType:
+        raise NotImplementedError
+
+
+class ShortTagsFormatter(BaseTagsFormatter):
+    def __call__(self, image: RemoteImage, tags: Iterable[Tag]) -> RenderableType:
+        table = self._build_table_for(image)
+        for tag in tags:
+            table.add_row(tag.name)
+        return table
+
+
+class LongTagsFormatter(BaseTagsFormatter):
+    def __call__(self, image: RemoteImage, tags: Iterable[Tag]) -> RenderableType:
+        table = self._build_table_for(image)
+        table.add_column("Size")
+        for tag in tags:
+            assert tag.name
+            assert tag.size
+            table.add_row(tag.name, format_size(tag.size))
         return table

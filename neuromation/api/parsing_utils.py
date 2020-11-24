@@ -262,6 +262,12 @@ class _ImageNameParser:
         return name, tag
 
 
+@dataclass(frozen=True)
+class Tag:
+    name: str
+    size: Optional[int] = None
+
+
 def _get_url_authority(url: URL) -> Optional[str]:
     if url.host is None:
         return None
