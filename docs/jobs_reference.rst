@@ -237,7 +237,11 @@ Jobs
                      life_span: Optional[float] = None, \
                  ) -> JobDescription
 
-      Start a new job. The method is deprecated and not recommended to use.
+      Start a new job.
+      
+      .. deprecated:: 20.11.25
+      
+         Please use :meth:`start` instead.
 
       :param Container container: container description to start.
 
