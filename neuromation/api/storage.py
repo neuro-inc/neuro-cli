@@ -133,58 +133,44 @@ class Storage(metaclass=NoPublicConstructor):
         self._min_time_diff = request_time - server_time - 1.0
         self._max_time_diff = response_time - server_time
 
-    def _is_local_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
-        # Have different size or local is newer.
-        return (
-            local.st_size != remote.size
-            or local.st_mtime - remote.modification_time
-            > self._min_time_diff - TIME_THRESHOLD
-        )
-
-    def _is_remote_partial(self, local: os.stat_result, remote: FileStatus) -> bool:
-        # Remote is smaller and newer.
-        return (
-            local.st_size > remote.size
-            and local.st_mtime - remote.modification_time
-            <= self._min_time_diff - TIME_THRESHOLD
-        )
-
-    def _is_remote_modified(self, local: os.stat_result, remote: FileStatus) -> bool:
-        # Have different size or remote is newer.
-        # Add 1 because remote.modification_time has been truncated
-        # and can be up to 1 second less than the actual value.
-        return (
-            local.st_size != remote.size
-            or local.st_mtime - remote.modification_time
-            < self._max_time_diff + TIME_THRESHOLD + 1.0
-        )
-
-    def _is_local_partial(self, local: os.stat_result, remote: FileStatus) -> bool:
-        # Local is smaller and newer.
-        # Add 1 because remote.modification_time has been truncated
-        # and can be up to 1 second less than the actual value.
-        return (
-            local.st_size < remote.size
-            and local.st_mtime - remote.modification_time
-            >= self._max_time_diff + TIME_THRESHOLD + 1.0
-        )
-
     def _check_upload(
-        self, local: os.stat_result, remote: FileStatus, continue_: bool
+        self, local: os.stat_result, remote: FileStatus, update: bool, continue_: bool
     ) -> Optional[int]:
-        if not self._is_local_modified(local, remote):
+        if (
+            local.st_mtime - remote.modification_time
+            > self._min_time_diff - TIME_THRESHOLD
+        ):
+            # Local is likely newer.
+            return 0
+        # Remote is definitely newer.
+        if update:
             return None
-        if continue_ and self._is_remote_partial(local, remote):
-            return remote.size
+        if continue_:
+            if local.st_size == remote.size:  # complete
+                return None
+            if local.st_size > remote.size:  # partial
+                return remote.size
         return 0
 
     def _check_download(
-        self, local: os.stat_result, remote: FileStatus, continue_: bool
+        self, local: os.stat_result, remote: FileStatus, update: bool, continue_: bool
     ) -> Optional[int]:
-        if not self._is_remote_modified(local, remote):
+        # Add 1 because remote.modification_time has been truncated
+        # and can be up to 1 second less than the actual value.
+        if (
+            local.st_mtime - remote.modification_time
+            < self._max_time_diff + TIME_THRESHOLD + 1.0
+        ):
+            # Remote is likely newer.
+            return 0
+        # Local is definitely newer.
+        if update:
             return None
-        if continue_ and self._is_local_partial(local, remote):
-            return local.st_size
+        if continue_:
+            if local.st_size == remote.size:  # complete
+                return None
+            if local.st_size < remote.size:  # partial
+                return local.st_size
         return 0
 
     async def ls(self, uri: URL) -> AsyncIterator[FileStatus]:
@@ -504,7 +490,9 @@ class Storage(metaclass=NoPublicConstructor):
                     pass
                 else:
                     if S_ISREG(src_stat.st_mode):
-                        offset = self._check_upload(src_stat, dst_stat, continue_)
+                        offset = self._check_upload(
+                            src_stat, dst_stat, update, continue_
+                        )
         if offset is None:
             return
 
@@ -650,7 +638,7 @@ class Storage(metaclass=NoPublicConstructor):
                 offset: Optional[int] = 0
                 if (update or continue_) and name in dst_files:
                     offset = self._check_upload(
-                        child.stat(), dst_files[name], continue_
+                        child.stat(), dst_files[name], update, continue_
                     )
                 if offset is None:
                     continue
@@ -712,7 +700,7 @@ class Storage(metaclass=NoPublicConstructor):
                 pass
             else:
                 if S_ISREG(dst_stat.st_mode):
-                    offset = self._check_download(dst_stat, src_stat, continue_)
+                    offset = self._check_download(dst_stat, src_stat, update, continue_)
         if offset is None:
             return
 
@@ -833,7 +821,7 @@ class Storage(metaclass=NoPublicConstructor):
                 offset: Optional[int] = 0
                 if (update or continue_) and name in dst_files:
                     offset = self._check_download(
-                        dst_files[name].stat(), child, continue_
+                        dst_files[name].stat(), child, update, continue_
                     )
                 if offset is None:
                     continue
