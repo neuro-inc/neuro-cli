@@ -124,6 +124,15 @@ class Images(metaclass=NoPublicConstructor):
         async with self._core.request("DELETE", url, auth=auth) as resp:
             assert resp
 
+    async def rm_tag(self, image: RemoteImage, tag: str) -> None:
+        name = f"{image.owner}/{image.name}"
+        auth = await self._config._registry_auth()
+        url = self._registry_url / name / "tags" / tag
+        print(url)
+        async with self._core.request("DELETE", url, auth=auth) as resp:
+            assert resp
+            print(await resp.json())
+
     async def pull(
         self,
         remote: RemoteImage,
