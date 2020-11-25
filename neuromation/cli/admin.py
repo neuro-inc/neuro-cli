@@ -489,7 +489,7 @@ async def update_resource_preset(
     )
     await root.client._admin.update_cluster_resource_presets(cluster_name, presets)
     if not root.quiet:
-        click.echo(
+        root.print(
             f"Updated resource preset {click.style(preset_name, bold=True)} "
             f"in cluster {click.style(cluster_name, bold=True)}"
         )
@@ -510,7 +510,7 @@ async def remove_resource_preset(
     del presets[preset_name]
     await root.client._admin.update_cluster_resource_presets(cluster_name, presets)
     if not root.quiet:
-        click.echo(
+        root.print(
             f"Removed resource preset {click.style(preset_name, bold=True)} "
             f"from cluster {click.style(cluster_name, bold=True)}"
         )
