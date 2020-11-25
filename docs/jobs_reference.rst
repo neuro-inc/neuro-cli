@@ -237,7 +237,7 @@ Jobs
                      life_span: Optional[float] = None, \
                  ) -> JobDescription
 
-      Start a new job.
+      Start a new job. The method is deprecated and not recommended to use.
 
       :param Container container: container description to start.
 
@@ -245,11 +245,11 @@ Jobs
 
       :param str name: optional job tags.
 
-      :param str desciption: optional container description.
+      :param str description: optional container description.
 
-      :param bool is_preemtible: a flag that specifies is the job is *preemptible* or
-                                 not, see :ref:`Preemption <job-preemption>` for
-                                 details.
+      :param bool is_preemptible: a flag that specifies is the job is *preemptible* or
+                                  not, see :ref:`Preemption <job-preemption>` for
+                                  details.
 
       :param bool pass_config: a flag that specifies that platform should pass
                                  config data to job. This allows to API and CLI
@@ -265,6 +265,96 @@ Jobs
                                      cluster resources (memory, CPU/GPU etc).
 
       :param float life_span: job run-time limit in seconds. Pass `None` to disable.
+
+      :return: :class:`JobDescription` instance with information about started job.
+
+   .. comethod:: start(*, \
+                       image: RemoteImage, \
+                       preset_name: str, \
+                       entrypoint: Optional[str] = None, \
+                       command: Optional[str] = None, \
+                       working_dir: Optional[str] = None, \
+                       http: Optional[HTTPPort] = None, \
+                       env: Optional[Mapping[str, str]] = None, \
+                       volumes: Sequence[Volume] = (), \
+                       secret_env: Optional[Mapping[str, URL]] = None, \
+                       secret_files: Sequence[SecretFile] = (), \
+                       disk_volumes: Sequence[DiskVolume] = (), \
+                       tty: bool = False, \
+                       shm: bool = False, \
+                       name: Optional[str] = None, \
+                       tags: Sequence[str] = (), \
+                       description: Optional[str] = None, \
+                       pass_config: bool = False, \
+                       wait_for_jobs_quota: bool = False, \
+                       schedule_timeout: Optional[float] = None, \
+                       restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER, \
+                       life_span: Optional[float] = None, \
+                 ) -> JobDescription
+
+      Start a new job.
+
+      :param RemoteImage image: image used for starting a container.
+
+      :param str preset_name: name of the preset of resources given to a container on a node.
+
+      :param str entrypoint: optional Docker ENTRYPOINT_ used for overriding image entry-point
+                             (:class:`str`), default ``None`` is used to pick entry-point
+                             from image's *Dockerfile*.
+
+      :param str command: optional command line to execute inside a container (:class:`str`),
+                          ``None`` for picking command line from image's *Dockerfile*.
+
+      :param str working_dir: optional working directory inside a container (:class:`str`),
+                          ``None`` for picking working directory from image's *Dockerfile*.
+
+      :param HTTPPort http: optional parameters of HTTP server exposed by container,
+                            ``None`` if the container doesn't provide HTTP access.
+
+      :param ~collections.abc.Mapping[str,str] env: optional custom *environment variables* for pushing into container's task.
+                                                    A :class:`~collections.abc.Mapping` where keys are environments variables names
+                                                    and values are variable values, both :class:`str`. ``None`` by default.
+
+      :param ~collections.abc.Sequence[Volume] volumes: optional Docker volumes to mount into container, a :class:`~collections.abc.Sequence`
+                                                                 of :class:`Volume` objects. Empty :class:`tuple` by default.
+
+      :param ~collections.abc.Mapping[str,yarl.URL] secret_env: optional secrets pushed as custom *environment variables* into container's task.
+                                                                A :class:`~collections.abc.Mapping` where keys are environments variables
+                                                                names (:class:`str`) and values are secret URIs (:class:`yarl.URL`).
+                                                                ``None`` by default.
+
+      :param ~collections.abc.Sequence[SecretFile] secret_files: optional secrets mounted as files in a container, a :class:`~collections.abc.Sequence`
+                                                                 of :class:`SecretFile` objects. Empty :class:`tuple` by default.
+
+      :param ~collections.abc.Sequence[DiskVolume] disk_volumes: optional disk volumes used to mount into container, a :class:`~collections.abc.Sequence`
+                                                                 of :class:`DiskVolume` objects. Empty :class:`tuple` by default.
+
+      :param bool tty: Allocate a TTY or not. ``False`` by default.
+
+      :param bool shm: Use Linux shared memory or not. ``False`` by default.
+
+      :param str name: optional job name.
+
+      :param ~collections.abc.Sequence[str] tags: optional job tags.
+
+      :param str description: optional container description.
+
+      :param bool pass_config: a flag that specifies that platform should pass
+                               config data to job. This allows to API and CLI
+                               from the inside of the job. See
+                               :meth:`Factory.login_with_passed_config` for details.
+
+      :param bool wait_for_jobs_quota: when this flat is set, job will wait for another
+                                       job to stop instead of failing immediately
+                                       because of total running jobs quota.
+
+      :param float schedule_timeout: minimal timeout to wait before reporting that job
+                                     cannot be scheduled because the lack of computation
+                                     cluster resources (memory, CPU/GPU etc).
+
+      :param float life_span: job run-time limit in seconds. Pass `None` to disable.
+
+      :param JobRestartPolicy restart_policy: job restart behavior. :class:`JobRestartPolicy`.NEVER by default.
 
       :return: :class:`JobDescription` instance with information about started job.
 
@@ -505,6 +595,28 @@ JobDescription
 
       DNS name to access the running job from other jobs based on jobs name instead of
       jobs id. Produces same value for jobs with ``name`` and ``owner`` in same cluster.
+
+
+JobRestartPolicy
+================
+
+.. class:: JobRestartPolicy
+
+   *Enumeration* that describes job restart behavior.
+
+   Can be one of the following statues:
+
+   .. attribute:: NEVER
+
+      Job will never be restarted.
+
+   .. attribute:: ON_FAILURE
+
+      Job will be restarted only in case of job failure.
+
+   .. attribute:: ALWAYS
+
+      Job will always be restarted after success or failure.
 
 
 JobStatus
