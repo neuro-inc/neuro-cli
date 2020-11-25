@@ -216,8 +216,8 @@ class LongImagesFormatter(BaseImagesFormatter):
 
 
 class BaseTagsFormatter:
-    def _build_table_for(self, image: RemoteImage) -> Table:
-        table = Table(box=box.SIMPLE_HEAVY, title=f"Tags for {str(image)}")
+    def _build_table_for(self) -> Table:
+        table = Table(box=box.SIMPLE_HEAVY)
         table.add_column("Tag", style="bold")
         return table
 
@@ -228,7 +228,7 @@ class BaseTagsFormatter:
 
 class ShortTagsFormatter(BaseTagsFormatter):
     def __call__(self, image: RemoteImage, tags: Iterable[Tag]) -> RenderableType:
-        table = self._build_table_for(image)
+        table = self._build_table_for()
         for tag in tags:
             table.add_row(tag.name)
         return table
@@ -236,7 +236,7 @@ class ShortTagsFormatter(BaseTagsFormatter):
 
 class LongTagsFormatter(BaseTagsFormatter):
     def __call__(self, image: RemoteImage, tags: Iterable[Tag]) -> RenderableType:
-        table = self._build_table_for(image)
+        table = self._build_table_for()
         table.add_column("Size")
         for tag in tags:
             assert tag.name

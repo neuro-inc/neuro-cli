@@ -174,6 +174,7 @@ async def tags(root: Root, format_long: bool, image: RemoteImage) -> None:
     else:
         formatter = ShortTagsFormatter()
     with root.pager():
+        root.print(f"Tags for [bold]{str(image)}[/bold]")
         root.print(formatter(image, tags_list))
 
 
