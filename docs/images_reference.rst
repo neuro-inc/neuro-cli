@@ -104,6 +104,26 @@ Images
       :return: list of remote images with tags (:class:`List[RemoteImage]`)
 
 
+   .. comethod:: size(image: RemoteImage) -> int
+
+      Return image size.
+
+      :param RemoteImage image: a spec for remote image with tag on Neuro
+                                registry.
+
+      :return: remote image size in bytes
+
+
+   .. comethod:: tag_info(image: RemoteImage) -> Tag
+
+      Return info about specified tag.
+
+      :param RemoteImage image: a spec for remote image with tag on Neuro
+                                registry.
+
+      :return: tag information (name and size) (:class: `Tag`)
+
+
 AbstractDockerImageProgress
 ===========================
 
@@ -260,6 +280,19 @@ RemoteImage
       :param str registry: registry where the image is located
 
       :param str tag: image tag
+
+
+.. class:: Tag
+
+   *Read-only* :class:`~dataclasses.dataclass` for tag information.
+
+   .. attribute:: name
+
+      Tag name, :class:`str`.
+
+   .. attribute:: size
+
+      Tag size in bytes, :class:`int`.
 
 
 .. _DockerHub: https://hub.docker.com
