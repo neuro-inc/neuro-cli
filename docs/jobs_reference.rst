@@ -238,9 +238,9 @@ Jobs
                  ) -> JobDescription
 
       Start a new job.
-      
+
       .. deprecated:: 20.11.25
-      
+
          Please use :meth:`start` instead.
 
       :param Container container: container description to start.
