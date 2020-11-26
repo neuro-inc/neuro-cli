@@ -1,7 +1,7 @@
 import contextlib
 import logging
 from dataclasses import replace
-from typing import Optional, List, Dict
+from typing import Optional
 
 import click
 
@@ -150,7 +150,12 @@ async def tags(root: Root, image: RemoteImage) -> None:
 
 
 @command()
-@option("-f", "force", is_flag=True, help="Force deletion of all tags referencing the image.")
+@option(
+    "-f",
+    "force",
+    is_flag=True,
+    help="Force deletion of all tags referencing the image.",
+)
 @argument("image", type=RemoteImageType())
 async def rm(root: Root, force: bool, image: RemoteImage) -> None:
     """
@@ -167,23 +172,19 @@ async def rm(root: Root, force: bool, image: RemoteImage) -> None:
     digest = await root.client.images.digest(image)
     click.echo(f"Deleting image identified by {digest}")
     tags = await root.client.images.tags(replace(image, tag=None))
-    tags_by_digest: Dict[str, List[str]] = {}
-    if len(tags) > 1:
+    # Collect all tags referencing the image to be deleted
+    if not force and len(tags) > 1:
+        tags_for_image = []
         for tag in tags:
             tag_digest = await root.client.images.digest(tag)
-            tags_for_digest = tags_by_digest.get(tag_digest, [])
-            tags_for_digest.append(tag.tag)
-            tags_by_digest[tag_digest] = tags_for_digest
-        if len(tags_by_digest[digest]) > 1:
-            if force:
-                for tag in tags_by_digest[digest]:
-                    root.print(f"Deleting tag {tag}")
-                    await root.client.images.rm_tag(image, tag)
-            else:
-                pass
-                # raise ValueError(f"There's more than one tag referencing this digest: "
-                #                  f"{', '.join(tags_by_digest[digest])}.\n"
-                #                  f"Please use -f to force deletion for all of them.")
+            if tag_digest == digest:
+                tags_for_image.append(tag_digest)
+        if len(tags_for_image) > 1:
+            raise ValueError(
+                f"There's more than one tag referencing this digest: "
+                f"{', '.join(tags_for_image)}.\n"
+                f"Please use -f to force deletion for all of them."
+            )
     await root.client.images.rm(image, digest)
 
 

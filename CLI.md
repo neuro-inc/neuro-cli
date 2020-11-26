@@ -1210,6 +1210,7 @@ neuro image rm image:myimage:latest
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_-f_|Force deletion of all tags referencing the image.|
 
 
 
