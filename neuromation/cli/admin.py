@@ -511,7 +511,7 @@ async def remove_resource_preset(
     await root.client._admin.update_cluster_resource_presets(cluster_name, presets)
     if not root.quiet:
         root.print(
-            f"Removed resource preset [b]{preset_name}]/b] "
+            f"Removed resource preset [b]{preset_name}[/b] "
             f"from cluster [b]{cluster_name}[/b]"
         )
 
