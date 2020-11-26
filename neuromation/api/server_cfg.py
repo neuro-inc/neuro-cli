@@ -13,6 +13,7 @@ class Preset:
     cpu: float
     memory_mb: int
     is_preemptible: bool = False
+    is_preemptible_node_required: bool = False
     gpu: Optional[int] = None
     gpu_model: Optional[str] = None
     tpu_type: Optional[str] = None

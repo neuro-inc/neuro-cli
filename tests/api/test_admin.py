@@ -13,6 +13,7 @@ from neuromation.api.admin import (
     _NodePool,
     _Storage,
 )
+from neuromation.api.server_cfg import Preset
 from tests import _TestServerFactory
 
 
@@ -504,3 +505,74 @@ async def test_get_cloud_provider_options(
     async with make_client(srv.make_url("/api/v1")) as client:
         result = await client._admin.get_cloud_provider_options("aws")
         assert result == sample_response
+
+
+async def test_update_cluster_resource_presets(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def update_cluster_resource_presets(
+        request: web.Request,
+    ) -> web.StreamResponse:
+        assert request.match_info["cluster_name"] == "my_cluster"
+        assert sorted(await request.json(), key=lambda x: x["name"]) == [
+            {
+                "name": "cpu-micro",
+                "cpu": 0.1,
+                "memory_mb": 100,
+                "is_preemptible": False,
+                "is_preemptible_node_required": False,
+            },
+            {
+                "name": "cpu-micro-p",
+                "cpu": 0.1,
+                "memory_mb": 100,
+                "is_preemptible": True,
+                "is_preemptible_node_required": True,
+            },
+            {
+                "name": "gpu-micro",
+                "cpu": 0.2,
+                "memory_mb": 200,
+                "gpu": 1,
+                "gpu_model": "nvidia-tesla-k80",
+                "is_preemptible": False,
+                "is_preemptible_node_required": False,
+            },
+            {
+                "name": "tpu-micro",
+                "cpu": 0.3,
+                "memory_mb": 300,
+                "tpu": {"type": "v2-8", "software_version": "1.14"},
+                "is_preemptible": False,
+                "is_preemptible_node_required": False,
+            },
+        ]
+        return web.Response(status=HTTPNoContent.status_code)
+
+    app = web.Application()
+    app.router.add_put(
+        "/api/v1/clusters/{cluster_name}/orchestrator/resource_presets",
+        update_cluster_resource_presets,
+    )
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        await client._admin.update_cluster_resource_presets(
+            "my_cluster",
+            {
+                "cpu-micro": Preset(cpu=0.1, memory_mb=100),
+                "cpu-micro-p": Preset(
+                    cpu=0.1,
+                    memory_mb=100,
+                    is_preemptible=True,
+                    is_preemptible_node_required=True,
+                ),
+                "gpu-micro": Preset(
+                    cpu=0.2, memory_mb=200, gpu=1, gpu_model="nvidia-tesla-k80"
+                ),
+                "tpu-micro": Preset(
+                    cpu=0.3, memory_mb=300, tpu_type="v2-8", tpu_software_version="1.14"
+                ),
+            },
+        )

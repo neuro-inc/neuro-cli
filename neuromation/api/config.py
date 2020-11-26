@@ -399,6 +399,9 @@ def _deserialize_resource_preset(payload: Dict[str, Any]) -> Tuple[str, Preset]:
             tpu_type=payload.get("tpu_type", None),
             tpu_software_version=payload.get("tpu_software_version", None),
             is_preemptible=payload.get("is_preemptible", False),
+            is_preemptible_node_required=payload.get(
+                "is_preemptible_node_required", False
+            ),
         ),
     )
 
@@ -507,6 +510,7 @@ def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
         "tpu_type": preset.tpu_type,
         "tpu_software_version": preset.tpu_software_version,
         "is_preemptible": preset.is_preemptible,
+        "is_preemptible_node_required": preset.is_preemptible_node_required,
     }
 
 
