@@ -165,8 +165,7 @@ Storage
 
       :param int size: Maximal size of the read data.  If ``None`` read to the end of the file.
 
-      :param ~typing.AsyncIterator[bytes] data: asynchronous iterator used for
-                                                retrieving the file content.
+      :return: asynchronous iterator used for retrieving the file content.
 
    .. rubric:: Copy operations
 

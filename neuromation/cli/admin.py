@@ -9,7 +9,10 @@ import yaml
 from prompt_toolkit import PromptSession
 
 from neuromation.api.admin import _ClusterUserRoleType
+from neuromation.api.server_cfg import Preset
 
+from .click_types import MEGABYTE
+from .defaults import JOB_CPU_NUMBER, JOB_MEMORY_AMOUNT
 from .formatters.admin import ClustersFormatter, ClusterUserFormatter
 from .formatters.config import QuotaFormatter
 from .root import Root
@@ -403,6 +406,116 @@ async def add_user_quota(
     root.print(fmt(user_with_quota.quota))
 
 
+@command()
+@argument("cluster_name")
+@argument("preset_name")
+@option(
+    "-c",
+    "--cpu",
+    metavar="NUMBER",
+    type=float,
+    help="Number of CPUs",
+    default=JOB_CPU_NUMBER,
+    show_default=True,
+)
+@option(
+    "-m",
+    "--memory",
+    metavar="AMOUNT",
+    type=MEGABYTE,
+    help="Memory amount",
+    default=JOB_MEMORY_AMOUNT,
+    show_default=True,
+)
+@option(
+    "-g",
+    "--gpu",
+    metavar="NUMBER",
+    type=int,
+    help="Number of GPUs",
+)
+@option(
+    "--gpu-model",
+    metavar="MODEL",
+    help="GPU model",
+)
+@option("--tpu-type", metavar="TYPE", type=str, help="TPU type")
+@option(
+    "tpu_software_version",
+    "--tpu-sw-version",
+    metavar="VERSION",
+    type=str,
+    help="TPU software version",
+)
+@option(
+    "--preemptible/--non-preemptible",
+    "-p/-P",
+    help="Job preemptability support",
+    default=False,
+    show_default=True,
+)
+@option(
+    "--preemptible-node/--non-preemptible-node",
+    help="Use a lower-cost preemptible instance",
+    default=False,
+    show_default=True,
+)
+async def update_resource_preset(
+    root: Root,
+    cluster_name: str,
+    preset_name: str,
+    cpu: float,
+    memory: int,
+    gpu: Optional[int],
+    gpu_model: Optional[str],
+    tpu_type: Optional[str],
+    tpu_software_version: Optional[str],
+    preemptible: bool,
+    preemptible_node: bool,
+) -> None:
+    """
+    Add/update resource preset
+    """
+    presets = dict(root.client.presets)
+    presets[preset_name] = Preset(
+        cpu=cpu,
+        memory_mb=memory,
+        gpu=gpu,
+        gpu_model=gpu_model,
+        tpu_type=tpu_type,
+        tpu_software_version=tpu_software_version,
+        is_preemptible=preemptible,
+        is_preemptible_node_required=preemptible_node,
+    )
+    await root.client._admin.update_cluster_resource_presets(cluster_name, presets)
+    if not root.quiet:
+        root.print(
+            f"Updated resource preset [b]{preset_name}[/b] "
+            f"in cluster [b]{cluster_name}[/b]"
+        )
+
+
+@command()
+@argument("cluster_name")
+@argument("preset_name")
+async def remove_resource_preset(
+    root: Root, cluster_name: str, preset_name: str
+) -> None:
+    """
+    Remove resource preset
+    """
+    presets = dict(root.client.presets)
+    if preset_name not in presets:
+        raise ValueError(f"Preset '{preset_name}' not found")
+    del presets[preset_name]
+    await root.client._admin.update_cluster_resource_presets(cluster_name, presets)
+    if not root.quiet:
+        root.print(
+            f"Removed resource preset [b]{preset_name}[/b] "
+            f"from cluster [b]{cluster_name}[/b]"
+        )
+
+
 admin.add_command(get_clusters)
 admin.add_command(generate_cluster_config)
 admin.add_command(add_cluster)
@@ -414,3 +527,6 @@ admin.add_command(remove_cluster_user)
 
 admin.add_command(set_user_quota)
 admin.add_command(add_user_quota)
+
+admin.add_command(update_resource_preset)
+admin.add_command(remove_resource_preset)

@@ -99,13 +99,15 @@ Blob Storage
       :raises: :exc:`FileNotFound` if key does not exist *or* you don't have access
           to it.
 
-   .. comethod:: get_blob(bucket_name: str, key: str) -> Blob
+   .. comethod:: get_blob(bucket_name: str, key: str, offset: int = 0, size: Optional[int] = None) -> Blob
       :async-with:
 
       Look up the blob and return it's metadata with body content.
 
       :param str bucket_name: Name of the bucket.
       :param str key: Key of the blob.
+      :param int offset: Position in blob from which to read.
+      :param int size: Maximal size of the read data.  If ``None`` read to the end of the blob.
 
       :return: :class:`Blob` object. Please note, that ``body_stream``'s lifetime is
          bounded to the asynchronous context manager. Accessing the attribute outside
@@ -114,7 +116,7 @@ Blob Storage
       :raises: :exc:`FileNotFound` if key does not exist *or* you don't have access
           to it.
 
-   .. comethod:: fetch_blob(bucket_name: str, key: str) -> AsyncIterator[bytes]
+   .. comethod:: fetch_blob(bucket_name: str, key: str, offset: int = 0, size: Optional[int] = None) -> AsyncIterator[bytes]
       :async-for:
 
       Look up the blob and return it's body content only. The content will be streamed
@@ -125,6 +127,10 @@ Blob Storage
 
       :param str bucket_name: Name of the bucket.
       :param str key: Key of the blob.
+      :param int offset: Position in blob from which to read.
+      :param int size: Maximal size of the read data.  If ``None`` read to the end of the blob.
+
+      :return: asynchronous iterator used for retrieving the file content.
 
       :raises: :exc:`FileNotFound` if key does not exist *or* you don't have access
           to it.

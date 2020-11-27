@@ -1,10 +1,11 @@
 import logging
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 import click
+from rich.table import Table
 from yarl import URL
 
-from neuromation.api import Permission, Share
+from neuromation.api import Action, Permission, Share
 
 from .formatters.utils import URIFormatter, uri_formatter
 from .root import Root
@@ -13,7 +14,6 @@ from .utils import (
     command,
     group,
     option,
-    pager_maybe,
     parse_permission_action,
     parse_resource_for_sharing,
 )
@@ -142,36 +142,55 @@ async def list(
 
     uri_obj = URL(uri) if uri else None
 
-    out: List[str] = []
     if not shared:
+        table = Table.grid(padding=(0, 2))
+        table.add_column()  # URI
+        table.add_column()  # Action
 
-        def permission_key(p: Permission) -> Any:
-            return p.uri, p.action
-
-        for p in sorted(
-            await root.client.users.get_acl(username, scheme=scheme, uri=uri_obj),
-            key=permission_key,
-        ):
-            out.append(f"{uri_fmtr(p.uri)} {p.action.value}")
+        permissions = await root.client.users.get_acl(
+            username, scheme=scheme, uri=uri_obj
+        )
+        for p in sorted(permissions, key=_permission_key):
+            table.add_row(uri_fmtr(p.uri), _fmt_action(p.action))
+        with root.pager():
+            root.print(table)
     else:
+        table = Table.grid(padding=(0, 2))
+        table.add_column()  # URI
+        table.add_column()  # Action
+        table.add_column()  # User
 
-        def shared_permission_key(share: Share) -> Any:
-            return share.permission.uri, share.permission.action.value, share.user
-
-        for share in sorted(
-            await root.client.users.get_shares(username, scheme=scheme, uri=uri_obj),
-            key=shared_permission_key,
-        ):
-            out.append(
-                " ".join(
-                    [
-                        uri_fmtr(share.permission.uri),
-                        share.permission.action.value,
-                        share.user,
-                    ]
-                )
+        shares = await root.client.users.get_shares(
+            username, scheme=scheme, uri=uri_obj
+        )
+        for share in sorted(shares, key=_shared_permission_key):
+            table.add_row(
+                uri_fmtr(share.permission.uri),
+                _fmt_action(share.permission.action),
+                share.user,
             )
-    pager_maybe(out, root.tty, root.terminal_size)
+        with root.pager():
+            root.print(table)
+
+
+def _permission_key(p: Permission) -> Any:
+    return p.uri, p.action
+
+
+def _shared_permission_key(share: Share) -> Any:
+    return share.permission.uri, share.permission.action.value, share.user
+
+
+ACTION_COLORS = {
+    Action.READ: "blue",
+    Action.WRITE: "green",
+    Action.MANAGE: "bright_yellow",
+}
+
+
+def _fmt_action(action: Action) -> str:
+    color = ACTION_COLORS.get(action, "none")
+    return f"[{color}]{action.value}[/{color}]"
 
 
 @command()

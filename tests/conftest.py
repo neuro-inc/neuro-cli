@@ -77,7 +77,12 @@ def cluster_config() -> Cluster:
             ),
             "cpu-small": Preset(cpu=7, memory_mb=2 * 1024),
             "cpu-large": Preset(cpu=7, memory_mb=14 * 1024),
-            "cpu-large-p": Preset(cpu=7, memory_mb=14 * 1024, is_preemptible=True),
+            "cpu-large-p": Preset(
+                cpu=7,
+                memory_mb=14 * 1024,
+                is_preemptible=True,
+                is_preemptible_node_required=True,
+            ),
         },
         name="default",
     )

@@ -414,8 +414,8 @@ async def cp(
         assert dst
 
         progress_obj = create_storage_progress(root, show_progress)
-        with progress_obj.begin(src, dst):
-            try:
+        try:
+            with progress_obj.begin(src, dst):
                 if src.scheme == "file" and dst.scheme == "storage":
                     if recursive and await _is_dir(root, src):
                         await root.client.storage.upload_dir(
@@ -459,9 +459,9 @@ async def cp(
                         f" to the file with scheme '{dst.scheme}'"
                         f" is not supported"
                     )
-            except (OSError, ResourceNotFound, IllegalArgumentError) as error:
-                log.error(f"cannot copy {src} to {dst}: {error}")
-                errors = True
+        except (OSError, ResourceNotFound, IllegalArgumentError) as error:
+            log.error(f"cannot copy {src} to {dst}: {error}")
+            errors = True
 
     if errors:
         sys.exit(EX_OSFILE)

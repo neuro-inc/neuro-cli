@@ -179,8 +179,14 @@ async def tags(root: Root, format_long: bool, image: RemoteImage) -> None:
 
 
 @command()
+@option(
+    "-f",
+    "force",
+    is_flag=True,
+    help="Force deletion of all tags referencing the image.",
+)
 @argument("image", type=RemoteImageType())
-async def rm(root: Root, image: RemoteImage) -> None:
+async def rm(root: Root, force: bool, image: RemoteImage) -> None:
     """
     Remove image from platform registry.
 
@@ -193,7 +199,21 @@ async def rm(root: Root, image: RemoteImage) -> None:
     neuro image rm image:myimage:latest
     """
     digest = await root.client.images.digest(image)
-    root.print(f"Deleting image identified by [bold]{digest}[/bold]")
+    click.echo(f"Deleting image identified by [bold]{digest}[/bold]")
+    tags = await root.client.images.tags(replace(image, tag=None))
+    # Collect all tags referencing the image to be deleted
+    if not force and len(tags) > 1:
+        tags_for_image = []
+        for tag in tags:
+            tag_digest = await root.client.images.digest(tag)
+            if tag_digest == digest:
+                tags_for_image.append(tag_digest)
+        if len(tags_for_image) > 1:
+            raise ValueError(
+                f"There's more than one tag referencing this digest: "
+                f"{', '.join(tags_for_image)}.\n"
+                f"Please use -f to force deletion for all of them."
+            )
     await root.client.images.rm(image, digest)
 
 
