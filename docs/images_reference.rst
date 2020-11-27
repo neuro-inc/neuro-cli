@@ -121,7 +121,7 @@ Images
       :param RemoteImage image: a spec for remote image with tag on Neuro
                                 registry.
 
-      :return: tag information (name and size) (:class: `Tag`)
+      :return: tag information (name and size) (:class:`Tag`)
 
 
 AbstractDockerImageProgress
