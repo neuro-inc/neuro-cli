@@ -199,7 +199,7 @@ async def rm(root: Root, force: bool, image: RemoteImage) -> None:
     neuro image rm image:myimage:latest
     """
     digest = await root.client.images.digest(image)
-    click.echo(f"Deleting image identified by [bold]{digest}[/bold]")
+    root.print(f"Deleting image identified by [bold]{digest}[/bold]")
     tags = await root.client.images.tags(replace(image, tag=None))
     # Collect all tags referencing the image to be deleted
     if not force and len(tags) > 1:
