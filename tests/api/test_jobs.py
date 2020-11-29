@@ -27,7 +27,6 @@ from neuromation.api.jobs import (
     _job_description_from_api,
 )
 from neuromation.api.parser import SecretFile
-from neuromation.api.server_cfg import Preset
 from tests import _TestServerFactory
 
 

@@ -44,7 +44,6 @@ from .images import (
 )
 from .parser import DiskVolume, Parser, SecretFile, Volume
 from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
-from .server_cfg import Preset
 from .url_utils import (
     normalize_disk_uri,
     normalize_secret_uri,
