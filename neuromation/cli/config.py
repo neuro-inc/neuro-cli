@@ -33,7 +33,7 @@ async def show(root: Root) -> None:
     """
     fmt = ConfigFormatter()
     try:
-        jobs_capacity = await root.client.jobs.get_capacity(root.client.config.presets)
+        jobs_capacity = await root.client.jobs.get_capacity()
     except ClientConnectionError:
         jobs_capacity = {}
     root.print(fmt(root.client.config, jobs_capacity))

@@ -2422,33 +2422,13 @@ async def test_get_capacity(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        payload = await request.json()
-        assert payload == {
-            "gpu-p": {
-                "cpu": 0.1,
-                "memory_mb": 100,
-                "gpu": 1,
-                "gpu_model": "nvidia-tesla-k80",
-                "is_preemptible": True,
-            }
-        }
         return web.json_response({"cpu-micro": 10})
 
     app = web.Application()
-    app.router.add_post("/jobs/available", handler)
+    app.router.add_get("/jobs/capacity", handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        result = await client.jobs.get_capacity(
-            {
-                "gpu-p": Preset(
-                    cpu=0.1,
-                    memory_mb=100,
-                    gpu=1,
-                    gpu_model="nvidia-tesla-k80",
-                    is_preemptible=True,
-                )
-            }
-        )
+        result = await client.jobs.get_capacity()
         assert result == {"cpu-micro": 10}

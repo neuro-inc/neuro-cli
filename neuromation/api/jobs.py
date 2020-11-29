@@ -674,19 +674,10 @@ class Jobs(metaclass=NoPublicConstructor):
         async with self._core.request("POST", url, auth=auth) as resp:
             resp
 
-    async def get_capacity(self, presets: Mapping[str, Preset]) -> Mapping[str, int]:
-        url = self._config.monitoring_url / "available"
+    async def get_capacity(self) -> Mapping[str, int]:
+        url = self._config.monitoring_url / "capacity"
         auth = await self._config._api_auth()
-        payload: Dict[str, Any] = {}
-        for name, preset in presets.items():
-            payload[name] = {
-                "cpu": preset.cpu,
-                "memory_mb": preset.memory_mb,
-                "gpu": preset.gpu or 0,
-                "gpu_model": preset.gpu_model or "",
-                "is_preemptible": preset.is_preemptible,
-            }
-        async with self._core.request("POST", url, auth=auth, json=payload) as resp:
+        async with self._core.request("GET", url, auth=auth) as resp:
             return await resp.json()
 
 
