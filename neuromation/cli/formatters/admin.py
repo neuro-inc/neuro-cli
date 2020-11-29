@@ -1,5 +1,4 @@
 import operator
-from platform import node
 from typing import Iterable, List
 
 from rich import box
