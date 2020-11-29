@@ -18,13 +18,11 @@ from neuromation.api import (
     PASS_CONFIG_ENV_NAME,
     AuthorizationError,
     Client,
-    Container,
     HTTPPort,
     JobDescription,
     JobRestartPolicy,
     JobStatus,
     RemoteImage,
-    Resources,
     Volume,
 )
 from neuromation.cli.formatters.images import DockerImageProgress
@@ -40,18 +38,10 @@ from .click_types import (
     JOB_COLUMNS,
     JOB_NAME,
     LOCAL_REMOTE_PORT,
-    MEGABYTE,
     PRESET,
     ImageType,
 )
 from .const import EX_PLATFORMERROR
-from .defaults import (
-    GPU_MODELS,
-    JOB_CPU_NUMBER,
-    JOB_GPU_MODEL,
-    JOB_GPU_NUMBER,
-    JOB_MEMORY_AMOUNT,
-)
 from .formatters.jobs import (
     BaseJobsFormatter,
     JobStartProgress,
@@ -106,277 +96,6 @@ def job() -> None:
     """
     Job operations.
     """
-
-
-@command(
-    context_settings=dict(allow_interspersed_args=False), hidden=True, deprecated=True
-)
-@argument("image", type=ImageType())
-@argument("cmd", nargs=-1, type=click.UNPROCESSED)
-@option(
-    "-g",
-    "--gpu",
-    metavar="NUMBER",
-    type=int,
-    help="Number of GPUs to request",
-    default=JOB_GPU_NUMBER,
-    show_default=True,
-)
-@option(
-    "--gpu-model",
-    metavar="MODEL",
-    type=click.Choice(GPU_MODELS),
-    help="GPU to use",
-    default=JOB_GPU_MODEL,
-    show_default=True,
-)
-@option("--tpu-type", metavar="TYPE", type=str, help="TPU type to use")
-@option(
-    "tpu_software_version",
-    "--tpu-sw-version",
-    metavar="VERSION",
-    type=str,
-    help="Requested TPU software version",
-)
-@option(
-    "-c",
-    "--cpu",
-    metavar="NUMBER",
-    type=float,
-    help="Number of CPUs to request",
-    default=JOB_CPU_NUMBER,
-    show_default=True,
-)
-@option(
-    "-m",
-    "--memory",
-    metavar="AMOUNT",
-    type=MEGABYTE,
-    help="Memory amount to request",
-    default=JOB_MEMORY_AMOUNT,
-    show_default=True,
-)
-@option(
-    "-x/-X",
-    "--extshm/--no-extshm",
-    is_flag=True,
-    default=True,
-    show_default=True,
-    help="Request extended '/dev/shm' space",
-)
-@option("--http", type=int, metavar="PORT", help="Enable HTTP port forwarding to a job")
-@option(
-    "--http-auth/--no-http-auth",
-    is_flag=True,
-    help="Enable HTTP authentication for forwarded HTTP port  [default: True]",
-    default=None,
-)
-@option(
-    "--preemptible/--non-preemptible",
-    "-p/-P",
-    help="Run job on a lower-cost preemptible instance",
-    default=False,
-    show_default=True,
-)
-@option(
-    "-n",
-    "--name",
-    metavar="NAME",
-    type=JOB_NAME,
-    help="Optional job name",
-    default=None,
-    secure=True,
-)
-@option(
-    "--tag",
-    metavar="TAG",
-    type=str,
-    help="Optional job tag, multiple values allowed",
-    multiple=True,
-)
-@option(
-    "-d",
-    "--description",
-    metavar="DESC",
-    help="Optional job description in free format",
-    secure=True,
-)
-@deprecated_quiet_option
-@option(
-    "-v",
-    "--volume",
-    metavar="MOUNT",
-    multiple=True,
-    help=(
-        "Mounts directory from vault into container. "
-        "Use multiple options to mount more than one volume. "
-    ),
-    secure=True,
-)
-@option(
-    "--entrypoint",
-    type=str,
-    help=(
-        "Executable entrypoint in the container "
-        "(note that it overwrites `ENTRYPOINT` and `CMD` "
-        "instructions of the docker image)"
-    ),
-    secure=True,
-)
-@option(
-    "-e",
-    "--env",
-    metavar="VAR=VAL",
-    multiple=True,
-    help=(
-        "Set environment variable in container "
-        "Use multiple options to define more than one variable"
-    ),
-    secure=True,
-)
-@option(
-    "--env-file",
-    type=click.Path(exists=True),
-    multiple=True,
-    help="File with environment variables to pass",
-    secure=True,
-)
-@option(
-    "--restart",
-    default="never",
-    show_default=True,
-    type=click.Choice([str(i) for i in JobRestartPolicy]),
-    help="Restart policy to apply when a job exits",
-)
-@option(
-    "--life-span",
-    type=str,
-    metavar="TIMEDELTA",
-    help=(
-        "Optional job run-time limit in the format '1d2h3m4s' "
-        "(some parts may be missing). Set '0' to disable. "
-        "Default value '1d' can be changed in the user config."
-    ),
-)
-@option(
-    "--wait-start/--no-wait-start",
-    default=True,
-    show_default=True,
-    help="Wait for a job start or failure",
-)
-@option(
-    "--pass-config/--no-pass-config",
-    default=False,
-    show_default=True,
-    help="Upload neuro config to the job",
-)
-@option(
-    "--wait-for-seat/--no-wait-for-seat",
-    default=False,
-    show_default=True,
-    help="Wait for total running jobs quota",
-)
-@option(
-    "--port-forward",
-    type=LOCAL_REMOTE_PORT,
-    multiple=True,
-    metavar="LOCAL_PORT:REMOTE_RORT",
-    help="Forward port(s) of a running job to local port(s) "
-    "(use multiple times for forwarding several ports)",
-)
-@option("--browse", is_flag=True, help="Open a job's URL in a web browser")
-@option(
-    "--detach",
-    is_flag=True,
-    help="Don't attach to job logs and don't wait for exit code",
-)
-@TTY_OPT
-async def submit(
-    root: Root,
-    image: RemoteImage,
-    gpu: Optional[int],
-    gpu_model: Optional[str],
-    tpu_type: Optional[str],
-    tpu_software_version: Optional[str],
-    cpu: float,
-    memory: int,
-    extshm: bool,
-    http: Optional[int],
-    http_auth: Optional[bool],
-    entrypoint: Optional[str],
-    cmd: Sequence[str],
-    working_dir: Optional[str],
-    volume: Sequence[str],
-    env: Sequence[str],
-    env_file: Sequence[str],
-    restart: str,
-    life_span: Optional[str],
-    port_forward: List[Tuple[int, int]],
-    preemptible: bool,
-    name: Optional[str],
-    tag: Sequence[str],
-    description: Optional[str],
-    wait_start: bool,
-    pass_config: bool,
-    wait_for_seat: bool,
-    browse: bool,
-    detach: bool,
-    tty: Optional[bool],
-) -> None:
-    """
-    Submit an image to run on the cluster.
-
-    IMAGE container image name.
-
-    CMD list will be passed as commands to model container.
-
-    Examples:
-
-    # Starts a container pytorch:latest with two paths mounted. Directory /q1/
-    # is mounted in read only mode to /qm directory within container.
-    # Directory /mod mounted to /mod directory in read-write mode.
-    neuro submit --volume storage:/q1:/qm:ro --volume storage:/mod:/mod:rw \
-      pytorch:latest
-
-    # Starts a container using the custom image my-ubuntu:latest stored in neuromation
-    # registry, run /script.sh and pass arg1 arg2 arg3 as its arguments:
-    neuro submit image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2 arg3
-    """
-    if tty is None:
-        tty = root.tty
-    await run_job(
-        root,
-        image=image,
-        gpu=gpu,
-        gpu_model=gpu_model,
-        tpu_type=tpu_type,
-        tpu_software_version=tpu_software_version,
-        cpu=cpu,
-        memory=memory,
-        extshm=extshm,
-        http=http,
-        http_auth=http_auth,
-        entrypoint=entrypoint,
-        cmd=cmd,
-        working_dir=working_dir,
-        volume=volume,
-        env=env,
-        env_file=env_file,
-        restart=restart,
-        life_span=life_span,
-        port_forward=port_forward,
-        preemptible=preemptible,
-        name=name,
-        tags=tag,
-        description=description,
-        wait_start=wait_start,
-        pass_config=pass_config,
-        wait_for_jobs_quota=wait_for_seat,
-        browse=browse,
-        detach=detach,
-        tty=tty,
-        schedule_timeout=None,
-    )
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
@@ -1035,12 +754,7 @@ async def run(
     await run_job(
         root,
         image=image,
-        gpu=job_preset.gpu,
-        gpu_model=job_preset.gpu_model,
-        tpu_type=job_preset.tpu_type,
-        tpu_software_version=job_preset.tpu_software_version,
-        cpu=job_preset.cpu,
-        memory=job_preset.memory_mb,
+        preset=preset,
         extshm=extshm,
         http=http,
         http_auth=http_auth,
@@ -1053,7 +767,6 @@ async def run(
         restart=restart,
         life_span=life_span,
         port_forward=port_forward,
-        preemptible=job_preset.is_preemptible,
         name=name,
         tags=tag,
         description=description,
@@ -1068,7 +781,6 @@ async def run(
 
 
 job.add_command(run)
-job.add_command(submit)
 job.add_command(ls)
 job.add_command(status)
 job.add_command(tags)
@@ -1090,12 +802,7 @@ async def run_job(
     root: Root,
     *,
     image: RemoteImage,
-    gpu: Optional[int],
-    gpu_model: Optional[str],
-    tpu_type: Optional[str],
-    tpu_software_version: Optional[str],
-    cpu: float,
-    memory: int,
+    preset: str,
     extshm: bool,
     http: Optional[int],
     http_auth: Optional[bool],
@@ -1108,7 +815,6 @@ async def run_job(
     restart: str,
     life_span: Optional[str],
     port_forward: List[Tuple[int, int]],
-    preemptible: bool,
     name: Optional[str],
     tags: Sequence[str],
     description: Optional[str],
@@ -1159,21 +865,6 @@ async def run_job(
 
     log.info(f"Using image '{image}'")
 
-    if tpu_type:
-        if not tpu_software_version:
-            raise ValueError(
-                "--tpu-sw-version cannot be empty while --tpu-type specified"
-            )
-    resources = Resources(
-        memory_mb=memory,
-        cpu=cpu,
-        gpu=gpu,
-        gpu_model=gpu_model,
-        shm=extshm,
-        tpu_type=tpu_type,
-        tpu_software_version=tpu_software_version,
-    )
-
     volume_parse_result = root.client.parse.volumes(volume)
     volumes = list(volume_parse_result.volumes)
     secret_files = volume_parse_result.secret_files
@@ -1201,24 +892,20 @@ async def run_job(
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
 
-    container = Container(
+    job = await root.client.jobs.start(
         image=image,
+        preset_name=preset,
         entrypoint=entrypoint,
         command=real_cmd,
         working_dir=working_dir,
         http=HTTPPort(http, http_auth) if http else None,
-        resources=resources,
         env=env_dict,
         volumes=volumes,
         secret_env=secret_env_dict,
         secret_files=secret_files,
         disk_volumes=disk_volumes,
         tty=tty,
-    )
-
-    job = await root.client.jobs.run(
-        container,
-        is_preemptible=preemptible,
+        shm=extshm,
         pass_config=pass_config,
         wait_for_jobs_quota=wait_for_jobs_quota,
         name=name,

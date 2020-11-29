@@ -16,26 +16,23 @@ of job namespace methods.
 Start a Job
 ===========
 
-To start a job use :meth:`Jobs.run` method.
+To start a job use :meth:`Jobs.start` method.
 
-The method accepts :class:`Container` data-class with specification of running image and
-required resources and returns :class:`JobDescription` with information about started
+The method accepts image and
+required resources preset name as parameters and returns :class:`JobDescription` with information about started
 job::
 
     from neuromation.api import *
 
     async with get() as client:
-        job = await client.jobs.run(
-            Container(
-                image=client.parse.remote_image("ubuntu:latest"),
-                resources=Resources(memory_mb=100, cpu=0.5),
-                command="sleep 30",
-            )
+        job = await client.jobs.start(
+            image=client.parse.remote_image("ubuntu:latest"),
+            preset_name="cpu-small",
+            command="sleep 30",
         )
 
 
-The example above starts a job using ``ubuntu:latest`` public image, ``100 MB`` of
-memory, ``0.5`` CPU and executes ``sleep 30`` command inside started container.
+The example above starts a job using ``ubuntu:latest`` public image, ``cpu-small`` resources preset and executes ``sleep 30`` command inside started container.
 
 
 .. note::

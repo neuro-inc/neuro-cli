@@ -947,6 +947,64 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
 
+    def test_job_with_preset_name(self, rich_cmp: Any) -> None:
+        description = JobDescription(
+            status=JobStatus.PENDING,
+            id="test-job",
+            description="test job description",
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=None,
+                finished_at=None,
+            ),
+            preset_name="cpu-small",
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_external_image(name="test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+            ),
+            is_preemptible=False,
+            pass_config=True,
+            owner="owner",
+            cluster_name="default",
+            uri=URL("job://default/owner/test-job"),
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
+
+    def test_job_on_preemptible_node(self, rich_cmp: Any) -> None:
+        description = JobDescription(
+            status=JobStatus.PENDING,
+            id="test-job",
+            description="test job description",
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=None,
+                finished_at=None,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_external_image(name="test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+            ),
+            is_preemptible=True,
+            is_preemptible_node_required=True,
+            pass_config=True,
+            owner="owner",
+            cluster_name="default",
+            uri=URL("job://default/owner/test-job"),
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
+
 
 class TestJobTelemetryFormatter:
     # Use utc timezone in test for stable constant result
