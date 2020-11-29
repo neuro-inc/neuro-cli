@@ -31,6 +31,7 @@ class TestClusterUserFormatter:
 class TestClustersFormatter:
     def _create_node_pool(
         self,
+        disk_type: str = "",
         is_scalable: bool = True,
         is_gpu: bool = False,
         is_tpu_enabled: bool = False,
@@ -44,6 +45,8 @@ class TestClustersFormatter:
             machine_type="n1-highmem-8",
             available_cpu=7.0,
             available_memory_mb=46080,
+            disk_size_gb=150,
+            disk_type=disk_type,
             gpu=1 if is_gpu else 0,
             gpu_model="nvidia-tesla-k80" if is_gpu else None,
             is_preemptible=is_preemptible,
@@ -102,8 +105,10 @@ class TestClustersFormatter:
                     region=None,
                     zones=[],
                     node_pools=[
-                        self._create_node_pool(is_scalable=False),
-                        self._create_node_pool(is_scalable=False, is_gpu=True),
+                        self._create_node_pool(disk_type="", is_scalable=False),
+                        self._create_node_pool(
+                            disk_type="ssd", is_scalable=False, is_gpu=True
+                        ),
                     ],
                     storage=None,
                 ),

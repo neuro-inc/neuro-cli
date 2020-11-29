@@ -1,4 +1,5 @@
 import operator
+from platform import node
 from typing import Iterable, List
 
 from rich import box
@@ -77,6 +78,7 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
     table.add_column("Machine", style="bold", justify="left")
     table.add_column("CPU", justify="right")
     table.add_column("Memory", justify="right")
+    table.add_column("Disk", justify="right")
     if has_preemptible:
         table.add_column("Preemptible", justify="center")
     table.add_column("GPU", justify="right")
@@ -96,6 +98,13 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
             str(node_pool.available_cpu),
             format_size(node_pool.available_memory_mb * 1024 ** 2),
         ]
+        if node_pool.disk_type:
+            row.append(
+                f"{format_size(node_pool.disk_size_gb * 1024 ** 3)} "
+                f"{node_pool.disk_type.upper()}"
+            )
+        else:
+            row.append(format_size(node_pool.disk_size_gb * 1024 ** 3))
         if has_preemptible:
             row.append("√" if node_pool.is_preemptible else "×")
         row.append(_gpu(node_pool))

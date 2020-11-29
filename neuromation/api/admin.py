@@ -43,6 +43,8 @@ class _NodePool:
     machine_type: str
     available_cpu: float
     available_memory_mb: int
+    disk_size_gb: int
+    disk_type: Optional[str] = None
     gpu: int = 0
     gpu_model: Optional[str] = None
     is_tpu_enabled: bool = False
@@ -267,6 +269,8 @@ def _node_pool_from_api(payload: Dict[str, Any]) -> _NodePool:
         machine_type=payload["machine_type"],
         available_cpu=payload["available_cpu"],
         available_memory_mb=payload["available_memory_mb"],
+        disk_type=payload.get("disk_type"),
+        disk_size_gb=payload["disk_size_gb"],
         gpu=payload.get("gpu", 0),
         gpu_model=payload.get("gpu_model"),
         is_tpu_enabled=payload.get("is_tpu_enabled", False),
