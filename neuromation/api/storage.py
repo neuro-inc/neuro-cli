@@ -1,5 +1,4 @@
 import asyncio
-import datetime
 import enum
 import errno
 import fnmatch
@@ -9,7 +8,7 @@ import os
 import re
 import time
 from dataclasses import dataclass
-from email.utils import parsedate
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from stat import S_ISREG
 from typing import (
@@ -119,15 +118,11 @@ class Storage(metaclass=NoPublicConstructor):
 
     def _set_time_diff(self, request_time: float, resp: aiohttp.ClientResponse) -> None:
         response_time = time.time()
-        str_date = resp.headers.get("Date")
-        if not str_date:
+        try:
+            server_dt = parsedate_to_datetime(resp.headers.get("Date", ""))
+        except ValueError:
             return
-        server_timetuple = parsedate(str_date)
-        if not server_timetuple:
-            return
-        server_time = datetime.datetime(
-            *server_timetuple[:6], tzinfo=datetime.timezone.utc
-        ).timestamp()
+        server_time = server_dt.timestamp()
         # Remove 1 because server time has been truncated
         # and can be up to 1 second less than the actual value.
         self._min_time_diff = request_time - server_time - 1.0

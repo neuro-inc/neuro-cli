@@ -6,9 +6,8 @@ import itertools
 import logging
 import re
 import sys
-import time
 from dataclasses import dataclass
-from email.utils import parsedate
+from email.utils import parsedate_to_datetime
 from pathlib import Path, PurePath
 from typing import (
     AbstractSet,
@@ -846,11 +845,11 @@ def _blob_status_from_prefix(bucket_name: str, data: Dict[str, Any]) -> PrefixLi
 def _blob_status_from_response(
     bucket_name: str, key: str, resp: aiohttp.ClientResponse
 ) -> BlobListing:
-    modification_time = 0
-    if "Last-Modified" in resp.headers:
-        timetuple = parsedate(resp.headers["Last-Modified"])
-        if timetuple is not None:
-            modification_time = int(time.mktime(timetuple))
+    try:
+        dt = parsedate_to_datetime(resp.headers.get("Last-Modified", ""))
+        modification_time = int(dt.timestamp())
+    except ValueError:
+        modification_time = 0
     return BlobListing(
         bucket_name=bucket_name,
         key=key,

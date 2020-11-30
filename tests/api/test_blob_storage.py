@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import os
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable, Dict, List, NoReturn, Set
@@ -81,44 +82,44 @@ def dir_list(path: Path) -> List[Dict[str, Any]]:
 
 @pytest.fixture
 def blob_storage_contents() -> _ContentsObj:
-    mtime1 = datetime(2019, 1, 1)
-    mtime2 = datetime(2019, 1, 2)
+    mtime1 = datetime(2019, 1, 1).timestamp()
+    mtime2 = datetime(2019, 1, 2).timestamp()
 
     contents: Dict[str, Dict[str, Any]] = {
         "empty/": {
             "key": "empty/",
             "size": 0,
-            "last_modified": mtime1.timestamp(),
+            "last_modified": mtime1,
             "body": b"",
         },
         "folder1/xxx.txt": {
             "key": "folder1/xxx.txt",
             "size": 1,
-            "last_modified": mtime1.timestamp(),
+            "last_modified": mtime1,
             "body": b"w",
         },
         "folder1/yyy.json": {
             "key": "folder1/yyy.json",
             "size": 2,
-            "last_modified": mtime2.timestamp(),
+            "last_modified": mtime2,
             "body": b"bb",
         },
         "test.json": {
             "key": "test.json",
             "size": 213,
-            "last_modified": mtime1.timestamp(),
+            "last_modified": mtime1,
             "body": b"w" * 213,
         },
         "test1.txt": {
             "key": "test1.txt",
             "size": 111,
-            "last_modified": mtime1.timestamp(),
+            "last_modified": mtime1,
             "body": b"w" * 111,
         },
         "test2.txt": {
             "key": "test2.txt",
             "size": 222,
-            "last_modified": mtime2.timestamp(),
+            "last_modified": mtime2,
             "body": b"w" * 222,
         },
     }
@@ -195,7 +196,7 @@ async def blob_storage_server(
         resp = web.StreamResponse(status=200)
         etag = hashlib.md5(blob["body"]).hexdigest()
         resp.headers.update({"ETag": repr(etag)})
-        resp.last_modified = blob["last_modified"]
+        resp.last_modified = int(blob["last_modified"])  # type: ignore
         start, stop, _ = rng.indices(len(content))
         if not (rng.start is rng.stop is None):
             if start >= stop:
@@ -224,7 +225,7 @@ async def blob_storage_server(
         blob = {
             "key": key,
             "size": len(body),
-            "last_modified": datetime.now().timestamp(),
+            "last_modified": time.time(),
             "body": body,
         }
         CONTENTS[key] = blob
@@ -499,7 +500,7 @@ async def test_blob_storage_head_blob(
 ) -> None:
     bucket_name = "foo"
     key = "text.txt"
-    mtime1 = datetime.now()
+    mtime1 = time.time()
 
     async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
@@ -507,7 +508,7 @@ async def test_blob_storage_head_blob(
         assert request.match_info == {"bucket": bucket_name, "path": key}
         resp = web.StreamResponse(status=200)
         resp.headers.update({"ETag": '"12312908asd"'})
-        resp.last_modified = mtime1
+        resp.last_modified = int(mtime1)  # type: ignore
         resp.content_length = 111
         resp.content_type = "plain/text"
         return resp
@@ -523,7 +524,7 @@ async def test_blob_storage_head_blob(
     assert ret == BlobListing(
         key=key,
         size=111,
-        modification_time=int(mtime1.timestamp()),
+        modification_time=int(mtime1),
         bucket_name=bucket_name,
     )
 
@@ -533,7 +534,7 @@ async def test_blob_storage_get_blob(
 ) -> None:
     bucket_name = "foo"
     key = "text.txt"
-    mtime1 = datetime.now()
+    mtime1 = time.time()
     body = b"W" * 1000
 
     async def handler(request: web.Request) -> web.StreamResponse:
@@ -542,7 +543,7 @@ async def test_blob_storage_get_blob(
         assert request.match_info == {"bucket": bucket_name, "path": key}
         resp = web.StreamResponse(status=200)
         resp.headers.update({"ETag": '"12312908asd"'})
-        resp.last_modified = mtime1
+        resp.last_modified = int(mtime1)  # type: ignore
         resp.content_length = len(body)
         resp.content_type = "plain/text"
         await resp.prepare(request)
@@ -559,7 +560,7 @@ async def test_blob_storage_get_blob(
             assert ret.stats == BlobListing(
                 key=key,
                 size=1000,
-                modification_time=int(mtime1.timestamp()),
+                modification_time=int(mtime1),
                 bucket_name=bucket_name,
             )
             assert await ret.body_stream.read() == body
@@ -570,7 +571,7 @@ async def test_blob_storage_fetch_blob(
 ) -> None:
     bucket_name = "foo"
     key = "text.txt"
-    mtime1 = datetime.now()
+    mtime1 = time.time()
     body = b"W" * 10 * 1024 * 1024
 
     async def handler(request: web.Request) -> web.StreamResponse:
@@ -579,7 +580,7 @@ async def test_blob_storage_fetch_blob(
         assert request.match_info == {"bucket": bucket_name, "path": key}
         resp = web.StreamResponse(status=200)
         resp.headers.update({"ETag": '"12312908asd"'})
-        resp.last_modified = mtime1
+        resp.last_modified = int(mtime1)  # type: ignore
         resp.content_length = len(body)
         resp.content_type = "plain/text"
         await resp.prepare(request)
@@ -603,7 +604,7 @@ async def test_blob_storage_fetch_blob_partial_read(
 ) -> None:
     bucket_name = "foo"
     key = "text.txt"
-    mtime1 = datetime.now()
+    mtime1 = time.time()
     body = b"ababahalamaha"
 
     async def handler(request: web.Request) -> web.StreamResponse:
@@ -615,7 +616,7 @@ async def test_blob_storage_fetch_blob_partial_read(
         resp = web.StreamResponse(status=web.HTTPPartialContent.status_code)
         resp.headers["ETag"] = '"12312908asd"'
         resp.headers["Content-Range"] = f"bytes {start}-{stop-1}/{len(body)}"
-        resp.last_modified = mtime1
+        resp.last_modified = int(mtime1)  # type: ignore
         resp.content_length = stop - start
         resp.content_type = "plain/text"
         await resp.prepare(request)
@@ -653,7 +654,7 @@ async def test_blob_storage_fetch_blob_unsupported_partial_read(
 ) -> None:
     bucket_name = "foo"
     key = "text.txt"
-    mtime1 = datetime.now()
+    mtime1 = time.time()
     body = b"ababahalamaha"
 
     async def handler(request: web.Request) -> web.StreamResponse:
@@ -662,7 +663,7 @@ async def test_blob_storage_fetch_blob_unsupported_partial_read(
         assert request.match_info == {"bucket": bucket_name, "path": key}
         resp = web.StreamResponse(status=200)
         resp.headers.update({"ETag": '"12312908asd"'})
-        resp.last_modified = mtime1
+        resp.last_modified = int(mtime1)  # type: ignore
         resp.content_length = len(body)
         resp.content_type = "plain/text"
         await resp.prepare(request)
