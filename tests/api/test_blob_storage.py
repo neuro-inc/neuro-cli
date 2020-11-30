@@ -1,16 +1,18 @@
+import asyncio
 import base64
 import hashlib
 import os
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, Dict, List, NoReturn, Set
+from typing import Any, AsyncIterator, Callable, Dict, List, NoReturn, Optional, Set
 from unittest import mock
 
 import pytest
 from aiohttp import web
 from yarl import URL
 
+import neuromation.api.blob_storage
 from neuromation.api import (
     Action,
     BlobListing,
@@ -1339,6 +1341,240 @@ async def test_blob_storage_glob_blobs(
         assert ret == expected_keys
 
 
+@pytest.fixture
+def zero_time_threshold(monkeypatch: Any) -> None:
+    monkeypatch.setattr(neuromation.api.blob_storage, "TIME_THRESHOLD", 0.0)
+
+
+@pytest.fixture
+def small_block_size(monkeypatch: Any) -> None:
+    monkeypatch.setattr(neuromation.api.blob_storage, "READ_SIZE", 300)
+
+
+async def test_storage_upload_file_update(
+    blob_storage_server: Any,
+    make_client: _MakeClient,
+    blob_storage_contents: _ContentsObj,
+    tmp_path: Path,
+    zero_time_threshold: None,
+    small_block_size: None,
+) -> None:
+    # storage_file = storage_path / "file.txt"
+    local_file = tmp_path / "file.txt"
+    src = URL(local_file.as_uri())
+    dst = URL("blob:foo/file.txt")
+
+    # No destination file
+    assert blob_storage_contents.get("file.txt") is None
+    local_file.write_bytes(b"old content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_file(src, dst, update=True)
+    assert blob_storage_contents["file.txt"]["body"] == b"old content"
+
+    # Source file is newer
+    local_file.write_bytes(b"new content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_file(src, dst, update=True)
+    assert blob_storage_contents["file.txt"]["body"] == b"new content"
+
+    # Destination file is newer, same size
+    await asyncio.sleep(5)
+    add_blob(blob_storage_contents, "file.txt", b"old")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_file(src, dst, update=True)
+    assert blob_storage_contents["file.txt"]["body"] == b"old"
+
+
+async def test_storage_upload_dir_update(
+    blob_storage_server: Any,
+    make_client: _MakeClient,
+    blob_storage_contents: _ContentsObj,
+    tmp_path: Path,
+    zero_time_threshold: None,
+) -> None:
+    local_dir = tmp_path / "folder"
+    local_file = local_dir / "nested" / "file.txt"
+    local_file.parent.mkdir(parents=True)
+    src = URL(local_dir.as_uri())
+    dst = URL("blob:foo")
+
+    # No destination file
+    assert blob_storage_contents.get("nested/file.txt") is None
+    # assert not storage_file.exists()
+    local_file.write_bytes(b"old content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_dir(src, dst, update=True)
+    assert blob_storage_contents["nested/file.txt"]["body"] == b"old content"
+
+    # Source file is newer
+    local_file.write_bytes(b"new content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_dir(src, dst, update=True)
+    assert blob_storage_contents["nested/file.txt"]["body"] == b"new content"
+
+    # Destination file is newer, same size
+    await asyncio.sleep(5)
+    add_blob(blob_storage_contents, "nested/file.txt", b"old")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.upload_dir(src, dst, update=True)
+    assert blob_storage_contents["nested/file.txt"]["body"] == b"old"
+
+
+async def test_storage_download_file_update(
+    blob_storage_server: Any,
+    make_client: _MakeClient,
+    blob_storage_contents: _ContentsObj,
+    tmp_path: Path,
+    zero_time_threshold: None,
+) -> None:
+    local_file = tmp_path / "file.txt"
+    src = URL("blob:foo/file.txt")
+    dst = URL(local_file.as_uri())
+
+    # No destination file
+    assert not local_file.exists()
+    add_blob(blob_storage_contents, "file.txt", b"old content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_file(src, dst, update=True)
+    assert local_file.read_bytes() == b"old content"
+
+    # Source file is newer
+    add_blob(blob_storage_contents, "file.txt", b"new content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_file(src, dst, update=True)
+    assert local_file.read_bytes() == b"new content"
+
+    # Destination file is newer
+    await asyncio.sleep(2)
+    local_file.write_bytes(b"old")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_file(src, dst, update=True)
+    assert local_file.read_bytes() == b"old"
+
+
+async def test_storage_download_file_continue(
+    blob_storage_server: Any,
+    make_client: _MakeClient,
+    blob_storage_contents: _ContentsObj,
+    tmp_path: Path,
+    zero_time_threshold: None,
+    small_block_size: None,
+) -> None:
+    local_file = tmp_path / "file.txt"
+    src = URL("blob:foo/file.txt")
+    dst = URL(local_file.as_uri())
+
+    # No destination file
+    assert not local_file.exists()
+    add_blob(blob_storage_contents, "file.txt", b"content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_file(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"content"
+
+    # Source file is newer
+    add_blob(blob_storage_contents, "file.txt", b"new content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_file(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"new content"
+
+    # Destination file is newer, same size
+    await asyncio.sleep(2)
+    local_file.write_bytes(b"old content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_file(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"old content"
+
+    # Destination file is shorter
+    local_file.write_bytes(b"old")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_file(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"old content"
+
+    # Destination file is longer
+    local_file.write_bytes(b"old long content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_file(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"new content"
+
+
+async def test_storage_download_dir_update(
+    blob_storage_server: Any,
+    make_client: _MakeClient,
+    blob_storage_contents: _ContentsObj,
+    tmp_path: Path,
+    zero_time_threshold: None,
+) -> None:
+    local_dir = tmp_path / "folder"
+    local_file = local_dir / "nested" / "file.txt"
+    src = URL("blob:foo")
+    dst = URL(local_dir.as_uri())
+
+    # No destination file
+    assert not local_file.exists()
+    add_blob(blob_storage_contents, "nested/file.txt", b"old content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_dir(src, dst, update=True)
+    assert local_file.read_bytes() == b"old content"
+
+    # Source file is newer
+    add_blob(blob_storage_contents, "nested/file.txt", b"new content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_dir(src, dst, update=True)
+    assert local_file.read_bytes() == b"new content"
+
+    # Destination file is newer
+    await asyncio.sleep(2)
+    local_file.write_bytes(b"old")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_dir(src, dst, update=True)
+    assert local_file.read_bytes() == b"old"
+
+
+async def test_storage_download_dir_continue(
+    blob_storage_server: Any,
+    make_client: _MakeClient,
+    blob_storage_contents: _ContentsObj,
+    tmp_path: Path,
+    zero_time_threshold: None,
+) -> None:
+    local_dir = tmp_path / "folder"
+    local_file = local_dir / "nested" / "file.txt"
+    src = URL("blob:foo")
+    dst = URL(local_dir.as_uri())
+
+    # No destination file
+    assert not local_file.exists()
+    add_blob(blob_storage_contents, "nested/file.txt", b"content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_dir(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"content"
+
+    # Source file is newer
+    add_blob(blob_storage_contents, "nested/file.txt", b"new content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_dir(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"new content"
+
+    # Destination file is newer, same size
+    await asyncio.sleep(2)
+    local_file.write_bytes(b"old content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_dir(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"old content"
+
+    # Destination file is shorter
+    local_file.write_bytes(b"old")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_dir(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"old content"
+
+    # Destination file is longer
+    local_file.write_bytes(b"old long content")
+    async with make_client(blob_storage_server.make_url("/")) as client:
+        await client.blob_storage.download_dir(src, dst, continue_=True)
+    assert local_file.read_bytes() == b"new content"
+
+
 async def test_storage_upload_dir_with_ignore_file_names(
     blob_storage_server: Any,
     make_client: _MakeClient,
@@ -1371,3 +1607,15 @@ async def test_storage_upload_dir_with_ignore_file_names(
         "folder/three",
         "folder/two",
     ]
+
+
+def add_blob(
+    contents: Dict[str, Any], key: str, body: bytes, mtime: Optional[float] = None
+) -> None:
+    contents[key] = {}
+    contents[key]["key"] = key
+    contents[key]["body"] = body
+    contents[key]["size"] = len(body)
+    if mtime is None:
+        mtime = time.time()
+    contents[key]["last_modified"] = mtime

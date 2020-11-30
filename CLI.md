@@ -1851,6 +1851,7 @@ neuro blob cp [OPTIONS] [SOURCES]... [DESTINATION]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--continue_|Continue copying partially-copied files. Only for copying from Blob Storage.|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
 |_--exclude_|Exclude files and directories that match the specified pattern.|
 |_--include_|Don't exclude files and directories that match the specified pattern.|
@@ -1859,6 +1860,7 @@ Name | Description|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
 |_\-r, --recursive_|Recursive copy, off by default|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY.|
+|_\-u, --update_|Copy only when the SOURCE file is newer than the destination file or when the destination file is missing.|
 
 
 
