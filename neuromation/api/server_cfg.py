@@ -51,6 +51,9 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
             gpu=data.get("gpu"),
             gpu_model=data.get("gpu_model"),
             is_preemptible=data.get("is_preemptible", False),
+            is_preemptible_node_required=data.get(
+                "is_preemptible_node_required", False
+            ),
             tpu_type=tpu_type,
             tpu_software_version=tpu_software_version,
         )

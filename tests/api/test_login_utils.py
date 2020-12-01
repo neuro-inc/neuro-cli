@@ -149,6 +149,13 @@ async def test_get_server_config_with_token_legacy(
                     },
                     {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
                     {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                    {
+                        "name": "cpu-large-p",
+                        "cpu": 3,
+                        "memory_mb": 14 * 1024,
+                        "is_preemptible": True,
+                        "is_preemptible_node_required": True,
+                    },
                 ],
             }
         ],
@@ -191,6 +198,12 @@ async def test_get_server_config_with_token_legacy(
                     ),
                     "cpu-small": Preset(cpu=2, memory_mb=2 * 1024),
                     "cpu-large": Preset(cpu=3, memory_mb=14 * 1024),
+                    "cpu-large-p": Preset(
+                        cpu=3,
+                        memory_mb=14 * 1024,
+                        is_preemptible=True,
+                        is_preemptible_node_required=True,
+                    ),
                 },
                 name="default",
             )
@@ -259,6 +272,13 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
                     },
                     {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
                     {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                    {
+                        "name": "cpu-large-p",
+                        "cpu": 3,
+                        "memory_mb": 14 * 1024,
+                        "is_preemptible": True,
+                        "is_preemptible_node_required": True,
+                    },
                 ],
             }
         ],
@@ -302,6 +322,12 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
             ),
             "cpu-small": Preset(cpu=2, memory_mb=2 * 1024),
             "cpu-large": Preset(cpu=3, memory_mb=14 * 1024),
+            "cpu-large-p": Preset(
+                cpu=3,
+                memory_mb=14 * 1024,
+                is_preemptible=True,
+                is_preemptible_node_required=True,
+            ),
         },
         name="default",
     )

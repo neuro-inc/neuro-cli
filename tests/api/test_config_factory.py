@@ -181,7 +181,9 @@ class TestConfigFileInteraction:
         await client.close()
         assert len(client.presets) > 0
         assert not client.presets["cpu-large"].is_preemptible
+        assert not client.presets["cpu-large"].is_preemptible_node_required
         assert client.presets["cpu-large-p"].is_preemptible
+        assert client.presets["cpu-large-p"].is_preemptible_node_required
 
     async def test_shorten_path(
         self,
