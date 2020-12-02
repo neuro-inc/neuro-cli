@@ -5,6 +5,12 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.11.18 (2020-12-02)
+=================================
+
+No significant changes.
+
+
 Neuromation 20.12.2 (2020-12-02)
 ================================
 
