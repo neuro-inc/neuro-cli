@@ -5,6 +5,38 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.12.2 (2020-12-02)
+================================
+
+Features
+--------
+
+
+- Add `-f` flag to `neuro image rm` to force delete images that have multiple tag references ([#1828](https://github.com/neuro-inc/platform-client-python/issues/1828))
+
+- Enable display of non-zero restarts count for all jobs (previously only jobs with proper --restart-policy had this field). ([#1859](https://github.com/neuro-inc/platform-client-python/issues/1859))
+
+- Added cluster resource presets management commands.
+  Added `Preemptible Node` column in resource presets format in `neuro config show`. ([#1863](https://github.com/neuro-inc/platform-client-python/issues/1863))
+
+- Pass preset instead of container resources to job api. ([#1864](https://github.com/neuro-inc/platform-client-python/issues/1864))
+
+- `neuro blob cp` uses now partial read when retry to download a blob. ([#1865](https://github.com/neuro-inc/platform-client-python/issues/1865))
+
+- Change jobs capacity API endpoint. ([#1872](https://github.com/neuro-inc/platform-client-python/issues/1872))
+
+- Add disk column to `admin get-clusters` command. ([#1873](https://github.com/neuro-inc/platform-client-python/issues/1873))
+
+- Added options `--update` and `--continue` for command `neuro blob cp`. Added optional boolean parameters `update` and `continue_` to the corresponding API. ([#1875](https://github.com/neuro-inc/platform-client-python/issues/1875))
+
+
+Bugfixes
+--------
+
+
+- Fixed parsing file modification time in Blob Storage. ([#1874](https://github.com/neuro-inc/platform-client-python/issues/1874))
+
+
 Neuromation 20.11.18 (2020-11-18)
 =================================
 
