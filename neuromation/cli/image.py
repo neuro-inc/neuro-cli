@@ -3,15 +3,18 @@ import logging
 from dataclasses import replace
 from typing import Optional
 
-import click
+from rich.progress import Progress
 
 from neuromation.api import LocalImage, RemoteImage
 from neuromation.cli.formatters.images import (
     BaseImagesFormatter,
+    BaseTagsFormatter,
     DockerImageProgress,
     LongImagesFormatter,
+    LongTagsFormatter,
     QuietImagesFormatter,
     ShortImagesFormatter,
+    ShortTagsFormatter,
 )
 from neuromation.cli.formatters.utils import (
     ImageFormatter,
@@ -19,9 +22,17 @@ from neuromation.cli.formatters.utils import (
     uri_formatter,
 )
 
+from ..api.parsing_utils import Tag
 from .click_types import RemoteImageType, RemoteTaglessImageType
 from .root import Root
-from .utils import argument, command, deprecated_quiet_option, group, option
+from .utils import (
+    argument,
+    command,
+    deprecated_quiet_option,
+    format_size,
+    group,
+    option,
+)
 
 
 log = logging.getLogger(__name__)
@@ -129,8 +140,11 @@ async def ls(root: Root, format_long: bool, full_uri: bool) -> None:
 
 
 @command()
+@option(
+    "-l", "format_long", is_flag=True, help="List in long format, with image sizes."
+)
 @argument("image", type=RemoteTaglessImageType())
-async def tags(root: Root, image: RemoteImage) -> None:
+async def tags(root: Root, format_long: bool, image: RemoteImage) -> None:
     """
     List tags for image in platform registry.
 
@@ -139,14 +153,29 @@ async def tags(root: Root, image: RemoteImage) -> None:
     Examples:
 
     neuro image tags image://myfriend/alpine
-    neuro image tags image:myimage
+    neuro image tags -l image:myimage
     """
 
-    images = await root.client.images.tags(image)
+    tags_list = [Tag(name=str(img.tag)) for img in await root.client.images.tags(image)]
+
+    formatter: BaseTagsFormatter
+    if format_long:
+        with Progress() as progress:
+            task = progress.add_task("Getting image sizes...", total=len(tags_list))
+            tags_with_sizes = []
+            for tag in tags_list:
+                tag_with_size = await root.client.images.tag_info(
+                    replace(image, tag=tag.name)
+                )
+                progress.update(task, advance=1)
+                tags_with_sizes.append(tag_with_size)
+        formatter = LongTagsFormatter()
+        tags_list = tags_with_sizes
+    else:
+        formatter = ShortTagsFormatter()
     with root.pager():
-        # TODO: Use table here
-        for image in images:
-            root.print(image.tag)
+        root.print(f"Tags for [bold]{str(image)}[/bold]")
+        root.print(formatter(image, tags_list))
 
 
 @command()
@@ -170,7 +199,7 @@ async def rm(root: Root, force: bool, image: RemoteImage) -> None:
     neuro image rm image:myimage:latest
     """
     digest = await root.client.images.digest(image)
-    click.echo(f"Deleting image identified by {digest}")
+    root.print(f"Deleting image identified by [bold]{digest}[/bold]")
     tags = await root.client.images.tags(replace(image, tag=None))
     # Collect all tags referencing the image to be deleted
     if not force and len(tags) > 1:
@@ -186,6 +215,24 @@ async def rm(root: Root, force: bool, image: RemoteImage) -> None:
                 f"Please use -f to force deletion for all of them."
             )
     await root.client.images.rm(image, digest)
+
+
+@command()
+@argument("image", type=RemoteImageType())
+async def size(root: Root, image: RemoteImage) -> None:
+    """
+    Get image size
+
+    Image name must be URL with image:// scheme.
+    Image name must contain tag.
+
+    Examples:
+
+    neuro image size image://myfriend/alpine:shared
+    neuro image size image:myimage:latest
+    """
+    size = await root.client.images.size(image)
+    root.print(format_size(size))
 
 
 @command()
@@ -210,5 +257,6 @@ image.add_command(ls)
 image.add_command(push)
 image.add_command(pull)
 image.add_command(rm)
+image.add_command(size)
 image.add_command(digest)
 image.add_command(tags)

@@ -42,6 +42,7 @@
 		* [neuro image push](#neuro-image-push)
 		* [neuro image pull](#neuro-image-pull)
 		* [neuro image rm](#neuro-image-rm)
+		* [neuro image size](#neuro-image-size)
 		* [neuro image digest](#neuro-image-digest)
 		* [neuro image tags](#neuro-image-tags)
 	* [neuro config](#neuro-config)
@@ -1149,6 +1150,7 @@ Name | Description|
 | _[neuro image push](#neuro-image-push)_| Push an image to platform registry |
 | _[neuro image pull](#neuro-image-pull)_| Pull an image from platform registry |
 | _[neuro image rm](#neuro-image-rm)_| Remove image from platform registry |
+| _[neuro image size](#neuro-image-size)_| Get image size Image name must be URL with image:// scheme |
 | _[neuro image digest](#neuro-image-digest)_| Get digest of an image from remote registry Image name must be URL with image://... |
 | _[neuro image tags](#neuro-image-tags)_| List tags for image in platform registry |
 
@@ -1265,6 +1267,34 @@ Name | Description|
 
 
 
+### neuro image size
+
+Get image size<br/><br/>Image name must be URL with image:// scheme. Image name must contain tag.<br/>
+
+**Usage:**
+
+```bash
+neuro image size [OPTIONS] IMAGE
+```
+
+**Examples:**
+
+```bash
+
+neuro image size image://myfriend/alpine:shared
+neuro image size image:myimage:latest
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ### neuro image digest
 
 Get digest of an image from remote registry<br/><br/>Image name must be URL with image:// scheme. Image name must contain tag.<br/>
@@ -1308,7 +1338,7 @@ neuro image tags [OPTIONS] IMAGE
 ```bash
 
 neuro image tags image://myfriend/alpine
-neuro image tags image:myimage
+neuro image tags -l image:myimage
 
 ```
 
@@ -1317,6 +1347,7 @@ neuro image tags image:myimage
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_-l_|List in long format, with image sizes.|
 
 
 

@@ -127,7 +127,7 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
         time.sleep(delay)
         # check the tag is present now
         captured = helper.run_cli(["image", "tags", image_full_str_no_tag])
-        if tag in captured.out.splitlines():
+        if tag in map(lambda s: s.strip(), captured.out.splitlines()):
             break
         # Give a chance to sync remote registries
         delay = min(delay * 2 + 1, 15)

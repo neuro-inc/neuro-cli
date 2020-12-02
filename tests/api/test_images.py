@@ -17,6 +17,7 @@ from neuromation.api import (
     TagOption,
 )
 from neuromation.api.parsing_utils import (
+    Tag,
     _as_repo_str,
     _get_url_authority,
     _ImageNameParser,
@@ -1353,6 +1354,61 @@ class TestRegistry:
                 registry="reg",
             ),
         }
+
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="aiodocker doesn't support Windows pipes yet"
+    )
+    async def test_tag_info(
+        self, aiohttp_server: _TestServerFactory, make_client: _MakeClient
+    ) -> None:
+        JSON = {
+            "schemaVersion": 2,
+            "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+            "config": {
+                "mediaType": "application/vnd.docker.container.image.v1+json",
+                "size": 349,
+                "digest": "sha256:ignored-1",
+            },
+            "layers": [
+                {
+                    "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+                    "size": 32036078,
+                    "digest": "sha256:ignored-2",
+                },
+                {
+                    "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+                    "size": 854454,
+                    "digest": "sha256:ignored-3",
+                },
+            ],
+        }
+
+        async def handler(request: web.Request) -> web.Response:
+            assert (
+                request.headers["Accept"]
+                == "application/vnd.docker.distribution.manifest.v2+json"
+            )
+            return web.json_response(JSON)
+
+        app = web.Application()
+        app.router.add_get("/v2/me/test/manifests/test_tag", handler)
+
+        srv = await aiohttp_server(app)
+        url = "http://platform"
+        registry_url = srv.make_url("/v2/")
+
+        async with make_client(url, registry_url=registry_url) as client:
+            image = RemoteImage.new_neuro_image(
+                name="test",
+                tag="test_tag",
+                owner="me",
+                cluster_name="test-cluster",
+                registry="reg",
+            )
+            ret = await client.images.tag_info(image)
+            assert image.tag
+
+        assert ret == Tag(name=image.tag, size=32890532)
 
     @pytest.mark.skipif(
         sys.platform == "win32", reason="aiodocker doesn't support Windows pipes yet"
