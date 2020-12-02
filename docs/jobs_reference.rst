@@ -233,6 +233,7 @@ Jobs
                      wait_for_jobs_quota: bool = False, \
                      schedule_timeout: Optional[float] = None, \
                      life_span: Optional[float] = None, \
+                     privileged: bool = False, \
                  ) -> JobDescription
 
       Start a new job.
@@ -268,6 +269,9 @@ Jobs
 
       :param float life_span: job run-time limit in seconds. Pass `None` to disable.
 
+      :param float privileged: Run job in privileged mode. This mode should be
+                               supported by cluster.
+
       :return: :class:`JobDescription` instance with information about started job.
 
    .. comethod:: start(*, \
@@ -292,6 +296,7 @@ Jobs
                        schedule_timeout: Optional[float] = None, \
                        restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER, \
                        life_span: Optional[float] = None, \
+                       privileged: bool = False, \
                  ) -> JobDescription
 
       Start a new job.
@@ -357,6 +362,9 @@ Jobs
       :param float life_span: job run-time limit in seconds. Pass `None` to disable.
 
       :param JobRestartPolicy restart_policy: job restart behavior. :class:`JobRestartPolicy`.NEVER by default.
+
+      :param float privileged: Run job in privileged mode. This mode should be
+                               supported by cluster.
 
       :return: :class:`JobDescription` instance with information about started job.
 
