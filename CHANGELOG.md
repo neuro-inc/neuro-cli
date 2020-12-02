@@ -5,18 +5,14 @@
 
 [comment]: # (towncrier release notes start)
 
-Neuromation 20.11.18 (2020-12-02)
-=================================
-
-No significant changes.
-
-
 Neuromation 20.12.2 (2020-12-02)
 ================================
 
 Features
 --------
 
+
+- Add `-l` option to `neuro image tags` for long output format ([#1855](https://github.com/neuro-inc/platform-client-python/issues/1855))
 
 - Add `-f` flag to `neuro image rm` to force delete images that have multiple tag references ([#1828](https://github.com/neuro-inc/platform-client-python/issues/1828))
 
