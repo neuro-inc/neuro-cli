@@ -136,6 +136,7 @@ class JobStatusFormatter:
             table.add_row("Preemptible Node", "True")
         if job_status.restart_policy != JobRestartPolicy.NEVER:
             table.add_row("Restart policy", job_status.restart_policy.value)
+        if job_status.history.restarts != 0:
             table.add_row("Restarts", str(job_status.history.restarts))
         if job_status.life_span is not None:
             table.add_row("Life span", format_life_span(job_status.life_span))
