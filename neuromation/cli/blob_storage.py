@@ -174,6 +174,20 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     is_flag=True,
     help="Treat DESTINATION as a normal file.",
 )
+@option(
+    "-u",
+    "--update",
+    is_flag=True,
+    help="Copy only when the SOURCE file is newer than the destination file "
+    "or when the destination file is missing.",
+)
+@option(
+    "--continue",
+    "continue_",
+    is_flag=True,
+    help="Continue copying partially-copied files. "
+    "Only for copying from Blob Storage.",
+)
 @filter_option(
     "--exclude",
     "filters",
@@ -212,6 +226,8 @@ async def cp(
     glob: bool,
     target_directory: Optional[str],
     no_target_directory: bool,
+    update: bool,
+    continue_: bool,
     filters: Optional[Tuple[Tuple[bool, str], ...]],
     exclude_from_files: str,
     progress: bool,
@@ -307,26 +323,41 @@ async def cp(
         try:
             with progress_blob.begin(src, dst):
                 if src.scheme == "file" and dst.scheme == "blob":
+                    if continue_:
+                        raise click.UsageError(
+                            "Option --continue is not supported for copying to "
+                            "Blob Storage"
+                        )
                     if recursive and await _is_dir(root, src):
                         await root.client.blob_storage.upload_dir(
                             src,
                             dst,
+                            update=update,
                             filter=file_filter.match,
                             ignore_file_names=frozenset(ignore_file_names),
                             progress=progress_blob,
                         )
                     else:
                         await root.client.blob_storage.upload_file(
-                            src, dst, progress=progress_blob
+                            src, dst, update=update, progress=progress_blob
                         )
                 elif src.scheme == "blob" and dst.scheme == "file":
                     if recursive and await _is_dir(root, src):
                         await root.client.blob_storage.download_dir(
-                            src, dst, filter=file_filter.match, progress=progress_blob
+                            src,
+                            dst,
+                            update=update,
+                            continue_=continue_,
+                            filter=file_filter.match,
+                            progress=progress_blob,
                         )
                     else:
                         await root.client.blob_storage.download_file(
-                            src, dst, progress=progress_blob
+                            src,
+                            dst,
+                            update=update,
+                            continue_=continue_,
+                            progress=progress_blob,
                         )
                 else:
                     raise RuntimeError(

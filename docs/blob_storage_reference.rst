@@ -199,6 +199,7 @@ Blob Storage
 
    .. comethod:: download_dir(src: URL, dst: URL, \
                               *, update: bool = False, \
+                              continue_: bool = False, \
                               filter: Optional[Callable[[str], Awaitable[bool]]] = None, \
                               progress: Optional[AbstractRecursiveFileProgress] = None \
                  ) -> None:
@@ -216,6 +217,12 @@ Blob Storage
                           than the destination file or when the destination
                           file is missing.
 
+      :param bool continue_: if true, download only the part of the source file
+                             past the end of the destination file and append it
+                             to the destination file if the destination file is
+                             newer and not longer than the source file.
+                             Otherwise download and overwrite the whole file.
+
       :param Callable[[str], Awaitable[bool]] filter:
 
          a callback function for determining which files and subdirectories
@@ -229,6 +236,7 @@ Blob Storage
 
    .. comethod:: download_file(src: URL, dst: URL, \
                                *, update: bool = False, \
+                               continue_: bool = False, \
                                progress: Optional[AbstractFileProgress] = None \
                  ) -> None:
 
@@ -244,6 +252,12 @@ Blob Storage
       :param bool update: if true, download only when the source file is newer
                           than the destination file or when the destination
                           file is missing.
+
+      :param bool continue_: if true, download only the part of the source file
+                             past the end of the destination file and append it
+                             to the destination file if the destination file is
+                             newer and not longer than the source file.
+                             Otherwise download and overwrite the whole file.
 
       :param AbstractFileProgress progress:
 

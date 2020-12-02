@@ -4,11 +4,14 @@ import errno
 import hashlib
 import itertools
 import logging
+import os
 import re
 import sys
+import time
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 from pathlib import Path, PurePath
+from stat import S_ISREG
 from typing import (
     AbstractSet,
     Any,
@@ -46,6 +49,7 @@ from .core import _Core
 from .errors import ResourceNotFound
 from .file_filter import FileFilter, translate
 from .storage import (
+    TIME_THRESHOLD,
     _always,
     _has_magic,
     _magic_check,
@@ -174,6 +178,8 @@ class BlobStorage(metaclass=NoPublicConstructor):
         self._config = config
         self._default_batch_size = 1000
         self._file_sem = asyncio.BoundedSemaphore(MAX_OPEN_FILES)
+        self._min_time_diff = 0.0
+        self._max_time_diff = 0.0
 
     async def list_buckets(self) -> List[BucketListing]:
         url = self._config.blob_storage_url / "b" / ""
@@ -239,7 +245,9 @@ class BlobStorage(metaclass=NoPublicConstructor):
         url = url.with_query(query)
 
         while True:
+            request_time = time.time()
             async with self._core.request("GET", url, auth=auth) as resp:
+                self._set_time_diff(request_time, resp)
                 res = await resp.json()
             contents = [
                 _blob_status_from_key(bucket_name, key) for key in res["contents"]
@@ -339,7 +347,9 @@ class BlobStorage(metaclass=NoPublicConstructor):
         url = self._config.blob_storage_url / "o" / bucket_name / key
         auth = await self._config._api_auth()
 
+        request_time = time.time()
         async with self._core.request("HEAD", url, auth=auth) as resp:
+            self._set_time_diff(request_time, resp)
             return _blob_status_from_response(bucket_name, key, resp)
 
     @asynccontextmanager
@@ -488,6 +498,51 @@ class BlobStorage(metaclass=NoPublicConstructor):
         assert key.strip("/"), "Can not create a bucket root folder"
         await self.put_blob(bucket_name=bucket_name, key=key, body=b"")
 
+    def _set_time_diff(self, request_time: float, resp: aiohttp.ClientResponse) -> None:
+        response_time = time.time()
+        try:
+            server_dt = parsedate_to_datetime(resp.headers.get("Date", ""))
+        except ValueError:
+            return
+        server_time = server_dt.timestamp()
+        # Remove 1 because server time has been truncated
+        # and can be up to 1 second less than the actual value.
+        self._min_time_diff = request_time - server_time - 1.0
+        self._max_time_diff = response_time - server_time
+
+    def _check_upload(
+        self, local: os.stat_result, remote: BlobListing
+    ) -> Optional[int]:
+        if (
+            local.st_mtime - remote.modification_time
+            > self._min_time_diff - TIME_THRESHOLD
+        ):
+            # Local is likely newer.
+            return 0
+        # Remote is definitely newer.
+        return None
+
+    def _check_download(
+        self, local: os.stat_result, remote: BlobListing, update: bool, continue_: bool
+    ) -> Optional[int]:
+        # Add 1 because remote.modification_time has been truncated
+        # and can be up to 1 second less than the actual value.
+        if (
+            local.st_mtime - remote.modification_time
+            < self._max_time_diff + TIME_THRESHOLD + 1.0
+        ):
+            # Remote is likely newer.
+            return 0
+        # Local is definitely newer.
+        if update:
+            return None
+        if continue_:
+            if local.st_size == remote.size:  # complete
+                return None
+            if local.st_size < remote.size:  # partial
+                return local.st_size
+        return 0
+
     def make_url(self, bucket_name: str, key: str) -> URL:
         """Helper function to let users create correct URL's for upload/download from
         bucket_name and key.
@@ -499,6 +554,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         src: URL,
         dst: URL,
         *,
+        update: bool = False,
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
@@ -538,6 +594,23 @@ class BlobStorage(metaclass=NoPublicConstructor):
                 raise NotADirectoryError(
                     errno.ENOTDIR, "Not a directory", str(dst.parent)
                 )
+
+        if update:
+            try:
+                dst_stat = await self.head_blob(bucket_name=bucket_name, key=key)
+            except ResourceNotFound:
+                pass
+            else:
+                try:
+                    src_stat = path.stat()
+                except OSError:
+                    pass
+                else:
+                    if S_ISREG(src_stat.st_mode):
+                        offset = self._check_upload(src_stat, dst_stat)
+                        if offset is None:
+                            return
+
         async_progress: _AsyncAbstractFileProgress
         queue, async_progress = queue_calls(progress)
         await run_progress(queue, self._upload_file(path, dst, progress=async_progress))
@@ -569,6 +642,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         src: URL,
         dst: URL,
         *,
+        update: bool = False,
         filter: Optional[Callable[[str], Awaitable[bool]]] = None,
         ignore_file_names: AbstractSet[str] = frozenset(),
         progress: Optional[AbstractRecursiveFileProgress] = None,
@@ -591,6 +665,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
                 path,
                 dst,
                 "",
+                update=update,
                 filter=filter,
                 ignore_file_names=ignore_file_names,
                 progress=async_progress,
@@ -604,6 +679,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         dst: URL,
         rel_path: str,
         *,
+        update: bool,
         filter: Callable[[str], Awaitable[bool]],
         ignore_file_names: AbstractSet[str],
         progress: _AsyncAbstractRecursiveFileProgress,
@@ -613,19 +689,39 @@ class BlobStorage(metaclass=NoPublicConstructor):
             dst = dst / ""
 
         bucket_name, key = self._extract_bucket_and_key(dst)
-        if key.rstrip("/"):
+        key = key.strip("/")
+        exists = False
+        if update:
+            if key:
+                key += "/"
             try:
-                # Make sure we don't have name conflicts
-                # We can't upload to folder `/path/to/file.txt/` if `/path/to/file.txt`
-                # already exists
-                await self.head_blob(bucket_name=bucket_name, key=key.rstrip("/"))
+                for retry in retries(f"Fail to list {dst}"):
+                    async with retry:
+                        blobs, _ = await self.list_blobs(
+                            bucket_name=bucket_name, prefix=key, recursive=False
+                        )
+                        dst_files = {x.name: x for x in blobs}
+                exists = True
             except ResourceNotFound:
-                pass
+                update = False
+        else:
+            if key:
+                try:
+                    # Make sure we don't have name conflicts
+                    # We can't upload to folder `/path/to/file.txt/` if
+                    # `/path/to/file.txt` already exists
+                    await self.head_blob(bucket_name=bucket_name, key=key)
+                except ResourceNotFound:
+                    pass
+                else:
+                    raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
             else:
-                raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(dst))
-
-            # Only create folder if we are not uploading to bucket root
-            await self._mkdir(dst)
+                # Only create folder if we are not uploading to bucket root
+                exists = True
+        if not exists:
+            for retry in retries(f"Fail to create {dst}"):
+                async with retry:
+                    await self._mkdir(dst)
 
         await progress.enter(StorageProgressEnterDir(src, dst))
         loop = asyncio.get_event_loop()
@@ -649,6 +745,10 @@ class BlobStorage(metaclass=NoPublicConstructor):
                 log.debug(f"Skip {child_rel_path}")
                 continue
             if child.is_file():
+                if update and name in dst_files:
+                    offset = self._check_upload(child.stat(), dst_files[name])
+                    if offset is None:
+                        continue
                 tasks.append(
                     self._upload_file(src_path / name, dst / name, progress=progress)
                 )
@@ -659,6 +759,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
                         src_path / name,
                         dst / name,
                         child_rel_path,
+                        update=update,
                         filter=filter,
                         ignore_file_names=ignore_file_names,
                         progress=progress,
@@ -681,6 +782,7 @@ class BlobStorage(metaclass=NoPublicConstructor):
         dst: URL,
         *,
         update: bool = False,
+        continue_: bool = False,
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         src = normalize_blob_path_uri(src, self._config.cluster_name)
@@ -688,11 +790,26 @@ class BlobStorage(metaclass=NoPublicConstructor):
         path = _extract_path(dst)
         bucket_name, key = self._extract_bucket_and_key(src)
         src_stat = await self.head_blob(bucket_name=bucket_name, key=key)
+
+        offset: Optional[int] = 0
+        if update or continue_:
+            try:
+                dst_stat = path.stat()
+            except OSError:
+                pass
+            else:
+                if S_ISREG(dst_stat.st_mode):
+                    offset = self._check_download(dst_stat, src_stat, update, continue_)
+        if offset is None:
+            return
+
         async_progress: _AsyncAbstractFileProgress
         queue, async_progress = queue_calls(progress)
         await run_progress(
             queue,
-            self._download_file(src, dst, path, src_stat.size, progress=async_progress),
+            self._download_file(
+                src, dst, path, src_stat.size, offset, progress=async_progress
+            ),
         )
 
     async def _download_file(
@@ -701,13 +818,16 @@ class BlobStorage(metaclass=NoPublicConstructor):
         dst: URL,
         dst_path: Path,
         size: int,
+        offset: int,
         *,
         progress: _AsyncAbstractFileProgress,
     ) -> None:
         loop = asyncio.get_event_loop()
         async with self._file_sem:
             await progress.start(StorageProgressStart(src, dst, size))
-            with dst_path.open("wb") as stream:
+            with dst_path.open("rb+" if offset else "wb") as stream:
+                if offset:
+                    stream.seek(offset)
                 for retry in retries(f"Fail to download {src}"):
                     pos = stream.tell()
                     if pos >= size:
@@ -731,6 +851,8 @@ class BlobStorage(metaclass=NoPublicConstructor):
         src: URL,
         dst: URL,
         *,
+        update: bool = False,
+        continue_: bool = False,
         filter: Optional[Callable[[str], Awaitable[bool]]] = None,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
@@ -743,7 +865,15 @@ class BlobStorage(metaclass=NoPublicConstructor):
         queue, async_progress = queue_calls(progress)
         await run_progress(
             queue,
-            self._download_dir(src, dst, path, filter=filter, progress=async_progress),
+            self._download_dir(
+                src,
+                dst,
+                path,
+                update=update,
+                continue_=continue_,
+                filter=filter,
+                progress=async_progress,
+            ),
         )
 
     async def _download_dir(
@@ -752,12 +882,24 @@ class BlobStorage(metaclass=NoPublicConstructor):
         dst: URL,
         dst_path: Path,
         *,
+        update: bool,
+        continue_: bool,
         filter: Callable[[str], Awaitable[bool]],
         progress: _AsyncAbstractRecursiveFileProgress,
     ) -> None:
         dst_path.mkdir(parents=True, exist_ok=True)
         await progress.enter(StorageProgressEnterDir(src, dst))
         tasks = []
+        if update or continue_:
+            loop = asyncio.get_event_loop()
+            async with self._file_sem:
+                dst_files = await loop.run_in_executor(
+                    None,
+                    lambda: {
+                        item.name: item for item in dst_path.iterdir() if item.is_file()
+                    },
+                )
+
         bucket_name, folder_key = self._extract_bucket_and_key(src)
         prefix_path = folder_key.strip("/")
         # If we are downloading the whole bucket we need to specify an empty prefix '',
@@ -789,12 +931,20 @@ class BlobStorage(metaclass=NoPublicConstructor):
             if child.is_file():
                 # Only BlobListing can be a file, so it's safe to just cast
                 child = cast(BlobListing, child)
+                offset: Optional[int] = 0
+                if (update or continue_) and name in dst_files:
+                    offset = self._check_download(
+                        dst_files[name].stat(), child, update, continue_
+                    )
+                if offset is None:
+                    continue
                 tasks.append(
                     self._download_file(
                         src / name,
                         dst / name,
                         dst_path / name,
                         child.size,
+                        offset,
                         progress=progress,
                     )
                 )
@@ -804,6 +954,8 @@ class BlobStorage(metaclass=NoPublicConstructor):
                         src / name,
                         dst / name,
                         dst_path / name,
+                        update=update,
+                        continue_=continue_,
                         filter=filter,
                         progress=progress,
                     )
