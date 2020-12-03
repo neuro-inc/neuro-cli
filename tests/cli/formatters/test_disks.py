@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import Any, List
 
 import pytest
@@ -20,6 +21,7 @@ def test_disk_formatter(rich_cmp: Any) -> None:
         "cluster",
         isoparse("2017-03-04T12:28:59.759433+00:00"),
         isoparse("2017-04-04T12:28:59.759433+00:00"),
+        timedelta(days=1, hours=2, minutes=3, seconds=4),
     )
     fmtr = DiskFormatter(str)
     rich_cmp(fmtr(disk))
@@ -44,6 +46,7 @@ def disks_list() -> List[Disk]:
             status=Disk.Status.READY,
             cluster_name="cluster",
             created_at=isoparse("2017-04-04T12:28:59.759433+00:00"),
+            life_span=timedelta(days=2, hours=3, minutes=4, seconds=5),
         ),
         Disk(
             id="disk-3",
