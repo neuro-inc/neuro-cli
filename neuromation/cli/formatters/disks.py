@@ -1,6 +1,7 @@
 import abc
 import operator
-from typing import Sequence
+from datetime import timedelta
+from typing import Optional, Sequence
 
 from rich import box
 from rich.console import RenderableType, RenderGroup
@@ -9,7 +10,7 @@ from rich.text import Text
 
 from neuromation.api import Disk
 from neuromation.cli import utils
-from neuromation.cli.formatters.jobs import format_datetime
+from neuromation.cli.formatters.jobs import format_datetime, format_life_span
 from neuromation.cli.formatters.utils import URIFormatter
 
 
@@ -38,13 +39,17 @@ class DisksFormatter(BaseDisksFormatter):
         storage_str = utils.format_size(disk.storage)
         line = [disk.id, storage_str, self._uri_formatter(disk.uri), disk.status.value]
         if self._long_format:
-            line += [format_datetime(disk.created_at), format_datetime(disk.last_usage)]
+            line += [
+                format_datetime(disk.created_at),
+                format_datetime(disk.last_usage),
+                format_disk_life_span(disk.life_span),
+            ]
         return line
 
     def __call__(self, disks: Sequence[Disk]) -> RenderableType:
         disks = sorted(disks, key=operator.attrgetter("id"))
         table = Table(box=box.SIMPLE_HEAVY)
-        # make sure that the first columnt is fully expanded
+        # make sure that the first column is fully expanded
         width = len("disk-06bed296-8b27-4aa8-9e2a-f3c47b41c807")
         table.add_column("Id", style="bold", width=width)
         table.add_column("Storage")
@@ -53,6 +58,7 @@ class DisksFormatter(BaseDisksFormatter):
         if self._long_format:
             table.add_column("Created at")
             table.add_column("Last used")
+            table.add_column("Life span")
         for disk in disks:
             table.add_row(*self._disk_to_table_row(disk))
         return table
@@ -76,4 +82,12 @@ class DiskFormatter:
         table.add_row("Status", disk.status.value)
         table.add_row("Created at", format_datetime(disk.created_at))
         table.add_row("Last used", format_datetime(disk.last_usage))
+        table.add_row("Life span", format_disk_life_span(disk.life_span))
         return table
+
+
+def format_disk_life_span(life_span: Optional[timedelta]) -> str:
+    if life_span is not None:
+        return format_life_span(life_span.total_seconds())
+    else:
+        return format_life_span(None)
