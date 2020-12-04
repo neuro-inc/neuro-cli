@@ -233,7 +233,6 @@ Jobs
                      wait_for_jobs_quota: bool = False, \
                      schedule_timeout: Optional[float] = None, \
                      life_span: Optional[float] = None, \
-                     privileged: bool = False, \
                  ) -> JobDescription
 
       Start a new job.
@@ -268,9 +267,6 @@ Jobs
                                      cluster resources (memory, CPU/GPU etc).
 
       :param float life_span: job run-time limit in seconds. Pass `None` to disable.
-
-      :param float privileged: Run job in privileged mode. This mode should be
-                               supported by cluster.
 
       :return: :class:`JobDescription` instance with information about started job.
 
@@ -363,8 +359,8 @@ Jobs
 
       :param JobRestartPolicy restart_policy: job restart behavior. :class:`JobRestartPolicy`.NEVER by default.
 
-      :param float privileged: Run job in privileged mode. This mode should be
-                               supported by cluster.
+      :param bool privileged: Run job in privileged mode. This mode should be
+                              supported by cluster.
 
       :return: :class:`JobDescription` instance with information about started job.
 
@@ -568,6 +564,12 @@ JobDescription
    .. attribute:: pass_config
 
       Is config data is passed by platform, see :meth:`Factory.login_with_passed_config`
+      for details.
+
+   .. attribute:: privileged
+
+      Is the job is running in privileged mode, refer to
+      `docker documentation <https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities>`_
       for details.
 
    .. attribute:: name
