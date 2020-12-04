@@ -187,6 +187,7 @@ class JobDescription:
     life_span: Optional[float] = None
     preset_name: Optional[str] = None
     is_preemptible_node_required: bool = False
+    privileged: bool = False
 
 
 @dataclass(frozen=True)
@@ -316,6 +317,7 @@ class Jobs(metaclass=NoPublicConstructor):
         schedule_timeout: Optional[float] = None,
         restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
         life_span: Optional[float] = None,
+        privileged: bool = False,
     ) -> JobDescription:
         url = (self._config.api_url / "jobs").with_query("from_preset")
         container_payload = _container_to_api(
@@ -344,6 +346,7 @@ class Jobs(metaclass=NoPublicConstructor):
             schedule_timeout=schedule_timeout,
             restart_policy=restart_policy,
             life_span=life_span,
+            privileged=privileged,
         )
         payload.update(**container_payload)
         auth = await self._config._api_auth()
@@ -904,6 +907,7 @@ def _job_to_api(
     schedule_timeout: Optional[float] = None,
     restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
     life_span: Optional[float] = None,
+    privileged: bool = False,
 ) -> Dict[str, Any]:
     primitive: Dict[str, Any] = {"pass_config": pass_config}
     if name:
@@ -922,6 +926,8 @@ def _job_to_api(
         primitive["max_run_time_minutes"] = int(life_span // 60)
     if wait_for_jobs_quota:
         primitive["wait_for_jobs_quota"] = wait_for_jobs_quota
+    if privileged:
+        primitive["privileged"] = privileged
     primitive["cluster_name"] = config.cluster_name
     return primitive
 

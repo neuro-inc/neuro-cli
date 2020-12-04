@@ -692,6 +692,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     is_flag=True,
     help="Don't attach to job logs and don't wait for exit code",
 )
+@option(
+    "--privileged",
+    default=False,
+    show_default=True,
+    help="Run job in privileged mode, if it is supported by cluster.",
+)
 @TTY_OPT
 async def run(
     root: Root,
@@ -720,6 +726,7 @@ async def run(
     detach: bool,
     tty: Optional[bool],
     schedule_timeout: Optional[str],
+    privileged: bool,
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -777,6 +784,7 @@ async def run(
         detach=detach,
         tty=tty,
         schedule_timeout=schedule_timeout,
+        privileged=privileged,
     )
 
 
@@ -825,6 +833,7 @@ async def run_job(
     detach: bool,
     tty: bool,
     schedule_timeout: Optional[str],
+    privileged: bool,
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -914,6 +923,7 @@ async def run_job(
         restart_policy=job_restart_policy,
         life_span=job_life_span,
         schedule_timeout=job_schedule_timeout,
+        privileged=privileged,
     )
     with JobStartProgress.create(console=root.console, quiet=root.quiet) as progress:
         progress.begin(job)
