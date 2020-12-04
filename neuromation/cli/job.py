@@ -264,7 +264,9 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     "-s",
     "--status",
     multiple=True,
-    type=click.Choice(["pending", "running", "succeeded", "failed", "all"]),
+    type=click.Choice(
+        [item.value for item in JobStatus if item != JobStatus.UNKNOWN] + ["all"]
+    ),
     help=(
         "Filter out jobs by status (multiple option)."
         " Note: option `all` is deprecated, use `neuro ps -a` instead."
@@ -310,10 +312,7 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     "--all",
     is_flag=True,
     default=False,
-    help=(
-        "Show all jobs regardless the status (equivalent to "
-        "`-s pending -s running -s succeeded -s failed`)."
-    ),
+    help="Show all jobs regardless the status.",
 )
 @deprecated_quiet_option
 @option("-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width.")

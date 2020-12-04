@@ -559,7 +559,7 @@ neuro ps -t tag1 -t tag2
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
+|_\-a, --all_|Show all jobs regardless the status.|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
@@ -567,7 +567,7 @@ Name | Description|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_--since DATE_|Show jobs created after a specific date \(including).|
-|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
+|_\-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--until DATE_|Show jobs created before a specific date \(including).|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
@@ -2256,7 +2256,7 @@ neuro ps -t tag1 -t tag2
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-a, --all_|Show all jobs regardless the status \(equivalent to `\-s pending -s running -s succeeded -s failed`).|
+|_\-a, --all_|Show all jobs regardless the status.|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
@@ -2264,7 +2264,7 @@ Name | Description|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_--since DATE_|Show jobs created after a specific date \(including).|
-|_\-s, --status \[pending &#124; running &#124; succeeded &#124; failed &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
+|_\-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--until DATE_|Show jobs created before a specific date \(including).|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
