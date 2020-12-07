@@ -1,0 +1,15 @@
+User Configuration:                               
+ User Name            user                        
+ Current Cluster      default                     
+ API URL              https://dev.neu.ro/api/v1   
+ Docker Registry URL  https://registry-dev.neu.ro 
+Resource Presets:                                                                                  
+ Name          #CPU   Memory   Preemptible   Preemptible Node   GPU                     TPU        
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ gpu-small        7    30.0G        ×               ×           1 x nvidia-tesla-k80               
+ gpu-large        7    60.0G        ×               ×           1 x nvidia-tesla-v100              
+ cpu-small        7     2.0G        ×               ×                                              
+ cpu-large        7    14.0G        ×               ×                                              
+ cpu-large-p      7    14.0G        √               √                                              
+ tpu-small        2     2.0G        ×               ×                                   v3-8/1.14  
+ hybrid           4    30.0G        ×               ×           2 x nvidia-tesla-v100   v3-64/1.14

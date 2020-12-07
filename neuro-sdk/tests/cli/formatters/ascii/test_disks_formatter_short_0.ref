@@ -1,0 +1,6 @@
+Id                                          Storage   Uri                          Status   
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+  disk-1                                      50.0G     disk://cluster/user/disk-1   Pending  
+  disk-2                                      50.0M     disk://cluster/user/disk-2   Ready    
+  disk-3                                      50.0K     disk://cluster/user/disk-3   Ready    
+  disk-4                                      50B       disk://cluster/user/disk-4   Broken

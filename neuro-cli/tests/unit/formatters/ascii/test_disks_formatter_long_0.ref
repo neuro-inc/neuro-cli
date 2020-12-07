@@ -1,0 +1,6 @@
+Id                                          Storage   Uri                          Status    Created at    Last used     Life span  
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+  disk-1                                      50.0G     disk://cluster/user/disk-1   Pending   Mar 04 2017   Mar 08 2017              
+  disk-2                                      50.0M     disk://cluster/user/disk-2   Ready     Apr 04 2017                 2d3h4m5s   
+  disk-3                                      50.0K     disk://cluster/user/disk-3   Ready     May 04 2017                            
+  disk-4                                      50B       disk://cluster/user/disk-4   Broken    Jun 04 2017

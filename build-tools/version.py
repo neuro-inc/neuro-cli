@@ -58,7 +58,12 @@ class SetupVP(VersionProcessor):
         fname.write_text(new_txt)
 
 
-FILES = {"neuromation/__init__.py": InitVP(), "setup.py": SetupVP()}
+FILES = {
+    "neuro-sdk/neuro_sdk/__init__.py": InitVP(),
+    "neuro-sdk/setup.py": SetupVP(),
+    "neuro-cli/neuro_cli/__init__.py": InitVP(),
+    "neuro-cli/setup.py": SetupVP(),
+}
 
 
 @dataclasses.dataclass(frozen=True)

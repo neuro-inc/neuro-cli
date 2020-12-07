@@ -1,0 +1,7 @@
+default                                
+ Status   Deployed                     
+ Cloud    gcp                          
+ Region   us-central1                  
+ Zones    us-central1-a, us-central1-c 
+ Storage  Filestore                    
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
