@@ -5,6 +5,25 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuromation 20.12.7 (2020-12-07)
+================================
+
+Features
+--------
+
+
+- Added --privileged flag to `neuro run`. Added corresponding argument `privileged` to `jobs.start`. ([#1879](https://github.com/neuro-inc/platform-client-python/issues/1879))
+
+- Added Disk life-span information to the `neuro disk ls --long-format` and `neuro disk get` commands. ([#1880](https://github.com/neuro-inc/platform-client-python/issues/1880))
+
+
+Bugfixes
+--------
+
+
+- Added support of filtering by statuses "cancelled" and "suspended" in `neuro ps`. ([#1881](https://github.com/neuro-inc/platform-client-python/issues/1881))
+
+
 Neuromation 20.12.2 (2020-12-02)
 ================================
 
