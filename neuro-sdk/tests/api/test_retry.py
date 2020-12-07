@@ -3,7 +3,6 @@ from typing import Any
 
 import aiohttp
 import pytest
-
 from neuromation.api.utils import retries
 
 

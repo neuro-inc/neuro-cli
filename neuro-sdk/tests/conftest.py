@@ -5,15 +5,14 @@ from typing import Any, Callable, Dict, Optional
 
 import aiohttp
 import aiohttp.pytest_plugin
+import neuromation
 import pytest
 from jose import jwt
-from yarl import URL
-
-import neuromation
 from neuromation.api import Client, Cluster, Preset
 from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData, _save
 from neuromation.api.tracing import _make_trace_config
 from neuromation.cli.asyncio_utils import setup_child_watcher
+from yarl import URL
 
 
 def pytest_addoption(parser: Any, pluginmanager: Any) -> None:

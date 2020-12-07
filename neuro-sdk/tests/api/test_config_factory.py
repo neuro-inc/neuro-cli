@@ -7,17 +7,16 @@ from typing import Any, Callable, Dict
 from unittest import mock
 
 import aiohttp
+import neuromation
+import neuromation.api.config_factory
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestServer as _TestServer
-from yarl import URL
-
-import neuromation
-import neuromation.api.config_factory
 from neuromation.api import PASS_CONFIG_ENV_NAME, Cluster, ConfigError, Factory
 from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData
 from neuromation.api.errors import AuthException
 from tests import _TestServerFactory
+from yarl import URL
 
 
 @pytest.fixture

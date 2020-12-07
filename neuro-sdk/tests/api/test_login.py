@@ -18,8 +18,6 @@ from aiohttp.web import (
     Response,
     json_response,
 )
-from yarl import URL
-
 from neuromation.api.errors import AuthException
 from neuromation.api.login import (
     AuthCode,
@@ -33,6 +31,7 @@ from neuromation.api.login import (
     create_auth_code_app,
 )
 from tests import _TestServerFactory
+from yarl import URL
 
 
 class TestAuthCode:

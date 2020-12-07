@@ -2,8 +2,6 @@ import time
 from typing import Any, List
 
 import pytest
-from yarl import URL
-
 from neuromation.api import Action, FileStatus, FileStatusType
 from neuromation.cli.formatters.storage import (
     BaseFilesFormatter,
@@ -18,6 +16,7 @@ from neuromation.cli.formatters.storage import (
     VerticalColumnsFilesFormatter,
     get_painter,
 )
+from yarl import URL
 
 
 class TestNonePainter:

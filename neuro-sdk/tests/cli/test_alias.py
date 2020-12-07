@@ -5,7 +5,6 @@ from typing import Callable, List
 
 import pytest
 import toml
-
 from neuromation.cli.alias import find_alias, list_aliases
 from neuromation.cli.root import Root
 

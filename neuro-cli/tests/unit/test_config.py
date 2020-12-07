@@ -3,11 +3,10 @@ from pathlib import Path
 from typing import Callable
 from unittest import mock
 
-from yarl import URL
-
 from neuromation.api import Client, Cluster, Preset
 from neuromation.cli.config import prompt_cluster
 from neuromation.cli.root import Root
+from yarl import URL
 
 
 async def test_prompt_cluster(make_client: Callable[..., Client]) -> None:

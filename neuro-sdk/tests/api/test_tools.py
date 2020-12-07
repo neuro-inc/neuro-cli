@@ -5,7 +5,6 @@ from typing import Any
 from unittest.mock import Mock, call
 
 import pytest
-
 from neuromation.api import ConfigError, find_project_root
 from neuromation.api.utils import queue_calls
 

@@ -8,11 +8,9 @@ from pathlib import Path
 from typing import Any, AsyncIterator, Callable, Dict, List, NoReturn, Optional, Set
 from unittest import mock
 
+import neuromation.api.blob_storage
 import pytest
 from aiohttp import web
-from yarl import URL
-
-import neuromation.api.blob_storage
 from neuromation.api import (
     Action,
     BlobListing,
@@ -25,6 +23,7 @@ from neuromation.api import (
 )
 from neuromation.api.blob_storage import calc_md5
 from tests import _TestServerFactory
+from yarl import URL
 
 
 _MakeClient = Callable[..., Client]

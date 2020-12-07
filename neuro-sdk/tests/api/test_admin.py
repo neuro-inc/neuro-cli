@@ -3,7 +3,6 @@ from typing import Callable
 from aiohttp import web
 from aiohttp.web import HTTPCreated, HTTPNoContent
 from aiohttp.web_exceptions import HTTPOk
-
 from neuromation.api import Client
 from neuromation.api.admin import (
     _CloudProvider,

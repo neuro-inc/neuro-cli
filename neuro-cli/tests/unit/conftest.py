@@ -8,16 +8,15 @@ from pathlib import Path
 from typing import Any, AsyncIterator, Callable, DefaultDict, List, Optional, Set, Union
 
 import click
-import pytest
-from rich.console import Console, RenderableType
-from yarl import URL
-
 import neuromation
+import pytest
 from neuromation.api import Cluster, Factory, Preset
 from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData
 from neuromation.cli import main
 from neuromation.cli.const import EX_OK
 from neuromation.cli.root import Root
+from rich.console import Console, RenderableType
+from yarl import URL
 
 
 SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])

@@ -7,8 +7,6 @@ from urllib.parse import parse_qsl
 import pytest
 import toml
 from aiohttp import web
-from yarl import URL
-
 from neuromation.api import Client, Cluster, ConfigError, Preset
 from neuromation.api.config import (
     _check_sections,
@@ -17,6 +15,7 @@ from neuromation.api.config import (
 )
 from neuromation.api.login import _AuthToken
 from tests import _TestServerFactory
+from yarl import URL
 
 
 _MakeClient = Callable[..., Client]

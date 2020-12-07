@@ -35,9 +35,6 @@ import click
 import pexpect
 import pytest
 import toml
-from typing_extensions import Final
-from yarl import URL
-
 from neuromation.api import (
     Action,
     AuthorizationError,
@@ -53,6 +50,8 @@ from neuromation.api import (
     get as api_get,
     login_with_token,
 )
+from typing_extensions import Final
+from yarl import URL
 
 
 if sys.version_info >= (3, 7):  # pragma: no cover

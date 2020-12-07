@@ -3,7 +3,6 @@ from typing import Any, List
 
 import pytest
 from dateutil.parser import isoparse
-
 from neuromation.api import Disk
 from neuromation.cli.formatters.disks import (
     DiskFormatter,

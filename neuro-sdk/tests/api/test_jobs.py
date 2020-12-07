@@ -6,8 +6,6 @@ import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
 from dateutil.parser import isoparse
-from yarl import URL
-
 from neuromation.api import (
     Client,
     Container,
@@ -28,6 +26,7 @@ from neuromation.api.jobs import (
 )
 from neuromation.api.parser import SecretFile
 from tests import _TestServerFactory
+from yarl import URL
 
 
 _MakeClient = Callable[..., Client]

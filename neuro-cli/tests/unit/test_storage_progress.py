@@ -4,8 +4,6 @@ from pathlib import Path
 from typing import Any, Callable, Iterator
 
 import pytest
-from yarl import URL
-
 from neuromation.api import (
     StorageProgressComplete,
     StorageProgressDelete,
@@ -24,6 +22,7 @@ from neuromation.cli.formatters.storage import (
 )
 from neuromation.cli.root import Root
 from tests.cli.conftest import NewConsole
+from yarl import URL
 
 
 class TimeCtl:

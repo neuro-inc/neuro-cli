@@ -1,8 +1,6 @@
 from typing import Callable
 
 import pytest
-from yarl import URL
-
 from neuromation.api import (
     Client,
     DiskVolume,
@@ -12,6 +10,7 @@ from neuromation.api import (
     Volume,
 )
 from neuromation.api.parsing_utils import _get_url_authority
+from yarl import URL
 
 
 _MakeClient = Callable[..., Client]

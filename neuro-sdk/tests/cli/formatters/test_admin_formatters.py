@@ -1,7 +1,5 @@
 from typing import Callable
 
-from rich.console import RenderableType
-
 from neuromation.api.admin import (
     _CloudProvider,
     _Cluster,
@@ -11,6 +9,7 @@ from neuromation.api.admin import (
     _Storage,
 )
 from neuromation.cli.formatters.admin import ClustersFormatter, ClusterUserFormatter
+from rich.console import RenderableType
 
 
 RichCmp = Callable[[RenderableType], None]

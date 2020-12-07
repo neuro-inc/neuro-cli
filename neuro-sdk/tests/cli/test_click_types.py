@@ -2,7 +2,6 @@ from typing import Tuple
 
 import click
 import pytest
-
 from neuromation.cli.click_types import JOB_NAME, LocalRemotePortParamType
 
 

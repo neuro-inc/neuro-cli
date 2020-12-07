@@ -1,7 +1,6 @@
+from neuromation.cli.ael import _has_detach
 from prompt_toolkit.key_binding import KeyPress
 from prompt_toolkit.keys import Keys
-
-from neuromation.cli.ael import _has_detach
 
 
 def test_detach_short() -> None:

@@ -7,8 +7,6 @@ import click
 import pytest
 import toml
 from aiohttp import web
-from yarl import URL
-
 from neuromation.api import Action, Client, JobStatus
 from neuromation.cli.parse_utils import parse_timedelta
 from neuromation.cli.root import Root
@@ -21,6 +19,7 @@ from neuromation.cli.utils import (
     resolve_job,
 )
 from tests import _TestServerFactory
+from yarl import URL
 
 
 _MakeClient = Callable[..., Client]

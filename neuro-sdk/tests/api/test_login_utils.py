@@ -1,12 +1,11 @@
 import aiohttp
 import pytest
 from aiohttp import web
-from yarl import URL
-
 from neuromation.api import Cluster, Preset
 from neuromation.api.login import _AuthConfig
 from neuromation.api.server_cfg import _ServerConfig, get_server_config
 from tests import _TestClientFactory
+from yarl import URL
 
 
 async def test_get_server_config_no_clusters(

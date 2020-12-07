@@ -6,9 +6,6 @@ from typing import Any, Callable, Optional
 
 import pytest
 from dateutil.parser import isoparse
-from rich.console import Console
-from yarl import URL
-
 from neuromation.api import (
     Container,
     DiskVolume,
@@ -35,6 +32,8 @@ from neuromation.cli.formatters.jobs import (
 )
 from neuromation.cli.formatters.utils import image_formatter, uri_formatter
 from neuromation.cli.parse_utils import parse_columns
+from rich.console import Console
+from yarl import URL
 
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"

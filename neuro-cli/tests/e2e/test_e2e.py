@@ -1,6 +1,5 @@
-import pytest
-
 import neuromation
+import pytest
 from tests.e2e import Helper
 
 

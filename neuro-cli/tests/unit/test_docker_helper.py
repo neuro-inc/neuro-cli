@@ -7,12 +7,11 @@ from pathlib import Path
 from typing import Any, Callable, List
 
 import pytest
-from yarl import URL
-
 from neuromation.api import CONFIG_ENV_NAME, Config
 from neuromation.cli.const import EX_OK
 from neuromation.cli.docker_credential_helper import main as dch
 from neuromation.cli.root import Root
+from yarl import URL
 
 
 SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])

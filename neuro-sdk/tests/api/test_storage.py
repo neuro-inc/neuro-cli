@@ -8,11 +8,9 @@ from shutil import copytree
 from typing import Any, AsyncIterator, Callable, List, Tuple
 from unittest import mock
 
+import neuromation.api.storage
 import pytest
 from aiohttp import web
-from yarl import URL
-
-import neuromation.api.storage
 from neuromation.api import (
     Action,
     Client,
@@ -26,6 +24,7 @@ from neuromation.api import (
 from neuromation.api.abc import StorageProgressDelete
 from neuromation.api.storage import _parse_content_range
 from tests import _RawTestServerFactory, _TestServerFactory
+from yarl import URL
 
 
 _MakeClient = Callable[..., Client]

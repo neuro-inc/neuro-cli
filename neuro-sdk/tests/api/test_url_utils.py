@@ -4,8 +4,6 @@ from pathlib import Path
 from typing import Any, AsyncIterator, Callable
 
 import pytest
-from yarl import URL
-
 from neuromation.api import Client
 from neuromation.api.url_utils import (
     _extract_path,
@@ -13,6 +11,7 @@ from neuromation.api.url_utils import (
     normalize_storage_path_uri,
     uri_from_cli,
 )
+from yarl import URL
 
 
 @pytest.fixture

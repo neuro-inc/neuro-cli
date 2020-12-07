@@ -1,5 +1,4 @@
 import pytest
-
 from neuromation.cli.formatters.ftable import Align, ColumnWidth, _cell, _row, table
 
 

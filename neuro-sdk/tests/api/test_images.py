@@ -7,8 +7,6 @@ import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
 from aiohttp.hdrs import LINK
-from yarl import URL
-
 from neuromation.api import (
     AuthorizationError,
     Client,
@@ -23,6 +21,7 @@ from neuromation.api.parsing_utils import (
     _ImageNameParser,
 )
 from tests import _TestServerFactory
+from yarl import URL
 
 
 _MakeClient = Callable[..., Client]

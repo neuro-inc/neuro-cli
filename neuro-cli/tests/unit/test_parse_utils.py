@@ -2,7 +2,6 @@ from datetime import timedelta
 
 import click
 import pytest
-
 from neuromation.cli.parse_utils import (
     COLUMNS_MAP,
     JobColumnInfo,

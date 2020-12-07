@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Any, List, Union, cast
 
 import pytest
-
 from neuromation.api import Action, BlobListing, BucketListing, PrefixListing
 from neuromation.cli.formatters.blob_storage import (
     BaseBlobFormatter,

@@ -7,7 +7,6 @@ from pathlib import Path
 
 import click
 from click.formatting import wrap_text
-
 from neuromation.cli.main import cli, topics
 from neuromation.cli.utils import split_examples
 

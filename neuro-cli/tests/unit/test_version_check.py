@@ -11,7 +11,6 @@ import trustme
 from aiohttp import web
 from aiohttp.abc import AbstractResolver
 from aiohttp.test_utils import unused_port
-
 from neuromation.api import Client
 from neuromation.cli import version_utils
 from neuromation.cli.root import Root

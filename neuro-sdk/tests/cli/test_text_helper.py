@@ -1,6 +1,5 @@
 import click
 import pytest
-
 from neuromation.cli.text_helper import StyledTextHelper
 
 

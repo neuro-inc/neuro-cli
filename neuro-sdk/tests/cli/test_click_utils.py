@@ -1,7 +1,6 @@
 from textwrap import dedent
 
 from click.testing import CliRunner
-
 from neuromation.cli.main import MainGroup
 from neuromation.cli.root import Root
 from neuromation.cli.utils import DeprecatedGroup, command, group

@@ -8,8 +8,7 @@ from textwrap import dedent
 from typing import Any, List
 
 import click
-
-from neuromation.cli.main import cli
+from neuro_cli.main import cli
 
 
 @dataclass()

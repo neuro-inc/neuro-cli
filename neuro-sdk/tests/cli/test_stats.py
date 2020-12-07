@@ -3,10 +3,8 @@ import sqlite3
 import urllib
 from unittest import mock
 
-import pytest
-from yarl import URL
-
 import neuromation
+import pytest
 from neuromation.cli.stats import (
     NEURO_EVENT_CATEGORY,
     SCHEMA,
@@ -16,6 +14,7 @@ from neuromation.cli.stats import (
     make_record,
     select_oldest,
 )
+from yarl import URL
 
 
 @pytest.fixture

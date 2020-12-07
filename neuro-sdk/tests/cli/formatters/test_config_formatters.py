@@ -3,8 +3,6 @@ from pathlib import Path
 from typing import Callable
 
 import toml
-from rich.console import RenderableType
-
 from neuromation.api import Client, Cluster, Preset
 from neuromation.api.admin import _Quota
 from neuromation.api.quota import _QuotaInfo
@@ -16,6 +14,7 @@ from neuromation.cli.formatters.config import (
     QuotaInfoFormatter,
 )
 from neuromation.cli.root import Root
+from rich.console import RenderableType
 
 
 RichCmp = Callable[[RenderableType], None]

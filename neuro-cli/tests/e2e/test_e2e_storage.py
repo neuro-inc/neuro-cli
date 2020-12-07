@@ -7,12 +7,11 @@ from pathlib import Path, PurePath
 from typing import Tuple
 
 import pytest
-from yarl import URL
-
 from neuromation.cli.const import EX_OSFILE
 from neuromation.cli.formatters.storage import TreeFormatter
 from tests.e2e import Helper
 from tests.e2e.utils import FILE_SIZE_B
+from yarl import URL
 
 
 _Data = Tuple[str, str]
