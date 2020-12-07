@@ -1,9 +1,5 @@
 SHELL := /bin/bash
 
-ISORT_DIRS := neuromation tests build-tools setup.py
-BLACK_DIRS := $(ISORT_DIRS)
-MYPY_DIRS :=  neuromation tests
-FLAKE8_DIRS := $(ISORT_DIRS)
 PYTEST_ARGS=
 
 PYTEST_XDIST_NUM_THREADS ?= auto
@@ -85,7 +81,8 @@ endif
 
 .PHONY: lint
 lint: fmt ### Reformat files, run linters and mypy checks
-	mypy $(MYPY_DIRS)
+	mypy neuro-sdk
+	mypy neuro-cli
 
 .PHONY: publish-lint
 publish-lint: ### Check for publishing safety
