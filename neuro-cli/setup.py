@@ -6,7 +6,7 @@ with open("README.md") as f:
 
 
 setup(
-    name="neuromation",
+    name="neuro-cli",
     version="20.12.7",
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
