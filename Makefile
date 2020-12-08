@@ -34,7 +34,7 @@ update-deps: ### Update dependencies
 	COLUMNS=160 LINES=75 pytest \
 	    -n ${PYTEST_XDIST_NUM_THREADS} \
 		-m "e2e" \
-		--cov=neuromation \
+		--cov=neuro-cli --cov=neuro-sdk \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--verbose \
@@ -49,7 +49,7 @@ e2e: .update-deps .e2e ### Run end-to-end tests
 .test-sdk:
 	pytest \
 		-m "not e2e" \
-		--cov=neuromation \
+		--cov=neuro-sdk \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--color=$(COLOR) \
@@ -63,7 +63,7 @@ test-sdk: .update-deps .test-sdk ### Run unit tests
 .test-cli:
 	pytest \
 		-m "not e2e" \
-		--cov=neuromation \
+		--cov=neuro-cli \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--color=$(COLOR) \
