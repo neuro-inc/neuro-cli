@@ -1,6 +1,6 @@
 import pathlib
 
-from neuromation.cli.secrets import read_data
+from neuro_cli.secrets import read_data
 
 
 def test_read_data_str() -> None:

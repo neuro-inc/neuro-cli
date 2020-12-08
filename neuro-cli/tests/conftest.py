@@ -5,13 +5,12 @@ from typing import Any, Callable, Dict, Optional
 
 import aiohttp
 import aiohttp.pytest_plugin
-import neuromation
 import pytest
 from jose import jwt
-from neuromation.api import Client, Cluster, Preset
-from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData, _save
-from neuromation.api.tracing import _make_trace_config
-from neuromation.cli.asyncio_utils import setup_child_watcher
+from neuro_cli.asyncio_utils import setup_child_watcher
+from neuro_sdk import Client, Cluster, Preset, __version__
+from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData, _save
+from neuro_sdk.tracing import _make_trace_config
 from yarl import URL
 
 
@@ -44,11 +43,11 @@ def token() -> str:
 @pytest.fixture
 def auth_config() -> _AuthConfig:
     return _AuthConfig.create(
-        auth_url=URL("https://dev-neuromation.auth0.com/authorize"),
-        token_url=URL("https://dev-neuromation.auth0.com/oauth/token"),
-        logout_url=URL("https://dev-neuromation.auth0.com/v2/logout"),
+        auth_url=URL("https://dev-neuro.auth0.com/authorize"),
+        token_url=URL("https://dev-neuro.auth0.com/oauth/token"),
+        logout_url=URL("https://dev-neuro.auth0.com/v2/logout"),
         client_id="CLIENT-ID",
-        audience="https://platform.dev.neuromation.io",
+        audience="https://platform.dev.neu.ro",
         headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
         success_redirect_url=URL("https://neu.ro/#running-your-first-job"),
         callback_urls=[
@@ -128,7 +127,7 @@ def make_client(
             auth_config=real_auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
             url=URL(url),
-            version=neuromation.__version__,
+            version=__version__,
             cluster_name=next(iter(clusters)),
             clusters=clusters,
         )

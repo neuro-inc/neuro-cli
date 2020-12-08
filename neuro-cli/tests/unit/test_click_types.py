@@ -2,7 +2,7 @@ from typing import Tuple
 
 import click
 import pytest
-from neuromation.cli.click_types import JOB_NAME, LocalRemotePortParamType
+from neuro_cli.click_types import JOB_NAME, LocalRemotePortParamType
 
 
 @pytest.mark.parametrize(

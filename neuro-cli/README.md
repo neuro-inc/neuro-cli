@@ -1,4 +1,4 @@
-[![codecov](https://codecov.io/gh/neuromation/platform-client-python/branch/master/graph/badge.svg)](https://codecov.io/gh/neuromation/platform-client-python)
+[![codecov](https://codecov.io/gh/neuro-cli/platform-client-python/branch/master/graph/badge.svg)](https://codecov.io/gh/neuro-cli/platform-client-python)
 
 # Preface
 

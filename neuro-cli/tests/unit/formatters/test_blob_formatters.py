@@ -2,12 +2,12 @@ from datetime import datetime
 from typing import Any, List, Union, cast
 
 import pytest
-from neuromation.api import Action, BlobListing, BucketListing, PrefixListing
-from neuromation.cli.formatters.blob_storage import (
+from neuro_cli.formatters.blob_storage import (
     BaseBlobFormatter,
     LongBlobFormatter,
     SimpleBlobFormatter,
 )
+from neuro_sdk import Action, BlobListing, BucketListing, PrefixListing
 
 
 ListResult = Union[BlobListing, PrefixListing]

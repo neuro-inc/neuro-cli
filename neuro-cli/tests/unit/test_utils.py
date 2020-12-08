@@ -7,10 +7,9 @@ import click
 import pytest
 import toml
 from aiohttp import web
-from neuromation.api import Action, Client, JobStatus
-from neuromation.cli.parse_utils import parse_timedelta
-from neuromation.cli.root import Root
-from neuromation.cli.utils import (
+from neuro_cli.parse_utils import parse_timedelta
+from neuro_cli.root import Root
+from neuro_cli.utils import (
     calc_life_span,
     pager_maybe,
     parse_file_resource,
@@ -18,6 +17,7 @@ from neuromation.cli.utils import (
     parse_resource_for_sharing,
     resolve_job,
 )
+from neuro_sdk import Action, Client, JobStatus
 from tests import _TestServerFactory
 from yarl import URL
 
@@ -470,7 +470,7 @@ def test_parse_file_resource_no_scheme(root: Root) -> None:
 
 def test_parse_file_resource_unsupported_scheme(root: Root) -> None:
     with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
-        parse_file_resource("http://neuromation.io", root)
+        parse_file_resource("http://neu.ro", root)
     with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
         parse_file_resource("image:ubuntu", root)
 
@@ -519,7 +519,7 @@ def test_parse_resource_for_sharing_no_scheme(root: Root) -> None:
 
 def test_parse_resource_for_sharing_unsupported_scheme(root: Root) -> None:
     with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
-        parse_resource_for_sharing("http://neuromation.io", root)
+        parse_resource_for_sharing("http://neu.ro", root)
     with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
         parse_resource_for_sharing("file:///etc/password", root)
     with pytest.raises(ValueError, match=r"Unsupported URI scheme"):

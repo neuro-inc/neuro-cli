@@ -7,10 +7,10 @@ from pathlib import Path
 from typing import Any, Callable, List
 
 import pytest
-from neuromation.api import CONFIG_ENV_NAME, Config
-from neuromation.cli.const import EX_OK
-from neuromation.cli.docker_credential_helper import main as dch
-from neuromation.cli.root import Root
+from neuro_cli.const import EX_OK
+from neuro_cli.docker_credential_helper import main as dch
+from neuro_cli.root import Root
+from neuro_sdk import CONFIG_ENV_NAME, Config
 from yarl import URL
 
 

@@ -35,7 +35,7 @@ import click
 import pexpect
 import pytest
 import toml
-from neuromation.api import (
+from neuro_sdk import (
     Action,
     AuthorizationError,
     Client,
@@ -59,8 +59,8 @@ if sys.version_info >= (3, 7):  # pragma: no cover
 else:
     from async_generator import asynccontextmanager
 
-from neuromation.cli.asyncio_utils import run
-from neuromation.cli.utils import resolve_job
+from neuro_cli.asyncio_utils import run
+from neuro_cli.utils import resolve_job
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
 
 

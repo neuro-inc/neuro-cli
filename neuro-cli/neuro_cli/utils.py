@@ -473,7 +473,7 @@ SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret", "disk")
 
 
 def parse_resource_for_sharing(uri: str, root: Root) -> URL:
-    """Parses the neuromation resource URI string.
+    """Parses the neuro resource URI string.
     Available schemes: storage, image, job. For image URIs, tags are not allowed.
     """
     if uri.startswith("image:"):
@@ -493,7 +493,7 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
 
 
 def parse_file_resource(uri: str, root: Root) -> URL:
-    """Parses the neuromation resource URI string.
+    """Parses the neuro resource URI string.
     Available schemes: file, storage.
     """
     return uri_from_cli(

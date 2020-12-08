@@ -9,7 +9,7 @@ from uuid import uuid4 as uuid
 
 import aiodocker
 import pytest
-from neuromation.api import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, JobStatus
+from neuro_sdk import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, JobStatus
 from tests.e2e import Helper
 from yarl import URL
 

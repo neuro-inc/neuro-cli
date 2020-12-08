@@ -1,20 +1,18 @@
 import time
 from typing import Any
 
-from neuromation.api import (
+from neuro_cli.formatters.images import DockerImageProgress
+from neuro_sdk import (
+    ImageCommitFinished,
+    ImageCommitStarted,
     ImageProgressPull,
     ImageProgressPush,
+    ImageProgressSave,
     ImageProgressStep,
     LocalImage,
     RemoteImage,
 )
-from neuromation.api.abc import (
-    ImageCommitFinished,
-    ImageCommitStarted,
-    ImageProgressSave,
-)
-from neuromation.cli.formatters.images import DockerImageProgress
-from tests.cli.conftest import NewConsole
+from tests.unit.conftest import NewConsole
 
 
 class TestDockerImageProgress:

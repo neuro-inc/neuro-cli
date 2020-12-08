@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import pytest
-from neuromation.cli.project import _project_init
+from neuro_cli.project import _project_init
 
 
 @pytest.mark.parametrize("slug", [None, "my-custom-slug"])

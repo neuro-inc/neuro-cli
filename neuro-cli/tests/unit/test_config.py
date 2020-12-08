@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import Callable
 from unittest import mock
 
-from neuromation.api import Client, Cluster, Preset
-from neuromation.cli.config import prompt_cluster
-from neuromation.cli.root import Root
+from neuro_cli.config import prompt_cluster
+from neuro_cli.root import Root
+from neuro_sdk import Client, Cluster, Preset
 from yarl import URL
 
 

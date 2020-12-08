@@ -11,15 +11,15 @@ import trustme
 from aiohttp import web
 from aiohttp.abc import AbstractResolver
 from aiohttp.test_utils import unused_port
-from neuromation.api import Client
-from neuromation.cli import version_utils
-from neuromation.cli.root import Root
+from neuro_cli import version_utils
+from neuro_cli.root import Root
+from neuro_sdk import Client
 
 
 PYPI_JSON = {
     "info": {
-        "author": "Neuromation Team",
-        "author_email": "pypi@neuromation.io",
+        "author": "Neu.ro Team",
+        "author_email": "team@neu.ro",
         "bugtrack_url": None,
         "classifiers": [
             "Development Status :: 4 - Beta",
@@ -39,17 +39,17 @@ PYPI_JSON = {
         "docs_url": None,
         "download_url": "",
         "downloads": {"last_day": -1, "last_month": -1, "last_week": -1},
-        "home_page": "https://neuromation.io/",
+        "home_page": "https://neu.ro/",
         "keywords": "",
         "license": "",
         "maintainer": "",
         "maintainer_email": "",
-        "name": "neuromation",
-        "package_url": "https://pypi.org/project/neuromation/",
+        "name": "neuro-cli",
+        "package_url": "https://pypi.org/project/neuro-cli/",
         "platform": "",
-        "project_url": "https://pypi.org/project/neuromation/",
-        "project_urls": {"Homepage": "https://neuromation.io/"},
-        "release_url": "https://pypi.org/project/neuromation/0.2.1/",
+        "project_url": "https://pypi.org/project/neuro-cli/",
+        "project_urls": {"Homepage": "https://neu.ro/"},
+        "release_url": "https://pypi.org/project/neuro-cli/0.2.1/",
         "requires_dist": [
             "aiohttp (>=3.0)",
             "python-jose (>=3.0.0)",
@@ -74,7 +74,7 @@ PYPI_JSON = {
                     "sha256": "6747274972648...abe9d8ba44f59635bac6e",
                 },
                 "downloads": -1,
-                "filename": "neuromation-0.2.0b0-py3-none-any.whl",
+                "filename": "neuro-cli-0.2.0b0-py3-none-any.whl",
                 "has_sig": False,
                 "md5_digest": "bc66247d61fcedb18e6dcc87f4f2bbbe",
                 "packagetype": "bdist_wheel",
@@ -93,7 +93,7 @@ PYPI_JSON = {
                     "sha256": "fd50b1f904c4...af6213c363ec5a83f3168aae1b8",
                 },
                 "downloads": -1,
-                "filename": "neuromation-0.2.1-py3-none-any.whl",
+                "filename": "neuro-cli-0.2.1-py3-none-any.whl",
                 "has_sig": False,
                 "md5_digest": "8dd303ee04215ff7f5c2e7f03a6409da",
                 "packagetype": "bdist_wheel",
@@ -110,7 +110,7 @@ PYPI_JSON = {
                     "sha256": "046832c04d4e7...38f6514d0e5b9acc4939",
                 },
                 "downloads": -1,
-                "filename": "neuromation-0.2.1.tar.gz",
+                "filename": "neuro-cli-0.2.1.tar.gz",
                 "has_sig": False,
                 "md5_digest": "af8fea5f3df6f7f81e9c6cbc6dd7c1e8",
                 "packagetype": "sdist",
@@ -130,7 +130,7 @@ PYPI_JSON = {
                 "sha256": "fd50b1f90c...c5a83f3168aae1b8",
             },
             "downloads": -1,
-            "filename": "neuromation-0.2.1-py3-none-any.whl",
+            "filename": "neuro-cli-0.2.1-py3-none-any.whl",
             "has_sig": False,
             "md5_digest": "8dd303ee04215ff7f5c2e7f03a6409da",
             "packagetype": "bdist_wheel",
@@ -196,7 +196,7 @@ class FakeResolver(AbstractResolver):
 class FakePyPI:
     def __init__(self, ssl_context: ssl.SSLContext) -> None:
         self.app = web.Application()
-        self.app.router.add_routes([web.get("/pypi/neuromation/json", self.json_info)])
+        self.app.router.add_routes([web.get("/pypi/neuro-cli/json", self.json_info)])
         self.runner: Optional[web.AppRunner] = None
         self.ssl_context = ssl_context
         self.response: Optional[Tuple[int, Dict[str, Any]]] = None
@@ -248,7 +248,7 @@ async def test__fetch_pypi(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
     t0 = time.time()
-    record = await version_utils._fetch_package(client._session, "neuromation")
+    record = await version_utils._fetch_package(client._session, "neuro-cli")
     assert record is not None
     assert record["version"] == "0.2.1"
     assert (
@@ -260,14 +260,14 @@ async def test__fetch_pypi(pypi_server: FakePyPI, client: Client) -> None:
 async def test__fetch_pypi_no_releases(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (200, {})
 
-    record = await version_utils._fetch_package(client._session, "neuromation")
+    record = await version_utils._fetch_package(client._session, "neuro-cli")
     assert record is None
 
 
 async def test__fetch_pypi_non_200(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (403, {"Status": "Forbidden"})
 
-    record = await version_utils._fetch_package(client._session, "neuromation")
+    record = await version_utils._fetch_package(client._session, "neuro-cli")
     assert record is None
 
 
@@ -278,7 +278,7 @@ async def test_run_version_checker(pypi_server: FakePyPI, client: Client) -> Non
     with client.config._open_db() as db:
         ret = list(db.execute("SELECT package, version FROM pypi"))
         assert len(ret) == 1
-        assert list(ret[0]) == ["neuromation", "0.2.1"]
+        assert list(ret[0]) == ["neuro-cli", "0.2.1"]
 
 
 async def test_run_version_checker_disabled(

@@ -3,12 +3,12 @@ from typing import Any, List
 
 import pytest
 from dateutil.parser import isoparse
-from neuromation.api import Disk
-from neuromation.cli.formatters.disks import (
+from neuro_cli.formatters.disks import (
     DiskFormatter,
     DisksFormatter,
     SimpleDisksFormatter,
 )
+from neuro_sdk import Disk
 
 
 def test_disk_formatter(rich_cmp: Any) -> None:

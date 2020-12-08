@@ -32,7 +32,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown; charset=UTF-8; variant=GFM",
     author="Neuro Team",
-    author_email="pypi@neu.ro",  # TODO: change this email
+    author_email="team@neu.ro",  # TODO: change this email
     license="Apache License, version 2.0",
     url="https://neu.ro/",
     packages=find_packages(include=("neuro_sdk")),

@@ -2,8 +2,8 @@ import json
 from typing import Any, Callable, List, Mapping
 from unittest import mock
 
-from neuromation.api.admin import _Admin, _ClusterUser, _ClusterUserRoleType
-from neuromation.api.server_cfg import Preset
+from neuro_sdk import Preset
+from neuro_sdk.admin import _Admin, _ClusterUser, _ClusterUserRoleType
 
 from .conftest import SysCapWithCode
 

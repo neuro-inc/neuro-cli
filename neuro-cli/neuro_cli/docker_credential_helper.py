@@ -1,7 +1,7 @@
 import sys
 from json import dumps
 
-from neuromation.api import get
+import neuro_sdk
 
 from .asyncio_utils import run
 from .const import EX_DATAERR, EX_UNAVAILABLE, EX_USAGE
@@ -18,7 +18,7 @@ async def async_main(action: str) -> None:
     elif action == "erase":
         print("Please use `neuro logout` instead `docker logout ...`", EX_UNAVAILABLE)
     else:
-        async with get() as client:
+        async with neuro_sdk.get() as client:
             config = client.config
             registry = sys.stdin.readline().strip()
             neuro_registry = config.registry_url.host

@@ -3,17 +3,17 @@ from pathlib import Path
 from typing import Callable
 
 import toml
-from neuromation.api import Client, Cluster, Preset
-from neuromation.api.admin import _Quota
-from neuromation.api.quota import _QuotaInfo
-from neuromation.cli.alias import list_aliases
-from neuromation.cli.formatters.config import (
+from neuro_cli.alias import list_aliases
+from neuro_cli.formatters.config import (
     AliasesFormatter,
     ConfigFormatter,
     QuotaFormatter,
     QuotaInfoFormatter,
 )
-from neuromation.cli.root import Root
+from neuro_cli.root import Root
+from neuro_sdk import Client, Cluster, Preset
+from neuro_sdk.admin import _Quota
+from neuro_sdk.quota import _QuotaInfo
 from rich.console import RenderableType
 
 

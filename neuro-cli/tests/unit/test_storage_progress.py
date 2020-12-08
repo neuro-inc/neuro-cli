@@ -4,7 +4,15 @@ from pathlib import Path
 from typing import Any, Callable, Iterator
 
 import pytest
-from neuromation.api import (
+from neuro_cli.formatters.storage import (
+    DeleteProgress,
+    StreamProgress,
+    TTYProgress,
+    create_storage_progress,
+    format_url,
+)
+from neuro_cli.root import Root
+from neuro_sdk import (
     StorageProgressComplete,
     StorageProgressDelete,
     StorageProgressEnterDir,
@@ -13,15 +21,7 @@ from neuromation.api import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from neuromation.cli.formatters.storage import (
-    DeleteProgress,
-    StreamProgress,
-    TTYProgress,
-    create_storage_progress,
-    format_url,
-)
-from neuromation.cli.root import Root
-from tests.cli.conftest import NewConsole
+from tests.unit.conftest import NewConsole
 from yarl import URL
 
 

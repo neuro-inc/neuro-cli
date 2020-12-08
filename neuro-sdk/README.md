@@ -38,4 +38,3 @@ Development flow:
 * Reformat code: `make format`
 * Lint: `make lint`
 * Run tests: `make test`
-* Run end-to-end tests: `make e2e`

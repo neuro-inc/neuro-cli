@@ -1,6 +1,7 @@
 from typing import Callable
 
-from neuromation.api.admin import (
+from neuro_cli.formatters.admin import ClustersFormatter, ClusterUserFormatter
+from neuro_sdk.admin import (
     _CloudProvider,
     _Cluster,
     _ClusterUser,
@@ -8,7 +9,6 @@ from neuromation.api.admin import (
     _NodePool,
     _Storage,
 )
-from neuromation.cli.formatters.admin import ClustersFormatter, ClusterUserFormatter
 from rich.console import RenderableType
 
 

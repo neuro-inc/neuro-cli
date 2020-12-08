@@ -24,8 +24,8 @@ import aiodocker
 import aiohttp
 import pytest
 from aiohttp.test_utils import unused_port
-from neuromation.api import Container, JobStatus, RemoteImage, Resources, get as api_get
-from neuromation.cli.asyncio_utils import run
+from neuro_cli.asyncio_utils import run
+from neuro_sdk import Container, JobStatus, RemoteImage, Resources, get as api_get
 from pexpect.replwrap import REPLWrapper
 from re_assert import Matches
 from tests.e2e.conftest import Helper

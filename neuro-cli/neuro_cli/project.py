@@ -26,7 +26,7 @@ async def init(root: Root, slug: Optional[str]) -> None:
     Examples:
 
     # Initializes a scaffolding for the new project with the recommended project
-    # structure (see http://github.com/neuromation/cookiecutter-neuro-project)
+    # structure (see http://github.com/neuro-inc/cookiecutter-neuro-project)
     neuro project init
 
     # Initializes a scaffolding for the new project with the recommended project
@@ -41,7 +41,7 @@ def _project_init(slug: Optional[str], *, no_input: bool = False) -> None:
     if slug:
         extra_context = {"project_slug": slug}
     cookiecutter(
-        "gh:neuromation/cookiecutter-neuro-project",
+        "gh:neuro-inc/cookiecutter-neuro-project",
         checkout="release",
         extra_context=extra_context,
         no_input=no_input,

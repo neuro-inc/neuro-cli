@@ -8,13 +8,13 @@ from pathlib import Path
 from typing import Any, AsyncIterator, Callable, DefaultDict, List, Optional, Set, Union
 
 import click
-import neuromation
 import pytest
-from neuromation.api import Cluster, Factory, Preset
-from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData
-from neuromation.cli import main
-from neuromation.cli.const import EX_OK
-from neuromation.cli.root import Root
+from neuro_cli import __version__
+from neuro_cli.const import EX_OK
+from neuro_cli.main import main
+from neuro_cli.root import Root
+from neuro_sdk import Cluster, Factory, Preset
+from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData
 from rich.console import Console, RenderableType
 from yarl import URL
 
@@ -48,7 +48,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
         url=URL("https://dev.neu.ro/api/v1"),
-        version=neuromation.__version__,
+        version=__version__,
         cluster_name="default",
         clusters={cluster_config.name: cluster_config},
     )

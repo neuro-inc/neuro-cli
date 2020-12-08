@@ -3,9 +3,9 @@ import sqlite3
 import urllib
 from unittest import mock
 
-import neuromation
 import pytest
-from neuromation.cli.stats import (
+from neuro_cli import __version__
+from neuro_cli.stats import (
     NEURO_EVENT_CATEGORY,
     SCHEMA,
     add_usage,
@@ -59,12 +59,12 @@ def test_add_usage(db: sqlite3.Connection) -> None:
     assert dict(ret[0]) == {
         "cmd": "neuro run",
         "args": '[{}, {"-s": "cpu-small", "image": null, "cmd": null}]',
-        "version": neuromation.__version__,
+        "version": __version__,
     }
     assert dict(ret[1]) == {
         "cmd": "neuro ps",
         "args": '[{}, {"-s": "(\'failed\', \'running\')", "image": null, "cmd": null}]',
-        "version": neuromation.__version__,
+        "version": __version__,
     }
 
 
@@ -83,7 +83,7 @@ def test_select_oldest(db: sqlite3.Connection) -> None:
         "cmd": "neuro run",
         "args": '[{}, {"-s": "cpu-small", "image": null, "cmd": null}]',
         "timestamp": mock.ANY,
-        "version": neuromation.__version__,
+        "version": __version__,
     }
 
 
@@ -102,7 +102,7 @@ def test_delete_oldest(db: sqlite3.Connection) -> None:
     assert dict(ret[0]) == {
         "cmd": "neuro ps",
         "args": '[{}, {"-s": "(\'failed\', \'running\')", "image": null, "cmd": null}]',
-        "version": neuromation.__version__,
+        "version": __version__,
     }
 
 

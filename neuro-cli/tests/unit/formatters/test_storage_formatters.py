@@ -2,8 +2,7 @@ import time
 from typing import Any, List
 
 import pytest
-from neuromation.api import Action, FileStatus, FileStatusType
-from neuromation.cli.formatters.storage import (
+from neuro_cli.formatters.storage import (
     BaseFilesFormatter,
     BSDAttributes,
     BSDPainter,
@@ -16,6 +15,7 @@ from neuromation.cli.formatters.storage import (
     VerticalColumnsFilesFormatter,
     get_painter,
 )
+from neuro_sdk import Action, FileStatus, FileStatusType
 from yarl import URL
 
 

@@ -6,7 +6,18 @@ from typing import Any, Callable, Optional
 
 import pytest
 from dateutil.parser import isoparse
-from neuromation.api import (
+from neuro_cli.formatters.jobs import (
+    JobStartProgress,
+    JobStatusFormatter,
+    JobTelemetryFormatter,
+    SimpleJobsFormatter,
+    TabularJobRow,
+    TabularJobsFormatter,
+    format_timedelta,
+)
+from neuro_cli.formatters.utils import image_formatter, uri_formatter
+from neuro_cli.parse_utils import parse_columns
+from neuro_sdk import (
     Container,
     DiskVolume,
     HTTPPort,
@@ -20,18 +31,7 @@ from neuromation.api import (
     SecretFile,
     Volume,
 )
-from neuromation.api.parsing_utils import _ImageNameParser
-from neuromation.cli.formatters.jobs import (
-    JobStartProgress,
-    JobStatusFormatter,
-    JobTelemetryFormatter,
-    SimpleJobsFormatter,
-    TabularJobRow,
-    TabularJobsFormatter,
-    format_timedelta,
-)
-from neuromation.cli.formatters.utils import image_formatter, uri_formatter
-from neuromation.cli.parse_utils import parse_columns
+from neuro_sdk.parsing_utils import _ImageNameParser
 from rich.console import Console
 from yarl import URL
 

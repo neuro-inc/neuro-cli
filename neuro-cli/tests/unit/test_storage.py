@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 import toml
-from neuromation.api import Client
-from neuromation.cli.storage import calc_filters, calc_ignore_file_names
+from neuro_cli.storage import calc_filters, calc_ignore_file_names
+from neuro_sdk import Client
 
 
 _MakeClient = Callable[..., Client]
