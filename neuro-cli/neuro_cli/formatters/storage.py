@@ -5,7 +5,6 @@ import operator
 import os
 import sys
 import time
-from abc import ABC
 from dataclasses import dataclass
 from fnmatch import fnmatch
 from time import monotonic
@@ -569,7 +568,7 @@ class StorageProgressContextManager:
         self._progress.end()
 
 
-class BaseStorageProgress(AbstractRecursiveFileProgress, ABC):
+class BaseStorageProgress(AbstractRecursiveFileProgress, abc.ABC):
     def begin(
         self, src: URL, dst: URL
     ) -> StorageProgressContextManager:  # pragma: no cover
