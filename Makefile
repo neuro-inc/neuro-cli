@@ -40,7 +40,8 @@ update-deps: ### Update dependencies
 		--verbose \
 		--color=$(COLOR) \
 		--durations 10 \
-		$(PYTEST_ARGS)
+		$(PYTEST_ARGS) \
+	        neuro-cli/tests
 
 .PHONY: e2e
 e2e: .update-deps .e2e ### Run end-to-end tests
