@@ -1,5 +1,6 @@
 **/__pycache__
 *.egg-info
+*.orig
 *.swo
 .coverage*
 .dmypy.json
@@ -14,11 +15,10 @@
 .update-deps
 .venv
 .vscode
-neuro-sdk/build
-neuro-cli/build
 coverage.xml
-neuro-sdk/dist
+neuro-cli/build
 neuro-cli/dist
+neuro-sdk/build
+neuro-sdk/dist
 neuro-sdk/docs/_build
 pip-wheel-metadata
-*.orig

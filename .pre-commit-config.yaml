@@ -45,14 +45,12 @@ repos:
     exclude: "[.]ref$"
   - id: check-symlinks
   - id: debug-statements
-# Another entry is required to apply file-contents-sorter to another file
-- repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: 'v3.3.0'
-  hooks:
   - id: file-contents-sorter
     files: |
-      neuro-sdk/docs/spelling_wordlist.txt|
-      .gitignore
+      (?x)^(
+        .gitignore|
+        neuro-sdk/docs/spelling_wordlist.txt
+      )$
 - repo: https://github.com/asottile/pyupgrade
   rev: 'v2.7.4'
   hooks:
