@@ -14,9 +14,11 @@
 .update-deps
 .venv
 .vscode
-build
+neuro-sdk/build
+neuro-cli/build
 coverage.xml
-dist
-docs/_build
+neuro-sdk/dist
+neuro-cli/dist
+neuro-sdk/docs/_build
 pip-wheel-metadata
 *.orig

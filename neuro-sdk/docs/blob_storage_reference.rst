@@ -30,7 +30,7 @@ Blob Storage
    .. comethod:: list_buckets() -> List[BucketListing]
 
       List all buckets available to the current user. The availability is determined
-      by Neuromation ACL definitions, so the bucket list may be different for each user.
+      by Neu.ro ACL definitions, so the bucket list may be different for each user.
 
       Permissions required:
 

@@ -9,8 +9,10 @@ grpc
 iterable
 login
 namespace
+neu
 neuro
 preemptible
+ro
 startup
 stderr
 stdin
