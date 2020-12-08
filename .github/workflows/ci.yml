@@ -95,9 +95,6 @@ jobs:
         COLOR: yes
       run: |
         make .test-${{ matrix.cmd }} PYTEST_ARGS=-vvv
-    - name: Copy coverage report
-      run: |
-        cp neuro-${{ matrix.cmd }}/coverage.xml .
     - name: Upload coverage
       uses: codecov/codecov-action@v1
       with:
@@ -156,9 +153,6 @@ jobs:
         COLOR: yes
       run: |
         make .e2e
-    - name: Copy coverage report
-      run: |
-        cp neuro-cli/coverage.xml .
     - name: Upload coverage
       uses: codecov/codecov-action@v1
       with:
