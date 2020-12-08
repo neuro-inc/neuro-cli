@@ -30,7 +30,7 @@ from typing import (
 import click
 import humanize
 from click.types import convert_type
-from neuro_sdk import Action, Client, JobStatus, TagOption, Volume
+from neuro_sdk import Action, Client, JobStatus, Volume
 from neuro_sdk.url_utils import uri_from_cli
 from yarl import URL
 
@@ -476,16 +476,15 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     """Parses the neuro resource URI string.
     Available schemes: storage, image, job. For image URIs, tags are not allowed.
     """
-    if uri.startswith("image:"):
-        image = root.client.parse.remote_image(uri, tag_option=TagOption.DENY)
-        uri = str(image)
-
     uri_res = uri_from_cli(
         uri,
         root.client.username,
         root.client.cluster_name,
         allowed_schemes=SHARE_SCHEMES,
     )
+    if uri_res.scheme == "image" and ":" in uri_res.path:
+        raise ValueError("tag is not allowed")
+
     # URI's for object storage can only operate on bucket level
     if uri_res.scheme == "blob" and "/" in uri_res.path.strip("/"):
         raise ValueError("Only bucket level permissions are supported for Blob Storage")

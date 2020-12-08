@@ -506,10 +506,40 @@ def test_parse_resource_for_sharing_image_no_tag(root: Root) -> None:
     )
 
 
+def test_parse_resource_for_sharing_image_non_ascii(root: Root) -> None:
+    uri = "image:образ"
+    parsed = parse_resource_for_sharing(uri, root)
+    assert parsed == URL(
+        f"image://{root.client.cluster_name}/{root.client.username}/образ"
+    )
+    assert parsed.path == f"/{root.client.username}/образ"
+
+
+def test_parse_resource_for_sharing_image_percent_encoded(root: Root) -> None:
+    uri = "image:%252d%3f%23"
+    parsed = parse_resource_for_sharing(uri, root)
+    assert parsed == URL(
+        f"image://{root.client.cluster_name}/{root.client.username}/%252d%3f%23"
+    )
+    assert parsed.path == f"/{root.client.username}/%2d?#"
+
+
 def test_parse_resource_for_sharing_image_with_tag_fail(root: Root) -> None:
-    uri = "image://~/ubuntu:latest"
+    uri = "image:ubuntu:latest"
     with pytest.raises(ValueError, match="tag is not allowed"):
         parse_resource_for_sharing(uri, root)
+
+
+def test_parse_resource_for_sharing_all_user_images(root: Root) -> None:
+    uri = "image:/otheruser"
+    parsed = parse_resource_for_sharing(uri, root)
+    assert parsed == URL(f"image://{root.client.cluster_name}/otheruser")
+
+
+def _test_parse_resource_for_sharing_all_cluster_images(root: Root) -> None:
+    uri = "image://"
+    parsed = parse_resource_for_sharing(uri, root)
+    assert parsed == URL(f"image://{root.client.cluster_name}/otheruser")
 
 
 def test_parse_resource_for_sharing_no_scheme(root: Root) -> None:
