@@ -8,10 +8,9 @@ import aiohttp.pytest_plugin
 import neuromation
 import pytest
 from jose import jwt
-from neuromation.api import Client, Cluster, Preset
-from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData, _save
-from neuromation.api.tracing import _make_trace_config
-from neuromation.cli.asyncio_utils import setup_child_watcher
+from neuro_sdk import Client, Cluster, Preset
+from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData, _save
+from neurom_sdk.tracing import _make_trace_config
 from yarl import URL
 
 
@@ -22,9 +21,6 @@ def pytest_addoption(parser: Any, pluginmanager: Any) -> None:
         action="store_true",
         help="Regenerate rich_cmp references from captured texts",
     )
-
-
-setup_child_watcher()
 
 
 def setup_test_loop(

@@ -12,7 +12,6 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Dict, Iterator, List, Mapping, Optional, Set, Tuple, Union
 
-import neuro_sdk
 import pkg_resources
 import toml
 from yarl import URL
@@ -121,7 +120,9 @@ class Config(metaclass=NoPublicConstructor):
         return await get_server_config(self._core._session, self.api_url, token)
 
     async def check_server(self) -> None:
-        if self._config_data.version != neuro_sdk.__version__:
+        from . import __version__
+
+        if self._config_data.version != __version__:
             config_authorized = await self._fetch_config()
             if (
                 config_authorized.clusters != self.clusters
@@ -130,9 +131,7 @@ class Config(metaclass=NoPublicConstructor):
                 raise ConfigError(
                     "Neuro Platform CLI was updated. Please logout and login again."
                 )
-            self.__config_data = replace(
-                self._config_data, version=neuro_sdk.__version__
-            )
+            self.__config_data = replace(self._config_data, version=__version__)
             _save(self._config_data, self._path)
 
     async def fetch(self) -> None:

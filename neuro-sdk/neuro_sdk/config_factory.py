@@ -9,7 +9,6 @@ from typing import Awaitable, Callable, List, Optional
 
 import aiohttp
 import certifi
-import neuro_sdk
 from yarl import URL
 
 from .client import Client
@@ -39,6 +38,8 @@ def _make_session(
 async def __make_session(
     timeout: aiohttp.ClientTimeout, trace_configs: Optional[List[aiohttp.TraceConfig]]
 ) -> aiohttp.ClientSession:
+    from . import __version__
+
     ssl_context = ssl.SSLContext()
     ssl_context.load_verify_locations(capath=certifi.where())
     connector = aiohttp.TCPConnector(ssl=ssl_context)
@@ -46,7 +47,7 @@ async def __make_session(
         timeout=timeout,
         connector=connector,
         trace_configs=trace_configs,
-        headers={"User-Agent": f"NeuroCLI/{neuro_sdk.__version__} ({sys.platform})"},
+        headers={"User-Agent": f"NeuroCLI/{__version__} ({sys.platform})"},
     )
 
 
@@ -178,12 +179,14 @@ class Factory:
     def _gen_config(
         self, server_config: _ServerConfig, token: _AuthToken, url: URL
     ) -> _ConfigData:
+        from . import __version__
+
         cluster_name = next(iter(server_config.clusters))
         config = _ConfigData(
             auth_config=server_config.auth_config,
             auth_token=token,
             url=url,
-            version=neuro_sdk.__version__,
+            version=__version__,
             cluster_name=cluster_name,
             clusters=server_config.clusters,
         )
