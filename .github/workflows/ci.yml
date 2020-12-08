@@ -99,7 +99,7 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
-        flags: unit
+        flags: ${{ matrix.cmd }}
         fail_ci_if_error: false
 
   e2e:
