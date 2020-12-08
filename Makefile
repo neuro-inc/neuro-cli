@@ -46,17 +46,32 @@ update-deps: ### Update dependencies
 e2e: .update-deps .e2e ### Run end-to-end tests
 
 .PHONY: .test
-.test:
+.test-sdk:
 	pytest \
 		-m "not e2e" \
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--color=$(COLOR) \
-		$(PYTEST_ARGS)
+		$(PYTEST_ARGS) \
+	        neuro-sdk/tests
+
+.PHONY: .test-sdk
+test-sdk: .update-deps .test-sdk ### Run unit tests
 
 .PHONY: .test
-test: .update-deps .test ### Run unit tests
+.test-cli:
+	pytest \
+		-m "not e2e" \
+		--cov=neuromation \
+		--cov-report term-missing:skip-covered \
+		--cov-report xml:coverage.xml \
+		--color=$(COLOR) \
+		$(PYTEST_ARGS) \
+	        neuro-cli/tests
+
+.PHONY: .test-cli
+test-cli: .update-deps .test-cli ### Run unit tests
 
 .PHONY: test-all
 test-all: .update-deps ### Run all tests
