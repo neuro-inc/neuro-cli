@@ -36,7 +36,7 @@ from aiohttp.web import (
 from jose import JWTError, jwt
 from yarl import URL
 
-from .errors import AuthException
+from .errors import AuthError
 
 
 if sys.version_info >= (3, 7):  # pragma: no cover
@@ -100,7 +100,7 @@ class AuthCode:
         try:
             await asyncio.wait_for(self._future, timeout_s)
         except (asyncio.TimeoutError, asyncio.CancelledError):
-            raise AuthException("failed to get an authorization code")
+            raise AuthError("failed to get an authorization code")
         return self._future.result()
 
 
@@ -199,7 +199,7 @@ class AuthCodeCallbackHandler:
         else:
             exc_factory = HTTPBadRequest
 
-        self._code.set_exception(AuthException(description))
+        self._code.set_exception(AuthError(description))
         raise exc_factory(text=description)
 
 
@@ -331,7 +331,7 @@ class AuthTokenClient:
             try:
                 resp.raise_for_status()
             except ClientResponseError as exc:
-                raise AuthException("failed to get an access token.") from exc
+                raise AuthError("failed to get an access token.") from exc
             resp_payload = await resp.json()
             return _AuthToken.create(
                 token=resp_payload["access_token"],
@@ -356,7 +356,7 @@ class AuthTokenClient:
             try:
                 resp.raise_for_status()
             except ClientResponseError as exc:
-                raise AuthException("failed to get an access token.") from exc
+                raise AuthError("failed to get an access token.") from exc
             resp_payload = await resp.json()
             return _AuthToken.create(
                 token=resp_payload["access_token"],

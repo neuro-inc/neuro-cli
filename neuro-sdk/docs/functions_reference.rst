@@ -3,7 +3,7 @@ Initialization
 ==============
 
 
-.. currentmodule:: neuromation.api
+.. currentmodule:: neuro_sdk
 
 .. _client-instantiation:
 
@@ -23,7 +23,7 @@ API functions
 
    The usage is::
 
-      async with neuromation.api.get() as client:
+      async with neuro_sdk.get() as client:
           async for job in client.jobs.list():
               print(job.id)
 

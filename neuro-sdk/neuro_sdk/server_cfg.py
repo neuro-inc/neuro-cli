@@ -4,7 +4,7 @@ from typing import Any, Dict, Mapping, Optional
 import aiohttp
 from yarl import URL
 
-from .errors import AuthException
+from .errors import AuthError
 from .login import _AuthConfig
 
 
@@ -109,5 +109,5 @@ async def get_server_config(
         )
         clusters = _parse_clusters(payload)
         if headers and not clusters:
-            raise AuthException("Cannot authorize user")
+            raise AuthError("Cannot authorize user")
         return _ServerConfig(auth_config=auth_config, clusters=clusters)

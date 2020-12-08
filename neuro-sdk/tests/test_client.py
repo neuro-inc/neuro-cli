@@ -1,6 +1,6 @@
 from typing import Callable
 
-from neuromation.api import Client
+from neuro_sdk import Client
 
 
 _MakeClient = Callable[..., Client]

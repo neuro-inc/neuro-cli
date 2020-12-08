@@ -1,4 +1,4 @@
-.. currentmodule:: neuromation.api
+.. currentmodule:: neuro_sdk
 
 .. _storage-usage:
 
@@ -8,7 +8,7 @@ Storage Usage
 
 
 Use Storage API (available as :attr:`Client.storage`) for uploading files to the
-Neuro Storage and downloading them back.  This chapter describes several common
+Neu.ro Storage and downloading them back.  This chapter describes several common
 scenarios like uploading / downloading directories recursively.
 
 There are many methods in :class:`Storage` namespace, here we describe a few.
@@ -24,7 +24,7 @@ Upload a Folder
 
 Use :meth:`Storage.upload_dir` to upload a local directory on the Neuro Storage::
 
-   from neuromation.api import *
+   from neuro_sdk import get
    from yarl import URL
 
    async with get() as client:

@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import Any, AsyncIterator, Callable, Dict, List, NoReturn, Optional, Set
 from unittest import mock
 
-import neuromation.api.blob_storage
+import neuro_sdk.blob_storage
 import pytest
 from aiohttp import web
-from neuromation.api import (
+from neuro_sdk import (
     Action,
     BlobListing,
     BucketListing,
@@ -21,7 +21,7 @@ from neuromation.api import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from neuromation.api.blob_storage import calc_md5
+from neuro_sdk.blob_storage import calc_md5
 from tests import _TestServerFactory
 from yarl import URL
 
@@ -1342,12 +1342,12 @@ async def test_blob_storage_glob_blobs(
 
 @pytest.fixture
 def zero_time_threshold(monkeypatch: Any) -> None:
-    monkeypatch.setattr(neuromation.api.blob_storage, "TIME_THRESHOLD", 0.0)
+    monkeypatch.setattr(neuro_sdk.blob_storage, "TIME_THRESHOLD", 0.0)
 
 
 @pytest.fixture
 def small_block_size(monkeypatch: Any) -> None:
-    monkeypatch.setattr(neuromation.api.blob_storage, "READ_SIZE", 300)
+    monkeypatch.setattr(neuro_sdk.blob_storage, "READ_SIZE", 300)
 
 
 async def test_storage_upload_file_update(

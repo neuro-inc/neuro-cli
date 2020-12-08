@@ -6,14 +6,13 @@
 # http://www.sphinx-doc.org/en/master/config
 
 
-import io
 import os
 import re
 
 
 _docs_path = os.path.dirname(__file__)
 _version_path = os.path.abspath(
-    os.path.join(_docs_path, "..", "neuromation", "__init__.py")
+    os.path.join(_docs_path, "..", "neuro_sdk", "__init__.py")
 )
 with open(_version_path, encoding="latin1") as fp:
     try:
@@ -43,9 +42,9 @@ with open(_version_path, encoding="latin1") as fp:
 
 # -- Project information -----------------------------------------------------
 
-project = "neuromation"
-copyright = "2019, Neuromation Ltd."
-author = "Neuromation Ltd."
+project = "neuro-sdk"
+copyright = "2019-2021, Neu.ro Inc."
+author = "Neu.ro Inc."
 
 # The short X.Y version.
 version = "{major}.{minor}".format(**_version_info)
@@ -138,7 +137,7 @@ html_static_path = ["_static"]
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "neuromationdoc"
+htmlhelp_basename = "neurosdkdoc"
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -164,9 +163,9 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        "neuromation.tex",
-        "neuromation Documentation",
-        "Neuromation Ltd.",
+        "neurosdk.tex",
+        "neuro Sdk Documentation",
+        "Neu.ro Inc.",
         "manual",
     ),
 ]
@@ -176,7 +175,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "neuromation", "neuromation Documentation", [author], 1)]
+man_pages = [(master_doc, "neurosdk", "Neu.ro SDK Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -187,10 +186,10 @@ man_pages = [(master_doc, "neuromation", "neuromation Documentation", [author], 
 texinfo_documents = [
     (
         master_doc,
-        "neuromation",
-        "neuromation Documentation",
+        "neurosdk",
+        "Neu.ro SDK Documentation",
         author,
-        "neuromation",
+        "neurosdk",
         "One line description of project.",
         "Miscellaneous",
     ),

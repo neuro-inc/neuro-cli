@@ -1,4 +1,4 @@
-.. currentmodule:: neuromation.api
+.. currentmodule:: neuro_sdk
 
 Client class
 ============
@@ -9,7 +9,7 @@ Client class
 
    For creating a client instance use :class:`Factory` or :func:`get`.
 
-   The class provides access to neuromation subsystems like *jobs* or *storage*.
+   The class provides access to Neu.ro subsystems like *jobs* or *storage*.
 
    .. attribute:: username
 

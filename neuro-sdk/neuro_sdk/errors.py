@@ -30,9 +30,5 @@ class ServerNotAvailable(ValueError):
     pass
 
 
-class AuthException(Exception):
-    pass
-
-
 class ConfigLoadException(Exception):
     pass

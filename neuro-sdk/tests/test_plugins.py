@@ -2,8 +2,8 @@ import numbers
 from typing import Any
 
 import pytest
-from neuromation.api import ConfigError
-from neuromation.api.plugins import ConfigBuilder
+from neuro_sdk import ConfigError
+from neuro_sdk.plugins import ConfigBuilder
 
 
 @pytest.mark.parametrize(

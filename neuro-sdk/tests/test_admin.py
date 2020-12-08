@@ -3,8 +3,8 @@ from typing import Callable
 from aiohttp import web
 from aiohttp.web import HTTPCreated, HTTPNoContent
 from aiohttp.web_exceptions import HTTPOk
-from neuromation.api import Client
-from neuromation.api.admin import (
+from neuro_sdk import Client
+from neuro_sdk.admin import (
     _CloudProvider,
     _Cluster,
     _ClusterUser,
@@ -12,7 +12,7 @@ from neuromation.api.admin import (
     _NodePool,
     _Storage,
 )
-from neuromation.api.server_cfg import Preset
+from neuro_sdk.server_cfg import Preset
 from tests import _TestServerFactory
 
 
@@ -211,7 +211,7 @@ async def test_add_cluster(
     create_cluster_json = None
     put_cloud_json = None
     # GCP cloud provider example from
-    # https://github.com/neuromation/platform-config#configuring-cloud-provider
+    # https://github.com/neuro-inc/platform-config#configuring-cloud-provider
     JSON = {
         "type": "gcp",
         "location_type": "zonal",

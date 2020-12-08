@@ -40,8 +40,7 @@ update-deps: ### Update dependencies
 		--verbose \
 		--color=$(COLOR) \
 		--durations 10 \
-		$(PYTEST_ARGS) \
-		tests
+		$(PYTEST_ARGS)
 
 .PHONY: e2e
 e2e: .update-deps .e2e ### Run end-to-end tests
@@ -54,8 +53,7 @@ e2e: .update-deps .e2e ### Run end-to-end tests
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--color=$(COLOR) \
-		$(PYTEST_ARGS) \
-		tests
+		$(PYTEST_ARGS)
 
 .PHONY: .test
 test: .update-deps .test ### Run unit tests
@@ -66,8 +64,7 @@ test-all: .update-deps ### Run all tests
 		--cov=neuromation \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
-		--color=$(COLOR) \
-		tests
+		--color=$(COLOR)
 
 
 .PHONY: format fmt

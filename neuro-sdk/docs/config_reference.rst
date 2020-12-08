@@ -1,4 +1,4 @@
-.. currentmodule:: neuromation.api
+.. currentmodule:: neuro_sdk
 
 
 .. _config-reference:
@@ -7,8 +7,6 @@
 Configuration API Reference
 ===========================
 
-
-.. currentmodule:: neuromation.api
 
 API functions
 =============

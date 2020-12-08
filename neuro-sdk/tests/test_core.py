@@ -7,8 +7,8 @@ import aiohttp
 import certifi
 import pytest
 from aiohttp import web
-from neuromation.api import IllegalArgumentError, ServerNotAvailable
-from neuromation.api.core import (
+from neuro_sdk import IllegalArgumentError, ServerNotAvailable
+from neuro_sdk.core import (
     _Core,
     _ensure_schema,
     _load_cookies,

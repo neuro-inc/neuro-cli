@@ -1,9 +1,9 @@
 import aiohttp
 import pytest
 from aiohttp import web
-from neuromation.api import Cluster, Preset
-from neuromation.api.login import _AuthConfig
-from neuromation.api.server_cfg import _ServerConfig, get_server_config
+from neuro_sdk import Cluster, Preset
+from neuro_sdk.login import _AuthConfig
+from neuro_sdk.server_cfg import _ServerConfig, get_server_config
 from tests import _TestClientFactory
 from yarl import URL
 
@@ -11,18 +11,18 @@ from yarl import URL
 async def test_get_server_config_no_clusters(
     aiohttp_client: _TestClientFactory,
 ) -> None:
-    auth_url = "https://dev-neuromation.auth0.com/authorize"
-    token_url = "https://dev-neuromation.auth0.com/oauth/token"
-    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
+    auth_url = "https://dev-neuro.auth0.com/authorize"
+    token_url = "https://dev-neuro.auth0.com/oauth/token"
+    logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neuromation.io"
+    audience = "https://platform.dev.neu.ro"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     callback_urls = [
         "http://127.0.0.1:54540",
         "http://127.0.0.1:54541",
         "http://127.0.0.1:54542",
     ]
-    success_redirect_url = "https://platform.neuromation.io"
+    success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
@@ -61,13 +61,13 @@ async def test_get_server_config_no_clusters(
 async def test_get_server_config_no_callback_urls(
     aiohttp_client: _TestClientFactory,
 ) -> None:
-    auth_url = "https://dev-neuromation.auth0.com/authorize"
-    token_url = "https://dev-neuromation.auth0.com/oauth/token"
-    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
+    auth_url = "https://dev-neuro.auth0.com/authorize"
+    token_url = "https://dev-neuro.auth0.com/oauth/token"
+    logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neuromation.io"
+    audience = "https://platform.dev.neu.ro"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
-    success_redirect_url = "https://platform.neuromation.io"
+    success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
@@ -104,17 +104,17 @@ async def test_get_server_config_no_callback_urls(
 async def test_get_server_config_with_token_legacy(
     aiohttp_client: _TestClientFactory,
 ) -> None:
-    registry_url = "https://registry.dev.neuromation.io"
-    storage_url = "https://storage.dev.neuromation.io"
-    users_url = "https://dev.neuromation.io/users"
-    monitoring_url = "https://dev.neuromation.io/monitoring"
-    auth_url = "https://dev-neuromation.auth0.com/authorize"
-    token_url = "https://dev-neuromation.auth0.com/oauth/token"
-    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
+    registry_url = "https://registry.dev.neu.ro"
+    storage_url = "https://storage.dev.neu.ro"
+    users_url = "https://dev.neu.ro/users"
+    monitoring_url = "https://dev.neu.ro/monitoring"
+    auth_url = "https://dev-neuro.auth0.com/authorize"
+    token_url = "https://dev-neuro.auth0.com/oauth/token"
+    logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neuromation.io"
+    audience = "https://platform.dev.neu.ro"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
-    success_redirect_url = "https://platform.neuromation.io"
+    success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
@@ -211,17 +211,17 @@ async def test_get_server_config_with_token_legacy(
 
 
 async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) -> None:
-    registry_url = "https://registry.dev.neuromation.io"
-    storage_url = "https://storage.dev.neuromation.io"
-    users_url = "https://dev.neuromation.io/users"
-    monitoring_url = "https://dev.neuromation.io/monitoring"
-    auth_url = "https://dev-neuromation.auth0.com/authorize"
-    token_url = "https://dev-neuromation.auth0.com/oauth/token"
-    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
+    registry_url = "https://registry.dev.neu.ro"
+    storage_url = "https://storage.dev.neu.ro"
+    users_url = "https://dev.neu.ro/users"
+    monitoring_url = "https://dev.neu.ro/monitoring"
+    auth_url = "https://dev-neuro.auth0.com/authorize"
+    token_url = "https://dev-neuro.auth0.com/oauth/token"
+    logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neuromation.io"
+    audience = "https://platform.dev.neuro.io"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
-    success_redirect_url = "https://platform.neuromation.io"
+    success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "name": "default",
         "registry_url": registry_url,

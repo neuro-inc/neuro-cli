@@ -1,4 +1,4 @@
-.. neuromation documentation master file, created by
+.. neuro-sdk documentation master file, created by
    sphinx-quickstart on Tue Aug  6 11:38:43 2019.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
@@ -12,10 +12,10 @@ A Python library for the Neuro Platform API.
 Installation
 ============
 
-The latest stable release is available on PyPI_. Either add ``neuromation`` to your
+The latest stable release is available on PyPI_. Either add ``neuro-sdk`` to your
 ``requirements.txt`` or install with pip::
 
-   $ pip install neuromation
+   $ pip install -U neuro-sdk
 
 
 Getting Started
@@ -29,12 +29,12 @@ to do it is the using of :term:`CLI` utility::
 
 After the login a configuration file is created and it can be read later.
 
-Use :func:`neuromation.api.get` for initializing client instance from existing
+Use :func:`neuro_sdk.get` for initializing client instance from existing
 configuration file::
 
-  from neuromation import api
+  import neuro_sdk
 
-  async with api.get() as client:
+  async with neuro_sdk.get() as client:
       jobs = [job async for job in client.jobs.list()]
 
 
@@ -43,7 +43,7 @@ fetches a list of user's jobs.  On exit from ``async with`` statement the ``clie
 object is closed and is not available for future calls.
 
 
-See :ref:`usage` section for ideas how typical operations can be done with neuromation
+See :ref:`usage` section for ideas how typical operations can be done with Neu.ro
 platform. :ref:`reference` section contains the full API reference for all API classes,
 functions etc.
 
@@ -65,4 +65,4 @@ Indices and tables
 * :ref:`search`
 
 
-.. _PyPI: https://pypi.org/project/neuromation/
+.. _PyPI: https://pypi.org/project/neuro-sdk/

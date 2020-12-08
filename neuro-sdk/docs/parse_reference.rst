@@ -3,7 +3,7 @@ Parser Reference
 ================
 
 
-.. currentmodule:: neuromation.api
+.. currentmodule:: neuro_sdk
 
 
 Parser

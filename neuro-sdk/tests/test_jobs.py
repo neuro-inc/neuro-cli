@@ -6,7 +6,7 @@ import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
 from dateutil.parser import isoparse
-from neuromation.api import (
+from neuro_sdk import (
     Client,
     Container,
     DiskVolume,
@@ -17,14 +17,10 @@ from neuromation.api import (
     RemoteImage,
     ResourceNotFound,
     Resources,
+    SecretFile,
     Volume,
 )
-from neuromation.api.jobs import (
-    INVALID_IMAGE_NAME,
-    _calc_status,
-    _job_description_from_api,
-)
-from neuromation.api.parser import SecretFile
+from neuro_sdk.jobs import INVALID_IMAGE_NAME, _calc_status, _job_description_from_api
 from tests import _TestServerFactory
 from yarl import URL
 
@@ -219,7 +215,7 @@ async def test_kill_ok(
 async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> None:
     async with make_client("http://whatever") as client:
         image = RemoteImage.new_external_image(name="ubuntu")
-        with pytest.raises(ValueError, match="must be in the neuromation registry"):
+        with pytest.raises(ValueError, match="must be in the neuro registry"):
             await client.jobs.save("job-id", image)
 
 

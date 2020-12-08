@@ -3,7 +3,7 @@ from typing import Any
 
 import aiohttp
 import pytest
-from neuromation.api.utils import retries
+from neuro_sdk.utils import retries
 
 
 async def test_success(caplog: Any) -> None:
@@ -27,7 +27,7 @@ async def test_first_fails(caplog: Any) -> None:
                 raise aiohttp.ClientError("Ouch!")
 
     assert count == 2
-    record = ("neuromation.api.utils", logging.INFO, "Fails: Ouch!.  Retry...")
+    record = ("neuro_sdk.utils", logging.INFO, "Fails: Ouch!.  Retry...")
     assert caplog.record_tuples == [record]
 
 
@@ -41,7 +41,7 @@ async def test_two_fail(caplog: Any) -> None:
                 raise aiohttp.ClientError("Ouch!")
 
     assert count == 3
-    record = ("neuromation.api.utils", logging.INFO, "Fails: Ouch!.  Retry...")
+    record = ("neuro_sdk.utils", logging.INFO, "Fails: Ouch!.  Retry...")
     assert caplog.record_tuples == [record] * 2
 
 
@@ -55,7 +55,7 @@ async def test_all_fail(caplog: Any) -> None:
                 raise aiohttp.ClientError("Ouch!")
 
     assert count == 3
-    record = ("neuromation.api.utils", logging.INFO, "Fails: Ouch!.  Retry...")
+    record = ("neuro_sdk.utils", logging.INFO, "Fails: Ouch!.  Retry...")
     assert caplog.record_tuples == [record] * 2
 
 
@@ -71,7 +71,7 @@ async def test_reset(caplog: Any) -> None:
                 raise aiohttp.ClientError("Ouch!")
 
     assert count == 7
-    record = ("neuromation.api.utils", logging.INFO, "Fails: Ouch!.  Retry...")
+    record = ("neuro_sdk.utils", logging.INFO, "Fails: Ouch!.  Retry...")
     assert caplog.record_tuples == [record] * 6
 
 

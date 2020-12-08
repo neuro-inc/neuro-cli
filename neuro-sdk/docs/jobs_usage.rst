@@ -1,4 +1,4 @@
-.. currentmodule:: neuromation.api
+.. currentmodule:: neuro_sdk
 
 .. _jobs-usage:
 
@@ -22,7 +22,7 @@ The method accepts image and
 required resources preset name as parameters and returns :class:`JobDescription` with information about started
 job::
 
-    from neuromation.api import *
+    from neuro_sdk import get
 
     async with get() as client:
         job = await client.jobs.start(
@@ -84,7 +84,7 @@ definition::
 
    volume = Volume(
        storage_uri=URL("storage:folder"),
-       container_path="/var/data",
+       container_path="/mnt/data",
    )
 
    job = await client.jobs.run(
@@ -105,11 +105,11 @@ format that is used in :term:`CLI`::
 
 To specify *read-only* mount point please pass ``read_only=True`` to :class:`Volume`
 constructor, e.g. the following code mounts public shared
-``storage://neuromation/public`` folder in read-only mode::
+``storage://neuro/public`` folder in read-only mode::
 
    public_volume = Volume(
-       storage_uri=URL("storage:neuromation/public"),
-       container_path="/var/neuro/neuromation/public",
+       storage_uri=URL("storage:neuro/public"),
+       container_path="/mnt/public",
        read_only=True,
    )
 
@@ -117,7 +117,7 @@ constructor, e.g. the following code mounts public shared
 The same effect can be achieved by using a parser API::
 
    public_volume = client.parse.volume(
-       "storage:neuromation/public:/var/neuro/neuromation/public:ro")
+       "storage:neuro/public:/mnt/public:ro")
 
 Pass a list of *volumes* into container to support multiple mount points::
 

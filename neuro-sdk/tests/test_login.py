@@ -18,8 +18,8 @@ from aiohttp.web import (
     Response,
     json_response,
 )
-from neuromation.api.errors import AuthException
-from neuromation.api.login import (
+from neuro_sdk import AuthError
+from neuro_sdk.login import (
     AuthCode,
     AuthNegotiator,
     AuthTokenClient,
@@ -37,19 +37,19 @@ from yarl import URL
 class TestAuthCode:
     async def test_wait_timed_out(self) -> None:
         code = AuthCode()
-        with pytest.raises(AuthException, match="failed to get an authorization code"):
+        with pytest.raises(AuthError, match="failed to get an authorization code"):
             await code.wait(timeout_s=0.0)
 
     async def test_wait_cancelled(self) -> None:
         code = AuthCode()
         code.cancel()
-        with pytest.raises(AuthException, match="failed to get an authorization code"):
+        with pytest.raises(AuthError, match="failed to get an authorization code"):
             await code.wait()
 
     async def test_wait_exception(self) -> None:
         code = AuthCode()
-        code.set_exception(AuthException("testerror"))
-        with pytest.raises(AuthException, match="testerror"):
+        code.set_exception(AuthError("testerror"))
+        with pytest.raises(AuthError, match="testerror"):
             await code.wait()
 
     async def test_wait(self) -> None:
@@ -147,9 +147,7 @@ class TestAuthCodeApp:
                 text = await resp.text()
                 assert text == "The 'code' query parameter is missing."
 
-            with pytest.raises(
-                AuthException, match="failed to get an authorization code"
-            ):
+            with pytest.raises(AuthError, match="failed to get an authorization code"):
                 await code.wait()
 
     async def test_error_unauthorized(self, client: ClientSession) -> None:
@@ -171,7 +169,7 @@ class TestAuthCodeApp:
                 text = await resp.text()
                 assert text == "Test Unauthorized"
 
-            with pytest.raises(AuthException, match="Test Unauthorized"):
+            with pytest.raises(AuthError, match="Test Unauthorized"):
                 await code.wait()
 
     async def test_error_access_denied(self, client: ClientSession) -> None:
@@ -193,7 +191,7 @@ class TestAuthCodeApp:
                 text = await resp.text()
                 assert text == "Test Access Denied"
 
-            with pytest.raises(AuthException, match="Test Access Denied"):
+            with pytest.raises(AuthError, match="Test Access Denied"):
                 await code.wait()
 
     async def test_error_other(self, client: ClientSession) -> None:
@@ -211,7 +209,7 @@ class TestAuthCodeApp:
                 text = await resp.text()
                 assert text == "Test Other"
 
-            with pytest.raises(AuthException, match="Test Other"):
+            with pytest.raises(AuthError, match="Test Other"):
                 await code.wait()
 
     async def test_create_app_server(self, client: ClientSession) -> None:
@@ -317,7 +315,7 @@ async def auth_config(
         token_url=auth_server / "oauth/token",
         logout_url=auth_server / "v2/logout",
         client_id=auth_client_id,
-        audience="https://platform.dev.neuromation.io",
+        audience="https://platform.dev.neu.ro",
         headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
         callback_urls=[URL(f"http://127.0.0.1:{port}")],
     )
@@ -374,14 +372,10 @@ class TestTokenClient:
 
         async with aiohttp.ClientSession() as session:
             async with AuthTokenClient(session, url, client_id=client_id) as client:
-                with pytest.raises(
-                    AuthException, match="failed to get an access token."
-                ):
+                with pytest.raises(AuthError, match="failed to get an access token."):
                     await client.request(code)
 
-                with pytest.raises(
-                    AuthException, match="failed to get an access token."
-                ):
+                with pytest.raises(AuthError, match="failed to get an access token."):
                     token = _AuthToken.create(
                         token="test_token",
                         expires_in=1234,
@@ -426,7 +420,7 @@ class TestHeadlessNegotiator:
                 client_id="test_client_id",
                 redirect_uri="https://dev.neu.ro/oauth/show-code",
                 scope="offline_access",
-                audience="https://platform.dev.neuromation.io",
+                audience="https://platform.dev.neu.ro",
             )
             return "test_code"
 

@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any, AsyncIterator, Callable
 
 import pytest
-from neuromation.api import Client
-from neuromation.api.url_utils import (
+from neuro_sdk import Client
+from neuro_sdk.url_utils import (
     _extract_path,
     normalize_local_path_uri,
     normalize_storage_path_uri,
@@ -518,7 +518,7 @@ async def test_normalize_local_path_uri__3_slashes__double(pwd: Path) -> None:
 
 @pytest.mark.skipif(sys.platform != "win32", reason="Requires Windows")
 def test_normalized_path() -> None:
-    p = URL("file:///Z:/neuromation/platform-api-clients/python/setup.py")
+    p = URL("file:///Z:/neuro/platform-api-clients/python/setup.py")
     assert normalize_local_path_uri(p) == p
 
 

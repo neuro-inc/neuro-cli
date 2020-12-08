@@ -5,7 +5,7 @@ Reference
 =========
 
 
-.. module:: neuromation.api
+.. module:: neuro_sdk
 
 
 

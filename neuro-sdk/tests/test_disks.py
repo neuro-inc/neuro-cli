@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Callable
 
 from aiohttp import web
-from neuromation.api import Client, Cluster, Disk
+from neuro_sdk import Client, Cluster, Disk
 from tests import _TestServerFactory
 
 

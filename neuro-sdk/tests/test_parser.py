@@ -1,15 +1,8 @@
 from typing import Callable
 
 import pytest
-from neuromation.api import (
-    Client,
-    DiskVolume,
-    LocalImage,
-    RemoteImage,
-    SecretFile,
-    Volume,
-)
-from neuromation.api.parsing_utils import _get_url_authority
+from neuro_sdk import Client, DiskVolume, LocalImage, RemoteImage, SecretFile, Volume
+from neuro_sdk.parsing_utils import _get_url_authority
 from yarl import URL
 
 

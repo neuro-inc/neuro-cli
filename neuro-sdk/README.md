@@ -1,4 +1,4 @@
-[![codecov](https://codecov.io/gh/neuromation/platform-client-python/branch/master/graph/badge.svg)](https://codecov.io/gh/neuromation/platform-client-python)
+[![codecov](https://codecov.io/gh/neuro-inc/platform-client-python/branch/master/graph/badge.svg)](https://codecov.io/gh/neuro-inc/platform-client-python)
 
 # Preface
 
@@ -6,7 +6,7 @@ Welcome to Python Neuro-SDK for https://neu.ro/.
 
 # Documentation
 
-https://neuromation-sdk.readthedocs.io/en/latest/
+https://neuro-sdk.readthedocs.io/en/latest/
 
 # Installation
 

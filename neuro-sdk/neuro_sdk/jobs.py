@@ -464,7 +464,7 @@ class Jobs(metaclass=NoPublicConstructor):
         progress: Optional[AbstractDockerImageProgress] = None,
     ) -> None:
         if not _is_in_neuro_registry(image):
-            raise ValueError(f"Image `{image}` must be in the neuromation registry")
+            raise ValueError(f"Image `{image}` must be in the neuro registry")
         if progress is None:
             progress = _DummyProgress()
 

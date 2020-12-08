@@ -7,14 +7,8 @@ import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
 from aiohttp.hdrs import LINK
-from neuromation.api import (
-    AuthorizationError,
-    Client,
-    LocalImage,
-    RemoteImage,
-    TagOption,
-)
-from neuromation.api.parsing_utils import (
+from neuro_sdk import AuthorizationError, Client, LocalImage, RemoteImage, TagOption
+from neuro_sdk.parsing_utils import (
     Tag,
     _as_repo_str,
     _get_url_authority,
@@ -863,7 +857,7 @@ class TestImageParser:
         )
         image = "example.com:9999/bob/library/ubuntu:v10.04"
         parsed = my_parser.parse_remote(image)
-        # NOTE: "owner" is parsed only for images in neuromation registry
+        # NOTE: "owner" is parsed only for images in neuro registry
         assert parsed == RemoteImage.new_external_image(
             name="bob/library/ubuntu",
             tag="v10.04",

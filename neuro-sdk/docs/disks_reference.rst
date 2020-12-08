@@ -3,7 +3,7 @@ Disks API Reference
 =====================
 
 
-.. currentmodule:: neuromation.api
+.. currentmodule:: neuro_sdk
 
 
 Disks

@@ -20,34 +20,22 @@ setup(
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
         "aiodocker>=0.18.7",
-        "click>=7.0",
-        "humanize>=0.5",
         "typing_extensions>=3.7.4",
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead
         "certifi",
-        "cookiecutter>=0.9.0",
         "atomicwrites>=1.0",
-        "wcwidth>=0.1.7",
         "toml>=0.10.0",
-        "prompt-toolkit>=3.0.5",
-        "rich>=9.1.0",
     ],
     include_package_data=True,
-    description="Neuro Platform API client",
+    description="Neuro SDK",
     long_description=readme,
     long_description_content_type="text/markdown; charset=UTF-8; variant=GFM",
-    author="Neuromation Team",
-    author_email="pypi@neuromation.io",  # TODO: change this email
+    author="Neuro Team",
+    author_email="pypi@neu.ro",  # TODO: change this email
     license="Apache License, version 2.0",
-    url="https://neuromation.io/",
-    packages=find_packages(include=("neuromation", "neuromation.*")),
-    entry_points={
-        "console_scripts": [
-            "neuro=neuromation.cli:main",
-            "docker-credential-neuro=neuromation.cli:dch",
-        ]
-    },
+    url="https://neu.ro/",
+    packages=find_packages(include=("neuro_sdk")),
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",

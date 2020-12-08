@@ -1,4 +1,4 @@
-.. currentmodule:: neuromation.api
+.. currentmodule:: neuro_sdk
 
 
 .. _plugin-reference:
@@ -8,7 +8,7 @@ Plugins API Reference
 ===========================
 
 
-.. currentmodule:: neuromation.api
+.. currentmodule:: neuro_sdk
 
 
 PluginManager

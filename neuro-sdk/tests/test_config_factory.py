@@ -7,14 +7,18 @@ from typing import Any, Callable, Dict
 from unittest import mock
 
 import aiohttp
-import neuromation
-import neuromation.api.config_factory
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestServer as _TestServer
-from neuromation.api import PASS_CONFIG_ENV_NAME, Cluster, ConfigError, Factory
-from neuromation.api.config import _AuthConfig, _AuthToken, _ConfigData
-from neuromation.api.errors import AuthException
+from neuro_sdk import (
+    PASS_CONFIG_ENV_NAME,
+    AuthError,
+    Cluster,
+    ConfigError,
+    Factory,
+    __version__,
+)
+from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData
 from tests import _TestServerFactory
 from yarl import URL
 
@@ -46,7 +50,7 @@ def _create_config(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
         url=URL("https://dev.neu.ro/api/v1"),
-        version=neuromation.__version__,
+        version=__version__,
         cluster_name=cluster_config.name,
         clusters={cluster_config.name: cluster_config},
     )
@@ -74,7 +78,7 @@ async def mock_for_login(
             "token_url": str(srv.make_url("/oauth/token")),
             "logout_url": str(srv.make_url("/v2/logout")),
             "client_id": "banana",
-            "audience": "https://test.dev.neuromation.io",
+            "audience": "https://test.dev.neu.ro",
             "headless_callback_url": str(srv.make_url("/oauth/show-code")),
             "callback_urls": callback_urls,
             "success_redirect_url": "https://neu.ro/#test",
@@ -255,7 +259,7 @@ class TestLoginWithToken:
     async def test_incorrect_token(
         self, tmp_home: Path, mock_for_login: _TestServer
     ) -> None:
-        with pytest.raises(AuthException):
+        with pytest.raises(AuthError):
             await Factory().login_with_token(
                 token="incorrect", url=mock_for_login.make_url("/")
             )
@@ -306,7 +310,7 @@ class TestLoginPassedConfig:
         self, tmp_home: Path, set_conf_to_env: Callable[[str], None]
     ) -> None:
         set_conf_to_env("incorrect")
-        with pytest.raises(AuthException):
+        with pytest.raises(AuthError):
             await Factory().get()
         nmrc_path = tmp_home / ".neuro"
         assert not Path(nmrc_path).exists(), "Config file not written after login "
@@ -331,7 +335,7 @@ class TestLoginPassedConfig:
         self, tmp_home: Path, set_conf_to_env: Callable[[str], None]
     ) -> None:
         set_conf_to_env("incorrect")
-        with pytest.raises(AuthException):
+        with pytest.raises(AuthError):
             await Factory().login_with_passed_config()
         nmrc_path = tmp_home / ".neuro"
         assert not Path(nmrc_path).exists(), "Config file written after bad login "
@@ -379,7 +383,7 @@ class TestHeadlessLogin:
                 client_id="banana",
                 redirect_uri=str(mock_for_login.make_url("/oauth/show-code")),
                 scope="offline_access",
-                audience="https://test.dev.neuromation.io",
+                audience="https://test.dev.neu.ro",
             )
             return "test_code"
 

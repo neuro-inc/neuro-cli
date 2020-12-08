@@ -8,10 +8,10 @@ from shutil import copytree
 from typing import Any, AsyncIterator, Callable, List, Tuple
 from unittest import mock
 
-import neuromation.api.storage
+import neuro_sdk.storage
 import pytest
 from aiohttp import web
-from neuromation.api import (
+from neuro_sdk import (
     Action,
     Client,
     FileStatus,
@@ -21,8 +21,8 @@ from neuromation.api import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from neuromation.api.abc import StorageProgressDelete
-from neuromation.api.storage import _parse_content_range
+from neuro_sdk.abc import StorageProgressDelete
+from neuro_sdk.storage import _parse_content_range
 from tests import _RawTestServerFactory, _TestServerFactory
 from yarl import URL
 
@@ -49,7 +49,7 @@ def calc_diff(dcmp: "dircmp[str]", *, pre: str = "") -> List[Tuple[str, str]]:
 
 @pytest.fixture
 def small_block_size(monkeypatch: Any) -> None:
-    monkeypatch.setattr(neuromation.api.storage, "READ_SIZE", 300)
+    monkeypatch.setattr(neuro_sdk.storage, "READ_SIZE", 300)
 
 
 @pytest.fixture
@@ -1354,7 +1354,7 @@ async def test_storage_download_dir_slash_ending(
 
 @pytest.fixture
 def zero_time_threshold(monkeypatch: Any) -> None:
-    monkeypatch.setattr(neuromation.api.storage, "TIME_THRESHOLD", 0.0)
+    monkeypatch.setattr(neuro_sdk.storage, "TIME_THRESHOLD", 0.0)
 
 
 async def test_storage_upload_file_update(

@@ -2,7 +2,7 @@ from typing import AsyncIterator, Callable
 
 import pytest
 from aiohttp import web
-from neuromation.api import Action, Client, Permission, ResourceNotFound
+from neuro_sdk import Action, Client, Permission, ResourceNotFound
 from tests import _TestServerFactory
 from yarl import URL
 

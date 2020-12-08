@@ -7,13 +7,9 @@ from urllib.parse import parse_qsl
 import pytest
 import toml
 from aiohttp import web
-from neuromation.api import Client, Cluster, ConfigError, Preset
-from neuromation.api.config import (
-    _check_sections,
-    _merge_user_configs,
-    _validate_user_config,
-)
-from neuromation.api.login import _AuthToken
+from neuro_sdk import Client, Cluster, ConfigError, Preset
+from neuro_sdk.config import _check_sections, _merge_user_configs, _validate_user_config
+from neuro_sdk.login import _AuthToken
 from tests import _TestServerFactory
 from yarl import URL
 
@@ -310,13 +306,13 @@ async def test_fetch(
     users_url = "https://users2-dev.neu.ro"
     monitoring_url = "https://jobs2-dev.neu.ro"
     secrets_url = "https://secrets2-dev.neu.ro"
-    auth_url = "https://dev-neuromation.auth0.com/authorize"
-    token_url = "https://dev-neuromation.auth0.com/oauth/token"
-    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
+    auth_url = "https://dev-neuro.auth0.com/authorize"
+    token_url = "https://dev-neuro.auth0.com/oauth/token"
+    logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neuromation.io"
+    audience = "https://platform.dev.neu.ro."
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
-    success_redirect_url = "https://platform.neuromation.io"
+    success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
@@ -381,13 +377,13 @@ async def test_fetch_dropped_selected_cluster(
     users_url = "https://users2-dev.neu.ro"
     monitoring_url = "https://jobs2-dev.neu.ro"
     secrets_url = "https://secrets2-dev.neu.ro"
-    auth_url = "https://dev-neuromation.auth0.com/authorize"
-    token_url = "https://dev-neuromation.auth0.com/oauth/token"
-    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
+    auth_url = "https://dev-neuro.auth0.com/authorize"
+    token_url = "https://dev-neuro.auth0.com/oauth/token"
+    logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neuromation.io"
+    audience = "https://platform.dev.neuro.io"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
-    success_redirect_url = "https://platform.neuromation.io"
+    success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
@@ -472,13 +468,13 @@ async def test_check_server_mismatch_clusters(
     users_url = "https://users2-dev.neu.ro"
     monitoring_url = "https://jobs2-dev.neu.ro"
     secrets_url = "https://secrets2-dev.neu.ro"
-    auth_url = "https://dev-neuromation.auth0.com/authorize"
-    token_url = "https://dev-neuromation.auth0.com/oauth/token"
-    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
+    auth_url = "https://dev-neuro.auth0.com/authorize"
+    token_url = "https://dev-neuro.auth0.com/oauth/token"
+    logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neuromation.io"
+    audience = "https://platform.dev.neu.ro"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
-    success_redirect_url = "https://platform.neuromation.io"
+    success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,
@@ -527,12 +523,12 @@ async def test_check_server_mismatch_auth(
     users_url = "https://users2-dev.neu.ro"
     monitoring_url = "https://jobs2-dev.neu.ro"
     secrets_url = "https://secrets2-dev.neu.ro"
-    auth_url = "https://dev-neuromation.auth0.com/authorize"
-    token_url = "https://dev-neuromation.auth0.com/oauth/token"
-    logout_url = "https://dev-neuromation.auth0.com/v2/logout"
-    audience = "https://platform.dev.neuromation.io"
+    auth_url = "https://dev-neuro.auth0.com/authorize"
+    token_url = "https://dev-neuro.auth0.com/oauth/token"
+    logout_url = "https://dev-neuro.auth0.com/v2/logout"
+    audience = "https://platform.dev.neu.ro"
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
-    success_redirect_url = "https://platform.neuromation.io"
+    success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "auth_url": auth_url,
         "token_url": token_url,

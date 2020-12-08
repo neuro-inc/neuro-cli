@@ -10,7 +10,6 @@ iterable
 login
 namespace
 neuro
-neuromation
 preemptible
 startup
 stderr
