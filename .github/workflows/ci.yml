@@ -54,6 +54,7 @@ jobs:
       matrix:
         python-version: [3.6, 3.7, 3.8, 3.9]
         os: [ubuntu, macos, windows]
+        cmd: [sdk, cli]
         exclude:
         - python-version: 3.7
           os: macos
@@ -93,13 +94,12 @@ jobs:
       env:
         COLOR: yes
       run: |
-        make .test PYTEST_ARGS=-vvv
+        make .test-${{ matrix.cmd }} PYTEST_ARGS=-vvv
     - name: Upload coverage
       uses: codecov/codecov-action@v1
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.xml
-        flags: unit
+        flags: ${{ matrix.cmd }}
         fail_ci_if_error: false
 
   e2e:
@@ -156,24 +156,9 @@ jobs:
     - name: Upload coverage
       uses: codecov/codecov-action@v1
       with:
-        token: ${{ secrets.CODECOV_TOKEN }}
         file: ./coverage.xml
         flags: e2e
         fail_ci_if_error: false
-
-  trigger-e2e:
-    name: Trigger external E2E tests
-    needs: e2e
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && contains(github.ref, 'refs/heads/master')
-    steps:
-    - name: Trigger E2E CircleCI test suite
-      env:
-        E2E_CIRCLECI_TOKEN: ${{ secrets.E2E_CIRCLECI_TOKEN }}
-      run: |
-        curl -X POST --header "Content-Type: application/json" \
-           -d '{"branch":"master"}' \
-           https://circleci.com/api/v1.1/project/github/neuromation/platform-e2e/build\?circle-token\=${E2E_CIRCLECI_TOKEN}
 
   deploy:
     name: Deploy
