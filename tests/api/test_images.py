@@ -589,11 +589,13 @@ class TestImageParser:
         )
 
     def test_parse_as_neuro_image_with_scheme_special_chars(self) -> None:
-        image = "image://other-cluster/bob/ubuntu%23%25%3F%C3%9F:v10.04%23%25%3F%C3%9F"
+        image = (
+            "image://other-cluster/bob/ubuntu%23%252d%3F%C3%9F:v10.04%23%252d%3F%C3%9F"
+        )
         parsed = self.parser.parse_as_neuro_image(image)
         assert parsed == RemoteImage.new_neuro_image(
-            name="ubuntu#%?ß",
-            tag="v10.04#%?ß",
+            name="ubuntu#%2d?ß",
+            tag="v10.04#%2d?ß",
             owner="bob",
             cluster_name="other-cluster",
             registry="reg.neu.ro",
@@ -640,11 +642,11 @@ class TestImageParser:
 
     def test_parse_as_neuro_image_with_registry_prefix_special_chars(self) -> None:
         image = self.parser.parse_as_neuro_image(
-            "reg.neu.ro/user/image%23%25%3F%C3%9F:tag%23%25%3F%C3%9F"
+            "reg.neu.ro/user/image%23%252d%3F%C3%9F:tag%23%252d%3F%C3%9F"
         )
         assert image == RemoteImage.new_neuro_image(
-            name="image#%?ß",
-            tag="tag#%?ß",
+            name="image#%2d?ß",
+            tag="tag#%2d?ß",
             owner="user",
             cluster_name="test-cluster",
             registry="reg.neu.ro",
