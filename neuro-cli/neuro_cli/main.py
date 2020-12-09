@@ -44,7 +44,6 @@ from .const import (
 from .log_formatter import ConsoleHandler, ConsoleWarningFormatter
 from .root import Root
 from .topics import topics
-from .tty_utils import enable_ansi
 from .utils import (
     Context,
     DeprecatedGroup,
@@ -82,7 +81,6 @@ def setup_stdout(errors: str) -> None:
 
 setup_stdout(errors="replace")
 setup_child_watcher()
-enable_ansi()
 
 
 log = logging.getLogger(__name__)
