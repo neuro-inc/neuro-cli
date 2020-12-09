@@ -45,8 +45,8 @@ setup(
     packages=find_packages(include=("neuro_sdk", "neuro_sdk.*")),
     entry_points={
         "console_scripts": [
-            "neuro=neuro_cli:main",
-            "docker-credential-neuro=neuro_cli:dch",
+            "neuro=neuro_cli.main:main",
+            "docker-credential-neuro=neuro_cli.docker_credential_helper:main",
         ]
     },
     classifiers=[
