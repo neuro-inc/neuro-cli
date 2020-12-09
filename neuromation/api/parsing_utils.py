@@ -67,13 +67,19 @@ class RemoteImage:
         return f"{prefix}{self.name}{suffix}"
 
     def __str__(self) -> str:
-        pre = (
-            f"image://{self.cluster_name}/{self.owner}/"
-            if _is_in_neuro_registry(self)
-            else ""
-        )
-        post = f":{self.tag}" if self.tag else ""
-        return pre + self.name + post
+        result = self.name
+        if self.tag:
+            result = f"{result}:{self.tag}"
+        if _is_in_neuro_registry(self):
+            assert self.cluster_name is not None
+            result = str(
+                URL.build(
+                    scheme="image",
+                    host=self.cluster_name,
+                    path=f"/{self.owner}/{result}",
+                )
+            )
+        return result
 
 
 def _is_in_neuro_registry(image: RemoteImage) -> bool:
