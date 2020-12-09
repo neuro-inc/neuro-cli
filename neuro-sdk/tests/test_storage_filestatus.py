@@ -127,11 +127,12 @@ def test_uri_forbidden_symbols() -> None:
     stat = _file_status_from_api_stat(
         "default",
         {
-            "path": "/user/path#to",
+            "path": "/user/path#%2d?:@~ßto",
             "type": "FILE",
             "length": 1234,
             "modificationTime": 3456,
             "permission": "read",
         },
     )
-    assert stat.uri == URL("storage://default/user/path%23to")
+    assert stat.uri == URL("storage://default/user/path%23%252d%3f:@~%C3%9Fto")
+    assert stat.uri.path == "/user/path#%2d?:@~ßto"

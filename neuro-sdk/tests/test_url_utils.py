@@ -91,16 +91,16 @@ def test_uri_from_cli_absolute_file_uri() -> None:
 
 def test_uri_from_cli_relative_file_uri_special_chars() -> None:
     uri = uri_from_cli(
-        "file:path/to/file%23%25%3f:@~%C3%9F", "testuser", "test-cluster"
+        "file:path/to/file%23%252d%3f:@~%C3%9F", "testuser", "test-cluster"
     )
-    assert uri.path.endswith("/path/to/file#%?:@~ß")
+    assert uri.path.endswith("/path/to/file#%2d?:@~ß")
 
 
 def test_uri_from_cli_absolute_file_uri_special_chars() -> None:
     uri = uri_from_cli(
-        "file:/path/to/file%23%25%3f:@~%C3%9F", "testuser", "test-cluster"
+        "file:/path/to/file%23%252d%3f:@~%C3%9F", "testuser", "test-cluster"
     )
-    assert uri.path.endswith("/path/to/file#%?:@~ß")
+    assert uri.path.endswith("/path/to/file#%2d?:@~ß")
 
 
 def test_uri_from_cli_relative_storage_uri() -> None:
@@ -121,11 +121,11 @@ def test_uri_from_cli_absolute_storage_uri() -> None:
 
 def test_uri_from_cli_absolute_storage_uri_special_chars() -> None:
     uri = uri_from_cli(
-        "storage://cluster/user/path/to/file%23%25%3f:@~%C3%9F",
+        "storage://cluster/user/path/to/file%23%252d%3f:@~%C3%9F",
         "testuser",
         "test-cluster",
     )
-    assert uri.path == "/user/path/to/file#%?:@~ß"
+    assert uri.path == "/user/path/to/file#%2d?:@~ß"
 
 
 def test_uri_from_cli_numberic_path() -> None:

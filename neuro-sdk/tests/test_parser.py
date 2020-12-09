@@ -97,34 +97,34 @@ async def test_parse_volumes(make_client: _MakeClient) -> None:
 async def test_parse_volumes_special_chars(make_client: _MakeClient) -> None:
     async with make_client("https://example.com") as client:
         volumes_str = [
-            "storage://cluster/user/path/to%23%25%3a%3f%40%C3%9F:/storage/location:rw",
-            "secret://cluster/user/secret%23%25%3a%3f%40%C3%9F:/secret/location",
-            "disk://cluster/user/disk%23%25%3a%3f%40%C3%9F:/disk/location:rw",
+            "storage://cluster/user/path/to%23%252d%3a%3f%40%C3%9F:/storage:rw",
+            "secret://cluster/user/secret%23%252d%3a%3f%40%C3%9F:/secret",
+            "disk://cluster/user/disk%23%252d%3a%3f%40%C3%9F:/disk:rw",
         ]
         result = client.parse.volumes(volumes_str)
         assert result.volumes == [
             Volume(
-                URL("storage://cluster/user/path/to%23%25%3a%3f%40%C3%9F"),
-                "/storage/location",
+                URL("storage://cluster/user/path/to%23%252d%3a%3f%40%C3%9F"),
+                "/storage",
                 False,
             ),
         ]
-        assert result.volumes[0].storage_uri.path == "/user/path/to#%:?@ß"
+        assert result.volumes[0].storage_uri.path == "/user/path/to#%2d:?@ß"
         assert result.secret_files == [
             SecretFile(
-                URL("secret://cluster/user/secret%23%25%3a%3f%40%C3%9F"),
-                "/secret/location",
+                URL("secret://cluster/user/secret%23%252d%3a%3f%40%C3%9F"),
+                "/secret",
             )
         ]
-        assert result.secret_files[0].secret_uri.path == "/user/secret#%:?@ß"
+        assert result.secret_files[0].secret_uri.path == "/user/secret#%2d:?@ß"
         assert result.disk_volumes == [
             DiskVolume(
-                URL("disk://cluster/user/disk%23%25%3a%3f%40%C3%9F"),
-                "/disk/location",
+                URL("disk://cluster/user/disk%23%252d%3a%3f%40%C3%9F"),
+                "/disk",
                 False,
             ),
         ]
-        assert result.disk_volumes[0].disk_uri.path == "/user/disk#%:?@ß"
+        assert result.disk_volumes[0].disk_uri.path == "/user/disk#%2d:?@ß"
 
 
 async def test_parse_local(make_client: _MakeClient) -> None:
