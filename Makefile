@@ -77,7 +77,7 @@ test-cli: .update-deps .test-cli ### Run unit tests
 .PHONY: test-all
 test-all: .update-deps ### Run all tests
 	pytest \
-		--cov=neuromation \
+		--cov=neuro-sdk/neuro_sdk --cov=neuro-sdk/neuro_cli \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--color=$(COLOR)
@@ -106,7 +106,8 @@ publish-lint: ### Check for publishing safety
 clean: ### Cleanup temporary files
 	find . -name '*.egg-info' -exec rm -rf {} +
 	find . -name '__pycache__' -exec rm -rf {} +
-	rm CLI.md
+	rm -rf CLI.md
+	rm -rf .mypy_cache
 
 .PHONY: docs
 docs: ### Generate CLI docs

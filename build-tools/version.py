@@ -39,6 +39,9 @@ class InitVP(VersionProcessor):
 
 
 class SetupVP(VersionProcessor):
+    def __init__(self, replace_sdk: bool = False) -> None:
+        self._replace_sdk = replace_sdk
+
     def read(self, fname: pathlib.Path) -> str:
         txt = fname.read_text()
         found = re.findall(r'^    version="([^"]+)",\r?$', txt, re.M)
@@ -55,14 +58,22 @@ class SetupVP(VersionProcessor):
         old = f'    version="{old_version}",'
         new = f'    version="{version}",'
         new_txt = txt.replace(old, new)
+        if self._replace_sdk:
+            old_dep = f'        "neuro-sdk>={old_version}",'
+            if old_dep not in new_txt:
+                raise click.ClickException(
+                    f"Unable to find neuro-sdk dependency in {fname}."
+                )
+            new_dep = f'        "neuro-sdk>={version}",'
+            new_txt = new_txt.replace(old_dep, new_dep)
         fname.write_text(new_txt)
 
 
 FILES = {
     "neuro-sdk/neuro_sdk/__init__.py": InitVP(),
-    "neuro-sdk/setup.py": SetupVP(),
+    "neuro-sdk/setup.py": SetupVP(False),
     "neuro-cli/neuro_cli/__init__.py": InitVP(),
-    "neuro-cli/setup.py": SetupVP(),
+    "neuro-cli/setup.py": SetupVP(True),
 }
 
 

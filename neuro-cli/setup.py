@@ -20,6 +20,7 @@ setup(
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
         "aiodocker>=0.18.7",
+        "neuro-sdk>=20.12.7",
         "click>=7.0",
         "humanize>=0.5",
         "typing_extensions>=3.7.4",
@@ -37,15 +38,15 @@ setup(
     description="Neuro Platform API client",
     long_description=readme,
     long_description_content_type="text/markdown; charset=UTF-8; variant=GFM",
-    author="Neuromation Team",
-    author_email="pypi@neuromation.io",  # TODO: change this email
+    author="Neu.ro Team",
+    author_email="team@neu.ro",
     license="Apache License, version 2.0",
     url="https://neuromation.io/",
-    packages=find_packages(include=("neuromation", "neuromation.*")),
+    packages=find_packages(include=("neuro_sdk", "neuro_sdk.*")),
     entry_points={
         "console_scripts": [
-            "neuro=neuromation.cli:main",
-            "docker-credential-neuro=neuromation.cli:dch",
+            "neuro=neuro_cli:main",
+            "docker-credential-neuro=neuro_cli:dch",
         ]
     },
     classifiers=[
