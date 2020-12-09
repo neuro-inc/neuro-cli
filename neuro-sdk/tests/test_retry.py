@@ -3,6 +3,7 @@ from typing import Any
 
 import aiohttp
 import pytest
+
 from neuro_sdk.utils import retries
 
 

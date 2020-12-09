@@ -20,7 +20,6 @@ from .server_cfg import _ServerConfig, get_server_config
 from .tracing import _make_trace_config
 from .utils import _ContextManager
 
-
 DEFAULT_CONFIG_PATH = "~/.neuro"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
 PASS_CONFIG_ENV_NAME = "NEURO_PASSED_CONFIG"

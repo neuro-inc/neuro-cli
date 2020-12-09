@@ -5,6 +5,10 @@ from itertools import chain
 from typing import List, Optional, Sequence, Tuple, Union, cast
 
 import click
+from rich.markup import escape as rich_escape
+from rich.text import Text
+from yarl import URL
+
 from neuro_sdk import (
     BlobListing,
     BucketListing,
@@ -15,9 +19,6 @@ from neuro_sdk import (
 )
 from neuro_sdk.file_filter import FileFilter
 from neuro_sdk.url_utils import _extract_path
-from rich.markup import escape as rich_escape
-from rich.text import Text
-from yarl import URL
 
 from .const import EX_OSFILE
 from .formatters.blob_storage import (
@@ -35,7 +36,6 @@ from .utils import (
     parse_blob_or_file_resource,
     parse_blob_resource,
 )
-
 
 log = logging.getLogger(__name__)
 

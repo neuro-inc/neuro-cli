@@ -11,7 +11,6 @@ import threading
 from typing import Any, Awaitable, Callable, List, Optional, Sequence, Tuple
 
 import click
-from neuro_sdk import IllegalArgumentError, JobDescription, JobStatus, StdStream
 from prompt_toolkit.formatted_text import HTML, merge_formatted_text
 from prompt_toolkit.input import create_input
 from prompt_toolkit.key_binding import KeyPress
@@ -22,11 +21,12 @@ from prompt_toolkit.output import Output, create_output
 from prompt_toolkit.shortcuts import PromptSession
 from typing_extensions import NoReturn
 
+from neuro_sdk import IllegalArgumentError, JobDescription, JobStatus, StdStream
+
 from .const import EX_IOERR, EX_PLATFORMERROR
 from .formatters.jobs import ExecStopProgress, JobStopProgress
 from .root import Root
 from .utils import AsyncExitStack
-
 
 log = logging.getLogger(__name__)
 

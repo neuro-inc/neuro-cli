@@ -7,10 +7,11 @@ import aiohttp
 import aiohttp.pytest_plugin
 import pytest
 from jose import jwt
+from yarl import URL
+
 from neuro_sdk import Client, Cluster, Preset, __version__
 from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData, _save
 from neuro_sdk.tracing import _make_trace_config
-from yarl import URL
 
 
 def setup_test_loop(

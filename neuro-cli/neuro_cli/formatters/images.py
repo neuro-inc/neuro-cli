@@ -2,6 +2,11 @@ import abc
 from types import TracebackType
 from typing import Dict, Iterable, Optional, Type
 
+from rich import box
+from rich.console import Console, RenderableType
+from rich.progress import BarColumn, DownloadColumn, Progress, TaskID, TextColumn
+from rich.table import Table
+
 from neuro_sdk import (
     AbstractDockerImageProgress,
     ImageCommitFinished,
@@ -13,10 +18,6 @@ from neuro_sdk import (
     RemoteImage,
 )
 from neuro_sdk.parsing_utils import Tag
-from rich import box
-from rich.console import Console, RenderableType
-from rich.progress import BarColumn, DownloadColumn, Progress, TaskID, TextColumn
-from rich.table import Table
 
 from ..utils import format_size
 from .utils import ImageFormatter

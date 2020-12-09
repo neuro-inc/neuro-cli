@@ -6,11 +6,11 @@ from typing import Generic, List, Optional, Sequence, Tuple, TypeVar, Union, cas
 
 import click
 from click import BadParameter
+
 from neuro_sdk import LocalImage, RemoteImage, TagOption
 
 from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
 from .root import Root
-
 
 # NOTE: these job name defaults are taken from `platform_api` file `validators.py`
 JOB_NAME_MIN_LENGTH = 3

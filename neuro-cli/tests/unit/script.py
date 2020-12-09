@@ -1,7 +1,6 @@
 import argparse
 import sys
 
-
 print(sys.argv[1:])
 
 

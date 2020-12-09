@@ -61,7 +61,6 @@ from .url_utils import _extract_path, normalize_blob_path_uri, normalize_local_p
 from .users import Action
 from .utils import NoPublicConstructor, queue_calls, retries
 
-
 if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import asynccontextmanager
 else:

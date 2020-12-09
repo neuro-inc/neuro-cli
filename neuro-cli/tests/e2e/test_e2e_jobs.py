@@ -24,13 +24,15 @@ import aiodocker
 import aiohttp
 import pytest
 from aiohttp.test_utils import unused_port
-from neuro_cli.asyncio_utils import run
-from neuro_sdk import Container, JobStatus, RemoteImage, Resources, get as api_get
 from pexpect.replwrap import REPLWrapper
 from re_assert import Matches
 from tests.e2e.conftest import Helper
 from yarl import URL
 
+from neuro_sdk import Container, JobStatus, RemoteImage, Resources
+from neuro_sdk import get as api_get
+
+from neuro_cli.asyncio_utils import run
 
 pytestmark = pytest.mark.e2e_job
 

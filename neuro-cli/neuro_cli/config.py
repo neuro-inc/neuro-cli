@@ -8,11 +8,13 @@ from typing import Any, Dict, Optional
 
 import click
 from aiohttp.client_exceptions import ClientConnectionError
-from neuro_cli.formatters.config import ClustersFormatter, QuotaInfoFormatter
-from neuro_sdk import DEFAULT_API_URL, ConfigError
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
 from yarl import URL
+
+from neuro_sdk import DEFAULT_API_URL, ConfigError
+
+from neuro_cli.formatters.config import ClustersFormatter, QuotaInfoFormatter
 
 from .alias import list_aliases
 from .formatters.config import AliasesFormatter, ConfigFormatter

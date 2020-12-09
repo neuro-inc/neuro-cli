@@ -8,11 +8,13 @@ import aiohttp
 import certifi
 import click
 import dateutil.parser
-import neuro_cli
 import pkg_resources
-from neuro_sdk import Client
 from typing_extensions import TypedDict
 from yarl import URL
+
+from neuro_sdk import Client
+
+import neuro_cli
 
 
 class Record(TypedDict):

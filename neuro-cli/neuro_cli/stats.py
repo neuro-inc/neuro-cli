@@ -10,12 +10,14 @@ import sys
 import time
 import uuid
 from typing import Dict, List, Optional
-from urllib.parse import quote as urlquote, urlencode
+from urllib.parse import quote as urlquote
+from urllib.parse import urlencode
 
-import neuro_cli
-from neuro_sdk import Client
 from yarl import URL
 
+from neuro_sdk import Client
+
+import neuro_cli
 
 logger = logging.getLogger(__name__)
 

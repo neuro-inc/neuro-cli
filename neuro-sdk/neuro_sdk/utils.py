@@ -22,7 +22,6 @@ import aiohttp
 
 from .errors import ConfigError
 
-
 _T = TypeVar("_T")
 
 

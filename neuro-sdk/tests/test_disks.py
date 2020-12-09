@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 from typing import Callable
 
 from aiohttp import web
-from neuro_sdk import Client, Cluster, Disk
 from tests import _TestServerFactory
 
+from neuro_sdk import Client, Cluster, Disk
 
 _MakeClient = Callable[..., Client]
 

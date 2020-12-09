@@ -7,6 +7,9 @@ import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
 from aiohttp.hdrs import LINK
+from tests import _TestServerFactory
+from yarl import URL
+
 from neuro_sdk import AuthorizationError, Client, LocalImage, RemoteImage, TagOption
 from neuro_sdk.parsing_utils import (
     Tag,
@@ -14,9 +17,6 @@ from neuro_sdk.parsing_utils import (
     _get_url_authority,
     _ImageNameParser,
 )
-from tests import _TestServerFactory
-from yarl import URL
-
 
 _MakeClient = Callable[..., Client]
 

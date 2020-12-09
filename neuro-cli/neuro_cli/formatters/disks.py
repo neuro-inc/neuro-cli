@@ -3,14 +3,16 @@ import operator
 from datetime import timedelta
 from typing import Optional, Sequence
 
-from neuro_cli import utils
-from neuro_cli.formatters.jobs import format_datetime, format_life_span
-from neuro_cli.formatters.utils import URIFormatter
-from neuro_sdk import Disk
 from rich import box
 from rich.console import RenderableType, RenderGroup
 from rich.table import Table
 from rich.text import Text
+
+from neuro_sdk import Disk
+
+from neuro_cli import utils
+from neuro_cli.formatters.jobs import format_datetime, format_life_span
+from neuro_cli.formatters.utils import URIFormatter
 
 
 class BaseDisksFormatter:

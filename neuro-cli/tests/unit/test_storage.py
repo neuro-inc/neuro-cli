@@ -2,9 +2,10 @@ from pathlib import Path
 from typing import Any, Callable
 
 import toml
-from neuro_cli.storage import calc_filters, calc_ignore_file_names
+
 from neuro_sdk import Client
 
+from neuro_cli.storage import calc_filters, calc_ignore_file_names
 
 _MakeClient = Callable[..., Client]
 

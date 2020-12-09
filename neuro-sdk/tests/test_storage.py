@@ -8,9 +8,12 @@ from shutil import copytree
 from typing import Any, AsyncIterator, Callable, List, Tuple
 from unittest import mock
 
-import neuro_sdk.storage
 import pytest
 from aiohttp import web
+from tests import _RawTestServerFactory, _TestServerFactory
+from yarl import URL
+
+import neuro_sdk.storage
 from neuro_sdk import (
     Action,
     Client,
@@ -23,9 +26,6 @@ from neuro_sdk import (
 )
 from neuro_sdk.abc import StorageProgressDelete
 from neuro_sdk.storage import _parse_content_range
-from tests import _RawTestServerFactory, _TestServerFactory
-from yarl import URL
-
 
 _MakeClient = Callable[..., Client]
 

@@ -1,9 +1,9 @@
 from typing import Callable
 
-from neuro_sdk import RemoteImage
-from neuro_sdk.url_utils import CLUSTER_SCHEMES
 from yarl import URL
 
+from neuro_sdk import RemoteImage
+from neuro_sdk.url_utils import CLUSTER_SCHEMES
 
 URIFormatter = Callable[[URL], str]
 ImageFormatter = Callable[[RemoteImage], str]

@@ -7,6 +7,10 @@ import aiohttp
 import certifi
 import pytest
 from aiohttp import web
+from tests import _TestServerFactory
+from typing_extensions import AsyncContextManager
+from yarl import URL
+
 from neuro_sdk import IllegalArgumentError, ServerNotAvailable
 from neuro_sdk.core import (
     _Core,
@@ -15,10 +19,6 @@ from neuro_sdk.core import (
     _make_cookie,
     _save_cookies,
 )
-from tests import _TestServerFactory
-from typing_extensions import AsyncContextManager
-from yarl import URL
-
 
 if sys.version_info >= (3, 7):
     from contextlib import asynccontextmanager

@@ -2,7 +2,6 @@ from typing import Callable
 
 from neuro_sdk import Client
 
-
 _MakeClient = Callable[..., Client]
 
 

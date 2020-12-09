@@ -3,6 +3,12 @@ from pathlib import Path
 from typing import Callable
 
 import toml
+from rich.console import RenderableType
+
+from neuro_sdk import Client, Cluster, Preset
+from neuro_sdk.admin import _Quota
+from neuro_sdk.quota import _QuotaInfo
+
 from neuro_cli.alias import list_aliases
 from neuro_cli.formatters.config import (
     AliasesFormatter,
@@ -11,11 +17,6 @@ from neuro_cli.formatters.config import (
     QuotaInfoFormatter,
 )
 from neuro_cli.root import Root
-from neuro_sdk import Client, Cluster, Preset
-from neuro_sdk.admin import _Quota
-from neuro_sdk.quota import _QuotaInfo
-from rich.console import RenderableType
-
 
 RichCmp = Callable[[RenderableType], None]
 

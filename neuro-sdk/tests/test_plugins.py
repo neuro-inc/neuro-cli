@@ -2,6 +2,7 @@ import numbers
 from typing import Any
 
 import pytest
+
 from neuro_sdk import ConfigError
 from neuro_sdk.plugins import ConfigBuilder
 

@@ -4,10 +4,10 @@ from pathlib import Path, PurePath
 from typing import Tuple
 
 import pytest
-from neuro_cli.const import EX_OSFILE
 from tests.e2e import Helper
 from tests.e2e.utils import FILE_SIZE_B
 
+from neuro_cli.const import EX_OSFILE
 
 _Data = Tuple[str, str]
 

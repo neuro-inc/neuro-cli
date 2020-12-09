@@ -6,9 +6,10 @@ from typing import IO, Optional
 
 import click
 import yaml
+from prompt_toolkit import PromptSession
+
 from neuro_sdk import Preset
 from neuro_sdk.admin import _ClusterUserRoleType
-from prompt_toolkit import PromptSession
 
 from .click_types import MEGABYTE
 from .defaults import JOB_CPU_NUMBER, JOB_MEMORY_AMOUNT

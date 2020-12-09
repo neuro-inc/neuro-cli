@@ -18,6 +18,9 @@ from aiohttp.web import (
     Response,
     json_response,
 )
+from tests import _TestServerFactory
+from yarl import URL
+
 from neuro_sdk import AuthError
 from neuro_sdk.login import (
     AuthCode,
@@ -30,8 +33,6 @@ from neuro_sdk.login import (
     create_app_server_once,
     create_auth_code_app,
 )
-from tests import _TestServerFactory
-from yarl import URL
 
 
 class TestAuthCode:

@@ -2,14 +2,16 @@ import operator
 from typing import Iterable, List, Mapping, Optional
 
 import click
-from neuro_cli.utils import format_size
-from neuro_sdk import Cluster, Config, Preset
-from neuro_sdk.admin import _Quota
-from neuro_sdk.quota import _QuotaInfo
 from rich import box
 from rich.console import RenderableType, RenderGroup
 from rich.padding import Padding
 from rich.table import Table
+
+from neuro_sdk import Cluster, Config, Preset
+from neuro_sdk.admin import _Quota
+from neuro_sdk.quota import _QuotaInfo
+
+from neuro_cli.utils import format_size
 
 
 class ConfigFormatter:

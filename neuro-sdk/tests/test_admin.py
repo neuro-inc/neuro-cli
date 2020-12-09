@@ -3,6 +3,8 @@ from typing import Callable
 from aiohttp import web
 from aiohttp.web import HTTPCreated, HTTPNoContent
 from aiohttp.web_exceptions import HTTPOk
+from tests import _TestServerFactory
+
 from neuro_sdk import Client
 from neuro_sdk.admin import (
     _CloudProvider,
@@ -13,8 +15,6 @@ from neuro_sdk.admin import (
     _Storage,
 )
 from neuro_sdk.server_cfg import Preset
-from tests import _TestServerFactory
-
 
 _MakeClient = Callable[..., Client]
 

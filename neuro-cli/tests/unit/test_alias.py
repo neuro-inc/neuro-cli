@@ -5,11 +5,11 @@ from typing import Callable, List
 
 import pytest
 import toml
+
 from neuro_cli.alias import find_alias, list_aliases
 from neuro_cli.root import Root
 
 from .conftest import SysCapWithCode
-
 
 _RunCli = Callable[[List[str]], SysCapWithCode]
 

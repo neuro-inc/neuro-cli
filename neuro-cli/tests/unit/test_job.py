@@ -5,12 +5,13 @@ from typing import Any, Callable, Tuple
 import click
 import pytest
 import toml
+from yarl import URL
+
+from neuro_sdk import Client, JobStatus
+
 from neuro_cli.job import _parse_cmd, calc_columns, calc_statuses
 from neuro_cli.parse_utils import COLUMNS_MAP, get_default_columns
 from neuro_cli.root import Root
-from neuro_sdk import Client, JobStatus
-from yarl import URL
-
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

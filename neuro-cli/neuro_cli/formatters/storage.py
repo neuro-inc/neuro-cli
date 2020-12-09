@@ -11,23 +11,6 @@ from time import monotonic
 from types import TracebackType
 from typing import Any, Dict, Iterator, List, Sequence, Type
 
-from neuro_cli.root import Root
-from neuro_cli.utils import format_size
-from neuro_sdk import (
-    AbstractDeleteProgress,
-    AbstractRecursiveFileProgress,
-    Action,
-    FileStatus,
-    FileStatusType,
-    StorageProgressComplete,
-    StorageProgressDelete,
-    StorageProgressEnterDir,
-    StorageProgressFail,
-    StorageProgressLeaveDir,
-    StorageProgressStart,
-    StorageProgressStep,
-)
-from neuro_sdk.url_utils import _extract_path
 from rich.ansi import AnsiDecoder
 from rich.columns import Columns
 from rich.console import RenderableType
@@ -45,6 +28,24 @@ from rich.table import Table
 from rich.text import Text
 from yarl import URL
 
+from neuro_sdk import (
+    AbstractDeleteProgress,
+    AbstractRecursiveFileProgress,
+    Action,
+    FileStatus,
+    FileStatusType,
+    StorageProgressComplete,
+    StorageProgressDelete,
+    StorageProgressEnterDir,
+    StorageProgressFail,
+    StorageProgressLeaveDir,
+    StorageProgressStart,
+    StorageProgressStep,
+)
+from neuro_sdk.url_utils import _extract_path
+
+from neuro_cli.root import Root
+from neuro_cli.utils import format_size
 
 RECENT_TIME_DELTA = 365 * 24 * 60 * 60 / 2
 TIME_FORMAT = "%Y-%m-%d %H:%M:%S"

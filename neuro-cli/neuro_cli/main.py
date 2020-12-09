@@ -11,10 +11,13 @@ from typing import Any, List, Optional, Sequence, Tuple, Type, Union, cast
 
 import aiohttp
 import click
-import neuro_cli
-import neuro_sdk
 from aiodocker.exceptions import DockerError
-from click.exceptions import Abort as ClickAbort, Exit as ClickExit
+from click.exceptions import Abort as ClickAbort
+from click.exceptions import Exit as ClickExit
+
+import neuro_sdk
+
+import neuro_cli
 
 from . import (
     admin,

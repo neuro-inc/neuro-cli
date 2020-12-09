@@ -11,10 +11,11 @@ import trustme
 from aiohttp import web
 from aiohttp.abc import AbstractResolver
 from aiohttp.test_utils import unused_port
-from neuro_cli import version_utils
-from neuro_cli.root import Root
+
 from neuro_sdk import Client
 
+from neuro_cli import version_utils
+from neuro_cli.root import Root
 
 PYPI_JSON = {
     "info": {

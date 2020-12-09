@@ -9,7 +9,6 @@
 import os
 import re
 
-
 _docs_path = os.path.dirname(__file__)
 _version_path = os.path.abspath(
     os.path.join(_docs_path, "..", "neuro_sdk", "__init__.py")

@@ -1,6 +1,7 @@
 import pytest
-from neuro_cli import __version__
 from tests.e2e import Helper
+
+from neuro_cli import __version__
 
 
 @pytest.mark.e2e

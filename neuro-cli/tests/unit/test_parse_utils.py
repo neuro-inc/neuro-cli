@@ -2,6 +2,7 @@ from datetime import timedelta
 
 import click
 import pytest
+
 from neuro_cli.parse_utils import (
     COLUMNS_MAP,
     JobColumnInfo,

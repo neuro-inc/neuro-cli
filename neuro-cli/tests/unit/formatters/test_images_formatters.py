@@ -1,7 +1,8 @@
 import time
 from typing import Any
 
-from neuro_cli.formatters.images import DockerImageProgress
+from tests.unit.conftest import NewConsole
+
 from neuro_sdk import (
     ImageCommitFinished,
     ImageCommitStarted,
@@ -12,7 +13,8 @@ from neuro_sdk import (
     LocalImage,
     RemoteImage,
 )
-from tests.unit.conftest import NewConsole
+
+from neuro_cli.formatters.images import DockerImageProgress
 
 
 class TestDockerImageProgress:

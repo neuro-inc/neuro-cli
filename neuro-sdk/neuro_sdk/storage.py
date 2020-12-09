@@ -57,7 +57,6 @@ from .url_utils import (
 from .users import Action
 from .utils import NoPublicConstructor, QueuedCall, queue_calls, retries
 
-
 log = logging.getLogger(__name__)
 
 MAX_OPEN_FILES = 20

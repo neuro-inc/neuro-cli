@@ -3,10 +3,12 @@ from pathlib import Path
 from typing import Callable
 from unittest import mock
 
+from yarl import URL
+
+from neuro_sdk import Client, Cluster, Preset
+
 from neuro_cli.config import prompt_cluster
 from neuro_cli.root import Root
-from neuro_sdk import Client, Cluster, Preset
-from yarl import URL
 
 
 async def test_prompt_cluster(make_client: Callable[..., Client]) -> None:

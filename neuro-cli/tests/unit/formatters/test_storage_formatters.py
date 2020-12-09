@@ -2,6 +2,10 @@ import time
 from typing import Any, List
 
 import pytest
+from yarl import URL
+
+from neuro_sdk import Action, FileStatus, FileStatusType
+
 from neuro_cli.formatters.storage import (
     BaseFilesFormatter,
     BSDAttributes,
@@ -15,8 +19,6 @@ from neuro_cli.formatters.storage import (
     VerticalColumnsFilesFormatter,
     get_painter,
 )
-from neuro_sdk import Action, FileStatus, FileStatusType
-from yarl import URL
 
 
 class TestNonePainter:

@@ -13,7 +13,6 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, TypeVar
 
 from typing_extensions import final
 
-
 if sys.version_info >= (3, 7):
     from asyncio import current_task
 else:

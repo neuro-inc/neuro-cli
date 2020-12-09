@@ -25,7 +25,6 @@ from .errors import (
 )
 from .tracing import gen_trace_id
 
-
 if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import asynccontextmanager
 else:

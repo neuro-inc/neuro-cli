@@ -6,7 +6,6 @@ from cookiecutter.main import cookiecutter
 from .root import Root
 from .utils import argument, command, group
 
-
 log = logging.getLogger(__name__)
 
 

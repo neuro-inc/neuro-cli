@@ -4,14 +4,9 @@ from pathlib import Path
 from typing import Any, Callable, Iterator
 
 import pytest
-from neuro_cli.formatters.storage import (
-    DeleteProgress,
-    StreamProgress,
-    TTYProgress,
-    create_storage_progress,
-    format_url,
-)
-from neuro_cli.root import Root
+from tests.unit.conftest import NewConsole
+from yarl import URL
+
 from neuro_sdk import (
     StorageProgressComplete,
     StorageProgressDelete,
@@ -21,8 +16,15 @@ from neuro_sdk import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from tests.unit.conftest import NewConsole
-from yarl import URL
+
+from neuro_cli.formatters.storage import (
+    DeleteProgress,
+    StreamProgress,
+    TTYProgress,
+    create_storage_progress,
+    format_url,
+)
+from neuro_cli.root import Root
 
 
 class TimeCtl:

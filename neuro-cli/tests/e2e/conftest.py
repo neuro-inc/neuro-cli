@@ -35,6 +35,9 @@ import click
 import pexpect
 import pytest
 import toml
+from typing_extensions import Final
+from yarl import URL
+
 from neuro_sdk import (
     Action,
     AuthorizationError,
@@ -47,22 +50,19 @@ from neuro_sdk import (
     JobStatus,
     ResourceNotFound,
     Resources,
-    get as api_get,
-    login_with_token,
 )
-from typing_extensions import Final
-from yarl import URL
-
+from neuro_sdk import get as api_get
+from neuro_sdk import login_with_token
 
 if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import asynccontextmanager
 else:
     from async_generator import asynccontextmanager
 
-from neuro_cli.asyncio_utils import run
-from neuro_cli.utils import resolve_job
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
 
+from neuro_cli.asyncio_utils import run
+from neuro_cli.utils import resolve_job
 
 JOB_TIMEOUT = 5 * 60
 JOB_WAIT_SLEEP_SECONDS = 2

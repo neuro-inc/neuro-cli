@@ -7,7 +7,6 @@ import click
 from .root import Root
 from .utils import argument, group
 
-
 CFG_FILE = {"bash": Path("~/.bashrc"), "zsh": Path("~/.zshrc")}
 SOURCE_CMD = {"bash": "source", "zsh": "source_zsh"}
 

@@ -7,12 +7,13 @@ from pathlib import Path
 from typing import Any, Callable, List
 
 import pytest
+from yarl import URL
+
+from neuro_sdk import CONFIG_ENV_NAME, Config
+
 from neuro_cli.const import EX_OK
 from neuro_cli.docker_credential_helper import main as dch
 from neuro_cli.root import Root
-from neuro_sdk import CONFIG_ENV_NAME, Config
-from yarl import URL
-
 
 SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])
 log = logging.getLogger(__name__)

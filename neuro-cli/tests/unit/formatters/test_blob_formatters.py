@@ -2,13 +2,14 @@ from datetime import datetime
 from typing import Any, List, Union, cast
 
 import pytest
+
+from neuro_sdk import Action, BlobListing, BucketListing, PrefixListing
+
 from neuro_cli.formatters.blob_storage import (
     BaseBlobFormatter,
     LongBlobFormatter,
     SimpleBlobFormatter,
 )
-from neuro_sdk import Action, BlobListing, BucketListing, PrefixListing
-
 
 ListResult = Union[BlobListing, PrefixListing]
 LsResult = Union[BucketListing, BlobListing, PrefixListing]

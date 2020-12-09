@@ -4,6 +4,8 @@ import urllib
 from unittest import mock
 
 import pytest
+from yarl import URL
+
 from neuro_cli import __version__
 from neuro_cli.stats import (
     NEURO_EVENT_CATEGORY,
@@ -14,7 +16,6 @@ from neuro_cli.stats import (
     make_record,
     select_oldest,
 )
-from yarl import URL
 
 
 @pytest.fixture

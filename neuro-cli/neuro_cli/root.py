@@ -22,13 +22,13 @@ from typing import (
 
 import aiohttp
 import click
-from neuro_sdk import Client, ConfigError, Factory, gen_trace_id
-from neuro_sdk.config import _ConfigData, load_user_config
 from rich.console import Console, PagerContext
 from rich.pager import Pager
 
-from .asyncio_utils import Runner
+from neuro_sdk import Client, ConfigError, Factory, gen_trace_id
+from neuro_sdk.config import _ConfigData, load_user_config
 
+from .asyncio_utils import Runner
 
 log = logging.getLogger(__name__)
 

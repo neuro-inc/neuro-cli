@@ -7,7 +7,6 @@ from urllib.parse import quote_from_bytes
 
 from yarl import URL
 
-
 CLUSTER_SCHEMES = ("storage", "image", "job", "secret", "disk")
 
 

@@ -51,7 +51,6 @@ from .url_utils import (
 )
 from .utils import NoPublicConstructor
 
-
 if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import asynccontextmanager
 else:

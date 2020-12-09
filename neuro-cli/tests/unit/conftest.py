@@ -9,15 +9,16 @@ from typing import Any, AsyncIterator, Callable, DefaultDict, List, Optional, Se
 
 import click
 import pytest
+from rich.console import Console, RenderableType
+from yarl import URL
+
+from neuro_sdk import Cluster, Factory, Preset
+from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData
+
 from neuro_cli import __version__
 from neuro_cli.const import EX_OK
 from neuro_cli.main import main
 from neuro_cli.root import Root
-from neuro_sdk import Cluster, Factory, Preset
-from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData
-from rich.console import Console, RenderableType
-from yarl import URL
-
 
 SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])
 log = logging.getLogger(__name__)

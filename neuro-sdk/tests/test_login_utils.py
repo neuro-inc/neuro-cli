@@ -1,11 +1,12 @@
 import aiohttp
 import pytest
 from aiohttp import web
+from tests import _TestClientFactory
+from yarl import URL
+
 from neuro_sdk import Cluster, Preset
 from neuro_sdk.login import _AuthConfig
 from neuro_sdk.server_cfg import _ServerConfig, get_server_config
-from tests import _TestClientFactory
-from yarl import URL
 
 
 async def test_get_server_config_no_clusters(

@@ -25,7 +25,6 @@ from .parser import Parser
 from .parsing_utils import LocalImage, RemoteImage, Tag, TagOption, _as_repo_str
 from .utils import NoPublicConstructor
 
-
 REPOS_PER_PAGE = 30
 TAGS_PER_PAGE = 30
 

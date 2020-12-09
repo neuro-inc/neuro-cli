@@ -6,7 +6,6 @@ from yarl import URL
 
 from .parsing_utils import LocalImage, RemoteImage
 
-
 # storage
 
 

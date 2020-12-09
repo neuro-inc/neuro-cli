@@ -1,6 +1,7 @@
 from textwrap import dedent
 
 from click.testing import CliRunner
+
 from neuro_cli.main import MainGroup
 from neuro_cli.root import Root
 from neuro_cli.utils import DeprecatedGroup, command, group

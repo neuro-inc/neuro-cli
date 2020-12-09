@@ -7,7 +7,6 @@ from neuro_sdk.admin import _Admin, _ClusterUser, _ClusterUserRoleType
 
 from .conftest import SysCapWithCode
 
-
 _RunCli = Callable[[List[str]], SysCapWithCode]
 
 

@@ -6,7 +6,6 @@ from typing import Callable, List, Mapping, Optional, TypeVar
 import click
 from rich.console import JustifyMethod
 
-
 _T = TypeVar("_T")
 
 

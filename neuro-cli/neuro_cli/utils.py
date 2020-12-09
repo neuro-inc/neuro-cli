@@ -30,15 +30,15 @@ from typing import (
 import click
 import humanize
 from click.types import convert_type
+from yarl import URL
+
 from neuro_sdk import Action, Client, JobStatus, Volume
 from neuro_sdk.url_utils import uri_from_cli
-from yarl import URL
 
 from .parse_utils import parse_timedelta
 from .root import Root
 from .stats import upload_gmp_stats
 from .version_utils import run_version_checker
-
 
 log = logging.getLogger(__name__)
 

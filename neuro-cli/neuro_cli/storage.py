@@ -6,12 +6,13 @@ import sys
 from typing import Any, Callable, List, Optional, Sequence, Tuple
 
 import click
-from neuro_sdk import Client, FileStatusType, IllegalArgumentError, ResourceNotFound
-from neuro_sdk.file_filter import FileFilter
-from neuro_sdk.url_utils import _extract_path
 from rich.markup import escape as rich_escape
 from rich.text import Text
 from yarl import URL
+
+from neuro_sdk import Client, FileStatusType, IllegalArgumentError, ResourceNotFound
+from neuro_sdk.file_filter import FileFilter
+from neuro_sdk.url_utils import _extract_path
 
 from .const import EX_OSFILE
 from .formatters.storage import (
@@ -28,7 +29,6 @@ from .formatters.storage import (
 )
 from .root import Root
 from .utils import Option, argument, command, group, option, parse_file_resource
-
 
 NEUROIGNORE_FILENAME = ".neuroignore"
 

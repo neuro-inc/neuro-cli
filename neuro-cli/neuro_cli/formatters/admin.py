@@ -1,13 +1,15 @@
 import operator
 from typing import Iterable, List
 
-from neuro_cli.utils import format_size
-from neuro_sdk.admin import _Cluster, _ClusterUser, _NodePool
 from rich import box
 from rich.console import RenderableType, RenderGroup
 from rich.rule import Rule
 from rich.styled import Styled
 from rich.table import Table
+
+from neuro_sdk.admin import _Cluster, _ClusterUser, _NodePool
+
+from neuro_cli.utils import format_size
 
 
 class ClusterUserFormatter:

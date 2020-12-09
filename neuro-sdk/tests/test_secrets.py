@@ -2,9 +2,9 @@ import base64
 from typing import Callable
 
 from aiohttp import web
-from neuro_sdk import Client, Secret
 from tests import _TestServerFactory
 
+from neuro_sdk import Client, Secret
 
 _MakeClient = Callable[..., Client]
 

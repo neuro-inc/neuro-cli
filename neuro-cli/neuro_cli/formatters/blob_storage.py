@@ -2,14 +2,15 @@ import abc
 import time
 from typing import Sequence, Union
 
-from neuro_cli.utils import format_size
-from neuro_sdk import Action, BlobListing, BucketListing, FileStatusType, PrefixListing
 from rich.console import RenderableType
 from rich.table import Table
 from rich.text import Text
 
-from .storage import TIME_FORMAT, get_painter
+from neuro_sdk import Action, BlobListing, BucketListing, FileStatusType, PrefixListing
 
+from neuro_cli.utils import format_size
+
+from .storage import TIME_FORMAT, get_painter
 
 BlobListings = Union[BucketListing, BlobListing, PrefixListing]
 

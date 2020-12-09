@@ -3,6 +3,11 @@ import logging
 from dataclasses import replace
 from typing import Optional
 
+from rich.progress import Progress
+
+from neuro_sdk import LocalImage, RemoteImage
+from neuro_sdk.parsing_utils import Tag
+
 from neuro_cli.formatters.images import (
     BaseImagesFormatter,
     BaseTagsFormatter,
@@ -14,9 +19,6 @@ from neuro_cli.formatters.images import (
     ShortTagsFormatter,
 )
 from neuro_cli.formatters.utils import ImageFormatter, image_formatter, uri_formatter
-from neuro_sdk import LocalImage, RemoteImage
-from neuro_sdk.parsing_utils import Tag
-from rich.progress import Progress
 
 from .click_types import RemoteImageType, RemoteTaglessImageType
 from .root import Root
@@ -28,7 +30,6 @@ from .utils import (
     group,
     option,
 )
-
 
 log = logging.getLogger(__name__)
 

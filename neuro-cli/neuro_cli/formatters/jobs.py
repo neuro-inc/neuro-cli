@@ -8,9 +8,6 @@ from types import TracebackType
 from typing import Iterable, List, Optional, Tuple, Type
 
 import humanize
-from neuro_cli.parse_utils import JobColumnInfo
-from neuro_cli.utils import format_size
-from neuro_sdk import JobDescription, JobRestartPolicy, JobStatus, JobTelemetry
 from rich import box
 from rich.console import Console, ConsoleRenderable, RenderableType, RenderHook
 from rich.control import Control
@@ -19,8 +16,12 @@ from rich.styled import Styled
 from rich.table import Table
 from rich.text import Text
 
-from .utils import ImageFormatter, URIFormatter, image_formatter, no, yes
+from neuro_sdk import JobDescription, JobRestartPolicy, JobStatus, JobTelemetry
 
+from neuro_cli.parse_utils import JobColumnInfo
+from neuro_cli.utils import format_size
+
+from .utils import ImageFormatter, URIFormatter, image_formatter, no, yes
 
 COLORS = {
     JobStatus.PENDING: "cyan",

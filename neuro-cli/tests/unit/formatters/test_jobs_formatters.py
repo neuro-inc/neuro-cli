@@ -6,17 +6,9 @@ from typing import Any, Callable, Optional
 
 import pytest
 from dateutil.parser import isoparse
-from neuro_cli.formatters.jobs import (
-    JobStartProgress,
-    JobStatusFormatter,
-    JobTelemetryFormatter,
-    SimpleJobsFormatter,
-    TabularJobRow,
-    TabularJobsFormatter,
-    format_timedelta,
-)
-from neuro_cli.formatters.utils import image_formatter, uri_formatter
-from neuro_cli.parse_utils import parse_columns
+from rich.console import Console
+from yarl import URL
+
 from neuro_sdk import (
     Container,
     DiskVolume,
@@ -32,9 +24,18 @@ from neuro_sdk import (
     Volume,
 )
 from neuro_sdk.parsing_utils import _ImageNameParser
-from rich.console import Console
-from yarl import URL
 
+from neuro_cli.formatters.jobs import (
+    JobStartProgress,
+    JobStatusFormatter,
+    JobTelemetryFormatter,
+    SimpleJobsFormatter,
+    TabularJobRow,
+    TabularJobsFormatter,
+    format_timedelta,
+)
+from neuro_cli.formatters.utils import image_formatter, uri_formatter
+from neuro_cli.parse_utils import parse_columns
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
 TEST_JOB_NAME = "test-job-name"

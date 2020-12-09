@@ -1,6 +1,7 @@
 from typing import Callable
 
-from neuro_cli.formatters.admin import ClustersFormatter, ClusterUserFormatter
+from rich.console import RenderableType
+
 from neuro_sdk.admin import (
     _CloudProvider,
     _Cluster,
@@ -9,8 +10,8 @@ from neuro_sdk.admin import (
     _NodePool,
     _Storage,
 )
-from rich.console import RenderableType
 
+from neuro_cli.formatters.admin import ClustersFormatter, ClusterUserFormatter
 
 RichCmp = Callable[[RenderableType], None]
 

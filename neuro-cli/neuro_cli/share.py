@@ -2,9 +2,10 @@ import logging
 from typing import Any, Optional
 
 import click
-from neuro_sdk import Action, Permission, Share
 from rich.table import Table
 from yarl import URL
+
+from neuro_sdk import Action, Permission, Share
 
 from .formatters.utils import URIFormatter, uri_formatter
 from .root import Root
@@ -16,7 +17,6 @@ from .utils import (
     parse_permission_action,
     parse_resource_for_sharing,
 )
-
 
 log = logging.getLogger(__name__)
 

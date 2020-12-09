@@ -5,6 +5,7 @@ from typing import Any
 from unittest.mock import Mock, call
 
 import pytest
+
 from neuro_sdk import ConfigError, find_project_root
 from neuro_sdk.utils import queue_calls
 

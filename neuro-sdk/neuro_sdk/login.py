@@ -38,7 +38,6 @@ from yarl import URL
 
 from .errors import AuthError
 
-
 if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import asynccontextmanager
 else:
