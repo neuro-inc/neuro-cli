@@ -7,12 +7,13 @@ import sys
 import warnings
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, List, Optional, Sequence, Tuple, Type, Union, cast
+from typing import Any, List, Optional, Sequence, Tuple, Union, cast
 
 import aiohttp
 import click
 from aiodocker.exceptions import DockerError
 from click.exceptions import Abort as ClickAbort, Exit as ClickExit
+from rich.logging import RichHandler
 
 import neuromation
 import neuromation.api.errors
@@ -43,7 +44,6 @@ from .const import (
     EX_SOFTWARE,
     EX_TIMEOUT,
 )
-from .log_formatter import ConsoleHandler, ConsoleWarningFormatter
 from .root import Root
 from .topics import topics
 from .tty_utils import enable_ansi
@@ -92,19 +92,17 @@ log = logging.getLogger(__name__)
 
 def setup_logging(verbosity: int, color: bool) -> None:
     root_logger = logging.getLogger()
-    handler = ConsoleHandler()
+    handler: logging.Handler
+    if color:
+        handler = RichHandler(show_time=False, show_path=False)
+    else:
+        handler = logging.StreamHandler()
     root_logger.addHandler(handler)
     root_logger.setLevel(logging.DEBUG)
 
-    if color:
-        format_class: Type[logging.Formatter] = ConsoleWarningFormatter
-    else:
-        format_class = logging.Formatter
-
-    if verbosity <= 1:
-        formatter = format_class()
-    else:
-        formatter = format_class("%(name)s.%(funcName)s: %(message)s")
+    if verbosity > 1:
+        formatter = logging.Formatter("%(name)s.%(funcName)s: %(message)s")
+        handler.setFormatter(formatter)
 
     if verbosity < -1:
         loglevel = logging.CRITICAL
@@ -117,7 +115,6 @@ def setup_logging(verbosity: int, color: bool) -> None:
     else:
         loglevel = logging.DEBUG
 
-    handler.setFormatter(formatter)
     handler.setLevel(loglevel)
 
 
