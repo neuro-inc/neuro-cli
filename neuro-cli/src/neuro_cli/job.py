@@ -194,7 +194,7 @@ async def port_forward(
     )
     async with AsyncExitStack() as stack:
         for local_port, job_port in local_remote_port:
-            click.echo(
+            root.print(
                 f"Port localhost:{local_port} will be forwarded "
                 f"to port {job_port} of {job_id}"
             )
@@ -202,7 +202,7 @@ async def port_forward(
                 root.client.jobs.port_forward(job_id, local_port, job_port)
             )
 
-        click.echo("Press ^C to stop forwarding")
+        root.print("Press ^C to stop forwarding")
         try:
             while True:
                 await asyncio.sleep(1)
@@ -474,7 +474,7 @@ async def save(root: Root, job: str, image: RemoteImage) -> None:
     progress = DockerImageProgress.create(console=root.console, quiet=root.quiet)
     with contextlib.closing(progress):
         await root.client.jobs.save(id, image, progress=progress)
-    click.echo(image)
+    root.print(image)
 
 
 @command()
@@ -491,17 +491,14 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         try:
             await root.client.jobs.kill(job_resolved)
             # TODO (ajuszkowski) printing should be on the cli level
-            click.echo(job_resolved)
+            root.print(job_resolved)
         except ValueError as e:
             errors.append((job, e))
         except AuthorizationError:
             errors.append((job, ValueError(f"Not enough permissions")))
 
-    def format_fail(job: str, reason: Exception) -> str:
-        return click.style(f"Cannot kill job {job}: {reason}", fg="red")
-
     for job, error in errors:
-        click.echo(format_fail(job, error), err=True)
+        root.print(f"Cannot kill job {job}: {error}", err=True, style="red")
     if errors:
         sys.exit(1)
 
@@ -742,7 +739,7 @@ async def run(
         preset = next(iter(root.client.config.presets.keys()))
     job_preset = root.client.config.presets[preset]
     if preemptible is not None:
-        click.echo(
+        root.print(
             "-p/-P option is deprecated and ignored. Use corresponding presets instead."
         )
     log.info(f"Using preset '{preset}': {job_preset}")
@@ -957,8 +954,8 @@ async def upload_and_map_config(root: Root) -> Tuple[str, Volume]:
     local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/.neuro/"
     local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
     if not root.quiet:
-        click.echo(f"Temporary config file created on storage: {storage_nmrc_path}.")
-        click.echo(f"Inside container it will be available at: {local_nmrc_path}.")
+        root.print(f"Temporary config file created on storage: {storage_nmrc_path}.")
+        root.print(f"Inside container it will be available at: {local_nmrc_path}.")
     await root.client.storage.mkdir(storage_nmrc_folder, parents=True, exist_ok=True)
 
     async def skip_tmp(fname: str) -> bool:
@@ -981,7 +978,7 @@ async def browse_job(root: Root, job: JobDescription) -> None:
     url = job.http_url
     if url.scheme not in ("http", "https"):
         raise RuntimeError(f"Cannot browse job URL: {url}")
-    click.echo(f"Browsing job, please open: {url}")
+    root.print(f"Browsing job, please open: {url}")
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, webbrowser.open, str(url))
 
