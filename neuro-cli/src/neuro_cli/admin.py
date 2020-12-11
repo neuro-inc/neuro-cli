@@ -488,6 +488,7 @@ async def update_resource_preset(
         is_preemptible_node_required=preemptible_node,
     )
     await root.client._admin.update_cluster_resource_presets(cluster_name, presets)
+    await root.client.config.fetch()
     if not root.quiet:
         root.print(
             f"Updated resource preset [b]{preset_name}[/b] "
@@ -509,6 +510,7 @@ async def remove_resource_preset(
         raise ValueError(f"Preset '{preset_name}' not found")
     del presets[preset_name]
     await root.client._admin.update_cluster_resource_presets(cluster_name, presets)
+    await root.client.config.fetch()
     if not root.quiet:
         root.print(
             f"Removed resource preset [b]{preset_name}[/b] "
