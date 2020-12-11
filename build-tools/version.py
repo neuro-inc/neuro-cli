@@ -70,9 +70,9 @@ class SetupVP(VersionProcessor):
 
 
 FILES = {
-    "neuro-sdk/neuro_sdk/__init__.py": InitVP(),
+    "neuro-sdk/src/neuro_sdk/__init__.py": InitVP(),
     "neuro-sdk/setup.py": SetupVP(False),
-    "neuro-cli/neuro_cli/__init__.py": InitVP(),
+    "neuro-cli/src/neuro_cli/__init__.py": InitVP(),
     "neuro-cli/setup.py": SetupVP(True),
 }
 

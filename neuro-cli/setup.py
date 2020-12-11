@@ -6,7 +6,7 @@ with open("README.md") as f:
 
 setup(
     name="neuro-cli",
-    version="20.12.11b3",
+    version="20.12.11b4",
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
@@ -19,7 +19,7 @@ setup(
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
         "aiodocker>=0.18.7",
-        "neuro-sdk>=20.12.11b3",
+        "neuro-sdk>=20.12.11b4",
         "click>=7.0",
         "humanize>=0.5",
         "typing_extensions>=3.7.4",
@@ -40,8 +40,9 @@ setup(
     author="Neu.ro Team",
     author_email="team@neu.ro",
     license="Apache License, version 2.0",
-    url="https://neuromation.io/",
-    packages=find_packages(include=("neuro_sdk", "neuro_sdk.*")),
+    url="https://neuro.ro/",
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     entry_points={
         "console_scripts": [
             "neuro=neuro_cli.main:main",

@@ -6,7 +6,7 @@ with open("README.md") as f:
 
 setup(
     name="neuro-sdk",
-    version="20.12.11b3",
+    version="20.12.11b4",
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
@@ -34,7 +34,8 @@ setup(
     author_email="team@neu.ro",
     license="Apache License, version 2.0",
     url="https://neu.ro/",
-    packages=find_packages(include=("neuro_sdk")),
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",

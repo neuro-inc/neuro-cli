@@ -1,19 +1,5 @@
-include LICENSE.txt
+include LICENSE
 include CHANGELOG.md
 include README.md
-include RELEASE.md
-include pytest.ini
-include pyproject.toml
-include Makefile
-graft neuromation
-graft docs
+include setup.cfg
 graft tests
-global-include neuromation *.pyi
-global-exclude *.pyc
-global-exclude *.pyd
-global-exclude *.so
-global-exclude *.lib
-global-exclude *.dll
-global-exclude *.a
-global-exclude *.obj
-prune docs/_build
