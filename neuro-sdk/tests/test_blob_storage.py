@@ -10,7 +10,6 @@ from unittest import mock
 
 import pytest
 from aiohttp import web
-from tests import _TestServerFactory
 from yarl import URL
 
 import neuro_sdk.blob_storage
@@ -25,6 +24,8 @@ from neuro_sdk import (
     StorageProgressStep,
 )
 from neuro_sdk.blob_storage import calc_md5
+
+from tests import _TestServerFactory
 
 _MakeClient = Callable[..., Client]
 

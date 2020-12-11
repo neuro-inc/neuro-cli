@@ -2,10 +2,11 @@ from typing import Callable
 
 import pytest
 from aiohttp import web
-from tests import _TestServerFactory
 
 from neuro_sdk import AuthorizationError, Client
 from neuro_sdk.quota import _QuotaInfo
+
+from tests import _TestServerFactory
 
 _MakeClient = Callable[..., Client]
 

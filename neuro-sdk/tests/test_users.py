@@ -2,10 +2,11 @@ from typing import AsyncIterator, Callable
 
 import pytest
 from aiohttp import web
-from tests import _TestServerFactory
 from yarl import URL
 
 from neuro_sdk import Action, Client, Permission, ResourceNotFound
+
+from tests import _TestServerFactory
 
 _MakeClient = Callable[..., Client]
 

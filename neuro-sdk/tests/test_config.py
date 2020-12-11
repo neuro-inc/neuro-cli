@@ -7,12 +7,13 @@ from urllib.parse import parse_qsl
 import pytest
 import toml
 from aiohttp import web
-from tests import _TestServerFactory
 from yarl import URL
 
 from neuro_sdk import Client, Cluster, ConfigError, Preset
 from neuro_sdk.config import _check_sections, _merge_user_configs, _validate_user_config
 from neuro_sdk.login import _AuthToken
+
+from tests import _TestServerFactory
 
 _MakeClient = Callable[..., Client]
 

@@ -10,7 +10,6 @@ from unittest import mock
 
 import pytest
 from aiohttp import web
-from tests import _RawTestServerFactory, _TestServerFactory
 from yarl import URL
 
 import neuro_sdk.storage
@@ -26,6 +25,8 @@ from neuro_sdk import (
 )
 from neuro_sdk.abc import StorageProgressDelete
 from neuro_sdk.storage import _parse_content_range
+
+from tests import _RawTestServerFactory, _TestServerFactory
 
 _MakeClient = Callable[..., Client]
 
