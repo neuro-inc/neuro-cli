@@ -4,4 +4,5 @@ include README.md
 include setup.cfg
 graft docs
 graft tests
+include src/neuro_sdk/py.typed
 prune docs/_build
