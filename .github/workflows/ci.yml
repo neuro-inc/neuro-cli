@@ -179,7 +179,8 @@ jobs:
         python -m pip install twine
     - name: Make dists
       run: |
-        python setup.py sdist bdist_wheel
+        python neuro-sdk/setup.py sdist bdist_wheel
+        python neuro-cli/setup.py sdist bdist_wheel
     - name: PyPI upload
       env:
         TWINE_USERNAME: __token__
