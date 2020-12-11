@@ -493,7 +493,7 @@ neuro job run [OPTIONS] IMAGE [CMD]...
 neuro run --preset=gpu-small --volume=storage::/var/storage/home:rw \
 --volume=storage:/neuromation/public:/var/storage/home:ro pytorch:latest
 
-# Starts a container using the custom image my-ubuntu:latest stored in neuromation
+# Starts a container using the custom image my-ubuntu:latest stored in neuro
 # registry, run /script.sh and pass arg1 and arg2 as its arguments:
 neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
 
@@ -852,7 +852,7 @@ neuro project init [OPTIONS] [SLUG]
 ```bash
 
 # Initializes a scaffolding for the new project with the recommended project
-# structure (see http://github.com/neuromation/cookiecutter-neuro-project)
+# structure (see http://github.com/neuro-inc/cookiecutter-neuro-project)
 neuro project init
 
 # Initializes a scaffolding for the new project with the recommended project
@@ -2191,7 +2191,7 @@ neuro run [OPTIONS] IMAGE [CMD]...
 neuro run --preset=gpu-small --volume=storage::/var/storage/home:rw \
 --volume=storage:/neuromation/public:/var/storage/home:ro pytorch:latest
 
-# Starts a container using the custom image my-ubuntu:latest stored in neuromation
+# Starts a container using the custom image my-ubuntu:latest stored in neuro
 # registry, run /script.sh and pass arg1 and arg2 as its arguments:
 neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
 

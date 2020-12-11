@@ -1,0 +1,33 @@
+[tool.towncrier]
+    package = "neuromation"
+    package_dir = "."
+    directory = "CHANGELOG.D"
+    filename = "CHANGELOG.md"
+    template = "CHANGELOG.D/towncrier_template.md"
+    issue_format = "[#{issue}](https://github.com/neuro-inc/platform-client-python/issues/{issue})"
+    start_string = "[comment]: # (towncrier release notes start)\n"
+
+    [[tool.towncrier.type]]
+        directory = "feature"
+        name = "Features"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "bugfix"
+        name = "Bugfixes"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "doc"
+        name = "Improved Documentation"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "removal"
+        name = "Deprecations and Removals"
+        showcontent = true
+
+    [[tool.towncrier.type]]
+        directory = "misc"
+        name = "Misc"
+        showcontent = false
