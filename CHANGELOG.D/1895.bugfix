@@ -1,0 +1,1 @@
+Generating the URI string for `RemoteImage` now correctly escapes special characters like "#", "%", "?" in image name and tag.
