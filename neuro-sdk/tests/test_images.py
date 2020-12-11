@@ -199,6 +199,7 @@ class TestImageParser:
         parsed = self.parser.parse_as_local_image(image)
         # instead of parser, the docker client will fail
         assert parsed == LocalImage(name="http://ubuntu", tag="latest")
+        assert self.parser.parse_as_local_image(str(parsed)) == parsed
 
     def test_parse_as_local_image_no_tag(self) -> None:
         image = "ubuntu"
@@ -209,6 +210,13 @@ class TestImageParser:
         image = "ubuntu:v10.04"
         parsed = self.parser.parse_as_local_image(image)
         assert parsed == LocalImage(name="ubuntu", tag="v10.04")
+        assert self.parser.parse_as_local_image(str(parsed)) == parsed
+
+    def test_parse_as_local_image_special_chars(self) -> None:
+        image = "image#%2d?ß:tag#%2d?ß"
+        parsed = self.parser.parse_as_local_image(image)
+        assert parsed == LocalImage(name="image#%2d?ß", tag="tag#%2d?ß")
+        assert self.parser.parse_as_local_image(str(parsed)) == parsed
 
     def test_parse_as_local_image_2_tag_fail(self) -> None:
         image = "ubuntu:v10.04:LTS"
@@ -594,6 +602,7 @@ class TestImageParser:
             cluster_name="other-cluster",
             registry="reg.neu.ro",
         )
+        assert self.parser.parse_as_neuro_image(str(parsed)) == parsed
 
     def test_parse_as_neuro_image_no_scheme_no_slash_no_tag_fail(self) -> None:
         image = "ubuntu"
@@ -645,6 +654,7 @@ class TestImageParser:
             cluster_name="test-cluster",
             registry="reg.neu.ro",
         )
+        assert self.parser.parse_as_neuro_image(str(image)) == image
 
     def test_parse_as_neuro_image_no_scheme_3_slash_with_tag_fail(self) -> None:
         image = "something/docker.io/library/ubuntu:v10.04"
@@ -890,6 +900,20 @@ class TestRemoteImage:
         )
         assert str(image) == "image://test-cluster/me/ubuntu:v10.04"
         assert _as_repo_str(image) == "registry.io/me/ubuntu:v10.04"
+
+    def test_as_str_in_neuro_registry_tag_special_chars(self) -> None:
+        image = RemoteImage.new_neuro_image(
+            name="image#%2d?ß",
+            tag="tag#%2d?ß",
+            owner="me",
+            cluster_name="test-cluster",
+            registry="registry.io",
+        )
+        assert (
+            str(image)
+            == "image://test-cluster/me/image%23%252d%3F%C3%9F:tag%23%252d%3F%C3%9F"
+        )
+        assert _as_repo_str(image) == "registry.io/me/image#%2d?ß:tag#%2d?ß"
 
     def test_as_str_not_in_neuro_registry_tag_none(self) -> None:
         image = RemoteImage.new_external_image(name="ubuntu")
