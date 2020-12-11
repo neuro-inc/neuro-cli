@@ -15,9 +15,7 @@
 .update-deps
 .venv
 .vscode
-build
 coverage.xml
-dist
 neuro-cli/build
 neuro-cli/dist
 neuro-sdk/build

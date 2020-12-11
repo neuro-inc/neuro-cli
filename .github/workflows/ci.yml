@@ -177,13 +177,25 @@ jobs:
       run: |
         make setup
         python -m pip install twine
-    - name: Make dists
+    - name: Make SDK dists
       run: |
-        python neuro-sdk/setup.py sdist bdist_wheel
+        cd neuro-sdk
+        python setup.py sdist bdist_wheel
+    - name: Make CLI dists
+      run: |
+        cd neuro-cli
         python neuro-cli/setup.py sdist bdist_wheel
-    - name: PyPI upload
+    - name: PyPI upload SDK
       env:
         TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_SDK }}
+        TWINE_NON_INTERACTIVE: 1
       run: |
-        twine upload dist/*
+        twine upload neuro-sdk/dist/*
+    - name: PyPI upload CLI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_CLI }}
+        TWINE_NON_INTERACTIVE: 1
+      run: |
+        twine upload neuro-cli/dist/*
