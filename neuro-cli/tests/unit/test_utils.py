@@ -7,7 +7,6 @@ import click
 import pytest
 import toml
 from aiohttp import web
-from tests import _TestServerFactory
 from yarl import URL
 
 from neuro_sdk import Action, Client, JobStatus
@@ -22,6 +21,8 @@ from neuro_cli.utils import (
     parse_resource_for_sharing,
     resolve_job,
 )
+
+from tests import _TestServerFactory
 
 _MakeClient = Callable[..., Client]
 

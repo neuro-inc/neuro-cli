@@ -59,10 +59,10 @@ if sys.version_info >= (3, 7):  # pragma: no cover
 else:
     from async_generator import asynccontextmanager
 
-from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
-
 from neuro_cli.asyncio_utils import run
 from neuro_cli.utils import resolve_job
+
+from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
 
 JOB_TIMEOUT = 5 * 60
 JOB_WAIT_SLEEP_SECONDS = 2

@@ -10,7 +10,6 @@ import aiohttp
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestServer as _TestServer
-from tests import _TestServerFactory
 from yarl import URL
 
 from neuro_sdk import (
@@ -22,6 +21,8 @@ from neuro_sdk import (
     __version__,
 )
 from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData
+
+from tests import _TestServerFactory
 
 
 @pytest.fixture

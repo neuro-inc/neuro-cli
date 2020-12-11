@@ -6,7 +6,6 @@ import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
 from dateutil.parser import isoparse
-from tests import _TestServerFactory
 from yarl import URL
 
 from neuro_sdk import (
@@ -24,6 +23,8 @@ from neuro_sdk import (
     Volume,
 )
 from neuro_sdk.jobs import INVALID_IMAGE_NAME, _calc_status, _job_description_from_api
+
+from tests import _TestServerFactory
 
 _MakeClient = Callable[..., Client]
 
