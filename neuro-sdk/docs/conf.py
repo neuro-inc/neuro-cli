@@ -11,7 +11,7 @@ import re
 
 _docs_path = os.path.dirname(__file__)
 _version_path = os.path.abspath(
-    os.path.join(_docs_path, "..", "neuro_sdk", "__init__.py")
+    os.path.join(_docs_path, "..", "src", "neuro_sdk", "__init__.py")
 )
 with open(_version_path, encoding="latin1") as fp:
     try:
