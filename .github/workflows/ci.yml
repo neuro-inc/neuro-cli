@@ -184,7 +184,7 @@ jobs:
     - name: Make CLI dists
       run: |
         cd neuro-cli
-        python neuro-cli/setup.py sdist bdist_wheel
+        python setup.py sdist bdist_wheel
     - name: PyPI upload SDK
       env:
         TWINE_USERNAME: __token__
