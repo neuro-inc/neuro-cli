@@ -1,5 +1,5 @@
 [tool.towncrier]
-    name = "Neuro"
+    name = "Neuro SDK/CLI"
     package = "neuro_cli"
     package_dir = "neuro-cli"
     directory = "CHANGELOG.D"
