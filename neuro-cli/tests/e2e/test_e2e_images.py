@@ -123,10 +123,15 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     delay = 0
     t0 = time.time()
 
-    while time.time() - t0 < 180:
+    while time.time() - t0 < 600:
         time.sleep(delay)
         # check the tag is present now
-        captured = helper.run_cli(["image", "tags", image_full_str_no_tag])
+        try:
+            captured = helper.run_cli(
+                ["image", "tags", image_full_str_no_tag], timeout=300
+            )
+        except subprocess.TimeoutExpired:
+            continue
         if tag in map(lambda s: s.strip(), captured.out.splitlines()):
             break
         # Give a chance to sync remote registries
