@@ -4,7 +4,7 @@ import subprocess
 import time
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, AsyncIterator, Set
+from typing import Any, AsyncIterator, Optional, Set
 from uuid import uuid4 as uuid
 
 import aiodocker
@@ -14,8 +14,6 @@ from yarl import URL
 from neuro_sdk import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, JobStatus
 
 from tests.e2e import Helper
-
-TEST_IMAGE_NAME = "e2e-banana-image"
 
 
 def parse_docker_ls_output(docker_ls_output: Any) -> Set[str]:
@@ -34,8 +32,10 @@ def tag() -> str:
 
 
 async def generate_image(
-    docker: aiodocker.Docker, tag: str, name: str = TEST_IMAGE_NAME
+    docker: aiodocker.Docker, tag: str, name: Optional[str] = None
 ) -> str:
+    if name is None:
+        name = "e2e-banana-{uuid()}"
     image_archive = Path(__file__).parent / "assets/echo-tag.tar"
     # TODO use random image name here
     image_name = f"{name}:{tag}"
@@ -123,10 +123,15 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     delay = 0
     t0 = time.time()
 
-    while time.time() - t0 < 180:
+    while time.time() - t0 < 600:
         time.sleep(delay)
         # check the tag is present now
-        captured = helper.run_cli(["image", "tags", image_full_str_no_tag])
+        try:
+            captured = helper.run_cli(
+                ["image", "tags", image_full_str_no_tag], timeout=300
+            )
+        except subprocess.TimeoutExpired:
+            continue
         if tag in map(lambda s: s.strip(), captured.out.splitlines()):
             break
         # Give a chance to sync remote registries
