@@ -463,6 +463,7 @@ class Helper:
         verbosity: int = 0,
         network_timeout: float = NETWORK_TIMEOUT,
         input: Optional[str] = None,
+        timeout: float = 300,
     ) -> SysCap:
         __tracebackhide__ = True
 
@@ -471,7 +472,7 @@ class Helper:
         # 5 min timeout is overkill
         proc = subprocess.run(
             ["neuro"] + self._default_args(verbosity, network_timeout) + arguments,
-            timeout=300,
+            timeout=timeout,
             encoding="utf8",
             errors="replace",
             stdout=subprocess.PIPE,
