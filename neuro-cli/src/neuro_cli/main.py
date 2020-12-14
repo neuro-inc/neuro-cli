@@ -7,7 +7,7 @@ import sys
 import warnings
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, List, Optional, Sequence, Tuple, Type, Union, cast
+from typing import Any, List, Optional, Sequence, Tuple, Union, cast
 
 import aiohttp
 import click
@@ -44,7 +44,7 @@ from .const import (
     EX_SOFTWARE,
     EX_TIMEOUT,
 )
-from .log_formatter import ConsoleHandler, ConsoleWarningFormatter
+from .log_formatter import ConsoleHandler
 from .root import Root
 from .topics import topics
 from .utils import (
@@ -89,21 +89,15 @@ setup_child_watcher()
 log = logging.getLogger(__name__)
 
 
-def setup_logging(verbosity: int, color: bool) -> None:
+def setup_logging(verbosity: int, color: bool) -> ConsoleHandler:
     root_logger = logging.getLogger()
-    handler = ConsoleHandler()
+    handler = ConsoleHandler(color=color)
     root_logger.addHandler(handler)
     root_logger.setLevel(logging.DEBUG)
 
-    if color:
-        format_class: Type[logging.Formatter] = ConsoleWarningFormatter
-    else:
-        format_class = logging.Formatter
-
-    if verbosity <= 1:
-        formatter = format_class()
-    else:
-        formatter = format_class("%(name)s.%(funcName)s: %(message)s")
+    if verbosity > 1:
+        formatter = logging.Formatter("%(name)s.%(funcName)s: %(message)s")
+        handler.setFormatter(formatter)
 
     if verbosity < -1:
         loglevel = logging.CRITICAL
@@ -116,8 +110,9 @@ def setup_logging(verbosity: int, color: bool) -> None:
     else:
         loglevel = logging.DEBUG
 
-    handler.setFormatter(formatter)
     handler.setLevel(loglevel)
+
+    return handler
 
 
 LOG_ERROR = log.error
@@ -159,7 +154,7 @@ class MainGroup(Group):
             real_color = tty
         ctx.color = real_color
         verbosity = kwargs["verbose"] - kwargs["quiet"]
-        setup_logging(verbosity=verbosity, color=real_color)
+        handler = setup_logging(verbosity=verbosity, color=real_color)
         if kwargs["hide_token"] is None:
             hide_token_bool = True
         else:
@@ -192,6 +187,7 @@ class MainGroup(Group):
             skip_gmp_stats=kwargs["skip_stats"],
             show_traceback=show_traceback,
         )
+        handler.setConsole(root.err_console)
         ctx.obj = root
         ctx.call_on_close(root.close)
         return ctx

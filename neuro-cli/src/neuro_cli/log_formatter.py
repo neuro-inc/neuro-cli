@@ -1,37 +1,47 @@
 import logging
+import sys
 
-import click
-
-
-class ConsoleWarningFormatter(logging.Formatter):
-    """A logging.Formatter which prints WARNING and ERROR messages with
-    a prefix of the log level colored appropriate for the log level.
-    """
-
-    def get_level_message(self, record: logging.LogRecord) -> str:
-        separator = ": "
-
-        if record.levelno == logging.WARNING:
-            return click.style(record.levelname, fg="yellow") + separator
-        if record.levelno == logging.ERROR:
-            return click.style(record.levelname, fg="red") + separator
-
-        return ""
-
-    def format(self, record: logging.LogRecord) -> str:
-        if isinstance(record.msg, bytes):
-            record.msg = record.msg.decode("utf-8")
-        message = super().format(record)
-        return "{}{}".format(self.get_level_message(record), message)
+import rich
 
 
-class ConsoleHandler(logging.StreamHandler):
+class ConsoleHandler(logging.Handler):
+    def __init__(self, color: bool) -> None:
+        logging.Handler.__init__(self)
+        self.console = rich.console.Console(
+            file=sys.stderr,
+            color_system="auto" if color else None,
+            highlight=False,
+            log_path=False,
+            width=2048,
+        )
+
     def emit(self, record: logging.LogRecord) -> None:
-        if self.stream.closed:
-            return
         try:
-            msg = self.format(record)
-            click.echo(msg, err=True)
-            self.flush()
+            self.acquire()
+            try:
+                if self.console.file.closed:
+                    return
+                self.console.print(self.get_level_message(record), end="", markup=True)
+                self.console.print(self.format(record), markup=False)
+            finally:
+                self.release()
+        except RecursionError:  # pragma: no cover
+            raise
         except Exception:  # pragma: no cover
             self.handleError(record)
+
+    def setConsole(self, console: rich.console.Console) -> None:
+        if console is not self.console:
+            self.acquire()
+            try:
+                self.console = console
+            finally:
+                self.release()
+
+    def get_level_message(self, record: logging.LogRecord) -> str:
+        if record.levelno >= logging.ERROR:
+            return f"[bold red]{record.levelname}[/bold red]: "
+        elif record.levelno >= logging.WARNING:
+            return f"[bold yellow]{record.levelname}[/bold yellow]: "
+
+        return ""

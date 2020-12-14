@@ -825,7 +825,7 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd", "--opt", "arg"])
         assert capture.code == 70, capture
-        assert capture.err.startswith("Cannot parse option --123")
+        assert capture.err.startswith("ERROR: Cannot parse option --123")
 
     def test_external_alias_short_option_not_identifier(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -838,7 +838,7 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd", "--opt", "arg"])
         assert capture.code == 70, capture
-        assert capture.err.startswith("Cannot parse option -1")
+        assert capture.err.startswith("ERROR: Cannot parse option -1")
 
     def test_external_alias_option_meta_not_identifier(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -855,7 +855,7 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd", "--opt", "arg"])
         assert capture.code == 70, capture
-        assert capture.err.startswith("Cannot parse option --opt 123")
+        assert capture.err.startswith("ERROR: Cannot parse option --opt 123")
 
     def test_external_alias_empty_substitution(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -864,7 +864,7 @@ class TestExternalAliasParseErrors:
         user_cfg.write_text(toml.dumps({"alias": {"user-cmd": {"exec": "script {}"}}}))
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
-        assert capture.err.startswith("Empty substitution is not allowed")
+        assert capture.err.startswith("ERROR: Empty substitution is not allowed")
 
     def test_external_alias_uppercased_parameter(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -875,7 +875,7 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
-        assert capture.err.startswith("Parameter PARAM should be lowercased")
+        assert capture.err.startswith("ERROR: Parameter PARAM should be lowercased")
 
     def test_external_alias_invalid_parameter_name(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -886,7 +886,7 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
-        assert capture.err.startswith("Parameter 123 is not a valid identifier")
+        assert capture.err.startswith("ERROR: Parameter 123 is not a valid identifier")
 
     def test_external_alias_unknown_parameter(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -906,7 +906,9 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
-        assert capture.err.startswith('Unknown parameter param in "script {param}"')
+        assert capture.err.startswith(
+            'ERROR: Unknown parameter param in "script {param}"'
+        )
 
     def test_external_alias_overlapped_args_and_options(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -928,7 +930,7 @@ class TestExternalAliasParseErrors:
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
         assert capture.err.startswith(
-            "The following names are present in both positional "
+            "ERROR: The following names are present in both positional "
             "and optional arguments: param"
         )
 
@@ -943,7 +945,7 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
-        assert capture.err.startswith('Nested brackets in "[[ARG]]"')
+        assert capture.err.startswith('ERROR: Nested brackets in "[[ARG]]"')
 
     def test_external_alias_missing_open_bracket(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -956,7 +958,7 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
-        assert capture.err.startswith('Missing open bracket in "ARG]"')
+        assert capture.err.startswith('ERROR: Missing open bracket in "ARG]"')
 
     def test_external_alias_missing_argument_inside_brackets(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -967,7 +969,7 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
-        assert capture.err.startswith('Missing argument inside brackets in "[]"')
+        assert capture.err.startswith('ERROR: Missing argument inside brackets in "[]"')
 
     def test_external_alias_ellipsis_should_follow_arg(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -979,7 +981,7 @@ class TestExternalAliasParseErrors:
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
         assert capture.err.startswith(
-            'Ellipsis (...) should follow an argument in "..."'
+            'ERROR: Ellipsis (...) should follow an argument in "..."'
         )
 
     def test_external_alias_ellipsis_inside_brackets(
@@ -993,7 +995,9 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
-        assert capture.err.startswith('Ellipsis (...) inside of brackets in "[ARG...]"')
+        assert capture.err.startswith(
+            'ERROR: Ellipsis (...) inside of brackets in "[ARG...]"'
+        )
 
     def test_external_alias_successive_ellipsis(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -1006,7 +1010,7 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
-        assert capture.err.startswith('Successive ellipsis (...) in "ARG......"')
+        assert capture.err.startswith('ERROR: Successive ellipsis (...) in "ARG......"')
 
     def test_external_alias_missing_close_bracket1(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -1019,7 +1023,7 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
-        assert capture.err.startswith('Missing close bracket in "[ARG"')
+        assert capture.err.startswith('ERROR: Missing close bracket in "[ARG"')
 
     def test_external_alias_missing_close_bracket2(
         self, run_cli: _RunCli, nmrc_path: Path
@@ -1032,7 +1036,7 @@ class TestExternalAliasParseErrors:
         )
         capture = run_cli(["user-cmd"])
         assert capture.code == 70, capture
-        assert capture.err.startswith('Missing close bracket in "[ARG1 ARG2"')
+        assert capture.err.startswith('ERROR: Missing close bracket in "[ARG1 ARG2"')
 
 
 def test_external_alias_simplified(
