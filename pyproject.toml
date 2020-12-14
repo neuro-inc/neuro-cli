@@ -1,6 +1,7 @@
 [tool.towncrier]
-    package = "neuromation"
-    package_dir = "."
+    name = "Neuro"
+    package = "neuro_cli"
+    package_dir = "neuro-cli"
     directory = "CHANGELOG.D"
     filename = "CHANGELOG.md"
     template = "CHANGELOG.D/towncrier_template.md"

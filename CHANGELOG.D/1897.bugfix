@@ -1,1 +1,0 @@
-Fixed conflict between logging and showing progress in `neuro cp -vv`. Use the `rich` library for outputting colored logs.

@@ -5,6 +5,25 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro 20.12.14 (2020-12-14)
+===============================
+
+Features
+--------
+
+
+- Extract `neuromation.api` into `neuro-sdk` package, rename `neuromation` to `neuro-cli`. ([#1892](https://github.com/neuro-inc/platform-client-python/issues/1892))
+
+
+Bugfixes
+--------
+
+
+- Generating the URI string for `RemoteImage` now correctly escapes special characters like "#", "%", "?" in image name and tag. ([#1895](https://github.com/neuro-inc/platform-client-python/issues/1895))
+
+- Fixed conflict between logging and showing progress in `neuro cp -vv`. Use the `rich` library for outputting colored logs. ([#1897](https://github.com/neuro-inc/platform-client-python/issues/1897))
+
+
 Neuromation 20.12.7 (2020-12-07)
 ================================
 
