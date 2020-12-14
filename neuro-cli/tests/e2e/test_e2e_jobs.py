@@ -1058,9 +1058,7 @@ def test_job_secret_env(helper: Helper, secret: Tuple[str, str]) -> None:
     assert match is not None, captured
     job_id = match.group(1)
 
-    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
+    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
 
 @pytest.mark.e2e
@@ -1088,9 +1086,7 @@ def test_job_secret_file(helper: Helper, secret: Tuple[str, str]) -> None:
     assert match is not None, captured
     job_id = match.group(1)
 
-    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
+    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
 
 @pytest.fixture
@@ -1127,9 +1123,7 @@ def test_job_working_dir(helper: Helper) -> None:
 
     job_id = captured.out
 
-    helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
-    helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-    helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
+    helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
 
 
 @pytest.mark.e2e
@@ -1159,6 +1153,4 @@ def test_job_disk_volume(
         assert match is not None, captured
         job_id = match.group(1)
 
-        helper.wait_job_change_state_from(job_id, JobStatus.PENDING)
-        helper.wait_job_change_state_from(job_id, JobStatus.RUNNING)
-        helper.assert_job_state(job_id, JobStatus.SUCCEEDED)
+        helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
