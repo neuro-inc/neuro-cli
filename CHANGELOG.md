@@ -5,8 +5,18 @@
 
 [comment]: # (towncrier release notes start)
 
-Neuro 20.12.14 (2020-12-14)
-===============================
+Neuro SDK/CLI 20.12.15 (2020-12-15)
+===================================
+
+Bugfixes
+--------
+
+
+- Fix unstable imports of `rich` tool. ([#1911](https://github.com/neuro-inc/platform-client-python/issues/1911))
+
+
+Neuro SDK/CLI 20.12.14 (2020-12-14)
+===================================
 
 Features
 --------
