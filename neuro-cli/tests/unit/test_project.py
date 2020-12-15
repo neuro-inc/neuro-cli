@@ -17,6 +17,6 @@ def test_project_init(tmp_path: Path, slug: Optional[str]) -> None:
 
         _project_init(slug, no_input=True)
         assert path.is_dir()
-        assert "Makefile" in {p.name for p in path.iterdir()}
+        assert "Dockerfile" in {p.name for p in path.iterdir()}
     finally:
         os.chdir(old_workdir)
