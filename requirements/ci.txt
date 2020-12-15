@@ -12,7 +12,7 @@ pytest==6.1.2
 pytest-aiohttp==0.3.0
 pytest-cov==2.10.1
 pytest-timeout==1.4.2
-pytest-xdist==2.1.0
+pytest-xdist==2.2.0
 re-assert==1.1.0
 setuptools==51.0.0
 towncrier==19.2.0
