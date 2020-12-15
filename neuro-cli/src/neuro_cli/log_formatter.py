@@ -1,13 +1,13 @@
 import logging
 import sys
 
-import rich
+from rich.console import Console
 
 
 class ConsoleHandler(logging.Handler):
     def __init__(self, color: bool) -> None:
         logging.Handler.__init__(self)
-        self.console = rich.console.Console(
+        self.console = Console(
             file=sys.stderr,
             color_system="auto" if color else None,
             highlight=False,
@@ -30,7 +30,7 @@ class ConsoleHandler(logging.Handler):
         except Exception:  # pragma: no cover
             self.handleError(record)
 
-    def setConsole(self, console: rich.console.Console) -> None:
+    def setConsole(self, console: Console) -> None:
         if console is not self.console:
             self.acquire()
             try:
