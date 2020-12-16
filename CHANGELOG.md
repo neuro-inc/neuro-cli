@@ -5,8 +5,8 @@
 
 [comment]: # (towncrier release notes start)
 
-Neuro_Cli 20.12.16 (2020-12-16)
-===============================
+Neuro SDK/CLI 20.12.16 (2020-12-16)
+===================================
 
 Bugfixes
 --------
