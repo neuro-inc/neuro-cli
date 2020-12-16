@@ -1,9 +1,11 @@
 import json
+from contextlib import ExitStack
 from typing import Any, Callable, List, Mapping
 from unittest import mock
 
 from neuro_sdk import Preset
 from neuro_sdk.admin import _Admin, _ClusterUser, _ClusterUserRoleType
+from neuro_sdk.config import Config
 
 from .conftest import SysCapWithCode
 
@@ -69,7 +71,11 @@ def test_show_cluster_config_options(run_cli: _RunCli) -> None:
 
 
 def test_update_resource_preset(run_cli: _RunCli) -> None:
-    with mock.patch.object(_Admin, "update_cluster_resource_presets") as mocked:
+    with ExitStack() as exit_stack:
+        admin_mocked = exit_stack.enter_context(
+            mock.patch.object(_Admin, "update_cluster_resource_presets")
+        )
+        config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
         async def update_cluster_resource_presets(
             cluster_name: str, presets: Mapping[str, Preset]
@@ -87,7 +93,12 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
                 is_preemptible_node_required=True,
             )
 
-        mocked.side_effect = update_cluster_resource_presets
+        async def fetch() -> None:
+            pass
+
+        admin_mocked.side_effect = update_cluster_resource_presets
+        config_mocked.side_effect = fetch
+
         capture = run_cli(
             [
                 "admin",
@@ -114,14 +125,23 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
 
 
 def test_update_resource_preset_print_result(run_cli: _RunCli) -> None:
-    with mock.patch.object(_Admin, "update_cluster_resource_presets") as mocked:
+    with ExitStack() as exit_stack:
+        admin_mocked = exit_stack.enter_context(
+            mock.patch.object(_Admin, "update_cluster_resource_presets")
+        )
+        config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
         async def update_cluster_resource_presets(
             cluster_name: str, presets: Mapping[str, Preset]
         ) -> None:
             pass
 
-        mocked.side_effect = update_cluster_resource_presets
+        async def fetch() -> None:
+            pass
+
+        admin_mocked.side_effect = update_cluster_resource_presets
+        config_mocked.side_effect = fetch
+
         capture = run_cli(["admin", "update-resource-preset", "default", "cpu-micro"])
         assert not capture.err
         assert capture.out == "Updated resource preset cpu-micro in cluster default"
@@ -135,14 +155,23 @@ def test_update_resource_preset_print_result(run_cli: _RunCli) -> None:
 
 
 def test_remove_resource_preset_print_result(run_cli: _RunCli) -> None:
-    with mock.patch.object(_Admin, "update_cluster_resource_presets") as mocked:
+    with ExitStack() as exit_stack:
+        admin_mocked = exit_stack.enter_context(
+            mock.patch.object(_Admin, "update_cluster_resource_presets")
+        )
+        config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
         async def update_cluster_resource_presets(
             cluster_name: str, presets: Mapping[str, Preset]
         ) -> None:
             pass
 
-        mocked.side_effect = update_cluster_resource_presets
+        async def fetch() -> None:
+            pass
+
+        admin_mocked.side_effect = update_cluster_resource_presets
+        config_mocked.side_effect = fetch
+
         capture = run_cli(["admin", "remove-resource-preset", "default", "cpu-small"])
         assert not capture.err
         assert capture.out == "Removed resource preset cpu-small from cluster default"
@@ -156,14 +185,23 @@ def test_remove_resource_preset_print_result(run_cli: _RunCli) -> None:
 
 
 def test_remove_resource_preset_not_exists(run_cli: _RunCli) -> None:
-    with mock.patch.object(_Admin, "update_cluster_resource_presets") as mocked:
+    with ExitStack() as exit_stack:
+        admin_mocked = exit_stack.enter_context(
+            mock.patch.object(_Admin, "update_cluster_resource_presets")
+        )
+        config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
         async def update_cluster_resource_presets(
             cluster_name: str, presets: Mapping[str, Preset]
         ) -> None:
             pass
 
-        mocked.side_effect = update_cluster_resource_presets
+        async def fetch() -> None:
+            pass
+
+        admin_mocked.side_effect = update_cluster_resource_presets
+        config_mocked.side_effect = fetch
+
         capture = run_cli(["admin", "remove-resource-preset", "default", "unknown"])
         assert capture.code
         assert "Preset 'unknown' not found" in capture.err
