@@ -1,10 +1,10 @@
 [tool.towncrier]
-    name = "Neuro SDK/CLI"
     package = "neuro_cli"
     package_dir = "neuro-cli"
     directory = "CHANGELOG.D"
     filename = "CHANGELOG.md"
     template = "CHANGELOG.D/towncrier_template.md"
+    title_format = "Neuro SDK/CLI {version} ({project_date})"
     issue_format = "[#{issue}](https://github.com/neuro-inc/platform-client-python/issues/{issue})"
     start_string = "[comment]: # (towncrier release notes start)\n"
 
