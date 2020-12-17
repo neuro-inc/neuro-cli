@@ -123,7 +123,7 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
     try:
         await root.factory.login_with_token(token, url=url, timeout=root.timeout)
     except ConfigError:
-        await root.factory.logout(_show_browser)
+        await root.factory.logout()
         root.print("You were successfully logged out.")
         await root.factory.login_with_token(token, url=url, timeout=root.timeout)
     _print_welcome(root, url)
