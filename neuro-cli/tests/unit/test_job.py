@@ -2,7 +2,6 @@ import logging
 from pathlib import Path
 from typing import Any, Callable, Tuple
 
-import click
 import pytest
 import toml
 from yarl import URL
@@ -20,32 +19,15 @@ _MakeClient = Callable[..., Client]
 
 
 @pytest.mark.parametrize("statuses", [("all",), ("all", "failed", "succeeded")])
-def test_calc_statuses__contains_all__all_statuses_true(statuses: Tuple[str]) -> None:
+def test_calc_statuses__contains_all(statuses: Tuple[str]) -> None:
     with pytest.raises(
-        click.UsageError,
-        match="Parameters `-a/--all` and " "`-s all/--status=all` are incompatible$",
+        ValueError,
+        match="'all' is not a valid JobStatus",
     ):
-        calc_statuses(statuses, all=True)
+        calc_statuses(statuses, all=False)
 
 
-@pytest.mark.parametrize("statuses", [("all",), ("all", "failed", "succeeded")])
-def test_calc_statuses__contains_all__all_statuses_false(
-    capsys: Any, caplog: Any, statuses: Tuple[str]
-) -> None:
-    calc_statuses(statuses, all=False)
-    std = capsys.readouterr()
-    assert not std.out
-    assert std.err == (
-        "DeprecationWarning: "
-        "Option `-s all/--status=all` is deprecated. "
-        "Please use `-a/--all` instead.\n"
-    )
-    assert not caplog.text
-
-
-def test_calc_statuses__not_contains_all__all_statuses_true(
-    capsys: Any, caplog: Any
-) -> None:
+def test_calc_statuses__all_statuses_true(capsys: Any, caplog: Any) -> None:
     assert calc_statuses(["succeeded", "pending"], all=True) == set()
     std = capsys.readouterr()
     assert not std.out
@@ -57,9 +39,7 @@ def test_calc_statuses__not_contains_all__all_statuses_true(
     assert warning in caplog.text
 
 
-def test_calc_statuses__not_contains_all__all_statuses_true__quiet_mode(
-    capsys: Any, caplog: Any
-) -> None:
+def test_calc_statuses__all_statuses_true__quiet_mode(capsys: Any, caplog: Any) -> None:
     caplog.set_level(logging.ERROR)
 
     assert calc_statuses(["succeeded", "pending"], all=True) == set()
@@ -69,9 +49,7 @@ def test_calc_statuses__not_contains_all__all_statuses_true__quiet_mode(
     assert not caplog.text
 
 
-def test_calc_statuses__not_contains_all__all_statuses_false(
-    capsys: Any, caplog: Any
-) -> None:
+def test_calc_statuses__all_statuses_false(capsys: Any, caplog: Any) -> None:
     assert calc_statuses(["succeeded", "pending"], all=False) == {
         JobStatus.SUCCEEDED,
         JobStatus.PENDING,

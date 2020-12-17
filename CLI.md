@@ -568,7 +568,7 @@ Name | Description|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_--since DATE_|Show jobs created after a specific date \(including).|
-|_\-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
+|_\-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled]_|Filter out jobs by status \(multiple option).|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--until DATE_|Show jobs created before a specific date \(including).|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
@@ -2266,7 +2266,7 @@ Name | Description|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_--since DATE_|Show jobs created after a specific date \(including).|
-|_\-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled &#124; all]_|Filter out jobs by status \(multiple option). Note: option `all` is deprecated, use `neuro ps -a` instead.|
+|_\-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled]_|Filter out jobs by status \(multiple option).|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--until DATE_|Show jobs created before a specific date \(including).|
 |_\-w, --wide_|Do not cut long lines for terminal width.|

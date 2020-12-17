@@ -260,13 +260,8 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     "-s",
     "--status",
     multiple=True,
-    type=click.Choice(
-        [item.value for item in JobStatus if item != JobStatus.UNKNOWN] + ["all"]
-    ),
-    help=(
-        "Filter out jobs by status (multiple option)."
-        " Note: option `all` is deprecated, use `neuro ps -a` instead."
-    ),
+    type=click.Choice([item.value for item in JobStatus if item != JobStatus.UNKNOWN]),
+    help="Filter out jobs by status (multiple option).",
 )
 @option(
     "-o",
@@ -992,32 +987,14 @@ async def browse_job(root: Root, job: JobDescription) -> None:
 
 
 def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
-    defaults = {item.value for item in JobStatus.active_items()}
     statuses = set(status)
-
-    if "all" in statuses:
-        if all:
-            raise click.UsageError(
-                "Parameters `-a/--all` and " "`-s all/--status=all` are incompatible"
-            )
-        click.echo(
-            click.style(
-                "DeprecationWarning: "
-                "Option `-s all/--status=all` is deprecated. "
-                "Please use `-a/--all` instead.",
-                fg="red",
-            ),
-            err=True,
-        )
+    if all:
+        if statuses:
+            opt = " ".join([f"--status={s}" for s in status])
+            log.warning(f"Option `-a/--all` overwrites option(s) `{opt}`")
         statuses = set()
-    else:
-        if all:
-            if statuses:
-                opt = " ".join([f"--status={s}" for s in status])
-                log.warning(f"Option `-a/--all` overwrites option(s) `{opt}`")
-            statuses = set()
-        elif not statuses:
-            statuses = defaults
+    elif not statuses:
+        statuses = {item.value for item in JobStatus.active_items()}
 
     return {JobStatus(s) for s in statuses}
 
