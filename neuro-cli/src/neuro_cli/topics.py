@@ -467,12 +467,12 @@ async def sharing() -> None:
     ===========================
 
     Understanding permissions
-    =========================
+    -------------------------
     Neu.ro platform supports five levels of access:
     * deny - no access
     * list - permits listing entities, but not looking at their details
     * read - read-only access to entity
-    * write - write-only access (including deletion) to entity
+    * write - read-write access (including deletion) to entity
     * manage - allows modification of entity's permissions
 
     Please note permissions are inclusive: write permission implies read and manage
@@ -497,7 +497,7 @@ async def sharing() -> None:
     along with users/roles you shared them with.
 
     Roles
-    =====
+    -----
     Neu.ro platform supports role-based access control. Role is a packed set
     of permissions to multiple entities which can be shared together. There's several
     default roles in each cluster, plus users may create their own custom roles.
