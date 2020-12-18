@@ -527,15 +527,15 @@ async def test_update_cluster_resource_presets(
                 "name": "cpu-micro",
                 "cpu": 0.1,
                 "memory_mb": 100,
-                "is_preemptible": False,
-                "is_preemptible_node_required": False,
+                "scheduler_enabled": False,
+                "preemptible_node": False,
             },
             {
                 "name": "cpu-micro-p",
                 "cpu": 0.1,
                 "memory_mb": 100,
-                "is_preemptible": True,
-                "is_preemptible_node_required": True,
+                "scheduler_enabled": True,
+                "preemptible_node": True,
             },
             {
                 "name": "gpu-micro",
@@ -543,16 +543,16 @@ async def test_update_cluster_resource_presets(
                 "memory_mb": 200,
                 "gpu": 1,
                 "gpu_model": "nvidia-tesla-k80",
-                "is_preemptible": False,
-                "is_preemptible_node_required": False,
+                "scheduler_enabled": False,
+                "preemptible_node": False,
             },
             {
                 "name": "tpu-micro",
                 "cpu": 0.3,
                 "memory_mb": 300,
                 "tpu": {"type": "v2-8", "software_version": "1.14"},
-                "is_preemptible": False,
-                "is_preemptible_node_required": False,
+                "scheduler_enabled": False,
+                "preemptible_node": False,
             },
         ]
         return web.Response(status=HTTPNoContent.status_code)
@@ -573,8 +573,8 @@ async def test_update_cluster_resource_presets(
                 "cpu-micro-p": Preset(
                     cpu=0.1,
                     memory_mb=100,
-                    is_preemptible=True,
-                    is_preemptible_node_required=True,
+                    scheduler_enabled=True,
+                    preemptible_node=True,
                 ),
                 "gpu-micro": Preset(
                     cpu=0.2, memory_mb=200, gpu=1, gpu_model="nvidia-tesla-k80"

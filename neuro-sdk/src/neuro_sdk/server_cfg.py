@@ -12,8 +12,8 @@ from .login import _AuthConfig
 class Preset:
     cpu: float
     memory_mb: int
-    is_preemptible: bool = False
-    is_preemptible_node_required: bool = False
+    scheduler_enabled: bool = False
+    preemptible_node: bool = False
     gpu: Optional[int] = None
     gpu_model: Optional[str] = None
     tpu_type: Optional[str] = None
@@ -50,10 +50,8 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
             memory_mb=data["memory_mb"],
             gpu=data.get("gpu"),
             gpu_model=data.get("gpu_model"),
-            is_preemptible=data.get("is_preemptible", False),
-            is_preemptible_node_required=data.get(
-                "is_preemptible_node_required", False
-            ),
+            scheduler_enabled=data.get("scheduler_enabled", False),
+            preemptible_node=data.get("preemptible_node", False),
             tpu_type=tpu_type,
             tpu_software_version=tpu_software_version,
         )

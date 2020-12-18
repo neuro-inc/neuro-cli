@@ -4,7 +4,7 @@ User Configuration:
  API URL              https://dev.neu.ro/api/v1   
  Docker Registry URL  https://registry-dev.neu.ro 
 Resource Presets:                                                                                  
- Name          #CPU   Memory   Preemptible   Preemptible Node   GPU                     TPU        
+ Name          #CPU   Memory   Round Robin   Preemptible Node   GPU                     TPU        
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  gpu-small        7    30.0G        ×               ×           1 x nvidia-tesla-k80               
  gpu-large        7    60.0G        ×               ×           1 x nvidia-tesla-v100              

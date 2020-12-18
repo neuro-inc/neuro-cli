@@ -89,8 +89,8 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
                 gpu_model="nvidia-tesla-k80",
                 tpu_type="v2-8",
                 tpu_software_version="1.14",
-                is_preemptible=True,
-                is_preemptible_node_required=True,
+                scheduler_enabled=True,
+                preemptible_node=True,
             )
 
         async def fetch() -> None:

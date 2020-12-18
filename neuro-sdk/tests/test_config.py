@@ -233,7 +233,7 @@ async def test_presets(
             "cpu-large": Preset(
                 cpu=7,
                 memory_mb=14336,
-                is_preemptible=False,
+                scheduler_enabled=False,
                 gpu=None,
                 gpu_model=None,
                 tpu_type=None,
@@ -242,7 +242,7 @@ async def test_presets(
             "cpu-small": Preset(
                 cpu=7,
                 memory_mb=2048,
-                is_preemptible=False,
+                scheduler_enabled=False,
                 gpu=None,
                 gpu_model=None,
                 tpu_type=None,
@@ -251,7 +251,7 @@ async def test_presets(
             "gpu-large": Preset(
                 cpu=7,
                 memory_mb=61440,
-                is_preemptible=False,
+                scheduler_enabled=False,
                 gpu=1,
                 gpu_model="nvidia-tesla-v100",
                 tpu_type=None,
@@ -260,7 +260,7 @@ async def test_presets(
             "gpu-small": Preset(
                 cpu=7,
                 memory_mb=30720,
-                is_preemptible=False,
+                scheduler_enabled=False,
                 gpu=1,
                 gpu_model="nvidia-tesla-k80",
                 tpu_type=None,
@@ -358,7 +358,7 @@ async def test_fetch(
                     "cpu-small": Preset(
                         cpu=2,
                         memory_mb=2048,
-                        is_preemptible=False,
+                        scheduler_enabled=False,
                         gpu=None,
                         gpu_model=None,
                         tpu_type=None,

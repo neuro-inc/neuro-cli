@@ -154,8 +154,8 @@ async def test_get_server_config_with_token_legacy(
                         "name": "cpu-large-p",
                         "cpu": 3,
                         "memory_mb": 14 * 1024,
-                        "is_preemptible": True,
-                        "is_preemptible_node_required": True,
+                        "scheduler_enabled": True,
+                        "preemptible_node": True,
                     },
                 ],
             }
@@ -202,8 +202,8 @@ async def test_get_server_config_with_token_legacy(
                     "cpu-large-p": Preset(
                         cpu=3,
                         memory_mb=14 * 1024,
-                        is_preemptible=True,
-                        is_preemptible_node_required=True,
+                        scheduler_enabled=True,
+                        preemptible_node=True,
                     ),
                 },
                 name="default",
@@ -277,8 +277,8 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
                         "name": "cpu-large-p",
                         "cpu": 3,
                         "memory_mb": 14 * 1024,
-                        "is_preemptible": True,
-                        "is_preemptible_node_required": True,
+                        "scheduler_enabled": True,
+                        "preemptible_node": True,
                     },
                 ],
             }
@@ -326,8 +326,8 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
             "cpu-large-p": Preset(
                 cpu=3,
                 memory_mb=14 * 1024,
-                is_preemptible=True,
-                is_preemptible_node_required=True,
+                scheduler_enabled=True,
+                preemptible_node=True,
             ),
         },
         name="default",
