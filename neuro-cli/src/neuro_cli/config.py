@@ -10,6 +10,7 @@ import click
 from aiohttp.client_exceptions import ClientConnectionError
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
+from rich.markup import escape as rich_escape
 from yarl import URL
 
 from neuro_sdk import DEFAULT_API_URL, ConfigError
@@ -215,7 +216,11 @@ async def docker(root: Root, docker_config: str) -> None:
         json.dump(payload, file2, indent=2)
 
     root.print(f"Configuration file {json_path} updated.")
-    root.print(f"You can use docker client with neuro registry: [b]{registry}[/b]")
+    root.print(
+        f"You can use docker client with neuro registry: "
+        f"[b]{rich_escape(registry)}[/b]",
+        markup=True,
+    )
 
 
 @command()
@@ -224,7 +229,7 @@ async def get_clusters(root: Root) -> None:
     Fetch and display the list of available clusters.
 
     """
-    root.print("[dim]Fetch the list of available clusters...")
+    root.print("Fetch the list of available clusters...", style="dim")
     await root.client.config.fetch()
     fmt = ClustersFormatter()
     with root.pager():
@@ -242,7 +247,7 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
     name is omitted (default).
 
     """
-    root.print("[dim]Fetch the list of available clusters...")
+    root.print("Fetch the list of available clusters...", style="dim")
     await root.client.config.fetch()
     if cluster_name is None:
         if not root.tty:
@@ -254,7 +259,9 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
     else:
         real_cluster_name = cluster_name
     await root.client.config.switch_cluster(real_cluster_name)
-    root.print(f"The current cluster is [u]{real_cluster_name}[/u]")
+    root.print(
+        f"The current cluster is [u]{rich_escape(real_cluster_name)}[/u]", markup=True
+    )
 
 
 async def prompt_cluster(
@@ -275,7 +282,9 @@ async def prompt_cluster(
             answer = root.client.config.cluster_name
         if answer not in clusters:
             root.print(
-                f"Selected cluster [u]{answer}[/u] doesn't exist, please try again."
+                f"Selected cluster [u]{rich_escape(answer)}[/u] "
+                f"doesn't exist, please try again.",
+                markup=True,
             )
         else:
             return answer

@@ -6,6 +6,7 @@ from rich import box
 from rich.console import RenderableType, RenderGroup
 from rich.padding import Padding
 from rich.table import Table
+from rich.text import Text
 
 from neuro_sdk import Cluster, Config, Preset
 from neuro_sdk.admin import _Quota
@@ -47,7 +48,10 @@ class QuotaInfoFormatter:
         cpu_details = self._format_quota_details(
             quota.cpu_time_spent, quota.cpu_time_limit, quota.cpu_time_left
         )
-        return RenderGroup(f"[b]GPU:[/b] {gpu_details}", f"[b]CPU[/b]: {cpu_details}")
+        return RenderGroup(
+            Text.assemble(Text("GPU", style="bold"), f": ", gpu_details),
+            Text.assemble(Text("CPU", style="bold"), f": ", cpu_details),
+        )
 
     def _format_quota_details(
         self, time_spent: float, time_limit: float, time_left: float
@@ -82,9 +86,9 @@ class QuotaFormatter:
             quota.total_non_gpu_run_time_minutes
         )
         return RenderGroup(
-            f"[b]Jobs[/b]: {jobs_details}",
-            f"[b]GPU[/b]: {gpu_details}",
-            f"[b]CPU[/b]: {non_gpu_details}",
+            Text.assemble(Text("Jobs", style="bold"), f": ", jobs_details),
+            Text.assemble(Text("GPU", style="bold"), f": ", gpu_details),
+            Text.assemble(Text("CPU", style="bold"), f": ", non_gpu_details),
         )
 
     def _format_quota_details(
@@ -102,13 +106,14 @@ class ClustersFormatter:
     def __call__(
         self, clusters: Iterable[Cluster], default_name: Optional[str]
     ) -> RenderableType:
-        out: List[RenderableType] = ["[i]Available clusters:[/i]"]
+        out: List[RenderableType] = [Text("Available clusters:", style="i")]
         for cluster in clusters:
-            name = cluster.name or ""
+            name: RenderableType = cluster.name or ""
+            pre = "  "
             if cluster.name == default_name:
-                name = f"[u]{name}[/u]"
-            pre = "* " if cluster.name == default_name else "  "
-            out.append(pre + "[b]Name[/b]: " + name)
+                name = Text(name, style="u")
+                pre = "* "
+            out.append(Text.assemble(pre, Text("Name"), ": ", name))
             out.append(Padding.indent(_format_presets(cluster.presets, None), 2))
         return RenderGroup(*out)
 

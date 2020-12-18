@@ -6,7 +6,6 @@ import sys
 from typing import Any, Callable, List, Optional, Sequence, Tuple
 
 import click
-from rich.markup import escape as rich_escape
 from rich.text import Text
 from yarl import URL
 
@@ -199,7 +198,7 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
             uri_text = painter.paint(str(uri), FileStatusType.FILE)
             root.print(Text.assemble("Using pattern ", uri_text, ":"))
         async for file in root.client.storage.glob(uri):
-            root.print(rich_escape(str(file)))
+            root.print(file)
 
 
 class FileFilterParserOption(click.parser.Option):

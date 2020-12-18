@@ -644,7 +644,10 @@ class StreamProgress(BaseStorageProgress):
         src = self.fmt_url(data.src, FileStatusType.FILE)
         dst = self.fmt_url(data.dst, FileStatusType.FILE)
         self._root.print(
-            f"[red]Failure:[/] {src} -> {dst} \\[{data.message}]", err=True
+            Text.assemble(
+                Text("Failure:", style="red"), f" {src} -> {dst} [{data.message}]"
+            ),
+            err=True,
         )
 
 
@@ -746,7 +749,10 @@ class TTYProgress(BaseStorageProgress):
         src = self.fmt_str(str(data.src), FileStatusType.FILE)
         dst = self.fmt_str(str(data.dst), FileStatusType.FILE)
         self._root.print(
-            f"[red]Failure:[/red] {src} -> {dst} \\[{data.message}]", err=True
+            Text.assemble(
+                Text("Failure:", style="red"), f" {src} -> {dst} [{data.message}]"
+            ),
+            err=True,
         )
 
 

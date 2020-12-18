@@ -6,6 +6,7 @@ from rich import box
 from rich.console import Console, RenderableType
 from rich.progress import BarColumn, DownloadColumn, Progress, TaskID, TextColumn
 from rich.table import Table
+from rich.text import Text
 
 from neuro_sdk import (
     AbstractDockerImageProgress,
@@ -91,10 +92,24 @@ class DetailedDockerImageProgress(DockerImageProgress):
         self._progress.start()
 
     def push(self, data: ImageProgressPush) -> None:
-        self._progress.log(f"Pushing image [b]{data.src}[/b] => [b]{data.dst}[/b]")
+        self._progress.log(
+            Text.assemble(
+                "Pushing image ",
+                Text(str(data.src), style="b"),
+                " => ",
+                Text(str(data.dst), style="b"),
+            )
+        )
 
     def pull(self, data: ImageProgressPull) -> None:
-        self._progress.log(f"Pulling image [b]{data.src}[/b] => [b]{data.dst}[/b]")
+        self._progress.log(
+            Text.assemble(
+                "Pulling image ",
+                Text(str(data.src), style="b"),
+                " => ",
+                Text(str(data.dst), style="b"),
+            )
+        )
 
     def step(self, data: ImageProgressStep) -> None:
         if data.layer_id:
@@ -128,11 +143,22 @@ class DetailedDockerImageProgress(DockerImageProgress):
             self._progress.log(data.message)
 
     def save(self, data: ImageProgressSave) -> None:
-        self._progress.log(f"Saving [b]{data.job}[/b] => [b]{data.dst}[/b]")
+        self._progress.log(
+            Text.assemble(
+                "Saving ",
+                Text(data.job, style="b"),
+                " => ",
+                Text(str(data.dst), style="b"),
+            )
+        )
 
     def commit_started(self, data: ImageCommitStarted) -> None:
         self._progress.log(
-            f"Creating image [b]{data.target_image}[/b] image from the job container",
+            Text.assemble(
+                "Creating image ",
+                Text(str(data.target_image), style="b"),
+                " from the job container",
+            )
         )
 
     def commit_finished(self, data: ImageCommitFinished) -> None:

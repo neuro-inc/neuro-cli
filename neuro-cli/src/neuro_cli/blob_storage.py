@@ -5,7 +5,6 @@ from itertools import chain
 from typing import List, Optional, Sequence, Tuple, Union, cast
 
 import click
-from rich.markup import escape as rich_escape
 from rich.text import Text
 from yarl import URL
 
@@ -152,7 +151,7 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
             root.print(Text.assemble("Using pattern ", uri_text, ":"))
 
         async for blob in blob_storage.glob_blobs(bucket_name, pattern):
-            root.print(rich_escape(str(blob.uri)))
+            root.print(blob.uri)
 
 
 @command()
