@@ -465,8 +465,8 @@ async def test_status_failed(
             "reason": "ContainerCannotRun",
             "description": "Not enough coffee",
         },
-        "is_preemptible": True,
-        "is_preemptible_node_required": True,
+        "scheduler_enabled": True,
+        "preemptible_node": True,
         "pass_config": False,
         "owner": "owner",
         "cluster_name": "default",
@@ -509,7 +509,7 @@ async def test_status_failed(
         ret = await client.jobs.status("job-id")
 
         assert ret == _job_description_from_api(JSON, client.parse)
-        assert ret.is_preemptible_node_required
+        assert ret.preemptible_node
 
 
 async def test_status_with_http(
@@ -527,7 +527,7 @@ async def test_status_with_http(
             "reason": "OK",
             "description": "Everything is fine",
         },
-        "is_preemptible": True,
+        "scheduler_enabled": True,
         "pass_config": False,
         "owner": "owner",
         "cluster_name": "default",
@@ -587,7 +587,7 @@ async def test_status_with_tpu(
             "reason": "OK",
             "description": "Everything is fine",
         },
-        "is_preemptible": True,
+        "scheduler_enabled": True,
         "pass_config": False,
         "owner": "owner",
         "cluster_name": "default",
@@ -664,7 +664,7 @@ async def test_job_start(
             },
         },
         "http_url": "http://my_host:8889",
-        "is_preemptible": False,
+        "scheduler_enabled": False,
         "pass_config": False,
     }
 
@@ -753,7 +753,7 @@ async def test_job_start_with_privileged_flag(
             },
         },
         "http_url": "http://my_host:8889",
-        "is_preemptible": False,
+        "scheduler_enabled": False,
         "pass_config": False,
         "privileged": True,
     }
@@ -816,7 +816,7 @@ async def test_job_run(
             },
         },
         "http_url": "http://my_host:8889",
-        "is_preemptible": False,
+        "scheduler_enabled": False,
         "pass_config": False,
     }
 
@@ -847,7 +847,7 @@ async def test_job_run(
                     },
                 ],
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
         }
@@ -878,7 +878,7 @@ async def test_job_run(
             volumes=volumes,
             http=HTTPPort(8181),
         )
-        ret = await client.jobs.run(container=container, is_preemptible=False)
+        ret = await client.jobs.run(container=container, scheduler_enabled=False)
 
         assert ret == _job_description_from_api(JSON, client.parse)
 
@@ -912,7 +912,7 @@ async def test_job_run_with_wait_for_quota(
             },
         },
         "http_url": "http://my_host:8889",
-        "is_preemptible": False,
+        "scheduler_enabled": False,
         "pass_config": False,
     }
 
@@ -930,7 +930,7 @@ async def test_job_run_with_wait_for_quota(
                     "gpu_model": "test-gpu-model",
                 },
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "wait_for_jobs_quota": True,
             "pass_config": False,
             "cluster_name": "default",
@@ -951,7 +951,7 @@ async def test_job_run_with_wait_for_quota(
             resources=resources,
         )
         ret = await client.jobs.run(
-            container=container, is_preemptible=False, wait_for_jobs_quota=True
+            container=container, scheduler_enabled=False, wait_for_jobs_quota=True
         )
 
         assert ret == _job_description_from_api(JSON, client.parse)
@@ -988,7 +988,7 @@ async def test_job_run_with_name_and_description(
             },
         },
         "http_url": "http://my_host:8889",
-        "is_preemptible": False,
+        "scheduler_enabled": False,
         "pass_config": False,
     }
 
@@ -1019,7 +1019,7 @@ async def test_job_run_with_name_and_description(
                     },
                 ],
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "name": "test-job-name",
             "description": "job description",
@@ -1054,7 +1054,7 @@ async def test_job_run_with_name_and_description(
         )
         ret = await client.jobs.run(
             container,
-            is_preemptible=False,
+            scheduler_enabled=False,
             name="test-job-name",
             description="job description",
         )
@@ -1092,7 +1092,7 @@ async def test_job_run_with_tags(
             },
         },
         "http_url": "http://my_host:8889",
-        "is_preemptible": False,
+        "scheduler_enabled": False,
         "pass_config": False,
     }
 
@@ -1123,7 +1123,7 @@ async def test_job_run_with_tags(
                     },
                 ],
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "tags": ["t1", "t2", "t3"],
             "cluster_name": "default",
@@ -1157,7 +1157,7 @@ async def test_job_run_with_tags(
         )
         ret = await client.jobs.run(
             container,
-            is_preemptible=False,
+            scheduler_enabled=False,
             tags=["t1", "t2", "t3"],
         )
 
@@ -1194,7 +1194,7 @@ async def test_job_run_no_volumes(
             },
         },
         "http_url": "http://my_host:8889",
-        "is_preemptible": False,
+        "scheduler_enabled": False,
         "pass_config": False,
     }
 
@@ -1213,7 +1213,7 @@ async def test_job_run_no_volumes(
                     "gpu_model": "test-gpu-model",
                 },
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "name": "test-job-name",
             "description": "job description",
@@ -1237,7 +1237,7 @@ async def test_job_run_no_volumes(
         )
         ret = await client.jobs.run(
             container,
-            is_preemptible=False,
+            scheduler_enabled=False,
             name="test-job-name",
             description="job description",
         )
@@ -1274,7 +1274,7 @@ async def test_job_run_with_relative_volume_uris(
             },
         },
         "http_url": "http://my_host:8889",
-        "is_preemptible": False,
+        "scheduler_enabled": False,
         "pass_config": False,
     }
 
@@ -1310,7 +1310,7 @@ async def test_job_run_with_relative_volume_uris(
                     },
                 ],
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
         }
@@ -1344,7 +1344,7 @@ async def test_job_run_with_relative_volume_uris(
             volumes=volumes,
             http=HTTPPort(8181),
         )
-        ret = await client.jobs.run(container=container, is_preemptible=False)
+        ret = await client.jobs.run(container=container, scheduler_enabled=False)
 
         assert ret == _job_description_from_api(JSON, client.parse)
 
@@ -1378,7 +1378,7 @@ async def test_job_run_with_secret_uris(
             },
         },
         "http_url": "http://my_host:8889",
-        "is_preemptible": False,
+        "scheduler_enabled": False,
         "pass_config": False,
     }
 
@@ -1412,7 +1412,7 @@ async def test_job_run_with_secret_uris(
                     }
                 ],
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
         }
@@ -1442,7 +1442,7 @@ async def test_job_run_with_secret_uris(
             secret_files=secret_files,
             http=HTTPPort(8181),
         )
-        ret = await client.jobs.run(container=container, is_preemptible=False)
+        ret = await client.jobs.run(container=container, scheduler_enabled=False)
 
         assert ret == _job_description_from_api(JSON, client.parse)
 
@@ -1483,7 +1483,7 @@ async def test_job_run_with_disk_volume_uris(
             ],
         },
         "http_url": "http://my_host:8889",
-        "is_preemptible": False,
+        "scheduler_enabled": False,
         "pass_config": False,
     }
 
@@ -1509,7 +1509,7 @@ async def test_job_run_with_disk_volume_uris(
                     }
                 ],
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
         }
@@ -1533,7 +1533,7 @@ async def test_job_run_with_disk_volume_uris(
             disk_volumes=disk_volumes,
             http=HTTPPort(8181),
         )
-        ret = await client.jobs.run(container=container, is_preemptible=False)
+        ret = await client.jobs.run(container=container, scheduler_enabled=False)
 
         assert ret == _job_description_from_api(JSON, client.parse)
 
@@ -1567,7 +1567,7 @@ async def test_job_run_preemptible(
                 "gpu_model": "nvidia-tesla-p4",
             },
         },
-        "is_preemptible": True,
+        "scheduler_enabled": True,
         "pass_config": False,
         "http_url": "http://my_host:8889",
     }
@@ -1599,7 +1599,7 @@ async def test_job_run_preemptible(
                     },
                 ],
             },
-            "is_preemptible": True,
+            "scheduler_enabled": True,
             "pass_config": False,
             "name": "test-job-name",
             "description": "job description",
@@ -1634,7 +1634,7 @@ async def test_job_run_preemptible(
         )
         ret = await client.jobs.run(
             container,
-            is_preemptible=True,
+            scheduler_enabled=True,
             name="test-job-name",
             description="job description",
         )
@@ -1671,7 +1671,7 @@ async def test_job_run_schedule_timeout(
             },
         },
         "http_url": "http://my_host:8889",
-        "is_preemptible": False,
+        "scheduler_enabled": False,
         "pass_config": False,
         "schedule_timeout": 5,
     }
@@ -1690,7 +1690,7 @@ async def test_job_run_schedule_timeout(
                     "gpu_model": "test-gpu-model",
                 },
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "schedule_timeout": 5,
             "cluster_name": "default",
@@ -1745,7 +1745,7 @@ async def test_job_run_tpu(
             },
         },
         "http_url": "http://my_host:8889",
-        "is_preemptible": False,
+        "scheduler_enabled": False,
         "pass_config": False,
     }
 
@@ -1764,7 +1764,7 @@ async def test_job_run_tpu(
                     "tpu": {"type": "v3-8", "software_version": "1.14"},
                 },
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "schedule_timeout": 5,
             "cluster_name": "default",
@@ -1806,7 +1806,7 @@ async def test_job_run_with_tty(
                 "resources": {"memory_mb": 16384, "cpu": 0.5, "shm": True},
                 "tty": True,
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
         }
@@ -1861,7 +1861,7 @@ def create_job_response(
                 "gpu_model": "nvidia-tesla-v100",
             },
         },
-        "is_preemptible": True,
+        "scheduler_enabled": True,
         "pass_config": False,
         "owner": owner,
         "cluster_name": "default",
@@ -2313,7 +2313,7 @@ async def test_job_run_life_span(
                 "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
                 "command": "submit-command",
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "max_run_time_minutes": 10,
             "cluster_name": "default",
@@ -2346,7 +2346,7 @@ async def test_job_run_restart_policy(
                 "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
                 "command": "submit-command",
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "restart_policy": "always",
             "cluster_name": "default",
@@ -2382,7 +2382,7 @@ async def test_job_run_working_dir(
                 "command": "submit-command",
                 "working_dir": "/working/dir",
             },
-            "is_preemptible": False,
+            "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
         }

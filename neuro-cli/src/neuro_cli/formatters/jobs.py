@@ -130,9 +130,9 @@ class JobStatusFormatter:
 
         table.add_row("Resources", Styled(resources, style="reset"))
 
-        if job_status.is_preemptible:
-            table.add_row("Preemptible", "True")
-        if job_status.is_preemptible_node_required:
+        if job_status.scheduler_enabled:
+            table.add_row("Round Robin", "True")
+        if job_status.preemptible_node:
             table.add_row("Preemptible Node", "True")
         if job_status.restart_policy != JobRestartPolicy.NEVER:
             table.add_row("Restart policy", job_status.restart_policy.value)

@@ -574,7 +574,7 @@ class Helper:
             )
             job = await client.jobs.run(
                 container,
-                is_preemptible=preset.scheduler_enabled,
+                scheduler_enabled=preset.scheduler_enabled,
                 description=description,
                 name=name,
             )
