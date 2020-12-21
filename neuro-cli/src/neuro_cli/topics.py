@@ -478,22 +478,22 @@ async def sharing() -> None:
     Please note permissions are inclusive: write permission implies read and manage
     includes read and write, and so on.
 
-    Permissions can be granted via "`neuro acl grant`" or "`neuro share`" and
-    revoked via "`neuro acl revoke`":
+    Permissions can be granted via `neuro acl grant` or `neuro share` and
+    revoked via `neuro acl revoke`:
     ```
     neuro acl grant job:job-0a6d3f81-b5d2-45db-95e3-548cc1fac81a bob
     neuro acl revoke job:job-0a6d3f81-b5d2-45db-95e3-548cc1fac81a bob
     ```
 
     You can check entities owned by you and shared with you by others by running
-    "`neuro acl list`". This will show all entity URIs and their access levels.
+    `neuro acl list`. This will show all entity URIs and their access levels.
     If you want to focus on a subset of entities you can filter them with `-s`.
-    For instance, "`neuro acl list -s job`" will only show you jobs you have access to.
+    For instance, `neuro acl list -s job` will only show you jobs you have access to.
 
-    If "`neuro acl list`" output contains a URI, such as "`secret:`" or "`storage:`"
+    If `neuro acl list` output contains a URI, such as `secret:` or `storage:`
     it means you've got corresponding permission for all entities of that type.
 
-    Running "`neuro acl list --shared`" will show you entities shared by you
+    Running `neuro acl list --shared` will show you entities shared by you
     along with users/roles you shared them with.
 
     Roles
@@ -512,7 +512,7 @@ async def sharing() -> None:
     `neuro acl add-role {username}/roles/{rolename}`
 
     This will create a role "rolename" with empty permission set. Then you may share
-    resources with the new role via "`neuro acl grant`":
+    resources with the new role via `neuro acl grant`:
 
     ```
     neuro acl grant image:IMAGE_NAME {username}/roles/{rolename}
@@ -529,10 +529,10 @@ async def sharing() -> None:
 
     From now on, `bob` will have access to all entities listed under
     the `{username}/roles/{rolename}` role. The list can be viewed by
-    "`neuro acl list -u {username}/roles/{rolename}`".
+    `neuro acl list -u {username}/roles/{rolename}`.
 
     If needed, role can be revoked:
     `neuro acl revoke role://{username}/roles/{rolename} bob`
 
-    And deleted by running "`neuro acl remove-role {username}/roles/{rolename}`".
+    And deleted by running `neuro acl remove-role {username}/roles/{rolename}`.
     """
