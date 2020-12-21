@@ -28,10 +28,7 @@ Client configuration.
 
 ### login
 
-
-
 Log into Neuro Platform
-
 
 
 #### Usage
@@ -46,22 +43,15 @@ Log into Neuro Platform.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### login-with-token
 
-
-
 Log into Neuro Platform with token
-
 
 
 #### Usage
@@ -78,22 +68,15 @@ by administration team.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### login-headless
 
-
-
 Log into Neuro Platform from non-GUI server...
-
 
 
 #### Usage
@@ -120,22 +103,15 @@ process.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### show
 
-
-
 Print current settings
-
 
 
 #### Usage
@@ -148,22 +124,15 @@ Print current settings.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### show-token
 
-
-
 Print current authorization token
-
 
 
 #### Usage
@@ -176,22 +145,15 @@ Print current authorization token.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### show-quota
 
-
-
 Print quota and remaining computation time...
-
 
 
 #### Usage
@@ -204,22 +166,15 @@ Print quota and remaining computation time for active cluster.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### aliases
 
-
-
 List available command aliases
-
 
 
 #### Usage
@@ -232,22 +187,15 @@ List available command aliases.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### get-clusters
 
-
-
 Fetch and display the list of available...
-
 
 
 #### Usage
@@ -260,22 +208,15 @@ Fetch and display the list of available clusters.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### switch-cluster
 
-
-
 Switch the active cluster
-
 
 
 #### Usage
@@ -292,22 +233,15 @@ name is omitted (default).
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### docker
 
-
-
 Configure docker client to fit the Neuro...
-
 
 
 #### Usage
@@ -320,24 +254,16 @@ Configure docker client to fit the Neuro Platform.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`--docker-config PATH`_ | Specifies the location of the Docker client configuration files |
-
 
 
 
 ### logout
 
-
-
 Log out
-
 
 
 #### Usage
@@ -350,12 +276,8 @@ Log out.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 

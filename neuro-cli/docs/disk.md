@@ -21,10 +21,7 @@ Operations with disks.
 
 ### ls
 
-
-
 List disks
-
 
 
 #### Usage
@@ -37,26 +34,17 @@ List disks.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`--full-uri`_ | Output full disk URI. |
-
 | _`--long-format`_ | Output all info about disk. |
-
 
 
 
 ### create
 
-
-
 Create a disk with at least storage amount...
-
 
 
 #### Usage
@@ -92,24 +80,16 @@ $ neuro disk create 500M
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`--life-span TIMEDELTA`_ | Optional disk lifetime limit after last usage in the format '1d2h3m4s' \(some parts may be missing\). Set '0' to disable. Default value '1d' can be changed in the user config. |
-
 
 
 
 ### get
 
-
-
 Get disk DISK_ID
-
 
 
 #### Usage
@@ -122,24 +102,16 @@ Get disk `DISK`_ID.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`--full-uri`_ | Output full disk URI. |
-
 
 
 
 ### rm
 
-
-
 Remove disk DISK_ID
-
 
 
 #### Usage
@@ -152,12 +124,8 @@ Remove disk `DISK`_ID.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 

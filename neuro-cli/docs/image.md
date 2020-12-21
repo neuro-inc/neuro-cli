@@ -24,10 +24,7 @@ Container image operations.
 
 ### ls
 
-
-
 List images
-
 
 
 #### Usage
@@ -40,26 +37,17 @@ List images.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`-l`_ | List in long format. |
-
 | _`--full-uri`_ | Output full image URI. |
-
 
 
 
 ### push
 
-
-
 Push an image to platform registry
-
 
 
 #### Usage
@@ -87,24 +75,16 @@ $ neuro push alpine image://myfriend/alpine:shared
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
-
 
 
 
 ### pull
 
-
-
 Pull an image from platform registry
-
 
 
 #### Usage
@@ -130,24 +110,16 @@ $ neuro pull image://username/my-alpine:production alpine:from-registry
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
-
 
 
 
 ### rm
 
-
-
 Remove image from platform registry
-
 
 
 #### Usage
@@ -172,24 +144,16 @@ $ neuro image rm image:myimage:latest
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`-f`_ | Force deletion of all tags referencing the image. |
-
 
 
 
 ### size
 
-
-
 Get image size Image name must be URL with...
-
 
 
 #### Usage
@@ -214,22 +178,15 @@ $ neuro image size image:myimage:latest
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### digest
 
-
-
 Get digest of an image from remote registry...
-
 
 
 #### Usage
@@ -254,22 +211,15 @@ $ neuro image digest image:myimage:latest
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### tags
 
-
-
 List tags for image in platform registry
-
 
 
 #### Usage
@@ -293,14 +243,9 @@ $ neuro image tags -l image:myimage
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`-l`_ | List in long format, with image sizes. |
-
 
 

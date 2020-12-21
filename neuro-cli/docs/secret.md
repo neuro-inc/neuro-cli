@@ -20,10 +20,7 @@ Operations with secrets.
 
 ### ls
 
-
-
 List secrets
-
 
 
 #### Usage
@@ -36,22 +33,15 @@ List secrets.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### add
 
-
-
 Add secret KEY with data VALUE
-
 
 
 #### Usage
@@ -75,22 +65,15 @@ $ neuro secret add KEY_NAME @path/to/file.txt
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### rm
 
-
-
 Remove secret KEY
-
 
 
 #### Usage
@@ -103,12 +86,8 @@ Remove secret `KEY`.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 

@@ -28,10 +28,7 @@ Cluster administration commands.
 
 ### get-clusters
 
-
-
 Print the list of available clusters
-
 
 
 #### Usage
@@ -44,22 +41,15 @@ Print the list of available clusters.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### generate-cluster-config
 
-
-
 Create a cluster configuration file
-
 
 
 #### Usage
@@ -72,24 +62,16 @@ Create a cluster configuration file.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`--type \[aws &#124; gcp &#124; azure\]`_ |  |
-
 
 
 
 ### add-cluster
 
-
-
 Create a new cluster and start its...
-
 
 
 #### Usage
@@ -102,22 +84,15 @@ Create a new cluster and start its provisioning.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### show-cluster-options
 
-
-
 Create a cluster configuration file
-
 
 
 #### Usage
@@ -130,24 +105,16 @@ Create a cluster configuration file.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`--type \[aws &#124; gcp &#124; azure\]`_ |  |
-
 
 
 
 ### get-cluster-users
 
-
-
 Print the list of all users in the cluster...
-
 
 
 #### Usage
@@ -160,22 +127,15 @@ Print the list of all users in the cluster with their assigned role.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### add-cluster-user
 
-
-
 Add user access to specified cluster
-
 
 
 #### Usage
@@ -191,22 +151,15 @@ roles: admin, manager or user.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### remove-cluster-user
 
-
-
 Remove user access from the cluster
-
 
 
 #### Usage
@@ -219,22 +172,15 @@ Remove user access from the cluster.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### set-user-quota
 
-
-
 Set user quota to given values
-
 
 
 #### Usage
@@ -247,28 +193,18 @@ Set user quota to given values
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`-g`, `--gpu AMOUNT`_ | GPU quota value in hours \(h\) or minutes \(m\). |
-
 | _`-j`, `--jobs AMOUNT`_ | Maximum running jobs quota |
-
 | _`-n`, `--non-gpu AMOUNT`_ | Non-GPU quota value in hours \(h\) or minutes \(m\). |
-
 
 
 
 ### add-user-quota
 
-
-
 Add given values to user quota
-
 
 
 #### Usage
@@ -281,26 +217,17 @@ Add given values to user quota
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`-g`, `--gpu AMOUNT`_ | Additional GPU quota value in hours \(h\) or minutes \(m\). |
-
 | _`-n`, `--non-gpu AMOUNT`_ | Additional non-GPU quota value in hours \(h\) or minutes \(m\). |
-
 
 
 
 ### update-resource-preset
 
-
-
 Add/update resource preset
-
 
 
 #### Usage
@@ -313,38 +240,23 @@ Add/update resource preset
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 | _`-c`, `--cpu NUMBER`_ | Number of CPUs  \_\[default: 0.1\]\_ |
-
 | _`-g`, `--gpu NUMBER`_ | Number of GPUs |
-
 | _`--gpu-model MODEL`_ | GPU model |
-
 | _`-m`, `--memory AMOUNT`_ | Memory amount  \_\[default: 1G\]\_ |
-
 | _`-p`, `--preemptible` / `-P`, `--non-preemptible`_ | Job preemptability support  \_\[default: False\]\_ |
-
 | _`--preemptible-node` / `--non-preemptible-node`_ | Use a lower-cost preemptible instance  \_\[default: False\]\_ |
-
 | _`--tpu-sw-version VERSION`_ | TPU software version |
-
 | _`--tpu-type TYPE`_ | TPU type |
-
 
 
 
 ### remove-resource-preset
 
-
-
 Remove resource preset
-
 
 
 #### Usage
@@ -357,12 +269,8 @@ Remove resource preset
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 

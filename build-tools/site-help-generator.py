@@ -16,25 +16,21 @@ HERE = Path(sys.argv[0]).resolve().parent
 
 def gen_command(out, cmd, parent_ctx):
     with click.Context(cmd, parent=parent_ctx, info_name=cmd.name) as ctx:
-        out.append(f"### {cmd.name}")
-        out.append("\n\n")
+        out.append(f"### {cmd.name}\n")
 
         descr = cmd.get_short_help_str()
         descr = re.sub(r"(?<!\n)\n(?!\n)", r" ", descr)
         out.append(descr)
-        out.append("\n\n")
+        out.append("\n")
 
         if cmd.deprecated:
-            out.append("~~DEPRECATED~~")
-            out.append("\n\n")
+            out.append("~~DEPRECATED~~\n")
 
-        out.append("#### Usage")
-        out.append("")
+        out.append("#### Usage\n")
         out.append("```bash")
         pieces = cmd.collect_usage_pieces(ctx)
         out.append(f"{ctx.command_path} " + " ".join(pieces))
-        out.append("```")
-        out.append("")
+        out.append("```\n")
 
         help, *examples = split_examples(cmd.help)
         help2 = click.unstyle(help)
@@ -81,15 +77,15 @@ def gen_command(out, cmd, parent_ctx):
             w2 = max(w2, len(descr2))
             opts.append((name2, descr2))
 
-        out.append("#### Options\n\n")
-        out.append(f"| Name | Description |\n")
-        out.append(f"| :--- | :--- |\n")
+        out.append("#### Options\n")
+        out.append(f"| Name | Description |")
+        out.append(f"| :--- | :--- |")
 
         for name, descr in opts:
             out.append(
                 f"| _{escape_cell(name.replace('|', ' | '))}_ "
                 f"| {escape_cell(descr)} |"
-                f"\n"
+                f""
             )
 
         out.append("\n\n")

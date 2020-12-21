@@ -18,10 +18,7 @@ Project operations.
 
 ### init
 
-
-
 Initialize an empty project
-
 
 
 #### Usage
@@ -47,12 +44,8 @@ $ neuro project init my-project-id
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 

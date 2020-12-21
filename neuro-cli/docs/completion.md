@@ -19,10 +19,7 @@ Output shell completion code.
 
 ### generate
 
-
-
 Provide an instruction for shell completion...
-
 
 
 #### Usage
@@ -35,22 +32,15 @@ Provide an instruction for shell completion generation.
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
 
 ### patch
 
-
-
 Automatically patch shell configuration...
-
 
 
 #### Usage
@@ -63,12 +53,8 @@ Automatically patch shell configuration profile to enable completion
 
 #### Options
 
-
 | Name | Description |
-
 | :--- | :--- |
-
 | _`--help`_ | Show this message and exit. |
-
 
 
