@@ -14,3 +14,4 @@
 * [shortcuts](neuro-cli/docs/shortcuts.md)
 * [storage](neuro-cli/docs/storage.md)
 * [topics](neuro-cli/docs/topics.md)
+* [CLI](CLI.md)
