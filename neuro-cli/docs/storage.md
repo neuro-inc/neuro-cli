@@ -10,19 +10,36 @@ neuro storage [OPTIONS] COMMAND [ARGS]...
 
 Storage operations.
 
-## Commands
+**Commands:**
 
-* [neuro storage cp](storage.md#cp): Copy files and directories
-* [neuro storage ls](storage.md#ls): List directory contents
-* [neuro storage glob](storage.md#glob): List resources that match PATTERNS
-* [neuro storage rm](storage.md#rm): Remove files or directories
-* [neuro storage mkdir](storage.md#mkdir): Make directories
-* [neuro storage mv](storage.md#mv): Move or rename files and directories
-* [neuro storage tree](storage.md#tree): List contents of directories in a tree-like...
+
+| Usage | Description |
+
+| :--- | :--- |
+
+| [_cp_](storage.md#cp) | Copy files and directories |
+
+| [_ls_](storage.md#ls) | List directory contents |
+
+| [_glob_](storage.md#glob) | List resources that match PATTERNS |
+
+| [_rm_](storage.md#rm) | Remove files or directories |
+
+| [_mkdir_](storage.md#mkdir) | Make directories |
+
+| [_mv_](storage.md#mv) | Move or rename files and directories |
+
+| [_tree_](storage.md#tree) | List contents of directories in a tree-like... |
+
+
 
 ### cp
 
+
+
 Copy files and directories
+
+
 
 #### Usage
 
@@ -84,23 +101,43 @@ $ neuro cp storage:results/*.out .
 
 #### Options
 
-| Name                                       | Description                                                                                                                                                                                                                               |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--help`                                   | Show this message and exit.                                                                                                                                                                                                               |
-| `--continue`                               | Continue copying partially-copied files.                                                                                                                                                                                                  |
-| `--exclude-from-files FILES`               | A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp-exclude-from-files configuration variable documented in "neuro help user-config" |
-| `--exclude`                                | Exclude files and directories that match the specified pattern.                                                                                                                                                                           |
-| `--include`                                | Don't exclude files and directories that match the specified pattern.                                                                                                                                                                     |
-| `--glob` / `--no-glob`                     | Expand glob patterns in SOURCES with explicit scheme.  _[default: True]_                                                                                                                                                                  |
-| `-T`, `--no-target-directory`              | Treat DESTINATION as a normal file.                                                                                                                                                                                                       |
-| `-p`, `--progress` / `-P`, `--no-progress` | Show progress, on by default in TTY mode, off otherwise.                                                                                                                                                                                  |
-| `-r`, `--recursive`                        | Recursive copy, off by default                                                                                                                                                                                                            |
-| `-t`, `--target-directory DIRECTORY`       | Copy all SOURCES into DIRECTORY.                                                                                                                                                                                                          |
-| `-u`, `--update`                           | Copy only when the SOURCE file is newer than the destination file or when the destination file is missing.                                                                                                                                |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`--continue`_ | Continue copying partially-copied files. |
+
+| _`--exclude-from-files FILES`_ | A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp-exclude-from-files configuration variable documented in "neuro help user-config" |
+
+| _`--exclude`_ | Exclude files and directories that match the specified pattern. |
+
+| _`--include`_ | Don't exclude files and directories that match the specified pattern. |
+
+| _`--glob` / `--no-glob`_ | Expand glob patterns in SOURCES with explicit scheme.  \_\[default: True\]\_ |
+
+| _`-T`, `--no-target-directory`_ | Treat DESTINATION as a normal file. |
+
+| _`-p`, `--progress` / `-P`, `--no-progress`_ | Show progress, on by default in TTY mode, off otherwise. |
+
+| _`-r`, `--recursive`_ | Recursive copy, off by default |
+
+| _`-t`, `--target-directory DIRECTORY`_ | Copy all SOURCES into DIRECTORY. |
+
+| _`-u`, `--update`_ | Copy only when the SOURCE file is newer than the destination file or when the destination file is missing. |
+
+
+
 
 ### ls
 
+
+
 List directory contents
+
+
 
 #### Usage
 
@@ -115,18 +152,33 @@ By default `PATH` is equal user's home dir
 
 #### Options
 
-| Name                      | Description                                          |
-| ------------------------- | ---------------------------------------------------- |
-| `--help`                  | Show this message and exit.                          |
-| `-d`, `--directory`       | list directories themselves, not their contents.     |
-| `-l`                      | use a long listing format.                           |
-| `-h`, `--human-readable`  | with -l print human readable sizes (e.g., 2K, 540M). |
-| `-a`, `--all`             | do not ignore entries starting with .                |
-| `--sort [name|size|time]` | sort by given field, default is name.                |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`-d`, `--directory`_ | list directories themselves, not their contents. |
+
+| _`-l`_ | use a long listing format. |
+
+| _`-h`, `--human-readable`_ | with -l print human readable sizes \(e.g., 2K, 540M\). |
+
+| _`-a`, `--all`_ | do not ignore entries starting with . |
+
+| _`--sort \[name &#124; size &#124; time\]`_ | sort by given field, default is name. |
+
+
+
 
 ### glob
 
+
+
 List resources that match PATTERNS
+
+
 
 #### Usage
 
@@ -138,13 +190,23 @@ List resources that match `PATTERNS`.
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### rm
 
+
+
 Remove files or directories
+
+
 
 #### Usage
 
@@ -166,16 +228,29 @@ $ neuro rm storage:foo/**/*.tmp
 
 #### Options
 
-| Name                                       | Description                                              |
-| ------------------------------------------ | -------------------------------------------------------- |
-| `--help`                                   | Show this message and exit.                              |
-| `--glob` / `--no-glob`                     | Expand glob patterns in PATHS  _[default: True]_         |
-| `-p`, `--progress` / `-P`, `--no-progress` | Show progress, on by default in TTY mode, off otherwise. |
-| `-r`, `--recursive`                        | remove directories and their contents recursively        |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`--glob` / `--no-glob`_ | Expand glob patterns in PATHS  \_\[default: True\]\_ |
+
+| _`-p`, `--progress` / `-P`, `--no-progress`_ | Show progress, on by default in TTY mode, off otherwise. |
+
+| _`-r`, `--recursive`_ | remove directories and their contents recursively |
+
+
+
 
 ### mkdir
 
+
+
 Make directories
+
+
 
 #### Usage
 
@@ -187,14 +262,25 @@ Make directories.
 
 #### Options
 
-| Name              | Description                                             |
-| ----------------- | ------------------------------------------------------- |
-| `--help`          | Show this message and exit.                             |
-| `-p`, `--parents` | No error if existing, make parent directories as needed |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`-p`, `--parents`_ | No error if existing, make parent directories as needed |
+
+
+
 
 ### mv
 
+
+
 Move or rename files and directories
+
+
 
 #### Usage
 
@@ -235,16 +321,29 @@ $ neuro mv storage://{username}/foo.txt storage:bar.dat
 
 #### Options
 
-| Name                                 | Description                                        |
-| ------------------------------------ | -------------------------------------------------- |
-| `--help`                             | Show this message and exit.                        |
-| `--glob` / `--no-glob`               | Expand glob patterns in SOURCES  _[default: True]_ |
-| `-T`, `--no-target-directory`        | Treat DESTINATION as a normal file                 |
-| `-t`, `--target-directory DIRECTORY` | Copy all SOURCES into DIRECTORY                    |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`--glob` / `--no-glob`_ | Expand glob patterns in SOURCES  \_\[default: True\]\_ |
+
+| _`-T`, `--no-target-directory`_ | Treat DESTINATION as a normal file |
+
+| _`-t`, `--target-directory DIRECTORY`_ | Copy all SOURCES into DIRECTORY |
+
+
+
 
 ### tree
 
+
+
 List contents of directories in a tree-like...
+
+
 
 #### Usage
 
@@ -273,10 +372,20 @@ home dir (storage:)
 
 #### Options
 
-| Name                      | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `--help`                  | Show this message and exit.                  |
-| `-h`, `--human-readable`  | Print the size in a more human readable way. |
-| `-a`, `--all`             | do not ignore entries starting with .        |
-| `-s`, `--size`            | Print the size in bytes of each file.        |
-| `--sort [name|size|time]` | sort by given field, default is name         |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`-h`, `--human-readable`_ | Print the size in a more human readable way. |
+
+| _`-a`, `--all`_ | do not ignore entries starting with . |
+
+| _`-s`, `--size`_ | Print the size in bytes of each file. |
+
+| _`--sort \[name &#124; size &#124; time\]`_ | sort by given field, default is name |
+
+
+

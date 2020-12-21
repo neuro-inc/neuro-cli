@@ -10,13 +10,24 @@ neuro project [OPTIONS] COMMAND [ARGS]...
 
 Project operations.
 
-## Commands
+**Commands:**
 
-* [neuro project init](project.md#init): Initialize an empty project
+
+| Usage | Description |
+
+| :--- | :--- |
+
+| [_init_](project.md#init) | Initialize an empty project |
+
+
 
 ### init
 
+
+
 Initialize an empty project
+
+
 
 #### Usage
 
@@ -41,6 +52,12 @@ $ neuro project init my-project-id
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+

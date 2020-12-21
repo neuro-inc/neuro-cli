@@ -10,16 +10,30 @@ neuro disk [OPTIONS] COMMAND [ARGS]...
 
 Operations with disks.
 
-## Commands
+**Commands:**
 
-* [neuro disk ls](disk.md#ls): List disks
-* [neuro disk create](disk.md#create): Create a disk with at least storage amount...
-* [neuro disk get](disk.md#get): Get disk DISK_ID
-* [neuro disk rm](disk.md#rm): Remove disk DISK_ID
+
+| Usage | Description |
+
+| :--- | :--- |
+
+| [_ls_](disk.md#ls) | List disks |
+
+| [_create_](disk.md#create) | Create a disk with at least storage amount... |
+
+| [_get_](disk.md#get) | Get disk DISK\_ID |
+
+| [_rm_](disk.md#rm) | Remove disk DISK\_ID |
+
+
 
 ### ls
 
+
+
 List disks
+
+
 
 #### Usage
 
@@ -31,15 +45,27 @@ List disks.
 
 #### Options
 
-| Name            | Description                 |
-| --------------- | --------------------------- |
-| `--help`        | Show this message and exit. |
-| `--full-uri`    | Output full disk URI.       |
-| `--long-format` | Output all info about disk. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`--full-uri`_ | Output full disk URI. |
+
+| _`--long-format`_ | Output all info about disk. |
+
+
+
 
 ### create
 
+
+
 Create a disk with at least storage amount...
+
+
 
 #### Usage
 
@@ -74,14 +100,25 @@ $ neuro disk create 500M
 
 #### Options
 
-| Name                    | Description                                                                                                                                                                   |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--help`                | Show this message and exit.                                                                                                                                                   |
-| `--life-span TIMEDELTA` | Optional disk lifetime limit after last usage in the format '1d2h3m4s' (some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`--life-span TIMEDELTA`_ | Optional disk lifetime limit after last usage in the format '1d2h3m4s' \(some parts may be missing\). Set '0' to disable. Default value '1d' can be changed in the user config. |
+
+
+
 
 ### get
 
+
+
 Get disk DISK_ID
+
+
 
 #### Usage
 
@@ -93,14 +130,25 @@ Get disk `DISK`_ID.
 
 #### Options
 
-| Name         | Description                 |
-| ------------ | --------------------------- |
-| `--help`     | Show this message and exit. |
-| `--full-uri` | Output full disk URI.       |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`--full-uri`_ | Output full disk URI. |
+
+
+
 
 ### rm
 
+
+
 Remove disk DISK_ID
+
+
 
 #### Usage
 
@@ -112,6 +160,12 @@ Remove disk `DISK`_ID.
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+

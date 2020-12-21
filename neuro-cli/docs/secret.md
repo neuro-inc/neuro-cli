@@ -10,15 +10,28 @@ neuro secret [OPTIONS] COMMAND [ARGS]...
 
 Operations with secrets.
 
-## Commands
+**Commands:**
 
-* [neuro secret ls](secret.md#ls): List secrets
-* [neuro secret add](secret.md#add): Add secret KEY with data VALUE
-* [neuro secret rm](secret.md#rm): Remove secret KEY
+
+| Usage | Description |
+
+| :--- | :--- |
+
+| [_ls_](secret.md#ls) | List secrets |
+
+| [_add_](secret.md#add) | Add secret KEY with data VALUE |
+
+| [_rm_](secret.md#rm) | Remove secret KEY |
+
+
 
 ### ls
 
+
+
 List secrets
+
+
 
 #### Usage
 
@@ -30,13 +43,23 @@ List secrets.
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### add
 
+
+
 Add secret KEY with data VALUE
+
+
 
 #### Usage
 
@@ -59,13 +82,23 @@ $ neuro secret add KEY_NAME @path/to/file.txt
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### rm
 
+
+
 Remove secret KEY
+
+
 
 #### Usage
 
@@ -77,6 +110,12 @@ Remove secret `KEY`.
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+

@@ -10,19 +10,36 @@ neuro image [OPTIONS] COMMAND [ARGS]...
 
 Container image operations.
 
-## Commands
+**Commands:**
 
-* [neuro image ls](image.md#ls): List images
-* [neuro image push](image.md#push): Push an image to platform registry
-* [neuro image pull](image.md#pull): Pull an image from platform registry
-* [neuro image rm](image.md#rm): Remove image from platform registry
-* [neuro image size](image.md#size): Get image size Image name must be URL with...
-* [neuro image digest](image.md#digest): Get digest of an image from remote registry...
-* [neuro image tags](image.md#tags): List tags for image in platform registry
+
+| Usage | Description |
+
+| :--- | :--- |
+
+| [_ls_](image.md#ls) | List images |
+
+| [_push_](image.md#push) | Push an image to platform registry |
+
+| [_pull_](image.md#pull) | Pull an image from platform registry |
+
+| [_rm_](image.md#rm) | Remove image from platform registry |
+
+| [_size_](image.md#size) | Get image size Image name must be URL with... |
+
+| [_digest_](image.md#digest) | Get digest of an image from remote registry... |
+
+| [_tags_](image.md#tags) | List tags for image in platform registry |
+
+
 
 ### ls
 
+
+
 List images
+
+
 
 #### Usage
 
@@ -34,15 +51,27 @@ List images.
 
 #### Options
 
-| Name         | Description                 |
-| ------------ | --------------------------- |
-| `--help`     | Show this message and exit. |
-| `-l`         | List in long format.        |
-| `--full-uri` | Output full image URI.      |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`-l`_ | List in long format. |
+
+| _`--full-uri`_ | Output full image URI. |
+
+
+
 
 ### push
 
+
+
 Push an image to platform registry
+
+
 
 #### Usage
 
@@ -69,14 +98,25 @@ $ neuro push alpine image://myfriend/alpine:shared
 
 #### Options
 
-| Name            | Description                            |
-| --------------- | -------------------------------------- |
-| `--help`        | Show this message and exit.            |
-| `-q`, `--quiet` | Run command in quiet mode (DEPRECATED) |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
+
+
+
 
 ### pull
 
+
+
 Pull an image from platform registry
+
+
 
 #### Usage
 
@@ -101,14 +141,25 @@ $ neuro pull image://username/my-alpine:production alpine:from-registry
 
 #### Options
 
-| Name            | Description                            |
-| --------------- | -------------------------------------- |
-| `--help`        | Show this message and exit.            |
-| `-q`, `--quiet` | Run command in quiet mode (DEPRECATED) |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
+
+
+
 
 ### rm
 
+
+
 Remove image from platform registry
+
+
 
 #### Usage
 
@@ -132,14 +183,25 @@ $ neuro image rm image:myimage:latest
 
 #### Options
 
-| Name     | Description                                       |
-| -------- | ------------------------------------------------- |
-| `--help` | Show this message and exit.                       |
-| `-f`     | Force deletion of all tags referencing the image. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`-f`_ | Force deletion of all tags referencing the image. |
+
+
+
 
 ### size
 
+
+
 Get image size Image name must be URL with...
+
+
 
 #### Usage
 
@@ -163,13 +225,23 @@ $ neuro image size image:myimage:latest
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### digest
 
+
+
 Get digest of an image from remote registry...
+
+
 
 #### Usage
 
@@ -193,13 +265,23 @@ $ neuro image digest image:myimage:latest
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### tags
 
+
+
 List tags for image in platform registry
+
+
 
 #### Usage
 
@@ -222,7 +304,14 @@ $ neuro image tags -l image:myimage
 
 #### Options
 
-| Name     | Description                            |
-| -------- | -------------------------------------- |
-| `--help` | Show this message and exit.            |
-| `-l`     | List in long format, with image sizes. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`-l`_ | List in long format, with image sizes. |
+
+
+

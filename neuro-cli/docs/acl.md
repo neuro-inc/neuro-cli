@@ -10,17 +10,32 @@ neuro acl [OPTIONS] COMMAND [ARGS]...
 
 Access Control List management.
 
-## Commands
+**Commands:**
 
-* [neuro acl grant](acl.md#grant): Shares resource with another user
-* [neuro acl revoke](acl.md#revoke): Revoke user access from another user
-* [neuro acl list](acl.md#list): List shared resources
-* [neuro acl add-role](acl.md#add-role): Add new role
-* [neuro acl remove-role](acl.md#remove-role): Remove existing role
+
+| Usage | Description |
+
+| :--- | :--- |
+
+| [_grant_](acl.md#grant) | Shares resource with another user |
+
+| [_revoke_](acl.md#revoke) | Revoke user access from another user |
+
+| [_list_](acl.md#list) | List shared resources |
+
+| [_add-role_](acl.md#add-role) | Add new role |
+
+| [_remove-role_](acl.md#remove-role) | Remove existing role |
+
+
 
 ### grant
 
+
+
 Shares resource with another user
+
+
 
 #### Usage
 
@@ -48,13 +63,23 @@ $ neuro acl grant job:///my_job_id alice write
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### revoke
 
+
+
 Revoke user access from another user
+
+
 
 #### Usage
 
@@ -79,13 +104,23 @@ $ neuro acl revoke job:///my_job_id alice
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### list
 
+
+
 List shared resources
+
+
 
 #### Usage
 
@@ -112,17 +147,31 @@ $ neuro acl list --shared image://
 
 #### Options
 
-| Name                  | Description                                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------------- |
-| `--help`              | Show this message and exit.                                                                             |
-| `--full-uri`          | Output full URI.                                                                                        |
-| `-s`, `--scheme TEXT` | Filter resources by scheme, e.g. job, storage, image or user. Deprecated, use the uri argument instead. |
-| `--shared`            | Output the resources shared by the user.                                                                |
-| `-u TEXT`             | Use specified user or role.                                                                             |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`--full-uri`_ | Output full URI. |
+
+| _`-s`, `--scheme TEXT`_ | Filter resources by scheme, e.g. job, storage, image or user. Deprecated, use the uri argument instead. |
+
+| _`--shared`_ | Output the resources shared by the user. |
+
+| _`-u TEXT`_ | Use specified user or role. |
+
+
+
 
 ### add-role
 
+
+
 Add new role
+
+
 
 #### Usage
 
@@ -140,13 +189,23 @@ $ neuro acl add-role mycompany/subdivision
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### remove-role
 
+
+
 Remove existing role
+
+
 
 #### Usage
 
@@ -164,6 +223,12 @@ $ neuro acl remove-role mycompany/subdivision
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+

@@ -10,14 +10,26 @@ neuro completion [OPTIONS] COMMAND [ARGS]...
 
 Output shell completion code.
 
-## Commands
+**Commands:**
 
-* [neuro completion generate](completion.md#generate): Provide an instruction for shell completion...
-* [neuro completion patch](completion.md#patch): Automatically patch shell configuration...
+
+| Usage | Description |
+
+| :--- | :--- |
+
+| [_generate_](completion.md#generate) | Provide an instruction for shell completion... |
+
+| [_patch_](completion.md#patch) | Automatically patch shell configuration... |
+
+
 
 ### generate
 
+
+
 Provide an instruction for shell completion...
+
+
 
 #### Usage
 
@@ -29,13 +41,23 @@ Provide an instruction for shell completion generation.
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### patch
 
+
+
 Automatically patch shell configuration...
+
+
 
 #### Usage
 
@@ -47,6 +69,12 @@ Automatically patch shell configuration profile to enable completion
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+

@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
+from dataclasses import dataclass, field
+
+import click
 import os
 import re
 import sys
-from dataclasses import dataclass, field
+from pathlib import Path
 from textwrap import dedent
 from typing import Any, List
-
-import click
 
 from neuro_cli.main import cli
 
@@ -86,13 +87,15 @@ def parse_command(parent_ctx, command, stack) -> CommandInfo:
     return info
 
 
-def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
+def generate_markdown(
+    info: CommandInfo, header_prefix: str = "#", filename: str = ""
+) -> str:
     def simple_escape_line(text: str) -> str:
-        escaped = re.sub(r"\*(\S[^*]*)\*", r"\\*\1*", text)
-        escaped = re.sub(r"\-(\S[^*]*)\-", r"\\-\1-", escaped)
-        escaped = re.sub(r"\_(\S[^*]*)\_", r"\\_\1_", escaped)
-        escaped = re.sub(r"\[(\S[^\]]*)\]", r"\\[\1]", escaped)
-        escaped = re.sub(r"\((\S[^)]*)\)", r"\\(\1)", escaped)
+        escaped = re.sub(r"\*", r"\\*", text)
+        escaped = re.sub(r"<(\S[^*]*)>", r"&lt;\1&gt;", escaped)
+        escaped = re.sub(r"_", r"\\_", escaped)
+        escaped = re.sub(r"\[(\S[^\]]*)\]", r"\\[\1\\]", escaped)
+        escaped = re.sub(r"\((\S[^)]*)\)", r"\\(\1\\)", escaped)
 
         return escaped
 
@@ -107,7 +110,7 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
                 before = after
                 after = simple_escape_line(line)
             escaped.append(after)
-        return "<br/>".join(escaped)
+        return "\n".join(escaped)
 
     def escape_cell(text: str) -> str:
         escaped = escape(text)
@@ -119,7 +122,9 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
     md += "\n\n"
 
     if info.description:
-        md += escape(info.description)
+        descr = info.description.strip()
+        descr = re.sub(r"(?<!\n)\n(?!\n)", r" ", descr)
+        md += descr
         md += "\n\n"
 
     if info.usage:
@@ -136,55 +141,57 @@ def generate_markdown(info: CommandInfo, header_prefix: str = "#") -> str:
 
     if info.options:
         md += "**Options:**\n\n"
-        md += "Name | Description|\n"
-        md += "|----|------------|\n"
+        md += "| Name | Description |\n"
+        md += "| :--- | :--- |\n"
         for option in info.options:
             md += (
-                f"|_{escape_cell(option.pattern.replace('|', ' | '))}_"
-                f"|{escape_cell(option.description)}|"
+                f"| _{escape_cell(option.pattern.replace('|', ' | '))}_ "
+                f"| {escape_cell(option.description)} |"
                 f"\n"
             )
 
-        md += "\n\n"
+        md += "\n"
 
     groups = [child for child in info.children if child.is_group]
     if groups:
         md += "**Command Groups:**\n\n"
-        md += "|Usage|Description|\n"
-        md += "|---|---|\n"
+        md += "| Usage | Description |\n"
+        md += "| :--- | :--- |\n"
         for group in groups:
             anchor = group.name
-            anchor = "#" + anchor.replace(" ", "-")
+            anchor = f"{filename}#" + anchor.replace(" ", "-")
             md += (
-                f"| _[{escape_cell(group.name)}]({anchor})_"
+                f"| [_{escape_cell(group.name)}_]({anchor}) "
                 f"| {escape_cell(group.short)} |\n"
             )
-        md += "\n\n"
+        md += "\n"
 
     commands = [child for child in info.children if not child.is_group]
     if commands:
         md += "**Commands:**\n\n"
-        md += "|Usage|Description|\n"
-        md += "|---|---|\n"
+        md += "| Usage | Description |\n"
+        md += "| :--- | :--- |\n"
         for command in commands:
             anchor = command.name
-            anchor = "#" + anchor.replace(" ", "-")
+            anchor = f"{filename}#" + anchor.replace(" ", "-")
             md += (
-                f"| _[{escape_cell(command.name)}]({anchor})_"
+                f"| [_{escape_cell(command.name)}_]({anchor}) "
                 f"| {escape_cell(command.short)} |\n"
             )
-        md += "\n\n"
+        md += "\n"
 
     return md
 
 
-def generate_command_markdown(info: CommandInfo, header_prefix="") -> str:
-    md = generate_markdown(info, header_prefix)
+def generate_command_markdown(
+    info: CommandInfo, header_prefix="", filename: str = ""
+) -> str:
+    md = generate_markdown(info, header_prefix, filename)
     if info.children:
         groups = [child for child in info.children if child.is_group]
         commands = [child for child in info.children if not child.is_group]
-        md += "\n\n" + "\n\n".join(
-            generate_command_markdown(item, header_prefix + "#")
+        md += "".join(
+            generate_command_markdown(item, header_prefix + "#", filename)
             for item in groups + commands
         )
     return md
@@ -197,11 +204,13 @@ def main():
 
     input_file = sys.argv[1]
     output_file = sys.argv[2]
+    filename = Path(output_file).name
+
     with open(input_file) as input:
         with open(output_file, "w") as output:
             template = input.read()
             info = parse_command(None, cli, ["neuro"])
-            cli_doc = generate_command_markdown(info, "")
+            cli_doc = generate_command_markdown(info, "#", filename=filename)
             generated_md = template.format(cli_doc=cli_doc)
             output.write(generated_md)
 

@@ -10,24 +10,46 @@ neuro job [OPTIONS] COMMAND [ARGS]...
 
 Job operations.
 
-## Commands
+**Commands:**
 
-* [neuro job run](job.md#run): Run a job with predefined resources...
-* [neuro job ls](job.md#ls): List all jobs
-* [neuro job status](job.md#status): Display status of a job
-* [neuro job tags](job.md#tags): List all tags submitted by the user
-* [neuro job exec](job.md#exec): Execute command in a running job
-* [neuro job port-forward](job.md#port-forward): Forward port(s) of a running job to local...
-* [neuro job logs](job.md#logs): Print the logs for a job
-* [neuro job kill](job.md#kill): Kill job(s)
-* [neuro job top](job.md#top): Display GPU/CPU/Memory usage
-* [neuro job save](job.md#save): Save job's state to an image
-* [neuro job browse](job.md#browse): Opens a job's URL in a web browser
-* [neuro job attach](job.md#attach): Attach local standard input, output, and...
+
+| Usage | Description |
+
+| :--- | :--- |
+
+| [_run_](job.md#run) | Run a job with predefined resources... |
+
+| [_ls_](job.md#ls) | List all jobs |
+
+| [_status_](job.md#status) | Display status of a job |
+
+| [_tags_](job.md#tags) | List all tags submitted by the user |
+
+| [_exec_](job.md#exec) | Execute command in a running job |
+
+| [_port-forward_](job.md#port-forward) | Forward port\(s\) of a running job to local... |
+
+| [_logs_](job.md#logs) | Print the logs for a job |
+
+| [_kill_](job.md#kill) | Kill job\(s\) |
+
+| [_top_](job.md#top) | Display GPU/CPU/Memory usage |
+
+| [_save_](job.md#save) | Save job's state to an image |
+
+| [_browse_](job.md#browse) | Opens a job's URL in a web browser |
+
+| [_attach_](job.md#attach) | Attach local standard input, output, and... |
+
+
 
 ### run
 
+
+
 Run a job with predefined resources...
+
+
 
 #### Usage
 
@@ -61,37 +83,71 @@ $ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg
 
 #### Options
 
-| Name                                     | Description                                                                                                                                                                            |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--help`                                 | Show this message and exit.                                                                                                                                                            |
-| `--browse`                               | Open a job's URL in a web browser                                                                                                                                                      |
-| `-d`, `--description DESC`               | Optional job description in free format                                                                                                                                                |
-| `--detach`                               | Don't attach to job logs and don't wait for exit code                                                                                                                                  |
-| `--entrypoint TEXT`                      | Executable entrypoint in the container (note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)                                                               |
-| `-e`, `--env VAR=VAL`                    | Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables. |
-| `--env-file PATH`                        | File with environment variables to pass                                                                                                                                                |
-| `-x`, `--extshm` / `-X`, `--no-extshm`   | Request extended '/dev/shm' space  _[default: True]_                                                                                                                                   |
-| `--http PORT`                            | Enable HTTP port forwarding to container  _[default: 80]_                                                                                                                              |
-| `--http-auth` / `--no-http-auth`         | Enable HTTP authentication for forwarded HTTP port  _[default: True]_                                                                                                                  |
-| `--life-span TIMEDELTA`                  | Optional job run-time limit in the format '1d2h3m4s' (some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.                            |
-| `-n`, `--name NAME`                      | Optional job name                                                                                                                                                                      |
-| `--pass-config` / `--no-pass-config`     | Upload neuro config to the job  _[default: False]_                                                                                                                                     |
-| `--port-forward LOCAL_PORT:REMOTE_RORT`  | Forward port(s) of a running job to local port(s) (use multiple times for forwarding several ports)                                                                                    |
-| `-s`, `--preset PRESET`                  | Predefined resource configuration (to see available values, run `neuro config show`)                                                                                                   |
-| `--privileged TEXT`                      | Run job in privileged mode, if it is supported by cluster.  _[default: False]_                                                                                                         |
-| `-q`, `--quiet`                          | Run command in quiet mode (DEPRECATED)                                                                                                                                                 |
-| `--restart [never|on-failure|always]`    | Restart policy to apply when a job exits  _[default: never]_                                                                                                                           |
-| `--schedule-timeout TIMEDELTA`           | Optional job schedule timeout in the format '3m4s' (some parts may be missing).                                                                                                        |
-| `--tag TAG`                              | Optional job tag, multiple values allowed                                                                                                                                              |
-| `-t`, `--tty` / `-T`, `--no-tty`         | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.                       |
-| `-v`, `--volume MOUNT`                   | Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files.       |
-| `--wait-for-seat` / `--no-wait-for-seat` | Wait for total running jobs quota  _[default: False]_                                                                                                                                  |
-| `--wait-start` / `--no-wait-start`       | Wait for a job start or failure  _[default: True]_                                                                                                                                     |
-| `-w`, `--workdir TEXT`                   | Working directory inside the container                                                                                                                                                 |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`--browse`_ | Open a job's URL in a web browser |
+
+| _`-d`, `--description DESC`_ | Optional job description in free format |
+
+| _`--detach`_ | Don't attach to job logs and don't wait for exit code |
+
+| _`--entrypoint TEXT`_ | Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image\) |
+
+| _`-e`, `--env VAR=VAL`_ | Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables. |
+
+| _`--env-file PATH`_ | File with environment variables to pass |
+
+| _`-x`, `--extshm` / `-X`, `--no-extshm`_ | Request extended '/dev/shm' space  \_\[default: True\]\_ |
+
+| _`--http PORT`_ | Enable HTTP port forwarding to container  \_\[default: 80\]\_ |
+
+| _`--http-auth` / `--no-http-auth`_ | Enable HTTP authentication for forwarded HTTP port  \_\[default: True\]\_ |
+
+| _`--life-span TIMEDELTA`_ | Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing\). Set '0' to disable. Default value '1d' can be changed in the user config. |
+
+| _`-n`, `--name NAME`_ | Optional job name |
+
+| _`--pass-config` / `--no-pass-config`_ | Upload neuro config to the job  \_\[default: False\]\_ |
+
+| _`--port-forward LOCAL\_PORT:REMOTE\_RORT`_ | Forward port\(s\) of a running job to local port\(s\) \(use multiple times for forwarding several ports\) |
+
+| _`-s`, `--preset PRESET`_ | Predefined resource configuration \(to see available values, run `neuro config show`\) |
+
+| _`--privileged TEXT`_ | Run job in privileged mode, if it is supported by cluster.  \_\[default: False\]\_ |
+
+| _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
+
+| _`--restart \[never &#124; on-failure &#124; always\]`_ | Restart policy to apply when a job exits  \_\[default: never\]\_ |
+
+| _`--schedule-timeout TIMEDELTA`_ | Optional job schedule timeout in the format '3m4s' \(some parts may be missing\). |
+
+| _`--tag TAG`_ | Optional job tag, multiple values allowed |
+
+| _`-t`, `--tty` / `-T`, `--no-tty`_ | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script. |
+
+| _`-v`, `--volume MOUNT`_ | Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files. |
+
+| _`--wait-for-seat` / `--no-wait-for-seat`_ | Wait for total running jobs quota  \_\[default: False\]\_ |
+
+| _`--wait-start` / `--no-wait-start`_ | Wait for a job start or failure  \_\[default: True\]\_ |
+
+| _`-w`, `--workdir TEXT`_ | Working directory inside the container |
+
+
+
 
 ### ls
 
+
+
 List all jobs
+
+
 
 #### Usage
 
@@ -115,25 +171,47 @@ $ neuro ps -t tag1 -t tag2
 
 #### Options
 
-| Name                                                                    | Description                                                                                                                                                                                                    |
-| ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--help`                                                                | Show this message and exit.                                                                                                                                                                                    |
-| `-a`, `--all`                                                           | Show all jobs regardless the status.                                                                                                                                                                           |
-| `-d`, `--description DESCRIPTION`                                       | Filter out jobs by description (exact match).                                                                                                                                                                  |
-| `--format COLUMNS`                                                      | Output table format, see "neuro help ps-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config" |
-| `--full-uri`                                                            | Output full image URI.                                                                                                                                                                                         |
-| `-n`, `--name NAME`                                                     | Filter out jobs by name.                                                                                                                                                                                       |
-| `-o`, `--owner TEXT`                                                    | Filter out jobs by owner (multiple option). Supports `ME` option to filter by the current user.                                                                                                                |
-| `-q`, `--quiet`                                                         | Run command in quiet mode (DEPRECATED)                                                                                                                                                                         |
-| `--since DATE`                                                          | Show jobs created after a specific date (including).                                                                                                                                                           |
-| `-s`, `--status [pending|suspended|running|succeeded|failed|cancelled]` | Filter out jobs by status (multiple option).                                                                                                                                                                   |
-| `-t`, `--tag TAG`                                                       | Filter out jobs by tag (multiple option)                                                                                                                                                                       |
-| `--until DATE`                                                          | Show jobs created before a specific date (including).                                                                                                                                                          |
-| `-w`, `--wide`                                                          | Do not cut long lines for terminal width.                                                                                                                                                                      |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`-a`, `--all`_ | Show all jobs regardless the status. |
+
+| _`-d`, `--description DESCRIPTION`_ | Filter out jobs by description \(exact match\). |
+
+| _`--format COLUMNS`_ | Output table format, see "neuro help ps-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config" |
+
+| _`--full-uri`_ | Output full image URI. |
+
+| _`-n`, `--name NAME`_ | Filter out jobs by name. |
+
+| _`-o`, `--owner TEXT`_ | Filter out jobs by owner \(multiple option\). Supports `ME` option to filter by the current user. |
+
+| _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
+
+| _`--since DATE`_ | Show jobs created after a specific date \(including\). |
+
+| _`-s`, `--status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled\]`_ | Filter out jobs by status \(multiple option\). |
+
+| _`-t`, `--tag TAG`_ | Filter out jobs by tag \(multiple option\) |
+
+| _`--until DATE`_ | Show jobs created before a specific date \(including\). |
+
+| _`-w`, `--wide`_ | Do not cut long lines for terminal width. |
+
+
+
 
 ### status
 
+
+
 Display status of a job
+
+
 
 #### Usage
 
@@ -145,14 +223,25 @@ Display status of a job.
 
 #### Options
 
-| Name         | Description                 |
-| ------------ | --------------------------- |
-| `--help`     | Show this message and exit. |
-| `--full-uri` | Output full URI.            |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`--full-uri`_ | Output full URI. |
+
+
+
 
 ### tags
 
+
+
 List all tags submitted by the user
+
+
 
 #### Usage
 
@@ -164,13 +253,23 @@ List all tags submitted by the user.
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### exec
 
+
+
 Execute command in a running job
+
+
 
 #### Usage
 
@@ -193,14 +292,25 @@ $ neuro exec --no-tty my-job ls -l
 
 #### Options
 
-| Name                             | Description                                                                                                                                                      |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--help`                         | Show this message and exit.                                                                                                                                      |
-| `-t`, `--tty` / `-T`, `--no-tty` | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`-t`, `--tty` / `-T`, `--no-tty`_ | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script. |
+
+
+
 
 ### port-forward
 
+
+
 Forward port(s) of a running job to local...
+
+
 
 #### Usage
 
@@ -230,13 +340,23 @@ $ neuro job port-forward my-job 2080:80 2222:22 2000:100
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### logs
 
+
+
 Print the logs for a job
+
+
 
 #### Usage
 
@@ -248,13 +368,23 @@ Print the logs for a job.
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### kill
 
+
+
 Kill job(s)
+
+
 
 #### Usage
 
@@ -266,13 +396,23 @@ Kill job(s).
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### top
 
+
+
 Display GPU/CPU/Memory usage
+
+
 
 #### Usage
 
@@ -284,14 +424,25 @@ Display `GPU`/`CPU`/Memory usage.
 
 #### Options
 
-| Name              | Description                                                                      |
-| ----------------- | -------------------------------------------------------------------------------- |
-| `--help`          | Show this message and exit.                                                      |
-| `--timeout FLOAT` | Maximum allowed time for executing the command, 0 for no timeout  _[default: 0]_ |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`--timeout FLOAT`_ | Maximum allowed time for executing the command, 0 for no timeout  \_\[default: 0\]\_ |
+
+
+
 
 ### save
 
+
+
 Save job's state to an image
+
+
 
 #### Usage
 
@@ -311,13 +462,23 @@ $ neuro job save my-favourite-job image://bob/ubuntu-patched
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### browse
 
+
+
 Opens a job's URL in a web browser
+
+
 
 #### Usage
 
@@ -329,13 +490,23 @@ Opens a job's `URL` in a web browser.
 
 #### Options
 
-| Name     | Description                 |
-| -------- | --------------------------- |
-| `--help` | Show this message and exit. |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+
+
 
 ### attach
 
+
+
 Attach local standard input, output, and...
+
+
 
 #### Usage
 
@@ -347,7 +518,14 @@ Attach local standard input, output, and error streams to a running job.
 
 #### Options
 
-| Name                                    | Description                                                                                         |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `--help`                                | Show this message and exit.                                                                         |
-| `--port-forward LOCAL_PORT:REMOTE_RORT` | Forward port(s) of a running job to local port(s) (use multiple times for forwarding several ports) |
+
+| Name | Description |
+
+| :--- | :--- |
+
+| _`--help`_ | Show this message and exit. |
+
+| _`--port-forward LOCAL\_PORT:REMOTE\_RORT`_ | Forward port\(s\) of a running job to local port\(s\) \(use multiple times for forwarding several ports\) |
+
+
+
