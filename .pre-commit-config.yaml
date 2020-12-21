@@ -12,7 +12,7 @@ repos:
     entry: make docs
     pass_filenames: false
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: 'v3.3.0'
+  rev: 'v3.4.0'
   hooks:
   - id: check-merge-conflict
     exclude: "rst$"
@@ -34,7 +34,7 @@ repos:
   - id: black
     language_version: python3 # Should be a command that runs python3.6+
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: 'v3.3.0'
+  rev: 'v3.4.0'
   hooks:
   - id: check-case-conflict
   - id: check-json
