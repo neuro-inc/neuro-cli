@@ -14,7 +14,7 @@ class Command(click.Command):
         formatter.write_paragraph()
         root = cast(Root, ctx.obj)
         with root.pager():
-            root.print(Markdown(self.help))
+            root.print(Markdown(self.help, inline_code_lexer="bash"))
 
     def get_short_help_str(self, limit: int = 45) -> str:
         if self.help is None:
@@ -509,9 +509,7 @@ async def sharing() -> None:
         always contain a whole set of user's permissions.
 
     If you want to create a new role, run
-    ```
-    neuro acl add-role {username}/roles/{rolename}
-    ```
+    `neuro acl add-role {username}/roles/{rolename}`
 
     This will create a role `rolename` with empty permission set. Then you may share
     resources with the new role via `neuro acl grant`:
@@ -534,10 +532,7 @@ async def sharing() -> None:
     `neuro acl list -u {username}/roles/{rolename}`.
 
     If needed, role can be revoked:
-
-    ```
-    neuro acl revoke role://{username}/roles/{rolename} bob
-    ```
+    `neuro acl revoke role://{username}/roles/{rolename} bob`
 
     And deleted by running `neuro acl remove-role {username}/roles/{rolename}`.
     """
