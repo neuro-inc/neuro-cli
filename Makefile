@@ -118,9 +118,9 @@ docs: ### Generate CLI docs
 .PHONY: api-doc
 api-doc: ### Generate API docs
 	make -C neuro-sdk/docs html SPHINXOPTS="-W -E"
-	@echo "open file://`pwd`/docs/_build/html/index.html"
+	@echo "open file://`pwd`/neuro-sdk/docs/_build/html/index.html"
 
 .PHONY: api-doc-spelling
 api-doc-spelling: ### Spell check API docs
 	make -C neuro-sdk/docs spelling SPHINXOPTS="-W -E"
-	@echo "open file://`pwd`/docs/_build/html/index.html"
+	@echo "open file://`pwd`/neuro-sdk/docs/_build/html/index.html"

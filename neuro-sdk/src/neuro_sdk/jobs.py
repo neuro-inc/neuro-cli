@@ -879,10 +879,8 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         cluster_name=cluster_name,
         history=history,
         container=container,
-        scheduler_enabled=res.get("scheduler_enabled", res["is_preemptible"]),
-        preemptible_node=res.get(
-            "preemptible_node", res.get("is_preemptible_node_required", False)
-        ),
+        scheduler_enabled=res["scheduler_enabled"],
+        preemptible_node=res.get("preemptible_node", False),
         pass_config=res["pass_config"],
         name=name,
         tags=tags,

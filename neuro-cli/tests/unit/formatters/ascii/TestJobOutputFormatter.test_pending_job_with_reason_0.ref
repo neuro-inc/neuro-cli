@@ -7,6 +7,6 @@ Job          test-job
  Command      test-command                     
  Resources     Memory  16.0M                   
                CPU       0.1                   
- Preemptible  True                             
+ Round Robin  True                             
  TTY          True                             
  Created      2018-09-25T12:28:21.298672+00:00

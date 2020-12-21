@@ -49,7 +49,7 @@ def _job_entry(job_id: str) -> Dict[str, Any]:
             "resources": {"cpu": 0.1, "memory_mb": 1024, "shm": True},
         },
         "ssh_auth_server": "ssh://nobody@ssh-auth-dev.neu.ro:22",
-        "is_preemptible": True,
+        "scheduler_enabled": True,
         "pass_config": False,
         "name": "job-name",
         "internal_hostname": "job-id.default",
