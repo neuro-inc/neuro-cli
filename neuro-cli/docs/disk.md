@@ -11,20 +11,12 @@ neuro disk [OPTIONS] COMMAND [ARGS]...
 Operations with disks.
 
 **Commands:**
-
-
 | Usage | Description |
-
 | :--- | :--- |
-
 | [_ls_](disk.md#ls) | List disks |
-
 | [_create_](disk.md#create) | Create a disk with at least storage amount... |
-
 | [_get_](disk.md#get) | Get disk DISK\_ID |
-
 | [_rm_](disk.md#rm) | Remove disk DISK\_ID |
-
 
 
 ### ls

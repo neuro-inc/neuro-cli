@@ -81,7 +81,6 @@ def gen_command(out, cmd, parent_ctx):
             w2 = max(w2, len(descr2))
             opts.append((name2, descr2))
 
-
         out.append("#### Options\n\n")
         out.append(f"| Name | Description |\n")
         out.append(f"| :--- | :--- |\n")
@@ -155,15 +154,15 @@ def gen_group(group, target_path, parent_ctx):
                 continue
             commands.append(cmd)
 
-        out.append("**Commands:**\n\n")
-        out.append("| Usage | Description |\n")
-        out.append("| :--- | :--- |\n")
+        out.append("**Commands:**")
+        out.append("| Usage | Description |")
+        out.append("| :--- | :--- |")
         for cmd in commands:
             anchor = cmd.name
             anchor = f"{group.name}.md#" + anchor.replace(" ", "-")
             out.append(
                 f"| [_{escape_cell(cmd.name)}_]({anchor}) "
-                f"| {escape_cell(cmd.get_short_help_str())} |\n"
+                f"| {escape_cell(cmd.get_short_help_str())} |"
             )
 
         out.append("\n")
@@ -176,17 +175,17 @@ def gen_group(group, target_path, parent_ctx):
 
 
 def gen_shortcuts(commands, target_path, ctx):
-    out = ["# Shortcuts\n\n"]
-    out.append("**Commands:**\n\n")
-    out.append("| Usage | Description |\n")
-    out.append("| :--- | :--- |\n")
+    out = ["# Shortcuts"]
+    out.append("**Commands:**")
+    out.append("| Usage | Description |")
+    out.append("| :--- | :--- |")
 
     for cmd in commands:
         anchor = cmd.name
         anchor = f"shortcuts.md#" + anchor.replace(" ", "-")
         out.append(
             f"| [_neuro {escape_cell(cmd.name)}_]({anchor}) "
-            f"| {escape_cell(cmd.get_short_help_str())} |\n"
+            f"| {escape_cell(cmd.get_short_help_str())} |"
         )
     out.append("\n")
 

@@ -11,36 +11,20 @@ neuro job [OPTIONS] COMMAND [ARGS]...
 Job operations.
 
 **Commands:**
-
-
 | Usage | Description |
-
 | :--- | :--- |
-
 | [_run_](job.md#run) | Run a job with predefined resources... |
-
 | [_ls_](job.md#ls) | List all jobs |
-
 | [_status_](job.md#status) | Display status of a job |
-
 | [_tags_](job.md#tags) | List all tags submitted by the user |
-
 | [_exec_](job.md#exec) | Execute command in a running job |
-
 | [_port-forward_](job.md#port-forward) | Forward port\(s\) of a running job to local... |
-
 | [_logs_](job.md#logs) | Print the logs for a job |
-
 | [_kill_](job.md#kill) | Kill job\(s\) |
-
 | [_top_](job.md#top) | Display GPU/CPU/Memory usage |
-
 | [_save_](job.md#save) | Save job's state to an image |
-
 | [_browse_](job.md#browse) | Opens a job's URL in a web browser |
-
 | [_attach_](job.md#attach) | Attach local standard input, output, and... |
-
 
 
 ### run

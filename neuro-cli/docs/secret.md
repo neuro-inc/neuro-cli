@@ -11,18 +11,11 @@ neuro secret [OPTIONS] COMMAND [ARGS]...
 Operations with secrets.
 
 **Commands:**
-
-
 | Usage | Description |
-
 | :--- | :--- |
-
 | [_ls_](secret.md#ls) | List secrets |
-
 | [_add_](secret.md#add) | Add secret KEY with data VALUE |
-
 | [_rm_](secret.md#rm) | Remove secret KEY |
-
 
 
 ### ls

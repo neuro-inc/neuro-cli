@@ -11,16 +11,10 @@ neuro completion [OPTIONS] COMMAND [ARGS]...
 Output shell completion code.
 
 **Commands:**
-
-
 | Usage | Description |
-
 | :--- | :--- |
-
 | [_generate_](completion.md#generate) | Provide an instruction for shell completion... |
-
 | [_patch_](completion.md#patch) | Automatically patch shell configuration... |
-
 
 
 ### generate

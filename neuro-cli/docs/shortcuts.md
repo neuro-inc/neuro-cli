@@ -1,55 +1,28 @@
 # Shortcuts
-
-
 **Commands:**
-
-
 | Usage | Description |
-
 | :--- | :--- |
-
 | [_neuro run_](shortcuts.md#run) | Run a job with predefined resources... |
-
 | [_neuro ps_](shortcuts.md#ps) | List all jobs |
-
 | [_neuro status_](shortcuts.md#status) | Display status of a job |
-
 | [_neuro exec_](shortcuts.md#exec) | Execute command in a running job |
-
 | [_neuro port-forward_](shortcuts.md#port-forward) | Forward port\(s\) of a running job to local... |
-
 | [_neuro attach_](shortcuts.md#attach) | Attach local standard input, output, and... |
-
 | [_neuro logs_](shortcuts.md#logs) | Print the logs for a job |
-
 | [_neuro kill_](shortcuts.md#kill) | Kill job\(s\) |
-
 | [_neuro top_](shortcuts.md#top) | Display GPU/CPU/Memory usage |
-
 | [_neuro save_](shortcuts.md#save) | Save job's state to an image |
-
 | [_neuro login_](shortcuts.md#login) | Log into Neuro Platform |
-
 | [_neuro logout_](shortcuts.md#logout) | Log out |
-
 | [_neuro cp_](shortcuts.md#cp) | Copy files and directories |
-
 | [_neuro ls_](shortcuts.md#ls) | List directory contents |
-
 | [_neuro rm_](shortcuts.md#rm) | Remove files or directories |
-
 | [_neuro mkdir_](shortcuts.md#mkdir) | Make directories |
-
 | [_neuro mv_](shortcuts.md#mv) | Move or rename files and directories |
-
 | [_neuro images_](shortcuts.md#images) | List images |
-
 | [_neuro push_](shortcuts.md#push) | Push an image to platform registry |
-
 | [_neuro pull_](shortcuts.md#pull) | Pull an image from platform registry |
-
 | [_neuro share_](shortcuts.md#share) | Shares resource with another user |
-
 
 
 ### run

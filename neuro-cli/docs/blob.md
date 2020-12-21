@@ -11,18 +11,11 @@ neuro blob [OPTIONS] COMMAND [ARGS]...
 Blob storage operations.
 
 **Commands:**
-
-
 | Usage | Description |
-
 | :--- | :--- |
-
 | [_cp_](blob.md#cp) | Simple utility to copy files and directories... |
-
 | [_ls_](blob.md#ls) | List buckets or bucket contents |
-
 | [_glob_](blob.md#glob) | List resources that match PATTERNS |
-
 
 
 ### cp

@@ -11,34 +11,19 @@ neuro config [OPTIONS] COMMAND [ARGS]...
 Client configuration.
 
 **Commands:**
-
-
 | Usage | Description |
-
 | :--- | :--- |
-
 | [_login_](config.md#login) | Log into Neuro Platform |
-
 | [_login-with-token_](config.md#login-with-token) | Log into Neuro Platform with token |
-
 | [_login-headless_](config.md#login-headless) | Log into Neuro Platform from non-GUI server... |
-
 | [_show_](config.md#show) | Print current settings |
-
 | [_show-token_](config.md#show-token) | Print current authorization token |
-
 | [_show-quota_](config.md#show-quota) | Print quota and remaining computation time... |
-
 | [_aliases_](config.md#aliases) | List available command aliases |
-
 | [_get-clusters_](config.md#get-clusters) | Fetch and display the list of available... |
-
 | [_switch-cluster_](config.md#switch-cluster) | Switch the active cluster |
-
 | [_docker_](config.md#docker) | Configure docker client to fit the Neuro... |
-
 | [_logout_](config.md#logout) | Log out |
-
 
 
 ### login

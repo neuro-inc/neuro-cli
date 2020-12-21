@@ -11,14 +11,9 @@ neuro project [OPTIONS] COMMAND [ARGS]...
 Project operations.
 
 **Commands:**
-
-
 | Usage | Description |
-
 | :--- | :--- |
-
 | [_init_](project.md#init) | Initialize an empty project |
-
 
 
 ### init

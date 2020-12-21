@@ -11,26 +11,15 @@ neuro storage [OPTIONS] COMMAND [ARGS]...
 Storage operations.
 
 **Commands:**
-
-
 | Usage | Description |
-
 | :--- | :--- |
-
 | [_cp_](storage.md#cp) | Copy files and directories |
-
 | [_ls_](storage.md#ls) | List directory contents |
-
 | [_glob_](storage.md#glob) | List resources that match PATTERNS |
-
 | [_rm_](storage.md#rm) | Remove files or directories |
-
 | [_mkdir_](storage.md#mkdir) | Make directories |
-
 | [_mv_](storage.md#mv) | Move or rename files and directories |
-
 | [_tree_](storage.md#tree) | List contents of directories in a tree-like... |
-
 
 
 ### cp

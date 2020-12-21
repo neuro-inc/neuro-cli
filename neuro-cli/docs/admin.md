@@ -11,34 +11,19 @@ neuro admin [OPTIONS] COMMAND [ARGS]...
 Cluster administration commands.
 
 **Commands:**
-
-
 | Usage | Description |
-
 | :--- | :--- |
-
 | [_get-clusters_](admin.md#get-clusters) | Print the list of available clusters |
-
 | [_generate-cluster-config_](admin.md#generate-cluster-config) | Create a cluster configuration file |
-
 | [_add-cluster_](admin.md#add-cluster) | Create a new cluster and start its... |
-
 | [_show-cluster-options_](admin.md#show-cluster-options) | Create a cluster configuration file |
-
 | [_get-cluster-users_](admin.md#get-cluster-users) | Print the list of all users in the cluster... |
-
 | [_add-cluster-user_](admin.md#add-cluster-user) | Add user access to specified cluster |
-
 | [_remove-cluster-user_](admin.md#remove-cluster-user) | Remove user access from the cluster |
-
 | [_set-user-quota_](admin.md#set-user-quota) | Set user quota to given values |
-
 | [_add-user-quota_](admin.md#add-user-quota) | Add given values to user quota |
-
 | [_update-resource-preset_](admin.md#update-resource-preset) | Add/update resource preset |
-
 | [_remove-resource-preset_](admin.md#remove-resource-preset) | Remove resource preset |
-
 
 
 ### get-clusters

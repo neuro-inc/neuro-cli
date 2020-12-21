@@ -11,22 +11,13 @@ neuro acl [OPTIONS] COMMAND [ARGS]...
 Access Control List management.
 
 **Commands:**
-
-
 | Usage | Description |
-
 | :--- | :--- |
-
 | [_grant_](acl.md#grant) | Shares resource with another user |
-
 | [_revoke_](acl.md#revoke) | Revoke user access from another user |
-
 | [_list_](acl.md#list) | List shared resources |
-
 | [_add-role_](acl.md#add-role) | Add new role |
-
 | [_remove-role_](acl.md#remove-role) | Remove existing role |
-
 
 
 ### grant
