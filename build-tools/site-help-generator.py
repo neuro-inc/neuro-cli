@@ -188,7 +188,7 @@ def gen_topics(target_path, ctx):
         exists=True, file_okay=False, dir_okay=True, writable=True, resolve_path=True
     ),
     help="Target dir in platform-web project",
-    default=str(HERE.parent.parent / "platform-docs/references/cli-reference"),
+    default=str(HERE.parent / "neuro-cli/docs"),
     show_default=True,
 )
 def main(target_dir):
