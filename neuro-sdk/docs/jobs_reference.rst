@@ -265,6 +265,8 @@ Jobs
       :param float schedule_timeout: minimal timeout to wait before reporting that job
                                      cannot be scheduled because the lack of computation
                                      cluster resources (memory, CPU/GPU etc).
+                                     This option is not allowed when ``is_preemptible``
+                                     is set to ``True``.
 
       :param float life_span: job run-time limit in seconds. Pass `None` to disable.
 
