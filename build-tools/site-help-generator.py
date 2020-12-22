@@ -220,7 +220,6 @@ def gen_summary(target_path, groups, topics):
     out.append("## Commands")
     for group in groups:
         out.append(f"* [{group.name}](neuro-cli/docs/{group.name}.md)")
-    out.append("* [Shortcuts](neuro-cli/docs/shortcuts.md)")
     out.append("\n## Topics\n")
     out.append(f"* [Topics](neuro-cli/docs/topics.md)")
     # for topic in topics:
@@ -277,6 +276,8 @@ def main(target_dir):
     # Topics generator produces ugly looking markdown, sorry
     gen_topics(target_path, ctx)
 
+    # For summary
+    groups.append(click.Group(name="shortcuts"))
     gen_summary(HERE.parent, sorted(groups, key=lambda g: g.name), ["sharing"])
 
 

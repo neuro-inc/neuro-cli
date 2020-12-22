@@ -12,8 +12,8 @@
 * [job](neuro-cli/docs/job.md)
 * [project](neuro-cli/docs/project.md)
 * [secret](neuro-cli/docs/secret.md)
+* [shortcuts](neuro-cli/docs/shortcuts.md)
 * [storage](neuro-cli/docs/storage.md)
-* [Shortcuts](neuro-cli/docs/shortcuts.md)
 
 ## Topics
 
