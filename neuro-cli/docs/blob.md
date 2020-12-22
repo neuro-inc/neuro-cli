@@ -97,7 +97,7 @@ List buckets or bucket contents.
 | _`-l`_ | use a long listing format. |
 | _`-h`, `--human-readable`_ | with -l print human readable sizes \(e.g., 2K, 540M\). |
 | _`-r`, `--recursive`_ | List all keys under the URL path provided, not just 1 level depths. |
-| _`--sort \[name | size | time\]`_ | sort by given field, default is name. |
+| _`--sort \[name \| size \| time\]`_ | sort by given field, default is name. |
 
 
 

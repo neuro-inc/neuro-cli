@@ -65,7 +65,7 @@ Create a cluster configuration file.
 | Name | Description |
 | :--- | :--- |
 | _`--help`_ | Show this message and exit. |
-| _`--type \[aws | gcp | azure\]`_ |  |
+| _`--type \[aws \| gcp \| azure\]`_ |  |
 
 
 
@@ -108,7 +108,7 @@ Create a cluster configuration file.
 | Name | Description |
 | :--- | :--- |
 | _`--help`_ | Show this message and exit. |
-| _`--type \[aws | gcp | azure\]`_ |  |
+| _`--type \[aws \| gcp \| azure\]`_ |  |
 
 
 

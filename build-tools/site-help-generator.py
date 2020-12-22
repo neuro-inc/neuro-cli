@@ -117,7 +117,7 @@ def escape(text: str) -> str:
 
 def escape_cell(text: str) -> str:
     escaped = escape(text)
-    # escaped = re.sub(r"\|", r"&#124;", escaped)
+    escaped = re.sub(r"\|", r"\\|", escaped)
     return escaped
 
 

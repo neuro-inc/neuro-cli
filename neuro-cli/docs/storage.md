@@ -128,7 +128,7 @@ By default `PATH` is equal user's home dir
 | _`-l`_ | use a long listing format. |
 | _`-h`, `--human-readable`_ | with -l print human readable sizes \(e.g., 2K, 540M\). |
 | _`-a`, `--all`_ | do not ignore entries starting with . |
-| _`--sort \[name | size | time\]`_ | sort by given field, default is name. |
+| _`--sort \[name \| size \| time\]`_ | sort by given field, default is name. |
 
 
 
@@ -300,6 +300,6 @@ home dir (storage:)
 | _`-h`, `--human-readable`_ | Print the size in a more human readable way. |
 | _`-a`, `--all`_ | do not ignore entries starting with . |
 | _`-s`, `--size`_ | Print the size in bytes of each file. |
-| _`--sort \[name | size | time\]`_ | sort by given field, default is name |
+| _`--sort \[name \| size \| time\]`_ | sort by given field, default is name |
 
 
