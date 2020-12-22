@@ -1,5 +1,3 @@
-# user-config
-
 User configuration files
 ========================
 

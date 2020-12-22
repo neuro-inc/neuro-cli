@@ -1,5 +1,3 @@
-# ps-format
-
 Format for columns specification
 ================================
 

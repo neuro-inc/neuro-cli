@@ -1,5 +1,3 @@
-# aliases
-
 Custom command aliases
 ======================
 

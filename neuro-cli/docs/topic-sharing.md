@@ -1,5 +1,3 @@
-# sharing
-
 Using sharing functionality
 ===========================
 

@@ -195,35 +195,28 @@ def gen_shortcuts(commands, target_path, ctx):
 
 
 def gen_topics(target_path, ctx):
-    out = ["# Topics", ""]
-
     for name in topics.list_commands(ctx):
         topic = topics.get_command(ctx, name)
-        out.append(
-            f"* [neuro {topic.name}](topics.md#{topic.name}): "
-            f"{topic.get_short_help_str()}"
-        )
-    out.append("")
+        out = [topic.help]
+        fname = target_path / f"topic-{topic.name}.md"
+        fname.write_text("\n".join(out))
 
-    for name in topics.list_commands(ctx):
-        topic = topics.get_command(ctx, name)
-        out.append(f"## {topic.name}")
-        out.append("")
-        out.append(topic.help)
 
-    fname = target_path / "topics.md"
-    fname.write_text("\n".join(out))
-
-def gen_summary(target_path, groups, topics):
+def gen_summary(target_path, groups, ctx):
     out = ["# Table of contents\n"]
+
     out.append("[Getting Started][(README.md)")
+
     out.append("## Commands")
     for group in groups:
         out.append(f"* [{group.name}](neuro-cli/docs/{group.name}.md)")
+
     out.append("\n## Topics\n")
-    out.append(f"* [Topics](neuro-cli/docs/topics.md)")
-    # for topic in topics:
-    #     out.append(f"* [{topic}](neuro-cli/docs/{topic}.md)")
+    for name in topics.list_commands(ctx):
+        topic = topics.get_command(ctx, name)
+        out.append(
+            f"* [{topic.get_short_help_str()}](neuro-cli/docs/topic-{topic.name}.md)"
+        )
 
     fname = target_path / "SUMMARY.md"
     fname.write_text("\n".join(out))
@@ -252,7 +245,7 @@ def main(target_dir):
     groups = []
     shortcuts = []
     with click.Context(
-        cli, info_name="neuro", color=False, terminal_width=80, max_content_width=80
+            cli, info_name="neuro", color=False, terminal_width=80, max_content_width=80
     ) as ctx:
         for cmd_name in cli.list_commands(ctx):
             cmd = cli.get_command(ctx, cmd_name)
@@ -278,7 +271,8 @@ def main(target_dir):
 
     # For summary
     groups.append(click.Group(name="shortcuts"))
-    gen_summary(HERE.parent, sorted(groups, key=lambda g: g.name), ["sharing"])
+
+    gen_summary(HERE.parent, sorted(groups, key=lambda g: g.name), ctx)
 
 
 if __name__ == "__main__":
