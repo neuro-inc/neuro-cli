@@ -10,6 +10,8 @@ class ConsoleHandler(logging.Handler):
         self.console = Console(
             file=sys.stderr,
             color_system="auto" if color else None,
+            markup=False,
+            emoji=False,
             highlight=False,
             log_path=False,
             width=2048,
@@ -22,7 +24,7 @@ class ConsoleHandler(logging.Handler):
                 if self.console.file.closed:
                     return
                 self.console.print(self.get_level_message(record), end="", markup=True)
-                self.console.print(self.format(record), markup=False)
+                self.console.print(self.format(record))
             finally:
                 self.release()
         except RecursionError:  # pragma: no cover

@@ -1,0 +1,1 @@
+Fixed unintentional interpretation of sequences like `:+1` and `[b]` in descriptions, commands, paths, URIs, etc when output on the console.

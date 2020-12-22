@@ -7,6 +7,7 @@ from typing import IO, Optional
 import click
 import yaml
 from prompt_toolkit import PromptSession
+from rich.markup import escape as rich_escape
 
 from neuro_sdk import Preset
 from neuro_sdk.admin import _ClusterUserRoleType
@@ -357,8 +358,9 @@ async def set_user_quota(
     )
     fmt = QuotaFormatter()
     root.print(
-        f"New quotas for [u]{user_with_quota.user_name}[/u] "
-        f"on cluster [u]{cluster_name}[/u]:"
+        f"New quotas for [u]{rich_escape(user_with_quota.user_name)}[/u] "
+        f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
+        markup=True,
     )
     root.print(fmt(user_with_quota.quota))
 
@@ -400,8 +402,9 @@ async def add_user_quota(
     )
     fmt = QuotaFormatter()
     root.print(
-        f"New quotas for [u]{user_with_quota.user_name}[/u] "
-        f"on cluster [u]{cluster_name}[/u]:"
+        f"New quotas for [u]{rich_escape(user_with_quota.user_name)}[/u] "
+        f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
+        markup=True,
     )
     root.print(fmt(user_with_quota.quota))
 
@@ -491,8 +494,9 @@ async def update_resource_preset(
     await root.client.config.fetch()
     if not root.quiet:
         root.print(
-            f"Updated resource preset [b]{preset_name}[/b] "
-            f"in cluster [b]{cluster_name}[/b]"
+            f"Updated resource preset [b]{rich_escape(preset_name)}[/b] "
+            f"in cluster [b]{rich_escape(cluster_name)}[/b]",
+            markup=True,
         )
 
 
@@ -513,8 +517,9 @@ async def remove_resource_preset(
     await root.client.config.fetch()
     if not root.quiet:
         root.print(
-            f"Removed resource preset [b]{preset_name}[/b] "
-            f"from cluster [b]{cluster_name}[/b]"
+            f"Removed resource preset [b]{rich_escape(preset_name)}[/b] "
+            f"from cluster [b]{rich_escape(cluster_name)}[/b]",
+            markup=True,
         )
 
 

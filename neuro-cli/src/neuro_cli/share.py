@@ -3,6 +3,7 @@ from typing import Any, Optional
 
 import click
 from rich.table import Table
+from rich.text import Text
 from yarl import URL
 
 from neuro_sdk import Action, Permission, Share
@@ -187,9 +188,9 @@ ACTION_COLORS = {
 }
 
 
-def _fmt_action(action: Action) -> str:
-    color = ACTION_COLORS.get(action, "none")
-    return f"[{color}]{action.value}[/{color}]"
+def _fmt_action(action: Action) -> Text:
+    color = ACTION_COLORS.get(action, "")
+    return Text(action.value, style=color)
 
 
 @command()

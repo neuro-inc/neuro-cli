@@ -12,6 +12,7 @@ from rich import box
 from rich.console import Console, ConsoleRenderable, RenderableType, RenderHook
 from rich.control import Control
 from rich.live_render import LiveRender
+from rich.markup import escape as rich_escape
 from rich.styled import Styled
 from rich.table import Table
 from rich.text import Text
@@ -471,9 +472,13 @@ class DetailedJobStartProgress(JobStartProgress, RenderHook):
         self._live_render = LiveRender(Text())
 
     def begin(self, job: JobDescription) -> None:
-        self._console.print(f"{yes()} [b]Job ID[/b]: {job.id}")
+        self._console.print(
+            f"{yes()} [b]Job ID[/b]: {rich_escape(job.id)}", markup=True
+        )
         if job.name:
-            self._console.print(f"{yes()} [b]Name[/b]: {job.name}")
+            self._console.print(
+                f"{yes()} [b]Name[/b]: {rich_escape(job.name)}", markup=True
+            )
 
     def step(self, job: JobDescription) -> None:
         new_time = self.time_factory()
@@ -481,7 +486,7 @@ class DetailedJobStartProgress(JobStartProgress, RenderHook):
         msg = "Status: " + fmt_status(job.status)
         reason = self._get_status_reason_message(job)
         if reason:
-            msg += f" [b]{reason}[/b]"
+            msg += f" [b]{rich_escape(reason)}[/b]"
         description = self._get_status_description_message(job)
         if description:
             msg += " " + description
@@ -496,7 +501,7 @@ class DetailedJobStartProgress(JobStartProgress, RenderHook):
 
         if msg != self._prev:
             if self._prev:
-                self._console.print(self._prev)
+                self._console.print(self._prev, markup=True)
             self._prev = msg
         else:
             msg = f"{msg} {next(self._spinner)} [{dt:.1f} sec]"
@@ -511,14 +516,14 @@ class DetailedJobStartProgress(JobStartProgress, RenderHook):
         if job.status != JobStatus.FAILED:
             http_url = job.http_url
             if http_url:
-                out.append(f"{yes()} [b]Http URL[/b]: {http_url}")
+                out.append(f"{yes()} [b]Http URL[/b]: {rich_escape(str(http_url))}")
             if job.life_span:
                 limit = humanize.naturaldelta(datetime.timedelta(seconds=job.life_span))
                 out.append(
                     f"{yes()} [yellow]The job will die in {limit}.[/yellow] "
                     "See --life-span option documentation for details.",
                 )
-            self._console.print("\n".join(out))
+            self._console.print("\n".join(out), markup=True)
 
     def process_renderables(
         self, renderables: List[ConsoleRenderable]
@@ -636,13 +641,13 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
 
     def _hint(self, hints: Iterable[Tuple[str, str]]) -> None:
         for title, hint in hints:
-            self._console.print(f"[dim][yellow]{title}:")
-            self._console.print(f"[dim]  {hint}")
+            self._console.print("title:", style="dim yellow")
+            self._console.print(f"  {hint}", style="dim")
 
     def detach(self, job: JobDescription) -> None:
         self._console.line()
         self._console.print(
-            f"{no()} [red]Terminal was detached but job is still running"
+            f"{no()} [red]Terminal was detached but job is still running", markup=True
         )
         self._hint(
             [
@@ -655,7 +660,7 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
 
     def kill(self, job: JobDescription) -> None:
         self._console.line()
-        self._console.print(f"{no()} [red]Job was killed")
+        self._console.print(f"{no()} [red]Job was killed", markup=True)
         self._hint(
             [
                 ("Get job status", f"neuro status {job.id}"),
@@ -681,10 +686,11 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
 
     def timeout(self, job: JobDescription) -> None:
         self._console.line()
-        self._console.print("[red]× Warning !!!")
+        self._console.print("[red]× Warning !!!", markup=True)
         self._console.print(
             f"{no()} [red]"
             "The attached session was disconnected but the job is still alive.",
+            markup=True,
         )
         self._hint(
             [
@@ -812,10 +818,11 @@ class DetailedExecStopProgress(ExecStopProgress, RenderHook):
 
     def timeout(self) -> None:
         self._console.line()
-        self._console.print(f"{no()} [red]Warning !!!")
+        self._console.print(f"{no()} [red]Warning !!!", markup=True)
         self._console.print(
             f"{no()} [red]The attached session was disconnected "
             "but the exec process is still alive.",
+            markup=True,
         )
 
     def process_renderables(

@@ -3,6 +3,7 @@ import logging
 from dataclasses import replace
 from typing import Optional
 
+from rich.markup import escape as rich_escape
 from rich.progress import Progress
 
 from neuro_sdk import LocalImage, RemoteImage
@@ -170,7 +171,7 @@ async def tags(root: Root, format_long: bool, image: RemoteImage) -> None:
     else:
         formatter = ShortTagsFormatter()
     with root.pager():
-        root.print(f"Tags for [bold]{str(image)}[/bold]")
+        root.print(f"Tags for [bold]{rich_escape(str(image))}[/bold]", markup=True)
         root.print(formatter(image, tags_list))
 
 
@@ -195,7 +196,9 @@ async def rm(root: Root, force: bool, image: RemoteImage) -> None:
     neuro image rm image:myimage:latest
     """
     digest = await root.client.images.digest(image)
-    root.print(f"Deleting image identified by [bold]{digest}[/bold]")
+    root.print(
+        f"Deleting image identified by [bold]{rich_escape(digest)}[/bold]", markup=True
+    )
     tags = await root.client.images.tags(replace(image, tag=None))
     # Collect all tags referencing the image to be deleted
     if not force and len(tags) > 1:
