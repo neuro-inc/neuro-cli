@@ -245,7 +245,7 @@ def main(target_dir):
     groups = []
     shortcuts = []
     with click.Context(
-            cli, info_name="neuro", color=False, terminal_width=80, max_content_width=80
+        cli, info_name="neuro", color=False, terminal_width=80, max_content_width=80
     ) as ctx:
         for cmd_name in cli.list_commands(ctx):
             cmd = cli.get_command(ctx, cmd_name)

@@ -113,6 +113,7 @@ clean: ### Cleanup temporary files
 docs: ### Generate CLI docs
 	build-tools/cli-help-generator.py CLI.in.md CLI.md
 	markdown-toc -t github -h 6 CLI.md
+	build-tools/site-help-generator.py
 
 
 .PHONY: api-doc
