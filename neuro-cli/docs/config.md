@@ -45,7 +45,7 @@ Log into Neuro Platform.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -70,7 +70,7 @@ by administration team.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -105,7 +105,7 @@ process.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -126,7 +126,7 @@ Print current settings.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -147,7 +147,7 @@ Print current authorization token.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -168,7 +168,7 @@ Print quota and remaining computation time for active cluster.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -189,7 +189,7 @@ List available command aliases.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -210,7 +210,7 @@ Fetch and display the list of available clusters.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -235,7 +235,7 @@ name is omitted (default).
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -256,8 +256,8 @@ Configure docker client to fit the Neuro Platform.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--docker-config PATH`_ | Specifies the location of the Docker client configuration files |
+| _--help_ | Show this message and exit. |
+| _--docker-config PATH_ | Specifies the location of the Docker client configuration files |
 
 
 
@@ -278,6 +278,6 @@ Log out.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 

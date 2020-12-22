@@ -46,6 +46,6 @@ $ neuro project init my-project-id
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 

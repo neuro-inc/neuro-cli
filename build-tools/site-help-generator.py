@@ -68,7 +68,7 @@ def gen_command(out, cmd, parent_ctx):
             l1 = re.split(" ?/ ?", name)
             for part in l1:
                 l2 = re.split(" ?, ?", part)
-                l4.append(", ".join(["`" + part2 + "`" for part2 in l2]))
+                l4.append(", ".join(l2))
 
             name2 = " / ".join(l4)
             descr2 = re.sub(r"(\[.+\])", r"_\1_", descr)
@@ -117,7 +117,7 @@ def escape(text: str) -> str:
 
 def escape_cell(text: str) -> str:
     escaped = escape(text)
-    escaped = re.sub(r"\|", r"\\|", escaped)
+    escaped = re.sub(r"\|", r"&#124;", escaped)
     return escaped
 
 

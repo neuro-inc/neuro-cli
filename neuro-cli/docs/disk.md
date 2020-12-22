@@ -36,9 +36,9 @@ List disks.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--full-uri`_ | Output full disk URI. |
-| _`--long-format`_ | Output all info about disk. |
+| _--help_ | Show this message and exit. |
+| _--full-uri_ | Output full disk URI. |
+| _--long-format_ | Output all info about disk. |
 
 
 
@@ -82,8 +82,8 @@ $ neuro disk create 500M
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--life-span TIMEDELTA`_ | Optional disk lifetime limit after last usage in the format '1d2h3m4s' \(some parts may be missing\). Set '0' to disable. Default value '1d' can be changed in the user config. |
+| _--help_ | Show this message and exit. |
+| _--life-span TIMEDELTA_ | Optional disk lifetime limit after last usage in the format '1d2h3m4s' \(some parts may be missing\). Set '0' to disable. Default value '1d' can be changed in the user config. |
 
 
 
@@ -104,8 +104,8 @@ Get disk `DISK`_ID.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--full-uri`_ | Output full disk URI. |
+| _--help_ | Show this message and exit. |
+| _--full-uri_ | Output full disk URI. |
 
 
 
@@ -126,6 +126,6 @@ Remove disk `DISK`_ID.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 

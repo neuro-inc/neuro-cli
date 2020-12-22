@@ -64,31 +64,31 @@ $ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--browse`_ | Open a job's URL in a web browser |
-| _`-d`, `--description DESC`_ | Optional job description in free format |
-| _`--detach`_ | Don't attach to job logs and don't wait for exit code |
-| _`--entrypoint TEXT`_ | Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image\) |
-| _`-e`, `--env VAR=VAL`_ | Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables. |
-| _`--env-file PATH`_ | File with environment variables to pass |
-| _`-x`, `--extshm` / `-X`, `--no-extshm`_ | Request extended '/dev/shm' space  \_\[default: True\]\_ |
-| _`--http PORT`_ | Enable HTTP port forwarding to container  \_\[default: 80\]\_ |
-| _`--http-auth` / `--no-http-auth`_ | Enable HTTP authentication for forwarded HTTP port  \_\[default: True\]\_ |
-| _`--life-span TIMEDELTA`_ | Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing\). Set '0' to disable. Default value '1d' can be changed in the user config. |
-| _`-n`, `--name NAME`_ | Optional job name |
-| _`--pass-config` / `--no-pass-config`_ | Upload neuro config to the job  \_\[default: False\]\_ |
-| _`--port-forward LOCAL\_PORT:REMOTE\_RORT`_ | Forward port\(s\) of a running job to local port\(s\) \(use multiple times for forwarding several ports\) |
-| _`-s`, `--preset PRESET`_ | Predefined resource configuration \(to see available values, run `neuro config show`\) |
-| _`--privileged TEXT`_ | Run job in privileged mode, if it is supported by cluster.  \_\[default: False\]\_ |
-| _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
-| _`--restart \[never \| on-failure \| always\]`_ | Restart policy to apply when a job exits  \_\[default: never\]\_ |
-| _`--schedule-timeout TIMEDELTA`_ | Optional job schedule timeout in the format '3m4s' \(some parts may be missing\). |
-| _`--tag TAG`_ | Optional job tag, multiple values allowed |
-| _`-t`, `--tty` / `-T`, `--no-tty`_ | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script. |
-| _`-v`, `--volume MOUNT`_ | Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files. |
-| _`--wait-for-seat` / `--no-wait-for-seat`_ | Wait for total running jobs quota  \_\[default: False\]\_ |
-| _`--wait-start` / `--no-wait-start`_ | Wait for a job start or failure  \_\[default: True\]\_ |
-| _`-w`, `--workdir TEXT`_ | Working directory inside the container |
+| _--help_ | Show this message and exit. |
+| _--browse_ | Open a job's URL in a web browser |
+| _-d, --description DESC_ | Optional job description in free format |
+| _--detach_ | Don't attach to job logs and don't wait for exit code |
+| _--entrypoint TEXT_ | Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image\) |
+| _-e, --env VAR=VAL_ | Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables. |
+| _--env-file PATH_ | File with environment variables to pass |
+| _-x, --extshm / -X, --no-extshm_ | Request extended '/dev/shm' space  \_\[default: True\]\_ |
+| _--http PORT_ | Enable HTTP port forwarding to container  \_\[default: 80\]\_ |
+| _--http-auth / --no-http-auth_ | Enable HTTP authentication for forwarded HTTP port  \_\[default: True\]\_ |
+| _--life-span TIMEDELTA_ | Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing\). Set '0' to disable. Default value '1d' can be changed in the user config. |
+| _-n, --name NAME_ | Optional job name |
+| _--pass-config / --no-pass-config_ | Upload neuro config to the job  \_\[default: False\]\_ |
+| _--port-forward LOCAL\_PORT:REMOTE\_RORT_ | Forward port\(s\) of a running job to local port\(s\) \(use multiple times for forwarding several ports\) |
+| _-s, --preset PRESET_ | Predefined resource configuration \(to see available values, run `neuro config show`\) |
+| _--privileged TEXT_ | Run job in privileged mode, if it is supported by cluster.  \_\[default: False\]\_ |
+| _-q, --quiet_ | Run command in quiet mode \(DEPRECATED\) |
+| _--restart \[never &#124; on-failure &#124; always\]_ | Restart policy to apply when a job exits  \_\[default: never\]\_ |
+| _--schedule-timeout TIMEDELTA_ | Optional job schedule timeout in the format '3m4s' \(some parts may be missing\). |
+| _--tag TAG_ | Optional job tag, multiple values allowed |
+| _-t, --tty / -T, --no-tty_ | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script. |
+| _-v, --volume MOUNT_ | Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files. |
+| _--wait-for-seat / --no-wait-for-seat_ | Wait for total running jobs quota  \_\[default: False\]\_ |
+| _--wait-start / --no-wait-start_ | Wait for a job start or failure  \_\[default: True\]\_ |
+| _-w, --workdir TEXT_ | Working directory inside the container |
 
 
 
@@ -121,19 +121,19 @@ $ neuro ps -t tag1 -t tag2
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-a`, `--all`_ | Show all jobs regardless the status. |
-| _`-d`, `--description DESCRIPTION`_ | Filter out jobs by description \(exact match\). |
-| _`--format COLUMNS`_ | Output table format, see "neuro help ps-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config" |
-| _`--full-uri`_ | Output full image URI. |
-| _`-n`, `--name NAME`_ | Filter out jobs by name. |
-| _`-o`, `--owner TEXT`_ | Filter out jobs by owner \(multiple option\). Supports `ME` option to filter by the current user. |
-| _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
-| _`--since DATE`_ | Show jobs created after a specific date \(including\). |
-| _`-s`, `--status \[pending \| suspended \| running \| succeeded \| failed \| cancelled\]`_ | Filter out jobs by status \(multiple option\). |
-| _`-t`, `--tag TAG`_ | Filter out jobs by tag \(multiple option\) |
-| _`--until DATE`_ | Show jobs created before a specific date \(including\). |
-| _`-w`, `--wide`_ | Do not cut long lines for terminal width. |
+| _--help_ | Show this message and exit. |
+| _-a, --all_ | Show all jobs regardless the status. |
+| _-d, --description DESCRIPTION_ | Filter out jobs by description \(exact match\). |
+| _--format COLUMNS_ | Output table format, see "neuro help ps-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config" |
+| _--full-uri_ | Output full image URI. |
+| _-n, --name NAME_ | Filter out jobs by name. |
+| _-o, --owner TEXT_ | Filter out jobs by owner \(multiple option\). Supports `ME` option to filter by the current user. |
+| _-q, --quiet_ | Run command in quiet mode \(DEPRECATED\) |
+| _--since DATE_ | Show jobs created after a specific date \(including\). |
+| _-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled\]_ | Filter out jobs by status \(multiple option\). |
+| _-t, --tag TAG_ | Filter out jobs by tag \(multiple option\) |
+| _--until DATE_ | Show jobs created before a specific date \(including\). |
+| _-w, --wide_ | Do not cut long lines for terminal width. |
 
 
 
@@ -154,8 +154,8 @@ Display status of a job.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--full-uri`_ | Output full URI. |
+| _--help_ | Show this message and exit. |
+| _--full-uri_ | Output full URI. |
 
 
 
@@ -187,8 +187,8 @@ $ neuro exec --no-tty my-job ls -l
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-t`, `--tty` / `-T`, `--no-tty`_ | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script. |
+| _--help_ | Show this message and exit. |
+| _-t, --tty / -T, --no-tty_ | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script. |
 
 
 
@@ -227,7 +227,7 @@ $ neuro job port-forward my-job 2080:80 2222:22 2000:100
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -248,8 +248,8 @@ Attach local standard input, output, and error streams to a running job.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--port-forward LOCAL\_PORT:REMOTE\_RORT`_ | Forward port\(s\) of a running job to local port\(s\) \(use multiple times for forwarding several ports\) |
+| _--help_ | Show this message and exit. |
+| _--port-forward LOCAL\_PORT:REMOTE\_RORT_ | Forward port\(s\) of a running job to local port\(s\) \(use multiple times for forwarding several ports\) |
 
 
 
@@ -270,7 +270,7 @@ Print the logs for a job.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -291,7 +291,7 @@ Kill job(s).
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -312,8 +312,8 @@ Display `GPU`/`CPU`/Memory usage.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--timeout FLOAT`_ | Maximum allowed time for executing the command, 0 for no timeout  \_\[default: 0\]\_ |
+| _--help_ | Show this message and exit. |
+| _--timeout FLOAT_ | Maximum allowed time for executing the command, 0 for no timeout  \_\[default: 0\]\_ |
 
 
 
@@ -342,7 +342,7 @@ $ neuro job save my-favourite-job image://bob/ubuntu-patched
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -365,7 +365,7 @@ Log into Neuro Platform.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -386,7 +386,7 @@ Log out.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -457,17 +457,17 @@ $ neuro cp storage:results/*.out .
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--continue`_ | Continue copying partially-copied files. |
-| _`--exclude-from-files FILES`_ | A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp-exclude-from-files configuration variable documented in "neuro help user-config" |
-| _`--exclude`_ | Exclude files and directories that match the specified pattern. |
-| _`--include`_ | Don't exclude files and directories that match the specified pattern. |
-| _`--glob` / `--no-glob`_ | Expand glob patterns in SOURCES with explicit scheme.  \_\[default: True\]\_ |
-| _`-T`, `--no-target-directory`_ | Treat DESTINATION as a normal file. |
-| _`-p`, `--progress` / `-P`, `--no-progress`_ | Show progress, on by default in TTY mode, off otherwise. |
-| _`-r`, `--recursive`_ | Recursive copy, off by default |
-| _`-t`, `--target-directory DIRECTORY`_ | Copy all SOURCES into DIRECTORY. |
-| _`-u`, `--update`_ | Copy only when the SOURCE file is newer than the destination file or when the destination file is missing. |
+| _--help_ | Show this message and exit. |
+| _--continue_ | Continue copying partially-copied files. |
+| _--exclude-from-files FILES_ | A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp-exclude-from-files configuration variable documented in "neuro help user-config" |
+| _--exclude_ | Exclude files and directories that match the specified pattern. |
+| _--include_ | Don't exclude files and directories that match the specified pattern. |
+| _--glob / --no-glob_ | Expand glob patterns in SOURCES with explicit scheme.  \_\[default: True\]\_ |
+| _-T, --no-target-directory_ | Treat DESTINATION as a normal file. |
+| _-p, --progress / -P, --no-progress_ | Show progress, on by default in TTY mode, off otherwise. |
+| _-r, --recursive_ | Recursive copy, off by default |
+| _-t, --target-directory DIRECTORY_ | Copy all SOURCES into DIRECTORY. |
+| _-u, --update_ | Copy only when the SOURCE file is newer than the destination file or when the destination file is missing. |
 
 
 
@@ -491,12 +491,12 @@ By default `PATH` is equal user's home dir
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-d`, `--directory`_ | list directories themselves, not their contents. |
-| _`-l`_ | use a long listing format. |
-| _`-h`, `--human-readable`_ | with -l print human readable sizes \(e.g., 2K, 540M\). |
-| _`-a`, `--all`_ | do not ignore entries starting with . |
-| _`--sort \[name \| size \| time\]`_ | sort by given field, default is name. |
+| _--help_ | Show this message and exit. |
+| _-d, --directory_ | list directories themselves, not their contents. |
+| _-l_ | use a long listing format. |
+| _-h, --human-readable_ | with -l print human readable sizes \(e.g., 2K, 540M\). |
+| _-a, --all_ | do not ignore entries starting with . |
+| _--sort \[name &#124; size &#124; time\]_ | sort by given field, default is name. |
 
 
 
@@ -527,10 +527,10 @@ $ neuro rm storage:foo/**/*.tmp
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--glob` / `--no-glob`_ | Expand glob patterns in PATHS  \_\[default: True\]\_ |
-| _`-p`, `--progress` / `-P`, `--no-progress`_ | Show progress, on by default in TTY mode, off otherwise. |
-| _`-r`, `--recursive`_ | remove directories and their contents recursively |
+| _--help_ | Show this message and exit. |
+| _--glob / --no-glob_ | Expand glob patterns in PATHS  \_\[default: True\]\_ |
+| _-p, --progress / -P, --no-progress_ | Show progress, on by default in TTY mode, off otherwise. |
+| _-r, --recursive_ | remove directories and their contents recursively |
 
 
 
@@ -551,8 +551,8 @@ Make directories.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-p`, `--parents`_ | No error if existing, make parent directories as needed |
+| _--help_ | Show this message and exit. |
+| _-p, --parents_ | No error if existing, make parent directories as needed |
 
 
 
@@ -602,10 +602,10 @@ $ neuro mv storage://{username}/foo.txt storage:bar.dat
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--glob` / `--no-glob`_ | Expand glob patterns in SOURCES  \_\[default: True\]\_ |
-| _`-T`, `--no-target-directory`_ | Treat DESTINATION as a normal file |
-| _`-t`, `--target-directory DIRECTORY`_ | Copy all SOURCES into DIRECTORY |
+| _--help_ | Show this message and exit. |
+| _--glob / --no-glob_ | Expand glob patterns in SOURCES  \_\[default: True\]\_ |
+| _-T, --no-target-directory_ | Treat DESTINATION as a normal file |
+| _-t, --target-directory DIRECTORY_ | Copy all SOURCES into DIRECTORY |
 
 
 
@@ -626,9 +626,9 @@ List images.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-l`_ | List in long format. |
-| _`--full-uri`_ | Output full image URI. |
+| _--help_ | Show this message and exit. |
+| _-l_ | List in long format. |
+| _--full-uri_ | Output full image URI. |
 
 
 
@@ -664,8 +664,8 @@ $ neuro push alpine image://myfriend/alpine:shared
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
+| _--help_ | Show this message and exit. |
+| _-q, --quiet_ | Run command in quiet mode \(DEPRECATED\) |
 
 
 
@@ -699,8 +699,8 @@ $ neuro pull image://username/my-alpine:production alpine:from-registry
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
+| _--help_ | Show this message and exit. |
+| _-q, --quiet_ | Run command in quiet mode \(DEPRECATED\) |
 
 
 
@@ -737,6 +737,6 @@ $ neuro acl grant job:///my_job_id alice write
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 

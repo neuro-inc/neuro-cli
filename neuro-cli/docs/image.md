@@ -39,9 +39,9 @@ List images.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-l`_ | List in long format. |
-| _`--full-uri`_ | Output full image URI. |
+| _--help_ | Show this message and exit. |
+| _-l_ | List in long format. |
+| _--full-uri_ | Output full image URI. |
 
 
 
@@ -77,8 +77,8 @@ $ neuro push alpine image://myfriend/alpine:shared
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
+| _--help_ | Show this message and exit. |
+| _-q, --quiet_ | Run command in quiet mode \(DEPRECATED\) |
 
 
 
@@ -112,8 +112,8 @@ $ neuro pull image://username/my-alpine:production alpine:from-registry
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
+| _--help_ | Show this message and exit. |
+| _-q, --quiet_ | Run command in quiet mode \(DEPRECATED\) |
 
 
 
@@ -146,8 +146,8 @@ $ neuro image rm image:myimage:latest
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-f`_ | Force deletion of all tags referencing the image. |
+| _--help_ | Show this message and exit. |
+| _-f_ | Force deletion of all tags referencing the image. |
 
 
 
@@ -180,7 +180,7 @@ $ neuro image size image:myimage:latest
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -213,7 +213,7 @@ $ neuro image digest image:myimage:latest
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -245,7 +245,7 @@ $ neuro image tags -l image:myimage
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-l`_ | List in long format, with image sizes. |
+| _--help_ | Show this message and exit. |
+| _-l_ | List in long format, with image sizes. |
 
 

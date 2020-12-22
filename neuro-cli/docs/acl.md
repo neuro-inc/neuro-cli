@@ -53,7 +53,7 @@ $ neuro acl grant job:///my_job_id alice write
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -87,7 +87,7 @@ $ neuro acl revoke job:///my_job_id alice
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -123,11 +123,11 @@ $ neuro acl list --shared image://
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--full-uri`_ | Output full URI. |
-| _`-s`, `--scheme TEXT`_ | Filter resources by scheme, e.g. job, storage, image or user. Deprecated, use the uri argument instead. |
-| _`--shared`_ | Output the resources shared by the user. |
-| _`-u TEXT`_ | Use specified user or role. |
+| _--help_ | Show this message and exit. |
+| _--full-uri_ | Output full URI. |
+| _-s, --scheme TEXT_ | Filter resources by scheme, e.g. job, storage, image or user. Deprecated, use the uri argument instead. |
+| _--shared_ | Output the resources shared by the user. |
+| _-u TEXT_ | Use specified user or role. |
 
 
 
@@ -154,7 +154,7 @@ $ neuro acl add-role mycompany/subdivision
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -181,6 +181,6 @@ $ neuro acl remove-role mycompany/subdivision
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 

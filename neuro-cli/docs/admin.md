@@ -43,7 +43,7 @@ Print the list of available clusters.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -64,8 +64,8 @@ Create a cluster configuration file.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--type \[aws \| gcp \| azure\]`_ |  |
+| _--help_ | Show this message and exit. |
+| _--type \[aws &#124; gcp &#124; azure\]_ |  |
 
 
 
@@ -86,7 +86,7 @@ Create a new cluster and start its provisioning.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -107,8 +107,8 @@ Create a cluster configuration file.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`--type \[aws \| gcp \| azure\]`_ |  |
+| _--help_ | Show this message and exit. |
+| _--type \[aws &#124; gcp &#124; azure\]_ |  |
 
 
 
@@ -129,7 +129,7 @@ Print the list of all users in the cluster with their assigned role.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -153,7 +153,7 @@ roles: admin, manager or user.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -174,7 +174,7 @@ Remove user access from the cluster.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -195,10 +195,10 @@ Set user quota to given values
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-g`, `--gpu AMOUNT`_ | GPU quota value in hours \(h\) or minutes \(m\). |
-| _`-j`, `--jobs AMOUNT`_ | Maximum running jobs quota |
-| _`-n`, `--non-gpu AMOUNT`_ | Non-GPU quota value in hours \(h\) or minutes \(m\). |
+| _--help_ | Show this message and exit. |
+| _-g, --gpu AMOUNT_ | GPU quota value in hours \(h\) or minutes \(m\). |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota |
+| _-n, --non-gpu AMOUNT_ | Non-GPU quota value in hours \(h\) or minutes \(m\). |
 
 
 
@@ -219,9 +219,9 @@ Add given values to user quota
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-g`, `--gpu AMOUNT`_ | Additional GPU quota value in hours \(h\) or minutes \(m\). |
-| _`-n`, `--non-gpu AMOUNT`_ | Additional non-GPU quota value in hours \(h\) or minutes \(m\). |
+| _--help_ | Show this message and exit. |
+| _-g, --gpu AMOUNT_ | Additional GPU quota value in hours \(h\) or minutes \(m\). |
+| _-n, --non-gpu AMOUNT_ | Additional non-GPU quota value in hours \(h\) or minutes \(m\). |
 
 
 
@@ -242,15 +242,15 @@ Add/update resource preset
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
-| _`-c`, `--cpu NUMBER`_ | Number of CPUs  \_\[default: 0.1\]\_ |
-| _`-g`, `--gpu NUMBER`_ | Number of GPUs |
-| _`--gpu-model MODEL`_ | GPU model |
-| _`-m`, `--memory AMOUNT`_ | Memory amount  \_\[default: 1G\]\_ |
-| _`-p`, `--preemptible` / `-P`, `--non-preemptible`_ | Job preemptability support  \_\[default: False\]\_ |
-| _`--preemptible-node` / `--non-preemptible-node`_ | Use a lower-cost preemptible instance  \_\[default: False\]\_ |
-| _`--tpu-sw-version VERSION`_ | TPU software version |
-| _`--tpu-type TYPE`_ | TPU type |
+| _--help_ | Show this message and exit. |
+| _-c, --cpu NUMBER_ | Number of CPUs  \_\[default: 0.1\]\_ |
+| _-g, --gpu NUMBER_ | Number of GPUs |
+| _--gpu-model MODEL_ | GPU model |
+| _-m, --memory AMOUNT_ | Memory amount  \_\[default: 1G\]\_ |
+| _-p, --preemptible / -P, --non-preemptible_ | Job preemptability support  \_\[default: False\]\_ |
+| _--preemptible-node / --non-preemptible-node_ | Use a lower-cost preemptible instance  \_\[default: False\]\_ |
+| _--tpu-sw-version VERSION_ | TPU software version |
+| _--tpu-type TYPE_ | TPU type |
 
 
 
@@ -271,6 +271,6 @@ Remove resource preset
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 

@@ -34,7 +34,7 @@ Provide an instruction for shell completion generation.
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -55,6 +55,6 @@ Automatically patch shell configuration profile to enable completion
 
 | Name | Description |
 | :--- | :--- |
-| _`--help`_ | Show this message and exit. |
+| _--help_ | Show this message and exit. |
 
 
