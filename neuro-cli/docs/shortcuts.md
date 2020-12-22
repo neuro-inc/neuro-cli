@@ -81,7 +81,7 @@ $ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg
 | _`-s`, `--preset PRESET`_ | Predefined resource configuration \(to see available values, run `neuro config show`\) |
 | _`--privileged TEXT`_ | Run job in privileged mode, if it is supported by cluster.  \_\[default: False\]\_ |
 | _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
-| _`--restart \[never &#124; on-failure &#124; always\]`_ | Restart policy to apply when a job exits  \_\[default: never\]\_ |
+| _`--restart \[never | on-failure | always\]`_ | Restart policy to apply when a job exits  \_\[default: never\]\_ |
 | _`--schedule-timeout TIMEDELTA`_ | Optional job schedule timeout in the format '3m4s' \(some parts may be missing\). |
 | _`--tag TAG`_ | Optional job tag, multiple values allowed |
 | _`-t`, `--tty` / `-T`, `--no-tty`_ | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script. |
@@ -130,7 +130,7 @@ $ neuro ps -t tag1 -t tag2
 | _`-o`, `--owner TEXT`_ | Filter out jobs by owner \(multiple option\). Supports `ME` option to filter by the current user. |
 | _`-q`, `--quiet`_ | Run command in quiet mode \(DEPRECATED\) |
 | _`--since DATE`_ | Show jobs created after a specific date \(including\). |
-| _`-s`, `--status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled\]`_ | Filter out jobs by status \(multiple option\). |
+| _`-s`, `--status \[pending | suspended | running | succeeded | failed | cancelled\]`_ | Filter out jobs by status \(multiple option\). |
 | _`-t`, `--tag TAG`_ | Filter out jobs by tag \(multiple option\) |
 | _`--until DATE`_ | Show jobs created before a specific date \(including\). |
 | _`-w`, `--wide`_ | Do not cut long lines for terminal width. |
@@ -496,7 +496,7 @@ By default `PATH` is equal user's home dir
 | _`-l`_ | use a long listing format. |
 | _`-h`, `--human-readable`_ | with -l print human readable sizes \(e.g., 2K, 540M\). |
 | _`-a`, `--all`_ | do not ignore entries starting with . |
-| _`--sort \[name &#124; size &#124; time\]`_ | sort by given field, default is name. |
+| _`--sort \[name | size | time\]`_ | sort by given field, default is name. |
 
 
 

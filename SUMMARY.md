@@ -1,6 +1,7 @@
 # Table of contents
 
-
+[Getting Started][(README.md)
+## Commands
 * [acl](neuro-cli/docs/acl.md)
 * [admin](neuro-cli/docs/admin.md)
 * [blob](neuro-cli/docs/blob.md)
@@ -11,7 +12,7 @@
 * [job](neuro-cli/docs/job.md)
 * [project](neuro-cli/docs/project.md)
 * [secret](neuro-cli/docs/secret.md)
-* [shortcuts](neuro-cli/docs/shortcuts.md)
 * [storage](neuro-cli/docs/storage.md)
-* [topics](neuro-cli/docs/topics.md)
-* [CLI](CLI.md)
+* [Shortcuts](neuro-cli/docs/shortcuts.md)
+## Topics
+* [Topics](neuro-cli/docs/topics.md)

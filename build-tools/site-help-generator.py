@@ -117,7 +117,7 @@ def escape(text: str) -> str:
 
 def escape_cell(text: str) -> str:
     escaped = escape(text)
-    escaped = re.sub(r"\|", r"&#124;", escaped)
+    # escaped = re.sub(r"\|", r"&#124;", escaped)
     return escaped
 
 
@@ -209,7 +209,22 @@ def gen_topics(target_path, ctx):
         out.append("")
         out.append(topic.help)
 
-    fname = target_path / f"topics.md"
+    fname = target_path / "topics.md"
+    fname.write_text("\n".join(out))
+
+def gen_summary(target_path, groups, topics):
+    out = ["# Table of contents\n"]
+    out.append("[Getting Started][(README.md)")
+    out.append("## Commands")
+    for group in groups:
+        out.append(f"* [{group.name}](neuro-cli/docs/{group.name}.md)")
+    out.append("* [Shortcuts](neuro-cli/docs/shortcuts.md)")
+    out.append("## Topics")
+    out.append(f"* [Topics](neuro-cli/docs/topics.md)")
+    # for topic in topics:
+    #     out.append(f"* [{topic}](neuro-cli/docs/{topic}.md)")
+
+    fname = target_path / "SUMMARY.md"
     fname.write_text("\n".join(out))
 
 
@@ -259,6 +274,8 @@ def main(target_dir):
 
     # Topics generator produces ugly looking markdown, sorry
     gen_topics(target_path, ctx)
+
+    gen_summary(HERE.parent, sorted(groups, key=lambda g: g.name), ["sharing"])
 
 
 if __name__ == "__main__":
