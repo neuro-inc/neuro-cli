@@ -97,6 +97,8 @@ def simple_escape_line(text: str) -> str:
     escaped = re.sub(r"_", r"\\_", escaped)
     escaped = re.sub(r"\[(\S[^\]]*)\]", r"\\[\1\\]", escaped)
     escaped = re.sub(r"\((\S[^)]*)\)", r"\\(\1\\)", escaped)
+    escaped = re.sub(r"\\_\\\[", r"_\[", escaped)
+    escaped = re.sub(r"\\]\\_", r"\]_", escaped)
 
     return escaped
 
@@ -219,7 +221,7 @@ def gen_summary(target_path, groups, topics):
     for group in groups:
         out.append(f"* [{group.name}](neuro-cli/docs/{group.name}.md)")
     out.append("* [Shortcuts](neuro-cli/docs/shortcuts.md)")
-    out.append("## Topics")
+    out.append("\n## Topics\n")
     out.append(f"* [Topics](neuro-cli/docs/topics.md)")
     # for topic in topics:
     #     out.append(f"* [{topic}](neuro-cli/docs/{topic}.md)")

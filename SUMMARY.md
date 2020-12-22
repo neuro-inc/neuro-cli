@@ -14,5 +14,7 @@
 * [secret](neuro-cli/docs/secret.md)
 * [storage](neuro-cli/docs/storage.md)
 * [Shortcuts](neuro-cli/docs/shortcuts.md)
+
 ## Topics
+
 * [Topics](neuro-cli/docs/topics.md)

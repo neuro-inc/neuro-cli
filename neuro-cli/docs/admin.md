@@ -243,12 +243,12 @@ Add/update resource preset
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --cpu NUMBER_ | Number of CPUs  \_\[default: 0.1\]\_ |
+| _-c, --cpu NUMBER_ | Number of CPUs  _\[default: 0.1\]_ |
 | _-g, --gpu NUMBER_ | Number of GPUs |
 | _--gpu-model MODEL_ | GPU model |
-| _-m, --memory AMOUNT_ | Memory amount  \_\[default: 1G\]\_ |
-| _-p, --preemptible / -P, --non-preemptible_ | Job preemptability support  \_\[default: False\]\_ |
-| _--preemptible-node / --non-preemptible-node_ | Use a lower-cost preemptible instance  \_\[default: False\]\_ |
+| _-m, --memory AMOUNT_ | Memory amount  _\[default: 1G\]_ |
+| _-p, --preemptible / -P, --non-preemptible_ | Job preemptability support  _\[default: False\]_ |
+| _--preemptible-node / --non-preemptible-node_ | Use a lower-cost preemptible instance  _\[default: False\]_ |
 | _--tpu-sw-version VERSION_ | TPU software version |
 | _--tpu-type TYPE_ | TPU type |
 
