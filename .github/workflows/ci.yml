@@ -201,3 +201,21 @@ jobs:
         TWINE_NON_INTERACTIVE: 1
       run: |
         twine upload neuro-cli/dist/*
+    - name: Merge dists for GitHub Release
+      run: |
+        mkdir dist
+        cp neuro-sdk/dist/* dist/
+        cp neuro-cli/dist/* dist/
+    - name: GitHub Release
+      using: aio-libs/create-release@master
+      with:
+        changes_file: CHANGELOG.md
+        name: Neuro SDK/CLI
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        pypi_token: ""
+        artifact: ""
+        version_file: neuro-sdk/neuro_sdk/__init__.py   # CLI has the same version
+        start_line: "[comment]: # (towncrier release notes start)"
+        head_line: "Neuro SDK/CLI {version}\\s+\\({date}\\)\n====+\n?"
+        fix_issue_regex: "([#(\\d+)](https://github.com/neuro-inc/platform-client-python/issues/\\1))"
+        fix_issue_repl: "(#\\1)"
