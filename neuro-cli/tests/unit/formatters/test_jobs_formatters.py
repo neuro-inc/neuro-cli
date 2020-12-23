@@ -7,6 +7,7 @@ from typing import Any, Callable, Optional
 import pytest
 from dateutil.parser import isoparse
 from rich.console import Console
+from rich.text import Text
 from yarl import URL
 
 from neuro_sdk import (
@@ -1208,7 +1209,7 @@ class TestTabularJobRow:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(status), "owner", image_formatter=str
         )
-        assert row.status == f"[{color}]{status}[/{color}]"
+        assert row.status == Text(status, style="color")
         assert row.when == date
 
     def test_image_from_registry_parsing_short(self) -> None:
