@@ -43,7 +43,7 @@ repos:
   - id: debug-statements
   - id: check-added-large-files
   - id: end-of-file-fixer
-    exclude: "^CLI[.]md$"
+    exclude: "[.]md$"
   - id: requirements-txt-fixer
   - id: trailing-whitespace
     exclude: "[.]ref$"
