@@ -96,6 +96,8 @@ class Root:
             self.console = Console(
                 color_system="auto" if self.color else None,
                 force_terminal=self.tty,
+                markup=False,
+                emoji=False,
                 highlight=False,
                 log_path=False,
                 width=2048,
