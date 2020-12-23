@@ -463,12 +463,12 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
             if isinstance(current_cmd, click.MultiCommand):
                 sub_name, sub_cmd, args = current_cmd.resolve_command(ctx, [cmd_name])
                 if sub_cmd is None or sub_cmd.hidden:
-                    click.echo(not_found)
+                    root.print(not_found)
                     break
                 sub_ctx = Context(sub_cmd, parent=ctx_stack[-1], info_name=sub_name)
                 ctx_stack.append(sub_ctx)
             else:
-                click.echo(not_found)
+                root.print(not_found)
                 break
         else:
             print_help(ctx_stack[-1])

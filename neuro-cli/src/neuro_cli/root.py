@@ -202,8 +202,8 @@ class Root:
         return trace_config
 
     def _print_debug(self, lines: List[str]) -> None:
-        txt = "\n".join(click.style(line, dim=True) for line in lines)
-        click.echo(txt, err=True)
+        for line in lines:
+            self.print(line, style="dim", err=True)
 
     def _process_chunk(self, chunk: bytes, printable: bool) -> List[str]:
         if not chunk:
@@ -316,7 +316,5 @@ class Root:
         return self.console.pager(MaybePager(self.console), styles=True, links=True)
 
     def print(self, *objects: Any, err: bool = False, **kwargs: Any) -> None:
-        if err:
-            self.err_console.print(*objects, **kwargs)
-        else:
-            self.console.print(*objects, **kwargs)
+        console = self.err_console if err else self.console
+        console.print(*objects, **kwargs)

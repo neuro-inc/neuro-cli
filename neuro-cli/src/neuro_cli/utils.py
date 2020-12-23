@@ -268,10 +268,10 @@ class Command(NeuroClickMixin, click.Command):
         """Given a context, this invokes the attached callback (if it exists)
         in the right way.
         """
+        root = cast(Root, ctx.obj)
         if self.deprecated:
-            click.echo(
-                click.style(DEPRECATED_INVOKE_NOTICE.format(name=self.name), fg="red"),
-                err=True,
+            root.print(
+                DEPRECATED_INVOKE_NOTICE.format(name=self.name), err=True, style="red"
             )
         if self.callback is not None:
             # Collect arguments for sending to google analytics
@@ -281,7 +281,6 @@ class Command(NeuroClickMixin, click.Command):
                 ctx2 = ctx2.parent
                 params.append(_collect_params(ctx2.command, ctx2))
             params.reverse()
-            root = cast(Root, ctx.obj)
             root.command_path = ctx.command_path
             root.command_params = params
             return ctx.invoke(self.callback, **ctx.params)

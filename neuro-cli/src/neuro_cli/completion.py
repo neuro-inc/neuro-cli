@@ -26,8 +26,12 @@ async def generate(root: Root, shell: str) -> None:
     """
     Provide an instruction for shell completion generation.
     """
-    click.echo(f"Push the following line into your {CFG_FILE[shell]}")
-    click.echo(ACTIVATION_TEMPLATE.format(cmd=SOURCE_CMD[shell], exe=sys.argv[0]))
+    root.print(f"Push the following line into your {CFG_FILE[shell]}")
+    root.print(
+        ACTIVATION_TEMPLATE.format(cmd=SOURCE_CMD[shell], exe=sys.argv[0]),
+        crop=False,
+        overflow="ignore",
+    )
 
 
 @completion.command()

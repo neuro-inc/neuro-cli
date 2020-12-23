@@ -15,7 +15,7 @@ from rich.live_render import LiveRender
 from rich.markup import escape as rich_escape
 from rich.styled import Styled
 from rich.table import Table
-from rich.text import Text
+from rich.text import Text, TextType
 
 from neuro_sdk import JobDescription, JobRestartPolicy, JobStatus, JobTelemetry
 
@@ -41,9 +41,9 @@ else:
     SPINNER = itertools.cycle("◢◣◤◥")
 
 
-def fmt_status(status: JobStatus) -> str:
+def fmt_status(status: JobStatus) -> Text:
     color = COLORS.get(status, "none")
-    return f"[{color}]{status.value}[/{color}]"
+    return Text(status.value, style=color)
 
 
 def format_timedelta(delta: datetime.timedelta) -> str:
@@ -87,13 +87,13 @@ class JobStatusFormatter:
         table.add_row("Cluster", job_status.cluster_name)
         if job_status.description:
             table.add_row("Description", job_status.description)
-        status_str = fmt_status(job_status.status)
+        status_text = fmt_status(job_status.status)
         if job_status.history.reason and job_status.status in [
             JobStatus.FAILED,
             JobStatus.PENDING,
         ]:
-            status_str += f" ({job_status.history.reason})"
-        table.add_row("Status", status_str)
+            status_text = Text.assemble(status_text, f" ({job_status.history.reason})")
+        table.add_row("Status", status_text)
         table.add_row("Image", self._format_image(job_status.container.image))
 
         if job_status.container.entrypoint:
@@ -331,7 +331,7 @@ class TabularJobRow:
     id: str
     name: str
     tags: str
-    status: str
+    status: Text
     when: str
     created: str
     started: str
@@ -373,7 +373,7 @@ class TabularJobRow:
             workdir=job.container.working_dir or "",
         )
 
-    def to_list(self, columns: List[JobColumnInfo]) -> List[str]:
+    def to_list(self, columns: List[JobColumnInfo]) -> List[TextType]:
         return [getattr(self, column.id) for column in columns]
 
 
@@ -483,30 +483,30 @@ class DetailedJobStartProgress(JobStartProgress, RenderHook):
     def step(self, job: JobDescription) -> None:
         new_time = self.time_factory()
         dt = new_time - self._time
-        msg = "Status: " + fmt_status(job.status)
-        reason = self._get_status_reason_message(job)
-        if reason:
-            msg += f" [b]{rich_escape(reason)}[/b]"
-        description = self._get_status_description_message(job)
-        if description:
-            msg += " " + description
-
         if job.status == JobStatus.PENDING:
-            msg = f"[yellow]-[/yellow] {msg}"
+            msg = Text("-", "yellow")
         elif job.status == JobStatus.FAILED:
-            msg = f"{no()} {msg}"
+            msg = Text("×", "red")
         else:
             # RUNNING or SUCCEDED
-            msg = f"{yes()} {msg}"
+            msg = Text("√", "green")
+
+        msg = Text.assemble(msg, " Status: ", fmt_status(job.status))
+        reason = self._get_status_reason_message(job)
+        if reason:
+            msg = Text.assemble(msg, " ", (reason, "b"))
+        description = self._get_status_description_message(job)
+        if description:
+            msg = Text.assemble(msg, " " + description)
 
         if msg != self._prev:
             if self._prev:
-                self._console.print(self._prev, markup=True)
+                self._console.print(self._prev)
             self._prev = msg
         else:
-            msg = f"{msg} {next(self._spinner)} [{dt:.1f} sec]"
+            msg = Text.assemble(msg, f" {next(self._spinner)} [{dt:.1f} sec]")
 
-        self._live_render.set_renderable(Text.from_markup(msg))
+        self._live_render.set_renderable(msg)
         with self._console:
             self._console.print(Control(""))
 

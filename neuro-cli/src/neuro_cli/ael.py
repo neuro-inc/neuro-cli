@@ -31,21 +31,19 @@ from .utils import AsyncExitStack
 log = logging.getLogger(__name__)
 
 
-JOB_STARTED = click.style(
-    "===== Job is running, press Ctrl-C to detach/kill =====", dim=True
+JOB_STARTED = "[dim]===== Job is running, press Ctrl-C to detach/kill =====[/dim]"
+
+JOB_STARTED_TTY = "\n".join(
+    "[green]√[/green] " + line
+    for line in [
+        "[dim]=========== Job is running in terminal mode ===========[/dim]",
+        "[dim](If you don't see a command prompt, try pressing enter)[/dim]",
+        "[dim](Use Ctrl-P Ctrl-Q key sequence to detach from the job)[/dim]",
+    ]
 )
 
-JOB_STARTED_TTY = (
-    click.style("√ ", fg="green")
-    + click.style("=========== Job is running in terminal mode ===========\n", dim=True)
-    + click.style("√ ", fg="green")
-    + click.style("(If you don't see a command prompt, try pressing enter)\n", dim=True)
-    + click.style("√ ", fg="green")
-    + click.style("(Use Ctrl-P Ctrl-Q key sequence to detach from the job)", dim=True)
-)
-
-ATTACH_STARTED_AFTER_LOGS = click.style(
-    "========= Job's output, may overlap with logs =========", dim=True
+ATTACH_STARTED_AFTER_LOGS = (
+    "[dim]========= Job's output, may overlap with logs =========[/dim]"
 )
 
 
@@ -196,7 +194,7 @@ async def process_attach(
 
     async with AsyncExitStack() as stack:
         for local_port, job_port in port_forward:
-            click.echo(
+            root.print(
                 f"Port localhost:{local_port} will be forwarded to port {job_port}"
             )
             await stack.enter_async_context(
@@ -242,7 +240,7 @@ async def process_attach(
 
 async def _attach_tty(root: Root, job: str, logs: bool) -> InterruptAction:
     if not root.quiet:
-        click.echo(JOB_STARTED_TTY)
+        root.print(JOB_STARTED_TTY, markup=True)
 
     loop = asyncio.get_event_loop()
     helper = AttachHelper(quiet=root.quiet)
@@ -430,8 +428,8 @@ async def _attach_non_tty(root: Root, job: str, logs: bool) -> InterruptAction:
     if not root.quiet:
         s = JOB_STARTED
         if root.tty:
-            s = click.style("√ ", fg="green") + s
-        click.echo(s)
+            s = "[green]√[/green] " + s
+        root.print(s, markup=True)
 
     loop = asyncio.get_event_loop()
     helper = AttachHelper(quiet=root.quiet)
@@ -508,8 +506,8 @@ async def _process_stdout_non_tty(
                 if helper.log_printed:
                     s = ATTACH_STARTED_AFTER_LOGS
                     if root.tty:
-                        s = click.style("√ ", fg="green") + s
-                    click.echo(s)
+                        s = "[green]√[/green] " + s
+                    root.print(s, markup=True)
             helper.attach_ready = True
             f.write(txt)
             f.flush()

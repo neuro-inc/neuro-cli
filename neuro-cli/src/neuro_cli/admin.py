@@ -46,7 +46,7 @@ async def add_cluster(root: Root, cluster_name: str, config: IO[str]) -> None:
     config_dict = yaml.safe_load(config)
     await root.client._admin.add_cluster(cluster_name, config_dict)
     if not root.quiet:
-        click.echo(
+        root.print(
             f"Cluster {cluster_name} successfully added "
             "and will be set up within 24 hours"
         )
@@ -61,7 +61,11 @@ async def show_cluster_options(root: Root, type: str) -> None:
     Create a cluster configuration file.
     """
     config_options = await root.client._admin.get_cloud_provider_options(type)
-    click.echo(json.dumps(config_options, sort_keys=True, indent=2))
+    root.print(
+        json.dumps(config_options, sort_keys=True, indent=2),
+        crop=False,
+        overflow="ignore",
+    )
 
 
 @command()
@@ -95,7 +99,7 @@ async def generate_cluster_config(root: Root, config: str, type: str) -> None:
         assert False, "Prompt should prevent this case"
     config_path.write_text(content, encoding="utf-8")
     if not root.quiet:
-        click.echo(f"Cluster config {config_path} is generated.")
+        root.print(f"Cluster config {config_path} is generated.")
 
 
 AWS_TEMPLATE = """\
@@ -269,10 +273,11 @@ async def add_cluster_user(
     """
     user = await root.client._admin.add_cluster_user(cluster_name, user_name, role)
     if not root.quiet:
-        click.echo(
-            f"Added {click.style(user.user_name, bold=True)} to cluster "
-            f"{click.style(cluster_name, bold=True)} as "
-            f"{click.style(user.role, bold=True)}"
+        root.print(
+            f"Added [bold]{rich_escape(user.user_name)}[/bold] to cluster "
+            f"[bold]{rich_escape(cluster_name)}[/bold] as "
+            f"[bold]{rich_escape(user.role)}[/bold]",
+            markup=True,
         )
 
 
@@ -306,9 +311,10 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
     """
     await root.client._admin.remove_cluster_user(cluster_name, user_name)
     if not root.quiet:
-        click.echo(
-            f"Removed {click.style(user_name, bold=True)} from cluster "
-            f"{click.style(cluster_name, bold=True)}"
+        root.print(
+            f"Removed [bold]{rich_escape(user_name)}[/bold] from cluster "
+            f"[bold]{rich_escape(cluster_name)}[/bold]",
+            markup=True,
         )
 
 
