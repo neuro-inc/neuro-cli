@@ -1,6 +1,7 @@
 import base64
 import contextlib
 import json
+import logging
 import numbers
 import os
 import re
@@ -43,6 +44,9 @@ SCHEMA = {
                            timestamp REAL)"""
     )
 }
+
+
+logger = logging.getLogger(__package__)
 
 
 @dataclass(frozen=True)
@@ -233,8 +237,8 @@ class Config(metaclass=NoPublicConstructor):
         return load_user_config(self._path)
 
     @contextlib.contextmanager
-    def _open_db(self) -> Iterator[sqlite3.Connection]:
-        with _open_db_rw(self._path) as db:
+    def _open_db(self, suppress_errors: bool = True) -> Iterator[sqlite3.Connection]:
+        with _open_db_rw(self._path, suppress_errors) as db:
             yield db
 
 
@@ -260,7 +264,9 @@ def load_user_config(path: Path) -> Mapping[str, Any]:
 
 
 @contextlib.contextmanager
-def _open_db_rw(path: Path) -> Iterator[sqlite3.Connection]:
+def _open_db_rw(
+    path: Path, suppress_errors: bool = True
+) -> Iterator[sqlite3.Connection]:
     path.mkdir(0o700, parents=True, exist_ok=True)
 
     config_file = path / "db"
@@ -269,8 +275,17 @@ def _open_db_rw(path: Path) -> Iterator[sqlite3.Connection]:
         os.chmod(config_file, 0o600)
 
         db.row_factory = sqlite3.Row
-        db.execute("PRAGMA journal_mode=WAL")
-        yield db
+        try:
+            db.execute("PRAGMA journal_mode=WAL")
+            yield db
+        except sqlite3.DatabaseError as exc:
+            if not suppress_errors:
+                raise
+            msg = "Cannot send the usage statistics: %s"
+            if str(exc) != "database is locked":
+                logger.warning(msg, repr(exc))
+            else:
+                logger.debug(msg, repr(exc))
 
 
 @contextlib.contextmanager
@@ -303,7 +318,7 @@ def _open_db_ro(path: Path) -> Iterator[sqlite3.Connection]:
             )
 
     with sqlite3.connect(str(config_file)) as db:
-        # forbid access to other users
+        # forbid access for other users
         os.chmod(config_file, 0o600)
 
         _check_db(db)
@@ -421,7 +436,7 @@ def _save_auth_token(db: sqlite3.Connection, token: _AuthToken) -> None:
         db.commit()
 
 
-def _save(config: _ConfigData, path: Path) -> None:
+def _save(config: _ConfigData, path: Path, suppress_errors: bool = True) -> None:
     # The wierd method signature is required for communicating with existing
     # Factory._save()
     try:
@@ -434,7 +449,7 @@ def _save(config: _ConfigData, path: Path) -> None:
     except (AttributeError, KeyError, TypeError, ValueError):
         raise ConfigError(MALFORMED_CONFIG_MSG)
 
-    with _open_db_rw(path) as db:
+    with _open_db_rw(path, suppress_errors) as db:
         _init_db_maybe(db)
 
         cur = db.cursor()

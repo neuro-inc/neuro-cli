@@ -219,4 +219,4 @@ class Factory:
                 pass
 
     def _save(self, config: _ConfigData) -> None:
-        _save(config, self._path)
+        _save(config, self._path, False)
