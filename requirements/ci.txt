@@ -17,5 +17,5 @@ re-assert==1.1.0
 setuptools==51.1.0.post20201221
 towncrier==19.2.0
 trustme==0.6.0
-twine==3.2.0
+twine==3.3.0
 wheel==0.36.2
