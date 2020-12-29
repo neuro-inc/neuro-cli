@@ -1,0 +1,5 @@
+root: ./
+
+structure:
+  readme: neuro-cli/docs/README.md
+  summary: SUMMARY.md
