@@ -33,6 +33,7 @@ class Cluster:
 
 @dataclass(frozen=True)
 class _ServerConfig:
+    admin_url: Optional[URL]
     auth_config: _AuthConfig
     clusters: Mapping[str, Cluster]
 
@@ -108,6 +109,13 @@ async def get_server_config(
             headless_callback_url=headless_callback_url,
         )
         clusters = _parse_clusters(payload)
-        if headers and not clusters:
+        admin_url: Optional[URL] = None
+        if "admin_url" in payload:
+            admin_url = URL(payload["admin_url"])
+        if headers and (not clusters or not admin_url):
             raise AuthError("Cannot authorize user")
-        return _ServerConfig(auth_config=auth_config, clusters=clusters)
+        return _ServerConfig(
+            admin_url=admin_url,
+            auth_config=auth_config,
+            clusters=clusters,
+        )

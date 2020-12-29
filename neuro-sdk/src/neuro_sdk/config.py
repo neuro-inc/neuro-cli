@@ -37,6 +37,7 @@ SCHEMA = {
                            expiration_time REAL,
                            refresh_token TEXT,
                            url TEXT,
+                           admin_url TEXT,
                            version TEXT,
                            cluster_name TEXT,
                            clusters TEXT,
@@ -50,6 +51,7 @@ class _ConfigData:
     auth_config: _AuthConfig
     auth_token: _AuthToken
     url: URL
+    admin_url: URL
     version: str
     cluster_name: str
     clusters: Mapping[str, Cluster]
@@ -168,10 +170,7 @@ class Config(metaclass=NoPublicConstructor):
 
     @property
     def admin_url(self) -> URL:
-        # XXX: Replace the path to match all APIs or do discovery
-
-        # API URL prefix: api/v1, admin prefix: apis/admin/v1
-        return self._config_data.url.parent.parent / "apis" / "admin" / "v1"
+        return self._config_data.admin_url
 
     @property
     def monitoring_url(self) -> URL:
@@ -321,12 +320,13 @@ def _load(path: Path) -> _ConfigData:
             cur.execute(
                 """
                 SELECT auth_config, token, expiration_time, refresh_token,
-                       url, version, cluster_name, clusters
+                       url, admin_url, version, cluster_name, clusters
                 FROM main ORDER BY timestamp DESC LIMIT 1"""
             )
             payload = cur.fetchone()
 
         api_url = URL(payload["url"])
+        admin_url = URL(payload["admin_url"])
         auth_config = _deserialize_auth_config(payload)
         clusters = _deserialize_clusters(payload)
         version = payload["version"]
@@ -340,6 +340,7 @@ def _load(path: Path) -> _ConfigData:
             auth_config=auth_config,
             auth_token=auth_token,
             url=api_url,
+            admin_url=admin_url,
             version=version,
             cluster_name=cluster_name,
             clusters=clusters,
@@ -426,6 +427,7 @@ def _save(config: _ConfigData, path: Path) -> None:
     # Factory._save()
     try:
         url = str(config.url)
+        admin_url = str(config.admin_url)
         auth_config = _serialize_auth_config(config.auth_config)
         clusters = _serialize_clusters(config.clusters)
         version = config.version
@@ -443,14 +445,15 @@ def _save(config: _ConfigData, path: Path) -> None:
             """
             INSERT INTO main
             (auth_config, token, expiration_time, refresh_token,
-             url, version, cluster_name, clusters, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+             url, admin_url, version, cluster_name, clusters, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 auth_config,
                 token.token,
                 token.expiration_time,
                 token.refresh_token,
                 url,
+                admin_url,
                 version,
                 cluster_name,
                 clusters,

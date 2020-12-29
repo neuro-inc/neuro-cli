@@ -180,11 +180,14 @@ class Factory:
     ) -> _ConfigData:
         from . import __version__
 
+        assert server_config.admin_url, "Authorized config should include admin_url"
+
         cluster_name = next(iter(server_config.clusters))
         config = _ConfigData(
             auth_config=server_config.auth_config,
             auth_token=token,
             url=url,
+            admin_url=server_config.admin_url,
             version=__version__,
             cluster_name=cluster_name,
             clusters=server_config.clusters,
