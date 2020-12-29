@@ -1,6 +1,8 @@
 # Table of contents
 
-[Getting Started][(README.md)
+## Introduction
+* [Getting Started][(neuro-cli/docs/README.md)
+
 ## Commands
 * [acl](neuro-cli/docs/acl.md)
 * [admin](neuro-cli/docs/admin.md)
