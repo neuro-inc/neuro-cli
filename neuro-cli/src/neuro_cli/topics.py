@@ -535,4 +535,6 @@ async def sharing() -> None:
     `neuro acl revoke role://{username}/roles/{rolename} bob`
 
     And deleted by running `neuro acl remove-role {username}/roles/{rolename}`.
+
+    FINDME
     """
