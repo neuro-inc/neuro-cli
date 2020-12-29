@@ -16,23 +16,21 @@ HERE = Path(sys.argv[0]).resolve().parent
 
 def gen_command(out, cmd, parent_ctx):
     with click.Context(cmd, parent=parent_ctx, info_name=cmd.name) as ctx:
-        out.append(f"### {cmd.name}")
-        out.append("")
+        out.append(f"### {cmd.name}\n")
 
-        out.append(cmd.get_short_help_str())
-        out.append("")
+        descr = cmd.get_short_help_str()
+        descr = re.sub(r"(?<!\n)\n(?!\n)", r" ", descr)
+        out.append(descr)
+        out.append("\n")
 
         if cmd.deprecated:
-            out.append("~~DEPRECATED~~")
-            out.append("")
+            out.append("~~DEPRECATED~~\n")
 
-        out.append("#### Usage")
-        out.append("")
+        out.append("#### Usage\n")
         out.append("```bash")
         pieces = cmd.collect_usage_pieces(ctx)
         out.append(f"{ctx.command_path} " + " ".join(pieces))
-        out.append("```")
-        out.append("")
+        out.append("```\n")
 
         help, *examples = split_examples(cmd.help)
         help2 = click.unstyle(help)
@@ -70,7 +68,7 @@ def gen_command(out, cmd, parent_ctx):
             l1 = re.split(" ?/ ?", name)
             for part in l1:
                 l2 = re.split(" ?, ?", part)
-                l4.append(", ".join(["`" + part2 + "`" for part2 in l2]))
+                l4.append(", ".join(l2))
 
             name2 = " / ".join(l4)
             descr2 = re.sub(r"(\[.+\])", r"_\1_", descr)
@@ -79,22 +77,50 @@ def gen_command(out, cmd, parent_ctx):
             w2 = max(w2, len(descr2))
             opts.append((name2, descr2))
 
-        name_title = "Name".ljust(w1)
-        descr_title = "Description".ljust(w2)
-        name_sep = "-" * w1
-        descr_sep = "-" * w2
-
-        out.append("#### Options")
-        out.append("")
-        out.append(f"| {name_title} | {descr_title} |")
-        out.append(f"| {name_sep} | {descr_sep} |")
+        out.append("#### Options\n")
+        out.append(f"| Name | Description |")
+        out.append(f"| :--- | :--- |")
 
         for name, descr in opts:
-            name = name.ljust(w1)
-            descr = descr.ljust(w2)
-            out.append(f"| {name} | {descr} |")
+            out.append(
+                f"| _{escape_cell(name.replace('|', ' | '))}_ "
+                f"| {escape_cell(descr)} |"
+                f""
+            )
 
-        out.append("")
+        out.append("\n\n")
+
+
+def simple_escape_line(text: str) -> str:
+    escaped = re.sub(r"\*", r"\\*", text)
+    escaped = re.sub(r"<(\S[^*]*)>", r"&lt;\1&gt;", escaped)
+    escaped = re.sub(r"_", r"\\_", escaped)
+    escaped = re.sub(r"\[(\S[^\]]*)\]", r"\\[\1\\]", escaped)
+    escaped = re.sub(r"\((\S[^)]*)\)", r"\\(\1\\)", escaped)
+    escaped = re.sub(r"\\_\\\[", r"_\[", escaped)
+    escaped = re.sub(r"\\]\\_", r"\]_", escaped)
+
+    return escaped
+
+
+def escape(text: str) -> str:
+    # escaped = text.replace('\\', '\\\\')
+    escaped = []
+    lines = text.splitlines()
+    for line in lines:
+        before = line
+        after = simple_escape_line(line)
+        while before != after:
+            before = after
+            after = simple_escape_line(line)
+        escaped.append(after)
+    return "\n".join(escaped)
+
+
+def escape_cell(text: str) -> str:
+    escaped = escape(text)
+    escaped = re.sub(r"\|", r"&#124;", escaped)
+    return escaped
 
 
 def gen_group(group, target_path, parent_ctx):
@@ -126,15 +152,18 @@ def gen_group(group, target_path, parent_ctx):
                 continue
             commands.append(cmd)
 
-        out.append("## Commands")
-        out.append("")
+        out.append("**Commands:**")
+        out.append("| Usage | Description |")
+        out.append("| :--- | :--- |")
         for cmd in commands:
-            cmd_path = f"{group.name}.md#{cmd.name}"
+            anchor = cmd.name
+            anchor = f"{group.name}.md#" + anchor.replace(" ", "-")
             out.append(
-                f"* [neuro {group.name} {cmd.name}]({cmd_path}): "
-                f"{cmd.get_short_help_str()}"
+                f"| [_{escape_cell(cmd.name)}_]({anchor}) "
+                f"| {escape_cell(cmd.get_short_help_str())} |"
             )
-        out.append("")
+
+        out.append("\n")
 
         for index2, cmd in enumerate(commands, 1):
             gen_command(out, cmd, ctx)
@@ -144,14 +173,19 @@ def gen_group(group, target_path, parent_ctx):
 
 
 def gen_shortcuts(commands, target_path, ctx):
-    out = ["# Shortcuts", "", "## Commands", ""]
+    out = ["# Shortcuts"]
+    out.append("**Commands:**")
+    out.append("| Usage | Description |")
+    out.append("| :--- | :--- |")
 
     for cmd in commands:
+        anchor = cmd.name
+        anchor = f"shortcuts.md#" + anchor.replace(" ", "-")
         out.append(
-            f"* [neuro {cmd.name}](shortcuts.md#{cmd.name}): "
-            f"{cmd.get_short_help_str()}"
+            f"| [_neuro {escape_cell(cmd.name)}_]({anchor}) "
+            f"| {escape_cell(cmd.get_short_help_str())} |"
         )
-    out.append("")
+    out.append("\n")
 
     for index2, cmd in enumerate(commands, 1):
         gen_command(out, cmd, ctx)
@@ -161,23 +195,30 @@ def gen_shortcuts(commands, target_path, ctx):
 
 
 def gen_topics(target_path, ctx):
-    out = ["# Topics", ""]
+    for name in topics.list_commands(ctx):
+        topic = topics.get_command(ctx, name)
+        out = [topic.help]
+        fname = target_path / f"topic-{topic.name}.md"
+        fname.write_text("\n".join(out))
 
+
+def gen_summary(target_path, groups, ctx):
+    out = ["# Table of contents\n"]
+
+    out.append("[Getting Started][(README.md)")
+
+    out.append("## Commands")
+    for group in groups:
+        out.append(f"* [{group.name}](neuro-cli/docs/{group.name}.md)")
+
+    out.append("\n## Topics\n")
     for name in topics.list_commands(ctx):
         topic = topics.get_command(ctx, name)
         out.append(
-            f"* [neuro {topic.name}](topics.md#{topic.name}): "
-            f"{topic.get_short_help_str()}"
+            f"* [{topic.get_short_help_str()}](neuro-cli/docs/topic-{topic.name}.md)"
         )
-    out.append("")
 
-    for name in topics.list_commands(ctx):
-        topic = topics.get_command(ctx, name)
-        out.append(f"## {topic.name}")
-        out.append("")
-        out.append(topic.help)
-
-    fname = target_path / f"topics.md"
+    fname = target_path / "SUMMARY.md"
     fname.write_text("\n".join(out))
 
 
@@ -188,7 +229,7 @@ def gen_topics(target_path, ctx):
         exists=True, file_okay=False, dir_okay=True, writable=True, resolve_path=True
     ),
     help="Target dir in platform-web project",
-    default=str(HERE.parent.parent / "platform-docs/references/cli-reference"),
+    default=str(HERE.parent / "neuro-cli/docs"),
     show_default=True,
 )
 def main(target_dir):
@@ -227,6 +268,11 @@ def main(target_dir):
 
     # Topics generator produces ugly looking markdown, sorry
     gen_topics(target_path, ctx)
+
+    # For summary
+    groups.append(click.Group(name="shortcuts"))
+
+    gen_summary(HERE.parent, sorted(groups, key=lambda g: g.name), ctx)
 
 
 if __name__ == "__main__":
