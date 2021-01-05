@@ -205,9 +205,7 @@ def gen_topics(target_path, ctx):
 def gen_summary(target_path, groups, ctx):
     out = ["# Table of contents\n"]
 
-    out.append("[Getting Started][(README.md)")
-
-    out.append("## Commands")
+    out.append("\n## Commands\n")
     for group in groups:
         out.append(f"* [{group.name}](neuro-cli/docs/{group.name}.md)")
 
