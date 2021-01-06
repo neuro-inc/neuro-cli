@@ -587,7 +587,7 @@ async def nginx_job_async(
         )
 
         job = await client.jobs.run(
-            container, is_preemptible=False, description="test NGINX job"
+            container, scheduler_enabled=False, description="test NGINX job"
         )
         try:
             for i in range(300):  # Same as in helper.run_cli

@@ -137,7 +137,7 @@ def _format_presets(
     table.add_column("Name", style="bold", justify="left")
     table.add_column("#CPU", justify="right")
     table.add_column("Memory", justify="right")
-    table.add_column("Preemptible", justify="center")
+    table.add_column("Round Robin", justify="center")
     table.add_column("Preemptible Node", justify="center")
     table.add_column("GPU", justify="left")
     if available_jobs_counts:
@@ -153,8 +153,8 @@ def _format_presets(
             name,
             str(preset.cpu),
             format_size(preset.memory_mb * 1024 ** 2),
-            "√" if preset.is_preemptible else "×",
-            "√" if preset.is_preemptible_node_required else "×",
+            "√" if preset.scheduler_enabled else "×",
+            "√" if preset.preemptible_node else "×",
             gpu,
         ]
         if has_tpu:

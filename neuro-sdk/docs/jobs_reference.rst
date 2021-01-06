@@ -228,7 +228,7 @@ Jobs
                      name: Optional[str] = None, \
                      tags: Sequence[str] = (), \
                      description: Optional[str] = None, \
-                     is_preemptible: bool = False, \
+                     scheduler_enabled: bool = False, \
                      pass_config: bool = False, \
                      wait_for_jobs_quota: bool = False, \
                      schedule_timeout: Optional[float] = None, \
@@ -249,9 +249,8 @@ Jobs
 
       :param str description: optional container description.
 
-      :param bool is_preemptible: a flag that specifies is the job is *preemptible* or
-                                  not, see :ref:`Preemption <job-preemption>` for
-                                  details.
+      :param bool scheduler_enabled: a flag that specifies is the job should
+                                     participate in round-robin scheduling.
 
       :param bool pass_config: a flag that specifies that platform should pass
                                  config data to job. This allows to API and CLI
@@ -558,10 +557,15 @@ JobDescription
       Description of container information used to start a job, :class:`Container`
       instance.
 
-   .. attribute:: is_preemptible
+   .. attribute:: scheduler_enabled
 
-      Is the job is *preemptible* or not, see :ref:`Preemption <job-preemption>` for
-      details.
+      Is job participate in round-robin scheduling.
+
+   .. attribute:: preemptible_node
+
+      Is this node allows execution on preemptible node. If set to ``True``, the job
+      only allows execution on preemptible nodes. If set to ``False``, the job
+      only allows execution on **non**-preemptible nodes.
 
    .. attribute:: pass_config
 
@@ -652,7 +656,7 @@ JobStatus
 
    .. attribute:: SUSPENDED
 
-      Preemptible job is paused to allow other jobs to run.
+      Scheduled job is paused to allow other jobs to run.
 
    .. attribute:: SUCCEEDED
 

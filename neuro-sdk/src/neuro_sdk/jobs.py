@@ -173,7 +173,7 @@ class JobDescription:
     status: JobStatus
     history: JobStatusHistory
     container: Container
-    is_preemptible: bool
+    scheduler_enabled: bool
     pass_config: bool
     uri: URL
     name: Optional[str] = None
@@ -185,7 +185,7 @@ class JobDescription:
     restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER
     life_span: Optional[float] = None
     preset_name: Optional[str] = None
-    is_preemptible_node_required: bool = False
+    preemptible_node: bool = False
     privileged: bool = False
 
 
@@ -252,7 +252,7 @@ class Jobs(metaclass=NoPublicConstructor):
         name: Optional[str] = None,
         tags: Sequence[str] = (),
         description: Optional[str] = None,
-        is_preemptible: bool = False,
+        scheduler_enabled: bool = False,
         pass_config: bool = False,
         wait_for_jobs_quota: bool = False,
         schedule_timeout: Optional[float] = None,
@@ -286,7 +286,7 @@ class Jobs(metaclass=NoPublicConstructor):
             tty=container.tty,
         )
         payload["container"]["resources"] = _resources_to_api(container.resources)
-        payload["is_preemptible"] = is_preemptible
+        payload["scheduler_enabled"] = scheduler_enabled
         auth = await self._config._api_auth()
         async with self._core.request("POST", url, json=payload, auth=auth) as resp:
             res = await resp.json()
@@ -879,8 +879,8 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         cluster_name=cluster_name,
         history=history,
         container=container,
-        is_preemptible=res["is_preemptible"],
-        is_preemptible_node_required=res.get("is_preemptible_node_required", False),
+        scheduler_enabled=res["scheduler_enabled"],
+        preemptible_node=res.get("preemptible_node", False),
         pass_config=res["pass_config"],
         name=name,
         tags=tags,

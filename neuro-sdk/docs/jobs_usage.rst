@@ -194,4 +194,4 @@ much cheaper (exact numbers varies on concrete computational cluster provides,
 e.g. Google Compute, AWS or Azure).
 
 Jobs are *non-preeptible* by default, you can change this by passing
-``is_preemptible=True`` flag to :meth:`Jobs.run`.
+``preemptible_node=True`` flag to :meth:`Jobs.run`.

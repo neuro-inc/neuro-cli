@@ -68,8 +68,8 @@ def cluster_config() -> Cluster:
             "cpu-large-p": Preset(
                 cpu=7,
                 memory_mb=14 * 1024,
-                is_preemptible=True,
-                is_preemptible_node_required=True,
+                scheduler_enabled=True,
+                preemptible_node=True,
             ),
         },
         name="default",

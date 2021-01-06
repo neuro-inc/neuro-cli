@@ -287,8 +287,8 @@ def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
         "name": name,
         "cpu": preset.cpu,
         "memory_mb": preset.memory_mb,
-        "is_preemptible": preset.is_preemptible,
-        "is_preemptible_node_required": preset.is_preemptible_node_required,
+        "scheduler_enabled": preset.scheduler_enabled,
+        "preemptible_node": preset.preemptible_node,
     }
     if preset.gpu:
         result["gpu"] = preset.gpu

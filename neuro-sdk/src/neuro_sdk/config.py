@@ -410,10 +410,8 @@ def _deserialize_resource_preset(payload: Dict[str, Any]) -> Tuple[str, Preset]:
             gpu_model=payload.get("gpu_model"),
             tpu_type=payload.get("tpu_type", None),
             tpu_software_version=payload.get("tpu_software_version", None),
-            is_preemptible=payload.get("is_preemptible", False),
-            is_preemptible_node_required=payload.get(
-                "is_preemptible_node_required", False
-            ),
+            scheduler_enabled=payload.get("scheduler_enabled", False),
+            preemptible_node=payload.get("preemptible_node", False),
         ),
     )
 
@@ -523,8 +521,8 @@ def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
         "gpu_model": preset.gpu_model,
         "tpu_type": preset.tpu_type,
         "tpu_software_version": preset.tpu_software_version,
-        "is_preemptible": preset.is_preemptible,
-        "is_preemptible_node_required": preset.is_preemptible_node_required,
+        "scheduler_enabled": preset.scheduler_enabled,
+        "preemptible_node": preset.preemptible_node,
     }
 
 

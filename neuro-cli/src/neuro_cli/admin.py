@@ -457,9 +457,9 @@ async def add_user_quota(
     help="TPU software version",
 )
 @option(
-    "--preemptible/--non-preemptible",
+    "--scheduler/--no-scheduler",
     "-p/-P",
-    help="Job preemptability support",
+    help="Use round robin scheduler for jobs",
     default=False,
     show_default=True,
 )
@@ -479,7 +479,7 @@ async def update_resource_preset(
     gpu_model: Optional[str],
     tpu_type: Optional[str],
     tpu_software_version: Optional[str],
-    preemptible: bool,
+    scheduler: bool,
     preemptible_node: bool,
 ) -> None:
     """
@@ -493,8 +493,8 @@ async def update_resource_preset(
         gpu_model=gpu_model,
         tpu_type=tpu_type,
         tpu_software_version=tpu_software_version,
-        is_preemptible=preemptible,
-        is_preemptible_node_required=preemptible_node,
+        scheduler_enabled=scheduler,
+        preemptible_node=preemptible_node,
     )
     await root.client._admin.update_cluster_resource_presets(cluster_name, presets)
     await root.client.config.fetch()

@@ -37,14 +37,14 @@ class TestConfigFormatter:
         presets["tpu-small"] = Preset(
             cpu=2,
             memory_mb=2048,
-            is_preemptible=False,
+            scheduler_enabled=False,
             tpu_type="v3-8",
             tpu_software_version="1.14",
         )
         presets["hybrid"] = Preset(
             cpu=4,
             memory_mb=30720,
-            is_preemptible=False,
+            scheduler_enabled=False,
             gpu=2,
             gpu_model="nvidia-tesla-v100",
             tpu_type="v3-64",
