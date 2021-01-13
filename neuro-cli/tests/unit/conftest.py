@@ -51,6 +51,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
         url=URL("https://dev.neu.ro/api/v1"),
+        admin_url=URL("https://dev.neu.ro/apis/admin/v1"),
         version=__version__,
         cluster_name="default",
         clusters={cluster_config.name: cluster_config},

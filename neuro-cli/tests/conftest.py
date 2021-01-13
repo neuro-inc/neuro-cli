@@ -133,6 +133,7 @@ def make_client(
             auth_config=real_auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
             url=URL(url),
+            admin_url=URL(url) / ".." / ".." / "apis" / "admin" / "v1",
             version=__version__,
             cluster_name=next(iter(clusters)),
             clusters=clusters,

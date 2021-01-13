@@ -57,12 +57,14 @@ async def test_get_server_config_no_clusters(
             success_redirect_url=URL(success_redirect_url),
         ),
         clusters={},
+        admin_url=None,
     )
 
 
 async def test_get_server_config_no_callback_urls(
     aiohttp_client: _TestClientFactory,
 ) -> None:
+
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
@@ -100,12 +102,15 @@ async def test_get_server_config_no_callback_urls(
             success_redirect_url=URL(success_redirect_url),
         ),
         clusters={},
+        admin_url=None,
     )
 
 
 async def test_get_server_config_with_token_legacy(
     aiohttp_client: _TestClientFactory,
 ) -> None:
+
+    admin_url = "https://admin-dev.neu.ro"
     registry_url = "https://registry.dev.neu.ro"
     storage_url = "https://storage.dev.neu.ro"
     blob_storage_url = "https://blob-storage.dev.neu.ro"
@@ -121,6 +126,7 @@ async def test_get_server_config_with_token_legacy(
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
+        "admin_url": admin_url,
         "auth_url": auth_url,
         "token_url": token_url,
         "logout_url": logout_url,
@@ -188,6 +194,7 @@ async def test_get_server_config_with_token_legacy(
             headless_callback_url=URL(headless_callback_url),
             success_redirect_url=URL(success_redirect_url),
         ),
+        admin_url=URL(admin_url),
         clusters={
             "default": Cluster(
                 registry_url=URL(registry_url),
@@ -220,6 +227,8 @@ async def test_get_server_config_with_token_legacy(
 
 
 async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) -> None:
+
+    admin_url = "https://admin-dev.neu.ro"
     registry_url = "https://registry.dev.neu.ro"
     storage_url = "https://storage.dev.neu.ro"
     blob_storage_url = "https://blob-storage.dev.neu.ro"
@@ -236,6 +245,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "name": "default",
+        "admin_url": admin_url,
         "registry_url": registry_url,
         "storage_url": storage_url,
         "users_url": users_url,
@@ -356,6 +366,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
             headless_callback_url=URL(headless_callback_url),
             success_redirect_url=URL(success_redirect_url),
         ),
+        admin_url=URL(admin_url),
         clusters={"default": cluster_config},
     )
 

@@ -309,6 +309,7 @@ async def test_clusters(
 async def test_fetch(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
+    admin_url = "https://admin-dev.neu.ro"
     registry_url = "https://registry2-dev.neu.ro"
     storage_url = "https://storage2-dev.neu.ro"
     blob_storage_url = "https://blob-storage2-dev.neu.ro"
@@ -331,6 +332,7 @@ async def test_fetch(
         "audience": audience,
         "headless_callback_url": headless_callback_url,
         "success_redirect_url": success_redirect_url,
+        "admin_url": admin_url,
         "clusters": [
             {
                 "name": "default",
@@ -386,6 +388,7 @@ async def test_fetch_dropped_selected_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     # the test returns the same as for valid answer but the cluster name is different
+    admin_url = "https://admin-dev.neu.ro"
     registry_url = "https://registry2-dev.neu.ro"
     storage_url = "https://storage2-dev.neu.ro"
     blob_storage_url = "https://blob-storage2-dev.neu.ro"
@@ -401,6 +404,7 @@ async def test_fetch_dropped_selected_cluster(
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
+        "admin_url": admin_url,
         "auth_url": auth_url,
         "token_url": token_url,
         "logout_url": logout_url,
@@ -481,6 +485,8 @@ async def test_check_server_mismatch_clusters(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     # the test returns the same as for valid answer but the cluster name is different
+
+    admin_url = "https://admin-dev.neu.ro"
     registry_url = "https://registry2-dev.neu.ro"
     storage_url = "https://storage2-dev.neu.ro"
     blob_storage_url = "https://blob-storage2-dev.neu.ro"
@@ -496,6 +502,7 @@ async def test_check_server_mismatch_clusters(
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
+        "admin_url": admin_url,
         "auth_url": auth_url,
         "token_url": token_url,
         "logout_url": logout_url,
@@ -540,6 +547,8 @@ async def test_check_server_mismatch_auth(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     # the test returns the same as for valid answer but the cluster name is different
+
+    admin_url = "https://admin-dev.neu.ro"
     registry_url = "https://registry2-dev.neu.ro"
     storage_url = "https://storage2-dev.neu.ro"
     blob_storage_url = "https://blob-storage2-dev.neu.ro"
@@ -554,6 +563,7 @@ async def test_check_server_mismatch_auth(
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
+        "admin_url": admin_url,
         "auth_url": auth_url,
         "token_url": token_url,
         "logout_url": logout_url,
