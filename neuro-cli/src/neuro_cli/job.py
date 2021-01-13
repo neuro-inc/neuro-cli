@@ -409,7 +409,7 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
     root.print(JobStatusFormatter(uri_formatter=uri_fmtr)(res))
 
 
-@command()
+@command(deprecated=True, hidden=True)
 async def tags(root: Root) -> None:
     """
     List all tags submitted by the user.
