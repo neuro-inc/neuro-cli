@@ -247,8 +247,8 @@ Add/update resource preset
 | _-g, --gpu NUMBER_ | Number of GPUs |
 | _--gpu-model MODEL_ | GPU model |
 | _-m, --memory AMOUNT_ | Memory amount  _\[default: 1G\]_ |
-| _-p, --preemptible / -P, --non-preemptible_ | Job preemptability support  _\[default: False\]_ |
 | _--preemptible-node / --non-preemptible-node_ | Use a lower-cost preemptible instance  _\[default: False\]_ |
+| _-p, --scheduler / -P, --no-scheduler_ | Use round robin scheduler for jobs  _\[default: False\]_ |
 | _--tpu-sw-version VERSION_ | TPU software version |
 | _--tpu-type TYPE_ | TPU type |
 

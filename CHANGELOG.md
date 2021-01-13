@@ -5,6 +5,29 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.1.13 (2021-01-13)
+==================================
+
+Features
+--------
+
+
+- Removed support of deprecated `--status=all` in `neuro ps`. Use `--all` instead. ([#1883](https://github.com/neuro-inc/platform-client-python/issues/1883))
+
+- Refresh config after resource presets are updated. ([#1899](https://github.com/neuro-inc/platform-client-python/issues/1899))
+
+
+Bugfixes
+--------
+
+
+- Don't open browser on `login-with-token`. ([#1748](https://github.com/neuro-inc/platform-client-python/issues/1748))
+
+- Suppress non-critical neuro configuration database errors. ([#1816](https://github.com/neuro-inc/platform-client-python/issues/1816))
+
+- Fixed unintentional interpretation of sequences like `:+1` and `[b]` in descriptions, commands, paths, URIs, etc when output on the console. ([#1917](https://github.com/neuro-inc/platform-client-python/issues/1917))
+
+
 Neuro SDK/CLI 20.12.16 (2020-12-16)
 ===================================
 
