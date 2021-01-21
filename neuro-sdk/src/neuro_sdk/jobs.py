@@ -552,8 +552,10 @@ class Jobs(metaclass=NoPublicConstructor):
             if e.headers and "X-Error" in e.headers:
                 log.error(f"Error during port-forwarding: {e.headers['X-Error']}")
             log.exception("Unhandled exception during port-forwarding")
+            writer.close()
         except Exception:
             log.exception("Unhandled exception during port-forwarding")
+            writer.close()
 
     async def _port_reader(
         self, ws: aiohttp.ClientWebSocketResponse, writer: asyncio.StreamWriter

@@ -59,13 +59,14 @@ class Runner:
 
         try:
             current_loop = asyncio.get_event_loop()
+        except RuntimeError:
+            # there is no current loop
+            pass
+        else:
             if current_loop.is_running():
                 raise RuntimeError(
                     "asyncio.run() cannot be called from a running event loop"
                 )
-        except RuntimeError:
-            # there is no current loop
-            pass
 
         asyncio.set_event_loop(self._loop)
         self._loop.set_debug(self._debug)

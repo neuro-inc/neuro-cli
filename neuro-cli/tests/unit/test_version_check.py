@@ -204,7 +204,7 @@ class FakePyPI:
 
     async def start(self) -> Dict[str, int]:
         port = unused_port()
-        self.runner = web.AppRunner(self.app)
+        self.runner = web.AppRunner(self.app, keepalive_timeout=0)
         await self.runner.setup()
         site = web.TCPSite(self.runner, "127.0.0.1", port, ssl_context=self.ssl_context)
         await site.start()
@@ -230,14 +230,16 @@ async def fake_pypi(
 
 
 @pytest.fixture()
-async def client(fake_pypi: Tuple[FakePyPI, Dict[str, int]], root: Root) -> Client:
+async def client(
+    fake_pypi: Tuple[FakePyPI, Dict[str, int]], root: Root
+) -> AsyncIterator[Client]:
     resolver = FakeResolver(fake_pypi[1])
-    connector = aiohttp.TCPConnector(resolver=resolver, ssl=False)
-    session = aiohttp.ClientSession(connector=connector)
+    connector = aiohttp.TCPConnector(resolver=resolver, ssl=False, force_close=True)
     old_session = root.client._session
-    await old_session.close()
-    root.client._session = session
-    return root.client
+    async with aiohttp.ClientSession(connector=connector) as session:
+        root.client._session = session
+        yield root.client
+    root.client._session = old_session
 
 
 @pytest.fixture

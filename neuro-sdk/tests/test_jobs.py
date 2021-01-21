@@ -2435,6 +2435,8 @@ async def test_port_forward(
                 writer.write(str(i).encode("ascii"))
                 ret = await reader.read(1024)
                 assert ret == b"rep-" + str(i).encode("ascii")
+            writer.close()
+            await writer.wait_closed()
 
 
 async def test_port_forward_logs_error(
@@ -2463,6 +2465,8 @@ async def test_port_forward_logs_error(
             reader, writer = await asyncio.open_connection("127.0.0.1", port)
             writer.write(b"boom")
             await writer.drain()
+            writer.close()
+            await writer.wait_closed()
             await asyncio.sleep(0.1)
 
     assert "test error info" in caplog.text

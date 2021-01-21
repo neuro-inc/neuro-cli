@@ -85,7 +85,7 @@ async def mock_for_login(
             "audience": "https://test.dev.neu.ro",
             "headless_callback_url": str(srv.make_url("/oauth/show-code")),
             "callback_urls": callback_urls,
-            "success_redirect_url": "https://neu.ro/#test",
+            "success_redirect_url": "http://example.com",
         }
 
         if (

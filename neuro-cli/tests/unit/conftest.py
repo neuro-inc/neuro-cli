@@ -1,11 +1,10 @@
-import asyncio
 import dataclasses
 import io
 import logging
 from collections import namedtuple
 from difflib import ndiff
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, DefaultDict, List, Optional, Set, Union
+from typing import Any, Callable, DefaultDict, Iterator, List, Optional, Set, Union
 
 import click
 import pytest
@@ -78,21 +77,20 @@ def create_root(config_path: Path) -> Root:
 
 
 @pytest.fixture()
-async def root(nmrc_path: Path, loop: asyncio.AbstractEventLoop) -> AsyncIterator[Root]:
+def root(nmrc_path: Path) -> Iterator[Root]:
     root = create_root(config_path=nmrc_path)
-    await root.init_client()
+    root.run(root.init_client())
     yield root
-    await root.client.close()
+    root.close()
 
 
 @pytest.fixture()
-async def root_no_logged_in(
-    tmp_path: Path, loop: asyncio.AbstractEventLoop
-) -> AsyncIterator[Root]:
+def root_no_logged_in(tmp_path: Path) -> Iterator[Root]:
     root = create_root(config_path=tmp_path)
     assert root._client is None
     yield root
     assert root._client is None
+    root.close()
 
 
 @pytest.fixture()
