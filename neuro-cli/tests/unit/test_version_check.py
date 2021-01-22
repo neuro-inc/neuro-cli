@@ -212,6 +212,7 @@ class FakePyPI:
 
     async def stop(self) -> None:
         assert self.runner is not None
+        # await asyncio.sleep(0.1)
         await self.runner.cleanup()
 
     async def json_info(self, request: web.Request) -> web.Response:
@@ -234,7 +235,7 @@ async def client(
     fake_pypi: Tuple[FakePyPI, Dict[str, int]], root: Root
 ) -> AsyncIterator[Client]:
     resolver = FakeResolver(fake_pypi[1])
-    connector = aiohttp.TCPConnector(resolver=resolver, ssl=False, force_close=True)
+    connector = aiohttp.TCPConnector(resolver=resolver, ssl=False, keepalive_timeout=0)
     old_session = root.client._session
     async with aiohttp.ClientSession(connector=connector) as session:
         root.client._session = session
