@@ -1,8 +1,10 @@
 import asyncio
+import sys
 from pathlib import Path
 from typing import Callable
 from unittest import mock
 
+import pytest
 from yarl import URL
 
 from neuro_sdk import Client, Cluster, Preset
@@ -11,6 +13,10 @@ from neuro_cli.config import prompt_cluster
 from neuro_cli.root import Root
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Promt_toolkit fails in github actions worker",
+)
 def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
     clusters = {
         "first": Cluster(
@@ -67,6 +73,10 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
     root.close()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Promt_toolkit fails in github actions worker",
+)
 def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
     clusters = {
         "first": Cluster(
