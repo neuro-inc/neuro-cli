@@ -1,5 +1,6 @@
 import asyncio
 import json
+import sys
 from typing import Any, Callable, Dict, List, Optional
 
 import pytest
@@ -2436,7 +2437,8 @@ async def test_port_forward(
                 ret = await reader.read(1024)
                 assert ret == b"rep-" + str(i).encode("ascii")
             writer.close()
-            await writer.wait_closed()
+            if sys.version_info >= (3, 7):
+                await writer.wait_closed()
 
 
 async def test_port_forward_logs_error(
@@ -2466,7 +2468,8 @@ async def test_port_forward_logs_error(
             writer.write(b"boom")
             await writer.drain()
             writer.close()
-            await writer.wait_closed()
+            if sys.version_info >= (3, 7):
+                await writer.wait_closed()
             await asyncio.sleep(0.1)
 
     assert "test error info" in caplog.text
