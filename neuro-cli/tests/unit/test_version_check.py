@@ -204,7 +204,7 @@ class FakePyPI:
 
     async def start(self) -> Dict[str, int]:
         port = unused_port()
-        self.runner = web.AppRunner(self.app, keepalive_timeout=0)
+        self.runner = web.AppRunner(self.app)
         await self.runner.setup()
         site = web.TCPSite(self.runner, "127.0.0.1", port, ssl_context=self.ssl_context)
         await site.start()
