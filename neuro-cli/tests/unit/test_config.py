@@ -1,8 +1,10 @@
 import asyncio
+import sys
 from pathlib import Path
 from typing import Callable
 from unittest import mock
 
+import pytest
 from yarl import URL
 
 from neuro_sdk import Client, Cluster, Preset
@@ -11,7 +13,11 @@ from neuro_cli.config import prompt_cluster
 from neuro_cli.root import Root
 
 
-async def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Promt_toolkit fails in github actions worker",
+)
+def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
     clusters = {
         "first": Cluster(
             registry_url=URL("https://registry-dev.neu.ro"),
@@ -37,7 +43,6 @@ async def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
         ),
     }
 
-    client = make_client("https://neu.ro", clusters=clusters)
     root = Root(
         color=False,
         tty=False,
@@ -52,18 +57,27 @@ async def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
         skip_gmp_stats=True,
         show_traceback=False,
     )
-    root._client = client
+
+    async def _async_make_client() -> Client:
+        return make_client("https://neu.ro", clusters=clusters)
+
+    root._client = root.run(_async_make_client())
 
     session = mock.Mock()
     loop = asyncio.get_event_loop()
     fut = loop.create_future()
     fut.set_result("second")
     session.prompt_async.return_value = fut
-    ret = await prompt_cluster(root, session=session)
+    ret = root.run(prompt_cluster(root, session=session))
     assert ret == "second"
+    root.close()
 
 
-async def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Promt_toolkit fails in github actions worker",
+)
+def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
     clusters = {
         "first": Cluster(
             registry_url=URL("https://registry-dev.neu.ro"),
@@ -89,7 +103,6 @@ async def test_prompt_cluster_default(make_client: Callable[..., Client]) -> Non
         ),
     }
 
-    client = make_client("https://neu.ro", clusters=clusters)
     root = Root(
         color=False,
         tty=False,
@@ -104,7 +117,11 @@ async def test_prompt_cluster_default(make_client: Callable[..., Client]) -> Non
         skip_gmp_stats=True,
         show_traceback=False,
     )
-    root._client = client
+
+    async def _async_make_client() -> Client:
+        return make_client("https://neu.ro", clusters=clusters)
+
+    root._client = root.run(_async_make_client())
 
     session = mock.Mock()
     loop = asyncio.get_event_loop()
@@ -112,5 +129,6 @@ async def test_prompt_cluster_default(make_client: Callable[..., Client]) -> Non
     fut.set_result("")
     session.prompt_async.return_value = fut
 
-    ret = await prompt_cluster(root, session=session)
+    ret = root.run(prompt_cluster(root, session=session))
     assert ret == "first"
+    root.close()

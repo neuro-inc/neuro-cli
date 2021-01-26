@@ -57,6 +57,7 @@ class TestConfigFormatter:
         )
         out = ConfigFormatter()(client.config, {})
         rich_cmp(out)
+        await client.close()
 
     async def test_output_with_jobs_available(
         self, root: Root, rich_cmp: RichCmp

@@ -30,7 +30,7 @@ setup(
         "atomicwrites>=1.0",
         "wcwidth>=0.1.7",
         "toml>=0.10.0",
-        "prompt-toolkit>=3.0.5",
+        "prompt-toolkit>=3.0.13",
         "rich>=9.1.0",
     ],
     include_package_data=True,

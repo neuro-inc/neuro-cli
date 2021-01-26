@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Iterator
 
 import aiohttp
 import pytest
@@ -7,8 +8,8 @@ from neuro_cli.root import Root
 
 
 @pytest.fixture
-def root_uninitialized() -> Root:
-    return Root(
+def root_uninitialized() -> Iterator[Root]:
+    root = Root(
         color=False,
         tty=False,
         disable_pypi_version_check=False,
@@ -22,6 +23,8 @@ def root_uninitialized() -> Root:
         skip_gmp_stats=True,
         show_traceback=False,
     )
+    yield root
+    root.close()
 
 
 def test_timeout(root_uninitialized: Root) -> None:
