@@ -10,7 +10,7 @@ dataclasses==0.7; python_version<"3.7"
 humanize==3.2.0
 python-dateutil==2.8.1
 python-jose==3.2.0
-pyyaml==5.4
+pyyaml==5.4.1
 requests==2.25.1
 rich==9.9.0
 toml==0.10.2
