@@ -210,7 +210,7 @@ async def docker(root: Root, docker_config: str) -> None:
     if "credHelpers" not in payload:
         payload["credHelpers"] = {}
 
-    registry = URL(root.client.config.registry_url).host
+    registry = URL(root.client.config.registry_url).host or ""
     payload["credHelpers"][registry] = "neuro"
     with json_path.open("w", encoding="utf-8") as file2:
         json.dump(payload, file2, indent=2)

@@ -8,6 +8,7 @@
 
 import os
 import re
+from typing import Dict
 
 _docs_path = os.path.dirname(__file__)
 _version_path = os.path.abspath(
@@ -15,7 +16,7 @@ _version_path = os.path.abspath(
 )
 with open(_version_path, encoding="latin1") as fp:
     try:
-        _version_info = re.search(
+        result = re.search(
             r'^__version__ = "'
             r"(?P<major>\d+)"
             r"\.(?P<minor>\d+)"
@@ -23,7 +24,10 @@ with open(_version_path, encoding="latin1") as fp:
             r'(?P<tag>.*)?"$',
             fp.read(),
             re.M,
-        ).groupdict()
+        )
+        if result is None:
+            raise RuntimeError("Unable to determine version.")
+        _version_info = result.groupdict()
     except IndexError:
         raise RuntimeError("Unable to determine version.")
 
@@ -141,7 +145,7 @@ htmlhelp_basename = "neurosdkdoc"
 
 # -- Options for LaTeX output ------------------------------------------------
 
-latex_elements = {
+latex_elements: Dict[str, str] = {
     # The paper size ('letterpaper' or 'a4paper').
     #
     # 'papersize': 'letterpaper',
