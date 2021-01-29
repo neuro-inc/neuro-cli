@@ -466,7 +466,7 @@ class JobStartProgress:
 class DetailedJobStartProgress(JobStartProgress, RenderHook):
     def __init__(self, console: Console) -> None:
         self._time = self.time_factory()
-        self._prev = ""
+        self._prev = Text("")
         self._console = console
         self._spinner = SPINNER
         self._live_render = LiveRender(Text())

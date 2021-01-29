@@ -1,5 +1,5 @@
 import operator
-from typing import Iterable, List, Mapping, Optional
+from typing import Iterable, List, Mapping, Optional, Union
 
 import click
 from rich import box
@@ -108,10 +108,10 @@ class ClustersFormatter:
     ) -> RenderableType:
         out: List[RenderableType] = [Text("Available clusters:", style="i")]
         for cluster in clusters:
-            name: RenderableType = cluster.name or ""
+            name: Union[str, Text] = cluster.name or ""
             pre = "  "
             if cluster.name == default_name:
-                name = Text(name, style="u")
+                name = Text(cluster.name, style="u")
                 pre = "* "
             out.append(Text.assemble(pre, Text("Name"), ": ", name))
             out.append(Padding.indent(_format_presets(cluster.presets, None), 2))
