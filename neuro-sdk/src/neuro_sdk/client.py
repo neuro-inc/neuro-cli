@@ -26,11 +26,11 @@ class Client(metaclass=NoPublicConstructor):
         session: aiohttp.ClientSession,
         path: Path,
         trace_id: Optional[str],
+        trace_sampled: Optional[bool],
     ) -> None:
         self._closed = False
-        self._trace_id = trace_id
         self._session = session
-        self._core = _Core(session, trace_id)
+        self._core = _Core(session, trace_id, trace_sampled)
         self._config = Config._create(self._core, path)
 
         # Order does matter, need to check the main config before loading

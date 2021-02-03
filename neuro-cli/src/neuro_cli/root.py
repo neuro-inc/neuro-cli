@@ -68,6 +68,7 @@ class Root:
     network_timeout: float
     config_path: Path
     trace: bool
+    force_trace_all: bool
     verbosity: int
     trace_hide_token: bool
     command_path: str
@@ -174,6 +175,7 @@ class Root:
                 path=self.config_path,
                 trace_configs=trace_configs,
                 trace_id=gen_trace_id(),
+                trace_sampled=True if self.force_trace_all else None,
             )
         return self._factory
 

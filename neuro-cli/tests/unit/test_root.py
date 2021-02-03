@@ -18,6 +18,7 @@ def root_uninitialized() -> Iterator[Root]:
         verbosity=0,
         trace=False,
         trace_hide_token=True,
+        force_trace_all=False,
         command_path="",
         command_params=[],
         skip_gmp_stats=True,

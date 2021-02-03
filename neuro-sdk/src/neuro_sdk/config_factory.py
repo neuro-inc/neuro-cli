@@ -56,6 +56,7 @@ class Factory:
         path: Optional[Path] = None,
         trace_configs: Optional[List[aiohttp.TraceConfig]] = None,
         trace_id: Optional[str] = None,
+        trace_sampled: Optional[bool] = None,
     ) -> None:
         if path is None:
             path = Path(os.environ.get(CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH))
@@ -64,6 +65,7 @@ class Factory:
         if trace_configs:
             self._trace_configs += trace_configs
         self._trace_id = trace_id
+        self._trace_sampled = trace_sampled
 
     @property
     def path(self) -> Path:
@@ -78,7 +80,9 @@ class Factory:
             await self.login_with_passed_config(timeout=timeout)
         session = await _make_session(timeout, self._trace_configs)
         try:
-            client = Client._create(session, self._path, self._trace_id)
+            client = Client._create(
+                session, self._path, self._trace_id, self._trace_sampled
+            )
             await client.config.check_server()
         except (asyncio.CancelledError, Exception):
             await session.close()
