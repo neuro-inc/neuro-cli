@@ -26,7 +26,7 @@ class Client(metaclass=NoPublicConstructor):
         session: aiohttp.ClientSession,
         path: Path,
         trace_id: Optional[str],
-        trace_sampled: Optional[bool],
+        trace_sampled: Optional[bool] = None,
     ) -> None:
         self._closed = False
         self._session = session
