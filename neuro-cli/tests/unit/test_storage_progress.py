@@ -76,6 +76,7 @@ def make_root(new_console: NewConsole) -> Iterator[_MakeRoot]:
             verbosity=int(verbose),
             trace=False,
             trace_hide_token=True,
+            force_trace_all=False,
             command_path="",
             command_params=[],
             skip_gmp_stats=True,

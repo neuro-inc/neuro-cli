@@ -4,6 +4,7 @@ import os
 import random
 import time
 import types
+from typing import Optional
 
 import aiohttp
 from multidict import CIMultiDict
@@ -32,10 +33,22 @@ def _gen_span_id() -> str:
     return os.urandom(8).hex()
 
 
-def _update_headers(headers: "CIMultiDict[str]", trace_id: str, span_id: str) -> None:
+def _update_headers(
+    headers: "CIMultiDict[str]",
+    trace_id: str,
+    span_id: str,
+    sampled: Optional[bool] = None,
+) -> None:
     """Creates dict with zipkin single header format."""
     # b3={TraceId}-{SpanId}-{SamplingState}-{ParentSpanId}
     headers["b3"] = f"{trace_id}-{span_id}"
+    if sampled is True:
+        sampled_str = "1"
+    elif sampled is False:
+        sampled_str = "0"
+    else:
+        sampled_str = ""
+    headers["sentry-trace"] = f"{trace_id}-{span_id}-{sampled_str}"
 
 
 async def _on_request_start(
@@ -47,8 +60,9 @@ async def _on_request_start(
     trace_id = getattr(trace_ctx, "trace_id", None)
     if trace_id is None:
         return
+    sampled = getattr(trace_ctx, "trace_sampled", None)
     span_id = _gen_span_id()
-    _update_headers(params.headers, trace_id, span_id)
+    _update_headers(params.headers, trace_id, span_id, sampled)
 
 
 def _make_trace_config() -> aiohttp.TraceConfig:

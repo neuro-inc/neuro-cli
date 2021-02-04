@@ -63,9 +63,11 @@ class _Core:
         self,
         session: aiohttp.ClientSession,
         trace_id: Optional[str],
+        trace_sampled: Optional[bool] = None,
     ) -> None:
         self._session = session
         self._trace_id = trace_id
+        self._trace_sampled = trace_sampled
         self._exception_map = {
             400: IllegalArgumentError,
             401: AuthenticationError,
@@ -131,6 +133,7 @@ class _Core:
         if trace_id is None:
             trace_id = gen_trace_id()
         trace_request_ctx.trace_id = trace_id
+        trace_request_ctx.trace_sampled = self._trace_sampled
         if params:
             url = url.with_query(params)
         async with self._session.request(

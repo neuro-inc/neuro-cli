@@ -181,6 +181,7 @@ class MainGroup(Group):
             network_timeout=kwargs["network_timeout"],
             config_path=Path(kwargs["neuromation_config"]),
             trace=kwargs["trace"],
+            force_trace_all=kwargs["x_trace_all"],
             trace_hide_token=hide_token_bool,
             command_path="",
             command_params=[],
@@ -384,6 +385,12 @@ def print_options(
     help="Trace sent HTTP requests and received replies to stderr.",
 )
 @option(
+    "--x-trace-all",
+    hidden=True,
+    is_flag=True,
+    help="Force distribute tracing in all HTTP requests.",
+)
+@option(
     "--hide-token/--no-hide-token",
     is_flag=True,
     default=None,
@@ -415,6 +422,7 @@ def cli(
     disable_pypi_version_check: bool,
     network_timeout: float,
     trace: bool,
+    x_trace_all: bool,
     hide_token: Optional[bool],
     skip_stats: bool,
 ) -> None:
