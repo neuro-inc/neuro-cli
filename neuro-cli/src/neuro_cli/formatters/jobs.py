@@ -343,6 +343,7 @@ class TabularJobRow:
     command: str
     life_span: str
     workdir: str
+    preset: str
 
     @classmethod
     def from_job(
@@ -371,6 +372,7 @@ class TabularJobRow:
             command=job.container.command if job.container.command else "",
             life_span=format_life_span(job.life_span),
             workdir=job.container.working_dir or "",
+            preset=job.preset_name or "",
         )
 
     def to_list(self, columns: List[JobColumnInfo]) -> List[TextType]:

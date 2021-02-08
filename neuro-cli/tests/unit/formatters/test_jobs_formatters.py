@@ -1530,3 +1530,38 @@ class TestTabularJobsFormatter:
         columns = parse_columns("id workdir")
         formatter = TabularJobsFormatter("test-user", columns, image_formatter=str)
         rich_cmp(formatter(jobs))
+
+    def test_preset(self, rich_cmp: Any) -> None:
+        items = [None, "cpu-small", "gpu-large"]
+        jobs = [
+            JobDescription(
+                status=JobStatus.FAILED,
+                owner="test-user",
+                cluster_name="default",
+                id=f"job-{i}",
+                uri=URL(f"job://default/test-user/job-{i}"),
+                description=None,
+                history=JobStatusHistory(
+                    status=JobStatus.FAILED,
+                    reason="ErrorReason",
+                    description="ErrorDesc",
+                    created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+                ),
+                container=Container(
+                    command="test-command",
+                    image=RemoteImage.new_external_image(name="test-image"),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                ),
+                scheduler_enabled=False,
+                pass_config=True,
+                internal_hostname="host.local",
+                preset_name=preset_name,
+            )
+            for i, preset_name in enumerate(items, 1)
+        ]
+
+        columns = parse_columns("id preset")
+        formatter = TabularJobsFormatter("test-user", columns, image_formatter=str)
+        rich_cmp(formatter(jobs))
