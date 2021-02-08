@@ -184,6 +184,7 @@ class JobDescription:
     internal_hostname_named: Optional[str] = None
     restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER
     life_span: Optional[float] = None
+    schedule_timeout: Optional[float] = None
     preset_name: Optional[str] = None
     preemptible_node: bool = False
     privileged: bool = False
@@ -893,6 +894,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         uri=URL(res["uri"]),
         restart_policy=restart_policy,
         life_span=life_span,
+        schedule_timeout=res.get("schedule_timeout", None),
         preset_name=res.get("preset_name"),
     )
 

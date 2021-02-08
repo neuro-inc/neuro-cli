@@ -16,6 +16,7 @@
 		* [neuro admin remove-resource-preset](#neuro-admin-remove-resource-preset)
 	* [neuro job](#neuro-job)
 		* [neuro job run](#neuro-job-run)
+		* [neuro job cmd-rerun](#neuro-job-cmd-rerun)
 		* [neuro job ls](#neuro-job-ls)
 		* [neuro job status](#neuro-job-status)
 		* [neuro job exec](#neuro-job-exec)
@@ -456,6 +457,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro job run](#neuro-job-run)_| Run a job with predefined resources configuration |
+| _[neuro job cmd-rerun](#neuro-job-cmd-rerun)_| Display status of a job |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
 | _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
@@ -526,6 +528,25 @@ Name | Description|
 |_\--wait-for-seat / --no-wait-for-seat_|Wait for total running jobs quota  \[default: False]|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
 |_\-w, --workdir TEXT_|Working directory inside the container|
+
+
+
+
+### neuro job cmd-rerun
+
+Display status of a job.
+
+**Usage:**
+
+```bash
+neuro job cmd-rerun [OPTIONS] JOB
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
 
 
 

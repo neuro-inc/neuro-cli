@@ -14,6 +14,7 @@ Job operations.
 | Usage | Description |
 | :--- | :--- |
 | [_run_](job.md#run) | Run a job with predefined resources... |
+| [_cmd-rerun_](job.md#cmd-rerun) | Display status of a job |
 | [_ls_](job.md#ls) | List all jobs |
 | [_status_](job.md#status) | Display status of a job |
 | [_exec_](job.md#exec) | Execute command in a running job |
@@ -90,6 +91,27 @@ $ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg
 | _--wait-for-seat / --no-wait-for-seat_ | Wait for total running jobs quota  _\[default: False\]_ |
 | _--wait-start / --no-wait-start_ | Wait for a job start or failure  _\[default: True\]_ |
 | _-w, --workdir TEXT_ | Working directory inside the container |
+
+
+
+### cmd-rerun
+
+Display status of a job
+
+
+#### Usage
+
+```bash
+neuro job cmd-rerun [OPTIONS] JOB
+```
+
+Display status of a job.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
 
 
 

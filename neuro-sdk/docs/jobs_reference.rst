@@ -604,7 +604,6 @@ JobDescription
       from custom code. Use :meth:`Jobs.exec` and :meth:`Jobs.port_forward` as
       official API for accessing to running job.
 
-
    .. attribute:: internal_hostname
 
       DNS name to access the running job from other jobs.
@@ -614,6 +613,15 @@ JobDescription
       DNS name to access the running job from other jobs based on jobs name instead of
       jobs id. Produces same value for jobs with ``name`` and ``owner`` in same cluster.
 
+   .. attribute:: life_span
+
+      Job run-time limit in seconds, :class:`float`
+
+   .. attribute:: schedule_timeout
+
+      Minimal timeout in seconds job will wait before reporting it
+      cannot be scheduled because the lack of computation
+      cluster resources (memory, CPU/GPU etc), :class:`float`
 
 JobRestartPolicy
 ================

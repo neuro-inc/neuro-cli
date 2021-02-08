@@ -1,14 +1,28 @@
 import logging
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, Tuple
 
 import pytest
 import toml
+from dateutil.parser import isoparse
 from yarl import URL
 
-from neuro_sdk import Client, JobStatus
+from neuro_sdk import (
+    Client,
+    Container,
+    DiskVolume,
+    JobDescription,
+    JobRestartPolicy,
+    JobStatus,
+    JobStatusHistory,
+    RemoteImage,
+    Resources,
+    SecretFile,
+    Volume,
+)
 
-from neuro_cli.job import _parse_cmd, calc_columns, calc_statuses
+from neuro_cli.job import _job_to_cli_args, _parse_cmd, calc_columns, calc_statuses
 from neuro_cli.parse_utils import COLUMNS_MAP, get_default_columns
 from neuro_cli.root import Root
 
@@ -214,3 +228,157 @@ def test_parse_cmd_single() -> None:
 def test_parse_cmd_multiple() -> None:
     cmd = ["bash", "-c", "ls -l && pwd"]
     assert _parse_cmd(cmd) == "bash -c 'ls -l && pwd'"
+
+
+def test_job_to_args_simple() -> None:
+    job = JobDescription(
+        status=JobStatus.FAILED,
+        owner="test-user",
+        cluster_name="default",
+        id=f"job",
+        uri=URL(f"job://default/test-user/job"),
+        description=None,
+        history=JobStatusHistory(
+            status=JobStatus.FAILED,
+            reason="ErrorReason",
+            description="ErrorDesc",
+            created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+            started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+            finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+        ),
+        container=Container(
+            command="test-command",
+            image=RemoteImage.new_external_image(name="test-image"),
+            resources=Resources(16, 0.1, 0, None, True, None, None),
+        ),
+        scheduler_enabled=False,
+        pass_config=False,
+        preset_name="testing",
+    )
+    assert _job_to_cli_args(job) == [
+        "--preset",
+        "testing",
+        "test-image",
+        "test-command",
+    ]
+
+
+def test_job_to_args_complex() -> None:
+    job = JobDescription(
+        status=JobStatus.FAILED,
+        owner="test-user",
+        name="test-job",
+        tags=["tag-1", "tag-2"],
+        cluster_name="default",
+        id=f"job",
+        uri=URL(f"job://default/test-user/job"),
+        description="test description",
+        restart_policy=JobRestartPolicy.ALWAYS,
+        history=JobStatusHistory(
+            status=JobStatus.FAILED,
+            reason="ErrorReason",
+            description="ErrorDesc",
+            created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+            started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+            finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+        ),
+        container=Container(
+            command="test-command",
+            image=RemoteImage.new_external_image(name="test-image"),
+            resources=Resources(16, 0.1, 0, None, False, None, None),
+            working_dir="/mnt/test",
+            volumes=[
+                Volume(
+                    storage_uri=URL("storage://test-cluster/test-user/_ro_"),
+                    container_path="/mnt/_ro_",
+                    read_only=True,
+                ),
+                Volume(
+                    storage_uri=URL("storage://test-cluster/test-user/rw"),
+                    container_path="/mnt/rw",
+                    read_only=False,
+                ),
+            ],
+            secret_files=[
+                SecretFile(
+                    URL("secret://test-cluster/test-user/secret1"),
+                    "/var/run/secret1",
+                ),
+                SecretFile(
+                    URL("secret://test-cluster/otheruser/secret2"),
+                    "/var/run/secret2",
+                ),
+            ],
+            disk_volumes=[
+                DiskVolume(
+                    URL("disk://test-cluster/test-user/disk1"),
+                    "/mnt/disk1",
+                    read_only=True,
+                ),
+                DiskVolume(
+                    URL("disk://test-cluster/otheruser/disk2"),
+                    "/mnt/disk2",
+                    read_only=False,
+                ),
+            ],
+            secret_env={
+                "ENV_NAME_1": URL("secret://test-cluster/test-user/secret4"),
+                "ENV_NAME_2": URL("secret://test-cluster/otheruser/secret5"),
+            },
+            env={
+                "ENV_NAME_3": "TEST1",
+                "ENV_NAME_4": "TEST2",
+            },
+        ),
+        scheduler_enabled=True,
+        pass_config=True,
+        preset_name="testing",
+        life_span=200,
+        schedule_timeout=3600 * 24 * 2 + 3600 * 11 + 60 * 17 + 12,
+        privileged=True,
+    )
+    assert _job_to_cli_args(job) == [
+        "--preset",
+        "testing",
+        "--no-extshm",
+        "--name",
+        "test-job",
+        "--tag",
+        "tag-1",
+        "--tag",
+        "tag-2",
+        "--description",
+        "test description",
+        "--volume",
+        "storage://test-cluster/test-user/_ro_:/mnt/_ro_:ro",
+        "--volume",
+        "storage://test-cluster/test-user/rw:/mnt/rw:rw",
+        "--volume",
+        "disk://test-cluster/test-user/disk1:/mnt/disk1:ro",
+        "--volume",
+        "disk://test-cluster/otheruser/disk2:/mnt/disk2:rw",
+        "--volume",
+        "secret://test-cluster/test-user/secret1:/var/run/secret1",
+        "--volume",
+        "secret://test-cluster/otheruser/secret2:/var/run/secret2",
+        "--workdir",
+        "/mnt/test",
+        "--env",
+        "ENV_NAME_3=TEST1",
+        "--env",
+        "ENV_NAME_4=TEST2",
+        "--env",
+        "ENV_NAME_1=secret://test-cluster/test-user/secret4",
+        "--env",
+        "ENV_NAME_2=secret://test-cluster/otheruser/secret5",
+        "--restart",
+        "always",
+        "--life-span",
+        "3.0m200s",
+        "--schedule-timeout",
+        "2d11.0h17.0m40632s",
+        "--pass-config",
+        "--privileged",
+        "test-image",
+        "test-command",
+    ]

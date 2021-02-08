@@ -5,7 +5,7 @@ import shlex
 import sys
 import uuid
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional, Sequence, Set, Tuple
 
 import async_timeout
@@ -52,6 +52,7 @@ from .parse_utils import (
     get_default_columns,
     parse_columns,
     parse_timedelta,
+    serialize_timedelta,
 )
 from .root import Root
 from .utils import (
@@ -775,7 +776,24 @@ async def run(
     )
 
 
+@command()
+@argument("job", type=JOB)
+async def cmd_rerun(root: Root, job: str) -> None:
+    """
+    Display status of a job.
+    """
+    id = await resolve_job(
+        job,
+        client=root.client,
+        status=JobStatus.items(),
+    )
+    job_description = await root.client.jobs.status(id)
+    args = _job_to_cli_args(job_description)
+    root.print(f"neuro run " + " ".join(args))
+
+
 job.add_command(run)
+job.add_command(cmd_rerun)
 job.add_command(ls)
 job.add_command(status)
 job.add_command(tags)
@@ -1026,3 +1044,66 @@ def _check_tty(root: Root, tty: bool) -> None:
             "The operation should be executed from a terminal, "
             "the input device is not a TTY"
         )
+
+
+def _job_to_cli_args(job: JobDescription) -> List[str]:
+    res = []
+    if job.preset_name:
+        res += ["--preset", job.preset_name]
+    else:
+        log.warning("Cannot determine preset name used to run job")
+    if not job.container.resources.shm:
+        res += ["--no-extshm"]
+    if job.container.http:
+        if job.container.http.port != 80:
+            res += ["--http", str(job.container.http.port)]
+        if not job.container.http.requires_auth:
+            res += ["--no-http-auth"]
+    if job.name:
+        res += ["--name", job.name]
+    for tag in job.tags:
+        res += ["--tag", tag]
+    if job.description:
+        res += ["--description", job.description]
+    for volume in job.container.volumes:
+        res += [
+            "--volume",
+            (
+                f"{volume.storage_uri}:{volume.container_path}"
+                f":{'ro' if volume.read_only else 'rw'}"
+            ),
+        ]
+    for disk in job.container.disk_volumes:
+        res += [
+            "--volume",
+            f"{disk.disk_uri}:{disk.container_path}:{'ro' if disk.read_only else 'rw'}",
+        ]
+    for secret in job.container.secret_files:
+        res += ["--volume", f"{secret.secret_uri}:{secret.container_path}"]
+    if job.container.entrypoint:
+        res += ["--entrypoint", job.container.entrypoint]
+    if job.container.working_dir:
+        res += ["--workdir", job.container.working_dir]
+    for env_name, env_value in job.container.env.items():
+        res += ["--env", f"{env_name}={env_value}"]
+    for env_name, secret_uri in job.container.secret_env.items():
+        res += ["--env", f"{env_name}={secret_uri}"]
+    if job.restart_policy == JobRestartPolicy.ALWAYS:
+        res += ["--restart", str(JobRestartPolicy.ALWAYS)]
+    if job.restart_policy == JobRestartPolicy.ON_FAILURE:
+        res += ["--restart", str(JobRestartPolicy.ON_FAILURE)]
+    if job.life_span:
+        res += ["--life-span", serialize_timedelta(timedelta(seconds=job.life_span))]
+    if job.schedule_timeout:
+        res += [
+            "--schedule-timeout",
+            serialize_timedelta(timedelta(seconds=job.schedule_timeout)),
+        ]
+    if job.pass_config:
+        res += ["--pass-config"]
+    if job.privileged:
+        res += ["--privileged"]
+    res += [str(job.container.image)]
+    if job.container.command:
+        res += [job.container.command]
+    return res

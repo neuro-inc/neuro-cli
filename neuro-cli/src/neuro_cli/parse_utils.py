@@ -237,3 +237,21 @@ def parse_timedelta(value: str) -> timedelta:
         minutes=int(match.group("m") or 0),
         seconds=int(match.group("s") or 0),
     )
+
+
+# Opposite to function above
+def serialize_timedelta(value: timedelta) -> str:
+    res = ""
+    hours = value.total_seconds() // 3600 % 24
+    minutes = value.total_seconds() // 60 % 60
+    if value.days:
+        res += f"{value.days}d"
+    if hours:
+        res += f"{hours}h"
+    if minutes:
+        res += f"{minutes}m"
+    if value.seconds:
+        res += f"{int(value.seconds)}s"
+    if res == "":
+        res = "0"
+    return res
