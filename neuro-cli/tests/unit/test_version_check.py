@@ -297,12 +297,11 @@ async def test__fetch_neuro_pypi(
     neuro_pypi_server: FakePyPI, neuro_pypi_client: Client
 ) -> None:
     neuro_pypi_server.response = (200, PYPI_JSON)
-    pypi_url_file_path = None
+    pypi_url_file_path = (
+        Path(version_utils.__file__).parent / version_utils.PIPY_URL_FILE_NAME
+    )
 
     try:
-        pypi_url_file_path = (
-            Path(version_utils.__file__).parent / version_utils.PIPY_URL_FILE_NAME
-        )
         pypi_url_file_path.write_text("https://pypi.org.neu.ro/pypi")
 
         t0 = time.time()
@@ -317,8 +316,7 @@ async def test__fetch_neuro_pypi(
         )
         assert t0 <= record["checked"] <= time.time()
     finally:
-        if pypi_url_file_path:
-            pypi_url_file_path.unlink(missing_ok=True)
+        pypi_url_file_path.unlink()
 
 
 async def test__fetch_pypi_no_releases(pypi_server: FakePyPI, client: Client) -> None:
