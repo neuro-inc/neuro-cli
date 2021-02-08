@@ -282,7 +282,7 @@ Display GPU/CPU/Memory usage
 #### Usage
 
 ```bash
-neuro job top [OPTIONS] JOB
+neuro job top [OPTIONS] [JOBS]...
 ```
 
 Display `GPU`/`CPU`/Memory usage.

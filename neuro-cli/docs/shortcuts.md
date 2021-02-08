@@ -303,7 +303,7 @@ Display GPU/CPU/Memory usage
 #### Usage
 
 ```bash
-neuro top [OPTIONS] JOB
+neuro top [OPTIONS] [JOBS]...
 ```
 
 Display `GPU`/`CPU`/Memory usage.

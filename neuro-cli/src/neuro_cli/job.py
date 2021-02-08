@@ -5,7 +5,7 @@ import shlex
 import sys
 import uuid
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Sequence, Set, Tuple
 
 import async_timeout
@@ -72,6 +72,9 @@ log = logging.getLogger(__name__)
 STORAGE_MOUNTPOINT = "/var/storage"
 
 DEFAULT_JOB_LIFE_SPAN = "1d"
+
+TOP_REFRESH_DELAY = 0.2
+TOP_NEW_JOBS_DELAY = 3
 
 
 TTY_OPT = option(
@@ -435,7 +438,7 @@ async def browse(root: Root, job: str) -> None:
 
 
 @command()
-@argument("job", type=JOB)
+@argument("jobs", nargs=-1, required=False, type=JOB)
 @option(
     "--timeout",
     default=0,
@@ -443,15 +446,62 @@ async def browse(root: Root, job: str) -> None:
     show_default=True,
     help="Maximum allowed time for executing the command, 0 for no timeout",
 )
-async def top(root: Root, job: str, timeout: float) -> None:
+async def top(root: Root, jobs: Sequence[str], timeout: float) -> None:
     """
     Display GPU/CPU/Memory usage.
     """
-    with JobTelemetryFormatter(root.console) as formatter:
-        id = await resolve_job(job, client=root.client, status=JobStatus.active_items())
+    observed: Set[str] = set()
+
+    async def create_pollers() -> None:
+        if jobs:
+            for job_str in jobs:
+                job_id = await resolve_job(
+                    job_str, client=root.client, status=JobStatus.active_items()
+                )
+                if job_id in observed:
+                    continue
+                observed.add(job_id)
+                job = await root.client.jobs.status(job_id)
+                asyncio.create_task(poller(job))
+        else:
+            since: Optional[datetime] = None
+            while True:
+                jobs2 = root.client.jobs.list(
+                    statuses=JobStatus.active_items(),
+                    owners=(root.client.username,),
+                    since=since,
+                )
+                dt: Optional[datetime]
+                dt = datetime.now(timezone.utc) - timedelta(minutes=1)
+                if since is None or since < dt:
+                    since = dt
+                async for job in jobs2:
+                    job_id = job.id
+                    if job_id in observed:
+                        continue
+                    observed.add(job_id)
+                    dt = job.history.created_at
+                    if dt is not None and since < dt:
+                        since = dt
+                    asyncio.create_task(poller(job))
+                await asyncio.sleep(TOP_NEW_JOBS_DELAY)
+
+    async def poller(job: JobDescription) -> None:
+        async for info in root.client.jobs.top(job.id):
+            formatter.update(job, info)
+            await asyncio.sleep(0)
+        formatter.remove(job.id)
+        await asyncio.sleep(0)
+
+    async def renderer() -> None:
         async with async_timeout.timeout(timeout if timeout else None):
-            async for res in root.client.jobs.top(id):
-                formatter.update(res)
+            while True:
+                if formatter.changed:
+                    formatter.render()
+                await asyncio.sleep(TOP_REFRESH_DELAY)
+
+    with JobTelemetryFormatter(root.console) as formatter:
+        await asyncio.gather(create_pollers(), renderer())
 
 
 @command()
