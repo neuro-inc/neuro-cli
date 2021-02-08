@@ -2,6 +2,7 @@ import asyncio
 import socket
 import ssl
 import time
+from pathlib import Path
 from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
 
 import aiohttp
@@ -183,7 +184,7 @@ class FakeResolver(AbstractResolver):
             {
                 "hostname": host,
                 "host": "127.0.0.1",
-                "port": self._fakes["pypi.org"],
+                "port": self._fakes[host],
                 "family": family,
                 "proto": 0,
                 "flags": socket.AI_NUMERICHOST,
@@ -195,11 +196,14 @@ class FakeResolver(AbstractResolver):
 
 
 class FakePyPI:
-    def __init__(self, ssl_context: ssl.SSLContext) -> None:
+    def __init__(
+        self, ssl_context: ssl.SSLContext, pypi_host: str = "pypi.org"
+    ) -> None:
         self.app = web.Application()
         self.app.router.add_routes([web.get("/pypi/neuro-cli/json", self.json_info)])
         self.runner: Optional[web.AppRunner] = None
         self.ssl_context = ssl_context
+        self.pypi_host = pypi_host
         self.response: Optional[Tuple[int, Dict[str, Any]]] = None
 
     async def start(self) -> Dict[str, int]:
@@ -208,7 +212,7 @@ class FakePyPI:
         await self.runner.setup()
         site = web.TCPSite(self.runner, "127.0.0.1", port, ssl_context=self.ssl_context)
         await site.start()
-        return {"pypi.org": port}
+        return {self.pypi_host: port}
 
     async def stop(self) -> None:
         assert self.runner is not None
@@ -231,10 +235,33 @@ async def fake_pypi(
 
 
 @pytest.fixture()
+async def fake_neuro_pypi(
+    ssl_ctx: ssl.SSLContext, loop: asyncio.AbstractEventLoop
+) -> AsyncIterator[Tuple[FakePyPI, Dict[str, int]]]:
+    fake_pypi = FakePyPI(ssl_ctx, pypi_host="pypi.org.neu.ro")
+    info = await fake_pypi.start()
+    yield fake_pypi, info
+    await fake_pypi.stop()
+
+
+@pytest.fixture()
 async def client(
     fake_pypi: Tuple[FakePyPI, Dict[str, int]], root: Root
 ) -> AsyncIterator[Client]:
     resolver = FakeResolver(fake_pypi[1])
+    connector = aiohttp.TCPConnector(resolver=resolver, ssl=False, keepalive_timeout=0)
+    old_session = root.client._session
+    async with aiohttp.ClientSession(connector=connector) as session:
+        root.client._session = session
+        yield root.client
+    root.client._session = old_session
+
+
+@pytest.fixture()
+async def neuro_pypi_client(
+    fake_neuro_pypi: Tuple[FakePyPI, Dict[str, int]], root: Root
+) -> AsyncIterator[Client]:
+    resolver = FakeResolver(fake_neuro_pypi[1])
     connector = aiohttp.TCPConnector(resolver=resolver, ssl=False, keepalive_timeout=0)
     old_session = root.client._session
     async with aiohttp.ClientSession(connector=connector) as session:
@@ -248,6 +275,11 @@ def pypi_server(fake_pypi: Tuple[FakePyPI, Dict[str, int]]) -> FakePyPI:
     return fake_pypi[0]
 
 
+@pytest.fixture
+def neuro_pypi_server(fake_neuro_pypi: Tuple[FakePyPI, Dict[str, int]]) -> FakePyPI:
+    return fake_neuro_pypi[0]
+
+
 async def test__fetch_pypi(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
@@ -259,6 +291,34 @@ async def test__fetch_pypi(pypi_server: FakePyPI, client: Client) -> None:
         record["uploaded"] == dateutil.parser.parse("2019-01-30T00:02:23").timestamp()
     )
     assert t0 <= record["checked"] <= time.time()
+
+
+async def test__fetch_neuro_pypi(
+    neuro_pypi_server: FakePyPI, neuro_pypi_client: Client
+) -> None:
+    neuro_pypi_server.response = (200, PYPI_JSON)
+    pypi_url_file_path = None
+
+    try:
+        pypi_url_file_path = (
+            Path(version_utils.__file__).parent / version_utils.PIPY_URL_FILE_NAME
+        )
+        pypi_url_file_path.write_text("https://pypi.org.neu.ro/pypi")
+
+        t0 = time.time()
+        record = await version_utils._fetch_package(
+            neuro_pypi_client._session, "neuro-cli"
+        )
+        assert record is not None
+        assert record["version"] == "0.2.1"
+        assert (
+            record["uploaded"]
+            == dateutil.parser.parse("2019-01-30T00:02:23").timestamp()
+        )
+        assert t0 <= record["checked"] <= time.time()
+    finally:
+        if pypi_url_file_path:
+            pypi_url_file_path.unlink(missing_ok=True)
 
 
 async def test__fetch_pypi_no_releases(pypi_server: FakePyPI, client: Client) -> None:

@@ -2,6 +2,7 @@ import contextlib
 import logging
 import sqlite3
 import time
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import aiohttp
@@ -15,6 +16,8 @@ from yarl import URL
 from neuro_sdk import Client
 
 import neuro_cli
+
+PIPY_URL_FILE_NAME = "pypi_url"
 
 
 class Record(TypedDict):
@@ -120,7 +123,12 @@ def _read_package(db: sqlite3.Connection, package: str) -> Optional[Record]:
 async def _fetch_package(
     session: aiohttp.ClientSession, package: str
 ) -> Optional[Record]:
-    url = URL(f"https://pypi.org/pypi/{package}/json")
+    pypi_url_path = Path(__file__).parent / PIPY_URL_FILE_NAME
+    if pypi_url_path.exists():
+        pypi_url = URL(pypi_url_path.read_text().strip())
+    else:
+        pypi_url = URL("https://pypi.org/pypi")
+    url = pypi_url / f"{package}/json"
     async with session.get(url) as resp:
         if resp.status != 200:
             log.debug("%s status on fetching %s", resp.status, url)
