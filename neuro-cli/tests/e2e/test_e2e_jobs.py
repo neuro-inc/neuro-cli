@@ -899,7 +899,7 @@ def test_e2e_job_top(helper: Helper) -> None:
             returncode = 0
 
         print("STDOUT", stdout)
-        if "TIMESTAMP" in stdout and "MEMORY (MB)" in stdout:
+        if "MEMORY (MB)" in stdout:
             # got response from job top telemetery
             returncode = 0
             break

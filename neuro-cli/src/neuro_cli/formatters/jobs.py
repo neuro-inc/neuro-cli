@@ -5,7 +5,7 @@ import sys
 import time
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Iterable, List, Optional, Tuple, Type
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Type
 
 import humanize
 from rich import box
@@ -250,38 +250,55 @@ def format_datetime(when: Optional[datetime.datetime]) -> str:
 
 
 class JobTelemetryFormatter(RenderHook):
-    def __init__(
-        self, console: Console, tz: Optional[datetime.timezone] = None
-    ) -> None:
-        self._tz = tz
+    def __init__(self, console: Console, maxrows: Optional[int] = None) -> None:
         self._console = console
+        self._maxrows = maxrows
         self._live_render = LiveRender(Table.grid())
+        self._data: Dict[str, Tuple[JobDescription, JobTelemetry]] = {}
+        self.changed = True
 
-    def _format_timestamp(self, timestamp: float) -> str:
-        # NOTE: ctime returns time wrt timezone
-        dt = datetime.datetime.fromtimestamp(timestamp, tz=self._tz)
-        return dt.ctime()
+    def update(self, job: JobDescription, info: JobTelemetry) -> None:
+        self._data[job.id] = job, info
+        self.changed = True
 
-    def update(self, info: JobTelemetry) -> None:
-        timestamp = self._format_timestamp(info.timestamp)
+    def remove(self, job_id: str) -> None:
+        self._data.pop(job_id, None)
+        self.changed = True
+
+    def render(self) -> None:
         table = Table(box=box.SIMPLE_HEAVY)
-        table.add_column("TIMESTAMP", justify="right", width=24)
+        table.add_column("ID", justify="left", width=40)
+        table.add_column("WHEN", justify="left", width=15)
         table.add_column("CPU", justify="right", width=15)
         table.add_column("MEMORY (MB)", justify="right", width=15)
         table.add_column("GPU (%)", justify="right", width=15)
         table.add_column("GPU_MEMORY (MB)", justify="right", width=15)
 
-        cpu = f"{info.cpu:.3f}"
-        mem = f"{info.memory:.3f}"
-        gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "0"
-        gpu_mem = f"{info.gpu_memory:.3f}" if info.gpu_memory else "0"
-        table.add_row(timestamp, cpu, mem, gpu, gpu_mem)
+        def sortkey(item: Tuple[JobDescription, JobTelemetry]) -> Any:
+            job, info = item
+            return info.cpu
+
+        items = list(self._data.values())
+        items.sort(key=sortkey, reverse=True)
+        maxrows = self._console.size.height - 4
+        if self._maxrows is not None and self._maxrows < maxrows:
+            maxrows = self._maxrows
+        del items[max(maxrows, 1) :]
+        for job, info in items:
+            created = format_datetime(job.history.created_at)
+            cpu = f"{info.cpu:.3f}"
+            mem = f"{info.memory:.3f}"
+            gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "0"
+            gpu_mem = f"{info.gpu_memory:.3f}" if info.gpu_memory else "0"
+            table.add_row(job.id, created, cpu, mem, gpu, gpu_mem)
+
         if self._console.is_terminal:
             self._live_render.set_renderable(table)
             with self._console:
                 self._console.print(Control(""))
         else:
             self._console.print(table)
+        self.changed = False
 
     def process_renderables(
         self, renderables: List[ConsoleRenderable]
