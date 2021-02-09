@@ -112,6 +112,7 @@ async def ps_format() -> None:
     * **command** (COMMAND): job command to execute.
     * **life_span** (LIFE-SPAN): job life-span.
     * **workdir** (WORKDIR): default working directory inside a job.
+    * **preset** (PRESET): resource configuration used for a job.
 
     By default all columns are left aligned and have no minimal and default widths.
 
