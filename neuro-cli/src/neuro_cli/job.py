@@ -778,9 +778,14 @@ async def run(
 
 @command()
 @argument("job", type=JOB)
-async def cmd_rerun(root: Root, job: str) -> None:
+async def generate_run_command(root: Root, job: str) -> None:
     """
-    Display status of a job.
+    Generate command that will rerun given job.
+
+    Examples:
+
+    # You can use the following to directly re-execute it:
+    eval $(neuro job generate-run-command <job-id>)
     """
     id = await resolve_job(
         job,
@@ -793,7 +798,7 @@ async def cmd_rerun(root: Root, job: str) -> None:
 
 
 job.add_command(run)
-job.add_command(cmd_rerun)
+job.add_command(generate_run_command)
 job.add_command(ls)
 job.add_command(status)
 job.add_command(tags)

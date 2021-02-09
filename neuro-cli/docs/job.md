@@ -14,7 +14,7 @@ Job operations.
 | Usage | Description |
 | :--- | :--- |
 | [_run_](job.md#run) | Run a job with predefined resources... |
-| [_cmd-rerun_](job.md#cmd-rerun) | Display status of a job |
+| [_generate-run-command_](job.md#generate-run-command) | Generate command that will rerun given job |
 | [_ls_](job.md#ls) | List all jobs |
 | [_status_](job.md#status) | Display status of a job |
 | [_exec_](job.md#exec) | Execute command in a running job |
@@ -94,18 +94,26 @@ $ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg
 
 
 
-### cmd-rerun
+### generate-run-command
 
-Display status of a job
+Generate command that will rerun given job
 
 
 #### Usage
 
 ```bash
-neuro job cmd-rerun [OPTIONS] JOB
+neuro job generate-run-command [OPTIONS] JOB
 ```
 
-Display status of a job.
+Generate command that will rerun given job.
+
+#### Examples
+
+```bash
+
+# You can use the following to directly re-execute it:
+$ eval $(neuro job generate-run-command <job-id>)
+```
 
 #### Options
 
