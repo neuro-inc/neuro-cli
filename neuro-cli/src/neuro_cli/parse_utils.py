@@ -87,6 +87,7 @@ COLUMNS = [
     JobColumnInfo("command", "COMMAND", "left", max_width=100),
     JobColumnInfo("life_span", "LIFE-SPAN", "left"),
     JobColumnInfo("workdir", "WORKDIR", "left"),
+    JobColumnInfo("preset", "PRESET", "left"),
 ]
 
 COLUMNS_DEFAULT_IGNORE = {
@@ -96,6 +97,7 @@ COLUMNS_DEFAULT_IGNORE = {
     "started",
     "finished",
     "workdir",
+    "preset",
 }
 
 

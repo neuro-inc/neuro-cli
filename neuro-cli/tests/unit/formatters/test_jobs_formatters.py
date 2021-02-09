@@ -1,6 +1,7 @@
 import io
 import itertools
 import sys
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from typing import Any, Callable, Optional
 
@@ -39,6 +40,7 @@ from neuro_cli.formatters.utils import image_formatter, uri_formatter
 from neuro_cli.parse_utils import parse_columns
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
+TEST_JOB_ID2 = "job-3f9c5f93-45be-4c5d-acbd-11c68260235f"
 TEST_JOB_NAME = "test-job-name"
 
 _NewConsole = Callable[..., Console]
@@ -1011,35 +1013,95 @@ class TestJobTelemetryFormatter:
     # Use utc timezone in test for stable constant result
 
     def test_format_telemetry_line_no_gpu(
-        self, rich_cmp: Any, new_console: _NewConsole
+        self, job_descr: JobDescription, rich_cmp: Any, new_console: _NewConsole
     ) -> None:
         console = new_console(tty=True, color=True)
-        with JobTelemetryFormatter(console, timezone.utc) as fmt:
+        with JobTelemetryFormatter(console) as fmt:
             timestamp = 1_517_248_466.238_723_6
             telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
             # Use utc timezone in test for stable constant result
-            fmt.update(telemetry)
+            fmt.update(job_descr, telemetry)
+            assert fmt.changed
+            fmt.render()
+            assert not fmt.changed
             rich_cmp(console)
 
     def test_format_telemetry_seq(
-        self, rich_cmp: Any, new_console: _NewConsole
+        self, job_descr: JobDescription, rich_cmp: Any, new_console: _NewConsole
     ) -> None:
         console = new_console(tty=True, color=True)
-        with JobTelemetryFormatter(console, timezone.utc) as fmt:
+        with JobTelemetryFormatter(console) as fmt:
             timestamp = 1_517_248_466.238_723_6
             telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
-            fmt.update(telemetry)
+            fmt.update(job_descr, telemetry)
+            assert fmt.changed
+            fmt.render()
+            assert not fmt.changed
             rich_cmp(console, index=0)
+
             timestamp = 1_517_248_467.238_723_6
             telemetry = JobTelemetry(cpu=0.23456, memory=128.123, timestamp=timestamp)
-            fmt.update(telemetry)
+            fmt.update(job_descr, telemetry)
+            assert fmt.changed
+            fmt.render()
+            assert not fmt.changed
+            rich_cmp(console, index=1)
+
+    def test_format_telemetry_multiple_jobs(
+        self, job_descr: JobDescription, rich_cmp: Any, new_console: _NewConsole
+    ) -> None:
+        job_descr2 = replace(job_descr, id=TEST_JOB_ID2)
+        console = new_console(tty=True, color=True)
+        with JobTelemetryFormatter(console) as fmt:
+            timestamp = 1_517_248_466.238_723_6
+            telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
+            fmt.update(job_descr, telemetry)
+            assert fmt.changed
+            fmt.render()
+            assert not fmt.changed
+            rich_cmp(console, index=0)
+
+            timestamp = 1_517_248_467.238_723_6
+            telemetry = JobTelemetry(cpu=0.23456, memory=128.123, timestamp=timestamp)
+            fmt.update(job_descr2, telemetry)
+            assert fmt.changed
+            fmt.render()
+            assert not fmt.changed
+            rich_cmp(console, index=1)
+
+            fmt.remove(job_descr2.id)
+            assert fmt.changed
+            fmt.render()
+            assert not fmt.changed
+            rich_cmp(console, index=2)
+
+    def test_format_telemetry_limited_height(
+        self, job_descr: JobDescription, rich_cmp: Any, new_console: _NewConsole
+    ) -> None:
+        job_descr2 = replace(job_descr, id=TEST_JOB_ID2)
+        console = new_console(tty=True, color=True)
+        with JobTelemetryFormatter(console, maxrows=1) as fmt:
+            timestamp = 1_517_248_466.238_723_6
+            telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
+            fmt.update(job_descr, telemetry)
+            assert fmt.changed
+            fmt.render()
+            assert not fmt.changed
+            rich_cmp(console, index=0)
+
+            timestamp = 1_517_248_467.238_723_6
+            telemetry = JobTelemetry(cpu=0.23456, memory=128.123, timestamp=timestamp)
+            fmt.update(job_descr2, telemetry)
+            assert fmt.changed
+            fmt.render()
+            assert not fmt.changed
             rich_cmp(console, index=1)
 
     def test_format_telemetry_line_with_gpu(
-        self, rich_cmp: Any, new_console: _NewConsole
+        self, job_descr: JobDescription, rich_cmp: Any, new_console: _NewConsole
     ) -> None:
         console = new_console(tty=True, color=True)
-        with JobTelemetryFormatter(console, timezone.utc) as fmt:
+        with JobTelemetryFormatter(console) as fmt:
             timestamp = 1_517_248_466
             telemetry = JobTelemetry(
                 cpu=0.12345,
@@ -1048,7 +1110,10 @@ class TestJobTelemetryFormatter:
                 gpu_duty_cycle=99,
                 gpu_memory=64.5,
             )
-            fmt.update(telemetry)
+            fmt.update(job_descr, telemetry)
+            assert fmt.changed
+            fmt.render()
+            assert not fmt.changed
             rich_cmp(console)
 
 
@@ -1528,5 +1593,40 @@ class TestTabularJobsFormatter:
         ]
 
         columns = parse_columns("id workdir")
+        formatter = TabularJobsFormatter("test-user", columns, image_formatter=str)
+        rich_cmp(formatter(jobs))
+
+    def test_preset(self, rich_cmp: Any) -> None:
+        items = [None, "cpu-small", "gpu-large"]
+        jobs = [
+            JobDescription(
+                status=JobStatus.FAILED,
+                owner="test-user",
+                cluster_name="default",
+                id=f"job-{i}",
+                uri=URL(f"job://default/test-user/job-{i}"),
+                description=None,
+                history=JobStatusHistory(
+                    status=JobStatus.FAILED,
+                    reason="ErrorReason",
+                    description="ErrorDesc",
+                    created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+                ),
+                container=Container(
+                    command="test-command",
+                    image=RemoteImage.new_external_image(name="test-image"),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                ),
+                scheduler_enabled=False,
+                pass_config=True,
+                internal_hostname="host.local",
+                preset_name=preset_name,
+            )
+            for i, preset_name in enumerate(items, 1)
+        ]
+
+        columns = parse_columns("id preset")
         formatter = TabularJobsFormatter("test-user", columns, image_formatter=str)
         rich_cmp(formatter(jobs))
