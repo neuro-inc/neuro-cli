@@ -14,6 +14,7 @@ Job operations.
 | Usage | Description |
 | :--- | :--- |
 | [_run_](job.md#run) | Run a job with predefined resources... |
+| [_generate-run-command_](job.md#generate-run-command) | Generate command that will rerun given job |
 | [_ls_](job.md#ls) | List all jobs |
 | [_status_](job.md#status) | Display status of a job |
 | [_exec_](job.md#exec) | Execute command in a running job |
@@ -90,6 +91,35 @@ $ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg
 | _--wait-for-seat / --no-wait-for-seat_ | Wait for total running jobs quota  _\[default: False\]_ |
 | _--wait-start / --no-wait-start_ | Wait for a job start or failure  _\[default: True\]_ |
 | _-w, --workdir TEXT_ | Working directory inside the container |
+
+
+
+### generate-run-command
+
+Generate command that will rerun given job
+
+
+#### Usage
+
+```bash
+neuro job generate-run-command [OPTIONS] JOB
+```
+
+Generate command that will rerun given job.
+
+#### Examples
+
+```bash
+
+# You can use the following to directly re-execute it:
+$ eval $(neuro job generate-run-command <job-id>)
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
 
 
 

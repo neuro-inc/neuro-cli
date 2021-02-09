@@ -1,6 +1,7 @@
 import asyncio
 import os
 import re
+import shlex
 import subprocess
 import sys
 import uuid
@@ -122,6 +123,38 @@ def test_job_run(helper: Helper) -> None:
     Matches(job_id) == captured.out
 
     helper.kill_job(job_id, wait=False)
+
+
+@pytest.mark.e2e
+def test_job_rerun(helper: Helper) -> None:
+    captured = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            UBUNTU_IMAGE_NAME,
+            'bash -c "exit 0"',
+        ]
+    )
+    job_id = captured.out
+
+    helper.wait_job_change_state_to(
+        job_id, JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
+    )
+    captured = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "generate-run-command",
+            job_id,
+        ]
+    )
+    args = shlex.split(captured.out)
+    captured = helper.run_cli(["-q", *args[1:]])
+    job_id = captured.out
+    helper.wait_job_change_state_to(
+        job_id, JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
+    )
 
 
 @pytest.mark.e2e
