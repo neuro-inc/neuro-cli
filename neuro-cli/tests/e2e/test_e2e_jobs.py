@@ -145,7 +145,7 @@ def test_job_rerun(helper: Helper) -> None:
         [
             "-q",
             "job",
-            "cmd-rerun",
+            "generate-run-command",
             job_id,
         ]
     )
