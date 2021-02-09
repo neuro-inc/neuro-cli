@@ -6,6 +6,7 @@ import hashlib
 import secrets
 import sys
 import time
+import warnings
 from dataclasses import dataclass, field
 from typing import (
     Any,
@@ -33,10 +34,13 @@ from aiohttp.web import (
     Response,
     TCPSite,
 )
-from jose import JWTError, jwt
 from yarl import URL
 
 from .errors import AuthError
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", "int_from_bytes is deprecated", UserWarning)
+    from jose import JWTError, jwt
 
 if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import asynccontextmanager
