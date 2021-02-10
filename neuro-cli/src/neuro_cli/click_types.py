@@ -245,3 +245,35 @@ class JobType(AsyncType[str]):
 
 
 JOB = JobType()
+
+
+class DiskType(AsyncType[str]):
+    name = "disk"
+
+    async def async_convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> str:
+        return value
+
+    async def async_complete(
+        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
+    ) -> List[Tuple[str, Optional[str]]]:
+        async with await root.init_client() as client:
+            ret: List[Tuple[str, Optional[str]]] = []
+            async for disk in client.disks.list():
+                disk_name = disk.name or ""
+                for test in (
+                    disk.id,
+                    disk_name,
+                ):
+                    if test.startswith(incomplete):
+                        ret.append((test, disk_name))
+
+            return ret
+
+
+DISK = DiskType()

@@ -1,6 +1,9 @@
 from datetime import timedelta
 from typing import Optional, Sequence
 
+from neuro_cli.click_types import DISK
+from neuro_cli.utils import resolve_disk
+
 from .formatters.disks import (
     BaseDisksFormatter,
     DiskFormatter,
@@ -96,13 +99,14 @@ async def create(root: Root, storage: str, life_span: Optional[str] = None) -> N
 
 
 @command()
-@argument("disk_id")
+@argument("disk", type=DISK)
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
-async def get(root: Root, disk_id: str, full_uri: bool) -> None:
+async def get(root: Root, disk: str, full_uri: bool) -> None:
     """
     Get disk DISK_ID.
     """
-    disk = await root.client.disks.get(disk_id)
+    disk_id = await resolve_disk(disk, client=root.client)
+    disk_obj = await root.client.disks.get(disk_id)
     if full_uri:
         uri_fmtr: URIFormatter = str
     else:
@@ -111,16 +115,17 @@ async def get(root: Root, disk_id: str, full_uri: bool) -> None:
         )
     disk_fmtr = DiskFormatter(uri_fmtr)
     with root.pager():
-        root.print(disk_fmtr(disk))
+        root.print(disk_fmtr(disk_obj))
 
 
 @command()
-@argument("disk_ids", nargs=-1, required=True)
-async def rm(root: Root, disk_ids: Sequence[str]) -> None:
+@argument("disks", type=DISK, nargs=-1, required=True)
+async def rm(root: Root, disks: Sequence[str]) -> None:
     """
     Remove disk DISK_ID.
     """
-    for disk_id in disk_ids:
+    for disk in disks:
+        disk_id = await resolve_disk(disk, client=root.client)
         await root.client.disks.rm(disk_id)
         if root.verbosity > 0:
             root.print(f"Disk with id '{disk_id}' was successfully removed.")

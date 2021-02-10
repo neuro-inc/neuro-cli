@@ -95,7 +95,7 @@ Get disk DISK_ID
 #### Usage
 
 ```bash
-neuro disk get [OPTIONS] DISK_ID
+neuro disk get [OPTIONS] DISK
 ```
 
 Get disk `DISK`_ID.
@@ -117,7 +117,7 @@ Remove disk DISK_ID
 #### Usage
 
 ```bash
-neuro disk rm [OPTIONS] DISK_IDS...
+neuro disk rm [OPTIONS] DISKS...
 ```
 
 Remove disk `DISK`_ID.
