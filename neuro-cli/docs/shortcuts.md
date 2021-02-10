@@ -124,11 +124,13 @@ $ neuro ps -t tag1 -t tag2
 | _--help_ | Show this message and exit. |
 | _-a, --all_ | Show all jobs regardless the status. |
 | _-d, --description DESCRIPTION_ | Filter out jobs by description \(exact match\). |
+| _--distinct_ | Show only first job if names are same. |
 | _--format COLUMNS_ | Output table format, see "neuro help ps-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config" |
 | _--full-uri_ | Output full image URI. |
 | _-n, --name NAME_ | Filter out jobs by name. |
 | _-o, --owner TEXT_ | Filter out jobs by owner \(multiple option\). Supports `ME` option to filter by the current user. |
 | _-q, --quiet_ | Run command in quiet mode \(DEPRECATED\) |
+| _--recent-first / --recent-last_ | Show newer jobs first or last |
 | _--since DATE_ | Show jobs created after a specific date \(including\). |
 | _-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled\]_ | Filter out jobs by status \(multiple option\). |
 | _-t, --tag TAG_ | Filter out jobs by tag \(multiple option\) |
