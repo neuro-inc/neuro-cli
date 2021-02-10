@@ -1187,3 +1187,34 @@ def test_job_disk_volume(
         job_id = match.group(1)
 
         helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)
+
+
+@pytest.mark.e2e
+def test_job_disk_volume_named(
+    helper: Helper, disk_factory: Callable[[str, str], ContextManager[str]]
+) -> None:
+    disk_name = f"test-disk-{os.urandom(5).hex()}"
+
+    with disk_factory("1G", disk_name):
+        bash_script = 'echo "test data" > /mnt/disk/file && cat /mnt/disk/file'
+        command = f"bash -c '{bash_script}'"
+        captured = helper.run_cli(
+            [
+                "job",
+                "run",
+                "--life-span",
+                "1m",  # Avoid completed job to block disk from cleanup
+                "-v",
+                f"disk:{disk_name}:/mnt/disk:rw",
+                "--no-wait-start",
+                UBUNTU_IMAGE_NAME,
+                command,
+            ]
+        )
+
+        out = captured.out
+        match = re.match("Job ID: (.+)", out)
+        assert match is not None, captured
+        job_id = match.group(1)
+
+        helper.wait_job_change_state_to(job_id, JobStatus.SUCCEEDED, JobStatus.FAILED)

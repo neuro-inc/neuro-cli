@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Optional, Sequence
 
-from neuro_cli.click_types import DISK
+from neuro_cli.click_types import DISK, DISK_NAME
 from neuro_cli.utils import resolve_disk
 
 from .formatters.disks import (
@@ -64,7 +64,19 @@ async def ls(root: Root, full_uri: bool, long_format: bool) -> None:
         "in the user config."
     ),
 )
-async def create(root: Root, storage: str, life_span: Optional[str] = None) -> None:
+@option(
+    "--name",
+    type=DISK_NAME,
+    metavar="NAME",
+    help="Optional disk name",
+    default=None,
+)
+async def create(
+    root: Root,
+    storage: str,
+    life_span: Optional[str] = None,
+    name: Optional[str] = None,
+) -> None:
     """
     Create a disk with at least storage amount STORAGE.
 
@@ -91,7 +103,7 @@ async def create(root: Root, storage: str, life_span: Optional[str] = None) -> N
         disk_life_span = timedelta(seconds=life_span_seconds)
 
     disk = await root.client.disks.create(
-        parse_memory(storage), life_span=disk_life_span
+        parse_memory(storage), life_span=disk_life_span, name=name
     )
     disk_fmtr = DiskFormatter(str)
     with root.pager():

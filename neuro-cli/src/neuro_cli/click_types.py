@@ -19,6 +19,13 @@ JOB_NAME_PATTERN = "^[a-z](?:-?[a-z0-9])*$"
 JOB_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
 JOB_LIMIT_ENV = "NEURO_CLI_JOB_AUTOCOMPLETE_LIMIT"
 
+
+# NOTE: these disk name valdation are taken from `platform_disk_api` file `schema.py`
+DISK_NAME_MIN_LENGTH = 3
+DISK_NAME_MAX_LENGTH = 40
+DISK_NAME_PATTERN = "^[a-z](?:-?[a-z0-9])*$"
+DISK_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
+
 _T = TypeVar("_T")
 
 
@@ -156,6 +163,32 @@ class JobNameType(click.ParamType):
 
 
 JOB_NAME = JobNameType()
+
+
+class DiskNameType(click.ParamType):
+    name = "disk_name"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> str:
+        if (
+            len(value) < DISK_NAME_MIN_LENGTH
+            or len(value) > DISK_NAME_MAX_LENGTH
+            or DISK_NAME_REGEX.match(value) is None
+        ):
+            raise ValueError(
+                f"Invalid disk name '{value}'.\n"
+                "The name can only contain lowercase letters, numbers and hyphens "
+                "with the following rules: \n"
+                "  - the first character must be a letter; \n"
+                "  - each hyphen must be surrounded by non-hyphen characters; \n"
+                f"  - total length must be between {DISK_NAME_MIN_LENGTH} and "
+                f"{DISK_NAME_MAX_LENGTH} characters long."
+            )
+        return value
+
+
+DISK_NAME = JobNameType()
 
 
 class JobColumnsType(click.ParamType):

@@ -923,9 +923,12 @@ async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Doc
 @pytest.fixture
 def disk_factory(helper: Helper) -> Callable[[str], ContextManager[str]]:
     @contextmanager
-    def _make_disk(storage: str) -> Iterator[str]:
+    def _make_disk(storage: str, name: Optional[str] = None) -> Iterator[str]:
         # Create disk
-        cap = helper.run_cli(["disk", "create", storage])
+        args = ["disk", "create", storage]
+        if name:
+            args += ["--name", name]
+        cap = helper.run_cli(args)
         assert cap.err == ""
         disk_id = cap.out.splitlines()[0].split()[1]
         yield disk_id
