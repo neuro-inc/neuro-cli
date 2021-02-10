@@ -21,6 +21,7 @@ class Disk:
     created_at: datetime
     last_usage: Optional[datetime] = None
     life_span: Optional[timedelta] = None
+    name: Optional[str] = None
 
     @property
     def uri(self) -> URL:
@@ -52,6 +53,7 @@ class Disks(metaclass=NoPublicConstructor):
             id=payload["id"],
             storage=payload["storage"],
             owner=payload["owner"],
+            name=payload.get("name"),
             status=Disk.Status(payload["status"]),
             cluster_name=self._config.cluster_name,
             created_at=isoparse(payload["created_at"]),
@@ -67,12 +69,18 @@ class Disks(metaclass=NoPublicConstructor):
             for disk_payload in ret:
                 yield self._parse_disk_payload(disk_payload)
 
-    async def create(self, storage: int, life_span: Optional[timedelta] = None) -> Disk:
+    async def create(
+        self,
+        storage: int,
+        life_span: Optional[timedelta] = None,
+        name: Optional[str] = None,
+    ) -> Disk:
         url = self._config.disk_api_url
         auth = await self._config._api_auth()
         data = {
             "storage": storage,
             "life_span": life_span.total_seconds() if life_span else None,
+            "name": name,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()
@@ -80,6 +88,13 @@ class Disks(metaclass=NoPublicConstructor):
 
     async def get(self, disk_id: str) -> Disk:
         url = self._config.disk_api_url / disk_id
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            payload = await resp.json()
+            return self._parse_disk_payload(payload)
+
+    async def get_by_name(self, disk_name: str) -> Disk:
+        url = self._config.disk_api_url / "by-name" / disk_name
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, auth=auth) as resp:
             payload = await resp.json()
