@@ -607,7 +607,7 @@ def pager_maybe(
 
 async def _calc_timedelta_key(
     client: Client, value: Optional[str], default: str, config_section: str, key: str
-) -> Optional[float]:
+) -> float:
     async def _calc_default_life_span(client: Client) -> timedelta:
         config = await client.config.get_user_config()
         section = config.get(config_section)
