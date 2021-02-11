@@ -263,6 +263,43 @@ def test_job_to_args_simple() -> None:
     ]
 
 
+def test_job_to_args_drop_env_when_pass_config() -> None:
+    job = JobDescription(
+        status=JobStatus.FAILED,
+        owner="test-user",
+        cluster_name="default",
+        id=f"job",
+        uri=URL(f"job://default/test-user/job"),
+        description=None,
+        history=JobStatusHistory(
+            status=JobStatus.FAILED,
+            reason="ErrorReason",
+            description="ErrorDesc",
+            created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+            started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+            finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+        ),
+        container=Container(
+            command="test-command",
+            image=RemoteImage.new_external_image(name="test-image"),
+            resources=Resources(16, 0.1, 0, None, True, None, None),
+            env={
+                "NEURO_PASSED_CONFIG": "base64 data here",
+            },
+        ),
+        scheduler_enabled=False,
+        pass_config=True,
+        preset_name="testing",
+    )
+    assert _job_to_cli_args(job) == [
+        "--preset",
+        "testing",
+        "--pass-config",
+        "test-image",
+        "test-command",
+    ]
+
+
 def test_job_to_args_complex() -> None:
     job = JobDescription(
         status=JobStatus.FAILED,
@@ -348,7 +385,7 @@ def test_job_to_args_complex() -> None:
         "--tag",
         "tag-2",
         "--description",
-        "test description",
+        "'test description'",
         "--volume",
         "storage://test-cluster/test-user/_ro_:/mnt/_ro_:ro",
         "--volume",
@@ -374,9 +411,9 @@ def test_job_to_args_complex() -> None:
         "--restart",
         "always",
         "--life-span",
-        "3.0m200s",
+        "3m20s",
         "--schedule-timeout",
-        "2d11.0h17.0m40632s",
+        "2d11h17m12s",
         "--pass-config",
         "--privileged",
         "test-image",

@@ -1149,7 +1149,7 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
     for tag in job.tags:
         res += ["--tag", tag]
     if job.description:
-        res += ["--description", job.description]
+        res += ["--description", shlex.quote(job.description)]
     for volume in job.container.volumes:
         res += [
             "--volume",
@@ -1170,6 +1170,8 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
     if job.container.working_dir:
         res += ["--workdir", job.container.working_dir]
     for env_name, env_value in job.container.env.items():
+        if env_name == PASS_CONFIG_ENV_NAME and job.pass_config:
+            continue  # Do not specify value for pass config env variable
         res += ["--env", f"{env_name}={env_value}"]
     for env_name, secret_uri in job.container.secret_env.items():
         res += ["--env", f"{env_name}={secret_uri}"]
