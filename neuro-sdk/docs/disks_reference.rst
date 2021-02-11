@@ -60,6 +60,12 @@ Disk
 
       The disk capacity, in bytes, :class:`int`.
 
+   .. attribute:: used_bytes
+
+      The amount of used bytes on disk, :class:`int` or ``None`` if this
+      information is not available. Note that this field is updated
+      periodically, so it can contain incorrect data.
+
    .. attribute:: owner
 
       The disk owner username, :class:`str`.

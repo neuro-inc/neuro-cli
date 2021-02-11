@@ -577,7 +577,9 @@ else:
     from async_exit_stack import AsyncExitStack  # noqa
 
 
-def format_size(value: float) -> str:
+def format_size(value: Optional[float]) -> str:
+    if value is None:
+        return ""
     return humanize.naturalsize(value, gnu=True)
 
 

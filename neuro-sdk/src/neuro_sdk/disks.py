@@ -21,6 +21,7 @@ class Disk:
     created_at: datetime
     last_usage: Optional[datetime] = None
     life_span: Optional[timedelta] = None
+    used_bytes: Optional[int] = None
 
     @property
     def uri(self) -> URL:
@@ -57,6 +58,7 @@ class Disks(metaclass=NoPublicConstructor):
             created_at=isoparse(payload["created_at"]),
             last_usage=last_usage,
             life_span=life_span,
+            used_bytes=payload.get("used_bytes"),
         )
 
     async def list(self) -> AsyncIterator[Disk]:
