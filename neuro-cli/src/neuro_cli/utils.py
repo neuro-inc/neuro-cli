@@ -476,7 +476,7 @@ async def resolve_disk(id_or_name: str, *, client: Client) -> str:
     if re.fullmatch(DISK_ID_PATTERN, id_or_name):
         return id_or_name
 
-    disk = await client.disks.get_by_name(id_or_name)
+    disk = await client.disks.get(id_or_name)
     return disk.id
 
 

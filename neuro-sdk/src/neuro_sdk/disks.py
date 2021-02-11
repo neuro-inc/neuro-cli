@@ -86,22 +86,15 @@ class Disks(metaclass=NoPublicConstructor):
             payload = await resp.json()
             return self._parse_disk_payload(payload)
 
-    async def get(self, disk_id: str) -> Disk:
-        url = self._config.disk_api_url / disk_id
+    async def get(self, disk_id_or_name: str) -> Disk:
+        url = self._config.disk_api_url / disk_id_or_name
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, auth=auth) as resp:
             payload = await resp.json()
             return self._parse_disk_payload(payload)
 
-    async def get_by_name(self, disk_name: str) -> Disk:
-        url = self._config.disk_api_url / "by-name" / disk_name
-        auth = await self._config._api_auth()
-        async with self._core.request("GET", url, auth=auth) as resp:
-            payload = await resp.json()
-            return self._parse_disk_payload(payload)
-
-    async def rm(self, disk_id: str) -> None:
-        url = self._config.disk_api_url / disk_id
+    async def rm(self, disk_id_or_name: str) -> None:
+        url = self._config.disk_api_url / disk_id_or_name
         auth = await self._config._api_auth()
         async with self._core.request("DELETE", url, auth=auth):
             pass

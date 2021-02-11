@@ -159,44 +159,6 @@ async def test_get(
         )
 
 
-async def test_get_by_name(
-    aiohttp_server: _TestServerFactory,
-    make_client: _MakeClient,
-    cluster_config: Cluster,
-) -> None:
-    created_at = datetime.now()
-
-    async def handler(request: web.Request) -> web.Response:
-        assert request.match_info["key"] == "name"
-        return web.json_response(
-            {
-                "id": "disk-1",
-                "storage": 500,
-                "owner": "user",
-                "status": "Ready",
-                "created_at": created_at.isoformat(),
-                "name": "name",
-            },
-        )
-
-    app = web.Application()
-    app.router.add_get("/disk/by-name/{key}", handler)
-
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        disk = await client.disks.get_by_name("name")
-        assert disk == Disk(
-            id="disk-1",
-            storage=500,
-            owner="user",
-            status=Disk.Status.READY,
-            cluster_name=cluster_config.name,
-            created_at=created_at,
-            name="name",
-        )
-
-
 async def test_rm(aiohttp_server: _TestServerFactory, make_client: _MakeClient) -> None:
     async def handler(request: web.Request) -> web.Response:
         assert request.match_info["key"] == "name"

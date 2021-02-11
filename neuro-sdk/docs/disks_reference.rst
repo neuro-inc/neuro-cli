@@ -37,27 +37,19 @@ Disks
 
       :return: Newly created disk info (:class:`Disk`)
 
-   .. comethod:: get(disk_id: str) -> Disk
+   .. comethod:: get(disk_id_or_name: str) -> Disk
 
-      Get a disk with id *disk_id*.
+      Get a disk with id or name *disk_id_or_name*.
 
-      :param str disk_id: disk's id.
-
-      :return: Disk info (:class:`Disk`)
-
-   .. comethod:: get_by_name(disk_name: str) -> Disk
-
-      Get a disk with name *disk_name*.
-
-      :param str disk_name: disk's name.
+      :param str disk_id_or_name: disk's id or name.
 
       :return: Disk info (:class:`Disk`)
 
-   .. comethod:: rm(disk_id: str) -> None
+   .. comethod:: rm(disk_id_or_name: str) -> None
 
-      Delete a disk with id *disk_id*.
+      Delete a disk with id or name *disk_id_or_name*.
 
-      :param str disk_id: disk's id.
+      :param str disk_id_or_name: disk's id or name.
 
 
 Disk
