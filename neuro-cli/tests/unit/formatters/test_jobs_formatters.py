@@ -25,6 +25,7 @@ from neuro_sdk import (
     SecretFile,
     Volume,
 )
+from neuro_sdk.jobs import JobStatusItem
 from neuro_sdk.parsing_utils import _ImageNameParser
 
 from neuro_cli.formatters.jobs import (
@@ -570,6 +571,57 @@ class TestJobOutputFormatter:
                 created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
                 started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
                 finished_at=None,
+            ),
+            http_url=URL("http://local.host.test/"),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_external_image(name="test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+            ),
+            scheduler_enabled=False,
+            pass_config=True,
+            internal_hostname="host.local",
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        rich_cmp(JobStatusFormatter(uri_formatter=uri_fmtr)(description))
+
+    def test_running_job_with_status_items(self, rich_cmp: Any) -> None:
+        description = JobDescription(
+            status=JobStatus.RUNNING,
+            owner="test-user",
+            cluster_name="default",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            description="test job description",
+            history=JobStatusHistory(
+                status=JobStatus.RUNNING,
+                reason="ContainerRunning",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                finished_at=None,
+                transitions=[
+                    JobStatusItem(
+                        status=JobStatus.PENDING,
+                        transition_time=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                        reason="Creating",
+                    ),
+                    JobStatusItem(
+                        status=JobStatus.PENDING,
+                        transition_time=isoparse("2018-09-25T12:28:22.298672+00:00"),
+                        reason="Scheduling",
+                    ),
+                    JobStatusItem(
+                        status=JobStatus.PENDING,
+                        transition_time=isoparse("2018-09-25T12:28:23.298672+00:00"),
+                        reason="ContainerCreating",
+                    ),
+                    JobStatusItem(
+                        status=JobStatus.RUNNING,
+                        transition_time=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                    ),
+                ],
             ),
             http_url=URL("http://local.host.test/"),
             container=Container(

@@ -18,6 +18,7 @@ from typing import (
     Sequence,
     Set,
     Union,
+    overload,
 )
 
 import aiohttp
@@ -142,6 +143,15 @@ class Container:
 
 
 @dataclass(frozen=True)
+class JobStatusItem:
+    status: JobStatus
+    transition_time: datetime
+    reason: str = ""
+    description: str = ""
+    exit_code: Optional[int] = None
+
+
+@dataclass(frozen=True)
 class JobStatusHistory:
     status: JobStatus
     reason: str
@@ -151,6 +161,7 @@ class JobStatusHistory:
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
     exit_code: Optional[int] = None
+    transitions: Sequence[JobStatusItem] = field(default_factory=list)
 
 
 class JobRestartPolicy(str, enum.Enum):
@@ -848,6 +859,16 @@ def _calc_status(stat: str) -> JobStatus:
         return JobStatus.UNKNOWN
 
 
+def _job_status_item_from_api(res: Dict[str, Any]) -> JobStatusItem:
+    return JobStatusItem(
+        status=_calc_status(res.get("status", "unknown")),
+        transition_time=_parse_datetime(res["transition_time"]),
+        reason=res.get("reason", ""),
+        description=res.get("description", ""),
+        exit_code=res.get("exit_code"),
+    )
+
+
 def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescription:
     container = _container_from_api(res["container"], parse)
     owner = res["owner"]
@@ -865,6 +886,9 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         started_at=_parse_datetime(res["history"].get("started_at")),
         finished_at=_parse_datetime(res["history"].get("finished_at")),
         exit_code=res["history"].get("exit_code"),
+        transitions=[
+            _job_status_item_from_api(item_raw) for item_raw in res.get("statuses", [])
+        ],
     )
     http_url = URL(res.get("http_url", ""))
     http_url_named = URL(res.get("http_url_named", ""))
@@ -997,6 +1021,16 @@ def _disk_volume_from_api(data: Dict[str, Any]) -> DiskVolume:
     container_path = data["dst_path"]
     read_only = data.get("read_only", True)
     return DiskVolume(disk_uri, container_path, read_only)
+
+
+@overload
+def _parse_datetime(dt: str) -> datetime:
+    ...
+
+
+@overload
+def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:
+    ...
 
 
 def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:
