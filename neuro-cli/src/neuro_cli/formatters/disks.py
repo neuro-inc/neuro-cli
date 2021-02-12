@@ -38,10 +38,13 @@ class DisksFormatter(BaseDisksFormatter):
 
     def _disk_to_table_row(self, disk: Disk) -> Sequence[str]:
         storage_str = utils.format_size(disk.storage)
+
+        used_str = utils.format_size(disk.used_bytes)
         line = [
             disk.id,
             disk.name or "",
             storage_str,
+            used_str,
             self._uri_formatter(disk.uri),
             disk.status.value,
         ]
@@ -49,7 +52,7 @@ class DisksFormatter(BaseDisksFormatter):
             line += [
                 format_datetime(disk.created_at),
                 format_datetime(disk.last_usage),
-                format_disk_life_span(disk.life_span),
+                format_disk_timeout_unused(disk.timeout_unused),
             ]
         return line
 
@@ -61,12 +64,13 @@ class DisksFormatter(BaseDisksFormatter):
         table.add_column("Id", style="bold", width=width)
         table.add_column("Name")
         table.add_column("Storage")
+        table.add_column("Used")
         table.add_column("Uri")
         table.add_column("Status")
         if self._long_format:
             table.add_column("Created at")
             table.add_column("Last used")
-            table.add_column("Life span")
+            table.add_column("Timeout unused")
         for disk in disks:
             table.add_row(*self._disk_to_table_row(disk))
         return table
@@ -86,18 +90,19 @@ class DiskFormatter:
         table.add_column(style="bold")
         table.add_row("Id", disk.id)
         table.add_row("Storage", utils.format_size(disk.storage))
+        table.add_row("Used", utils.format_size(disk.used_bytes))
         table.add_row("Uri", self._uri_formatter(disk.uri))
         if disk.name:
             table.add_row("Name", disk.name)
         table.add_row("Status", disk.status.value)
         table.add_row("Created at", format_datetime(disk.created_at))
         table.add_row("Last used", format_datetime(disk.last_usage))
-        table.add_row("Life span", format_disk_life_span(disk.life_span))
+        table.add_row("Timeout unused", format_disk_timeout_unused(disk.timeout_unused))
         return table
 
 
-def format_disk_life_span(life_span: Optional[timedelta]) -> str:
-    if life_span is not None:
-        return format_life_span(life_span.total_seconds())
+def format_disk_timeout_unused(timeout_unused: Optional[timedelta]) -> str:
+    if timeout_unused is not None:
+        return format_life_span(timeout_unused.total_seconds())
     else:
         return format_life_span(None)

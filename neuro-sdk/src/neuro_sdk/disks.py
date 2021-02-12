@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
@@ -10,6 +11,8 @@ from .config import Config
 from .core import _Core
 from .utils import NoPublicConstructor
 
+logger = logging.getLogger(__name__)
+
 
 @dataclass(frozen=True)
 class Disk:
@@ -20,8 +23,17 @@ class Disk:
     cluster_name: str
     created_at: datetime
     last_usage: Optional[datetime] = None
-    life_span: Optional[timedelta] = None
     name: Optional[str] = None
+    timeout_unused: Optional[timedelta] = None
+    used_bytes: Optional[int] = None
+
+    @property
+    def life_span(self) -> Optional[timedelta]:
+        logger.warning(
+            "Disk.life_span property is deprecated, "
+            "please use Disk.timeout_unused instead"
+        )
+        return self.timeout_unused
 
     @property
     def uri(self) -> URL:
@@ -46,19 +58,20 @@ class Disks(metaclass=NoPublicConstructor):
             last_usage = None
         life_span_raw = payload.get("life_span")
         if life_span_raw is not None:
-            life_span: Optional[timedelta] = timedelta(seconds=life_span_raw)
+            timeout_unused: Optional[timedelta] = timedelta(seconds=life_span_raw)
         else:
-            life_span = None
+            timeout_unused = None
         return Disk(
             id=payload["id"],
             storage=payload["storage"],
+            used_bytes=payload.get("used_bytes"),
             owner=payload["owner"],
             name=payload.get("name"),
             status=Disk.Status(payload["status"]),
             cluster_name=self._config.cluster_name,
             created_at=isoparse(payload["created_at"]),
             last_usage=last_usage,
-            life_span=life_span,
+            timeout_unused=timeout_unused,
         )
 
     async def list(self) -> AsyncIterator[Disk]:
@@ -72,14 +85,14 @@ class Disks(metaclass=NoPublicConstructor):
     async def create(
         self,
         storage: int,
-        life_span: Optional[timedelta] = None,
+        timeout_unused: Optional[timedelta] = None,
         name: Optional[str] = None,
     ) -> Disk:
         url = self._config.disk_api_url
         auth = await self._config._api_auth()
         data = {
             "storage": storage,
-            "life_span": life_span.total_seconds() if life_span else None,
+            "life_span": timeout_unused.total_seconds() if timeout_unused else None,
             "name": name,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:

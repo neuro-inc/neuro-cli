@@ -227,6 +227,20 @@ class JobStatusFormatter:
             table.add_row("Exit code", str(job_status.history.exit_code))
         if job_status.status == JobStatus.FAILED and job_status.history.description:
             table.add_row("Description", job_status.history.description)
+        if job_status.history.transitions:
+            status_transitions = Table(box=None, show_header=True, show_edge=False)
+            status_transitions.add_column("Status")
+            status_transitions.add_column("Time")
+            for status_item in job_status.history.transitions:
+                status_text = fmt_status(status_item.status)
+                if status_item.reason:
+                    status_text = Text.assemble(status_text, f" ({status_item.reason})")
+                status_transitions.add_row(
+                    status_text, status_item.transition_time.isoformat()
+                )
+            table.add_row(
+                "Status transitions", Styled(status_transitions, style="reset")
+            )
         return table
 
 

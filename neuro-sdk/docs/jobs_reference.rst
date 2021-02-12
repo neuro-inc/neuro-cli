@@ -715,6 +715,44 @@ JobStatus
       :attr:`~JobStatus.SUCCEEDED`, :attr:`~JobStatus.CANCELLED` and :attr:`~JobStatus.FAILED`
 
 
+JobStatusItem
+================
+
+.. class:: JobStatusItem
+
+   *Read-only* :class:`~dataclasses.dataclass` for describing job status transition details.
+
+   .. attribute:: transition_time
+
+      Status transition timestamp, :class:`~datetime.datetime`.
+
+   .. attribute:: status
+
+      Status of job after this transition, :class:`JobStatus` enumeration.
+
+   .. attribute:: reason
+
+      Additional information for job status, :class:`str`.
+
+      Examples of *reason* values:
+
+      * ``'ContainerCreating'`` for :attr:`JobStatus.PENDING` job that initiates a pod
+        for container.
+
+      * ``'ErrImagePull'`` for :attr:`JobStatus.FAILED` job that cannot pull specified
+        image.
+
+   .. attribute:: description
+
+      Extended description for short abbreviation described by :attr:`reason`,
+      empty :class:`str` if no additional information is provided.
+
+   .. attribute:: exit_code
+
+      Exit code for container's process (:class:`int`) or ``None`` if the job was not
+      started or was still running when this transition occurred.
+
+
 JobStatusHistory
 ================
 
@@ -768,6 +806,10 @@ JobStatusHistory
 
       Job finishing timestamp, :class:`~datetime.datetime` or ``None`` if job not
       finished.
+
+   .. attribute:: transitions
+
+      List of job status transitions, :class:`~typing.Sequence` of :class:`JobStatusItem`.
 
 
 JobTelemetry

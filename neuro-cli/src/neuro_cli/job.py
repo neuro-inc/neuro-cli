@@ -7,7 +7,7 @@ import sys
 import uuid
 import webbrowser
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional, Sequence, Set, Tuple
+from typing import AsyncIterator, List, Optional, Sequence, Set, Tuple
 
 import async_timeout
 import click
@@ -279,6 +279,18 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
 )
 @option("-n", "--name", metavar="NAME", help="Filter out jobs by name.", secure=True)
 @option(
+    "--distinct",
+    is_flag=True,
+    default=False,
+    help="Show only first job if names are same.",
+)
+@option(
+    "--recent-first/--recent-last",
+    is_flag=True,
+    default=False,
+    help="Show newer jobs first or last",
+)
+@option(
     "-t",
     "--tag",
     metavar="TAG",
@@ -330,6 +342,8 @@ async def ls(
     status: Sequence[str],
     all: bool,
     name: str,
+    distinct: bool,
+    recent_first: bool,
     tag: Sequence[str],
     owner: Sequence[str],
     since: str,
@@ -367,11 +381,27 @@ async def ls(
         tags=tags,
         since=_parse_date(since),
         until=_parse_date(until),
+        reverse=recent_first,
     )
 
     # client-side filtering
     if description:
         jobs = (job async for job in jobs if job.description == description)
+
+    if distinct:
+
+        async def _filter_distinct(
+            jobs_iter: AsyncIterator[JobDescription],
+        ) -> AsyncIterator[JobDescription]:
+            names: Set[str] = set()
+            async for job in jobs_iter:
+                if job.name in names:
+                    continue
+                if job.name is not None:
+                    names.add(job.name)
+                yield job
+
+        jobs = _filter_distinct(jobs)
 
     uri_fmtr: URIFormatter
     if full_uri:
@@ -1132,7 +1162,7 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
     for tag in job.tags:
         res += ["--tag", tag]
     if job.description:
-        res += ["--description", job.description]
+        res += ["--description", shlex.quote(job.description)]
     for volume in job.container.volumes:
         res += [
             "--volume",
@@ -1153,6 +1183,8 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
     if job.container.working_dir:
         res += ["--workdir", job.container.working_dir]
     for env_name, env_value in job.container.env.items():
+        if env_name == PASS_CONFIG_ENV_NAME and job.pass_config:
+            continue  # Do not specify value for pass config env variable
         res += ["--env", f"{env_name}={env_value}"]
     for env_name, secret_uri in job.container.secret_env.items():
         res += ["--env", f"{env_name}={secret_uri}"]

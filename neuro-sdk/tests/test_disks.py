@@ -61,7 +61,7 @@ async def test_list(
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
             created_at=created_at,
-            life_span=None,
+            timeout_unused=None,
             name=None,
         ),
         Disk(
@@ -72,7 +72,7 @@ async def test_list(
             cluster_name=cluster_config.name,
             created_at=created_at,
             last_usage=last_usage,
-            life_span=timedelta(hours=1),
+            timeout_unused=timedelta(hours=1),
             name="test-disk",
         ),
     ]
@@ -118,7 +118,7 @@ async def test_add(
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
             created_at=created_at,
-            life_span=timedelta(hours=1),
+            timeout_unused=timedelta(hours=1),
             name="test-disk",
         )
 
@@ -136,6 +136,7 @@ async def test_get(
             {
                 "id": "disk-1",
                 "storage": 500,
+                "used_bytes": 150,
                 "owner": "user",
                 "status": "Ready",
                 "created_at": created_at.isoformat(),
@@ -152,6 +153,7 @@ async def test_get(
         assert disk == Disk(
             id="disk-1",
             storage=500,
+            used_bytes=150,
             owner="user",
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
