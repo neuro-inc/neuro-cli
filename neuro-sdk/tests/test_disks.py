@@ -59,7 +59,7 @@ async def test_list(
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
             created_at=created_at,
-            life_span=None,
+            timeout_unused=None,
         ),
         Disk(
             id="disk-2",
@@ -69,7 +69,7 @@ async def test_list(
             cluster_name=cluster_config.name,
             created_at=created_at,
             last_usage=last_usage,
-            life_span=timedelta(hours=1),
+            timeout_unused=timedelta(hours=1),
         ),
     ]
 
@@ -112,7 +112,7 @@ async def test_add(
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
             created_at=created_at,
-            life_span=timedelta(hours=1),
+            timeout_unused=timedelta(hours=1),
         )
 
 

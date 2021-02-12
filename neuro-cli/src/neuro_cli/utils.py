@@ -605,15 +605,15 @@ def pager_maybe(
         )
 
 
-async def calc_life_span(
-    client: Client, value: Optional[str], default: str, config_section: str
-) -> Optional[float]:
+async def _calc_timedelta_key(
+    client: Client, value: Optional[str], default: str, config_section: str, key: str
+) -> float:
     async def _calc_default_life_span(client: Client) -> timedelta:
         config = await client.config.get_user_config()
         section = config.get(config_section)
         life_span = default
         if section is not None:
-            value = section.get("life-span")
+            value = section.get(key)
             if value is not None:
                 life_span = value
         return parse_timedelta(life_span)
@@ -623,7 +623,15 @@ async def calc_life_span(
         if value is not None
         else await _calc_default_life_span(client)
     )
-    seconds = delta.total_seconds()
+    return delta.total_seconds()
+
+
+async def calc_life_span(
+    client: Client, value: Optional[str], default: str, config_section: str
+) -> Optional[float]:
+    seconds = await _calc_timedelta_key(
+        client, value, default, config_section, "life-span"
+    )
     if seconds == 0:
         click.secho(
             "Zero job's life-span (--life-span=0) is deprecated "
@@ -634,3 +642,11 @@ async def calc_life_span(
         return None
     assert seconds > 0
     return seconds
+
+
+async def calc_timeout_unused(
+    client: Client, value: Optional[str], default: str, config_section: str
+) -> Optional[float]:
+    return await _calc_timedelta_key(
+        client, value, default, config_section, "timeout-unused"
+    )

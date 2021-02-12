@@ -43,7 +43,7 @@ class DisksFormatter(BaseDisksFormatter):
             line += [
                 format_datetime(disk.created_at),
                 format_datetime(disk.last_usage),
-                format_disk_life_span(disk.life_span),
+                format_disk_timeout_unused(disk.timeout_unused),
             ]
         return line
 
@@ -59,7 +59,7 @@ class DisksFormatter(BaseDisksFormatter):
         if self._long_format:
             table.add_column("Created at")
             table.add_column("Last used")
-            table.add_column("Life span")
+            table.add_column("Timeout unused")
         for disk in disks:
             table.add_row(*self._disk_to_table_row(disk))
         return table
@@ -83,12 +83,12 @@ class DiskFormatter:
         table.add_row("Status", disk.status.value)
         table.add_row("Created at", format_datetime(disk.created_at))
         table.add_row("Last used", format_datetime(disk.last_usage))
-        table.add_row("Life span", format_disk_life_span(disk.life_span))
+        table.add_row("Timeout unused", format_disk_timeout_unused(disk.timeout_unused))
         return table
 
 
-def format_disk_life_span(life_span: Optional[timedelta]) -> str:
-    if life_span is not None:
-        return format_life_span(life_span.total_seconds())
+def format_disk_timeout_unused(timeout_unused: Optional[timedelta]) -> str:
+    if timeout_unused is not None:
+        return format_life_span(timeout_unused.total_seconds())
     else:
         return format_life_span(None)

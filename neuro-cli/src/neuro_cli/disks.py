@@ -10,7 +10,7 @@ from .formatters.disks import (
 from .formatters.utils import URIFormatter, uri_formatter
 from .parse_utils import parse_memory
 from .root import Root
-from .utils import argument, calc_life_span, command, group, option
+from .utils import argument, calc_timeout_unused, command, group, option
 
 DEFAULT_DISK_LIFE_SPAN = "1d"
 
@@ -51,7 +51,7 @@ async def ls(root: Root, full_uri: bool, long_format: bool) -> None:
 @command()
 @argument("storage")
 @option(
-    "--life-span",
+    "--timeout-unused",
     type=str,
     metavar="TIMEDELTA",
     help=(
@@ -61,7 +61,9 @@ async def ls(root: Root, full_uri: bool, long_format: bool) -> None:
         "in the user config."
     ),
 )
-async def create(root: Root, storage: str, life_span: Optional[str] = None) -> None:
+async def create(
+    root: Root, storage: str, timeout_unused: Optional[str] = None
+) -> None:
     """
     Create a disk with at least storage amount STORAGE.
 
@@ -80,15 +82,15 @@ async def create(root: Root, storage: str, life_span: Optional[str] = None) -> N
       neuro disk create 10G
       neuro disk create 500M
     """
-    life_span_seconds = await calc_life_span(
-        root.client, life_span, DEFAULT_DISK_LIFE_SPAN, "disk"
+    timeout_unused_seconds = await calc_timeout_unused(
+        root.client, timeout_unused, DEFAULT_DISK_LIFE_SPAN, "disk"
     )
-    disk_life_span = None
-    if life_span_seconds:
-        disk_life_span = timedelta(seconds=life_span_seconds)
+    disk_timeout_unused = None
+    if timeout_unused_seconds:
+        disk_timeout_unused = timedelta(seconds=timeout_unused_seconds)
 
     disk = await root.client.disks.create(
-        parse_memory(storage), life_span=disk_life_span
+        parse_memory(storage), timeout_unused=disk_timeout_unused
     )
     disk_fmtr = DiskFormatter(str)
     with root.pager():
