@@ -941,11 +941,14 @@ async def run_job(
     secret_files = volume_parse_result.secret_files
 
     # Replace disk names with disk ids
-    def _force_disk_id(disk_uri: URL) -> URL:
-        return disk_uri / f"../{resolve_disk(disk_uri.parts[-1], client=root.client)}"
+    async def _force_disk_id(disk_uri: URL) -> URL:
+        disk_id = await resolve_disk(disk_uri.parts[-1], client=root.client)
+        return disk_uri / f"../{disk_id}"
 
     disk_volumes = [
-        dataclasses.replace(disk_volume, disk_uri=_force_disk_id(disk_volume.disk_uri))
+        dataclasses.replace(
+            disk_volume, disk_uri=await _force_disk_id(disk_volume.disk_uri)
+        )
         for disk_volume in volume_parse_result.disk_volumes
     ]
 
