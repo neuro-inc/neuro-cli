@@ -27,6 +27,7 @@ async def test_list(
                     "owner": "user",
                     "status": "Ready",
                     "created_at": created_at.isoformat(),
+                    "name": None,
                 },
                 {
                     "id": "disk-2",
@@ -36,6 +37,7 @@ async def test_list(
                     "created_at": created_at.isoformat(),
                     "last_usage": last_usage.isoformat(),
                     "life_span": 3600,
+                    "name": "test-disk",
                 },
             ]
         )
@@ -60,6 +62,7 @@ async def test_list(
             cluster_name=cluster_config.name,
             created_at=created_at,
             timeout_unused=None,
+            name=None,
         ),
         Disk(
             id="disk-2",
@@ -70,6 +73,7 @@ async def test_list(
             created_at=created_at,
             last_usage=last_usage,
             timeout_unused=timedelta(hours=1),
+            name="test-disk",
         ),
     ]
 
@@ -86,6 +90,7 @@ async def test_add(
         assert data == {
             "storage": 500,
             "life_span": 3600,
+            "name": "test-disk",
         }
         return web.json_response(
             {
@@ -95,6 +100,7 @@ async def test_add(
                 "status": "Ready",
                 "created_at": created_at.isoformat(),
                 "life_span": 3600,
+                "name": "test-disk",
             },
         )
 
@@ -104,7 +110,7 @@ async def test_add(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        disk = await client.disks.create(500, timedelta(hours=1))
+        disk = await client.disks.create(500, timedelta(hours=1), name="test-disk")
         assert disk == Disk(
             id="disk-1",
             storage=500,
@@ -113,6 +119,7 @@ async def test_add(
             cluster_name=cluster_config.name,
             created_at=created_at,
             timeout_unused=timedelta(hours=1),
+            name="test-disk",
         )
 
 

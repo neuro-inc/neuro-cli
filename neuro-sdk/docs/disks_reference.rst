@@ -18,7 +18,11 @@ Disks
 
       List user's disks, async iterator. Yields :class:`Disk` instances.
 
-   .. comethod:: create(storage: int, life_span: typing.Optional[datetime.timedelta]) -> Disk
+   .. comethod:: create(  \
+                        storage: int, \
+                        life_span: typing.Optional[datetime.timedelta], \
+                        name: typing.Optional[str], \
+                 ) -> Disk
 
       Create a disk with capacity of *storage* bytes.
 
@@ -28,21 +32,24 @@ Disks
                                                              disk will be deleted. ``None``
                                                              means no limit.
 
+      :param ~typing.Optional[str] name: Name of the disk. Should be unique among all user's
+                                         disk.
+
       :return: Newly created disk info (:class:`Disk`)
 
-   .. comethod:: get(disk_id: str) -> Disk
+   .. comethod:: get(disk_id_or_name: str) -> Disk
 
-      Get a disk with id *disk_id*.
+      Get a disk with id or name *disk_id_or_name*.
 
-      :param str disk_id: disk's id.
+      :param str disk_id_or_name: disk's id or name.
 
       :return: Disk info (:class:`Disk`)
 
-   .. comethod:: rm(disk_id: str) -> None
+   .. comethod:: rm(disk_id_or_name: str) -> None
 
-      Delete a disk with id *disk_id*.
+      Delete a disk with id or name *disk_id_or_name*.
 
-      :param str disk_id: disk's id.
+      :param str disk_id_or_name: disk's id or name.
 
 
 Disk
@@ -69,6 +76,11 @@ Disk
    .. attribute:: owner
 
       The disk owner username, :class:`str`.
+
+   .. attribute:: name
+
+      The disk name set by user, unique among all user's disks,
+      :class:`str` or ``None`` if no name was set.
 
    .. attribute:: status
 

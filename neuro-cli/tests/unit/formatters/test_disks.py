@@ -15,14 +15,15 @@ from neuro_cli.formatters.disks import (
 
 def test_disk_formatter(rich_cmp: Any) -> None:
     disk = Disk(
-        "disk",
-        int(11.93 * (1024 ** 3)),
-        "user",
-        Disk.Status.READY,
-        "cluster",
-        isoparse("2017-03-04T12:28:59.759433+00:00"),
-        isoparse("2017-04-04T12:28:59.759433+00:00"),
-        timedelta(days=1, hours=2, minutes=3, seconds=4),
+        id="disk",
+        name="test-disk",
+        storage=int(11.93 * (1024 ** 3)),
+        owner="user",
+        status=Disk.Status.READY,
+        cluster_name="cluster",
+        created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
+        last_usage=isoparse("2017-04-04T12:28:59.759433+00:00"),
+        timeout_unused=timedelta(days=1, hours=2, minutes=3, seconds=4),
     )
     fmtr = DiskFormatter(str)
     rich_cmp(fmtr(disk))

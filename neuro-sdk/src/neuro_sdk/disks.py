@@ -23,6 +23,7 @@ class Disk:
     cluster_name: str
     created_at: datetime
     last_usage: Optional[datetime] = None
+    name: Optional[str] = None
     timeout_unused: Optional[timedelta] = None
     used_bytes: Optional[int] = None
 
@@ -65,6 +66,7 @@ class Disks(metaclass=NoPublicConstructor):
             storage=payload["storage"],
             used_bytes=payload.get("used_bytes"),
             owner=payload["owner"],
+            name=payload.get("name"),
             status=Disk.Status(payload["status"]),
             cluster_name=self._config.cluster_name,
             created_at=isoparse(payload["created_at"]),
@@ -81,27 +83,31 @@ class Disks(metaclass=NoPublicConstructor):
                 yield self._parse_disk_payload(disk_payload)
 
     async def create(
-        self, storage: int, timeout_unused: Optional[timedelta] = None
+        self,
+        storage: int,
+        timeout_unused: Optional[timedelta] = None,
+        name: Optional[str] = None,
     ) -> Disk:
         url = self._config.disk_api_url
         auth = await self._config._api_auth()
         data = {
             "storage": storage,
             "life_span": timeout_unused.total_seconds() if timeout_unused else None,
+            "name": name,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()
             return self._parse_disk_payload(payload)
 
-    async def get(self, disk_id: str) -> Disk:
-        url = self._config.disk_api_url / disk_id
+    async def get(self, disk_id_or_name: str) -> Disk:
+        url = self._config.disk_api_url / disk_id_or_name
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, auth=auth) as resp:
             payload = await resp.json()
             return self._parse_disk_payload(payload)
 
-    async def rm(self, disk_id: str) -> None:
-        url = self._config.disk_api_url / disk_id
+    async def rm(self, disk_id_or_name: str) -> None:
+        url = self._config.disk_api_url / disk_id_or_name
         auth = await self._config._api_auth()
         async with self._core.request("DELETE", url, auth=auth):
             pass

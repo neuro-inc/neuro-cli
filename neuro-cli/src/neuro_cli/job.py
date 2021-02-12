@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import dataclasses
 import logging
 import shlex
 import sys
@@ -28,6 +29,7 @@ from neuro_sdk import (
 
 from neuro_cli.formatters.images import DockerImageProgress
 from neuro_cli.formatters.utils import URIFormatter, image_formatter, uri_formatter
+from neuro_cli.utils import resolve_disk
 
 from .ael import process_attach, process_exec, process_logs
 from .click_types import (
@@ -967,7 +969,18 @@ async def run_job(
     volume_parse_result = root.client.parse.volumes(volume)
     volumes = list(volume_parse_result.volumes)
     secret_files = volume_parse_result.secret_files
-    disk_volumes = volume_parse_result.disk_volumes
+
+    # Replace disk names with disk ids
+    async def _force_disk_id(disk_uri: URL) -> URL:
+        disk_id = await resolve_disk(disk_uri.parts[-1], client=root.client)
+        return disk_uri / f"../{disk_id}"
+
+    disk_volumes = [
+        dataclasses.replace(
+            disk_volume, disk_uri=await _force_disk_id(disk_volume.disk_uri)
+        )
+        for disk_volume in volume_parse_result.disk_volumes
+    ]
 
     if pass_config:
         env_name = PASS_CONFIG_ENV_NAME

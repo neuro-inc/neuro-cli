@@ -2118,6 +2118,7 @@ neuro disk create 500M
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--name NAME_|Optional disk name|
 |_\--timeout-unused TIMEDELTA_|Optional disk lifetime limit after last usage in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 
 
@@ -2130,7 +2131,7 @@ Get disk DISK_ID.
 **Usage:**
 
 ```bash
-neuro disk get [OPTIONS] DISK_ID
+neuro disk get [OPTIONS] DISK
 ```
 
 **Options:**
@@ -2150,7 +2151,7 @@ Remove disk DISK_ID.
 **Usage:**
 
 ```bash
-neuro disk rm [OPTIONS] DISK_IDS...
+neuro disk rm [OPTIONS] DISKS...
 ```
 
 **Options:**
