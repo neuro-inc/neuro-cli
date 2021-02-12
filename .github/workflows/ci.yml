@@ -64,7 +64,6 @@ jobs:
           os: macos
         - python-version: 3.8
           os: windows
-        - os: macos
       fail-fast: false
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 15
@@ -119,7 +118,6 @@ jobs:
           os: macos
         - python-version: 3.8
           os: windows
-        - os: macos
       fail-fast: false
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 45
