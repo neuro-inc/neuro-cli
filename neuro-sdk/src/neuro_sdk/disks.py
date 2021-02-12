@@ -24,6 +24,7 @@ class Disk:
     created_at: datetime
     last_usage: Optional[datetime] = None
     timeout_unused: Optional[timedelta] = None
+    used_bytes: Optional[int] = None
 
     @property
     def life_span(self) -> Optional[timedelta]:
@@ -62,6 +63,7 @@ class Disks(metaclass=NoPublicConstructor):
         return Disk(
             id=payload["id"],
             storage=payload["storage"],
+            used_bytes=payload.get("used_bytes"),
             owner=payload["owner"],
             status=Disk.Status(payload["status"]),
             cluster_name=self._config.cluster_name,

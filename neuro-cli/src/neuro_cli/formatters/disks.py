@@ -38,7 +38,14 @@ class DisksFormatter(BaseDisksFormatter):
 
     def _disk_to_table_row(self, disk: Disk) -> Sequence[str]:
         storage_str = utils.format_size(disk.storage)
-        line = [disk.id, storage_str, self._uri_formatter(disk.uri), disk.status.value]
+        used_str = utils.format_size(disk.used_bytes)
+        line = [
+            disk.id,
+            storage_str,
+            used_str,
+            self._uri_formatter(disk.uri),
+            disk.status.value,
+        ]
         if self._long_format:
             line += [
                 format_datetime(disk.created_at),
@@ -54,6 +61,7 @@ class DisksFormatter(BaseDisksFormatter):
         width = len("disk-06bed296-8b27-4aa8-9e2a-f3c47b41c807")
         table.add_column("Id", style="bold", width=width)
         table.add_column("Storage")
+        table.add_column("Used")
         table.add_column("Uri")
         table.add_column("Status")
         if self._long_format:
@@ -79,6 +87,7 @@ class DiskFormatter:
         table.add_column(style="bold")
         table.add_row("Id", disk.id)
         table.add_row("Storage", utils.format_size(disk.storage))
+        table.add_row("Used", utils.format_size(disk.used_bytes))
         table.add_row("Uri", self._uri_formatter(disk.uri))
         table.add_row("Status", disk.status.value)
         table.add_row("Created at", format_datetime(disk.created_at))

@@ -129,6 +129,7 @@ async def test_get(
             {
                 "id": "disk-1",
                 "storage": 500,
+                "used_bytes": 150,
                 "owner": "user",
                 "status": "Ready",
                 "created_at": created_at.isoformat(),
@@ -145,6 +146,7 @@ async def test_get(
         assert disk == Disk(
             id="disk-1",
             storage=500,
+            used_bytes=150,
             owner="user",
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
