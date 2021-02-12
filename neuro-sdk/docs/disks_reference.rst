@@ -91,7 +91,7 @@ Disk
       Timestamp when disk was last attached to job, :class:`~datetime.datetime`
       or ``None`` if disk was never used.
 
-   .. attribute:: life_span
+   .. attribute:: timeout_unused
 
       Max unused duration after which disk will be deleted by platform,
       :class:`~datetime.timedelta` or ``None`` if there is no limit.

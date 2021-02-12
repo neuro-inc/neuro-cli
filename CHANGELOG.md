@@ -5,6 +5,31 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.2.11 (2021-02-11)
+==================================
+
+Features
+--------
+
+
+- `neuro top` supports now multiple jobs. If multiple jobs is specified at command line, it outputs a table for that jobs. If no jobs are specified, it outputs all active user's job. ([#418](https://github.com/neuro-inc/platform-client-python/issues/418))
+
+- Added private option `--x-trace-all` which forces distribute tracing. ([#1973](https://github.com/neuro-inc/platform-client-python/issues/1973))
+
+- Add `neuro job generate-run-command <job-id-or-name>` to simplify reruning of jobs. ([#1977](https://github.com/neuro-inc/platform-client-python/issues/1977))
+
+- Added new options to `neuro ps`:
+  `--distinct`: Show only first job if names are same.
+  `--recent-first/--recent-last`: Show newer jobs first or last ([#1981](https://github.com/neuro-inc/platform-client-python/issues/1981))
+
+
+Deprecations and Removals
+-------------------------
+
+
+- Soft-deprecate `neuro job tags` command. ([#1840](https://github.com/neuro-inc/platform-client-python/issues/1840))
+
+
 Neuro SDK/CLI 21.1.13 (2021-01-13)
 ==================================
 
