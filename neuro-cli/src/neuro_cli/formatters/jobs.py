@@ -711,7 +711,7 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
                 + f" Wait for stop {next(self._spinner)} [{dt:.1f} sec]"
             )
         else:
-            msg = yes() + " Stopped"
+            msg = yes() + f" Job [b]{job.id}[/b] stopped"
 
         self._live_render.set_renderable(Text.from_markup(msg))
         with self._console:
@@ -788,15 +788,16 @@ class ExecStopProgress:
     time_factory = staticmethod(time.monotonic)
 
     @classmethod
-    def create(cls, console: Console, quiet: bool) -> "ExecStopProgress":
+    def create(cls, console: Console, quiet: bool, job_id: str) -> "ExecStopProgress":
         if quiet:
-            return ExecStopProgress()
+            return ExecStopProgress(job_id)
         elif console.is_terminal:
-            return DetailedExecStopProgress(console)
-        return StreamExecStopProgress(console)
+            return DetailedExecStopProgress(console, job_id)
+        return StreamExecStopProgress(console, job_id)
 
-    def __init__(self) -> None:
+    def __init__(self, job_id: str) -> None:
         self._time = self.time_factory()
+        self._job_id = job_id
 
     def __call__(self, running: bool) -> bool:
         # return False if timeout, True otherwise
@@ -827,8 +828,8 @@ class ExecStopProgress:
 
 
 class DetailedExecStopProgress(ExecStopProgress, RenderHook):
-    def __init__(self, console: Console) -> None:
-        super().__init__()
+    def __init__(self, console: Console, job_id: str) -> None:
+        super().__init__(job_id)
         self._console = console
         self._spinner = SPINNER
         self._live_render = LiveRender(Text())
@@ -843,7 +844,7 @@ class DetailedExecStopProgress(ExecStopProgress, RenderHook):
                 + f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
             )
         else:
-            msg = yes() + " Stopped"
+            msg = yes() + f" Job [b]{self._job_id}[/b] stopped"
 
         self._live_render.set_renderable(Text.from_markup(msg))
         with self._console:
@@ -887,8 +888,8 @@ class DetailedExecStopProgress(ExecStopProgress, RenderHook):
 
 
 class StreamExecStopProgress(ExecStopProgress):
-    def __init__(self, console: Console) -> None:
-        super().__init__()
+    def __init__(self, console: Console, job_id: str) -> None:
+        super().__init__(job_id)
         self._console = console
         self._console.print("Wait for stopping")
 
