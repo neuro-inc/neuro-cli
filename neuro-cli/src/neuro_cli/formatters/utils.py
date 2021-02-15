@@ -1,5 +1,7 @@
-from typing import Callable
+import datetime
+from typing import Callable, Optional
 
+import humanize
 from yarl import URL
 
 from neuro_sdk import RemoteImage
@@ -33,6 +35,52 @@ def image_formatter(uri_formatter: URIFormatter) -> ImageFormatter:
             return image_str
 
     return formatter
+
+
+def format_timedelta(delta: datetime.timedelta) -> str:
+    s = int(delta.total_seconds())
+    if s < 0:
+        raise ValueError(f"Invalid delta {delta}: expect non-negative total value")
+    _sec_in_minute = 60
+    _sec_in_hour = _sec_in_minute * 60
+    _sec_in_day = _sec_in_hour * 24
+    d, s = divmod(s, _sec_in_day)
+    h, s = divmod(s, _sec_in_hour)
+    m, s = divmod(s, _sec_in_minute)
+    return "".join(
+        [
+            f"{d}d" if d else "",
+            f"{h}h" if h else "",
+            f"{m}m" if m else "",
+            f"{s}s" if s else "",
+        ]
+    )
+
+
+def format_datetime_iso(when: Optional[datetime.datetime]) -> str:
+    if when is None:
+        return ""
+    return when.isoformat()
+
+
+def format_datetime_human(when: Optional[datetime.datetime]) -> str:
+    if when is None:
+        return ""
+    assert when.tzinfo is not None
+    delta = datetime.datetime.now(datetime.timezone.utc) - when
+    if delta < datetime.timedelta(days=1):
+        return humanize.naturaltime(delta)
+    else:
+        return humanize.naturaldate(when.astimezone())
+
+
+DatetimeFormatter = Callable[[Optional[datetime.datetime]], str]
+
+
+def get_datetime_formatter(use_iso_format: bool) -> DatetimeFormatter:
+    if use_iso_format:
+        return format_datetime_iso
+    return format_datetime_human
 
 
 def yes() -> str:

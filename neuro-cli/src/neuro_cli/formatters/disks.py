@@ -11,8 +11,7 @@ from rich.text import Text
 from neuro_sdk import Disk
 
 from neuro_cli import utils
-from neuro_cli.formatters.jobs import format_datetime, format_life_span
-from neuro_cli.formatters.utils import URIFormatter
+from neuro_cli.formatters.utils import DatetimeFormatter, URIFormatter, format_timedelta
 
 
 class BaseDisksFormatter:
@@ -30,10 +29,12 @@ class DisksFormatter(BaseDisksFormatter):
     def __init__(
         self,
         uri_formatter: URIFormatter,
+        datetime_formatter: DatetimeFormatter,
         *,
         long_format: bool = False,
     ) -> None:
         self._uri_formatter = uri_formatter
+        self._datetime_formatter = datetime_formatter
         self._long_format = long_format
 
     def _disk_to_table_row(self, disk: Disk) -> Sequence[str]:
@@ -50,8 +51,8 @@ class DisksFormatter(BaseDisksFormatter):
         ]
         if self._long_format:
             line += [
-                format_datetime(disk.created_at),
-                format_datetime(disk.last_usage),
+                self._datetime_formatter(disk.created_at),
+                self._datetime_formatter(disk.last_usage),
                 format_disk_timeout_unused(disk.timeout_unused),
             ]
         return line
@@ -77,7 +78,10 @@ class DisksFormatter(BaseDisksFormatter):
 
 
 class DiskFormatter:
-    def __init__(self, uri_formatter: URIFormatter) -> None:
+    def __init__(
+        self, uri_formatter: URIFormatter, datetime_formatter: DatetimeFormatter
+    ) -> None:
+        self._datetime_formatter = datetime_formatter
         self._uri_formatter = uri_formatter
 
     def __call__(self, disk: Disk) -> RenderableType:
@@ -95,14 +99,14 @@ class DiskFormatter:
         if disk.name:
             table.add_row("Name", disk.name)
         table.add_row("Status", disk.status.value)
-        table.add_row("Created at", format_datetime(disk.created_at))
-        table.add_row("Last used", format_datetime(disk.last_usage))
+        table.add_row("Created at", self._datetime_formatter(disk.created_at))
+        table.add_row("Last used", self._datetime_formatter(disk.last_usage))
         table.add_row("Timeout unused", format_disk_timeout_unused(disk.timeout_unused))
         return table
 
 
 def format_disk_timeout_unused(timeout_unused: Optional[timedelta]) -> str:
     if timeout_unused is not None:
-        return format_life_span(timeout_unused.total_seconds())
+        return format_timedelta(timeout_unused)
     else:
-        return format_life_span(None)
+        return "no limit"

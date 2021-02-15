@@ -11,6 +11,7 @@ from neuro_cli.formatters.disks import (
     DisksFormatter,
     SimpleDisksFormatter,
 )
+from neuro_cli.formatters.utils import format_datetime_human
 
 
 def test_disk_formatter(rich_cmp: Any) -> None:
@@ -25,7 +26,7 @@ def test_disk_formatter(rich_cmp: Any) -> None:
         last_usage=isoparse("2017-04-04T12:28:59.759433+00:00"),
         timeout_unused=timedelta(days=1, hours=2, minutes=3, seconds=4),
     )
-    fmtr = DiskFormatter(str)
+    fmtr = DiskFormatter(str, datetime_formatter=format_datetime_human)
     rich_cmp(fmtr(disk))
 
 
@@ -75,10 +76,12 @@ def test_disks_formatter_simple(disks_list: List[Disk], rich_cmp: Any) -> None:
 
 
 def test_disks_formatter_short(disks_list: List[Disk], rich_cmp: Any) -> None:
-    fmtr = DisksFormatter(str)
+    fmtr = DisksFormatter(str, datetime_formatter=format_datetime_human)
     rich_cmp(fmtr(disks_list))
 
 
 def test_disks_formatter_long(disks_list: List[Disk], rich_cmp: Any) -> None:
-    fmtr = DisksFormatter(str, long_format=True)
+    fmtr = DisksFormatter(
+        str, long_format=True, datetime_formatter=format_datetime_human
+    )
     rich_cmp(fmtr(disks_list))

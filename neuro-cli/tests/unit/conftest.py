@@ -74,6 +74,7 @@ def create_root(config_path: Path) -> Root:
         command_params=[],
         skip_gmp_stats=True,
         show_traceback=False,
+        iso_datetime_format=False,
     )
 
 
