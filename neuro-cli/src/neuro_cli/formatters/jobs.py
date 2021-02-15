@@ -66,6 +66,19 @@ def format_timedelta(delta: datetime.timedelta) -> str:
     )
 
 
+def _get_run_time(job: JobDescription) -> datetime.timedelta:
+    run_time = datetime.timedelta()
+    prev_time: Optional[datetime.datetime] = None
+    for item in job.history.transitions:
+        if prev_time:
+            run_time += item.transition_time - prev_time
+        prev_time = item.transition_time if item.status.is_running else None
+    if prev_time:
+        # job still running
+        run_time += datetime.datetime.now(datetime.timezone.utc) - prev_time
+    return run_time
+
+
 class JobStatusFormatter:
     def __init__(self, uri_formatter: URIFormatter) -> None:
         self._format_uri = uri_formatter
@@ -217,6 +230,19 @@ class JobStatusFormatter:
         ]:
             assert job_status.history.started_at is not None
             table.add_row("Started", job_status.history.started_at.isoformat())
+        if (
+            job_status.status
+            in [
+                JobStatus.PENDING,
+                JobStatus.RUNNING,
+                JobStatus.SUSPENDED,
+            ]
+            and job_status.life_span
+        ):
+            life_span = datetime.timedelta(seconds=job_status.life_span)
+            runtime_left = life_span - _get_run_time(job_status)
+            runtime_ends = datetime.datetime.now(datetime.timezone.utc) + runtime_left
+            table.add_row("Life span ends (approx)", runtime_ends.isoformat())
         if job_status.status in [
             JobStatus.CANCELLED,
             JobStatus.FAILED,
