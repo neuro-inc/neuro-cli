@@ -710,7 +710,7 @@ class TTYProgress(BaseStorageProgress):
 
     def end(self) -> None:
         # Clean terminal if there is no files in progress
-        self._progress.transient = not self._progress.task_ids
+        self._progress.live.transient = not self._progress.task_ids
         self._progress.stop()
 
     def enter(self, data: StorageProgressEnterDir) -> None:
