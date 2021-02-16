@@ -140,7 +140,9 @@ class Guard:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Guard):
             return NotImplemented
-        return self.arg == other.arg
+        return [s.rstrip() for s in self.arg.splitlines()] == [
+            s.rstrip() for s in other.arg.splitlines()
+        ]
 
 
 class RichComparator:
@@ -210,7 +212,7 @@ class RichComparator:
             orig = self.read_ref(ref)
             tmp = ref.with_suffix(".orig")
             self.write_file(tmp, buf)
-            # reading from file is important, fil writer replaces \r with \n
+            # reading from file is important, file writer replaces \r with \n
             actual = self.read_file(tmp)
             assert Guard(actual, tmp) == Guard(orig, ref)
 
