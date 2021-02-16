@@ -102,7 +102,9 @@ async def process_exec(root: Root, job: str, cmd: str, tty: bool) -> NoReturn:
         root.soft_reset_tty()
 
     info = await root.client.jobs.exec_inspect(job, exec_id)
-    with ExecStopProgress.create(console=root.console, quiet=root.quiet) as progress:
+    with ExecStopProgress.create(
+        console=root.console, quiet=root.quiet, job_id=job
+    ) as progress:
         while info.running:
             await asyncio.sleep(0.2)
             info = await root.client.jobs.exec_inspect(job, exec_id)
