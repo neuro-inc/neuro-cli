@@ -75,6 +75,7 @@ class Root:
     command_params: List[Dict[str, Optional[str]]]
     skip_gmp_stats: bool
     show_traceback: bool
+    iso_datetime_format: bool
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None

@@ -28,7 +28,12 @@ from neuro_sdk import (
 )
 
 from neuro_cli.formatters.images import DockerImageProgress
-from neuro_cli.formatters.utils import URIFormatter, image_formatter, uri_formatter
+from neuro_cli.formatters.utils import (
+    URIFormatter,
+    get_datetime_formatter,
+    image_formatter,
+    uri_formatter,
+)
 from neuro_cli.utils import resolve_disk
 
 from .ael import process_attach, process_exec, process_logs
@@ -415,7 +420,10 @@ async def ls(
     else:
         image_fmtr = image_formatter(uri_formatter=uri_fmtr)
         formatter = TabularJobsFormatter(
-            root.client.username, format, image_formatter=image_fmtr
+            root.client.username,
+            format,
+            image_formatter=image_fmtr,
+            datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
         )
 
     with root.pager():
@@ -442,7 +450,12 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
         uri_fmtr = uri_formatter(
             username=root.client.username, cluster_name=root.client.cluster_name
         )
-    root.print(JobStatusFormatter(uri_formatter=uri_fmtr)(res))
+    root.print(
+        JobStatusFormatter(
+            uri_formatter=uri_fmtr,
+            datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
+        )(res)
+    )
 
 
 @command(deprecated=True, hidden=True)
@@ -533,7 +546,10 @@ async def top(root: Root, jobs: Sequence[str], timeout: float) -> None:
                     formatter.render()
                 await asyncio.sleep(TOP_REFRESH_DELAY)
 
-    with JobTelemetryFormatter(root.console) as formatter:
+    with JobTelemetryFormatter(
+        root.console,
+        datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
+    ) as formatter:
         await asyncio.gather(create_pollers(), renderer())
 
 
