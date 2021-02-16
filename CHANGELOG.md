@@ -5,6 +5,28 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.2.16 (2021-02-16)
+==================================
+
+Features
+--------
+
+
+- Added support of named disks:
+  - create new disk by `neuro disk create --name <disk-name> STORAGE` command
+  - name can be used to get/delete disk: `neuro disk get <disk-name>` or `neuro disk delete <disk-name>`
+  - name can be used to mount disk: `neuro run -v disk:<disk-name>:/mnt/disk ...` ([#1983](https://github.com/neuro-inc/platform-client-python/issues/1983))
+
+- Added printing of job id when `neuro flow` or `neuro attach` exits. ([#1993](https://github.com/neuro-inc/platform-client-python/issues/1993))
+
+- Added "Life span ends" field to `neuro status <job-id>`. ([#1994](https://github.com/neuro-inc/platform-client-python/issues/1994))
+
+- Now all datetime fields are printed in "humanized form". Use `neuro --iso-datetime-format <command> ...` to
+  force ISO 8601 format. ([#1995](https://github.com/neuro-inc/platform-client-python/issues/1995))
+
+- Added recovering of attachment to job after internet connection issue in `neuro attach` and `neuro run`. ([#1996](https://github.com/neuro-inc/platform-client-python/issues/1996))
+
+
 Neuro SDK/CLI 21.2.11 (2021-02-11)
 ==================================
 
