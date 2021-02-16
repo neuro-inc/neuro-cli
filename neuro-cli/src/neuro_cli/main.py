@@ -187,6 +187,7 @@ class MainGroup(Group):
             command_params=[],
             skip_gmp_stats=kwargs["skip_stats"],
             show_traceback=show_traceback,
+            iso_datetime_format=kwargs["iso_datetime_format"],
         )
         handler.setConsole(root.err_console)
         ctx.obj = root
@@ -411,6 +412,12 @@ def print_options(
         "environment variables, etc."
     ),
 )
+@option(
+    "--iso-datetime-format/--no-iso-datetime-format",
+    is_flag=True,
+    default=False,
+    help=("Use ISO 8601 format for printing date and time"),
+)
 @click.pass_context
 def cli(
     ctx: click.Context,
@@ -425,6 +432,7 @@ def cli(
     x_trace_all: bool,
     hide_token: Optional[bool],
     skip_stats: bool,
+    iso_datetime_format: bool,
 ) -> None:
     #   ▇ ◣
     #   ▇ ◥ ◣

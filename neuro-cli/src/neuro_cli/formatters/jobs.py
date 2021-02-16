@@ -19,10 +19,18 @@ from rich.text import Text, TextType
 
 from neuro_sdk import JobDescription, JobRestartPolicy, JobStatus, JobTelemetry
 
+from neuro_cli.formatters.utils import DatetimeFormatter
 from neuro_cli.parse_utils import JobColumnInfo
 from neuro_cli.utils import format_size
 
-from .utils import ImageFormatter, URIFormatter, image_formatter, no, yes
+from .utils import (
+    ImageFormatter,
+    URIFormatter,
+    format_timedelta,
+    image_formatter,
+    no,
+    yes,
+)
 
 COLORS = {
     JobStatus.PENDING: "cyan",
@@ -46,26 +54,6 @@ def fmt_status(status: JobStatus) -> Text:
     return Text(status.value, style=color)
 
 
-def format_timedelta(delta: datetime.timedelta) -> str:
-    s = int(delta.total_seconds())
-    if s < 0:
-        raise ValueError(f"Invalid delta {delta}: expect non-negative total value")
-    _sec_in_minute = 60
-    _sec_in_hour = _sec_in_minute * 60
-    _sec_in_day = _sec_in_hour * 24
-    d, s = divmod(s, _sec_in_day)
-    h, s = divmod(s, _sec_in_hour)
-    m, s = divmod(s, _sec_in_minute)
-    return "".join(
-        [
-            f"{d}d" if d else "",
-            f"{h}h" if h else "",
-            f"{m}m" if m else "",
-            f"{s}s" if s else "",
-        ]
-    )
-
-
 def _get_run_time(job: JobDescription) -> datetime.timedelta:
     run_time = datetime.timedelta()
     prev_time: Optional[datetime.datetime] = None
@@ -80,8 +68,11 @@ def _get_run_time(job: JobDescription) -> datetime.timedelta:
 
 
 class JobStatusFormatter:
-    def __init__(self, uri_formatter: URIFormatter) -> None:
+    def __init__(
+        self, uri_formatter: URIFormatter, datetime_formatter: DatetimeFormatter
+    ) -> None:
         self._format_uri = uri_formatter
+        self._datetime_formatter = datetime_formatter
         self._format_image = image_formatter(uri_formatter=uri_formatter)
 
     def __call__(self, job_status: JobDescription) -> RenderableType:
@@ -220,7 +211,9 @@ class JobStatusFormatter:
             table.add_row("Secret environment", Styled(secret_env, style="reset"))
 
         assert job_status.history.created_at is not None
-        table.add_row("Created", job_status.history.created_at.isoformat())
+        table.add_row(
+            "Created", self._datetime_formatter(job_status.history.created_at)
+        )
         if job_status.status in [
             JobStatus.RUNNING,
             JobStatus.SUSPENDED,
@@ -229,7 +222,9 @@ class JobStatusFormatter:
             JobStatus.CANCELLED,
         ]:
             assert job_status.history.started_at is not None
-            table.add_row("Started", job_status.history.started_at.isoformat())
+            table.add_row(
+                "Started", self._datetime_formatter(job_status.history.started_at)
+            )
         if (
             job_status.status
             in [
@@ -242,14 +237,18 @@ class JobStatusFormatter:
             life_span = datetime.timedelta(seconds=job_status.life_span)
             runtime_left = life_span - _get_run_time(job_status)
             runtime_ends = datetime.datetime.now(datetime.timezone.utc) + runtime_left
-            table.add_row("Life span ends (approx)", runtime_ends.isoformat())
+            table.add_row(
+                "Life span ends (approx)", self._datetime_formatter(runtime_ends)
+            )
         if job_status.status in [
             JobStatus.CANCELLED,
             JobStatus.FAILED,
             JobStatus.SUCCEEDED,
         ]:
             assert job_status.history.finished_at is not None
-            table.add_row("Finished", job_status.history.finished_at.isoformat())
+            table.add_row(
+                "Finished", self._datetime_formatter(job_status.history.finished_at)
+            )
             table.add_row("Exit code", str(job_status.history.exit_code))
         if job_status.status == JobStatus.FAILED and job_status.history.description:
             table.add_row("Description", job_status.history.description)
@@ -262,7 +261,7 @@ class JobStatusFormatter:
                 if status_item.reason:
                     status_text = Text.assemble(status_text, f" ({status_item.reason})")
                 status_transitions.add_row(
-                    status_text, status_item.transition_time.isoformat()
+                    status_text, self._datetime_formatter(status_item.transition_time)
                 )
             table.add_row(
                 "Status transitions", Styled(status_transitions, style="reset")
@@ -278,21 +277,16 @@ def format_life_span(life_span: Optional[float]) -> str:
     return format_timedelta(datetime.timedelta(seconds=life_span))
 
 
-def format_datetime(when: Optional[datetime.datetime]) -> str:
-    if when is None:
-        return ""
-    assert when.tzinfo is not None
-    delta = datetime.datetime.now(datetime.timezone.utc) - when
-    if delta < datetime.timedelta(days=1):
-        return humanize.naturaltime(delta)
-    else:
-        return humanize.naturaldate(when.astimezone())
-
-
 class JobTelemetryFormatter(RenderHook):
-    def __init__(self, console: Console, maxrows: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        console: Console,
+        datetime_formatter: DatetimeFormatter,
+        maxrows: Optional[int] = None,
+    ) -> None:
         self._console = console
         self._maxrows = maxrows
+        self._datetime_formatter = datetime_formatter
         self._live_render = LiveRender(Table.grid())
         self._data: Dict[str, Tuple[JobDescription, JobTelemetry]] = {}
         self.changed = True
@@ -308,7 +302,7 @@ class JobTelemetryFormatter(RenderHook):
     def render(self) -> None:
         table = Table(box=box.SIMPLE_HEAVY)
         table.add_column("ID", justify="left", width=40)
-        table.add_column("WHEN", justify="left", width=15)
+        table.add_column("WHEN", justify="left", width=32)
         table.add_column("CPU", justify="right", width=15)
         table.add_column("MEMORY (MB)", justify="right", width=15)
         table.add_column("GPU (%)", justify="right", width=15)
@@ -325,7 +319,7 @@ class JobTelemetryFormatter(RenderHook):
             maxrows = self._maxrows
         del items[max(maxrows, 1) :]
         for job, info in items:
-            created = format_datetime(job.history.created_at)
+            created = self._datetime_formatter(job.history.created_at)
             cpu = f"{info.cpu:.3f}"
             mem = f"{info.memory:.3f}"
             gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "0"
@@ -404,7 +398,11 @@ class TabularJobRow:
 
     @classmethod
     def from_job(
-        cls, job: JobDescription, username: str, image_formatter: ImageFormatter
+        cls,
+        job: JobDescription,
+        username: str,
+        image_formatter: ImageFormatter,
+        datetime_formatter: DatetimeFormatter,
     ) -> "TabularJobRow":
         if job.status == JobStatus.PENDING:
             when = job.history.created_at
@@ -418,10 +416,10 @@ class TabularJobRow:
             name=job.name if job.name else "",
             tags=",".join(job.tags),
             status=fmt_status(job.status),
-            when=format_datetime(when),
-            created=format_datetime(job.history.created_at),
-            started=format_datetime(job.history.started_at),
-            finished=format_datetime(job.history.finished_at),
+            when=datetime_formatter(when),
+            created=datetime_formatter(job.history.created_at),
+            started=datetime_formatter(job.history.started_at),
+            finished=datetime_formatter(job.history.finished_at),
             image=image_formatter(job.container.image),
             owner=("YOU" if job.owner == username else job.owner),
             description=job.description if job.description else "",
@@ -442,10 +440,12 @@ class TabularJobsFormatter(BaseJobsFormatter):
         username: str,
         columns: List[JobColumnInfo],
         image_formatter: ImageFormatter,
+        datetime_formatter: DatetimeFormatter,
     ) -> None:
         self._username = username
         self._columns = columns
         self._image_formatter = image_formatter
+        self._datetime_formatter = datetime_formatter
 
     def __call__(self, jobs: Iterable[JobDescription]) -> RenderableType:
         table = Table(box=box.SIMPLE_HEAVY)
@@ -470,7 +470,10 @@ class TabularJobsFormatter(BaseJobsFormatter):
         for job in jobs:
             table.add_row(
                 *TabularJobRow.from_job(
-                    job, self._username, image_formatter=self._image_formatter
+                    job,
+                    self._username,
+                    image_formatter=self._image_formatter,
+                    datetime_formatter=self._datetime_formatter,
                 ).to_list(self._columns)
             )
         return table
@@ -737,7 +740,7 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
                 + f" Wait for stop {next(self._spinner)} [{dt:.1f} sec]"
             )
         else:
-            msg = yes() + " Stopped"
+            msg = yes() + f" Job [b]{job.id}[/b] stopped"
 
         self._live_render.set_renderable(Text.from_markup(msg))
         with self._console:
@@ -814,15 +817,16 @@ class ExecStopProgress:
     time_factory = staticmethod(time.monotonic)
 
     @classmethod
-    def create(cls, console: Console, quiet: bool) -> "ExecStopProgress":
+    def create(cls, console: Console, quiet: bool, job_id: str) -> "ExecStopProgress":
         if quiet:
-            return ExecStopProgress()
+            return ExecStopProgress(job_id)
         elif console.is_terminal:
-            return DetailedExecStopProgress(console)
-        return StreamExecStopProgress(console)
+            return DetailedExecStopProgress(console, job_id)
+        return StreamExecStopProgress(console, job_id)
 
-    def __init__(self) -> None:
+    def __init__(self, job_id: str) -> None:
         self._time = self.time_factory()
+        self._job_id = job_id
 
     def __call__(self, running: bool) -> bool:
         # return False if timeout, True otherwise
@@ -853,8 +857,8 @@ class ExecStopProgress:
 
 
 class DetailedExecStopProgress(ExecStopProgress, RenderHook):
-    def __init__(self, console: Console) -> None:
-        super().__init__()
+    def __init__(self, console: Console, job_id: str) -> None:
+        super().__init__(job_id)
         self._console = console
         self._spinner = SPINNER
         self._live_render = LiveRender(Text())
@@ -869,7 +873,7 @@ class DetailedExecStopProgress(ExecStopProgress, RenderHook):
                 + f"Wait for stopping {next(self._spinner)} [{dt:.1f} sec]"
             )
         else:
-            msg = yes() + " Stopped"
+            msg = yes() + f" Job [b]{self._job_id}[/b] stopped"
 
         self._live_render.set_renderable(Text.from_markup(msg))
         with self._console:
@@ -913,8 +917,8 @@ class DetailedExecStopProgress(ExecStopProgress, RenderHook):
 
 
 class StreamExecStopProgress(ExecStopProgress):
-    def __init__(self, console: Console) -> None:
-        super().__init__()
+    def __init__(self, console: Console, job_id: str) -> None:
+        super().__init__(job_id)
         self._console = console
         self._console.print("Wait for stopping")
 

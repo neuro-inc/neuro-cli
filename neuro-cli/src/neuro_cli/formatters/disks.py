@@ -11,8 +11,7 @@ from rich.text import Text
 from neuro_sdk import Disk
 
 from neuro_cli import utils
-from neuro_cli.formatters.jobs import format_datetime, format_life_span
-from neuro_cli.formatters.utils import URIFormatter
+from neuro_cli.formatters.utils import DatetimeFormatter, URIFormatter, format_timedelta
 
 
 class BaseDisksFormatter:
@@ -30,17 +29,21 @@ class DisksFormatter(BaseDisksFormatter):
     def __init__(
         self,
         uri_formatter: URIFormatter,
+        datetime_formatter: DatetimeFormatter,
         *,
         long_format: bool = False,
     ) -> None:
         self._uri_formatter = uri_formatter
+        self._datetime_formatter = datetime_formatter
         self._long_format = long_format
 
     def _disk_to_table_row(self, disk: Disk) -> Sequence[str]:
         storage_str = utils.format_size(disk.storage)
+
         used_str = utils.format_size(disk.used_bytes)
         line = [
             disk.id,
+            disk.name or "",
             storage_str,
             used_str,
             self._uri_formatter(disk.uri),
@@ -48,8 +51,8 @@ class DisksFormatter(BaseDisksFormatter):
         ]
         if self._long_format:
             line += [
-                format_datetime(disk.created_at),
-                format_datetime(disk.last_usage),
+                self._datetime_formatter(disk.created_at),
+                self._datetime_formatter(disk.last_usage),
                 format_disk_timeout_unused(disk.timeout_unused),
             ]
         return line
@@ -60,6 +63,7 @@ class DisksFormatter(BaseDisksFormatter):
         # make sure that the first column is fully expanded
         width = len("disk-06bed296-8b27-4aa8-9e2a-f3c47b41c807")
         table.add_column("Id", style="bold", width=width)
+        table.add_column("Name")
         table.add_column("Storage")
         table.add_column("Used")
         table.add_column("Uri")
@@ -74,7 +78,10 @@ class DisksFormatter(BaseDisksFormatter):
 
 
 class DiskFormatter:
-    def __init__(self, uri_formatter: URIFormatter) -> None:
+    def __init__(
+        self, uri_formatter: URIFormatter, datetime_formatter: DatetimeFormatter
+    ) -> None:
+        self._datetime_formatter = datetime_formatter
         self._uri_formatter = uri_formatter
 
     def __call__(self, disk: Disk) -> RenderableType:
@@ -89,15 +96,17 @@ class DiskFormatter:
         table.add_row("Storage", utils.format_size(disk.storage))
         table.add_row("Used", utils.format_size(disk.used_bytes))
         table.add_row("Uri", self._uri_formatter(disk.uri))
+        if disk.name:
+            table.add_row("Name", disk.name)
         table.add_row("Status", disk.status.value)
-        table.add_row("Created at", format_datetime(disk.created_at))
-        table.add_row("Last used", format_datetime(disk.last_usage))
+        table.add_row("Created at", self._datetime_formatter(disk.created_at))
+        table.add_row("Last used", self._datetime_formatter(disk.last_usage))
         table.add_row("Timeout unused", format_disk_timeout_unused(disk.timeout_unused))
         return table
 
 
 def format_disk_timeout_unused(timeout_unused: Optional[timedelta]) -> str:
     if timeout_unused is not None:
-        return format_life_span(timeout_unused.total_seconds())
+        return format_timedelta(timeout_unused)
     else:
-        return format_life_span(None)
+        return "no limit"

@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import dataclasses
 import logging
 import shlex
 import sys
@@ -27,7 +28,13 @@ from neuro_sdk import (
 )
 
 from neuro_cli.formatters.images import DockerImageProgress
-from neuro_cli.formatters.utils import URIFormatter, image_formatter, uri_formatter
+from neuro_cli.formatters.utils import (
+    URIFormatter,
+    get_datetime_formatter,
+    image_formatter,
+    uri_formatter,
+)
+from neuro_cli.utils import resolve_disk
 
 from .ael import process_attach, process_exec, process_logs
 from .click_types import (
@@ -413,7 +420,10 @@ async def ls(
     else:
         image_fmtr = image_formatter(uri_formatter=uri_fmtr)
         formatter = TabularJobsFormatter(
-            root.client.username, format, image_formatter=image_fmtr
+            root.client.username,
+            format,
+            image_formatter=image_fmtr,
+            datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
         )
 
     with root.pager():
@@ -440,7 +450,12 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
         uri_fmtr = uri_formatter(
             username=root.client.username, cluster_name=root.client.cluster_name
         )
-    root.print(JobStatusFormatter(uri_formatter=uri_fmtr)(res))
+    root.print(
+        JobStatusFormatter(
+            uri_formatter=uri_fmtr,
+            datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
+        )(res)
+    )
 
 
 @command(deprecated=True, hidden=True)
@@ -531,7 +546,10 @@ async def top(root: Root, jobs: Sequence[str], timeout: float) -> None:
                     formatter.render()
                 await asyncio.sleep(TOP_REFRESH_DELAY)
 
-    with JobTelemetryFormatter(root.console) as formatter:
+    with JobTelemetryFormatter(
+        root.console,
+        datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
+    ) as formatter:
         await asyncio.gather(create_pollers(), renderer())
 
 
@@ -967,7 +985,18 @@ async def run_job(
     volume_parse_result = root.client.parse.volumes(volume)
     volumes = list(volume_parse_result.volumes)
     secret_files = volume_parse_result.secret_files
-    disk_volumes = volume_parse_result.disk_volumes
+
+    # Replace disk names with disk ids
+    async def _force_disk_id(disk_uri: URL) -> URL:
+        disk_id = await resolve_disk(disk_uri.parts[-1], client=root.client)
+        return disk_uri / f"../{disk_id}"
+
+    disk_volumes = [
+        dataclasses.replace(
+            disk_volume, disk_uri=await _force_disk_id(disk_volume.disk_uri)
+        )
+        for disk_volume in volume_parse_result.disk_volumes
+    ]
 
     if pass_config:
         env_name = PASS_CONFIG_ENV_NAME

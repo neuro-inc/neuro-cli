@@ -10,6 +10,7 @@ import sys
 import threading
 from typing import Any, Awaitable, Callable, List, Optional, Sequence, Tuple
 
+import aiohttp
 import click
 from prompt_toolkit.formatted_text import HTML, merge_formatted_text
 from prompt_toolkit.input import create_input
@@ -101,7 +102,9 @@ async def process_exec(root: Root, job: str, cmd: str, tty: bool) -> NoReturn:
         root.soft_reset_tty()
 
     info = await root.client.jobs.exec_inspect(job, exec_id)
-    with ExecStopProgress.create(console=root.console, quiet=root.quiet) as progress:
+    with ExecStopProgress.create(
+        console=root.console, quiet=root.quiet, job_id=job
+    ) as progress:
         while info.running:
             await asyncio.sleep(0.2)
             info = await root.client.jobs.exec_inspect(job, exec_id)
@@ -182,7 +185,38 @@ async def _exec_watcher(root: Root, job: str, exec_id: str) -> None:
         await asyncio.sleep(5)
 
 
+class RetryAttach(Exception):
+    pass
+
+
 async def process_attach(
+    root: Root,
+    job: JobDescription,
+    tty: bool,
+    logs: bool,
+    port_forward: List[Tuple[int, int]],
+) -> None:
+    max_retry_timeout = 10
+    while True:
+        retry_timeout = 1
+        try:
+            await _process_attach_single_try(root, job, tty, logs, port_forward)
+        except RetryAttach:
+            while True:
+                root.print(f"Connection lost. Retrying in {retry_timeout} seconds")
+                await asyncio.sleep(retry_timeout)
+                retry_timeout = min(retry_timeout * 2, max_retry_timeout)
+                try:
+                    job = await root.client.jobs.status(job.id)
+                except aiohttp.ClientConnectionError:
+                    pass
+                else:
+                    break
+        else:
+            break
+
+
+async def _process_attach_single_try(
     root: Root,
     job: JobDescription,
     tty: bool,
@@ -220,6 +254,13 @@ async def process_attach(
         finally:
             root.soft_reset_tty()
 
+        # We exited attach function not because of detach or kill,
+        # probably we lost connectivity?
+        try:
+            job = await root.client.jobs.status(job.id)
+        except aiohttp.ClientConnectionError:
+            raise RetryAttach
+
         # The class pins the current time in counstructor,
         # that's why we need to initialize
         # it AFTER the disconnection from attached session.
@@ -227,7 +268,6 @@ async def process_attach(
             console=root.console,
             quiet=root.quiet,
         ) as progress:
-            job = await root.client.jobs.status(job.id)
             while job.status == JobStatus.RUNNING:
                 await asyncio.sleep(0.2)
                 job = await root.client.jobs.status(job.id)
