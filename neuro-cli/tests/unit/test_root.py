@@ -23,6 +23,7 @@ def root_uninitialized() -> Iterator[Root]:
         command_params=[],
         skip_gmp_stats=True,
         show_traceback=False,
+        iso_datetime_format=False,
     )
     yield root
     root.close()

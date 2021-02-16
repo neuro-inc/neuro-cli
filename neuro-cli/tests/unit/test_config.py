@@ -57,6 +57,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
         command_params=[],
         skip_gmp_stats=True,
         show_traceback=False,
+        iso_datetime_format=False,
     )
 
     async def _async_make_client() -> Client:
@@ -118,6 +119,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
         command_params=[],
         skip_gmp_stats=True,
         show_traceback=False,
+        iso_datetime_format=False,
     )
 
     async def _async_make_client() -> Client:

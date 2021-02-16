@@ -2,6 +2,7 @@ from datetime import timedelta
 from typing import Optional, Sequence
 
 from neuro_cli.click_types import DISK, DISK_NAME
+from neuro_cli.formatters.utils import get_datetime_formatter
 from neuro_cli.utils import resolve_disk
 
 from .formatters.disks import (
@@ -41,7 +42,11 @@ async def ls(root: Root, full_uri: bool, long_format: bool) -> None:
             uri_fmtr = uri_formatter(
                 username=root.client.username, cluster_name=root.client.cluster_name
             )
-        disks_fmtr = DisksFormatter(uri_fmtr, long_format=long_format)
+        disks_fmtr = DisksFormatter(
+            uri_fmtr,
+            long_format=long_format,
+            datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
+        )
 
     disks = []
     async for disk in root.client.disks.list():
@@ -105,7 +110,9 @@ async def create(
     disk = await root.client.disks.create(
         parse_memory(storage), timeout_unused=disk_timeout_unused, name=name
     )
-    disk_fmtr = DiskFormatter(str)
+    disk_fmtr = DiskFormatter(
+        str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
+    )
     with root.pager():
         root.print(disk_fmtr(disk))
 
@@ -125,7 +132,9 @@ async def get(root: Root, disk: str, full_uri: bool) -> None:
         uri_fmtr = uri_formatter(
             username=root.client.username, cluster_name=root.client.cluster_name
         )
-    disk_fmtr = DiskFormatter(uri_fmtr)
+    disk_fmtr = DiskFormatter(
+        uri_fmtr, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
+    )
     with root.pager():
         root.print(disk_fmtr(disk_obj))
 
