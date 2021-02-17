@@ -1039,7 +1039,9 @@ def test_job_run_stdout(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_job_attach_tty(helper: Helper) -> None:
-    job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, "sh", tty=True)
+    job_id = helper.run_job_and_wait_state(
+        UBUNTU_IMAGE_NAME, "timeout 300 sh", tty=True
+    )
 
     status = helper.job_info(job_id)
     assert status.container.tty
