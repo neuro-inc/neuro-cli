@@ -737,7 +737,7 @@ Name | Description|
 
 ### neuro job top
 
-Display GPU/CPU/Memory usage.
+Display GPU/CPU/Memory usage.<br/>
 
 **Usage:**
 
@@ -745,12 +745,30 @@ Display GPU/CPU/Memory usage.
 neuro job top [OPTIONS] [JOBS]...
 ```
 
+**Examples:**
+
+```bash
+
+neuro top
+neuro top job-1 job-2
+neuro top --owner=user-1 --owner=user-2
+neuro top --name my-experiments-v1
+neuro top -t tag1 -t tag2
+
+```
+
 **Options:**
 
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
+|_\-n, --name NAME_|Filter out jobs by name.|
+|_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user. Specify `ALL` to show jobs of all users.|
+|_--since DATE_|Show jobs created after a specific date \(including).|
+|_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
+|_--until DATE_|Show jobs created before a specific date \(including).|
 
 
 
@@ -2439,7 +2457,7 @@ Name | Description|
 
 ## neuro top
 
-Display GPU/CPU/Memory usage.
+Display GPU/CPU/Memory usage.<br/>
 
 **Usage:**
 
@@ -2447,12 +2465,30 @@ Display GPU/CPU/Memory usage.
 neuro top [OPTIONS] [JOBS]...
 ```
 
+**Examples:**
+
+```bash
+
+neuro top
+neuro top job-1 job-2
+neuro top --owner=user-1 --owner=user-2
+neuro top --name my-experiments-v1
+neuro top -t tag1 -t tag2
+
+```
+
 **Options:**
 
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
+|_\-n, --name NAME_|Filter out jobs by name.|
+|_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user. Specify `ALL` to show jobs of all users.|
+|_--since DATE_|Show jobs created after a specific date \(including).|
+|_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
+|_--until DATE_|Show jobs created before a specific date \(including).|
 
 
 
