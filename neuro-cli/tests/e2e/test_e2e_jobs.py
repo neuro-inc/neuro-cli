@@ -25,7 +25,6 @@ import aiodocker
 import aiohttp
 import pytest
 from aiohttp.test_utils import unused_port
-from pexpect.replwrap import REPLWrapper
 from re_assert import Matches
 from yarl import URL
 
@@ -1040,7 +1039,10 @@ def test_job_run_stdout(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_job_attach_tty(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(
-        UBUNTU_IMAGE_NAME, "timeout 300 sh", tty=True
+        UBUNTU_IMAGE_NAME,
+        "timeout 300 bash --norc",
+        tty=True,
+        env={"PS1": "# "},
     )
 
     status = helper.job_info(job_id)
@@ -1048,12 +1050,10 @@ def test_job_attach_tty(helper: Helper) -> None:
 
     expect = helper.pexpect(["job", "attach", job_id])
     expect.expect("========== Job is running in terminal mode =========")
-    expect.sendline("\n")  # prompt may be missing after the connection.
-    repl = REPLWrapper(expect, "# ", None)
-    random_token, filename = uuid4(), uuid4()
-    repl.run_command(f"echo {random_token} > {filename}.txt")
-    ret = repl.run_command(f"cat {filename}.txt")
-    assert str(random_token) in ret
+    random_token = uuid4()
+    expect.sendline(f"echo {random_token}\n")
+    expect.expect(f"echo {random_token}")  # wait for cmd echo
+    expect.expect(str(random_token))  # wait for cmd execution output
 
     helper.kill_job(job_id)
 

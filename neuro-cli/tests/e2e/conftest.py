@@ -559,10 +559,13 @@ class Helper:
         description: Optional[str] = None,
         name: Optional[str] = None,
         tty: bool = False,
+        env: Optional[Dict[str, str]] = None,
         wait_state: JobStatus = JobStatus.RUNNING,
         stop_state: JobStatus = JobStatus.FAILED,
     ) -> str:
         __tracebackhide__ = True
+        if env is None:
+            env = {}
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             preset = client.presets["cpu-micro"]
             resources = Resources(memory_mb=preset.memory_mb, cpu=preset.cpu)
@@ -571,6 +574,7 @@ class Helper:
                 command=command,
                 resources=resources,
                 tty=tty,
+                env=env,
             )
             job = await client.jobs.run(
                 container,
