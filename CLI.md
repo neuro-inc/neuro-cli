@@ -362,6 +362,7 @@ neuro admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\-c, --credits AMOUNT_|Maximum running jobs quota|
 |_\-g, --gpu AMOUNT_|GPU quota value in hours \(h) or minutes \(m).|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota|
 |_\-n, --non-gpu AMOUNT_|Non-GPU quota value in hours \(h) or minutes \(m).|
@@ -384,6 +385,7 @@ neuro admin add-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\-c, --credits AMOUNT_|Maximum running jobs quota|
 |_\-g, --gpu AMOUNT_|Additional GPU quota value in hours \(h) or minutes \(m).|
 |_\-n, --non-gpu AMOUNT_|Additional non-GPU quota value in hours \(h) or minutes \(m).|
 
@@ -406,6 +408,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-c, --cpu NUMBER_|Number of CPUs  \[default: 0.1]|
+|_\--credits-per-hour AMOUNT_|Price of running job of this preset for an hour in credits  \[default: 0]|
 |_\-g, --gpu NUMBER_|Number of GPUs|
 |_\--gpu-model MODEL_|GPU model|
 |_\-m, --memory AMOUNT_|Memory amount  \[default: 1G]|

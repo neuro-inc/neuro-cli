@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Callable
 
 from aiohttp import web
@@ -422,9 +423,11 @@ async def test_set_user_quota(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/api/v1")) as client:
-        await client._admin.set_user_quota("default", "ivan", 10, 100, 200)
-        await client._admin.set_user_quota("neuro", "user2", None, None, None)
-        await client._admin.set_user_quota("neuro-ai", "user3", None, 150, None)
+        await client._admin.set_user_quota(
+            "default", "ivan", Decimal("1000"), 10, 100, 200
+        )
+        await client._admin.set_user_quota("neuro", "user2", None, None, None, None)
+        await client._admin.set_user_quota("neuro-ai", "user3", None, None, 150, None)
         assert requested_cluster_users == [
             ("default", "ivan"),
             ("neuro", "user2"),
@@ -433,6 +436,7 @@ async def test_set_user_quota(
         assert len(requested_payloads) == 3
         assert {
             "quota": {
+                "credits": "1000",
                 "total_running_jobs": 10,
                 "total_gpu_run_time_minutes": 100,
                 "total_non_gpu_run_time_minutes": 200,
@@ -471,9 +475,9 @@ async def test_add_user_quota(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/api/v1")) as client:
-        await client._admin.add_user_quota("default", "ivan", 100, 200)
-        await client._admin.add_user_quota("neuro", "user2", None, None)
-        await client._admin.add_user_quota("neuro-ai", "user3", 150, None)
+        await client._admin.add_user_quota("default", "ivan", Decimal("1000"), 100, 200)
+        await client._admin.add_user_quota("neuro", "user2", None, None, None)
+        await client._admin.add_user_quota("neuro-ai", "user3", None, 150, None)
         assert requested_cluster_users == [
             ("default", "ivan"),
             ("neuro", "user2"),
@@ -482,6 +486,7 @@ async def test_add_user_quota(
         assert len(requested_payloads) == 3
         assert {
             "additional_quota": {
+                "credits": "1000",
                 "total_gpu_run_time_minutes": 100,
                 "total_non_gpu_run_time_minutes": 200,
             },
@@ -525,6 +530,7 @@ async def test_update_cluster_resource_presets(
         assert sorted(await request.json(), key=lambda x: x["name"]) == [
             {
                 "name": "cpu-micro",
+                "credits_per_hour": "10",
                 "cpu": 0.1,
                 "memory_mb": 100,
                 "scheduler_enabled": False,
@@ -532,6 +538,7 @@ async def test_update_cluster_resource_presets(
             },
             {
                 "name": "cpu-micro-p",
+                "credits_per_hour": "10",
                 "cpu": 0.1,
                 "memory_mb": 100,
                 "scheduler_enabled": True,
@@ -539,6 +546,7 @@ async def test_update_cluster_resource_presets(
             },
             {
                 "name": "gpu-micro",
+                "credits_per_hour": "10",
                 "cpu": 0.2,
                 "memory_mb": 200,
                 "gpu": 1,
@@ -548,6 +556,7 @@ async def test_update_cluster_resource_presets(
             },
             {
                 "name": "tpu-micro",
+                "credits_per_hour": "10",
                 "cpu": 0.3,
                 "memory_mb": 300,
                 "tpu": {"type": "v2-8", "software_version": "1.14"},
@@ -569,18 +578,29 @@ async def test_update_cluster_resource_presets(
         await client._admin.update_cluster_resource_presets(
             "my_cluster",
             {
-                "cpu-micro": Preset(cpu=0.1, memory_mb=100),
+                "cpu-micro": Preset(
+                    credits_per_hour=Decimal("10"), cpu=0.1, memory_mb=100
+                ),
                 "cpu-micro-p": Preset(
+                    credits_per_hour=Decimal("10"),
                     cpu=0.1,
                     memory_mb=100,
                     scheduler_enabled=True,
                     preemptible_node=True,
                 ),
                 "gpu-micro": Preset(
-                    cpu=0.2, memory_mb=200, gpu=1, gpu_model="nvidia-tesla-k80"
+                    credits_per_hour=Decimal("10"),
+                    cpu=0.2,
+                    memory_mb=200,
+                    gpu=1,
+                    gpu_model="nvidia-tesla-k80",
                 ),
                 "tpu-micro": Preset(
-                    cpu=0.3, memory_mb=300, tpu_type="v2-8", tpu_software_version="1.14"
+                    credits_per_hour=Decimal("10"),
+                    cpu=0.3,
+                    memory_mb=300,
+                    tpu_type="v2-8",
+                    tpu_software_version="1.14",
                 ),
             },
         )

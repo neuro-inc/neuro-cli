@@ -2,6 +2,7 @@ import dataclasses
 import io
 import logging
 from collections import namedtuple
+from decimal import Decimal
 from difflib import ndiff
 from pathlib import Path
 from typing import Any, Callable, DefaultDict, Iterator, List, Optional, Set, Union
@@ -36,13 +37,25 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         disks_url=URL("https://disks-dev.neu.ro"),
         presets={
             "gpu-small": Preset(
-                cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory_mb=30 * 1024,
+                gpu=1,
+                gpu_model="nvidia-tesla-k80",
             ),
             "gpu-large": Preset(
-                cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory_mb=60 * 1024,
+                gpu=1,
+                gpu_model="nvidia-tesla-v100",
             ),
-            "cpu-small": Preset(cpu=7, memory_mb=2 * 1024),
-            "cpu-large": Preset(cpu=7, memory_mb=14 * 1024),
+            "cpu-small": Preset(
+                credits_per_hour=Decimal("10"), cpu=7, memory_mb=2 * 1024
+            ),
+            "cpu-large": Preset(
+                credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+            ),
         },
         name="default",
     )

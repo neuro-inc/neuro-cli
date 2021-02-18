@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from decimal import Decimal
 from enum import Enum, unique
 from typing import Any, Dict, List, Mapping, Optional
 
@@ -26,6 +27,7 @@ class _ClusterUser:
 
 @dataclass(frozen=True)
 class _Quota:
+    credits: Optional[Decimal]
     total_running_jobs: Optional[int]
     total_gpu_run_time_minutes: Optional[int]
     total_non_gpu_run_time_minutes: Optional[int]
@@ -146,6 +148,7 @@ class _Admin(metaclass=NoPublicConstructor):
         self,
         cluster_name: str,
         user_name: str,
+        credits: Optional[Decimal],
         total_running_jobs: Optional[int],
         gpu_value_minutes: Optional[int],
         non_gpu_value_minutes: Optional[int],
@@ -160,6 +163,7 @@ class _Admin(metaclass=NoPublicConstructor):
         )
         payload = {
             "quota": {
+                "credits": str(credits) if credits else None,
                 "total_running_jobs": total_running_jobs,
                 "total_gpu_run_time_minutes": gpu_value_minutes,
                 "total_non_gpu_run_time_minutes": non_gpu_value_minutes,
@@ -177,6 +181,7 @@ class _Admin(metaclass=NoPublicConstructor):
         self,
         cluster_name: str,
         user_name: str,
+        additional_credits: Optional[Decimal],
         additional_gpu_value_minutes: Optional[float],
         additional_non_gpu_value_minutes: Optional[float],
     ) -> _ClusterUserWithQuota:
@@ -190,6 +195,7 @@ class _Admin(metaclass=NoPublicConstructor):
         )
         payload = {
             "additional_quota": {
+                "credits": str(additional_credits) if additional_credits else None,
                 "total_gpu_run_time_minutes": additional_gpu_value_minutes,
                 "total_non_gpu_run_time_minutes": additional_non_gpu_value_minutes,
             },
@@ -226,6 +232,7 @@ def _cluster_user_with_quota_from_api(
         user_name=user_name,
         role=_ClusterUserRoleType(payload["role"]),
         quota=_Quota(
+            Decimal(quota_dict["credits"]) if "credits" in quota_dict else None,
             quota_dict.get("total_running_jobs"),
             quota_dict.get("total_gpu_run_time_minutes"),
             quota_dict.get("total_non_gpu_run_time_minutes"),
@@ -285,6 +292,7 @@ def _storage_from_api(payload: Dict[str, Any]) -> _Storage:
 def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
     result: Dict[str, Any] = {
         "name": name,
+        "credits_per_hour": str(preset.credits_per_hour),
         "cpu": preset.cpu,
         "memory_mb": preset.memory_mb,
         "scheduler_enabled": preset.scheduler_enabled,

@@ -107,6 +107,7 @@ async def mock_for_login(
                             "resource_presets": [
                                 {
                                     "name": "gpu-small",
+                                    "credits_per_hour": "10",
                                     "cpu": 7,
                                     "memory_mb": 30 * 1024,
                                     "gpu": 1,
@@ -114,13 +115,24 @@ async def mock_for_login(
                                 },
                                 {
                                     "name": "gpu-large",
+                                    "credits_per_hour": "10",
                                     "cpu": 7,
                                     "memory_mb": 60 * 1024,
                                     "gpu": 1,
                                     "gpu_model": "nvidia-tesla-v100",
                                 },
-                                {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
-                                {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                                {
+                                    "name": "cpu-small",
+                                    "credits_per_hour": "10",
+                                    "cpu": 2,
+                                    "memory_mb": 2 * 1024,
+                                },
+                                {
+                                    "name": "cpu-large",
+                                    "credits_per_hour": "10",
+                                    "cpu": 3,
+                                    "memory_mb": 14 * 1024,
+                                },
                             ],
                         }
                     ]

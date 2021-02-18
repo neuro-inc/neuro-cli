@@ -1,4 +1,5 @@
 from dataclasses import replace
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Dict
 from unittest import mock
@@ -139,7 +140,11 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
             monitoring_url=URL("https://jobs-dev.neu.ro"),
             secrets_url=URL("https://secrets-dev.neu.ro"),
             disks_url=URL("https://disks-dev.neu.ro"),
-            presets={"cpu-small": Preset(cpu=1, memory_mb=2 * 1024)},
+            presets={
+                "cpu-small": Preset(
+                    credits_per_hour=Decimal("10"), cpu=1, memory_mb=2 * 1024
+                )
+            },
         ),
         "another": Cluster(
             name="another",
@@ -150,7 +155,11 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
             monitoring_url=URL("https://jobs2-dev.neu.ro"),
             secrets_url=URL("https://secrets2-dev.neu.ro"),
             disks_url=URL("https://disks-dev.neu.ro"),
-            presets={"cpu-large": Preset(cpu=7, memory_mb=14 * 1024)},
+            presets={
+                "cpu-large": Preset(
+                    credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+                )
+            },
         ),
     }
 
@@ -174,7 +183,11 @@ async def test_get_cluster_name_from_local(
         assert client.config.blob_storage_url == URL("https://blob-storage-dev.neu.ro")
         assert client.config.monitoring_url == URL("https://jobs-dev.neu.ro")
         assert client.config.secrets_url == URL("https://secrets-dev.neu.ro")
-        assert client.config.presets == {"cpu-small": Preset(cpu=1, memory_mb=2 * 1024)}
+        assert client.config.presets == {
+            "cpu-small": Preset(
+                credits_per_hour=Decimal("10"), cpu=1, memory_mb=2 * 1024
+            )
+        }
 
         local_conf = proj_dir / ".neuro.toml"
         local_conf.write_text(toml.dumps({"job": {"cluster-name": "another"}}))
@@ -184,7 +197,9 @@ async def test_get_cluster_name_from_local(
         assert client.config.monitoring_url == URL("https://jobs2-dev.neu.ro")
         assert client.config.secrets_url == URL("https://secrets2-dev.neu.ro")
         assert client.config.presets == {
-            "cpu-large": Preset(cpu=7, memory_mb=14 * 1024)
+            "cpu-large": Preset(
+                credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+            )
         }
 
 
@@ -236,6 +251,7 @@ async def test_presets(
     async with make_client(srv.make_url("/")) as client:
         assert client.config.presets == {
             "cpu-large": Preset(
+                credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory_mb=14336,
                 scheduler_enabled=False,
@@ -245,6 +261,7 @@ async def test_presets(
                 tpu_software_version=None,
             ),
             "cpu-small": Preset(
+                credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory_mb=2048,
                 scheduler_enabled=False,
@@ -254,6 +271,7 @@ async def test_presets(
                 tpu_software_version=None,
             ),
             "gpu-large": Preset(
+                credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory_mb=61440,
                 scheduler_enabled=False,
@@ -263,6 +281,7 @@ async def test_presets(
                 tpu_software_version=None,
             ),
             "gpu-small": Preset(
+                credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory_mb=30720,
                 scheduler_enabled=False,
@@ -344,7 +363,12 @@ async def test_fetch(
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
                 "resource_presets": [
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
+                    {
+                        "name": "cpu-small",
+                        "credits_per_hour": "10",
+                        "cpu": 2,
+                        "memory_mb": 2 * 1024,
+                    }
                 ],
             }
         ],
@@ -371,6 +395,7 @@ async def test_fetch(
                 disks_url=URL(disks_url),
                 presets={
                     "cpu-small": Preset(
+                        credits_per_hour=Decimal("10"),
                         cpu=2,
                         memory_mb=2048,
                         scheduler_enabled=False,
@@ -423,7 +448,12 @@ async def test_fetch_dropped_selected_cluster(
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
                 "resource_presets": [
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
+                    {
+                        "name": "cpu-small",
+                        "credits_per_hour": "10",
+                        "cpu": 2,
+                        "memory_mb": 2 * 1024,
+                    }
                 ],
             }
         ],
@@ -521,7 +551,12 @@ async def test_check_server_mismatch_clusters(
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
                 "resource_presets": [
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
+                    {
+                        "name": "cpu-small",
+                        "credits_per_hour": "10",
+                        "cpu": 2,
+                        "memory_mb": 2 * 1024,
+                    }
                 ],
             }
         ],
@@ -582,7 +617,12 @@ async def test_check_server_mismatch_auth(
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
                 "resource_presets": [
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024}
+                    {
+                        "name": "cpu-small",
+                        "credits_per_hour": "10",
+                        "cpu": 2,
+                        "memory_mb": 2 * 1024,
+                    }
                 ],
             }
         ],

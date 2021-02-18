@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Any, Dict, Mapping, Optional
 
 import aiohttp
@@ -10,6 +11,7 @@ from .login import _AuthConfig
 
 @dataclass(frozen=True)
 class Preset:
+    credits_per_hour: Decimal
     cpu: float
     memory_mb: int
     scheduler_enabled: bool = False
@@ -49,6 +51,7 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
             tpu_type = tpu_payload["type"]
             tpu_software_version = tpu_payload["software_version"]
         presets[data["name"]] = Preset(
+            credits_per_hour=Decimal(data["credits_per_hour"]),
             cpu=data["cpu"],
             memory_mb=data["memory_mb"],
             gpu=data.get("gpu"),

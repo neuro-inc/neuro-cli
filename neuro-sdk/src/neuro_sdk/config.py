@@ -9,6 +9,7 @@ import sqlite3
 import sys
 import time
 from dataclasses import dataclass, replace
+from decimal import Decimal
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Dict, Iterator, List, Mapping, Optional, Set, Tuple, Union
@@ -405,6 +406,7 @@ def _deserialize_resource_preset(payload: Dict[str, Any]) -> Tuple[str, Preset]:
     return (
         payload["name"],
         Preset(
+            credits_per_hour=Decimal(payload["credits_per_hour"]),
             cpu=payload["cpu"],
             memory_mb=payload["memory_mb"],
             gpu=payload.get("gpu"),
@@ -518,6 +520,7 @@ def _serialize_clusters(clusters: Mapping[str, Cluster]) -> str:
 def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
     return {
         "name": name,
+        "credits_per_hour": str(preset.credits_per_hour),
         "cpu": preset.cpu,
         "memory_mb": preset.memory_mb,
         "gpu": preset.gpu,

@@ -1,5 +1,6 @@
 import json
 from contextlib import ExitStack
+from decimal import Decimal
 from typing import Any, Callable, List, Mapping
 from unittest import mock
 
@@ -83,6 +84,7 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
             assert cluster_name == "default"
             assert "cpu-micro" in presets
             assert presets["cpu-micro"] == Preset(
+                credits_per_hour=Decimal("10"),
                 cpu=0.1,
                 memory_mb=100,
                 gpu=1,
@@ -105,6 +107,8 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
                 "update-resource-preset",
                 "default",
                 "cpu-micro",
+                "--credits-per-hour",
+                "10.00",
                 "-c",
                 "0.1",
                 "-m",

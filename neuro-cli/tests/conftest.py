@@ -1,5 +1,6 @@
 import asyncio
 from dataclasses import replace
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
@@ -72,14 +73,27 @@ def cluster_config() -> Cluster:
         disks_url=URL("https://disks-storage-dev.neu.ro"),
         presets={
             "gpu-small": Preset(
-                cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory_mb=30 * 1024,
+                gpu=1,
+                gpu_model="nvidia-tesla-k80",
             ),
             "gpu-large": Preset(
-                cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory_mb=60 * 1024,
+                gpu=1,
+                gpu_model="nvidia-tesla-v100",
             ),
-            "cpu-small": Preset(cpu=7, memory_mb=2 * 1024),
-            "cpu-large": Preset(cpu=7, memory_mb=14 * 1024),
+            "cpu-small": Preset(
+                credits_per_hour=Decimal("10"), cpu=7, memory_mb=2 * 1024
+            ),
+            "cpu-large": Preset(
+                credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+            ),
             "cpu-large-p": Preset(
+                credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory_mb=14 * 1024,
                 scheduler_enabled=True,
@@ -114,13 +128,25 @@ def make_client(
                 disks_url=(url / "disks"),
                 presets={
                     "gpu-small": Preset(
-                        cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                        credits_per_hour=Decimal("10"),
+                        cpu=7,
+                        memory_mb=30 * 1024,
+                        gpu=1,
+                        gpu_model="nvidia-tesla-k80",
                     ),
                     "gpu-large": Preset(
-                        cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                        credits_per_hour=Decimal("10"),
+                        cpu=7,
+                        memory_mb=60 * 1024,
+                        gpu=1,
+                        gpu_model="nvidia-tesla-v100",
                     ),
-                    "cpu-small": Preset(cpu=7, memory_mb=2 * 1024),
-                    "cpu-large": Preset(cpu=7, memory_mb=14 * 1024),
+                    "cpu-small": Preset(
+                        credits_per_hour=Decimal("10"), cpu=7, memory_mb=2 * 1024
+                    ),
+                    "cpu-large": Preset(
+                        credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+                    ),
                 },
                 name="default",
             )

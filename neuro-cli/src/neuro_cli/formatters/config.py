@@ -1,4 +1,5 @@
 import operator
+from decimal import Decimal
 from typing import Iterable, List, Mapping, Optional, Union
 
 import click
@@ -78,6 +79,7 @@ class QuotaFormatter:
     QUOTA_NOT_SET = "infinity"
 
     def __call__(self, quota: _Quota) -> RenderableType:
+        credits_details = self._format_quota_details(quota.credits, is_minutes=False)
         jobs_details = self._format_quota_details(
             quota.total_running_jobs, is_minutes=False
         )
@@ -86,13 +88,14 @@ class QuotaFormatter:
             quota.total_non_gpu_run_time_minutes
         )
         return RenderGroup(
+            Text.assemble(Text("Credits", style="bold"), f": ", credits_details),
             Text.assemble(Text("Jobs", style="bold"), f": ", jobs_details),
             Text.assemble(Text("GPU", style="bold"), f": ", gpu_details),
             Text.assemble(Text("CPU", style="bold"), f": ", non_gpu_details),
         )
 
     def _format_quota_details(
-        self, quota: Optional[int], *, is_minutes: bool = True
+        self, quota: Optional[Union[int, Decimal]], *, is_minutes: bool = True
     ) -> str:
         if quota is None:
             return self.QUOTA_NOT_SET
@@ -144,6 +147,7 @@ def _format_presets(
         table.add_column("Jobs Avail", justify="right")
     if has_tpu:
         table.add_column("TPU", justify="left")
+    table.add_column("Credits per hour", justify="left")
 
     for name, preset in presets.items():
         gpu = ""
@@ -169,6 +173,7 @@ def _format_presets(
                 row.append(str(available_jobs_counts[name]))
             else:
                 row.append("")
+        row.append(str(preset.credits_per_hour))
         table.add_row(*row)
 
     return table
