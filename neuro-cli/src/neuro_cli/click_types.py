@@ -9,7 +9,12 @@ from click import BadParameter
 
 from neuro_sdk import LocalImage, RemoteImage, TagOption
 
-from .parse_utils import JobColumnInfo, parse_columns, to_megabytes
+from .parse_utils import (
+    JobColumnInfo,
+    parse_ps_columns,
+    parse_top_columns,
+    to_megabytes,
+)
 from .root import Root
 
 # NOTE: these job name defaults are taken from `platform_api` file `validators.py`
@@ -202,10 +207,27 @@ class JobColumnsType(click.ParamType):
     ) -> List[JobColumnInfo]:
         if isinstance(value, list):
             return value
-        return parse_columns(value)
+        return parse_ps_columns(value)
 
 
 JOB_COLUMNS = JobColumnsType()
+
+
+class TopColumnsType(click.ParamType):
+    name = "columns"
+
+    def convert(
+        self,
+        value: Union[str, List[JobColumnInfo]],
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> List[JobColumnInfo]:
+        if isinstance(value, list):
+            return value
+        return parse_top_columns(value)
+
+
+TOP_COLUMNS = TopColumnsType()
 
 
 class PresetType(AsyncType[str]):

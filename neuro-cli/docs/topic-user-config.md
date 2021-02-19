@@ -48,6 +48,12 @@ Default value for `neuro ps --format=XXX` option.
 
 See `neuro help ps-format` for information about the value specification.
 
+**`top-format`**
+
+Default value for `neuro top --format=XXX` option.
+
+See `neuro help top-format` for information about the value specification.
+
 **`life-span`**
 
 Default job run-time limit for `neuro run --life-span=XXX` option.

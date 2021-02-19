@@ -315,6 +315,8 @@ Display `GPU`/`CPU`/Memory usage.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--format COLUMNS_ | Output table format, see "neuro help top-format" for more info about the format specification. The default can be changed using the job.top-format configuration variable documented in "neuro help user-config" |
+| _--full-uri_ | Output full image URI. |
 | _--timeout FLOAT_ | Maximum allowed time for executing the command, 0 for no timeout  _\[default: 0\]_ |
 
 

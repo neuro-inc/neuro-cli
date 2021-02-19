@@ -43,6 +43,7 @@ from .click_types import (
     JOB_NAME,
     LOCAL_REMOTE_PORT,
     PRESET,
+    TOP_COLUMNS,
     ImageType,
 )
 from .const import EX_PLATFORMERROR
@@ -56,9 +57,11 @@ from .formatters.jobs import (
 )
 from .parse_utils import (
     JobColumnInfo,
-    get_default_columns,
-    parse_columns,
+    get_default_ps_columns,
+    get_default_top_columns,
+    parse_ps_columns,
     parse_timedelta,
+    parse_top_columns,
     serialize_timedelta,
 )
 from .root import Root
@@ -371,7 +374,7 @@ async def ls(
     neuro ps -t tag1 -t tag2
     """
 
-    format = await calc_columns(root.client, format)
+    format = await calc_ps_columns(root.client, format)
 
     statuses = calc_statuses(status, all)
     owners = set(owner)
@@ -486,16 +489,37 @@ async def browse(root: Root, job: str) -> None:
 @command()
 @argument("jobs", nargs=-1, required=False, type=JOB)
 @option(
+    "--format",
+    type=TOP_COLUMNS,
+    help=(
+        'Output table format, see "neuro help top-format" '
+        "for more info about the format specification. "
+        "The default can be changed using the job.top-format "
+        'configuration variable documented in "neuro help user-config"'
+    ),
+    default=None,
+)
+@option("--full-uri", is_flag=True, help="Output full image URI.")
+@option(
     "--timeout",
     default=0,
     type=float,
     show_default=True,
     help="Maximum allowed time for executing the command, 0 for no timeout",
 )
-async def top(root: Root, jobs: Sequence[str], timeout: float) -> None:
+async def top(
+    root: Root,
+    jobs: Sequence[str],
+    format: Optional[List[JobColumnInfo]],
+    full_uri: bool,
+    timeout: float,
+) -> None:
     """
     Display GPU/CPU/Memory usage.
     """
+
+    format = await calc_top_columns(root.client, format)
+
     observed: Set[str] = set()
 
     async def create_pollers() -> None:
@@ -546,9 +570,22 @@ async def top(root: Root, jobs: Sequence[str], timeout: float) -> None:
                     formatter.render()
                 await asyncio.sleep(TOP_REFRESH_DELAY)
 
+    uri_fmtr: URIFormatter
+    if full_uri:
+        uri_fmtr = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username, cluster_name=root.client.cluster_name
+        )
+    image_fmtr = image_formatter(uri_formatter=uri_fmtr)
+    datetime_fmtr = get_datetime_formatter(root.iso_datetime_format)
+
     with JobTelemetryFormatter(
         root.console,
-        datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
+        root.client.username,
+        format,
+        image_formatter=image_fmtr,
+        datetime_formatter=datetime_fmtr,
     ) as formatter:
         await asyncio.gather(create_pollers(), renderer())
 
@@ -1128,7 +1165,7 @@ def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
     return {JobStatus(s) for s in statuses}
 
 
-async def calc_columns(
+async def calc_ps_columns(
     client: Client, format: Optional[List[JobColumnInfo]]
 ) -> List[JobColumnInfo]:
     if format is None:
@@ -1137,8 +1174,22 @@ async def calc_columns(
         if section is not None:
             format_str = section.get("ps-format")
             if format_str is not None:
-                return parse_columns(format_str)
-        return get_default_columns()
+                return parse_ps_columns(format_str)
+        return get_default_ps_columns()
+    return format
+
+
+async def calc_top_columns(
+    client: Client, format: Optional[List[JobColumnInfo]]
+) -> List[JobColumnInfo]:
+    if format is None:
+        config = await client.config.get_user_config()
+        section = config.get("job")
+        if section is not None:
+            format_str = section.get("top-format")
+            if format_str is not None:
+                return parse_top_columns(format_str)
+        return get_default_top_columns()
     return format
 
 
