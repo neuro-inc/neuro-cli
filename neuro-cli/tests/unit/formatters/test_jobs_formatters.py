@@ -42,7 +42,7 @@ from neuro_cli.formatters.utils import (
     image_formatter,
     uri_formatter,
 )
-from neuro_cli.parse_utils import parse_columns
+from neuro_cli.parse_utils import parse_ps_columns, parse_top_columns
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
 TEST_JOB_ID2 = "job-3f9c5f93-45be-4c5d-acbd-11c68260235f"
@@ -1161,7 +1161,11 @@ class TestJobTelemetryFormatter:
     ) -> None:
         console = new_console(tty=True, color=True)
         with JobTelemetryFormatter(
-            console, datetime_formatter=format_datetime_human
+            console,
+            "owner",
+            parse_top_columns(None),
+            image_formatter=str,
+            datetime_formatter=format_datetime_human,
         ) as fmt:
             timestamp = 1_517_248_466.238_723_6
             telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
@@ -1177,7 +1181,11 @@ class TestJobTelemetryFormatter:
     ) -> None:
         console = new_console(tty=True, color=True)
         with JobTelemetryFormatter(
-            console, datetime_formatter=format_datetime_human
+            console,
+            "owner",
+            parse_top_columns(None),
+            image_formatter=str,
+            datetime_formatter=format_datetime_human,
         ) as fmt:
             timestamp = 1_517_248_466.238_723_6
             telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
@@ -1201,7 +1209,11 @@ class TestJobTelemetryFormatter:
         job_descr2 = replace(job_descr, id=TEST_JOB_ID2)
         console = new_console(tty=True, color=True)
         with JobTelemetryFormatter(
-            console, datetime_formatter=format_datetime_human
+            console,
+            "owner",
+            parse_top_columns(None),
+            image_formatter=str,
+            datetime_formatter=format_datetime_human,
         ) as fmt:
             timestamp = 1_517_248_466.238_723_6
             telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
@@ -1231,7 +1243,12 @@ class TestJobTelemetryFormatter:
         job_descr2 = replace(job_descr, id=TEST_JOB_ID2)
         console = new_console(tty=True, color=True)
         with JobTelemetryFormatter(
-            console, maxrows=1, datetime_formatter=format_datetime_human
+            console,
+            "owner",
+            parse_top_columns(None),
+            image_formatter=str,
+            datetime_formatter=format_datetime_human,
+            maxrows=1,
         ) as fmt:
             timestamp = 1_517_248_466.238_723_6
             telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
@@ -1254,7 +1271,11 @@ class TestJobTelemetryFormatter:
     ) -> None:
         console = new_console(tty=True, color=True)
         with JobTelemetryFormatter(
-            console, datetime_formatter=format_datetime_human
+            console,
+            "owner",
+            parse_top_columns(None),
+            image_formatter=str,
+            datetime_formatter=format_datetime_human,
         ) as fmt:
             timestamp = 1_517_248_466
             telemetry = JobTelemetry(
@@ -1484,7 +1505,7 @@ class TestTabularJobsFormatter:
     def test_empty(self, rich_cmp: Any) -> None:
         formatter = TabularJobsFormatter(
             "owner",
-            parse_columns(None),
+            parse_ps_columns(None),
             image_formatter=str,
             datetime_formatter=format_datetime_human,
         )
@@ -1522,7 +1543,7 @@ class TestTabularJobsFormatter:
         )
         formatter = TabularJobsFormatter(
             "owner",
-            parse_columns(None),
+            parse_ps_columns(None),
             image_formatter=str,
             datetime_formatter=format_datetime_human,
         )
@@ -1600,7 +1621,7 @@ class TestTabularJobsFormatter:
         ]
         formatter = TabularJobsFormatter(
             "owner",
-            parse_columns(None),
+            parse_ps_columns(None),
             image_formatter=str,
             datetime_formatter=format_datetime_human,
         )
@@ -1632,7 +1653,7 @@ class TestTabularJobsFormatter:
             pass_config=True,
         )
 
-        columns = parse_columns("{status;align=right;min=20;Status Code}")
+        columns = parse_ps_columns("{status;align=right;min=20;Status Code}")
         formatter = TabularJobsFormatter(
             "owner",
             columns,
@@ -1672,7 +1693,7 @@ class TestTabularJobsFormatter:
             for i, life_span in enumerate(life_spans, 1)
         ]
 
-        columns = parse_columns("id life_span")
+        columns = parse_ps_columns("id life_span")
         formatter = TabularJobsFormatter(
             "owner",
             columns,
@@ -1737,7 +1758,7 @@ class TestTabularJobsFormatter:
             for i, item in enumerate(items, 1)
         ]
 
-        columns = parse_columns("id status when created started finished")
+        columns = parse_ps_columns("id status when created started finished")
         formatter = TabularJobsFormatter(
             "test-user",
             columns,
@@ -1777,7 +1798,7 @@ class TestTabularJobsFormatter:
             for i, working_dir in enumerate(items, 1)
         ]
 
-        columns = parse_columns("id workdir")
+        columns = parse_ps_columns("id workdir")
         formatter = TabularJobsFormatter(
             "test-user",
             columns,
@@ -1817,7 +1838,7 @@ class TestTabularJobsFormatter:
             for i, preset_name in enumerate(items, 1)
         ]
 
-        columns = parse_columns("id preset")
+        columns = parse_ps_columns("id preset")
         formatter = TabularJobsFormatter(
             "test-user",
             columns,

@@ -114,6 +114,13 @@ async def ps_format() -> None:
     * **workdir** (WORKDIR): default working directory inside a job.
     * **preset** (PRESET): resource configuration used for a job.
 
+    Columns recognizes only in the `neuro top` command:
+
+    * **cpu** (CPU): number of used CPUs.
+    * **memory** (MEMORY (MB)): amount of used memory, in MB.
+    * **gpu** (GPU (%)): used GPUs, in percents.
+    * **gpu_memory** (GPU_MEMORY (MB)): amount of used GPU memory, in MB.
+
     By default all columns are left aligned and have no minimal and default widths.
 
     The column id is case insensitive, it can be shrinked to any unambiguous subset
@@ -122,6 +129,14 @@ async def ps_format() -> None:
     column ids.
 
     """
+
+
+@topics.command()
+async def top_format() -> None:
+    pass
+
+
+top_format.help = ps_format.help
 
 
 @topics.command()
@@ -176,6 +191,12 @@ async def user_config() -> None:
     Default value for `neuro ps --format=XXX` option.
 
     See `neuro help ps-format` for information about the value specification.
+
+    **`top-format`**
+
+    Default value for `neuro top --format=XXX` option.
+
+    See `neuro help top-format` for information about the value specification.
 
     **`life-span`**
 

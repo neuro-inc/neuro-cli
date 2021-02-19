@@ -1,7 +1,7 @@
 import dataclasses
 import re
 from datetime import timedelta
-from typing import Callable, List, Mapping, Optional, TypeVar
+from typing import Callable, Dict, List, Mapping, Optional, TypeVar
 
 import click
 from rich.console import JustifyMethod
@@ -69,7 +69,7 @@ class JobColumnInfo:
 # Note: please keep the help for format specs in sync with the following data
 # structures.
 
-COLUMNS = [
+PS_COLUMNS = [
     JobColumnInfo(
         "id", "ID", "left", width=len("job-28040560-2a21-428e-a7c0-44c809490b53")
     ),
@@ -90,7 +90,7 @@ COLUMNS = [
     JobColumnInfo("preset", "PRESET", "left"),
 ]
 
-COLUMNS_DEFAULT_IGNORE = {
+PS_COLUMNS_DEFAULT_IGNORE = {
     "tags",
     "life_span",
     "created",
@@ -100,12 +100,37 @@ COLUMNS_DEFAULT_IGNORE = {
     "preset",
 }
 
+PS_COLUMNS_DEFAULT = {
+    col.id for col in PS_COLUMNS if col.id not in PS_COLUMNS_DEFAULT_IGNORE
+}
 
-def get_default_columns() -> List[JobColumnInfo]:
-    return [col for col in COLUMNS if col.id not in COLUMNS_DEFAULT_IGNORE]
+TOP_COLUMNS = PS_COLUMNS + [
+    JobColumnInfo("cpu", "CPU", "right", width=15),
+    JobColumnInfo("memory", "MEMORY (MB)", "right", width=15),
+    JobColumnInfo("gpu", "GPU (%)", "right", width=15),
+    JobColumnInfo("gpu_memory", "GPU_MEMORY (MB)", "right", width=15),
+]
+
+TOP_COLUMNS_DEFAULT = {
+    "id",
+    "when",
+    "cpu",
+    "memory",
+    "gpu",
+    "gpu_memory",
+}
 
 
-COLUMNS_MAP = {column.id: column for column in COLUMNS}
+def get_default_ps_columns() -> List[JobColumnInfo]:
+    return [col for col in PS_COLUMNS if col.id in PS_COLUMNS_DEFAULT]
+
+
+def get_default_top_columns() -> List[JobColumnInfo]:
+    return [col for col in TOP_COLUMNS if col.id in TOP_COLUMNS_DEFAULT]
+
+
+PS_COLUMNS_MAP = {column.id: column for column in PS_COLUMNS}
+TOP_COLUMNS_MAP = {column.id: column for column in TOP_COLUMNS}
 
 COLUMNS_RE = re.compile(
     r"""
@@ -155,12 +180,22 @@ def _justify(arg: str) -> JustifyMethod:
     return arg  # type: ignore
 
 
-def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
+def parse_ps_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
+    return _parse_columns(fmt, PS_COLUMNS_MAP) or get_default_ps_columns()
+
+
+def parse_top_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
+    return _parse_columns(fmt, TOP_COLUMNS_MAP) or get_default_top_columns()
+
+
+def _parse_columns(
+    fmt: Optional[str], columns_map: Dict[str, JobColumnInfo]
+) -> Optional[List[JobColumnInfo]]:
     # Column format is "{id[;field=val][;title]}",
     # columns are separated by commas or spaces
     # spaces in title are forbidden
     if not fmt:
-        return get_default_columns()
+        return None
     ret = []
     for m1 in COLUMNS_RE.finditer(fmt):
         if m1.lastgroup == "sep":
@@ -178,19 +213,19 @@ def parse_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
             raise ValueError(f"Invalid format {fmt!r}")
         groups = m2.groupdict()
         id = groups["id"].lower()
-        default = COLUMNS_MAP.get(id)
+        default = columns_map.get(id)
         if default is None:
-            for name in COLUMNS_MAP:
+            for name in columns_map:
                 if name.startswith(id):
                     if default is not None:
                         variants = ", ".join(
-                            name for name in COLUMNS_MAP if name.startswith(id)
+                            name for name in columns_map if name.startswith(id)
                         )
                         raise ValueError(
                             f"Ambiguous column {id!r} in format {fmt!r};"
                             f" available variants: {variants}"
                         )
-                    default = COLUMNS_MAP[name]
+                    default = columns_map[name]
             if default is None:
                 raise ValueError(f"Unknown column {id!r} in format {fmt!r}")
         title = _get(groups, "title", fmt, str, default.title)

@@ -633,6 +633,7 @@ def _validate_user_config(
     # validates it.
     plugin_manager = PluginManager()
     plugin_manager.config.define_str("job", "ps-format")
+    plugin_manager.config.define_str("job", "top-format")
     plugin_manager.config.define_str("job", "life-span")
     if allow_cluster_name:
         plugin_manager.config.define_str("job", "cluster-name")

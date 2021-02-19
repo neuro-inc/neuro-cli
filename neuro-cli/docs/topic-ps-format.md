@@ -45,6 +45,13 @@ The system recognizes the following columns:
 * **workdir** (WORKDIR): default working directory inside a job.
 * **preset** (PRESET): resource configuration used for a job.
 
+Columns recognizes only in the `neuro top` command:
+
+* **cpu** (CPU): number of used CPUs.
+* **memory** (MEMORY (MB)): amount of used memory, in MB.
+* **gpu** (GPU (%)): used GPUs, in percents.
+* **gpu_memory** (GPU_MEMORY (MB)): amount of used GPU memory, in MB.
+
 By default all columns are left aligned and have no minimal and default widths.
 
 The column id is case insensitive, it can be shrinked to any unambiguous subset
