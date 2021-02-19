@@ -5,6 +5,16 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.2.19 (2021-02-19)
+==================================
+
+Bugfixes
+--------
+
+
+- Fixed parsing of huge job payloads. ([#2004](https://github.com/neuro-inc/platform-client-python/issues/2004))
+
+
 Neuro SDK/CLI 21.2.16 (2021-02-16)
 ==================================
 

@@ -6,7 +6,7 @@ with open("README.md") as f:
 
 setup(
     name="neuro-sdk",
-    version="21.2.16",
+    version="21.2.19",
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
