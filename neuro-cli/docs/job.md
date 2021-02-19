@@ -319,14 +319,32 @@ neuro job top [OPTIONS] [JOBS]...
 
 Display `GPU`/`CPU`/Memory usage.
 
+#### Examples
+
+```bash
+
+$ neuro top
+$ neuro top job-1 job-2
+$ neuro top --format={name} {cpu} job-1 job-2
+$ neuro top --owner=user-1 --owner=user-2
+$ neuro top --name my-experiments-v1
+$ neuro top -t tag1 -t tag2
+```
+
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _-d, --description DESCRIPTION_ | Filter out jobs by description \(exact match\). |
 | _--format COLUMNS_ | Output table format, see "neuro help top-format" for more info about the format specification. The default can be changed using the job.top-format configuration variable documented in "neuro help user-config" |
 | _--full-uri_ | Output full image URI. |
+| _-n, --name NAME_ | Filter out jobs by name. |
+| _-o, --owner TEXT_ | Filter out jobs by owner \(multiple option\). Supports `ME` option to filter by the current user. |
+| _--since DATE_ | Show jobs created after a specific date \(including\). |
+| _-t, --tag TAG_ | Filter out jobs by tag \(multiple option\) |
 | _--timeout FLOAT_ | Maximum allowed time for executing the command, 0 for no timeout  _\[default: 0\]_ |
+| _--until DATE_ | Show jobs created before a specific date \(including\). |
 
 
 
