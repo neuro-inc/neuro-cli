@@ -22,8 +22,19 @@ from neuro_sdk import (
     Volume,
 )
 
-from neuro_cli.job import _job_to_cli_args, _parse_cmd, calc_columns, calc_statuses
-from neuro_cli.parse_utils import COLUMNS_MAP, get_default_columns
+from neuro_cli.job import (
+    _job_to_cli_args,
+    _parse_cmd,
+    calc_ps_columns,
+    calc_statuses,
+    calc_top_columns,
+)
+from neuro_cli.parse_utils import (
+    PS_COLUMNS_MAP,
+    TOP_COLUMNS_MAP,
+    get_default_ps_columns,
+    get_default_top_columns,
+)
 from neuro_cli.root import Root
 
 logger = logging.getLogger(__name__)
@@ -193,7 +204,7 @@ def test_extract_secret_env(root: Root) -> None:
     assert env == {"ENV_VAR_2": "value2", "ENV_VAR_4": "value4"}
 
 
-async def test_calc_columns_section_doesnt_exist(
+async def test_calc_ps_columns_section_doesnt_exist(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
 
@@ -202,10 +213,22 @@ async def test_calc_columns_section_doesnt_exist(
         local_conf = tmp_path / ".neuro.toml"
         # empty config
         local_conf.write_text("")
-        assert await calc_columns(client, None) == get_default_columns()
+        assert await calc_ps_columns(client, None) == get_default_ps_columns()
 
 
-async def test_calc_columns_user_spec(
+async def test_calc_top_columns_section_doesnt_exist(
+    monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+) -> None:
+
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text("")
+        assert await calc_top_columns(client, None) == get_default_top_columns()
+
+
+async def test_calc_ps_columns_user_spec(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
 
@@ -214,9 +237,24 @@ async def test_calc_columns_user_spec(
         local_conf = tmp_path / ".neuro.toml"
         # empty config
         local_conf.write_text(toml.dumps({"job": {"ps-format": "{id}, {status}"}}))
-        assert await calc_columns(client, None) == [
-            COLUMNS_MAP["id"],
-            COLUMNS_MAP["status"],
+        assert await calc_ps_columns(client, None) == [
+            PS_COLUMNS_MAP["id"],
+            PS_COLUMNS_MAP["status"],
+        ]
+
+
+async def test_calc_top_columns_user_spec(
+    monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+) -> None:
+
+    async with make_client("https://example.com") as client:
+        monkeypatch.chdir(tmp_path)
+        local_conf = tmp_path / ".neuro.toml"
+        # empty config
+        local_conf.write_text(toml.dumps({"job": {"top-format": "{id}, {cpu}"}}))
+        assert await calc_top_columns(client, None) == [
+            TOP_COLUMNS_MAP["id"],
+            TOP_COLUMNS_MAP["cpu"],
         ]
 
 

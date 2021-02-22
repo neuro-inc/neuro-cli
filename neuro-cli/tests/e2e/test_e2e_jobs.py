@@ -953,6 +953,30 @@ def test_e2e_job_top(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
+def test_e2e_job_top_default_format(helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as excinfo:
+        helper.run_cli(["job", "top", "--timeout", "0.1"])
+    assert excinfo.value.returncode == 124
+    stdout = excinfo.value.output
+    assert "ID" in stdout
+    assert "CPU" in stdout
+    assert "GPU" in stdout
+    assert "NAME" not in stdout
+
+
+@pytest.mark.e2e
+def test_e2e_job_top_format(helper: Helper) -> None:
+    with pytest.raises(subprocess.CalledProcessError) as excinfo:
+        helper.run_cli(["job", "top", "--format", "name cpu", "--timeout", "0.1"])
+    assert excinfo.value.returncode == 124
+    stdout = excinfo.value.output
+    assert "NAME" in stdout
+    assert "CPU" in stdout
+    assert "ID" not in stdout
+    assert "GPU" not in stdout
+
+
+@pytest.mark.e2e
 def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
     captured = helper.run_cli(
         [
