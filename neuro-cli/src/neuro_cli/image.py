@@ -259,7 +259,8 @@ async def remove_tag(root: Root, image: RemoteImage, *, force: bool) -> None:
     assert image.tag is not None
     digest = await root.client.images.digest(image)
     root.print(
-        f"Deleting image identified by [bold]{rich_escape(digest)}[/bold]", markup=True
+        f"Deleting {image} identified by [bold]{rich_escape(digest)}[/bold]",
+        markup=True,
     )
     tags = await root.client.images.tags(replace(image, tag=None))
     # Collect all tags referencing the image to be deleted
