@@ -96,6 +96,8 @@ PS_COLUMNS_DEFAULT_IGNORE = {
     "created",
     "started",
     "finished",
+    "cluster_name",
+    "description",
     "workdir",
     "preset",
 }
