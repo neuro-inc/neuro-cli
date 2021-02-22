@@ -44,7 +44,7 @@ from .click_types import (
     LOCAL_REMOTE_PORT,
     PRESET,
     TOP_COLUMNS,
-    ImageType,
+    RemoteImageType,
 )
 from .const import EX_PLATFORMERROR
 from .formatters.jobs import (
@@ -592,7 +592,7 @@ async def top(
 
 @command()
 @argument("job", type=JOB)
-@argument("image", type=ImageType())
+@argument("image", type=RemoteImageType())
 async def save(root: Root, job: str, image: RemoteImage) -> None:
     """
     Save job's state to an image.
@@ -640,7 +640,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 
 
 @command(context_settings=dict(allow_interspersed_args=False))
-@argument("image", type=ImageType())
+@argument("image", type=RemoteImageType())
 @argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @option(
     "-s",
