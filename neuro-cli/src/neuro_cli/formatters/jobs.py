@@ -281,12 +281,18 @@ class JobTelemetryFormatter(RenderHook):
     def __init__(
         self,
         console: Console,
+        username: str,
+        columns: List[JobColumnInfo],
+        image_formatter: ImageFormatter,
         datetime_formatter: DatetimeFormatter,
         maxrows: Optional[int] = None,
     ) -> None:
         self._console = console
-        self._maxrows = maxrows
+        self._username = username
+        self._columns = columns
+        self._image_formatter = image_formatter
         self._datetime_formatter = datetime_formatter
+        self._maxrows = maxrows
         self._live_render = LiveRender(Table.grid())
         self._data: Dict[str, Tuple[JobDescription, JobTelemetry]] = {}
         self.changed = True
@@ -301,12 +307,7 @@ class JobTelemetryFormatter(RenderHook):
 
     def render(self) -> None:
         table = Table(box=box.SIMPLE_HEAVY)
-        table.add_column("ID", justify="left", width=40)
-        table.add_column("WHEN", justify="left", width=32)
-        table.add_column("CPU", justify="right", width=15)
-        table.add_column("MEMORY (MB)", justify="right", width=15)
-        table.add_column("GPU (%)", justify="right", width=15)
-        table.add_column("GPU_MEMORY (MB)", justify="right", width=15)
+        _add_columns(table, self._columns)
 
         def sortkey(item: Tuple[JobDescription, JobTelemetry]) -> Any:
             job, info = item
@@ -318,13 +319,27 @@ class JobTelemetryFormatter(RenderHook):
         if self._maxrows is not None and self._maxrows < maxrows:
             maxrows = self._maxrows
         del items[max(maxrows, 1) :]
+
         for job, info in items:
-            created = self._datetime_formatter(job.history.created_at)
-            cpu = f"{info.cpu:.3f}"
-            mem = f"{info.memory:.3f}"
-            gpu = f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "0"
-            gpu_mem = f"{info.gpu_memory:.3f}" if info.gpu_memory else "0"
-            table.add_row(job.id, created, cpu, mem, gpu, gpu_mem)
+            job_data = TabularJobRow.from_job(
+                job,
+                self._username,
+                image_formatter=self._image_formatter,
+                datetime_formatter=self._datetime_formatter,
+            )
+            telemetry_data = dict(
+                cpu=f"{info.cpu:.3f}",
+                memory=f"{info.memory:.3f}",
+                gpu=f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "0",
+                gpu_memory=f"{info.gpu_memory:.3f}" if info.gpu_memory else "0",
+            )
+            fields = [
+                telemetry_data[column.id]
+                if column.id in telemetry_data
+                else getattr(job_data, column.id)
+                for column in self._columns
+            ]
+            table.add_row(*fields)
 
         if self._console.is_terminal:
             self._live_render.set_renderable(table)
@@ -449,23 +464,7 @@ class TabularJobsFormatter(BaseJobsFormatter):
 
     def __call__(self, jobs: Iterable[JobDescription]) -> RenderableType:
         table = Table(box=box.SIMPLE_HEAVY)
-        column = self._columns[0]
-        table.add_column(
-            column.title,
-            style="bold",
-            justify=column.justify,
-            width=column.width,
-            min_width=column.min_width,
-            max_width=column.max_width,
-        )
-        for column in self._columns[1:]:
-            table.add_column(
-                column.title,
-                justify=column.justify,
-                width=column.width,
-                min_width=column.min_width,
-                max_width=column.max_width,
-            )
+        _add_columns(table, self._columns)
 
         for job in jobs:
             table.add_row(
@@ -523,6 +522,26 @@ class JobStartProgress:
         exc_tb: TracebackType,
     ) -> None:
         pass
+
+
+def _add_columns(table: Table, columns: List[JobColumnInfo]) -> None:
+    column = columns[0]
+    table.add_column(
+        column.title,
+        style="bold",
+        justify=column.justify,
+        width=column.width,
+        min_width=column.min_width,
+        max_width=column.max_width,
+    )
+    for column in columns[1:]:
+        table.add_column(
+            column.title,
+            justify=column.justify,
+            width=column.width,
+            min_width=column.min_width,
+            max_width=column.max_width,
+        )
 
 
 class DetailedJobStartProgress(JobStartProgress, RenderHook):
