@@ -1,5 +1,4 @@
-ID                                         NAME    STATUS    WHEN          IMAGE                  OWNER   CLUSTER   DESCRIPTION            COMMAND            
- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
-  job-7ee153a7-249c-4be9-965a-ba3eafb67c82   name1   failed    Sep 25 2017   some-image-name:wit…   YOU     default   some description       ls -la /some/path  
-                                                                                                                      long long long long                       
-  job-7ee153a7-249c-4be9-965a-ba3eafb67c84   name2   pending   Sep 25 2017   image://test-cluste…   YOU     default   some description       ls -la /some/path
+ID                                         NAME    STATUS    WHEN          IMAGE                                      OWNER   COMMAND            
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+  job-7ee153a7-249c-4be9-965a-ba3eafb67c82   name1   failed    Sep 25 2017   some-image-name:with-long-tag              YOU     ls -la /some/path  
+  job-7ee153a7-249c-4be9-965a-ba3eafb67c84   name2   pending   Sep 25 2017   image://test-cluster/bob/some-image-nam…   YOU     ls -la /some/path
