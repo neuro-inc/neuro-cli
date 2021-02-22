@@ -1,7 +1,7 @@
 import contextlib
 import logging
 from dataclasses import replace
-from typing import Optional
+from typing import Optional, Sequence
 
 from rich.markup import escape as rich_escape
 from rich.progress import Progress
@@ -181,8 +181,10 @@ async def tags(root: Root, format_long: bool, image: RemoteImage) -> None:
     is_flag=True,
     help="Force deletion of all tags referencing the image.",
 )
-@argument("image", type=RemoteImageType(tag_option=TagOption.ALLOW))
-async def rm(root: Root, force: bool, image: RemoteImage) -> None:
+@argument(
+    "images", nargs=-1, required=True, type=RemoteImageType(tag_option=TagOption.ALLOW)
+)
+async def rm(root: Root, force: bool, images: Sequence[RemoteImage]) -> None:
     """
     Remove image from platform registry.
 
@@ -194,10 +196,11 @@ async def rm(root: Root, force: bool, image: RemoteImage) -> None:
     neuro image rm image://myfriend/alpine:shared
     neuro image rm image:myimage:latest
     """
-    if image.tag is None:
-        await remove_image(root, image)
-    else:
-        await remove_tag(root, image, force=force)
+    for image in images:
+        if image.tag is None:
+            await remove_image(root, image)
+        else:
+            await remove_tag(root, image, force=force)
 
 
 @command()

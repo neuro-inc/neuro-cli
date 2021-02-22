@@ -125,7 +125,7 @@ Remove image from platform registry
 #### Usage
 
 ```bash
-neuro image rm [OPTIONS] IMAGE
+neuro image rm [OPTIONS] IMAGES...
 ```
 
 Remove image from platform registry.
