@@ -5,7 +5,7 @@ cmarkgfm==0.5.2
 flake8==3.8.4
 isort==5.7.0
 markdown-toc==1.2.6
-mypy==0.800
+mypy==0.812
 pexpect==4.8.0
 pre-commit==2.10.1
 pytest==6.2.2
