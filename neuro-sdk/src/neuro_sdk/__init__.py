@@ -59,7 +59,7 @@ from .jobs import (
     StdStream,
 )
 from .parser import DiskVolume, Parser, SecretFile, Volume
-from .parsing_utils import LocalImage, RemoteImage, TagOption
+from .parsing_utils import LocalImage, RemoteImage, Tag, TagOption
 from .plugins import ConfigBuilder, PluginManager
 from .secrets import Secret, Secrets
 from .server_cfg import Cluster
@@ -140,6 +140,7 @@ __all__ = (
     "StorageProgressLeaveDir",
     "StorageProgressStart",
     "StorageProgressStep",
+    "Tag",
     "TagOption",
     "Users",
     "Volume",

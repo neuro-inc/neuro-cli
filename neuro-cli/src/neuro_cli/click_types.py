@@ -77,18 +77,6 @@ class LocalImageType(click.ParamType):
         return client.parse.local_image(value)
 
 
-class ImageType(click.ParamType):
-    name = "image"
-
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> RemoteImage:
-        assert ctx is not None
-        root = cast(Root, ctx.obj)
-        client = root.run(root.init_client())
-        return client.parse.remote_image(value)
-
-
 class RemoteTaglessImageType(click.ParamType):
     name = "image"
 
@@ -104,13 +92,16 @@ class RemoteTaglessImageType(click.ParamType):
 class RemoteImageType(click.ParamType):
     name = "image"
 
+    def __init__(self, tag_option: TagOption = TagOption.DEFAULT) -> None:
+        self.tag_option = tag_option
+
     def convert(
         self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
     ) -> RemoteImage:
         assert ctx is not None
         root = cast(Root, ctx.obj)
         client = root.run(root.init_client())
-        return client.parse.remote_image(value)
+        return client.parse.remote_image(value, tag_option=self.tag_option)
 
 
 class LocalRemotePortParamType(click.ParamType):

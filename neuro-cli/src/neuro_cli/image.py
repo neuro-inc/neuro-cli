@@ -1,13 +1,12 @@
 import contextlib
 import logging
 from dataclasses import replace
-from typing import Optional
+from typing import Optional, Sequence
 
 from rich.markup import escape as rich_escape
 from rich.progress import Progress
 
-from neuro_sdk import LocalImage, RemoteImage
-from neuro_sdk.parsing_utils import Tag
+from neuro_sdk import LocalImage, RemoteImage, Tag, TagOption
 
 from neuro_cli.formatters.images import (
     BaseImagesFormatter,
@@ -21,7 +20,7 @@ from neuro_cli.formatters.images import (
 )
 from neuro_cli.formatters.utils import ImageFormatter, image_formatter, uri_formatter
 
-from .click_types import RemoteImageType, RemoteTaglessImageType
+from .click_types import RemoteImageType
 from .root import Root
 from .utils import (
     argument,
@@ -140,7 +139,7 @@ async def ls(root: Root, format_long: bool, full_uri: bool) -> None:
 @option(
     "-l", "format_long", is_flag=True, help="List in long format, with image sizes."
 )
-@argument("image", type=RemoteTaglessImageType())
+@argument("image", type=RemoteImageType(tag_option=TagOption.DENY))
 async def tags(root: Root, format_long: bool, image: RemoteImage) -> None:
     """
     List tags for image in platform registry.
@@ -182,8 +181,10 @@ async def tags(root: Root, format_long: bool, image: RemoteImage) -> None:
     is_flag=True,
     help="Force deletion of all tags referencing the image.",
 )
-@argument("image", type=RemoteImageType())
-async def rm(root: Root, force: bool, image: RemoteImage) -> None:
+@argument(
+    "images", nargs=-1, required=True, type=RemoteImageType(tag_option=TagOption.ALLOW)
+)
+async def rm(root: Root, force: bool, images: Sequence[RemoteImage]) -> None:
     """
     Remove image from platform registry.
 
@@ -195,25 +196,11 @@ async def rm(root: Root, force: bool, image: RemoteImage) -> None:
     neuro image rm image://myfriend/alpine:shared
     neuro image rm image:myimage:latest
     """
-    digest = await root.client.images.digest(image)
-    root.print(
-        f"Deleting image identified by [bold]{rich_escape(digest)}[/bold]", markup=True
-    )
-    tags = await root.client.images.tags(replace(image, tag=None))
-    # Collect all tags referencing the image to be deleted
-    if not force and len(tags) > 1:
-        tags_for_image = []
-        for tag in tags:
-            tag_digest = await root.client.images.digest(tag)
-            if tag_digest == digest:
-                tags_for_image.append(tag_digest)
-        if len(tags_for_image) > 1:
-            raise ValueError(
-                f"There's more than one tag referencing this digest: "
-                f"{', '.join(tags_for_image)}.\n"
-                f"Please use -f to force deletion for all of them."
-            )
-    await root.client.images.rm(image, digest)
+    for image in images:
+        if image.tag is None:
+            await remove_image(root, image)
+        else:
+            await remove_tag(root, image, force=force)
 
 
 @command()
@@ -259,3 +246,34 @@ image.add_command(rm)
 image.add_command(size)
 image.add_command(digest)
 image.add_command(tags)
+
+
+async def remove_image(root: Root, image: RemoteImage) -> None:
+    assert image.tag is None
+    images = await root.client.images.tags(image)
+    for img in images:
+        await remove_tag(root, img, force=True)
+
+
+async def remove_tag(root: Root, image: RemoteImage, *, force: bool) -> None:
+    assert image.tag is not None
+    digest = await root.client.images.digest(image)
+    root.print(
+        f"Deleting {image} identified by [bold]{rich_escape(digest)}[/bold]",
+        markup=True,
+    )
+    tags = await root.client.images.tags(replace(image, tag=None))
+    # Collect all tags referencing the image to be deleted
+    if not force and len(tags) > 1:
+        tags_for_image = []
+        for tag in tags:
+            tag_digest = await root.client.images.digest(tag)
+            if tag_digest == digest:
+                tags_for_image.append(tag_digest)
+        if len(tags_for_image) > 1:
+            raise ValueError(
+                f"There's more than one tag referencing this digest: "
+                f"{', '.join(tags_for_image)}.\n"
+                f"Please use -f to force deletion for all of them."
+            )
+    await root.client.images.rm(image, digest)

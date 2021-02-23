@@ -1260,7 +1260,7 @@ Remove image from platform registry.<br/><br/>Image name must be URL with image:
 **Usage:**
 
 ```bash
-neuro image rm [OPTIONS] IMAGE
+neuro image rm [OPTIONS] IMAGES...
 ```
 
 **Examples:**
