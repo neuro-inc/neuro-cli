@@ -2,6 +2,7 @@ import configparser
 import json
 import os
 import pathlib
+from decimal import Decimal
 from typing import IO, Optional
 
 import click
@@ -13,7 +14,7 @@ from neuro_sdk import Preset
 from neuro_sdk.admin import _ClusterUserRoleType
 
 from .click_types import MEGABYTE
-from .defaults import JOB_CPU_NUMBER, JOB_MEMORY_AMOUNT
+from .defaults import JOB_CPU_NUMBER, JOB_MEMORY_AMOUNT, PRESET_PRICE
 from .formatters.admin import ClustersFormatter, ClusterUserFormatter
 from .formatters.config import QuotaFormatter
 from .root import Root
@@ -302,6 +303,15 @@ def _parse_quota_value(
     return int(result)
 
 
+def _parse_credits_value(value: Optional[str]) -> Optional[Decimal]:
+    if value is None:
+        return None
+    try:
+        return Decimal(value)
+    except (ValueError, LookupError):
+        raise click.BadParameter(f"{value} is not valid decimal number")
+
+
 @command()
 @argument("cluster_name", required=True, type=str)
 @argument("user_name", required=True, type=str)
@@ -321,6 +331,13 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
 @command()
 @argument("cluster_name", required=True, type=str)
 @argument("user_name", required=True, type=str)
+@option(
+    "-c",
+    "--credits",
+    metavar="AMOUNT",
+    type=str,
+    help="Maximum running jobs quota",
+)
 @option(
     "-j",
     "--jobs",
@@ -346,6 +363,7 @@ async def set_user_quota(
     root: Root,
     cluster_name: str,
     user_name: str,
+    credits: Optional[str],
     jobs: Optional[int],
     gpu: Optional[str],
     non_gpu: Optional[str],
@@ -353,11 +371,13 @@ async def set_user_quota(
     """
     Set user quota to given values
     """
+    credits_decimal = _parse_credits_value(credits)
     gpu_value_minutes = _parse_quota_value(gpu, allow_infinity=True)
     non_gpu_value_minutes = _parse_quota_value(non_gpu, allow_infinity=True)
     user_with_quota = await root.client._admin.set_user_quota(
         cluster_name=cluster_name,
         user_name=user_name,
+        credits=credits_decimal,
         total_running_jobs=jobs,
         gpu_value_minutes=gpu_value_minutes,
         non_gpu_value_minutes=non_gpu_value_minutes,
@@ -374,6 +394,13 @@ async def set_user_quota(
 @command()
 @argument("cluster_name", required=True, type=str)
 @argument("user_name", required=True, type=str)
+@option(
+    "-c",
+    "--credits",
+    metavar="AMOUNT",
+    type=str,
+    help="Maximum running jobs quota",
+)
 @option(
     "-g",
     "--gpu",
@@ -392,19 +419,22 @@ async def add_user_quota(
     root: Root,
     cluster_name: str,
     user_name: str,
+    credits: str,
     gpu: Optional[str],
     non_gpu: Optional[str],
 ) -> None:
     """
     Add given values to user quota
     """
+    additional_credits = _parse_credits_value(credits)
     additional_gpu_value_minutes = _parse_quota_value(gpu, False)
     additional_non_gpu_value_minutes = _parse_quota_value(non_gpu, False)
     user_with_quota = await root.client._admin.add_user_quota(
         cluster_name,
         user_name,
-        additional_gpu_value_minutes,
-        additional_non_gpu_value_minutes,
+        additional_credits=additional_credits,
+        additional_gpu_value_minutes=additional_gpu_value_minutes,
+        additional_non_gpu_value_minutes=additional_non_gpu_value_minutes,
     )
     fmt = QuotaFormatter()
     root.print(
@@ -418,6 +448,14 @@ async def add_user_quota(
 @command()
 @argument("cluster_name")
 @argument("preset_name")
+@option(
+    "--credits-per-hour",
+    metavar="AMOUNT",
+    type=str,
+    help="Price of running job of this preset for an hour in credits",
+    default=PRESET_PRICE,
+    show_default=True,
+)
 @option(
     "-c",
     "--cpu",
@@ -473,6 +511,7 @@ async def update_resource_preset(
     root: Root,
     cluster_name: str,
     preset_name: str,
+    credits_per_hour: str,
     cpu: float,
     memory: int,
     gpu: Optional[int],
@@ -487,6 +526,7 @@ async def update_resource_preset(
     """
     presets = dict(root.client.presets)
     presets[preset_name] = Preset(
+        credits_per_hour=Decimal(credits_per_hour),
         cpu=cpu,
         memory_mb=memory,
         gpu=gpu,

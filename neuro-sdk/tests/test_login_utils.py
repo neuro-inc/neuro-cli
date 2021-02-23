@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 import aiohttp
 import pytest
 from aiohttp import web
@@ -147,6 +149,7 @@ async def test_get_server_config_with_token_legacy(
                 "resource_presets": [
                     {
                         "name": "gpu-small",
+                        "credits_per_hour": "10",
                         "cpu": 7,
                         "memory_mb": 30 * 1024,
                         "gpu": 1,
@@ -154,15 +157,27 @@ async def test_get_server_config_with_token_legacy(
                     },
                     {
                         "name": "gpu-large",
+                        "credits_per_hour": "10",
                         "cpu": 7,
                         "memory_mb": 60 * 1024,
                         "gpu": 1,
                         "gpu_model": "nvidia-tesla-v100",
                     },
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
-                    {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                    {
+                        "name": "cpu-small",
+                        "credits_per_hour": "10",
+                        "cpu": 2,
+                        "memory_mb": 2 * 1024,
+                    },
+                    {
+                        "name": "cpu-large",
+                        "credits_per_hour": "10",
+                        "cpu": 3,
+                        "memory_mb": 14 * 1024,
+                    },
                     {
                         "name": "cpu-large-p",
+                        "credits_per_hour": "10",
                         "cpu": 3,
                         "memory_mb": 14 * 1024,
                         "scheduler_enabled": True,
@@ -206,14 +221,27 @@ async def test_get_server_config_with_token_legacy(
                 disks_url=URL(disks_url),
                 presets={
                     "gpu-small": Preset(
-                        cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                        credits_per_hour=Decimal("10"),
+                        cpu=7,
+                        memory_mb=30 * 1024,
+                        gpu=1,
+                        gpu_model="nvidia-tesla-k80",
                     ),
                     "gpu-large": Preset(
-                        cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                        credits_per_hour=Decimal("10"),
+                        cpu=7,
+                        memory_mb=60 * 1024,
+                        gpu=1,
+                        gpu_model="nvidia-tesla-v100",
                     ),
-                    "cpu-small": Preset(cpu=2, memory_mb=2 * 1024),
-                    "cpu-large": Preset(cpu=3, memory_mb=14 * 1024),
+                    "cpu-small": Preset(
+                        credits_per_hour=Decimal("10"), cpu=2, memory_mb=2 * 1024
+                    ),
+                    "cpu-large": Preset(
+                        credits_per_hour=Decimal("10"), cpu=3, memory_mb=14 * 1024
+                    ),
                     "cpu-large-p": Preset(
+                        credits_per_hour=Decimal("10"),
                         cpu=3,
                         memory_mb=14 * 1024,
                         scheduler_enabled=True,
@@ -253,6 +281,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
         "resource_presets": [
             {
                 "name": "gpu-small",
+                "credits_per_hour": "10",
                 "cpu": 7,
                 "memory_mb": 30 * 1024,
                 "gpu": 1,
@@ -260,13 +289,24 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
             },
             {
                 "name": "gpu-large",
+                "credits_per_hour": "10",
                 "cpu": 7,
                 "memory_mb": 60 * 1024,
                 "gpu": 1,
                 "gpu_model": "nvidia-tesla-v100",
             },
-            {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
-            {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+            {
+                "name": "cpu-small",
+                "credits_per_hour": "10",
+                "cpu": 2,
+                "memory_mb": 2 * 1024,
+            },
+            {
+                "name": "cpu-large",
+                "credits_per_hour": "10",
+                "cpu": 3,
+                "memory_mb": 14 * 1024,
+            },
         ],
         "clusters": [
             {
@@ -281,6 +321,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
                 "resource_presets": [
                     {
                         "name": "gpu-small",
+                        "credits_per_hour": "10",
                         "cpu": 7,
                         "memory_mb": 30 * 1024,
                         "gpu": 1,
@@ -288,15 +329,27 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
                     },
                     {
                         "name": "gpu-large",
+                        "credits_per_hour": "10",
                         "cpu": 7,
                         "memory_mb": 60 * 1024,
                         "gpu": 1,
                         "gpu_model": "nvidia-tesla-v100",
                     },
-                    {"name": "cpu-small", "cpu": 2, "memory_mb": 2 * 1024},
-                    {"name": "cpu-large", "cpu": 3, "memory_mb": 14 * 1024},
+                    {
+                        "name": "cpu-small",
+                        "credits_per_hour": "10",
+                        "cpu": 2,
+                        "memory_mb": 2 * 1024,
+                    },
+                    {
+                        "name": "cpu-large",
+                        "credits_per_hour": "10",
+                        "cpu": 3,
+                        "memory_mb": 14 * 1024,
+                    },
                     {
                         "name": "cpu-large-p",
+                        "credits_per_hour": "10",
                         "cpu": 3,
                         "memory_mb": 14 * 1024,
                         "scheduler_enabled": True,
@@ -340,14 +393,27 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
         disks_url=URL(disks_url),
         presets={
             "gpu-small": Preset(
-                cpu=7, memory_mb=30 * 1024, gpu=1, gpu_model="nvidia-tesla-k80"
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory_mb=30 * 1024,
+                gpu=1,
+                gpu_model="nvidia-tesla-k80",
             ),
             "gpu-large": Preset(
-                cpu=7, memory_mb=60 * 1024, gpu=1, gpu_model="nvidia-tesla-v100"
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory_mb=60 * 1024,
+                gpu=1,
+                gpu_model="nvidia-tesla-v100",
             ),
-            "cpu-small": Preset(cpu=2, memory_mb=2 * 1024),
-            "cpu-large": Preset(cpu=3, memory_mb=14 * 1024),
+            "cpu-small": Preset(
+                credits_per_hour=Decimal("10"), cpu=2, memory_mb=2 * 1024
+            ),
+            "cpu-large": Preset(
+                credits_per_hour=Decimal("10"), cpu=3, memory_mb=14 * 1024
+            ),
             "cpu-large-p": Preset(
+                credits_per_hour=Decimal("10"),
                 cpu=3,
                 memory_mb=14 * 1024,
                 scheduler_enabled=True,

@@ -3,10 +3,10 @@ User Configuration:
  Current Cluster      default                     
  API URL              https://dev.neu.ro/api/v1   
  Docker Registry URL  https://registry-dev.neu.ro 
-Resource Presets:                                                                   
- Name        #CPU   Memory   Round Robin   Preemptible Node   GPU                   
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- gpu-small      7    30.0G        ×               ×           1 x nvidia-tesla-k80  
- gpu-large      7    60.0G        ×               ×           1 x nvidia-tesla-v100 
- cpu-small      7     2.0G        ×               ×                                 
- cpu-large      7    14.0G        ×               ×
+Resource Presets:                                                                                      
+ Name        #CPU   Memory   Round Robin   Preemptible Node   GPU                     Credits per hour 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ gpu-small      7    30.0G        ×               ×           1 x nvidia-tesla-k80    10               
+ gpu-large      7    60.0G        ×               ×           1 x nvidia-tesla-v100   10               
+ cpu-small      7     2.0G        ×               ×                                   10               
+ cpu-large      7    14.0G        ×               ×                                   10

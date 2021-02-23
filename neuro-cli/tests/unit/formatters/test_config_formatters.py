@@ -1,4 +1,5 @@
 from dataclasses import replace
+from decimal import Decimal
 from pathlib import Path
 from typing import Callable
 
@@ -35,6 +36,7 @@ class TestConfigFormatter:
         presets = dict(cluster_config.presets)
 
         presets["tpu-small"] = Preset(
+            credits_per_hour=Decimal("10"),
             cpu=2,
             memory_mb=2048,
             scheduler_enabled=False,
@@ -42,6 +44,7 @@ class TestConfigFormatter:
             tpu_software_version="1.14",
         )
         presets["hybrid"] = Preset(
+            credits_per_hour=Decimal("10"),
             cpu=4,
             memory_mb=30720,
             scheduler_enabled=False,
@@ -155,6 +158,7 @@ class TestQuotaInfoFormatter:
 class TestQuotaFormatter:
     def test_output(self, rich_cmp: RichCmp) -> None:
         quota = _Quota(
+            credits=Decimal("10"),
             total_running_jobs=10,
             total_gpu_run_time_minutes=321,
             total_non_gpu_run_time_minutes=123,
@@ -164,6 +168,7 @@ class TestQuotaFormatter:
 
     def test_output_no_quota(self, rich_cmp: RichCmp) -> None:
         quota = _Quota(
+            credits=None,
             total_running_jobs=None,
             total_non_gpu_run_time_minutes=None,
             total_gpu_run_time_minutes=None,
@@ -173,6 +178,7 @@ class TestQuotaFormatter:
 
     def test_output_only_gpu(self, rich_cmp: RichCmp) -> None:
         quota = _Quota(
+            credits=None,
             total_running_jobs=None,
             total_gpu_run_time_minutes=9923,
             total_non_gpu_run_time_minutes=None,
@@ -182,6 +188,7 @@ class TestQuotaFormatter:
 
     def test_output_only_cpu(self, rich_cmp: RichCmp) -> None:
         quota = _Quota(
+            credits=None,
             total_running_jobs=None,
             total_non_gpu_run_time_minutes=3256,
             total_gpu_run_time_minutes=None,
@@ -191,6 +198,17 @@ class TestQuotaFormatter:
 
     def test_output_only_jobs(self, rich_cmp: RichCmp) -> None:
         quota = _Quota(
+            credits=None,
+            total_running_jobs=10,
+            total_non_gpu_run_time_minutes=None,
+            total_gpu_run_time_minutes=None,
+        )
+        out = QuotaFormatter()(quota)
+        rich_cmp(out)
+
+    def test_output_only_credits(self, rich_cmp: RichCmp) -> None:
+        quota = _Quota(
+            credits=Decimal("10"),
             total_running_jobs=10,
             total_non_gpu_run_time_minutes=None,
             total_gpu_run_time_minutes=None,
@@ -200,6 +218,7 @@ class TestQuotaFormatter:
 
     def test_output_zeroes(self, rich_cmp: RichCmp) -> None:
         quota = _Quota(
+            credits=Decimal("0"),
             total_running_jobs=0,
             total_gpu_run_time_minutes=0,
             total_non_gpu_run_time_minutes=0,
