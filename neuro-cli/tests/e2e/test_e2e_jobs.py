@@ -968,6 +968,7 @@ def test_e2e_job_top_filtering(helper: Helper) -> None:
     helper.kill_job(job2_id, wait=True)
 
 
+@pytest.mark.e2e
 def test_e2e_job_top_default_format(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as excinfo:
         helper.run_cli(["job", "top", "--timeout", "0.1"])
