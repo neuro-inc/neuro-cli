@@ -571,6 +571,7 @@ async def top(
     format = await calc_top_columns(root.client, format)
 
     observed: Set[str] = set()
+    loop = asyncio.get_event_loop()
 
     if jobs:
         for opt, val in [
@@ -594,7 +595,7 @@ async def top(
                     continue
                 observed.add(job_id)
                 job = await root.client.jobs.status(job_id)
-                asyncio.create_task(poller(job))
+                loop.create_task(poller(job))
 
     else:
         owners = set(owner)
@@ -641,7 +642,7 @@ async def top(
                     dt = job.history.created_at
                     if dt is not None and since_dt < dt:
                         since_dt = dt
-                    asyncio.create_task(poller(job))
+                    loop.create_task(poller(job))
                 await asyncio.sleep(TOP_NEW_JOBS_DELAY)
 
     async def poller(job: JobDescription) -> None:
