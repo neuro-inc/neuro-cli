@@ -419,19 +419,12 @@ class TabularJobRow:
         image_formatter: ImageFormatter,
         datetime_formatter: DatetimeFormatter,
     ) -> "TabularJobRow":
-        if job.status == JobStatus.PENDING:
-            when = job.history.created_at
-        elif job.status == JobStatus.RUNNING:
-            when = job.history.started_at
-        else:
-            when = job.history.finished_at
-        assert when is not None
         return cls(
             id=job.id,
             name=job.name if job.name else "",
             tags=",".join(job.tags),
             status=fmt_status(job.status),
-            when=datetime_formatter(when),
+            when=datetime_formatter(job.history.changed_at),
             created=datetime_formatter(job.history.created_at),
             started=datetime_formatter(job.history.started_at),
             finished=datetime_formatter(job.history.finished_at),
