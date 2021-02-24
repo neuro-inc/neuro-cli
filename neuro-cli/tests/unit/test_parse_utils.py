@@ -5,11 +5,13 @@ import pytest
 
 from neuro_cli.parse_utils import (
     PS_COLUMNS_MAP,
+    SORT_KEY_FUNCS,
     JobColumnInfo,
     get_default_ps_columns,
     get_default_top_columns,
     parse_memory,
     parse_ps_columns,
+    parse_sort_keys,
     parse_timedelta,
     parse_top_columns,
 )
@@ -165,6 +167,21 @@ def test_parse_ps_columns_invalid_property() -> None:
 def test_parse_ps_columns_ambigous() -> None:
     with pytest.raises(ValueError, match="Ambiguous column"):
         parse_ps_columns("{c}")
+
+
+def test_parse_sort_keys() -> None:
+    assert parse_sort_keys("name") == [(SORT_KEY_FUNCS["name"], False)]
+    assert parse_sort_keys("cpu") == [(SORT_KEY_FUNCS["cpu"], False)]
+    assert parse_sort_keys("-cpu") == [(SORT_KEY_FUNCS["cpu"], True)]
+    assert parse_sort_keys("name,-cpu,preset") == [
+        (SORT_KEY_FUNCS["name"], False),
+        (SORT_KEY_FUNCS["cpu"], True),
+        (SORT_KEY_FUNCS["preset"], False),
+    ]
+    with pytest.raises(ValueError, match="invalid sort key"):
+        parse_sort_keys("spam")
+    with pytest.raises(ValueError, match="invalid sort key"):
+        parse_sort_keys("")
 
 
 def test_parse_timedelta_valid_zero() -> None:

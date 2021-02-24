@@ -927,6 +927,11 @@ def test_e2e_job_top(helper: Helper) -> None:
             # got response from job top telemetery
             break
 
+    for stdout in try_job_top(helper, "--sort", "status,-memory", job_id):
+        if job_id in stdout:
+            # got response from job top telemetery
+            break
+
     helper.kill_job(job_id, wait=True)
 
     # the "top" command formatter is tested by unit-tests
@@ -962,6 +967,18 @@ def test_e2e_job_top_filtering(helper: Helper) -> None:
         if job1_id in stdout:
             # got response from job top telemetery
             assert job2_id not in stdout
+            break
+
+    for stdout in try_job_top(helper, "--owner", helper.username, "--sort", "created"):
+        if job1_id in stdout and job2_id in stdout:
+            # got response from job top telemetery
+            assert stdout.index(job1_id) < stdout.index(job2_id)
+            break
+
+    for stdout in try_job_top(helper, "--owner", helper.username, "--sort", "-created"):
+        if job1_id in stdout and job2_id in stdout:
+            # got response from job top telemetery
+            assert stdout.index(job1_id) > stdout.index(job2_id)
             break
 
     helper.kill_job(job1_id, wait=True)
