@@ -9,16 +9,7 @@ from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
 from time import sleep, time
-from typing import (
-    Any,
-    AsyncIterator,
-    Callable,
-    ContextManager,
-    Dict,
-    Iterator,
-    List,
-    Tuple,
-)
+from typing import Any, AsyncIterator, Callable, ContextManager, Dict, Iterator, Tuple
 from uuid import uuid4
 
 import aiodocker
@@ -900,52 +891,41 @@ def test_job_run_volume_all_and_another(helper: Helper) -> None:
         assert msg in captured.err
 
 
+def try_job_top(helper: Helper, *args: str) -> Iterator[str]:
+    t0 = time()
+    delay = 1.0
+    while True:
+        print("Try job top", delay)
+        with pytest.raises(subprocess.CalledProcessError) as excinfo:
+            helper.run_cli(["job", "top", "--timeout", str(delay), *args])
+        stdout = excinfo.value.output
+        stderr = excinfo.value.stderr
+        print("STDOUT", stdout)
+        assert excinfo.value.returncode == 124
+        yield stdout
+        if time() - t0 > 3 * 60:
+            # timeout is reached without info from server
+            raise AssertionError(
+                f"Cannot get response from server "
+                f"in {time() - t0} secs, delay={delay}\n"
+                f"stdout = {stdout}\nstdderr = {stderr}"
+            )
+        print(f"job top has failed, increase timeout to {delay}")
+        delay = min(delay * 1.5, 60)
+
+
 @pytest.mark.e2e
 def test_e2e_job_top(helper: Helper) -> None:
-    def split_non_empty_parts(line: str, sep: str) -> List[str]:
-        return [part.strip() for part in line.split(sep) if part.strip()]
-
     command = f"sleep 300"
 
     print("Run job... ")
     job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
     print("... done")
-    t0 = time()
-    returncode = -1
-    delay = 1.0
 
-    while returncode and time() - t0 < 3 * 60:
-        try:
-            print("Try job top", delay)
-            capture = helper.run_cli(["job", "top", job_id, "--timeout", str(delay)])
-        except subprocess.CalledProcessError as ex:
-            stdout = ex.output
-            stderr = ex.stderr
-            returncode = ex.returncode
-            print("FAILED", returncode)
-            print(stdout)
-            print(stderr)
-        else:
-            stdout = capture.out
-            stderr = capture.err
-            returncode = 0
-
-        print("STDOUT", stdout)
-        if "MEMORY (MB)" in stdout:
+    for stdout in try_job_top(helper, job_id):
+        if job_id in stdout:
             # got response from job top telemetery
-            returncode = 0
             break
-        else:
-            print(f"job top has failed, increase timeout to {delay}")
-            delay = min(delay * 1.5, 60)
-
-    # timeout is reached without info from server
-    assert not returncode, (
-        f"Cannot get response from server "
-        f"in {time() - t0} secs, delay={delay} "
-        f"returncode={returncode}\n"
-        f"stdout = {stdout}\nstdderr = {stderr}"
-    )
 
     helper.kill_job(job_id, wait=True)
 
@@ -953,6 +933,41 @@ def test_e2e_job_top(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
+def test_e2e_job_top_filtering(helper: Helper) -> None:
+    job_name = f"test-job-{str(uuid4())[:8]}"
+    description = str(uuid4())
+    command = f"sleep 300"
+
+    print("Run jobs... ")
+    job1_id = helper.run_job_and_wait_state(
+        image=UBUNTU_IMAGE_NAME, command=command, description=description
+    )
+    job2_id = helper.run_job_and_wait_state(
+        image=UBUNTU_IMAGE_NAME, command=command, name=job_name
+    )
+    print("... done")
+
+    for stdout in try_job_top(helper, "--name", job_name):
+        if job2_id in stdout:
+            # got response from job top telemetery
+            assert job1_id not in stdout
+            break
+
+    for stdout in try_job_top(helper, "--owner", helper.username):
+        if job1_id in stdout and job2_id in stdout:
+            # got response from job top telemetery
+            break
+
+    for stdout in try_job_top(helper, "--owner", "ME", "--description", description):
+        if job1_id in stdout:
+            # got response from job top telemetery
+            assert job2_id not in stdout
+            break
+
+    helper.kill_job(job1_id, wait=True)
+    helper.kill_job(job2_id, wait=True)
+
+
 def test_e2e_job_top_default_format(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError) as excinfo:
         helper.run_cli(["job", "top", "--timeout", "0.1"])

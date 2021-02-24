@@ -489,6 +489,42 @@ async def browse(root: Root, job: str) -> None:
 @command()
 @argument("jobs", nargs=-1, required=False, type=JOB)
 @option(
+    "-o",
+    "--owner",
+    multiple=True,
+    help="Filter out jobs by owner (multiple option). "
+    "Supports `ME` option to filter by the current user. "
+    "Specify `ALL` to show jobs of all users.",
+    secure=True,
+)
+@option("-n", "--name", metavar="NAME", help="Filter out jobs by name.", secure=True)
+@option(
+    "-t",
+    "--tag",
+    metavar="TAG",
+    type=str,
+    help="Filter out jobs by tag (multiple option)",
+    multiple=True,
+)
+@option(
+    "-d",
+    "--description",
+    metavar="DESCRIPTION",
+    default="",
+    help="Filter out jobs by description (exact match).",
+    secure=True,
+)
+@option(
+    "--since",
+    metavar="DATE",
+    help="Show jobs created after a specific date (including).",
+)
+@option(
+    "--until",
+    metavar="DATE",
+    help="Show jobs created before a specific date (including).",
+)
+@option(
     "--format",
     type=TOP_COLUMNS,
     help=(
@@ -510,20 +546,46 @@ async def browse(root: Root, job: str) -> None:
 async def top(
     root: Root,
     jobs: Sequence[str],
+    name: str,
+    tag: Sequence[str],
+    owner: Sequence[str],
+    since: str,
+    until: str,
+    description: str,
     format: Optional[List[JobColumnInfo]],
     full_uri: bool,
     timeout: float,
 ) -> None:
     """
     Display GPU/CPU/Memory usage.
+
+    Examples:
+
+    neuro top
+    neuro top job-1 job-2
+    neuro top --owner=user-1 --owner=user-2
+    neuro top --name my-experiments-v1
+    neuro top -t tag1 -t tag2
     """
 
     format = await calc_top_columns(root.client, format)
 
     observed: Set[str] = set()
 
-    async def create_pollers() -> None:
-        if jobs:
+    if jobs:
+        for opt, val in [
+            ("name", name),
+            ("owner", owner),
+            ("since", since),
+            ("until", until),
+            ("description", description),
+        ]:
+            if val:
+                raise click.UsageError(
+                    f"Option --{opt} is mutually exclusive with job arguments"
+                )
+
+        async def create_pollers() -> None:
             for job_str in jobs:
                 job_id = await resolve_job(
                     job_str, client=root.client, status=JobStatus.active_items()
@@ -533,26 +595,52 @@ async def top(
                 observed.add(job_id)
                 job = await root.client.jobs.status(job_id)
                 asyncio.create_task(poller(job))
-        else:
-            since: Optional[datetime] = None
-            while True:
-                jobs2 = root.client.jobs.list(
-                    statuses=JobStatus.active_items(),
-                    owners=(root.client.username,),
-                    since=since,
+
+    else:
+        owners = set(owner)
+        if not owners:
+            owners = {root.client.config.username}
+        elif "ALL" in owners:
+            owners.remove("ALL")
+            if owners:
+                raise click.UsageError(
+                    "Multiple --owner options are incompatible with --owner=ALL"
                 )
+        elif "ME" in owners:
+            owners.remove("ME")
+            owners.add(root.client.config.username)
+        tags = set(tag)
+        since_dt = _parse_date(since)
+        until_dt = _parse_date(until)
+
+        async def create_pollers() -> None:
+            nonlocal since_dt
+            while True:
+                jobs = root.client.jobs.list(
+                    statuses=JobStatus.active_items(),
+                    name=name,
+                    owners=owners,
+                    tags=tags,
+                    since=since_dt,
+                    until=until_dt,
+                )
+
+                # client-side filtering
+                if description:
+                    jobs = (job async for job in jobs if job.description == description)
+
                 dt: Optional[datetime]
                 dt = datetime.now(timezone.utc) - timedelta(minutes=1)
-                if since is None or since < dt:
-                    since = dt
-                async for job in jobs2:
+                if since_dt is None or since_dt < dt:
+                    since_dt = dt
+                async for job in jobs:
                     job_id = job.id
                     if job_id in observed:
                         continue
                     observed.add(job_id)
                     dt = job.history.created_at
-                    if dt is not None and since < dt:
-                        since = dt
+                    if dt is not None and since_dt < dt:
+                        since_dt = dt
                     asyncio.create_task(poller(job))
                 await asyncio.sleep(TOP_NEW_JOBS_DELAY)
 
