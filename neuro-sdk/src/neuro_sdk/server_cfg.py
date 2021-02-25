@@ -51,7 +51,8 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
             tpu_type = tpu_payload["type"]
             tpu_software_version = tpu_payload["software_version"]
         presets[data["name"]] = Preset(
-            credits_per_hour=Decimal(data["credits_per_hour"]),
+            # TODO: make credits_per_hour not optional after server updated
+            credits_per_hour=Decimal(data.get("credits_per_hour", "0")),
             cpu=data["cpu"],
             memory_mb=data["memory_mb"],
             gpu=data.get("gpu"),
