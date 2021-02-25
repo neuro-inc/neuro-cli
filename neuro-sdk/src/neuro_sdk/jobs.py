@@ -163,6 +163,21 @@ class JobStatusHistory:
     exit_code: Optional[int] = None
     transitions: Sequence[JobStatusItem] = field(default_factory=list)
 
+    @property
+    def changed_at(self) -> datetime:
+        if self.status == JobStatus.PENDING:
+            when = self.created_at
+        elif self.status == JobStatus.RUNNING:
+            when = self.started_at
+        elif self.status == JobStatus.RUNNING or self.status == JobStatus.SUSPENDED:
+            when = self.started_at
+        elif self.status.is_finished:
+            when = self.finished_at
+        else:
+            when = self.transitions[-1].transition_time
+        assert when is not None
+        return when
+
 
 class JobRestartPolicy(str, enum.Enum):
     NEVER = "never"
