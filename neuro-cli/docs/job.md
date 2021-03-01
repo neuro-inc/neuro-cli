@@ -25,6 +25,7 @@ Job operations.
 | [_save_](job.md#save) | Save job's state to an image |
 | [_browse_](job.md#browse) | Opens a job's URL in a web browser |
 | [_attach_](job.md#attach) | Attach local standard input, output, and... |
+| [_bump-life-span_](job.md#bump-life-span) | Display status of a job |
 
 
 ### run
@@ -416,5 +417,26 @@ Attach local standard input, output, and error streams to a running job.
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _--port-forward LOCAL\_PORT:REMOTE\_RORT_ | Forward port\(s\) of a running job to local port\(s\) \(use multiple times for forwarding several ports\) |
+
+
+
+### bump-life-span
+
+Display status of a job
+
+
+#### Usage
+
+```bash
+neuro job bump-life-span [OPTIONS] JOB TIMEDELTA
+```
+
+Display status of a job.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
 
 

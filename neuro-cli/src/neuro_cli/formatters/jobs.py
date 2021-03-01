@@ -67,6 +67,23 @@ def _get_run_time(job: JobDescription) -> datetime.timedelta:
     return run_time
 
 
+def get_lifespan_ends(job: JobDescription) -> Optional[datetime.datetime]:
+    if (
+        job.status
+        in [
+            JobStatus.PENDING,
+            JobStatus.RUNNING,
+            JobStatus.SUSPENDED,
+        ]
+        and job.life_span
+    ):
+        life_span = datetime.timedelta(seconds=job.life_span)
+        runtime_left = life_span - _get_run_time(job)
+        runtime_ends = datetime.datetime.now(datetime.timezone.utc) + runtime_left
+        return runtime_ends
+    return None
+
+
 class JobStatusFormatter:
     def __init__(
         self, uri_formatter: URIFormatter, datetime_formatter: DatetimeFormatter
@@ -225,20 +242,10 @@ class JobStatusFormatter:
             table.add_row(
                 "Started", self._datetime_formatter(job_status.history.started_at)
             )
-        if (
-            job_status.status
-            in [
-                JobStatus.PENDING,
-                JobStatus.RUNNING,
-                JobStatus.SUSPENDED,
-            ]
-            and job_status.life_span
-        ):
-            life_span = datetime.timedelta(seconds=job_status.life_span)
-            runtime_left = life_span - _get_run_time(job_status)
-            runtime_ends = datetime.datetime.now(datetime.timezone.utc) + runtime_left
+        lifespan_ends = get_lifespan_ends(job_status)
+        if lifespan_ends:
             table.add_row(
-                "Life span ends (approx)", self._datetime_formatter(runtime_ends)
+                "Life span ends (approx)", self._datetime_formatter(lifespan_ends)
             )
         if job_status.status in [
             JobStatus.CANCELLED,
@@ -267,6 +274,21 @@ class JobStatusFormatter:
                 "Status transitions", Styled(status_transitions, style="reset")
             )
         return table
+
+
+class LifeSpanUpdateFormatter:
+    def __init__(self, datetime_formatter: DatetimeFormatter) -> None:
+        self._datetime_formatter = datetime_formatter
+
+    def __call__(self, job_status: JobDescription) -> RenderableType:
+        res = (
+            f"Updated job {job_status.id} life span to "
+            f"be {format_life_span(job_status.life_span)}"
+        )
+        life_span_ends = get_lifespan_ends(job_status)
+        if life_span_ends is not None:
+            res += f"\nLife ends (approx): {self._datetime_formatter(life_span_ends)}"
+        return res
 
 
 def format_life_span(life_span: Optional[float]) -> str:

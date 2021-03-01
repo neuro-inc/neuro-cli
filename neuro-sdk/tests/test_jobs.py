@@ -2497,3 +2497,30 @@ async def test_get_capacity(
     async with make_client(srv.make_url("/")) as client:
         result = await client.jobs.get_capacity()
         assert result == {"cpu-micro": 10}
+
+
+async def test_bump_life_span(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    called = False
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "additional_max_run_time_minutes": 60,
+        }
+        nonlocal called
+        called = True
+        raise web.HTTPNoContent()
+
+    app = web.Application()
+    app.router.add_put("/jobs/job-id/max_run_time_minutes", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.jobs.bump_life_span(
+            id="job-id",
+            additional_life_span=3600,  # 1h
+        )
+        assert called
