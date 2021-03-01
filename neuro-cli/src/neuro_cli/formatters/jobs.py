@@ -5,7 +5,7 @@ import sys
 import time
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Type
+from typing import Dict, Iterable, List, Optional, Tuple, Type
 
 import humanize
 from rich import box
@@ -20,7 +20,7 @@ from rich.text import Text, TextType
 from neuro_sdk import JobDescription, JobRestartPolicy, JobStatus, JobTelemetry
 
 from neuro_cli.formatters.utils import DatetimeFormatter
-from neuro_cli.parse_utils import JobColumnInfo
+from neuro_cli.parse_utils import JobColumnInfo, JobTelemetryKeyFunc
 from neuro_cli.utils import format_size
 
 from .utils import (
@@ -282,6 +282,7 @@ class JobTelemetryFormatter(RenderHook):
         self,
         console: Console,
         username: str,
+        sort_keys: List[Tuple[JobTelemetryKeyFunc, bool]],
         columns: List[JobColumnInfo],
         image_formatter: ImageFormatter,
         datetime_formatter: DatetimeFormatter,
@@ -289,6 +290,7 @@ class JobTelemetryFormatter(RenderHook):
     ) -> None:
         self._console = console
         self._username = username
+        self.sort_keys = sort_keys
         self._columns = columns
         self._image_formatter = image_formatter
         self._datetime_formatter = datetime_formatter
@@ -309,12 +311,9 @@ class JobTelemetryFormatter(RenderHook):
         table = Table(box=box.SIMPLE_HEAVY)
         _add_columns(table, self._columns)
 
-        def sortkey(item: Tuple[JobDescription, JobTelemetry]) -> Any:
-            job, info = item
-            return info.cpu
-
         items = list(self._data.values())
-        items.sort(key=sortkey, reverse=True)
+        for keyfunc, reverse in reversed(self.sort_keys):
+            items.sort(key=keyfunc, reverse=reverse)
         maxrows = self._console.size.height - 4
         if self._maxrows is not None and self._maxrows < maxrows:
             maxrows = self._maxrows

@@ -771,6 +771,7 @@ Name | Description|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user. Specify `ALL` to show jobs of all users.|
 |_--since DATE_|Show jobs created after a specific date \(including).|
+|_--sort COLUMNS_|Sort rows by specified column. Add "-" prefix to revert the sorting order. Multiple columns can be specified \(comma separated).  \[default: cpu]|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--until DATE_|Show jobs created before a specific date \(including).|
@@ -2493,6 +2494,7 @@ Name | Description|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user. Specify `ALL` to show jobs of all users.|
 |_--since DATE_|Show jobs created after a specific date \(including).|
+|_--sort COLUMNS_|Sort rows by specified column. Add "-" prefix to revert the sorting order. Multiple columns can be specified \(comma separated).  \[default: cpu]|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--until DATE_|Show jobs created before a specific date \(including).|

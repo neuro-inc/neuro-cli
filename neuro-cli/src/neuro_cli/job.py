@@ -34,6 +34,7 @@ from neuro_cli.formatters.utils import (
     image_formatter,
     uri_formatter,
 )
+from neuro_cli.parse_utils import parse_sort_keys
 from neuro_cli.utils import resolve_disk
 
 from .ael import process_attach, process_exec, process_logs
@@ -525,6 +526,15 @@ async def browse(root: Root, job: str) -> None:
     help="Show jobs created before a specific date (including).",
 )
 @option(
+    "--sort",
+    metavar="COLUMNS",
+    help="Sort rows by specified column. "
+    'Add "-" prefix to revert the sorting order. '
+    "Multiple columns can be specified (comma separated).",
+    default="cpu",
+    show_default=True,
+)
+@option(
     "--format",
     type=TOP_COLUMNS,
     help=(
@@ -552,6 +562,7 @@ async def top(
     since: str,
     until: str,
     description: str,
+    sort: str,
     format: Optional[List[JobColumnInfo]],
     full_uri: bool,
     timeout: float,
@@ -568,6 +579,7 @@ async def top(
     neuro top -t tag1 -t tag2
     """
 
+    sort_keys = parse_sort_keys(sort)
     format = await calc_top_columns(root.client, format)
 
     observed: Set[str] = set()
@@ -672,7 +684,8 @@ async def top(
     with JobTelemetryFormatter(
         root.console,
         root.client.username,
-        format,
+        sort_keys=sort_keys,
+        columns=format,
         image_formatter=image_fmtr,
         datetime_formatter=datetime_fmtr,
     ) as formatter:

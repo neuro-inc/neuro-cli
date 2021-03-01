@@ -1,10 +1,12 @@
 import dataclasses
 import re
-from datetime import timedelta
-from typing import Callable, Dict, List, Mapping, Optional, TypeVar
+from datetime import datetime, timedelta, timezone
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, TypeVar
 
 import click
 from rich.console import JustifyMethod
+
+from neuro_sdk import JobDescription, JobStatus, JobTelemetry
 
 _T = TypeVar("_T")
 
@@ -251,6 +253,81 @@ def _parse_columns(
     if not ret:
         raise ValueError(f"Invalid format {fmt!r}")
     return ret
+
+
+class InvertKey:
+    def __init__(self, value: Any) -> None:
+        self.value = Any
+
+    def __lt__(self, other: Any) -> Any:
+        return self.value > other.value
+
+    def __gt__(self, other: Any) -> Any:
+        return self.value < other.value
+
+    def __le__(self, other: Any) -> Any:
+        return self.value >= other.value
+
+    def __ge__(self, other: Any) -> Any:
+        return self.value <= other.value
+
+    def __eq__(self, other: Any) -> Any:
+        return self.value == other.value
+
+    def __ne__(self, other: Any) -> Any:
+        return self.value != other.value
+
+
+JobTelemetryKeyFunc = Callable[[Tuple[JobDescription, JobTelemetry]], Any]
+
+JOB_STATUS_PRIORITIES = {status: i for i, status in enumerate(JobStatus)}
+DATETIME_MIN = datetime.min.replace(tzinfo=timezone.utc)
+INF = float("inf")
+
+SORT_KEY_FUNCS: Dict[str, JobTelemetryKeyFunc] = {
+    # JobDescriptor attibutes
+    "id": lambda item: item[0].id,
+    "name": lambda item: item[0].name or "",
+    "status": lambda item: JOB_STATUS_PRIORITIES[item[0].status],
+    "created": lambda item: item[0].history.created_at or DATETIME_MIN,
+    "started": lambda item: item[0].history.started_at or DATETIME_MIN,
+    "finished": lambda item: item[0].history.finished_at or DATETIME_MIN,
+    "when": lambda item: item[0].history.changed_at,
+    "image": lambda item: str(item[0].container.image),
+    "owner": lambda item: item[0].owner,
+    "description": lambda item: item[0].description or "",
+    "cluster_name": lambda item: item[0].cluster_name,
+    "command": lambda item: item[0].container.command,
+    "life_span": lambda item: item[0].life_span or INF,
+    "workdir": lambda item: item[0].container.working_dir or "",
+    "preset": lambda item: item[0].preset_name or "",
+    # JobTelemetry attibutes
+    "cpu": lambda item: -item[1].cpu,
+    "memory": lambda item: -item[1].memory,
+    "gpu": lambda item: -(item[1].gpu_duty_cycle or 0),
+    "gpu_memory": lambda item: -(item[1].gpu_memory or 0),
+}
+
+SORT_KEY_NAMES = tuple(SORT_KEY_FUNCS)
+
+
+def parse_sort_keys(fmt: str) -> List[Tuple[JobTelemetryKeyFunc, bool]]:
+    sort_keys: List[Tuple[JobTelemetryKeyFunc, bool]] = []
+    for keyname in fmt.split(","):
+        keyname = keyname.strip()
+        if keyname[:1] == "-":
+            reverse = True
+            keyname = keyname[1:]
+        else:
+            reverse = False
+
+        try:
+            keyfunc = SORT_KEY_FUNCS[keyname]
+        except KeyError:
+            raise ValueError(f"invalid sort key {keyname!r}") from None
+        sort_keys.append((keyfunc, reverse))
+
+    return sort_keys
 
 
 REGEX_TIME_DELTA = re.compile(

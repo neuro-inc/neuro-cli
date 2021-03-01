@@ -42,7 +42,7 @@ from neuro_cli.formatters.utils import (
     image_formatter,
     uri_formatter,
 )
-from neuro_cli.parse_utils import parse_ps_columns, parse_top_columns
+from neuro_cli.parse_utils import parse_ps_columns, parse_sort_keys, parse_top_columns
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
 TEST_JOB_ID2 = "job-3f9c5f93-45be-4c5d-acbd-11c68260235f"
@@ -1156,13 +1156,14 @@ class TestJobOutputFormatter:
 class TestJobTelemetryFormatter:
     # Use utc timezone in test for stable constant result
 
-    def test_format_telemetry_line_no_gpu(
+    def test_format_telemetry_no_gpu(
         self, job_descr: JobDescription, rich_cmp: Any, new_console: _NewConsole
     ) -> None:
         console = new_console(tty=True, color=True)
         with JobTelemetryFormatter(
             console,
             "owner",
+            [],
             parse_top_columns(None),
             image_formatter=str,
             datetime_formatter=format_datetime_human,
@@ -1183,6 +1184,7 @@ class TestJobTelemetryFormatter:
         with JobTelemetryFormatter(
             console,
             "owner",
+            parse_sort_keys("cpu"),
             parse_top_columns(None),
             image_formatter=str,
             datetime_formatter=format_datetime_human,
@@ -1211,6 +1213,7 @@ class TestJobTelemetryFormatter:
         with JobTelemetryFormatter(
             console,
             "owner",
+            parse_sort_keys("cpu"),
             parse_top_columns(None),
             image_formatter=str,
             datetime_formatter=format_datetime_human,
@@ -1231,6 +1234,16 @@ class TestJobTelemetryFormatter:
             assert not fmt.changed
             rich_cmp(console, index=1)
 
+            fmt.sort_keys = parse_sort_keys("owner,memory")
+            fmt.render()
+            assert not fmt.changed
+            rich_cmp(console, index=3)
+
+            fmt.sort_keys = parse_sort_keys("owner,-memory")
+            fmt.render()
+            assert not fmt.changed
+            rich_cmp(console, index=4)
+
             fmt.remove(job_descr2.id)
             assert fmt.changed
             fmt.render()
@@ -1245,6 +1258,7 @@ class TestJobTelemetryFormatter:
         with JobTelemetryFormatter(
             console,
             "owner",
+            parse_sort_keys("cpu"),
             parse_top_columns(None),
             image_formatter=str,
             datetime_formatter=format_datetime_human,
@@ -1266,13 +1280,14 @@ class TestJobTelemetryFormatter:
             assert not fmt.changed
             rich_cmp(console, index=1)
 
-    def test_format_telemetry_line_with_gpu(
+    def test_format_telemetry_with_gpu(
         self, job_descr: JobDescription, rich_cmp: Any, new_console: _NewConsole
     ) -> None:
         console = new_console(tty=True, color=True)
         with JobTelemetryFormatter(
             console,
             "owner",
+            [],
             parse_top_columns(None),
             image_formatter=str,
             datetime_formatter=format_datetime_human,
