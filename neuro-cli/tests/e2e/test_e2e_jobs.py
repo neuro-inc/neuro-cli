@@ -893,7 +893,7 @@ def test_job_run_volume_all_and_another(helper: Helper) -> None:
 
 def try_job_top(helper: Helper, *args: str) -> Iterator[str]:
     t0 = time()
-    delay = 1.0
+    delay = 3.0
     while True:
         print("Try job top", delay)
         with pytest.raises(subprocess.CalledProcessError) as excinfo:
@@ -902,7 +902,8 @@ def try_job_top(helper: Helper, *args: str) -> Iterator[str]:
         stderr = excinfo.value.stderr
         print("STDOUT", stdout)
         assert excinfo.value.returncode == 124
-        yield stdout
+        i = stdout.rfind(" ID ")
+        yield (stdout if i < 0 else stdout[i:])
         if time() - t0 > 3 * 60:
             # timeout is reached without info from server
             raise AssertionError(
@@ -916,7 +917,7 @@ def try_job_top(helper: Helper, *args: str) -> Iterator[str]:
 
 @pytest.mark.e2e
 def test_e2e_job_top(helper: Helper) -> None:
-    command = f"sleep 300"
+    command = "sleep 400"
 
     print("Run job... ")
     job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
@@ -941,7 +942,7 @@ def test_e2e_job_top(helper: Helper) -> None:
 def test_e2e_job_top_filtering(helper: Helper) -> None:
     job_name = f"test-job-{str(uuid4())[:8]}"
     description = str(uuid4())
-    command = f"sleep 300"
+    command = "sleep 1000"
 
     print("Run jobs... ")
     job1_id = helper.run_job_and_wait_state(
