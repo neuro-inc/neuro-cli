@@ -1924,6 +1924,7 @@ class TestLifeSpanUpdateFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
+            life_span=3600,
         )
 
         formatter = LifeSpanUpdateFormatter(
