@@ -473,7 +473,7 @@ Name | Description|
 | _[neuro job save](#neuro-job-save)_| Save job's state to an image |
 | _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
 | _[neuro job attach](#neuro-job-attach)_| Attach local standard input, output, and error streams to a running job |
-| _[neuro job bump\-life-span](#neuro-job-bump-life-span)_| Display status of a job |
+| _[neuro job bump\-life-span](#neuro-job-bump-life-span)_| Increase job life span |
 
 
 
@@ -850,7 +850,7 @@ Name | Description|
 
 ### neuro job bump-life-span
 
-Display status of a job.
+Increase job life span
 
 **Usage:**
 

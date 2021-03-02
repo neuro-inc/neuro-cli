@@ -287,7 +287,9 @@ class LifeSpanUpdateFormatter:
         )
         life_span_ends = get_lifespan_ends(job_status)
         if life_span_ends is not None:
-            res += f"\nLife ends (approx): {self._datetime_formatter(life_span_ends)}"
+            res += (
+                f"\nLife span ends (approx): {self._datetime_formatter(life_span_ends)}"
+            )
         return res
 
 

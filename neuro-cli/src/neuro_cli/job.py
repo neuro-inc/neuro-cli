@@ -471,7 +471,7 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
 )
 async def bump_life_span(root: Root, job: str, additional_life_span: str) -> None:
     """
-    Display status of a job.
+    Increase job life span
     """
     job_id = await resolve_job(
         job,

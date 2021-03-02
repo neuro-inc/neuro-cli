@@ -401,6 +401,13 @@ Jobs
 
       :return: asynchronous iterator which emits `JobTelemetry` objects periodically.
 
+   .. comethod:: bump_life_span(id: str, additional_life_span: float) -> None
+
+      Increase life span of a job.
+
+      :param str id: job :attr:`~JobDescription.id` to increase life span.
+
+      :param float life_span: amount of seconds to add to job run-time limit.
 
 Container
 =========

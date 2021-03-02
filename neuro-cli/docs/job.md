@@ -25,7 +25,7 @@ Job operations.
 | [_save_](job.md#save) | Save job's state to an image |
 | [_browse_](job.md#browse) | Opens a job's URL in a web browser |
 | [_attach_](job.md#attach) | Attach local standard input, output, and... |
-| [_bump-life-span_](job.md#bump-life-span) | Display status of a job |
+| [_bump-life-span_](job.md#bump-life-span) | Increase job life span |
 
 
 ### run
@@ -422,7 +422,7 @@ Attach local standard input, output, and error streams to a running job.
 
 ### bump-life-span
 
-Display status of a job
+Increase job life span
 
 
 #### Usage
@@ -431,7 +431,7 @@ Display status of a job
 neuro job bump-life-span [OPTIONS] JOB TIMEDELTA
 ```
 
-Display status of a job.
+Increase job life span
 
 #### Options
 
