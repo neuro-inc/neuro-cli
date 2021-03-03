@@ -912,7 +912,7 @@ def try_job_top(helper: Helper, *args: str) -> Iterator[str]:
                 f"stdout = {stdout}\nstdderr = {stderr}"
             )
         print(f"job top has failed, increase timeout to {delay}")
-        delay = min(delay * 1.5, 60)
+        delay = min(delay * 1.5, 10)
 
 
 @pytest.mark.e2e
