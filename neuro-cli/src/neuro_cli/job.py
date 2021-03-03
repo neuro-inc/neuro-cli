@@ -658,10 +658,14 @@ async def top(
                 await asyncio.sleep(TOP_NEW_JOBS_DELAY)
 
     async def poller(job: JobDescription) -> None:
-        async for info in root.client.jobs.top(job.id):
-            formatter.update(job, info)
-            await asyncio.sleep(0)
-        formatter.remove(job.id)
+        try:
+            async for info in root.client.jobs.top(job.id):
+                formatter.update(job, info)
+                await asyncio.sleep(0)
+        except ValueError:
+            pass  # Job is finished.
+        finally:
+            formatter.remove(job.id)
         await asyncio.sleep(0)
 
     async def renderer() -> None:
