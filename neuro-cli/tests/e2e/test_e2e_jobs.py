@@ -904,7 +904,7 @@ def try_job_top(helper: Helper, *args: str) -> Iterator[str]:
         assert excinfo.value.returncode == 124
         i = stdout.rfind(" ID ")
         yield (stdout if i < 0 else stdout[i:])
-        if time() - t0 > 3 * 60:
+        if time() - t0 > 10 * 60:
             # timeout is reached without info from server
             raise AssertionError(
                 f"Cannot get response from server "
@@ -912,7 +912,7 @@ def try_job_top(helper: Helper, *args: str) -> Iterator[str]:
                 f"stdout = {stdout}\nstdderr = {stderr}"
             )
         print(f"job top has failed, increase timeout to {delay}")
-        delay = min(delay * 1.5, 10)
+        delay = min(delay * 1.5, 60)
 
 
 @pytest.mark.e2e
