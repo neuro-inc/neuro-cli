@@ -53,6 +53,7 @@ from .formatters.jobs import (
     JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
+    LifeSpanUpdateFormatter,
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
@@ -460,6 +461,35 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
             datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
         )(res)
     )
+
+
+@command()
+@argument("job", type=JOB)
+@argument(
+    "additional-life-span",
+    type=str,
+    metavar="TIMEDELTA",
+)
+async def bump_life_span(root: Root, job: str, additional_life_span: str) -> None:
+    """
+    Increase job life span
+    """
+    job_id = await resolve_job(
+        job,
+        client=root.client,
+        status=JobStatus.items(),
+    )
+    await root.client.jobs.bump_life_span(
+        id=job_id,
+        additional_life_span=parse_timedelta(additional_life_span).total_seconds(),
+    )
+    if not root.quiet:
+        res = await root.client.jobs.status(id=job_id)
+        root.print(
+            LifeSpanUpdateFormatter(
+                datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
+            )(res)
+        )
 
 
 @command(deprecated=True, hidden=True)
@@ -1047,6 +1077,7 @@ job.add_command(top)
 job.add_command(save)
 job.add_command(browse)
 job.add_command(attach)
+job.add_command(bump_life_span)
 
 
 job.add_command(alias(ls, "list", hidden=True))

@@ -32,6 +32,7 @@ from neuro_cli.formatters.jobs import (
     JobStartProgress,
     JobStatusFormatter,
     JobTelemetryFormatter,
+    LifeSpanUpdateFormatter,
     SimpleJobsFormatter,
     TabularJobRow,
     TabularJobsFormatter,
@@ -1861,3 +1862,87 @@ class TestTabularJobsFormatter:
             datetime_formatter=format_datetime_human,
         )
         rich_cmp(formatter(jobs))
+
+
+class TestLifeSpanUpdateFormatter:
+    async def test_not_finished(self, rich_cmp: Any) -> None:
+        job = JobDescription(
+            status=JobStatus.RUNNING,
+            owner="test-user",
+            cluster_name="default",
+            id=f"job-id",
+            uri=URL(f"job://default/test-user/job-id"),
+            description=None,
+            history=JobStatusHistory(
+                status=JobStatus.RUNNING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+                transitions=[
+                    JobStatusItem(
+                        status=JobStatus.PENDING,
+                        transition_time=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                        reason="Creating",
+                    ),
+                    JobStatusItem(
+                        status=JobStatus.PENDING,
+                        transition_time=isoparse("2018-09-25T12:28:22.298672+00:00"),
+                        reason="Scheduling",
+                    ),
+                    JobStatusItem(
+                        status=JobStatus.PENDING,
+                        transition_time=isoparse("2018-09-25T12:28:23.298672+00:00"),
+                        reason="ContainerCreating",
+                    ),
+                    JobStatusItem(
+                        status=JobStatus.RUNNING,
+                        transition_time=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                    ),
+                ],
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_external_image(name="test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+            ),
+            scheduler_enabled=False,
+            pass_config=True,
+        )
+
+        formatter = LifeSpanUpdateFormatter(
+            datetime_formatter=format_datetime_human,
+        )
+        rich_cmp(formatter(job))
+
+    async def test_finished(self, rich_cmp: Any) -> None:
+        job = JobDescription(
+            status=JobStatus.SUCCEEDED,
+            owner="test-user",
+            cluster_name="default",
+            id=f"job-id",
+            uri=URL(f"job://default/test-user/job-id"),
+            description=None,
+            history=JobStatusHistory(
+                status=JobStatus.SUCCEEDED,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_external_image(name="test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+            ),
+            scheduler_enabled=False,
+            pass_config=True,
+            life_span=3600,
+        )
+
+        formatter = LifeSpanUpdateFormatter(
+            datetime_formatter=format_datetime_human,
+        )
+        rich_cmp(formatter(job))

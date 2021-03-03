@@ -439,6 +439,16 @@ class Jobs(metaclass=NoPublicConstructor):
             # an error is raised for status >= 400
             return None  # 201 status code
 
+    async def bump_life_span(self, id: str, additional_life_span: float) -> None:
+        url = self._config.api_url / "jobs" / id / "max_run_time_minutes"
+        payload = {
+            "additional_max_run_time_minutes": int(additional_life_span // 60),
+        }
+        auth = await self._config._api_auth()
+        async with self._core.request("PUT", url, json=payload, auth=auth):
+            # an error is raised for status >= 400
+            return None  # 201 status code
+
     async def monitor(self, id: str) -> AsyncIterator[bytes]:
         url = self._config.monitoring_url / id / "log"
         timeout = attr.evolve(self._core.timeout, sock_read=None)

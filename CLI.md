@@ -27,6 +27,7 @@
 		* [neuro job save](#neuro-job-save)
 		* [neuro job browse](#neuro-job-browse)
 		* [neuro job attach](#neuro-job-attach)
+		* [neuro job bump-life-span](#neuro-job-bump-life-span)
 	* [neuro project](#neuro-project)
 		* [neuro project init](#neuro-project-init)
 	* [neuro storage](#neuro-storage)
@@ -472,6 +473,7 @@ Name | Description|
 | _[neuro job save](#neuro-job-save)_| Save job's state to an image |
 | _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
 | _[neuro job attach](#neuro-job-attach)_| Attach local standard input, output, and error streams to a running job |
+| _[neuro job bump\-life-span](#neuro-job-bump-life-span)_| Increase job life span |
 
 
 
@@ -843,6 +845,25 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
+
+
+
+
+### neuro job bump-life-span
+
+Increase job life span
+
+**Usage:**
+
+```bash
+neuro job bump-life-span [OPTIONS] JOB TIMEDELTA
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
 
 
 
