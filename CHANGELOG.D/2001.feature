@@ -1,1 +1,0 @@
-Added filtering options in `neuro top`: `--owner`, `--name`, `--tag`, `--description`, `--since` and `--until`. They are similar to corresponding options in `neuro ps`. By default shown only jobs of the current user, specify `--owner=ALL` to show jobs of all users.

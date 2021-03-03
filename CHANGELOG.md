@@ -5,6 +5,31 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.3.3 (2021-03-03)
+=================================
+
+Features
+--------
+
+
+- Added option `--format` in `neuro top` for specifying the output columns. It is similar to option `--format` of `neuro ps`, but support several additional columns. ([#2000](https://github.com/neuro-inc/platform-client-python/issues/2000))
+
+- Added filtering options in `neuro top`: `--owner`, `--name`, `--tag`, `--description`, `--since` and `--until`. They are similar to corresponding options in `neuro ps`. By default shown only jobs of the current user, specify `--owner=ALL` to show jobs of all users. ([#2001](https://github.com/neuro-inc/platform-client-python/issues/2001))
+
+- Add option `--sort` in `neuro top`. ([#2002](https://github.com/neuro-inc/platform-client-python/issues/2002))
+
+- Drop cluster_name and description from default output of `neuro ps` command. ([#2009](https://github.com/neuro-inc/platform-client-python/issues/2009))
+
+- Allow deletion images without tag. Support multiple arguments for `neuro image rm` command. ([#2010](https://github.com/neuro-inc/platform-client-python/issues/2010))
+
+
+Bugfixes
+--------
+
+
+- Support job statuses "suspended" and "unknown" in `neuro ps` and `neuro top`. ([#2011](https://github.com/neuro-inc/platform-client-python/issues/2011))
+
+
 Neuro SDK/CLI 21.2.19 (2021-02-19)
 ==================================
 
