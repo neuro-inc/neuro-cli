@@ -1,0 +1,1 @@
+Do not add implicit '\n's to `neuro job generate_run_command <job-id>` command output.
