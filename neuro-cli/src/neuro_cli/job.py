@@ -953,6 +953,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 )
 @option(
     "--privileged",
+    is_flag=True,
     default=False,
     show_default=True,
     help="Run job in privileged mode, if it is supported by cluster.",

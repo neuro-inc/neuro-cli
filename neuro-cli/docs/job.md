@@ -82,7 +82,7 @@ $ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg
 | _--pass-config / --no-pass-config_ | Upload neuro config to the job  _\[default: False\]_ |
 | _--port-forward LOCAL\_PORT:REMOTE\_RORT_ | Forward port\(s\) of a running job to local port\(s\) \(use multiple times for forwarding several ports\) |
 | _-s, --preset PRESET_ | Predefined resource configuration \(to see available values, run `neuro config show`\) |
-| _--privileged TEXT_ | Run job in privileged mode, if it is supported by cluster.  _\[default: False\]_ |
+| _--privileged_ | Run job in privileged mode, if it is supported by cluster.  _\[default: False\]_ |
 | _-q, --quiet_ | Run command in quiet mode \(DEPRECATED\) |
 | _--restart \[never &#124; on-failure &#124; always\]_ | Restart policy to apply when a job exits  _\[default: never\]_ |
 | _--schedule-timeout TIMEDELTA_ | Optional job schedule timeout in the format '3m4s' \(some parts may be missing\). |
