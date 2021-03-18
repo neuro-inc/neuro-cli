@@ -11,8 +11,10 @@ import aiohttp
 import certifi
 from yarl import URL
 
+from neuro_sdk.login import AuthTokenClient
+
 from .client import Client
-from .config import _ConfigData, _load, _save
+from .config import _ConfigData, _load, _load_recovery_data, _save
 from .core import DEFAULT_TIMEOUT
 from .errors import ConfigError
 from .login import AuthNegotiator, HeadlessNegotiator, _AuthToken, logout_from_browser
@@ -78,6 +80,18 @@ class Factory:
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         if not self.is_config_present and PASS_CONFIG_ENV_NAME in os.environ:
             await self.login_with_passed_config(timeout=timeout)
+        try:
+            return await self._get(timeout=timeout)
+        except ConfigError as initial_error:
+            try:
+                await self._try_recover_config(timeout)
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                raise initial_error
+            return await self._get(timeout=timeout)
+
+    async def _get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
         session = await _make_session(timeout, self._trace_configs)
         try:
             client = Client._create(
@@ -89,6 +103,29 @@ class Factory:
             raise
         else:
             return client
+
+    async def _try_recover_config(
+        self, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+    ) -> None:
+        recovery_data = _load_recovery_data(self._path)
+        async with _make_session(timeout, self._trace_configs) as session:
+            config_unauthorized = await get_server_config(session, recovery_data.url)
+            old_token = _AuthToken.create("", 0, recovery_data.refresh_token)
+            async with AuthTokenClient(
+                session,
+                url=config_unauthorized.auth_config.token_url,
+                client_id=config_unauthorized.auth_config.client_id,
+            ) as token_client:
+                fresh_token = await token_client.refresh(old_token)
+            config_authorized = await get_server_config(
+                session, recovery_data.url, token=fresh_token.token
+            )
+            config = self._gen_config(config_authorized, fresh_token, recovery_data.url)
+        self._save(config)
+
+        client = await self.get(timeout=timeout)
+        await client.config.switch_cluster(recovery_data.cluster_name)
+        await client.close()
 
     async def login(
         self,
