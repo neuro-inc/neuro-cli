@@ -1,7 +1,7 @@
 -r base.txt
 asynctest==0.13.0
 black==20.8b1
-cmarkgfm==0.5.2
+cmarkgfm==0.5.3
 flake8==3.9.0
 isort==5.7.0
 markdown-toc==1.2.6
