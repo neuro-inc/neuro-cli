@@ -610,6 +610,12 @@ class DetailedJobStartProgress(JobStartProgress, RenderHook):
     def end(self, job: JobDescription) -> None:
         out = []
 
+        if self._prev:
+            self._console.print(self._prev)
+            empty = Text("")
+            self._prev = empty
+            self._live_render.set_renderable(empty)
+
         if job.status != JobStatus.FAILED:
             http_url = job.http_url
             if http_url:
@@ -645,9 +651,9 @@ class DetailedJobStartProgress(JobStartProgress, RenderHook):
         exc_val: BaseException,
         exc_tb: TracebackType,
     ) -> None:
+        self._console.pop_render_hook()
         self._console.line()
         self._console.show_cursor(True)
-        self._console.pop_render_hook()
 
 
 class StreamJobStartProgress(JobStartProgress):
@@ -819,9 +825,9 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
         exc_val: BaseException,
         exc_tb: TracebackType,
     ) -> None:
+        self._console.pop_render_hook()
         self._console.line()
         self._console.show_cursor(True)
-        self._console.pop_render_hook()
 
 
 class StreamJobStopProgress(JobStopProgress):
