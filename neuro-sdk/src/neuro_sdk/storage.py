@@ -104,16 +104,11 @@ class Storage(metaclass=NoPublicConstructor):
             uri, self._config.username, self._config.cluster_name
         )
 
-    def _uri_to_path(self, uri: URL, *, normalized: bool = False) -> str:
+    def _get_storage_url(self, uri: URL, *, normalized: bool = False) -> URL:
         if not normalized:
-            uri = normalize_storage_path_uri(
-                uri, self._config.username, self._config.cluster_name
-            )
-        if not uri.host:
-            return ""
-        if uri.host != self._config.cluster_name:
-            raise ValueError(f"cluster_name != {self._config.cluster_name!r}")
-        return uri.path.lstrip("/")
+            uri = self._normalize_uri(uri)
+        assert uri.host is not None
+        return self._config.get_cluster(uri.host).storage_url / uri.path.lstrip("/")
 
     def _set_time_diff(self, request_time: float, resp: aiohttp.ClientResponse) -> None:
         response_time = time.time()
@@ -169,7 +164,7 @@ class Storage(metaclass=NoPublicConstructor):
 
     async def ls(self, uri: URL) -> AsyncIterator[FileStatus]:
         uri = self._normalize_uri(uri)
-        url = self._config.storage_url / self._uri_to_path(uri, normalized=True)
+        url = self._get_storage_url(uri, normalized=True)
         url = url.with_query(op="LISTSTATUS")
         headers = {"Accept": "application/x-ndjson"}
 
@@ -273,7 +268,7 @@ class Storage(metaclass=NoPublicConstructor):
                         errno.ENOENT, "No such directory", str(parent)
                     )
 
-        url = self._config.storage_url / self._uri_to_path(uri)
+        url = self._get_storage_url(uri)
         url = url.with_query(op="MKDIRS")
         auth = await self._config._api_auth()
 
@@ -281,9 +276,7 @@ class Storage(metaclass=NoPublicConstructor):
             resp  # resp.status == 201
 
     async def create(self, uri: URL, data: Union[bytes, AsyncIterator[bytes]]) -> None:
-        path = self._uri_to_path(uri)
-        assert path, "Creation in root is not allowed"
-        url = self._config.storage_url / path
+        url = self._get_storage_url(uri)
         url = url.with_query(op="CREATE")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         auth = await self._config._api_auth()
@@ -296,8 +289,7 @@ class Storage(metaclass=NoPublicConstructor):
     async def write(self, uri: URL, data: bytes, offset: int) -> None:
         if not data:
             raise ValueError("empty data")
-        path = self._uri_to_path(uri)
-        url = self._config.storage_url / path
+        url = self._get_storage_url(uri)
         url = url.with_query(op="WRITE")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         auth = await self._config._api_auth()
@@ -310,7 +302,8 @@ class Storage(metaclass=NoPublicConstructor):
 
     async def stat(self, uri: URL) -> FileStatus:
         uri = self._normalize_uri(uri)
-        url = self._config.storage_url / self._uri_to_path(uri, normalized=True)
+        assert uri.host is not None
+        url = self._get_storage_url(uri, normalized=True)
         url = url.with_query(op="GETFILESTATUS")
         auth = await self._config._api_auth()
 
@@ -320,14 +313,12 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._core.request("GET", url, auth=auth) as resp:
             self._set_time_diff(request_time, resp)
             res = await resp.json()
-            return _file_status_from_api_stat(
-                self._config.cluster_name, res["FileStatus"]
-            )
+            return _file_status_from_api_stat(uri.host, res["FileStatus"])
 
     async def open(
         self, uri: URL, offset: int = 0, size: Optional[int] = None
     ) -> AsyncIterator[bytes]:
-        url = self._config.storage_url / self._uri_to_path(uri)
+        url = self._get_storage_url(uri)
         url = url.with_query(op="OPEN")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         auth = await self._config._api_auth()
@@ -397,12 +388,12 @@ class Storage(metaclass=NoPublicConstructor):
     async def _rm(
         self, uri: URL, *, recursive: bool, progress: _AsyncAbstractDeleteProgress
     ) -> None:
-        path = self._uri_to_path(uri)
-
-        url = self._config.storage_url / path
+        uri = self._normalize_uri(uri)
+        assert uri.host is not None
+        url = self._get_storage_url(uri, normalized=True)
         url = url.with_query(op="DELETE", recursive="true" if recursive else "false")
         auth = await self._config._api_auth()
-        base_uri = URL.build(scheme="storage", authority=self._config.cluster_name)
+        base_uri = URL.build(scheme="storage", authority=uri.host)
 
         headers = {"Accept": "application/x-ndjson"}
 
@@ -423,8 +414,14 @@ class Storage(metaclass=NoPublicConstructor):
                 pass  # Old server versions do not support delete status streaming
 
     async def mv(self, src: URL, dst: URL) -> None:
-        url = self._config.storage_url / self._uri_to_path(src)
-        url = url.with_query(op="RENAME", destination="/" + self._uri_to_path(dst))
+        src = self._normalize_uri(src)
+        dst = self._normalize_uri(dst)
+        assert src.host is not None
+        assert dst.host is not None
+        if src.host != dst.host:
+            raise ValueError("Cannot move cross-cluster")
+        url = self._get_storage_url(src)
+        url = url.with_query(op="RENAME", destination="/" + dst.path.lstrip("/"))
         auth = await self._config._api_auth()
 
         async with self._core.request("POST", url, auth=auth) as resp:

@@ -108,15 +108,18 @@ class Config(metaclass=NoPublicConstructor):
 
     @property
     def _cluster(self) -> Cluster:
+        return self.get_cluster(self.cluster_name)
+
+    def get_cluster(self, cluster_name: str) -> Cluster:
         try:
-            return self._config_data.clusters[self.cluster_name]
+            return self._config_data.clusters[cluster_name]
         except KeyError:
             if self._get_user_cluster_name() is None:
                 tip = "Please logout and login again."
             else:
                 tip = "Please edit local user config file or logout and login again."
             raise RuntimeError(
-                f"Cluster {self.cluster_name} doesn't exist in "
+                f"Cluster {cluster_name} doesn't exist in "
                 f"a list of available clusters "
                 f"{list(self._config_data.clusters)}. {tip}"
             ) from None
