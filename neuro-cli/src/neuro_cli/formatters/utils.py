@@ -67,7 +67,9 @@ def format_datetime_iso(
 
 
 def format_datetime_human(
-    when: Optional[datetime.datetime], precise: bool = False
+    when: Optional[datetime.datetime],
+    precise: bool = False,
+    timezone: Optional[datetime.timezone] = None,
 ) -> str:
     """Humanizes the datetime
 
@@ -104,7 +106,7 @@ def format_datetime_human(
             )
         return humanize.naturaltime(delta)
     else:
-        when_local = when.astimezone()
+        when_local = when.astimezone(timezone)
         result = humanize.naturaldate(when_local)
         if precise:
             result = f"{result} at {when_local.strftime('%H:%M')} "

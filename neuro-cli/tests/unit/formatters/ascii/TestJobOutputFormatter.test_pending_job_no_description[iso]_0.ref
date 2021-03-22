@@ -1,0 +1,11 @@
+Job          test-job                         
+ Owner        owner                            
+ Cluster      default                          
+ Status       pending (ContainerCreating)      
+ Image        test-image                       
+ Command      test-command                     
+ Resources     Memory  16.0M                   
+               CPU       0.1                   
+ Round Robin  True                             
+ TTY          False                            
+ Created      2018-09-25T12:28:21.298672+00:00

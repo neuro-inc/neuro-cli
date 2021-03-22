@@ -1,0 +1,4 @@
+ID                                         NAME    STATUS    WHEN                               IMAGE                              OWNER   COMMAND            
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+  job-7ee153a7-249c-4be9-965a-ba3eafb67c82   name1   failed    2017-09-25T12:28:59.759433+00:00   some-image-name:with-long-tag      YOU     ls -la /some/path  
+  job-7ee153a7-249c-4be9-965a-ba3eafb67c84   name2   pending   2017-09-25T12:28:21.298672+00:00   image://test-cluster/bob/some-i…   YOU     ls -la /some/path

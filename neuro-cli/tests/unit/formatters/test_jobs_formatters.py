@@ -39,7 +39,9 @@ from neuro_cli.formatters.jobs import (
     format_timedelta,
 )
 from neuro_cli.formatters.utils import (
+    DatetimeFormatter,
     format_datetime_human,
+    format_datetime_iso,
     image_formatter,
     uri_formatter,
 )
@@ -50,6 +52,19 @@ TEST_JOB_ID2 = "job-3f9c5f93-45be-4c5d-acbd-11c68260235f"
 TEST_JOB_NAME = "test-job-name"
 
 _NewConsole = Callable[..., Console]
+
+
+def _format_datetime_human(when: Optional[datetime], precise: bool = False) -> str:
+    return format_datetime_human(when, precise, timezone=timezone.utc)
+
+
+@pytest.fixture(params=["iso", "human"])
+def datetime_formatter(request: Any) -> DatetimeFormatter:
+    if request.param == "iso":
+        return format_datetime_iso
+    if request.param == "human":
+        return _format_datetime_human
+    raise Exception(f"Unknown format mode {request.param}.")
 
 
 @pytest.fixture
@@ -252,7 +267,9 @@ class TestJobStartProgress:
 
 
 class TestJobOutputFormatter:
-    def test_job_with_name(self, rich_cmp: Any) -> None:
+    def test_job_with_name(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -284,11 +301,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_tags(self, rich_cmp: Any) -> None:
+    def test_job_with_tags(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -320,11 +339,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_tags_wrap_tags(self, rich_cmp: Any) -> None:
+    def test_job_with_tags_wrap_tags(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -356,11 +377,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_life_span_with_value(self, rich_cmp: Any) -> None:
+    def test_job_with_life_span_with_value(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -392,11 +415,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_life_span_without_value(self, rich_cmp: Any) -> None:
+    def test_job_with_life_span_without_value(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -428,11 +453,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_restart_policy(self, rich_cmp: Any) -> None:
+    def test_job_with_restart_policy(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -465,11 +492,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_pending_job(self, rich_cmp: Any) -> None:
+    def test_pending_job(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -500,11 +529,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_pending_job_no_reason(self, rich_cmp: Any) -> None:
+    def test_pending_job_no_reason(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.PENDING,
             id="test-job",
@@ -532,11 +563,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_pending_job_with_reason(self, rich_cmp: Any) -> None:
+    def test_pending_job_with_reason(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.PENDING,
             id="test-job",
@@ -565,11 +598,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_pending_job_no_description(self, rich_cmp: Any) -> None:
+    def test_pending_job_no_description(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.PENDING,
             id="test-job",
@@ -597,11 +632,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_running_job(self, rich_cmp: Any) -> None:
+    def test_running_job(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
@@ -631,11 +668,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_running_job_with_status_items(self, rich_cmp: Any) -> None:
+    def test_running_job_with_status_items(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
@@ -686,11 +725,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_running_named_job(self, rich_cmp: Any) -> None:
+    def test_running_named_job(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
@@ -722,11 +763,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_entrypoint(self, rich_cmp: Any) -> None:
+    def test_job_with_entrypoint(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
@@ -757,11 +800,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_environment(self, rich_cmp: Any) -> None:
+    def test_job_with_environment(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -800,11 +845,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_volumes_short(self, rich_cmp: Any) -> None:
+    def test_job_with_volumes_short(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -859,11 +906,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_volumes_long(self, rich_cmp: Any) -> None:
+    def test_job_with_volumes_long(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -912,11 +961,13 @@ class TestJobOutputFormatter:
 
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=str, datetime_formatter=format_datetime_human
+                uri_formatter=str, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_secrets_short(self, rich_cmp: Any) -> None:
+    def test_job_with_secrets_short(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -981,11 +1032,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_disk_volumes_short(self, rich_cmp: Any) -> None:
+    def test_job_with_disk_volumes_short(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -1040,11 +1093,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_working_dir(self, rich_cmp: Any) -> None:
+    def test_job_with_working_dir(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
@@ -1083,11 +1138,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_with_preset_name(self, rich_cmp: Any) -> None:
+    def test_job_with_preset_name(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.PENDING,
             id="test-job",
@@ -1116,11 +1173,13 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
-    def test_job_on_preemptible_node(self, rich_cmp: Any) -> None:
+    def test_job_on_preemptible_node(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         description = JobDescription(
             status=JobStatus.PENDING,
             id="test-job",
@@ -1149,7 +1208,7 @@ class TestJobOutputFormatter:
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
         rich_cmp(
             JobStatusFormatter(
-                uri_formatter=uri_fmtr, datetime_formatter=format_datetime_human
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
             )(description)
         )
 
@@ -1158,7 +1217,11 @@ class TestJobTelemetryFormatter:
     # Use utc timezone in test for stable constant result
 
     def test_format_telemetry_no_gpu(
-        self, job_descr: JobDescription, rich_cmp: Any, new_console: _NewConsole
+        self,
+        job_descr: JobDescription,
+        rich_cmp: Any,
+        new_console: _NewConsole,
+        datetime_formatter: DatetimeFormatter,
     ) -> None:
         console = new_console(tty=True, color=True)
         with JobTelemetryFormatter(
@@ -1167,7 +1230,7 @@ class TestJobTelemetryFormatter:
             [],
             parse_top_columns(None),
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         ) as fmt:
             timestamp = 1_517_248_466.238_723_6
             telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
@@ -1179,7 +1242,11 @@ class TestJobTelemetryFormatter:
             rich_cmp(console)
 
     def test_format_telemetry_seq(
-        self, job_descr: JobDescription, rich_cmp: Any, new_console: _NewConsole
+        self,
+        job_descr: JobDescription,
+        rich_cmp: Any,
+        new_console: _NewConsole,
+        datetime_formatter: DatetimeFormatter,
     ) -> None:
         console = new_console(tty=True, color=True)
         with JobTelemetryFormatter(
@@ -1188,7 +1255,7 @@ class TestJobTelemetryFormatter:
             parse_sort_keys("cpu"),
             parse_top_columns(None),
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         ) as fmt:
             timestamp = 1_517_248_466.238_723_6
             telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
@@ -1207,7 +1274,11 @@ class TestJobTelemetryFormatter:
             rich_cmp(console, index=1)
 
     def test_format_telemetry_multiple_jobs(
-        self, job_descr: JobDescription, rich_cmp: Any, new_console: _NewConsole
+        self,
+        job_descr: JobDescription,
+        rich_cmp: Any,
+        new_console: _NewConsole,
+        datetime_formatter: DatetimeFormatter,
     ) -> None:
         job_descr2 = replace(job_descr, id=TEST_JOB_ID2)
         console = new_console(tty=True, color=True)
@@ -1217,7 +1288,7 @@ class TestJobTelemetryFormatter:
             parse_sort_keys("cpu"),
             parse_top_columns(None),
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         ) as fmt:
             timestamp = 1_517_248_466.238_723_6
             telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
@@ -1252,7 +1323,11 @@ class TestJobTelemetryFormatter:
             rich_cmp(console, index=2)
 
     def test_format_telemetry_limited_height(
-        self, job_descr: JobDescription, rich_cmp: Any, new_console: _NewConsole
+        self,
+        job_descr: JobDescription,
+        rich_cmp: Any,
+        new_console: _NewConsole,
+        datetime_formatter: DatetimeFormatter,
     ) -> None:
         job_descr2 = replace(job_descr, id=TEST_JOB_ID2)
         console = new_console(tty=True, color=True)
@@ -1262,7 +1337,7 @@ class TestJobTelemetryFormatter:
             parse_sort_keys("cpu"),
             parse_top_columns(None),
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
             maxrows=1,
         ) as fmt:
             timestamp = 1_517_248_466.238_723_6
@@ -1282,7 +1357,11 @@ class TestJobTelemetryFormatter:
             rich_cmp(console, index=1)
 
     def test_format_telemetry_with_gpu(
-        self, job_descr: JobDescription, rich_cmp: Any, new_console: _NewConsole
+        self,
+        job_descr: JobDescription,
+        rich_cmp: Any,
+        new_console: _NewConsole,
+        datetime_formatter: DatetimeFormatter,
     ) -> None:
         console = new_console(tty=True, color=True)
         with JobTelemetryFormatter(
@@ -1291,7 +1370,7 @@ class TestJobTelemetryFormatter:
             [],
             parse_top_columns(None),
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         ) as fmt:
             timestamp = 1_517_248_466
             telemetry = JobTelemetry(
@@ -1433,21 +1512,21 @@ class TestTabularJobRow:
             pass_config=True,
         )
 
-    def test_with_job_name(self) -> None:
+    def test_with_job_name(self, datetime_formatter: DatetimeFormatter) -> None:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(JobStatus.RUNNING, name="job-name"),
             "owner",
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         assert row.name == "job-name"
 
-    def test_without_job_name(self) -> None:
+    def test_without_job_name(self, datetime_formatter: DatetimeFormatter) -> None:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(JobStatus.RUNNING, name=None),
             "owner",
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         assert row.name == ""
 
@@ -1462,7 +1541,10 @@ class TestTabularJobRow:
         ],
     )
     def test_status_date_relation(
-        self, status: JobStatus, date: str, color: str
+        self,
+        status: JobStatus,
+        date: str,
+        color: str,
     ) -> None:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(status),
@@ -1473,7 +1555,9 @@ class TestTabularJobRow:
         assert row.status == Text(status, style="color")
         assert row.when == date
 
-    def test_image_from_registry_parsing_short(self) -> None:
+    def test_image_from_registry_parsing_short(
+        self, datetime_formatter: DatetimeFormatter
+    ) -> None:
         uri_fmtr = uri_formatter(username="bob", cluster_name="test-cluster")
         image_fmtr = image_formatter(uri_formatter=uri_fmtr)
         row = TabularJobRow.from_job(
@@ -1483,12 +1567,14 @@ class TestTabularJobRow:
             ),
             "bob",
             image_formatter=image_fmtr,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         assert row.image == "image:swiss-box:red"
         assert row.name == ""
 
-    def test_image_from_registry_parsing_long(self) -> None:
+    def test_image_from_registry_parsing_long(
+        self, datetime_formatter: DatetimeFormatter
+    ) -> None:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(
                 JobStatus.PENDING,
@@ -1496,7 +1582,7 @@ class TestTabularJobRow:
             ),
             "owner",
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         assert row.image == "image://test-cluster/bob/swiss-box:red"
         assert row.name == ""
@@ -1518,12 +1604,12 @@ class TestTabularJobsFormatter:
         "bob", "test-cluster", URL("https://registry-test.neu.ro")
     )
 
-    def test_empty(self, rich_cmp: Any) -> None:
+    def test_empty(self, rich_cmp: Any, datetime_formatter: DatetimeFormatter) -> None:
         formatter = TabularJobsFormatter(
             "owner",
             parse_ps_columns(None),
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         rich_cmp(formatter([]))
 
@@ -1531,7 +1617,12 @@ class TestTabularJobsFormatter:
         "idx,owner_name,owner_printed", [(0, "owner", "<you>"), (1, "alice", "alice")]
     )
     def test_short_cells(
-        self, idx: int, owner_name: str, owner_printed: str, rich_cmp: Any
+        self,
+        idx: int,
+        owner_name: str,
+        owner_printed: str,
+        rich_cmp: Any,
+        datetime_formatter: DatetimeFormatter,
     ) -> None:
         job = JobDescription(
             status=JobStatus.FAILED,
@@ -1561,7 +1652,7 @@ class TestTabularJobsFormatter:
             "owner",
             parse_ps_columns(None),
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         rich_cmp(formatter([job]), index=idx)
 
@@ -1569,7 +1660,12 @@ class TestTabularJobsFormatter:
         "idx,owner_name,owner_printed", [(0, "owner", "<you>"), (1, "alice", "alice")]
     )
     def test_wide_cells(
-        self, idx: int, owner_name: str, owner_printed: str, rich_cmp: Any
+        self,
+        idx: int,
+        owner_name: str,
+        owner_printed: str,
+        rich_cmp: Any,
+        datetime_formatter: DatetimeFormatter,
     ) -> None:
         jobs = [
             JobDescription(
@@ -1639,11 +1735,13 @@ class TestTabularJobsFormatter:
             "owner",
             parse_ps_columns(None),
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         rich_cmp(formatter(jobs), index=idx)
 
-    def test_custom_columns(self, rich_cmp: Any) -> None:
+    def test_custom_columns(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         job = JobDescription(
             status=JobStatus.FAILED,
             id="j",
@@ -1674,11 +1772,13 @@ class TestTabularJobsFormatter:
             "owner",
             columns,
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         rich_cmp(formatter([job]))
 
-    def test_life_span(self, rich_cmp: Any) -> None:
+    def test_life_span(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         life_spans = [None, 0, 7 * 24 * 3600, 12345]
         jobs = [
             JobDescription(
@@ -1714,11 +1814,11 @@ class TestTabularJobsFormatter:
             "owner",
             columns,
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         rich_cmp(formatter(jobs))
 
-    def test_dates(self, rich_cmp: Any) -> None:
+    def test_dates(self, rich_cmp: Any, datetime_formatter: DatetimeFormatter) -> None:
         items = [
             JobStatusHistory(
                 status=JobStatus.PENDING,
@@ -1779,11 +1879,13 @@ class TestTabularJobsFormatter:
             "test-user",
             columns,
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         rich_cmp(formatter(jobs))
 
-    def test_working_dir(self, rich_cmp: Any) -> None:
+    def test_working_dir(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         items = [None, "/working/dir"]
         jobs = [
             JobDescription(
@@ -1819,11 +1921,11 @@ class TestTabularJobsFormatter:
             "test-user",
             columns,
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         rich_cmp(formatter(jobs))
 
-    def test_preset(self, rich_cmp: Any) -> None:
+    def test_preset(self, rich_cmp: Any, datetime_formatter: DatetimeFormatter) -> None:
         items = [None, "cpu-small", "gpu-large"]
         jobs = [
             JobDescription(
@@ -1859,13 +1961,15 @@ class TestTabularJobsFormatter:
             "test-user",
             columns,
             image_formatter=str,
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         rich_cmp(formatter(jobs))
 
 
 class TestLifeSpanUpdateFormatter:
-    async def test_not_finished(self, rich_cmp: Any) -> None:
+    async def test_not_finished(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         job = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
@@ -1912,11 +2016,13 @@ class TestLifeSpanUpdateFormatter:
         )
 
         formatter = LifeSpanUpdateFormatter(
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         rich_cmp(formatter(job))
 
-    async def test_finished(self, rich_cmp: Any) -> None:
+    async def test_finished(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
         job = JobDescription(
             status=JobStatus.SUCCEEDED,
             owner="test-user",
@@ -1943,6 +2049,6 @@ class TestLifeSpanUpdateFormatter:
         )
 
         formatter = LifeSpanUpdateFormatter(
-            datetime_formatter=format_datetime_human,
+            datetime_formatter=datetime_formatter,
         )
         rich_cmp(formatter(job))
