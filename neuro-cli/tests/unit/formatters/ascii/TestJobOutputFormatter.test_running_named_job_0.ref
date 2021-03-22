@@ -12,5 +12,5 @@ Job                      test-job
  Internal Hostname        host.local                 
  Internal Hostname Named  test-job--test-owner.local 
  Http URL                 http://local.host.test/    
- Created                  Sep 25 2018                
- Started                  Sep 25 2018
+ Created                  Sep 25 2018 at 15:28       
+ Started                  Sep 25 2018 at 15:28

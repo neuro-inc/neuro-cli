@@ -229,7 +229,7 @@ class JobStatusFormatter:
 
         assert job_status.history.created_at is not None
         table.add_row(
-            "Created", self._datetime_formatter(job_status.history.created_at)
+            "Created", self._datetime_formatter(job_status.history.created_at, True)
         )
         if job_status.status in [
             JobStatus.RUNNING,
@@ -240,7 +240,7 @@ class JobStatusFormatter:
         ]:
             assert job_status.history.started_at is not None
             table.add_row(
-                "Started", self._datetime_formatter(job_status.history.started_at)
+                "Started", self._datetime_formatter(job_status.history.started_at, True)
             )
         lifespan_ends = get_lifespan_ends(job_status)
         if lifespan_ends:
@@ -254,7 +254,8 @@ class JobStatusFormatter:
         ]:
             assert job_status.history.finished_at is not None
             table.add_row(
-                "Finished", self._datetime_formatter(job_status.history.finished_at)
+                "Finished",
+                self._datetime_formatter(job_status.history.finished_at, True),
             )
             table.add_row("Exit code", str(job_status.history.exit_code))
         if job_status.status == JobStatus.FAILED and job_status.history.description:
@@ -268,7 +269,8 @@ class JobStatusFormatter:
                 if status_item.reason:
                     status_text = Text.assemble(status_text, f" ({status_item.reason})")
                 status_transitions.add_row(
-                    status_text, self._datetime_formatter(status_item.transition_time)
+                    status_text,
+                    self._datetime_formatter(status_item.transition_time, True),
                 )
             table.add_row(
                 "Status transitions", Styled(status_transitions, style="reset")

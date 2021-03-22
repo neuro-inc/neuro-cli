@@ -15,8 +15,8 @@ Job                  test-job
  Http URL             http://local.host.test/                                    
  Http port            80                                                         
  Http authentication  True                                                       
- Created              Sep 25 2018                                                
- Started              Sep 25 2018                                                
- Finished             Sep 25 2018                                                
+ Created              Sep 25 2018 at 15:28                                       
+ Started              Sep 25 2018 at 15:28                                       
+ Finished             Sep 25 2018 at 15:28                                       
  Exit code            123                                                        
  Description          ErrorDesc

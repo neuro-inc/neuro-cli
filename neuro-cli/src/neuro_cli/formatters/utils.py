@@ -1,7 +1,8 @@
 import datetime
-from typing import Callable, Optional
+from typing import Callable, Optional, overload
 
 import humanize
+from typing_extensions import Protocol
 from yarl import URL
 
 from neuro_sdk import RemoteImage
@@ -57,24 +58,70 @@ def format_timedelta(delta: datetime.timedelta) -> str:
     )
 
 
-def format_datetime_iso(when: Optional[datetime.datetime]) -> str:
+def format_datetime_iso(
+    when: Optional[datetime.datetime], precise: bool = False
+) -> str:
     if when is None:
         return ""
     return when.isoformat()
 
 
-def format_datetime_human(when: Optional[datetime.datetime]) -> str:
+def format_datetime_human(
+    when: Optional[datetime.datetime], precise: bool = False
+) -> str:
+    """Humanizes the datetime
+
+    When not in precise mode (precise=False), prints number of largest units
+    for moments that are less then a day ago, and date just day otherwise:
+
+    "32 seconds ago"
+    "5 minutes ago"
+    "11 hours age"
+    "yesterday"
+    "Jan 1"
+
+    In precise mode (precise=True), prints two largest units for moments
+    that are less then a day ago, and date with time otherwise:
+
+    "32 seconds ago"
+    "5 minutes and 22 seconds ago"
+    "5 hours and 31 minutes ago"
+    "yesterday at 14:22"
+    "Jan 1 at 00:01"
+    """
     if when is None:
         return ""
     assert when.tzinfo is not None
     delta = datetime.datetime.now(datetime.timezone.utc) - when
     if delta < datetime.timedelta(days=1):
+        if precise:
+            min_unit = "seconds"
+            if delta > datetime.timedelta(hours=1):
+                min_unit = "minutes"
+            return (
+                humanize.precisedelta(delta, minimum_unit=min_unit, format="%0.0f")
+                + " ago"
+            )
         return humanize.naturaltime(delta)
     else:
-        return humanize.naturaldate(when.astimezone())
+        when_local = when.astimezone()
+        result = humanize.naturaldate(when_local)
+        if precise:
+            result = f"{result} at {when_local.strftime('%H:%M')} "
+        return result
 
 
-DatetimeFormatter = Callable[[Optional[datetime.datetime]], str]
+class DatetimeFormatter(Protocol):
+    @overload
+    def __call__(self, when: Optional[datetime.datetime]) -> str:
+        ...
+
+    @overload
+    def __call__(self, when: Optional[datetime.datetime], precise: bool) -> str:
+        ...
+
+    def __call__(self, when: Optional[datetime.datetime], precise: bool = True) -> str:
+        ...
 
 
 def get_datetime_formatter(use_iso_format: bool) -> DatetimeFormatter:
