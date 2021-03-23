@@ -71,6 +71,7 @@ def test_images_complete_lifecycle(
     # assert not captured.err
 
     image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
+    print(captured.out)
     assert captured.out.endswith(image_full_str)
     image_url = URL(image_full_str)
 
