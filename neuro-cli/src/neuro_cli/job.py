@@ -318,13 +318,17 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
 )
 @option(
     "--since",
-    metavar="DATE",
-    help="Show jobs created after a specific date (including).",
+    metavar="DATE_OR_TIMEDELTA",
+    help="Show jobs created after a specific date (including). "
+    "Use value of format '1d2h3m4s' to specify moment in "
+    "past relatively to current time.",
 )
 @option(
     "--until",
-    metavar="DATE",
-    help="Show jobs created before a specific date (including).",
+    metavar="DATE_OR_TIMEDELTA",
+    help="Show jobs created before a specific date (including). "
+    "Use value of format '1d2h3m4s' to specify moment in "
+    "past relatively to current time.",
 )
 @option(
     "-a",
@@ -547,13 +551,17 @@ async def browse(root: Root, job: str) -> None:
 )
 @option(
     "--since",
-    metavar="DATE",
-    help="Show jobs created after a specific date (including).",
+    metavar="DATE_OR_TIMEDELTA",
+    help="Show jobs created after a specific date (including). "
+    "Use value of format '1d2h3m4s' to specify moment in "
+    "past relatively to current time.",
 )
 @option(
     "--until",
-    metavar="DATE",
-    help="Show jobs created before a specific date (including).",
+    metavar="DATE_OR_TIMEDELTA",
+    help="Show jobs created before a specific date (including). "
+    "Use value of format '1d2h3m4s' to specify moment in "
+    "past relatively to current time.",
 )
 @option(
     "--sort",
@@ -1336,7 +1344,14 @@ def _parse_date(value: str) -> Optional[datetime]:
         try:
             return isoparse(value)
         except ValueError:
-            raise ValueError("Date should be in ISO-8601 format")
+            try:
+                delta = parse_timedelta(value)
+                return datetime.now(timezone.utc) - delta
+            except click.UsageError:
+                raise ValueError(
+                    "Date should be either in ISO-8601 format or "
+                    "relative delta of form 1d2h3m4s"
+                )
     else:
         return None
 
