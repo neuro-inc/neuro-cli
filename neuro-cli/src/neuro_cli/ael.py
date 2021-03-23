@@ -34,6 +34,10 @@ log = logging.getLogger(__name__)
 
 JOB_STARTED = "[dim]===== Job is running, press Ctrl-C to detach/kill =====[/dim]"
 
+JOB_STARTED_NEURO_HAS_NO_TTY = (
+    "[dim]===== Job is running, press Ctrl-C to detach =====[/dim]"
+)
+
 JOB_STARTED_TTY = "\n".join(
     "[green]√[/green] " + line
     for line in [
@@ -466,9 +470,9 @@ async def _process_stdout_tty(
 
 async def _attach_non_tty(root: Root, job: str, logs: bool) -> InterruptAction:
     if not root.quiet:
-        s = JOB_STARTED
+        s = JOB_STARTED_NEURO_HAS_NO_TTY
         if root.tty:
-            s = "[green]√[/green] " + s
+            s = "[green]√[/green] " + JOB_STARTED
         root.print(s, markup=True)
 
     loop = asyncio.get_event_loop()
