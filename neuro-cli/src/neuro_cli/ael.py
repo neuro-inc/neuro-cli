@@ -633,10 +633,8 @@ async def _process_ctrl_c(root: Root, job: str, helper: AttachHelper) -> None:
             if signum is None:
                 return
             if not root.tty:
-                # Ask nothing but just kill a job
-                # if executed from non-terminal
-                await root.client.jobs.kill(job)
-                helper.action = InterruptAction.KILL
+                click.secho("Detach terminal", dim=True, fg="green")
+                helper.action = InterruptAction.DETACH
                 return
             async with helper.write_sem:
                 session = _create_interruption_dialog()
