@@ -287,6 +287,63 @@ async def test_storage_ls(
     ]
 
 
+async def test_storage_ls_another_cluster(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    file_statuses = [
+        {
+            "path": "foo",
+            "length": 1024,
+            "type": "FILE",
+            "modificationTime": 0,
+            "permission": "read",
+        },
+        {
+            "path": "bar",
+            "length": 4 * 1024,
+            "type": "DIRECTORY",
+            "modificationTime": 0,
+            "permission": "read",
+        },
+    ]
+
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.path == "/storage2/user/folder"
+        assert request.query == {"op": "LISTSTATUS"}
+        return await make_listiter_response(request, file_statuses)
+
+    app = web.Application()
+    app.router.add_get("/storage2/user/folder", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        ret = [
+            file
+            async for file in client.storage.ls(URL("storage://another/user/folder"))
+        ]
+
+    assert ret == [
+        FileStatus(
+            path="foo",
+            size=1024,
+            type=FileStatusType.FILE,
+            modification_time=0,
+            permission=Action.READ,
+            uri=URL("storage://another/user/folder/foo"),
+        ),
+        FileStatus(
+            path="bar",
+            size=4 * 1024,
+            type=FileStatusType.DIRECTORY,
+            modification_time=0,
+            permission=Action.READ,
+            uri=URL("storage://another/user/folder/bar"),
+        ),
+    ]
+
+
 async def test_storage_ls_error_in_server_response(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -493,6 +550,30 @@ async def test_storage_rm_file(
         await client.storage.rm(URL("storage:file"))
 
 
+async def test_storage_rm_file_another_cluster(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    remove_listing = {"path": "/user/file", "is_dir": False}
+
+    async def delete_handler(request: web.Request) -> web.StreamResponse:
+        assert request.path == "/storage2/user/file"
+        assert request.query == {"op": "DELETE", "recursive": "false"}
+        assert request.headers["Accept"] == "application/x-ndjson"
+        resp = web.StreamResponse()
+        resp.headers["Content-Type"] = "application/x-ndjson"
+        await resp.prepare(request)
+        await resp.write(json.dumps(remove_listing).encode() + b"\n")
+        return resp
+
+    app = web.Application()
+    app.router.add_delete("/storage2/user/file", delete_handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.rm(URL("storage://another/user/file"))
+
+
 async def test_storage_rm_file_progress(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -520,6 +601,38 @@ async def test_storage_rm_file_progress(
     progress.delete.assert_called_with(
         StorageProgressDelete(
             uri=URL("storage://default/user/file"),
+            is_dir=False,
+        )
+    )
+
+
+async def test_storage_rm_file_progress_another_cluster(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    remove_listing = {"path": "/user/file", "is_dir": False}
+
+    async def delete_handler(request: web.Request) -> web.StreamResponse:
+        assert request.path == "/storage2/user/file"
+        assert request.query == {"op": "DELETE", "recursive": "false"}
+        assert request.headers["Accept"] == "application/x-ndjson"
+        resp = web.StreamResponse()
+        resp.headers["Content-Type"] = "application/x-ndjson"
+        await resp.prepare(request)
+        await resp.write(json.dumps(remove_listing).encode() + b"\n")
+        return resp
+
+    app = web.Application()
+    app.router.add_delete("/storage2/user/file", delete_handler)
+
+    srv = await aiohttp_server(app)
+
+    progress = mock.Mock()
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.rm(URL("storage://another/user/file"), progress=progress)
+
+    progress.delete.assert_called_with(
+        StorageProgressDelete(
+            uri=URL("storage://another/user/file"),
             is_dir=False,
         )
     )
@@ -644,6 +757,49 @@ async def test_storage_mv(
         await client.storage.mv(URL("storage:folder"), URL("storage:other"))
 
 
+async def test_storage_mv_another_cluster(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage2/user/folder"
+        assert request.query == {"op": "RENAME", "destination": "/user/other"}
+        return web.Response(status=204)
+
+    app = web.Application()
+    app.router.add_post("/storage2/user/folder", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.mv(
+            URL("storage://another/user/folder"), URL("storage://another/user/other")
+        )
+
+
+async def test_storage_mv_different_clusters(make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        with pytest.raises(ValueError, match="Cannot move cross-cluster"):
+            await client.storage.mv(
+                URL("storage:folder"), URL("storage://another/user/other")
+            )
+        with pytest.raises(ValueError, match="Cannot move cross-cluster"):
+            await client.storage.mv(
+                URL("storage://another/user/folder"), URL("storage:other")
+            )
+
+
+async def test_storage_mv_unknown_cluster(make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        with pytest.raises(
+            RuntimeError,
+            match="Cluster unknown doesn't exist in a list of available clusters",
+        ):
+            await client.storage.mv(
+                URL("storage://unknown/user/folder"),
+                URL("storage://unknown/user/other"),
+            )
+
+
 async def test_storage_mkdir_parents_exist_ok(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -660,6 +816,25 @@ async def test_storage_mkdir_parents_exist_ok(
     async with make_client(srv.make_url("/")) as client:
         await client.storage.mkdir(
             URL("storage:folder/sub"), parents=True, exist_ok=True
+        )
+
+
+async def test_storage_mkdir_parents_exist_ok_another_cluster(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage2/user/folder/sub"
+        assert request.query == {"op": "MKDIRS"}
+        return web.Response(status=204)
+
+    app = web.Application()
+    app.router.add_put("/storage2/user/folder/sub", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.mkdir(
+            URL("storage://another/user/folder/sub"), parents=True, exist_ok=True
         )
 
 
@@ -781,6 +956,29 @@ async def test_storage_create(
         await client.storage.create(URL("storage:file"), gen())
 
 
+async def test_storage_create_another_cluster(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage2/user/file"
+        assert request.query == {"op": "CREATE"}
+        content = await request.read()
+        assert content == b"01234"
+        return web.Response(status=201)
+
+    app = web.Application()
+    app.router.add_put("/storage2/user/file", handler)
+
+    srv = await aiohttp_server(app)
+
+    async def gen() -> AsyncIterator[bytes]:
+        for i in range(5):
+            yield str(i).encode("ascii")
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.create(URL("storage://another/user/file"), gen())
+
+
 async def test_storage_write(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -800,6 +998,27 @@ async def test_storage_write(
 
     async with make_client(srv.make_url("/")) as client:
         await client.storage.write(URL("storage:file"), b"01234", 4)
+
+
+async def test_storage_write_another_cluster(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage2/user/file"
+        assert request.query == {"op": "WRITE"}
+        rng = _parse_content_range(request.headers.get("Content-Range"))
+        assert rng == slice(4, 9)
+        content = await request.read()
+        assert content == b"01234"
+        return web.Response(status=200)
+
+    app = web.Application()
+    app.router.add_patch("/storage2/user/file", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        await client.storage.write(URL("storage://another/user/file"), b"01234", 4)
 
 
 async def test_storage_stats(
@@ -837,6 +1056,41 @@ async def test_storage_stats(
         )
 
 
+async def test_storage_stats_another_cluster(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage2/user/folder"
+        assert request.query == {"op": "GETFILESTATUS"}
+        return web.json_response(
+            {
+                "FileStatus": {
+                    "path": "/user/folder",
+                    "type": "DIRECTORY",
+                    "length": 1234,
+                    "modificationTime": 3456,
+                    "permission": "read",
+                }
+            }
+        )
+
+    app = web.Application()
+    app.router.add_get("/storage2/user/folder", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        stats = await client.storage.stat(URL("storage://another/user/folder"))
+        assert stats == FileStatus(
+            path="/user/folder",
+            type=FileStatusType.DIRECTORY,
+            size=1234,
+            modification_time=3456,
+            permission=Action.READ,
+            uri=URL("storage://another/user/folder"),
+        )
+
+
 async def test_storage_open(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -859,6 +1113,32 @@ async def test_storage_open(
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
         async for chunk in client.storage.open(URL("storage:file")):
+            buf.extend(chunk)
+        assert buf == b"01234"
+
+
+async def test_storage_open_another_cluster(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert request.path == "/storage2/user/file"
+        if request.query["op"] == "OPEN":
+            resp = web.StreamResponse()
+            await resp.prepare(request)
+            for i in range(5):
+                await resp.write(str(i).encode("ascii"))
+            return resp
+        else:
+            raise AssertionError(f"Unknown operation {request.query['op']}")
+
+    app = web.Application()
+    app.router.add_get("/storage2/user/file", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        buf = bytearray()
+        async for chunk in client.storage.open(URL("storage://another/user/file")):
             buf.extend(chunk)
         assert buf == b"01234"
 

@@ -136,7 +136,28 @@ def make_client(
                 },
                 name="default",
             )
-            clusters = {cluster_config.name: cluster_config}
+            cluster2_config = Cluster(
+                registry_url=(url / "registry2"),
+                monitoring_url=(url / "jobs2"),
+                storage_url=(url / "storage2"),
+                blob_storage_url=(url / "blob2"),
+                users_url=url,
+                secrets_url=(url / "secrets2"),
+                disks_url=(url / "disk2"),
+                presets={
+                    "cpu-small": Preset(
+                        credits_per_hour=Decimal("10"), cpu=7, memory_mb=2 * 1024
+                    ),
+                    "cpu-large": Preset(
+                        credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+                    ),
+                },
+                name="another",
+            )
+            clusters = {
+                cluster_config.name: cluster_config,
+                cluster2_config.name: cluster2_config,
+            }
         if token_url is not None:
             real_auth_config = replace(auth_config, token_url=token_url)
         else:
