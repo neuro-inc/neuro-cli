@@ -81,6 +81,9 @@ class RemoteImage:
             )
         return result
 
+    def __rich__(self) -> str:
+        return str(self)
+
 
 def _is_in_neuro_registry(image: RemoteImage) -> bool:
     return bool(image.registry and image.owner and image.cluster_name)
