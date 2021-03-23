@@ -104,6 +104,9 @@ class LocalImage:
         post = f":{self.tag}" if self.tag else ""
         return self.name + post
 
+    def __rich__(self) -> str:
+        return str(self)
+
 
 class _ImageNameParser:
     def __init__(self, default_user: str, default_cluster: str, registry_url: URL):
