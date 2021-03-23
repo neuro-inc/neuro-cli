@@ -32,16 +32,12 @@ update-deps: ### Update dependencies
 .PHONY: .e2e
 .e2e:
 	COLUMNS=160 LINES=75 pytest \
-	    -n ${PYTEST_XDIST_NUM_THREADS} \
 		-m "e2e" \
-		--cov=neuro-cli --cov=neuro-sdk \
-		--cov-report term-missing:skip-covered \
-		--cov-report xml:coverage.xml \
 		--verbose \
 		--color=$(COLOR) \
 		--durations 10 \
 		$(PYTEST_ARGS) \
-	        neuro-cli/tests
+	        neuro-cli/tests/e2e/test_e2e_images.py::test_images_complete_lifecycle
 
 .PHONY: e2e
 e2e: .update-deps .e2e ### Run end-to-end tests
