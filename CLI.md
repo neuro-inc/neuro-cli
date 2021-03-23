@@ -603,10 +603,10 @@ Name | Description|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\--recent-first / --recent-last_|Show newer jobs first or last|
-|_--since DATE_|Show jobs created after a specific date \(including).|
+|_--since DATE\_OR_TIMEDELTA_|Show jobs created after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_\-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled]_|Filter out jobs by status \(multiple option).|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
-|_--until DATE_|Show jobs created before a specific date \(including).|
+|_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
 
 
@@ -772,11 +772,11 @@ Name | Description|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user. Specify `ALL` to show jobs of all users.|
-|_--since DATE_|Show jobs created after a specific date \(including).|
+|_--since DATE\_OR_TIMEDELTA_|Show jobs created after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_--sort COLUMNS_|Sort rows by specified column. Add "-" prefix to revert the sorting order. Multiple columns can be specified \(comma separated).  \[default: cpu]|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
-|_--until DATE_|Show jobs created before a specific date \(including).|
+|_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 
 
 
@@ -2325,10 +2325,10 @@ Name | Description|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
 |_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\--recent-first / --recent-last_|Show newer jobs first or last|
-|_--since DATE_|Show jobs created after a specific date \(including).|
+|_--since DATE\_OR_TIMEDELTA_|Show jobs created after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_\-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled]_|Filter out jobs by status \(multiple option).|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
-|_--until DATE_|Show jobs created before a specific date \(including).|
+|_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_\-w, --wide_|Do not cut long lines for terminal width.|
 
 
@@ -2514,11 +2514,11 @@ Name | Description|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user. Specify `ALL` to show jobs of all users.|
-|_--since DATE_|Show jobs created after a specific date \(including).|
+|_--since DATE\_OR_TIMEDELTA_|Show jobs created after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_--sort COLUMNS_|Sort rows by specified column. Add "-" prefix to revert the sorting order. Multiple columns can be specified \(comma separated).  \[default: cpu]|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
-|_--until DATE_|Show jobs created before a specific date \(including).|
+|_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 
 
 
