@@ -71,7 +71,7 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
         result_remote_image = await root.client.images.push(
             local_obj, remote_obj, progress=progress
         )
-    root.print(result_remote_image)
+    root.print(str(result_remote_image))
 
 
 @command()
