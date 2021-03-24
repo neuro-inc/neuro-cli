@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-PYTEST_ARGS= --rich-gen
+PYTEST_ARGS=
 
 PYTEST_XDIST_NUM_THREADS ?= auto
 COLOR ?= auto
