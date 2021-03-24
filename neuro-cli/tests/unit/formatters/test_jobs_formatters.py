@@ -55,7 +55,7 @@ _NewConsole = Callable[..., Console]
 
 
 def _format_datetime_human(when: Optional[datetime], precise: bool = False) -> str:
-    return format_datetime_human(when, precise, timezone=timezone.utc)
+    return format_datetime_human(when, precise=precise, timezone=timezone.utc)
 
 
 @pytest.fixture(params=["iso", "human"])
@@ -1622,7 +1622,6 @@ class TestTabularJobsFormatter:
         owner_name: str,
         owner_printed: str,
         rich_cmp: Any,
-        datetime_formatter: DatetimeFormatter,
     ) -> None:
         job = JobDescription(
             status=JobStatus.FAILED,
@@ -1652,7 +1651,7 @@ class TestTabularJobsFormatter:
             "owner",
             parse_ps_columns(None),
             image_formatter=str,
-            datetime_formatter=datetime_formatter,
+            datetime_formatter=format_datetime_human,
         )
         rich_cmp(formatter([job]), index=idx)
 
@@ -1818,7 +1817,7 @@ class TestTabularJobsFormatter:
         )
         rich_cmp(formatter(jobs))
 
-    def test_dates(self, rich_cmp: Any, datetime_formatter: DatetimeFormatter) -> None:
+    def test_dates(self, rich_cmp: Any) -> None:
         items = [
             JobStatusHistory(
                 status=JobStatus.PENDING,
@@ -1879,7 +1878,7 @@ class TestTabularJobsFormatter:
             "test-user",
             columns,
             image_formatter=str,
-            datetime_formatter=datetime_formatter,
+            datetime_formatter=format_datetime_human,
         )
         rich_cmp(formatter(jobs))
 

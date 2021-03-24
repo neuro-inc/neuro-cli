@@ -59,7 +59,7 @@ def format_timedelta(delta: datetime.timedelta) -> str:
 
 
 def format_datetime_iso(
-    when: Optional[datetime.datetime], precise: bool = False
+    when: Optional[datetime.datetime], *, precise: bool = False
 ) -> str:
     if when is None:
         return ""
@@ -68,6 +68,7 @@ def format_datetime_iso(
 
 def format_datetime_human(
     when: Optional[datetime.datetime],
+    *,
     precise: bool = False,
     timezone: Optional[datetime.timezone] = None,
 ) -> str:
@@ -119,10 +120,12 @@ class DatetimeFormatter(Protocol):
         ...
 
     @overload
-    def __call__(self, when: Optional[datetime.datetime], precise: bool) -> str:
+    def __call__(self, when: Optional[datetime.datetime], *, precise: bool) -> str:
         ...
 
-    def __call__(self, when: Optional[datetime.datetime], precise: bool = True) -> str:
+    def __call__(
+        self, when: Optional[datetime.datetime], *, precise: bool = True
+    ) -> str:
         ...
 
 
