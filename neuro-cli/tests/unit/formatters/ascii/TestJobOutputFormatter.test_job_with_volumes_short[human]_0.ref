@@ -1,0 +1,22 @@
+Job                  test-job                                                   
+ Name                 test-job-name                                              
+ Owner                test-user                                                  
+ Cluster              default                                                    
+ Description          test job description                                       
+ Status               failed (ErrorReason)                                       
+ Image                image:test-image:sometag                                   
+ Command              test-command                                               
+ Resources             Memory  16.0M                                             
+                       CPU       0.1                                             
+ TTY                  False                                                      
+ Volumes               /mnt/_ro_  storage:/otheruser/_ro_              READONLY  
+                       /mnt/rw    storage:rw                                     
+                       /mnt/ro    storage://othercluster/otheruser/ro  READONLY  
+ Http URL             http://local.host.test/                                    
+ Http port            80                                                         
+ Http authentication  True                                                       
+ Created              Sep 25 2018 at 12:28                                       
+ Started              Sep 25 2018 at 12:28                                       
+ Finished             Sep 25 2018 at 12:28                                       
+ Exit code            123                                                        
+ Description          ErrorDesc

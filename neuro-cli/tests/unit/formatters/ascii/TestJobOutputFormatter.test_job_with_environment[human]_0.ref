@@ -1,0 +1,21 @@
+Job                  test-job                 
+ Name                 test-job-name            
+ Owner                test-user                
+ Cluster              default                  
+ Description          test job description     
+ Status               failed (ErrorReason)     
+ Image                image:test-image:sometag 
+ Command              test-command             
+ Resources             Memory  16.0M           
+                       CPU       0.1           
+ TTY                  False                    
+ Http URL             http://local.host.test/  
+ Http port            80                       
+ Http authentication  True                     
+ Environment           ENV_NAME_1  __value1__  
+                       ENV_NAME_2  **value2**  
+ Created              Sep 25 2018 at 12:28     
+ Started              Sep 25 2018 at 12:28     
+ Finished             Sep 25 2018 at 12:28     
+ Exit code            123                      
+ Description          ErrorDesc
