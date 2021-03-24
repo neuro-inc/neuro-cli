@@ -148,7 +148,7 @@ async def rm(root: Root, disks: Sequence[str]) -> None:
     for disk in disks:
         disk_id = await resolve_disk(disk, client=root.client)
         await root.client.disks.rm(disk_id)
-        if root.verbosity > 0:
+        if root.verbosity >= 0:
             root.print(f"Disk with id '{disk_id}' was successfully removed.")
 
 
