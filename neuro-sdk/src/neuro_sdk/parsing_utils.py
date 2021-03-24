@@ -1,6 +1,6 @@
 import enum
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 from yarl import URL
 
@@ -109,15 +109,21 @@ class LocalImage:
 
 
 class _ImageNameParser:
-    def __init__(self, default_user: str, default_cluster: str, registry_url: URL):
+    def __init__(
+        self, default_user: str, default_cluster: str, registry_urls: Dict[str, URL]
+    ):
         self._default_user = default_user
         self._default_cluster = default_cluster
-        if not registry_url.host:
-            raise ValueError(
-                f"Empty hostname in registry URL '{registry_url}': "
-                "please consider updating configuration"
-            )
-        self._registry = _get_url_authority(registry_url)
+        for registry_url in registry_urls.values():
+            if not registry_url.host:
+                raise ValueError(
+                    f"Empty hostname in registry URL '{registry_url}': "
+                    f"please consider updating configuration"
+                )
+        self._registries: Dict[str, str] = {
+            cluster_name: _get_url_authority(registry_url)
+            for cluster_name, registry_url in registry_urls.items()
+        }
 
     def parse_as_local_image(self, image: str) -> LocalImage:
         try:
@@ -145,39 +151,46 @@ class _ImageNameParser:
     def parse_remote(
         self, value: str, *, tag_option: TagOption = TagOption.DEFAULT
     ) -> RemoteImage:
-        if value.startswith("image:") or value.startswith(f"{self._registry}/"):
+        if value.startswith("image:"):
             return self.parse_as_neuro_image(value, tag_option=tag_option)
-        else:
-            img = self.parse_as_local_image(value)
-            name = img.name
-            registry = None
-            if ":" in name:
-                msg = "here name must contain slash(es). checked by _split_image_name()"
-                assert "/" in name, msg
-                registry, name = name.split("/", 1)
 
-            return RemoteImage.new_external_image(
-                name=name, tag=img.tag, registry=registry
-            )
+        for cluster_name, registry1 in self._registries.items():
+            if value.startswith(f"{registry1}/"):
+                return self.parse_as_neuro_image(value, tag_option=tag_option)
+
+        img = self.parse_as_local_image(value)
+        name = img.name
+        registry = None
+        if ":" in name:
+            msg = "here name must contain slash(es). checked by _split_image_name()"
+            assert "/" in name, msg
+            registry, name = name.split("/", 1)
+
+        return RemoteImage.new_external_image(name=name, tag=img.tag, registry=registry)
 
     def convert_to_neuro_image(self, image: LocalImage) -> RemoteImage:
-        assert self._registry is not None
+        cluster_name = self._default_cluster
+        registry = self._registries[self._default_cluster]
         owner = self._default_user
         name = image.name
-        if image.name.startswith(f"{self._registry}/"):
-            path = image.name[len(self._registry) :].lstrip("/")
-            if path:
-                owner, _, name = path.partition("/")
-                if not name:
-                    owner = self._default_user
-                    name = path
+        for cluster_name1, registry1 in self._registries.items():
+            if image.name.startswith(f"{registry1}/"):
+                cluster_name = cluster_name1
+                registry = registry1
+                path = image.name[len(registry1) :].lstrip("/")
+                if path:
+                    owner, _, name = path.partition("/")
+                    if not name:
+                        owner = self._default_user
+                        name = path
+                break
 
         return RemoteImage.new_neuro_image(
             name=name,
             tag=image.tag,
             owner=owner,
-            cluster_name=self._default_cluster,
-            registry=self._registry,
+            cluster_name=cluster_name,
+            registry=registry,
         )
 
     def convert_to_local_image(self, image: RemoteImage) -> LocalImage:
@@ -209,7 +222,6 @@ class _ImageNameParser:
     def _parse_as_neuro_image(
         self, image: str, default_tag: Optional[str]
     ) -> RemoteImage:
-        assert self._registry is not None
         if image.startswith("image:"):
             # Check string representation to detect also trailing "?" and "#".
             _check_uri_str(image, "image")
@@ -220,10 +232,15 @@ class _ImageNameParser:
                     host=self._default_cluster,
                     path=f"/{self._default_user}/{url.path[len('image:') :]}",
                 )
-        elif image.startswith(f"{self._registry}/"):
-            url = URL(f"image://{self._default_cluster}{image[len(self._registry) :]}")
         else:
-            raise ValueError("scheme 'image:' is required for remote images")
+            for cluster_name, registry in self._registries.items():
+                if image.startswith(f"{registry}/"):
+                    url = URL(f"image://{cluster_name}{image[len(registry) :]}")
+                    break
+            else:
+                print(self._registries)
+                print(image)
+                raise ValueError("scheme 'image:' is required for remote images")
 
         if not url.path or url.path == "/":
             raise ValueError("no image name specified")
@@ -237,10 +254,17 @@ class _ImageNameParser:
                 raise ValueError("no image name specified")
         else:
             owner = self._default_user
+        if cluster_name not in self._registries:
+            tip = "Please logout and login again."
+            raise RuntimeError(
+                f"Cluster {cluster_name} doesn't exist in "
+                f"a list of available clusters "
+                f"{list(self._registries)}. {tip}"
+            )
         return RemoteImage.new_neuro_image(
             name=name,
             tag=tag,
-            registry=self._registry,
+            registry=self._registries[cluster_name],
             owner=owner,
             cluster_name=cluster_name,
         )
@@ -280,9 +304,8 @@ class Tag:
     size: Optional[int] = None
 
 
-def _get_url_authority(url: URL) -> Optional[str]:
-    if url.host is None:
-        return None
+def _get_url_authority(url: URL) -> str:
+    assert url.host is not None
     port = url.explicit_port  # type: ignore
     suffix = f":{port}" if port is not None else ""
     return url.host + suffix
