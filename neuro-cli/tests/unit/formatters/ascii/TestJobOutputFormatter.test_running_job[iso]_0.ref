@@ -2,7 +2,7 @@ Job                test-job
  Owner              test-user                        
  Cluster            default                          
  Description        test job description             
- Status             running                          
+ Status             running (ContainerRunning)       
  Image              test-image                       
  Command            test-command                     
  Resources           Memory  16.0M                   

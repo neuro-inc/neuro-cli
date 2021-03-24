@@ -62,6 +62,13 @@ class _ConfigData:
     clusters: Mapping[str, Cluster]
 
 
+@dataclass(frozen=True)
+class _ConfigRecoveryData:
+    url: URL
+    cluster_name: str
+    refresh_token: str
+
+
 class Config(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, path: Path) -> None:
         self._core = core
@@ -108,15 +115,18 @@ class Config(metaclass=NoPublicConstructor):
 
     @property
     def _cluster(self) -> Cluster:
+        return self.get_cluster(self.cluster_name)
+
+    def get_cluster(self, cluster_name: str) -> Cluster:
         try:
-            return self._config_data.clusters[self.cluster_name]
+            return self._config_data.clusters[cluster_name]
         except KeyError:
             if self._get_user_cluster_name() is None:
                 tip = "Please logout and login again."
             else:
                 tip = "Please edit local user config file or logout and login again."
             raise RuntimeError(
-                f"Cluster {self.cluster_name} doesn't exist in "
+                f"Cluster {cluster_name} doesn't exist in "
                 f"a list of available clusters "
                 f"{list(self._config_data.clusters)}. {tip}"
             ) from None
@@ -358,6 +368,27 @@ def _load(path: Path) -> _ConfigData:
             version=version,
             cluster_name=cluster_name,
             clusters=clusters,
+        )
+    except (AttributeError, KeyError, TypeError, ValueError, sqlite3.DatabaseError):
+        raise ConfigError(MALFORMED_CONFIG_MSG)
+
+
+def _load_recovery_data(path: Path) -> _ConfigRecoveryData:
+    try:
+        with _open_db_ro(path) as db:
+            cur = db.cursor()
+            # only one row is always present normally
+            cur.execute(
+                """
+                SELECT refresh_token, url, cluster_name
+                FROM main ORDER BY timestamp DESC LIMIT 1"""
+            )
+            payload = cur.fetchone()
+
+        return _ConfigRecoveryData(
+            url=URL(payload["url"]),
+            cluster_name=payload["cluster_name"],
+            refresh_token=payload["refresh_token"],
         )
     except (AttributeError, KeyError, TypeError, ValueError, sqlite3.DatabaseError):
         raise ConfigError(MALFORMED_CONFIG_MSG)

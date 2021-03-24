@@ -217,9 +217,9 @@ async def test_get_cluster_name_from_local_invalid_cluster(
         assert client.config.cluster_name == "default"
 
         local_conf = proj_dir / ".neuro.toml"
-        local_conf.write_text(toml.dumps({"job": {"cluster-name": "another"}}))
-        assert client.config.cluster_name == "another"
-        match = "Cluster another doesn't exist.*Please edit local user config file"
+        local_conf.write_text(toml.dumps({"job": {"cluster-name": "unknown"}}))
+        assert client.config.cluster_name == "unknown"
+        match = "Cluster unknown doesn't exist.*Please edit local user config file"
         with pytest.raises(RuntimeError, match=match):
             client.config.registry_url
         with pytest.raises(RuntimeError, match=match):
@@ -310,7 +310,7 @@ async def test_clusters(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        assert client.config.clusters == {
+        assert dict(client.config.clusters) == {
             "default": Cluster(
                 name="default",
                 registry_url=URL("https://registry-dev.neu.ro"),
@@ -321,7 +321,18 @@ async def test_clusters(
                 secrets_url=srv.make_url("/secrets"),
                 disks_url=srv.make_url("/disk"),
                 presets=mock.ANY,
-            )
+            ),
+            "another": Cluster(
+                name="another",
+                registry_url=srv.make_url("/registry2"),
+                storage_url=srv.make_url("/storage2"),
+                blob_storage_url=srv.make_url("/blob2"),
+                users_url=srv.make_url("/"),
+                monitoring_url=srv.make_url("/jobs2"),
+                secrets_url=srv.make_url("/secrets2"),
+                disks_url=srv.make_url("/disk2"),
+                presets=mock.ANY,
+            ),
         }
 
 
@@ -485,8 +496,8 @@ async def test_switch_clusters(
 async def test_switch_clusters_unknown(make_client: _MakeClient) -> None:
     async with make_client("https://example.org") as client:
         assert client.config.cluster_name == "default"
-        with pytest.raises(RuntimeError, match="Cluster another doesn't exist"):
-            await client.config.switch_cluster("another")
+        with pytest.raises(RuntimeError, match="Cluster unknown doesn't exist"):
+            await client.config.switch_cluster("unknown")
         assert client.config.cluster_name == "default"
 
 

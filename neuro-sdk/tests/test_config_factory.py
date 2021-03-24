@@ -2,8 +2,9 @@ import base64
 import json
 import os
 import sys
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict
+from typing import Any, Awaitable, Callable, Dict
 from unittest import mock
 
 import aiohttp
@@ -62,103 +63,119 @@ def _create_config(
     return token
 
 
+@dataclass
+class MockForLoginControl:
+    client_id: str = "banana"
+
+
 @pytest.fixture
-async def mock_for_login(
+async def mock_for_login_factory(
     aiohttp_server: _TestServerFactory,
     token: str,
     aiohttp_unused_port: Callable[[], int],
-) -> _TestServer:
+) -> Callable[[MockForLoginControl], Awaitable[_TestServer]]:
+    async def _factory(control: MockForLoginControl) -> _TestServer:
+        callback_urls = [
+            f"http://127.0.0.1:{aiohttp_unused_port()}",
+            f"http://127.0.0.1:{aiohttp_unused_port()}",
+            f"http://127.0.0.1:{aiohttp_unused_port()}",
+        ]
 
-    callback_urls = [
-        f"http://127.0.0.1:{aiohttp_unused_port()}",
-        f"http://127.0.0.1:{aiohttp_unused_port()}",
-        f"http://127.0.0.1:{aiohttp_unused_port()}",
-    ]
+        async def config_handler(request: web.Request) -> web.Response:
+            config_json: Dict[str, Any] = {
+                "auth_url": str(srv.make_url("/authorize")),
+                "token_url": str(srv.make_url("/oauth/token")),
+                "logout_url": str(srv.make_url("/v2/logout")),
+                "admin_url": str(srv.make_url("/apis/admin/v1")),
+                "client_id": control.client_id,
+                "audience": "https://test.dev.neu.ro",
+                "headless_callback_url": str(srv.make_url("/oauth/show-code")),
+                "callback_urls": callback_urls,
+                "success_redirect_url": "http://example.com",
+            }
 
-    async def config_handler(request: web.Request) -> web.Response:
-        config_json: Dict[str, Any] = {
-            "auth_url": str(srv.make_url("/authorize")),
-            "token_url": str(srv.make_url("/oauth/token")),
-            "logout_url": str(srv.make_url("/v2/logout")),
-            "admin_url": str(srv.make_url("/apis/admin/v1")),
-            "client_id": "banana",
-            "audience": "https://test.dev.neu.ro",
-            "headless_callback_url": str(srv.make_url("/oauth/show-code")),
-            "callback_urls": callback_urls,
-            "success_redirect_url": "http://example.com",
-        }
-
-        if (
-            "Authorization" in request.headers
-            and "incorrect" not in request.headers["Authorization"]
-        ):
-            config_json.update(
-                {
-                    "clusters": [
+            if (
+                "Authorization" in request.headers
+                and "incorrect" not in request.headers["Authorization"]
+            ):
+                cluster_config: Dict[str, Any] = {
+                    "name": "default",
+                    "registry_url": "https://registry-dev.test.com",
+                    "storage_url": "https://storage-dev.test.com",
+                    "blob_storage_url": "https://blob-storage-dev.test.com",
+                    "users_url": "https://users-dev.test.com",
+                    "monitoring_url": "https://monitoring-dev.test.com",
+                    "secrets_url": "https://secrets-dev.test.com",
+                    "disks_url": "https://disks-dev.test.com",
+                    "resource_presets": [
                         {
-                            "name": "default",
-                            "registry_url": "https://registry-dev.test.com",
-                            "storage_url": "https://storage-dev.test.com",
-                            "blob_storage_url": "https://blob-storage-dev.test.com",
-                            "users_url": "https://users-dev.test.com",
-                            "monitoring_url": "https://monitoring-dev.test.com",
-                            "secrets_url": "https://secrets-dev.test.com",
-                            "disks_url": "https://disks-dev.test.com",
-                            "resource_presets": [
-                                {
-                                    "name": "gpu-small",
-                                    "credits_per_hour": "10",
-                                    "cpu": 7,
-                                    "memory_mb": 30 * 1024,
-                                    "gpu": 1,
-                                    "gpu_model": "nvidia-tesla-k80",
-                                },
-                                {
-                                    "name": "gpu-large",
-                                    "credits_per_hour": "10",
-                                    "cpu": 7,
-                                    "memory_mb": 60 * 1024,
-                                    "gpu": 1,
-                                    "gpu_model": "nvidia-tesla-v100",
-                                },
-                                {
-                                    "name": "cpu-small",
-                                    "credits_per_hour": "10",
-                                    "cpu": 2,
-                                    "memory_mb": 2 * 1024,
-                                },
-                                {
-                                    "name": "cpu-large",
-                                    "credits_per_hour": "10",
-                                    "cpu": 3,
-                                    "memory_mb": 14 * 1024,
-                                },
-                            ],
-                        }
-                    ]
+                            "name": "gpu-small",
+                            "credits_per_hour": "10",
+                            "cpu": 7,
+                            "memory_mb": 30 * 1024,
+                            "gpu": 1,
+                            "gpu_model": "nvidia-tesla-k80",
+                        },
+                        {
+                            "name": "gpu-large",
+                            "credits_per_hour": "10",
+                            "cpu": 7,
+                            "memory_mb": 60 * 1024,
+                            "gpu": 1,
+                            "gpu_model": "nvidia-tesla-v100",
+                        },
+                        {
+                            "name": "cpu-small",
+                            "credits_per_hour": "10",
+                            "cpu": 2,
+                            "memory_mb": 2 * 1024,
+                        },
+                        {
+                            "name": "cpu-large",
+                            "credits_per_hour": "10",
+                            "cpu": 3,
+                            "memory_mb": 14 * 1024,
+                        },
+                    ],
                 }
+                config_json.update(
+                    {
+                        "clusters": [
+                            {**cluster_config, "name": "default"},
+                            {**cluster_config, "name": "default2"},
+                        ]
+                    }
+                )
+            return web.json_response(config_json)
+
+        async def show_code(request: web.Request) -> web.Response:
+            return web.json_response({})
+
+        async def authorize(request: web.Request) -> web.Response:
+            url = URL(request.query["redirect_uri"]).with_query(code="test_auth_code")
+            raise web.HTTPSeeOther(location=url)
+
+        async def new_token(request: web.Request) -> web.Response:
+            return web.json_response(
+                {"access_token": token, "expires_in": 3600, "refresh_token": token}
             )
-        return web.json_response(config_json)
 
-    async def show_code(request: web.Request) -> web.Response:
-        return web.json_response({})
+        app = web.Application()
+        app.router.add_get("/config", config_handler)
+        app.router.add_get("/oauth/show-code", show_code)
+        app.router.add_get("/authorize", authorize)
+        app.router.add_post("/oauth/token", new_token)
+        srv = await aiohttp_server(app)
+        return srv
 
-    async def authorize(request: web.Request) -> web.Response:
-        url = URL(request.query["redirect_uri"]).with_query(code="test_auth_code")
-        raise web.HTTPSeeOther(location=url)
+    return _factory
 
-    async def new_token(request: web.Request) -> web.Response:
-        return web.json_response(
-            {"access_token": token, "expires_in": 3600, "refresh_token": token}
-        )
 
-    app = web.Application()
-    app.router.add_get("/config", config_handler)
-    app.router.add_get("/oauth/show-code", show_code)
-    app.router.add_get("/authorize", authorize)
-    app.router.add_post("/oauth/token", new_token)
-    srv = await aiohttp_server(app)
-    return srv
+@pytest.fixture
+async def mock_for_login(
+    mock_for_login_factory: Callable[[MockForLoginControl], Awaitable[_TestServer]]
+) -> _TestServer:
+    return await mock_for_login_factory(MockForLoginControl())
 
 
 class TestConfigFileInteraction:
@@ -432,3 +449,42 @@ class TestLogout:
         assert not config_dir.exists(), "Config not removed after logout\n" + "\n".join(
             [p.name for p in config_dir.iterdir()]
         )
+
+
+class TestConfigRecovery:
+    async def show_dummy_browser(self, url: URL) -> None:
+        async with aiohttp.ClientSession() as client:
+            await client.get(url, allow_redirects=True)
+
+    async def test_recovery(
+        self,
+        tmp_home: Path,
+        mock_for_login_factory: Callable[[MockForLoginControl], Awaitable[_TestServer]],
+    ) -> None:
+        control = MockForLoginControl(client_id="test1")
+        mock_for_login = await mock_for_login_factory(control)
+        await Factory().login(self.show_dummy_browser, url=mock_for_login.make_url("/"))
+        with mock.patch("neuro_sdk.__version__", "21.13.13"):  # Impossible version
+            control.client_id = "test2"
+            client = await Factory().get()
+            assert client.config._config_data.version == "21.13.13"
+
+        await mock_for_login.close()
+
+    async def test_recovery_cluster_is_preserved(
+        self,
+        tmp_home: Path,
+        mock_for_login_factory: Callable[[MockForLoginControl], Awaitable[_TestServer]],
+    ) -> None:
+        control = MockForLoginControl(client_id="test1")
+        mock_for_login = await mock_for_login_factory(control)
+        await Factory().login(self.show_dummy_browser, url=mock_for_login.make_url("/"))
+        async with await Factory().get() as client:
+            await client.config.switch_cluster("default2")
+
+        with mock.patch("neuro_sdk.__version__", "21.13.13"):  # Impossible version
+            control.client_id = "test2"
+            client = await Factory().get()
+            assert client.config.cluster_name == "default2"
+
+        await mock_for_login.close()

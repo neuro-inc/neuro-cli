@@ -81,6 +81,9 @@ class RemoteImage:
             )
         return result
 
+    def __rich__(self) -> str:
+        return str(self)
+
 
 def _is_in_neuro_registry(image: RemoteImage) -> bool:
     return bool(image.registry and image.owner and image.cluster_name)
@@ -100,6 +103,9 @@ class LocalImage:
     def __str__(self) -> str:
         post = f":{self.tag}" if self.tag else ""
         return self.name + post
+
+    def __rich__(self) -> str:
+        return str(self)
 
 
 class _ImageNameParser:

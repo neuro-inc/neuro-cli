@@ -109,10 +109,7 @@ class JobStatusFormatter:
         if job_status.description:
             table.add_row("Description", job_status.description)
         status_text = fmt_status(job_status.status)
-        if job_status.history.reason and job_status.status in [
-            JobStatus.FAILED,
-            JobStatus.PENDING,
-        ]:
+        if job_status.history.reason:
             status_text = Text.assemble(status_text, f" ({job_status.history.reason})")
         table.add_row("Status", status_text)
         table.add_row("Image", self._format_image(job_status.container.image))
@@ -612,6 +609,12 @@ class DetailedJobStartProgress(JobStartProgress, RenderHook):
     def end(self, job: JobDescription) -> None:
         out = []
 
+        if self._prev:
+            self._console.print(self._prev)
+            empty = Text("")
+            self._prev = empty
+            self._live_render.set_renderable(empty)
+
         if job.status != JobStatus.FAILED:
             http_url = job.http_url
             if http_url:
@@ -647,9 +650,9 @@ class DetailedJobStartProgress(JobStartProgress, RenderHook):
         exc_val: BaseException,
         exc_tb: TracebackType,
     ) -> None:
+        self._console.pop_render_hook()
         self._console.line()
         self._console.show_cursor(True)
-        self._console.pop_render_hook()
 
 
 class StreamJobStartProgress(JobStartProgress):
@@ -821,9 +824,9 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
         exc_val: BaseException,
         exc_tb: TracebackType,
     ) -> None:
+        self._console.pop_render_hook()
         self._console.line()
         self._console.show_cursor(True)
-        self._console.pop_render_hook()
 
 
 class StreamJobStopProgress(JobStopProgress):
