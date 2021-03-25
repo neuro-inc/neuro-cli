@@ -114,16 +114,14 @@ class _ImageNameParser:
     ):
         self._default_user = default_user
         self._default_cluster = default_cluster
-        for registry_url in registry_urls.values():
+        self._registries = {}
+        for cluster_name, registry_url in registry_urls.items():
             if not registry_url.host:
                 raise ValueError(
                     f"Empty hostname in registry URL '{registry_url}': "
                     f"please consider updating configuration"
                 )
-        self._registries: Dict[str, str] = {
-            cluster_name: _get_url_authority(registry_url)
-            for cluster_name, registry_url in registry_urls.items()
-        }
+            self._registries[cluster_name] = _get_url_authority(registry_url)
 
     def parse_as_local_image(self, image: str) -> LocalImage:
         try:
@@ -151,12 +149,8 @@ class _ImageNameParser:
     def parse_remote(
         self, value: str, *, tag_option: TagOption = TagOption.DEFAULT
     ) -> RemoteImage:
-        if value.startswith("image:"):
+        if value.startswith("image:") or self._find_by_registry(value):
             return self.parse_as_neuro_image(value, tag_option=tag_option)
-
-        for cluster_name, registry1 in self._registries.items():
-            if value.startswith(f"{registry1}/"):
-                return self.parse_as_neuro_image(value, tag_option=tag_option)
 
         img = self.parse_as_local_image(value)
         name = img.name
@@ -170,27 +164,23 @@ class _ImageNameParser:
 
     def convert_to_neuro_image(self, image: LocalImage) -> RemoteImage:
         cluster_name = self._default_cluster
-        registry = self._registries[self._default_cluster]
         owner = self._default_user
         name = image.name
-        for cluster_name1, registry1 in self._registries.items():
-            if image.name.startswith(f"{registry1}/"):
-                cluster_name = cluster_name1
-                registry = registry1
-                path = image.name[len(registry1) :].lstrip("/")
-                if path:
-                    owner, _, name = path.partition("/")
-                    if not name:
-                        owner = self._default_user
-                        name = path
-                break
+        res = self._find_by_registry(name)
+        if res:
+            cluster_name, path = res
+            if path:
+                owner, _, name = path.partition("/")
+                if not name:
+                    owner = self._default_user
+                    name = path
 
         return RemoteImage.new_neuro_image(
             name=name,
             tag=image.tag,
             owner=owner,
             cluster_name=cluster_name,
-            registry=registry,
+            registry=self._registries[cluster_name],
         )
 
     def convert_to_local_image(self, image: RemoteImage) -> LocalImage:
@@ -233,14 +223,11 @@ class _ImageNameParser:
                     path=f"/{self._default_user}/{url.path[len('image:') :]}",
                 )
         else:
-            for cluster_name, registry in self._registries.items():
-                if image.startswith(f"{registry}/"):
-                    url = URL(f"image://{cluster_name}{image[len(registry) :]}")
-                    break
-            else:
-                print(self._registries)
-                print(image)
+            res = self._find_by_registry(image)
+            if not res:
                 raise ValueError("scheme 'image:' is required for remote images")
+            cluster_name, path = res
+            url = URL(f"image://{cluster_name}/{path}")
 
         if not url.path or url.path == "/":
             raise ValueError("no image name specified")
@@ -268,6 +255,13 @@ class _ImageNameParser:
             owner=owner,
             cluster_name=cluster_name,
         )
+
+    def _find_by_registry(self, image: str) -> Optional[Tuple[str, str]]:
+        for cluster_name, registry in self._registries.items():
+            if image.startswith(f"{registry}/"):
+                path = image[len(registry) :].lstrip("/")
+                return cluster_name, path
+        return None
 
     def _split_image_name(
         self, image: str, default_tag: Optional[str] = None
