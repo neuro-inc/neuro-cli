@@ -1480,7 +1480,7 @@ class TestSimpleJobsFormatter:
 
 class TestTabularJobRow:
     image_parser = _ImageNameParser(
-        "bob", "test-cluster", URL("https://registry-test.neu.ro")
+        "bob", "test-cluster", {"test-cluster": URL("https://registry-test.neu.ro")}
     )
 
     def _job_descr_with_status(
@@ -1601,7 +1601,7 @@ class TestTabularJobsFormatter:
         "COMMAND",
     ]
     image_parser = _ImageNameParser(
-        "bob", "test-cluster", URL("https://registry-test.neu.ro")
+        "bob", "test-cluster", {"test-cluster": URL("https://registry-test.neu.ro")}
     )
 
     def test_empty(self, rich_cmp: Any, datetime_formatter: DatetimeFormatter) -> None:

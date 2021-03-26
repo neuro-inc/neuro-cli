@@ -38,7 +38,15 @@ class Images(metaclass=NoPublicConstructor):
         self._parse = parse
         self._temporary_images: Set[str] = set()
         self.__docker: Optional[aiodocker.Docker] = None
-        self._registry_url = self._config.registry_url.with_path("/v2/")
+
+    def _get_image_url(self, remote: RemoteImage) -> URL:
+        cluster_name = remote.cluster_name
+        if cluster_name:
+            assert remote.owner
+            registry_url = self._config.get_cluster(cluster_name).registry_url
+        else:
+            registry_url = self._config.registry_url
+        return registry_url.with_path("/v2/") / f"{remote.owner}/{remote.name}"
 
     @property
     def _docker(self) -> aiodocker.Docker:
@@ -104,10 +112,9 @@ class Images(metaclass=NoPublicConstructor):
         return remote
 
     async def digest(self, remote: RemoteImage) -> str:
-        name = f"{remote.owner}/{remote.name}"
         auth = await self._config._registry_auth()
         assert remote.tag
-        url = self._registry_url / name / "manifests" / remote.tag
+        url = self._get_image_url(remote) / "manifests" / remote.tag
         async with self._core.request(
             "HEAD",
             url,
@@ -122,10 +129,9 @@ class Images(metaclass=NoPublicConstructor):
         return tag_information.size
 
     async def tag_info(self, remote: RemoteImage) -> Tag:
-        name = f"{remote.owner}/{remote.name}"
         auth = await self._config._registry_auth()
         assert remote.tag
-        url = self._registry_url / name / "manifests" / remote.tag
+        url = self._get_image_url(remote) / "manifests" / remote.tag
         async with self._core.request(
             "GET",
             url,
@@ -137,9 +143,8 @@ class Images(metaclass=NoPublicConstructor):
             return Tag(name=remote.tag, size=size)
 
     async def rm(self, remote: RemoteImage, digest: str) -> None:
-        name = f"{remote.owner}/{remote.name}"
         auth = await self._config._registry_auth()
-        url = self._registry_url / name / "manifests" / digest
+        url = self._get_image_url(remote) / "manifests" / digest
         async with self._core.request("DELETE", url, auth=auth) as resp:
             assert resp
 
@@ -182,7 +187,7 @@ class Images(metaclass=NoPublicConstructor):
     async def ls(self) -> List[RemoteImage]:
         auth = await self._config._registry_auth()
         prefix = f"image://{self._config.cluster_name}/"
-        url = self._registry_url / "_catalog"
+        url = self._config.registry_url.with_path("/v2/") / "_catalog"
         result: List[RemoteImage] = []
         while True:
             url = url.update_query(n=str(REPOS_PER_PAGE))
@@ -214,9 +219,8 @@ class Images(metaclass=NoPublicConstructor):
 
     async def tags(self, image: RemoteImage) -> List[RemoteImage]:
         self._validate_image_for_tags(image)
-        name = f"{image.owner}/{image.name}"
         auth = await self._config._registry_auth()
-        url = self._registry_url / name / "tags" / "list"
+        url = self._get_image_url(image) / "tags" / "list"
         result: List[RemoteImage] = []
         while True:
             url = url.update_query(n=str(TAGS_PER_PAGE))

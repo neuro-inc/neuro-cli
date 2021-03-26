@@ -135,13 +135,13 @@ async def test_parse_local(make_client: _MakeClient) -> None:
 
 async def test_parse_remote(make_client: _MakeClient) -> None:
     async with make_client("https://api.localhost.localdomain") as client:
-        result = client.parse.remote_image("image://test-cluster/bob/bananas:latest")
+        result = client.parse.remote_image("image://default/bob/bananas:latest")
     assert result == RemoteImage.new_neuro_image(
         name="bananas",
         tag="latest",
         owner="bob",
         registry="registry-dev.neu.ro",
-        cluster_name="test-cluster",
+        cluster_name="default",
     )
 
 
@@ -184,4 +184,5 @@ def test_get_url_authority_without_port() -> None:
 
 def test_get_url_authority_without_host() -> None:
     url = URL("scheme://")
-    assert _get_url_authority(url) is None
+    with pytest.raises(AssertionError):
+        _get_url_authority(url)

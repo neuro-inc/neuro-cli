@@ -157,31 +157,29 @@ class Parser(metaclass=NoPublicConstructor):
             allowed_schemes=("disk",),
         )
 
-    def local_image(self, image: str) -> LocalImage:
-        parser = _ImageNameParser(
-            self._config.username, self._config.cluster_name, self._config.registry_url
+    @property
+    def _image_parser(self) -> _ImageNameParser:
+        registry = {
+            cluster.name: cluster.registry_url
+            for cluster in self._config.clusters.values()
+        }
+        return _ImageNameParser(
+            self._config.username, self._config.cluster_name, registry
         )
-        return parser.parse_as_local_image(image)
+
+    def local_image(self, image: str) -> LocalImage:
+        return self._image_parser.parse_as_local_image(image)
 
     def remote_image(
         self, image: str, *, tag_option: TagOption = TagOption.DEFAULT
     ) -> RemoteImage:
-        parser = _ImageNameParser(
-            self._config.username, self._config.cluster_name, self._config.registry_url
-        )
-        return parser.parse_remote(image, tag_option=tag_option)
+        return self._image_parser.parse_remote(image, tag_option=tag_option)
 
     def _local_to_remote_image(self, image: LocalImage) -> RemoteImage:
-        parser = _ImageNameParser(
-            self._config.username, self._config.cluster_name, self._config.registry_url
-        )
-        return parser.convert_to_neuro_image(image)
+        return self._image_parser.convert_to_neuro_image(image)
 
     def _remote_to_local_image(self, image: RemoteImage) -> LocalImage:
-        parser = _ImageNameParser(
-            self._config.username, self._config.cluster_name, self._config.registry_url
-        )
-        return parser.convert_to_local_image(image)
+        return self._image_parser.convert_to_local_image(image)
 
     def env(
         self, env: Sequence[str], env_file: Sequence[str] = ()
