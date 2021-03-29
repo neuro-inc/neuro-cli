@@ -368,7 +368,7 @@ class JobTelemetryFormatter(RenderHook):
         if self._console.is_terminal:
             self._live_render.set_renderable(table)
             with self._console:
-                self._console.print(Control(""))
+                self._console.print(Control())
         else:
             self._console.print(table)
         self.changed = False
@@ -606,7 +606,7 @@ class DetailedJobStartProgress(JobStartProgress, RenderHook):
 
         self._live_render.set_renderable(msg)
         with self._console:
-            self._console.print(Control(""))
+            self._console.print(Control())
 
     def end(self, job: JobDescription) -> None:
         out = []
@@ -786,7 +786,7 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
 
         self._live_render.set_renderable(Text.from_markup(msg))
         with self._console:
-            self._console.print(Control(""))
+            self._console.print(Control())
 
     def timeout(self, job: JobDescription) -> None:
         self._console.line()
@@ -919,7 +919,7 @@ class DetailedExecStopProgress(ExecStopProgress, RenderHook):
 
         self._live_render.set_renderable(Text.from_markup(msg))
         with self._console:
-            self._console.print(Control(""))
+            self._console.print(Control())
 
     def timeout(self) -> None:
         self._console.line()
