@@ -90,7 +90,12 @@ def _print_welcome(root: Root, url: URL) -> None:
 
 async def _show_browser(url: URL) -> None:
     loop = asyncio.get_event_loop()
-    await loop.run_in_executor(None, webbrowser.open_new, str(url))
+    success = await loop.run_in_executor(None, webbrowser.open_new, str(url))
+    if not success:
+        raise Exception(
+            "No browser found. For non-GUI environments, use "
+            "`neuro config login-headless` to login."
+        )
 
 
 @command(init_client=False)
