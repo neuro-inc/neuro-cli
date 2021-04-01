@@ -5,6 +5,47 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.4.1 (2021-04-01)
+=================================
+
+Features
+--------
+
+
+- Allow bumping jobs life span using `neuro jobs bump-life-span <timedelta>`. ([#2020](https://github.com/neuro-inc/platform-client-python/issues/2020))
+
+- Make a job status reason always printed by neuro status if it is available. ([#2047](https://github.com/neuro-inc/platform-client-python/issues/2047))
+
+- Add support of automatic re-login after config errors. This allows to upgrade
+  to a new CLI version without manual re-login. ([#2048](https://github.com/neuro-inc/platform-client-python/issues/2048))
+
+- Made more precise datetime formatting for neuro status: now hours and minutes are always printed. Seconds are printed
+  for event that happened in the last hour. ([#2053](https://github.com/neuro-inc/platform-client-python/issues/2053))
+
+- Storage operations support now URIs with cluster names different from the current cluster name. You can now list or copy to/from other cluster's storage without switching the current cluster name. ([#2054](https://github.com/neuro-inc/platform-client-python/issues/2054))
+
+- Added printing of ids of removed disk in `neuro disk rm`. ([#2056](https://github.com/neuro-inc/platform-client-python/issues/2056))
+
+- Allow to specify date and time in --since/--until relatively to current moment. For example,
+  `neuro ps --since 1d` will show jobs that were created during last day. ([#2059](https://github.com/neuro-inc/platform-client-python/issues/2059))
+
+- Image operations support now URIs with cluster names different from the current cluster name. ([#2066](https://github.com/neuro-inc/platform-client-python/issues/2066))
+
+- Added hint about headless login when `neuro login` executes in non-GUI environment. ([#2068](https://github.com/neuro-inc/platform-client-python/issues/2068))
+
+
+Bugfixes
+--------
+
+
+- Do not add implicit '\n's to `neuro job generate_run_command <job-id>` command output. ([#2034](https://github.com/neuro-inc/platform-client-python/issues/2034))
+
+- Fix bad formatting in `neuro run` command. ([#2055](https://github.com/neuro-inc/platform-client-python/issues/2055))
+
+- Do not kill a non-tty job when running in non-tty mode automatically.
+  This allows to exit from `neuro run ... | tee` using `^C` without killing a job. ([#2063](https://github.com/neuro-inc/platform-client-python/issues/2063))
+
+
 Neuro SDK/CLI 21.3.3 (2021-03-03)
 =================================
 

@@ -1,2 +1,0 @@
-Do not kill a non-tty job when running in non-tty mode automatically.
-This allows to exit from `neuro run ... | tee` using `^C` without killing a job.
