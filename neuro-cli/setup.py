@@ -6,7 +6,7 @@ with open("README.md") as f:
 
 setup(
     name="neuro-cli",
-    version="21.4.1",
+    version="21.4.2",
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
@@ -19,7 +19,7 @@ setup(
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
         "aiodocker>=0.18.7",
-        "neuro-sdk>=21.4.1",
+        "neuro-sdk>=21.4.2",
         "click>=7.0",
         "humanize>=0.5",
         "typing_extensions>=3.7.4",

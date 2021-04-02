@@ -5,6 +5,16 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.4.2 (2021-04-02)
+=================================
+
+Bugfixes
+--------
+
+
+- Bump pinned rich version to >=10.0.1 ([#2072](https://github.com/neuro-inc/platform-client-python/issues/2072))
+
+
 Neuro SDK/CLI 21.4.1 (2021-04-01)
 =================================
 
