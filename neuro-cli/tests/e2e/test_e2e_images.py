@@ -4,7 +4,7 @@ import subprocess
 import time
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, AsyncIterator, Optional, Set
+from typing import Any, AsyncIterator, Set
 from uuid import uuid4 as uuid
 
 import aiodocker
@@ -13,7 +13,7 @@ from yarl import URL
 
 from neuro_sdk import CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH, JobStatus
 
-from tests.e2e import Helper
+from tests.e2e import Helper, make_image_name
 
 
 def parse_docker_ls_output(docker_ls_output: Any) -> Set[str]:
@@ -31,11 +31,8 @@ def tag() -> str:
     return str(uuid())
 
 
-async def generate_image(
-    docker: aiodocker.Docker, tag: str, name: Optional[str] = None
-) -> str:
-    if name is None:
-        name = f"e2e-cli-{uuid()}"
+async def generate_image(docker: aiodocker.Docker, tag: str) -> str:
+    name = make_image_name()
     image_archive = Path(__file__).parent / "assets/echo-tag.tar"
     # TODO use random image name here
     image_name = f"{name}:{tag}"
@@ -192,8 +189,8 @@ async def test_images_delete(
     helper: Helper,
     docker: aiodocker.Docker,
 ) -> None:
-    name = f"test-{uuid()}"
-    await generate_image(docker, name=name, tag="latest")
+    image_ref = await generate_image(docker, tag="latest")
+    name, _ = image_ref.split(":")
     img_name = f"image:{name}"
 
     helper.run_cli(["image", "push", name + ":latest"])

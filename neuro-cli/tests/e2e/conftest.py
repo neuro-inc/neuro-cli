@@ -8,8 +8,10 @@ import re
 import shlex
 import subprocess
 import sys
+import tempfile
 from collections import namedtuple
 from contextlib import contextmanager, suppress
+from datetime import datetime, timedelta
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
@@ -740,24 +742,24 @@ def nmrc_path(tmp_path_factory: Any, request: Any) -> Optional[Path]:
     global _nmrc_path_user
     global _nmrc_path_admin
     require_admin = request.keywords.get("require_admin", False)
+    tmp_path = tmp_path_factory.mktemp("config")
     if require_admin:
         if _nmrc_path_admin is None:
-            _nmrc_path_admin = _get_nmrc_path(tmp_path_factory, True)
+            _nmrc_path_admin = _get_nmrc_path(tmp_path, True)
         return _nmrc_path_admin
     else:
         if _nmrc_path_user is None:
-            _nmrc_path_user = _get_nmrc_path(tmp_path_factory, False)
+            _nmrc_path_user = _get_nmrc_path(tmp_path, False)
         return _nmrc_path_user
 
 
-def _get_nmrc_path(tmp_path_factory: Any, require_admin: bool) -> Optional[Path]:
+def _get_nmrc_path(tmp_path: Any, require_admin: bool) -> Optional[Path]:
     if require_admin:
         token_env = "E2E_TOKEN"
     else:
         token_env = "E2E_USER_TOKEN"
     e2e_test_token = os.environ.get(token_env)
     if e2e_test_token:
-        tmp_path = tmp_path_factory.mktemp("config")
         nmrc_path = tmp_path / "conftest.nmrc"
         run(
             login_with_token(
@@ -844,7 +846,7 @@ def _tmp_bucket_create(
 ) -> Iterator[Tuple[str, Helper]]:
     tmp_path = tmp_path_factory.mktemp("tmp_bucket" + str(uuid()))
     tmpbucketname = f"neuro-e2e-{uuid()}"
-    nmrc_path = _get_nmrc_path(tmp_path_factory, require_admin=True)
+    nmrc_path = _get_nmrc_path(tmp_path_factory.mktemp("config"), require_admin=True)
 
     helper = Helper(nmrc_path, tmp_path)
 
@@ -942,3 +944,35 @@ def disk_factory(helper: Helper) -> Callable[[str], ContextManager[str]]:
         assert cap.err == ""
 
     return _make_disk
+
+
+IMAGE_DATETIME_FORMAT = "%Y%m%d%H%M"
+IMAGE_DATETIME_SEP = "-date"
+
+
+def make_image_name() -> str:
+    time_str = datetime.now().strftime(IMAGE_DATETIME_FORMAT)
+    return f"e2e-cli-{uuid()}{IMAGE_DATETIME_SEP}{time_str}{IMAGE_DATETIME_SEP}"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def drop_old_test_images() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        nmrc_path = _get_nmrc_path(tmpdir_path, False)
+        subdir = tmpdir_path / "tmp"
+        subdir.mkdir()
+        helper = Helper(nmrc_path=nmrc_path, tmp_path=subdir)
+
+        res: SysCap = helper.run_cli(["-q", "image", "ls", "--full-uri"])
+        for image_str in res.out.splitlines():
+            image_url = URL(image_str)
+            image_name = image_url.parts[-1]
+            try:
+                _, time_str, _ = image_name.split(IMAGE_DATETIME_SEP)
+                image_time = datetime.strptime(time_str, IMAGE_DATETIME_FORMAT)
+                if datetime.now() - image_time < timedelta(days=1):
+                    continue
+                helper.run_cli(["image", "rm", image_str])
+            except Exception:
+                pass
