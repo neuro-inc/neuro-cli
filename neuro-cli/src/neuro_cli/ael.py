@@ -264,6 +264,15 @@ async def _process_attach_single_try(
             job = await root.client.jobs.status(job.id)
         except aiohttp.ClientConnectionError:
             raise RetryAttach
+        # Maybe it is spurious disconnect, and we should re-attach back?
+        # Check container liveness by calling attach once
+        try:
+            async with root.client.jobs.attach(job.id, stdin=True):
+                raise RetryAttach
+        except (asyncio.CancelledError, RetryAttach):
+            raise
+        except Exception:
+            pass  # Was unable to reconnect, most likely container is dead
 
         # The class pins the current time in counstructor,
         # that's why we need to initialize
