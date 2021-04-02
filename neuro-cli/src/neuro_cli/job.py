@@ -1190,7 +1190,9 @@ async def run_job(
         # TODO: remove this and upload_and_map_config function
         old_env_name = "NEURO_STEAL_CONFIG"
         if old_env_name in env_dict:
-            raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
+            raise ValueError(
+                f"{old_env_name} is already set to {env_dict[old_env_name]}"
+            )
 
         env_var, secret_volume = await upload_and_map_config(root)
         env_dict[old_env_name] = env_var
@@ -1384,6 +1386,8 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
     if job.description:
         res += ["--description", shlex.quote(job.description)]
     for volume in job.container.volumes:
+        if volume.container_path == "/var/storage/.neuro" and job.pass_config:
+            continue
         res += [
             "--volume",
             (
@@ -1403,7 +1407,7 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
     if job.container.working_dir:
         res += ["--workdir", job.container.working_dir]
     for env_name, env_value in job.container.env.items():
-        if env_name == PASS_CONFIG_ENV_NAME and job.pass_config:
+        if env_name in (PASS_CONFIG_ENV_NAME, "NEURO_STEAL_CONFIG") and job.pass_config:
             continue  # Do not specify value for pass config env variable
         res += ["--env", f"{env_name}={env_value}"]
     for env_name, secret_uri in job.container.secret_env.items():
