@@ -31,7 +31,7 @@ setup(
         "wcwidth>=0.1.7",
         "toml>=0.10.0",
         "prompt-toolkit>=3.0.13",
-        "rich>=9.11.0",
+        "rich>=10.0.1",
     ],
     include_package_data=True,
     description="Neuro Platform API client",
