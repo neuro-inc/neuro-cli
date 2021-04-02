@@ -14,7 +14,9 @@ async def test_list(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        return web.json_response([{"key": "name1"}, {"key": "name2"}])
+        return web.json_response(
+            [{"key": "name1", "owner": "test"}, {"key": "name2", "owner": "test"}]
+        )
 
     app = web.Application()
     app.router.add_get("/secrets", handler)
@@ -27,7 +29,10 @@ async def test_list(
         async for s in client.secrets.list():
             ret.append(s)
 
-    assert ret == [Secret(key="name1"), Secret(key="name2")]
+    assert ret == [
+        Secret(key="name1", owner="test", cluster_name="default"),
+        Secret(key="name2", owner="test", cluster_name="default"),
+    ]
 
 
 async def test_add(

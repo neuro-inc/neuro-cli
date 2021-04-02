@@ -1,10 +1,14 @@
 import pathlib
 
-from rich import box
-from rich.table import Table
+from neuro_cli.formatters.secrets import (
+    BaseSecretsFormatter,
+    SecretsFormatter,
+    SimpleSecretsFormatter,
+)
+from neuro_cli.formatters.utils import URIFormatter, uri_formatter
 
 from .root import Root
-from .utils import argument, command, group
+from .utils import argument, command, group, option
 
 
 @group()
@@ -15,17 +19,30 @@ def secret() -> None:
 
 
 @command()
-async def ls(root: Root) -> None:
+@option("--full-uri", is_flag=True, help="Output full disk URI.")
+async def ls(root: Root, full_uri: bool) -> None:
     """
     List secrets.
     """
+    if root.quiet:
+        secrets_fmtr: BaseSecretsFormatter = SimpleSecretsFormatter()
+    else:
+        if full_uri:
+            uri_fmtr: URIFormatter = str
+        else:
+            uri_fmtr = uri_formatter(
+                username=root.client.username, cluster_name=root.client.cluster_name
+            )
+        secrets_fmtr = SecretsFormatter(
+            uri_fmtr,
+        )
 
-    table = Table(box=box.MINIMAL_HEAVY_HEAD)
-    table.add_column("KEY", style="bold")
+    secrets = []
     async for secret in root.client.secrets.list():
-        table.add_row(secret.key)
+        secrets.append(secret)
+
     with root.pager():
-        root.print(table)
+        root.print(secrets_fmtr(secrets))
 
 
 @command()

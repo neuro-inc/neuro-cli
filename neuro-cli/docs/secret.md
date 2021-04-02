@@ -36,6 +36,7 @@ List secrets.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--full-uri_ | Output full disk URI. |
 
 
 

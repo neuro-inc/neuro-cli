@@ -2039,6 +2039,7 @@ neuro secret ls [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--full-uri_|Output full disk URI.|
 
 
 
