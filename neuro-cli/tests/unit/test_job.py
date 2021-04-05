@@ -323,7 +323,14 @@ def test_job_to_args_drop_env_when_pass_config() -> None:
             resources=Resources(16, 0.1, 0, None, True, None, None),
             env={
                 "NEURO_PASSED_CONFIG": "base64 data here",
+                "NEURO_STEAL_CONFIG": "path here",
             },
+            volumes=[
+                Volume(
+                    storage_uri=URL("storage:.neuro"),
+                    container_path="/var/storage/.neuro",
+                )
+            ],
         ),
         scheduler_enabled=False,
         pass_config=True,
