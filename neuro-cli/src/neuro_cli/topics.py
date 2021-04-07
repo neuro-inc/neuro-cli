@@ -67,66 +67,66 @@ def topics() -> None:
 @topics.command()
 async def ps_format() -> None:
     """\
-    Format for columns specification
+    Format for column specification
     ================================
 
-    The format is a sequence of column specifications separated
+    This format is a sequence of column specifications separated
     by commas or spaces: `{id}, {status}, {when}`.
 
-    A column spec has a mandatory column id plus optional properties
-    for indication of alignment, minimum and maximum column width,
-    and optional column title: `{id;align=center;min=10;max=30;width=20;TITLE}`
+    A column specification contains a mandatory column ID and optional properties
+    that indicate alignment, minimum and maximum column width,
+    and the column's title: `{id;align=center;min=10;max=30;width=20;TITLE}`
 
-    Here **id** is the column id, **align**, **min**, **max**, **width**
-    are properties and **TITLE** is the column title.
+    Here, **id** is the column's ID, **align**, **min**, **max**, and **width**
+    are optional properties, and **TITLE** is the column's title.
 
-    An alternative form is specifying the column id only without
-    additional properties, in this case curly brackets can be omitted:
-    `id, status, when` or `id status when` are valid formats.
+    Alternatively, you can specify only the column's ID without
+    additional properties and omit the curly brackets by using one of the following formats:
 
+    * `id, status, when` 
+    * `id status when`
 
     Available properties:
 
-    * **align**: Column aligning, accepted values: left, right, center.
-    * **min**: Minimal column width.
-    * **max**: Maximal column width.
+    * **align**: Column alignment. Accepted values: left, right, center.
+    * **min**: Minimum column width.
+    * **max**: Maximum column width.
     * **width**: Default column width.
 
-    All properties can be skipped, the default value for specified column ID
-    is used in this case.
+    If all of these properties are skipped, the default value is used for the specified column ID.
 
     The system recognizes the following columns:
 
-    * **id** (ID): job id.
-    * **name** (NAME): job name.
-    * **tags** (TAGS): job tags.
-    * **status** (STATUS): job status.
-    * **when** (WHEN): time of the last update of job information.
-    * **created** (CREATED): time of job creation.
-    * **started** (STARTED): time of job statrting.
-    * **finished** (FINISHED): time of job finishing.
-    * **image** (IMAGE): job image.
-    * **owner** (OWNER): job owner.
-    * **cluster_name** (CLUSTER): job cluster name.
-    * **description** (DESCRIPTION): job description.
-    * **command** (COMMAND): job command to execute.
-    * **life_span** (LIFE-SPAN): job life-span.
-    * **workdir** (WORKDIR): default working directory inside a job.
-    * **preset** (PRESET): resource configuration used for a job.
+    * **id** (ID): Job id.
+    * **name** (NAME): Job name.
+    * **tags** (TAGS): Job tags.
+    * **status** (STATUS): Job status.
+    * **when** (WHEN): Time of the last update of job information.
+    * **created** (CREATED): Job creation time.
+    * **started** (STARTED): Job starting time.
+    * **finished** (FINISHED): Job finishing time.
+    * **image** (IMAGE): Job image.
+    * **owner** (OWNER): Job owner.
+    * **cluster_name** (CLUSTER): Job cluster name.
+    * **description** (DESCRIPTION): Job description.
+    * **command** (COMMAND): The command a job executes.
+    * **life_span** (LIFE-SPAN): Job lifespan.
+    * **workdir** (WORKDIR): Default working directory inside a job.
+    * **preset** (PRESET): Resource configuration used for a job.
 
-    Columns recognizes only in the `neuro top` command:
+    These additional columns are only recognized in the `neuro top` command:
 
-    * **cpu** (CPU): number of used CPUs.
-    * **memory** (MEMORY (MB)): amount of used memory, in MB.
-    * **gpu** (GPU (%)): used GPUs, in percents.
-    * **gpu_memory** (GPU_MEMORY (MB)): amount of used GPU memory, in MB.
+    * **cpu** (CPU): Number of used CPUs.
+    * **memory** (MEMORY (MB)): Amount of used memory, in MB.
+    * **gpu** (GPU (%)): Used GPUs, per cent.
+    * **gpu_memory** (GPU_MEMORY (MB)): Amount of used GPU memory, in MB.
 
-    By default all columns are left aligned and have no minimal and default widths.
+    By default, all columns are left-aligned and have no minimum and default widths.
 
-    The column id is case insensitive, it can be shrinked to any unambiguous subset
-    of the full name.  For example `{CLUSTER:max=20}` is a good column spec but
-    `{C:max=20}` is not; it can be expanded into both `cluster_name` and `command`
-    column ids.
+    The column ID is case-insensitive, so it can be changed to any unambiguous shortened version
+    of the full name.  For example, `{CLUSTER:max=20}` is a good column specificaton, while
+    `{C:max=20}` is not, as it can be expanded both into `cluster_name` and `command`
+    column IDs.
 
     """
 
@@ -145,26 +145,26 @@ async def user_config() -> None:
     User configuration files
     ========================
 
-    The Neuro client supports user configuration files to provide default values
-    for particular command options, user defined command aliases etc.
+    The Neuro client supports custom configuration files that provide default values
+    for particular command options, user-defined command aliases, etc.
 
-    There are two configuration files: **global** and **local**, both are optional
-    and can be absent.
+    There are two types of configuration files that a project may have: **global** and **local**. Both of these 
+    are completely optional.
 
-    The global file is located in the standard neuro config path.  "neuro" CLI uses
-    `~/.neuro` folder by default, the path for global config file is
+    The global file is located in the standard neuro config path. Neuro CLI uses the
+    `~/.neuro` folder by default, so the full path for the global config file is
     `~/.neuro/user.toml`.
 
-    The local config file is named .neuro.toml, the CLI search for this file
+    The local config file is named `.neuro.toml` and the CLI searches for this file
     starting from the current folder up to the root directory.
 
-    Found local and global configurations are merged.
-    If a parameter is present are both global and local versions the local parameter
-    take a precedence.
+    Local and global configurations that were found by the CLI are then merged.
+    If a parameter is present both in the global and local versions, the local parameter
+    take precedence.
 
-    Configuration files have a TOML format (a stricter version of well-known INI
+    These configuration files must be written in the TOML format (which is a stricter version of the well-known INI
     format). See `https://en.wikipedia.org/wiki/TOML` and
-    `https://github.com/toml-lang/toml#toml` for the format specification details.
+    `https://github.com/toml-lang/toml#toml` for this format's specification details.
 
     Supported configuration sections and parameters:
 
@@ -182,29 +182,29 @@ async def user_config() -> None:
 
     **`cluster-name`**
 
-    The name of active cluster which overrides global cluster name set by
-    `neuro config switch-cluster`.  Can only be specified in **local**
+    The name of active cluster which overrides the global cluster name set by
+    `neuro config switch-cluster`.  Can only be specified in the **local**
     configuration file.
 
     **`ps-format`**
 
-    Default value for `neuro ps --format=XXX` option.
+    Default value for the `neuro ps --format=XXX` option.
 
-    See `neuro help ps-format` for information about the value specification.
+    See `neuro help ps-format` for information about the value's specification.
 
     **`top-format`**
 
-    Default value for `neuro top --format=XXX` option.
+    Default value for the `neuro top --format=XXX` option.
 
-    See `neuro help top-format` for information about the value specification.
+    See `neuro help top-format` for information about the value's specification.
 
     **`life-span`**
 
-    Default job run-time limit for `neuro run --life-span=XXX` option.
+    Default job runtime limit for the `neuro run --life-span=XXX` option.
 
-    The value is a string in format `1d2h3m4s` (this example will set the limit to
-    1 day, 2 hours, 3 minutes and 4 seconds). Some values can be missing, for example:
-    `1d6h`, `30m`. No spaces are allowed between values.
+    The value is a string of the following format: `1d2h3m4s` (this example will set the limit to
+    1 day, 2 hours, 3 minutes, and 4 seconds). Some parts of the value can be omitted, for example:
+    `1d6h`, `30m`, `4h30s`. No spaces are allowed between the parts of the value.
 
     `[storage]` section
     -------------------
@@ -213,31 +213,31 @@ async def user_config() -> None:
 
     **`cp-exclude`**
 
-    Default value for `neuro cp --exclude=XXX` and `neuro cp --include=YYY` options.
+    Default value for the `neuro cp --exclude=XXX` and `neuro cp --include=YYY` options.
 
-    The value is a list of shell wildcard patterns, a file or folder that matches a
-    pattern is excluded from processing.
+    The value is a list of shell wildcard patterns. Files and folders that match these patterns
+    will be excluded from processing.
 
-    The pattern can contain `*` and `?`, e.g. `["*.jpg"]` is for exclusion of all
-    files with `.jpg` extension.
+    The pattern can contain `*` and `?`. For example, `["*.jpg"]` will exclude all
+    files with the `.jpg` extension.
 
-    Exclamation mark ! is used to negate the pattern, e.g. `["*.jpg", "!main.jpg"]`
-    excludes all `.jpg` files except `main.jpg`.
+    Exclamation mark `!` is used to negate the pattern. For example, `["*.jpg", "!main.jpg"]`
+    will exclude all `.jpg` files except for `main.jpg`.
 
     **`cp-exclude-from-files`**
 
-    Default value for `neuro cp --exclude-from-files=XXX` option.
+    Default value for the `neuro cp --exclude-from-files=XXX` option.
 
-    The value is a list of filenames that contain patterns for exclusion files
-    and directories from uploading. For every proceeded folder
-    patterns from matched exclusion files (e.g. ".neuroignore")
+    The value is a list of filenames that contain patterns for excluding files
+    and directories from being uploaded. For every processed folder,
+    patterns from the matched exclusion files (e.g., ".neuroignore")
     are read and recursively applied to the directory content.
 
     Default is `[".neuroignore"]`.
 
-    The format of files is the same as the format of `.gitignore` files:
-    every line contains a pattern, exclamation mark `!` is used to negate
-    the pattern, empty lines and lines which start with `#` are ignored.
+    The format of these files is the same as the format of `.gitignore` files:
+    every line contains a pattern, and the exclamation mark `!` is used to negate
+    the pattern. Empty lines and lines which start with `#` are ignored.
 
     `[disk]` section
     ----------------
@@ -246,11 +246,11 @@ async def user_config() -> None:
 
     **`life-span`**
 
-    Default disk lifetime limit for `neuro disk create --life-span=XXX` option.
+    Default disk lifetime limit for the `neuro disk create --life-span=XXX` option.
 
-    The value is a string in format `1d2h3m4s` (this example will set the limit to
-    1 day, 2 hours, 3 minutes and 4 seconds). Some values can be missing, for example:
-    `1d6h`, `30m`. No spaces are allowed between values.
+    The value is a string of the following format: `1d2h3m4s` (this example will set the limit to
+    1 day, 2 hours, 3 minutes, and 4 seconds). Some parts of the value can be omitted, for example:
+    `1d6h`, `30m`, `4h30s`. No spaces are allowed between the parts of the value.
 
     *Example:*
     ```
@@ -278,30 +278,30 @@ async def aliases() -> None:
     Custom command aliases
     ======================
 
-    Aliases exist to provide for abbreviating a system command,
-    or for adding default arguments to a regularly used command.
+    Aliases provide a way to abbreviate system commands and
+    add default arguments to commonly used commands.
 
     Aliases are described in user-config files
     (see `neuro help user-config` for details).
 
-    `~/.neuro/user.toml` is used for **global** aliases,
+    `~/.neuro/user.toml` is used for **global** aliases, and 
     `.neuro.toml` can be used for saving **project-specific** aliases.
-    Project aliases everrides global ones if the same alias
+    Project aliases overrides global ones if the same alias
     name exists in both configuration files.
 
-    There are **internal** and **external** aliases.
-    An **internal** alias executes built-in neuro command in-place, an **
-    external** alias executes any **system OS** command.
+    There are two types of aliases: **internal** and **external**.
+    **Internal** aliases execute built-in neuro commands, and  **
+    external** aliases execute **system OS** commands.
 
-    Internal alias
-    --------------
+    Internal aliases
+    ----------------
 
-    The internal alias is used for running existing neuro CLI command under
+    Internal aliases are used for running existing neuro CLI commands under
     a different name and with optional overriden defaults (passed predefined
-    command-line options and arguments).
+    command line options and arguments).
 
-    For example, the following alias definition makes `neuro lsl` command
-    that executes `neuro storage ls -hl` for listing the storage content
+    For example, the following alias definition creates a `neuro lsl` command
+    that executes `neuro storage ls -hl` to list the storage's content
     using a long output mode with human-readable file sizes.
 
     ```
@@ -312,122 +312,122 @@ async def aliases() -> None:
 
     Available configuration arguments:
 
-    * `[alias.lsl]`: defines a subgroup for named alias,
+    * `[alias.lsl]`: Defines a subgroup for a named alias,
                        `lsl` in this case.
-    * `cmd`: command to execute with provided overridden options,
-      the key is **mandatory**.
-      `cmd` key in alias section implies **internal alias** mode.
-    * `help`: help string, displayed by `neuro du --help`
-      command (optional),
+    * `cmd`: The command to execute with provided overridden options,
+      this key is **mandatory**.
+      The `cmd` key in the alias section implies **internal alias** mode.
+    * `help`: Help string displayed by the `neuro lsl --help`
+      command (optional).
 
-    Internal allases accept additional command line options and agruments,
-    these parameters are passed to underlying command as is.
+    Internal aliases accept additional command line options and agruments,
+    and pass them to the underlying command as is.
 
-    E.g., `neuro lsl storage:directory` works as
+    For example, `neuro lsl storage:directory` works as
     `neuro ls -l --human-readable storage:directory`
 
 
-    External alias
-    --------------
+    External aliases
+    ----------------
 
-    The external alias spawns a subprocess with passing default options and
-    arguments, all user-provided arguments are passed to underlying
-    programm as well.
+    External aliases spawn a subprocess with passing default options and
+    arguments. All user-provided arguments are passed to the underlying
+    program as well.
 
     For example, the following configuration defines `neuro du` command as
-    an alias for system `du --human-readable` with optional providing the
-    directory for analyzing.
+    an alias for the system `du --human-readable` command with an additional 
+    ability to specify a directory for analysis.
 
     ```
       [alias.du]
       exec = "du"
       args = "[FILE]..."
       options = [
-        "-h, --human-readable   print sizes in powers of 1024 (e.g., 1023M)",
+        "-h, --human-readable   print sizes in powers of 1024 (e.g., 1024M)",
         "-d, --max-depth=N  max recursion level for subdirectories lookup",
       ]
       help = '''
-        Summarize disk usage of the set of FILEs,
+        Summarize disk usage of the set of files,
         recursively for directories.
       '''
     ```
 
     Available configuration arguments:
 
-    * `[alias.du]`: defines a subgroup for named alias,
+    * `[alias.du]`: Defines a subgroup for a named alias,
       `du` in this case.
-    * `exec`: external command to execute, the key is **mandatory**.
-      `exec` key in alias section implies **external alias** mode.
-    * `args`: positional args accepted by the alias,
+    * `exec`: External command to execute, this key is **mandatory**.
+      The `exec` key in the alias section implies **external alias** mode.
+    * `args`: Positional argumentss accepted by the alias,
       the format is described below (optional).
-    * `options`: options and flags accepted by the alias,
+    * `options`: Options and flags accepted by the alias,
       the format is described below (optional).
-    * `help`: help string, displayed by `neuro lsl --help`
+    * `help`: Help string displayed by `neuro du --help`
       command (optional),
 
-    **args** is string with sequence of arguments, e.g. `DIR SRC... [DST]`
+    **args** is a string with a sequence of arguments, e.g. `DIR SRC... [DST]`
 
-    If an argument is enclosed in brackets it is **optional** (`[FILE]`).
-    If an argument is ended with ellipsis the argument accepts
+    If an argument is enclosed in square brackets, it's **optional** (`[FILE]`).
+    If an argument ends with an ellipsis, this argument accepts
     multiple values (`SRC...`)
 
-    **options** is a list of strings, a string per option.
+    **options** is a list of strings specifying various options.
 
-    Each string describes a single option, the options definition is separated
-    from the option description (help) by two or more spaces.
+    Each string describes a single option. The option definitions should be separated
+    from the option descriptions (help) by two or more spaces.
 
-    The option definition can contain:
-    * short name (`-h`)
-    * long name (`--human-readable`)
-    * indication for required value (`-d, --max-depth=N`).
-      If the required value indicator (`=NAME`) is absent
-      the option is considered as boolean flag.
+    An option definition can contain:
+    * Short name (`-h`)
+    * Long name (`--human-readable`)
+    * Indication of the required value type (`-d, --max-depth=N`).
+      If the required value indicator (`=NAME`) is absent,
+      the option will be considered a boolean flag.
 
-    **exec** defines an external system to execute.
+    **exec** defines an external system command to execute.
 
-    The command is spawn in a subprocess, Neuro CLI waits for the subprocess
-    finish, and, in turn, returns the exit code to the outer caller.
+    The command is spawned in a subprocess. Neuro CLI waits for the subprocess 
+    to be finished, and then returns the exit code to the outer caller.
 
-    The parameter may specify and executable file along with some options,
-    e.g. `exec = "du --human-readable"` enforces human-readable mode
-    for `du` command.
+    The parameter may specify an executable file along with some options.
+    For example, `exec = "du --human-readable"` enforces human-readable mode
+    for the `du` command.
 
     `exec` can be used in **simplified** and **pattern** mode.
 
     Pattern mode
     ------------
 
-    In **pattern mode** the system command is used along with **substitutions**,
-    e.g. `exec = "du {human_readable} {max_depth} {file}"`.
-    Substitution is a variable name to expand enclosed in figure brackets,
+    In **pattern mode**, the system command is used along with **substitutions**.
+    For example, `exec = "du {human_readable} {max_depth} {file}"`.
+    Substitution is enclosed in curly brackets and represents a variable name to expand,
     e.g. `{file}`.
 
-    It is expanded with an option or positional argument specified
+    It's expanded with an option or positional argument specified
     by `args` or `options`.  The substitution name is automatically lowercased,
-    minus (`-`) is replaced with underscore (`_`).
-    E.g. `args = "ARG-NAME"` matches to `{arg_name}`.
+    and dashes (`-`) are replaced with underscores (`_`).
+    For example, `args = "ARG-NAME"` matches to `{arg_name}`.
 
-    If the substitution corresponds to optional parameter and it is not provided
-    by user the substitution is expanded to empty string.
+    If a substitution corresponds to an optional parameter not provided
+    by the user, this substitution will be expanded to an empty string.
 
-    If the substitution corresponds to multiple values all of them are provided,
-    e.g. `neuro du folder1 folder2` expands to `du folder1 folder2` since
-    `[FILE]...` argument matches to `folder1 folder2` values.
+    If a substitution corresponds to multiple values, all of them are used.
+    For example, `neuro du folder1 folder2` expands to `du folder1 folder2` since
+    the `[FILE]...` argument matches to `folder1 folder2` values.
 
-    Options are expanded using longest form if provided,
+    Options are expanded using the longest form if provided,
     e.g. `neuro du -h` is expanded to `du --human-readable`.
 
     Options with values are expanded as well,
-    e.g. `neuro du -d 1` is expanded to `du --max-depth 1`,
+    e.g. `neuro du -d 1` is expanded to `du --max-depth 1`.
     `neuro du --max-depth 1` matches to the same command.
 
     Simplified mode
     ---------------
 
-    In **simplified mode** the `exec` value does not contain any **substitutions**.
-    In this case all parsed `options` and `args` are appended
-    to executed command automatically if provided,
-    e.g. `exec = "du"` is expanded to
+    In **simplified mode**, the `exec` value does not contain any **substitutions**.
+    In this case, all parsed `options` and `args` are appended
+    to the executed command automatically if provided.
+    For example, `exec = "du"` is expanded to
     `exec = "du {human_readable} {max_depth} {file}"`
 
     """
@@ -439,45 +439,44 @@ async def secrets() -> None:
     Using secrets
     =============
 
-    Secret is a named encrypted data stored in the Neuro Platform Cluster.
+    A *secret* is a piece of encrypted named data stored in the Neuro Platform Cluster.
 
-    A user can create a secret, list available secret names and delete unused secrets
-    but the reading of secret's data back is forbidden.  Instead of bare reading,
-    secrets can be accessed from a running job as environment variable or mounted
+    Users can create secrets, list available secret names, and delete unused secrets.
+    However, reading the secret's data back is impossible. Instead of plain reading,
+    secrets can be accessed from a running job as an environment variable or a mounted
     file.
 
-    Secrets are isolated and user-specific, a secret that belongs to user A cannot be
+    Secrets are isolated and user-specific - a secret that belongs to user A cannot be
     accessed by user B.
 
-    Secrets management
-    ------------------
+    Managing secrets
+    ----------------
 
-    Use `neuro secret` command group for managing secrets.
+    Use the `neuro secret` command group to manage secrets.
 
     `neuro secret ls` prints all available secret names.
 
     `neuro secret add key value` creates a secret named *key* with encrypted data
     *value*.
 
-    To store the file's content as a secret please use
+    To store a file's content as a secret, use the
     `neuro secret add KEY_NAME @path/to/file.txt` notation.
 
-    `neuro secret rm key` removes the secret *key*.
+    `neuro secret rm key` removes the secret named *key*.
 
-    Internally, Neuro Platform uses Kubernetes Cluster secrets subsystem a secrets
-    storage.
+    Internally, the Neuro Platform uses the Kubernetes Cluster secrets subsystem to store secrets.
 
-    Secrets usage
+    Using secrets
     -------------
 
-    As said above, you cannot read a secret directly but should pass it into a running
-    job as an environment variable or mounted file.
+    As said above, you can't read a secret directly, but instead should pass it to a running
+    job as an environment variable or a mounted file.
 
-    To pass a secret *key* as environment variable please use `secret:key` as a value,
-    e.g. `neuro run --env VAR=secret:key ...` form.
+    To pass a secret named *key* as an environment variable, use `secret:key` as a value for `--env`.
+    For example, `neuro run --env VAR=secret:key ...`.
 
-    To mount a secret as a file please use `secret:` volume's schema, e.g.
-    `neuro run --volume secret:key:/mount/path/file.txt`.
+    To mount a secret as a file, use the `secret:` scheme of `--volume`.
+    For example, `neuro run --volume secret:key:/mount/path/file.txt`.
 
     """
 
@@ -485,20 +484,20 @@ async def secrets() -> None:
 @topics.command()
 async def sharing() -> None:
     """
-    Using sharing functionality
-    ===========================
+    Using the sharing functionality
+    ===============================
 
     Understanding permissions
     -------------------------
-    Neu.ro platform supports five levels of access:
-    * deny - no access
-    * list - permits listing entities, but not looking at their details
-    * read - read-only access to entity
-    * write - read-write access (including deletion) to entity
-    * manage - allows modification of entity's permissions
+    The Neu.ro platform supports five levels of access:
+    * deny - No access
+    * list - Permits listing entities, but not looking at their details
+    * read - Read-only access to an entity
+    * write - Read-write access to an entity (including deletion)
+    * manage - Allows modification of an entity's permissions
 
-    Please note permissions are inclusive: write permission implies read and manage
-    includes read and write, and so on.
+    Please note that permissions are inclusive: *write* permission implies reading, 
+    and *manage* includes reading and writing, and so on.
 
     Permissions can be granted via `neuro acl grant` or `neuro share` and
     revoked via `neuro acl revoke`:
@@ -507,22 +506,22 @@ async def sharing() -> None:
     neuro acl revoke job:job-0a6d3f81-b5d2-45db-95e3-548cc1fac81a bob
     ```
 
-    You can check entities owned by you and shared with you by others by running
+    You can check entities owned by you and shared with you by running
     `neuro acl list`. This will show all entity URIs and their access levels.
-    If you want to focus on a subset of entities you can filter them with `-s`.
+    If you want to focus on a subset of entities, you can filter them with `-s`.
     For instance, `neuro acl list -s job` will only show you jobs you have access to.
 
-    If `neuro acl list` output contains a URI, such as `secret:` or `storage:`
-    it means you've got corresponding permission for all entities of that type.
+    If the `neuro acl list` output contains a URI such as `secret:` or `storage:`,
+    it means you have corresponding permissions for all entities of that type.
 
     Running `neuro acl list --shared` will show you entities shared by you
     along with users/roles you shared them with.
 
     Roles
     -----
-    Neu.ro platform supports role-based access control. Role is a packed set
+    The Neu.ro platform supports role-based access control. Role is a packed set
     of permissions to multiple entities which can be shared together. There's several
-    default roles in each cluster, plus users may create their own custom roles.
+    default roles in each cluster, and users may additionally create their own custom roles.
 
     Default roles are:
     * {cluster}/manager
@@ -533,7 +532,7 @@ async def sharing() -> None:
     If you want to create a new role, run
     `neuro acl add-role {username}/roles/{rolename}`
 
-    This will create a role "rolename" with empty permission set. Then you may share
+    This will create a role "rolename" with an empty permission set. Then you may share
     resources with the new role via `neuro acl grant`:
 
     ```
@@ -543,7 +542,7 @@ async def sharing() -> None:
     neuro acl grant storage:/folder_name {username}/roles/{rolename}
     ```
 
-    When ready, grant this permission set to another user (`bob` in the example):
+    When ready, grant this permission set to another user (`bob` in this case):
 
     ```
     neuro acl grant role://{username}/roles/{rolename} bob
@@ -553,8 +552,8 @@ async def sharing() -> None:
     the `{username}/roles/{rolename}` role. The list can be viewed by
     `neuro acl list -u {username}/roles/{rolename}`.
 
-    If needed, role can be revoked:
+    If needed, a role can be revoked:
     `neuro acl revoke role://{username}/roles/{rolename} bob`
 
-    And deleted by running `neuro acl remove-role {username}/roles/{rolename}`.
+    Roles can be deleted by running `neuro acl remove-role {username}/roles/{rolename}`.
     """
