@@ -825,6 +825,32 @@ def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
 
 
 @pytest.mark.e2e
+def test_job_run_share(helper: Helper, fakebrowser: Any) -> None:
+    another_test_user = "test2"
+    # Run a new job
+    captured = helper.run_cli(
+        [
+            "-q",
+            "job",
+            "run",
+            "--no-wait-start",
+            "--share",
+            another_test_user,
+            UBUNTU_IMAGE_NAME,
+            "true",
+        ]
+    )
+    job_id = captured.out.strip()
+
+    uri = f"job://{helper.cluster_name}/{helper.username}/{job_id}"
+    captured = helper.run_cli(["acl", "list", "--full-uri", "--shared", uri])
+    result = [line.split() for line in captured.out.splitlines()]
+    assert [uri, "write", another_test_user] in result
+
+    helper.run_cli(["acl", "revoke", uri, another_test_user])
+
+
+@pytest.mark.e2e
 def test_job_submit_no_detach_failure(helper: Helper) -> None:
     # Run a new job
     with pytest.raises(subprocess.CalledProcessError) as exc_info:

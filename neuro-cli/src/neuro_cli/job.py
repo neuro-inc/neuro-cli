@@ -17,12 +17,14 @@ from yarl import URL
 
 from neuro_sdk import (
     PASS_CONFIG_ENV_NAME,
+    Action,
     AuthorizationError,
     Client,
     HTTPPort,
     JobDescription,
     JobRestartPolicy,
     JobStatus,
+    Permission,
     RemoteImage,
     Volume,
 )
@@ -966,6 +968,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     show_default=True,
     help="Run job in privileged mode, if it is supported by cluster.",
 )
+@option(
+    "--share",
+    metavar="USER",
+    multiple=True,
+    help=("Share job write permissions to user or role."),
+)
 @TTY_OPT
 async def run(
     root: Root,
@@ -995,6 +1003,7 @@ async def run(
     tty: Optional[bool],
     schedule_timeout: Optional[str],
     privileged: bool,
+    share: Sequence[str],
 ) -> None:
     """
     Run a job with predefined resources configuration.
@@ -1053,6 +1062,7 @@ async def run(
         tty=tty,
         schedule_timeout=schedule_timeout,
         privileged=privileged,
+        share=share,
     )
 
 
@@ -1125,6 +1135,7 @@ async def run_job(
     tty: bool,
     schedule_timeout: Optional[str],
     privileged: bool,
+    share: Sequence[str],
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -1229,6 +1240,9 @@ async def run_job(
         schedule_timeout=job_schedule_timeout,
         privileged=privileged,
     )
+    permission = Permission(job.uri, Action.WRITE)
+    for user in share:
+        await root.client.users.share(user, permission)
     with JobStartProgress.create(console=root.console, quiet=root.quiet) as progress:
         progress.begin(job)
         while wait_start and job.status == JobStatus.PENDING:

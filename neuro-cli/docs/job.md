@@ -86,6 +86,7 @@ $ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg
 | _-q, --quiet_ | Run command in quiet mode \(DEPRECATED\) |
 | _--restart \[never &#124; on-failure &#124; always\]_ | Restart policy to apply when a job exits  _\[default: never\]_ |
 | _--schedule-timeout TIMEDELTA_ | Optional job schedule timeout in the format '3m4s' \(some parts may be missing\). |
+| _--share USER_ | Share job write permissions to user or role. |
 | _--tag TAG_ | Optional job tag, multiple values allowed |
 | _-t, --tty / -T, --no-tty_ | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script. |
 | _-v, --volume MOUNT_ | Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files. |
