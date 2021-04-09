@@ -80,10 +80,10 @@ async def ps_format() -> None:
     Here, **id** is the column's ID, **align**, **min**, **max**, and **width**
     are optional properties, and **TITLE** is the column's title.
 
-    Alternatively, you can specify only the column's ID without
-    additional properties and omit the curly brackets by using one of the following formats:
+    Alternatively, you can specify only the column's ID without additional properties
+    and omit the curly brackets by using one of the following formats:
 
-    * `id, status, when` 
+    * `id, status, when`
     * `id status when`
 
     Available properties:
@@ -93,7 +93,8 @@ async def ps_format() -> None:
     * **max**: Maximum column width.
     * **width**: Default column width.
 
-    If all of these properties are skipped, the default value is used for the specified column ID.
+    If all of these properties are skipped, the default value is used for
+    the specified column ID.
 
     The system recognizes the following columns:
 
@@ -123,10 +124,10 @@ async def ps_format() -> None:
 
     By default, all columns are left-aligned and have no minimum and default widths.
 
-    The column ID is case-insensitive, so it can be changed to any unambiguous shortened version
-    of the full name.  For example, `{CLUSTER:max=20}` is a good column specificaton, while
-    `{C:max=20}` is not, as it can be expanded both into `cluster_name` and `command`
-    column IDs.
+    The column ID is case-insensitive, so it can be changed to any unambiguous shortened
+    version of the full name.  For example, `{CLUSTER:max=20}` is a good column
+    specificaton, while `{C:max=20}` is not, as it can be expanded both into
+    `cluster_name` and `command` column IDs.
 
     """
 
@@ -148,8 +149,8 @@ async def user_config() -> None:
     The Neuro client supports custom configuration files that provide default values
     for particular command options, user-defined command aliases, etc.
 
-    There are two types of configuration files that a project may have: **global** and **local**. Both of these 
-    are completely optional.
+    There are two types of configuration files that a project may have: **global** and
+    **local**. Both of these are completely optional.
 
     The global file is located in the standard neuro config path. Neuro CLI uses the
     `~/.neuro` folder by default, so the full path for the global config file is
@@ -162,8 +163,8 @@ async def user_config() -> None:
     If a parameter is present both in the global and local versions, the local parameter
     take precedence.
 
-    These configuration files must be written in the TOML format (which is a stricter version of the well-known INI
-    format). See `https://en.wikipedia.org/wiki/TOML` and
+    These configuration files must be written in the TOML format (which is a stricter
+    version of the well-known INI format). See `https://en.wikipedia.org/wiki/TOML` and
     `https://github.com/toml-lang/toml#toml` for this format's specification details.
 
     Supported configuration sections and parameters:
@@ -202,9 +203,10 @@ async def user_config() -> None:
 
     Default job runtime limit for the `neuro run --life-span=XXX` option.
 
-    The value is a string of the following format: `1d2h3m4s` (this example will set the limit to
-    1 day, 2 hours, 3 minutes, and 4 seconds). Some parts of the value can be omitted, for example:
-    `1d6h`, `30m`, `4h30s`. No spaces are allowed between the parts of the value.
+    The value is a string of the following format: `1d2h3m4s` (this example will set the
+    limit to 1 day, 2 hours, 3 minutes, and 4 seconds). Some parts of the value can be
+    omitted, for example: `1d6h`, `30m`, `4h30s`. No spaces are allowed between the
+    parts of the value.
 
     `[storage]` section
     -------------------
@@ -215,14 +217,14 @@ async def user_config() -> None:
 
     Default value for the `neuro cp --exclude=XXX` and `neuro cp --include=YYY` options.
 
-    The value is a list of shell wildcard patterns. Files and folders that match these patterns
-    will be excluded from processing.
+    The value is a list of shell wildcard patterns. Files and folders that match these
+    patterns will be excluded from processing.
 
     The pattern can contain `*` and `?`. For example, `["*.jpg"]` will exclude all
     files with the `.jpg` extension.
 
-    Exclamation mark `!` is used to negate the pattern. For example, `["*.jpg", "!main.jpg"]`
-    will exclude all `.jpg` files except for `main.jpg`.
+    Exclamation mark `!` is used to negate the pattern. For example, `["*.jpg",
+    "!main.jpg"]` will exclude all `.jpg` files except for `main.jpg`.
 
     **`cp-exclude-from-files`**
 
@@ -248,9 +250,10 @@ async def user_config() -> None:
 
     Default disk lifetime limit for the `neuro disk create --life-span=XXX` option.
 
-    The value is a string of the following format: `1d2h3m4s` (this example will set the limit to
-    1 day, 2 hours, 3 minutes, and 4 seconds). Some parts of the value can be omitted, for example:
-    `1d6h`, `30m`, `4h30s`. No spaces are allowed between the parts of the value.
+    The value is a string of the following format: `1d2h3m4s` (this example will set the
+    limit to 1 day, 2 hours, 3 minutes, and 4 seconds). Some parts of the value can be
+    omitted, for example: `1d6h`, `30m`, `4h30s`. No spaces are allowed between the
+    parts of the value.
 
     *Example:*
     ```
@@ -284,7 +287,7 @@ async def aliases() -> None:
     Aliases are described in user-config files
     (see `neuro help user-config` for details).
 
-    `~/.neuro/user.toml` is used for **global** aliases, and 
+    `~/.neuro/user.toml` is used for **global** aliases, and
     `.neuro.toml` can be used for saving **project-specific** aliases.
     Project aliases overrides global ones if the same alias
     name exists in both configuration files.
@@ -335,7 +338,7 @@ async def aliases() -> None:
     program as well.
 
     For example, the following configuration defines `neuro du` command as
-    an alias for the system `du --human-readable` command with an additional 
+    an alias for the system `du --human-readable` command with an additional
     ability to specify a directory for analysis.
 
     ```
@@ -385,7 +388,7 @@ async def aliases() -> None:
 
     **exec** defines an external system command to execute.
 
-    The command is spawned in a subprocess. Neuro CLI waits for the subprocess 
+    The command is spawned in a subprocess. Neuro CLI waits for the subprocess
     to be finished, and then returns the exit code to the outer caller.
 
     The parameter may specify an executable file along with some options.
@@ -435,8 +438,7 @@ async def aliases() -> None:
 
 @topics.command()
 async def secrets() -> None:
-    """
-    Using secrets
+    """Using secrets
     =============
 
     A *secret* is a piece of encrypted named data stored in the Neuro Platform Cluster.
@@ -464,16 +466,17 @@ async def secrets() -> None:
 
     `neuro secret rm key` removes the secret named *key*.
 
-    Internally, the Neuro Platform uses the Kubernetes Cluster secrets subsystem to store secrets.
+    Internally, the Neuro Platform uses the Kubernetes Cluster secrets subsystem to
+    store secrets.
 
     Using secrets
     -------------
 
-    As said above, you can't read a secret directly, but instead should pass it to a running
-    job as an environment variable or a mounted file.
+    As said above, you can't read a secret directly, but instead should pass it to a
+    running job as an environment variable or a mounted file.
 
-    To pass a secret named *key* as an environment variable, use `secret:key` as a value for `--env`.
-    For example, `neuro run --env VAR=secret:key ...`.
+    To pass a secret named *key* as an environment variable, use `secret:key` as a value
+    for `--env`.  For example, `neuro run --env VAR=secret:key ...`.
 
     To mount a secret as a file, use the `secret:` scheme of `--volume`.
     For example, `neuro run --volume secret:key:/mount/path/file.txt`.
@@ -483,12 +486,12 @@ async def secrets() -> None:
 
 @topics.command()
 async def sharing() -> None:
-    """
-    Using the sharing functionality
+    """Using the sharing functionality
     ===============================
 
     Understanding permissions
     -------------------------
+
     The Neu.ro platform supports five levels of access:
     * deny - No access
     * list - Permits listing entities, but not looking at their details
@@ -496,7 +499,7 @@ async def sharing() -> None:
     * write - Read-write access to an entity (including deletion)
     * manage - Allows modification of an entity's permissions
 
-    Please note that permissions are inclusive: *write* permission implies reading, 
+    Please note that permissions are inclusive: *write* permission implies reading,
     and *manage* includes reading and writing, and so on.
 
     Permissions can be granted via `neuro acl grant` or `neuro share` and
@@ -519,9 +522,11 @@ async def sharing() -> None:
 
     Roles
     -----
-    The Neu.ro platform supports role-based access control. Role is a packed set
-    of permissions to multiple entities which can be shared together. There's several
-    default roles in each cluster, and users may additionally create their own custom roles.
+
+    The Neu.ro platform supports role-based access control. Role is a packed set of
+    permissions to multiple entities which can be shared together. There's several
+    default roles in each cluster, and users may additionally create their own custom
+    roles.
 
     Default roles are:
     * {cluster}/manager
@@ -556,4 +561,5 @@ async def sharing() -> None:
     `neuro acl revoke role://{username}/roles/{rolename} bob`
 
     Roles can be deleted by running `neuro acl remove-role {username}/roles/{rolename}`.
+
     """

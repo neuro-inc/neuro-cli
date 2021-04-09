@@ -19,8 +19,8 @@
 ## Topics
 
 * [Custom command aliases](neuro-cli/docs/topic-aliases.md)
-* [Format for columns specification](neuro-cli/docs/topic-ps-format.md)
+* [Format for column specification](neuro-cli/docs/topic-ps-format.md)
 * [Using secrets](neuro-cli/docs/topic-secrets.md)
-* [Using sharing functionality](neuro-cli/docs/topic-sharing.md)
-* [Format for columns specification](neuro-cli/docs/topic-top-format.md)
+* [Using the sharing functionality](neuro-cli/docs/topic-sharing.md)
+* [Format for column specification](neuro-cli/docs/topic-top-format.md)
 * [User configuration files](neuro-cli/docs/topic-user-config.md)
