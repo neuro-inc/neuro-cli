@@ -22,7 +22,7 @@ def gen_trace_id() -> str:
 
     high = int(time.time())
     low = random.getrandbits(96)
-    return "{:032x}".format((high << 96) | low)
+    return f"{(high << 96) | low:032x}"
 
 
 def _gen_span_id() -> str:
