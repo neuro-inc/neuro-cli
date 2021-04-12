@@ -12,6 +12,7 @@ from typing import Any, Awaitable, Callable, List, Optional, Sequence, Tuple
 
 import aiohttp
 import click
+from aiohttp import WSServerHandshakeError
 from prompt_toolkit.formatted_text import HTML, merge_formatted_text
 from prompt_toolkit.input import create_input
 from prompt_toolkit.key_binding import KeyPress
@@ -255,6 +256,15 @@ async def _process_attach_single_try(
                 elif action == InterruptAction.DETACH:
                     progress.detach(job)
                     sys.exit(0)
+        except WSServerHandshakeError as e:
+            # Websocket handshake error has no access to response body, so we can only
+            # check the status here. Status 400 can mean:
+            # - wrong job id (cannot happen here as it is checked above)
+            # - wrong usage api usage (checked by tests)
+            # - container already stopped, so we can ignore such error
+
+            if e.status != 400:
+                raise
         finally:
             root.soft_reset_tty()
 
