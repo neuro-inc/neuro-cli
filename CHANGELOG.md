@@ -5,6 +5,23 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.4.13 (2021-04-13)
+==================================
+
+Features
+--------
+
+
+- Added option `--share` in `neuro job run`. It allows to share a created job with specified user or role. ([#2079](https://github.com/neuro-inc/platform-client-python/issues/2079))
+
+
+Bugfixes
+--------
+
+
+- Fixed handling jobs with `--pass-config` in `neuro job generate-run-command`. ([#2074](https://github.com/neuro-inc/platform-client-python/issues/2074))
+
+
 Neuro SDK/CLI 21.4.2 (2021-04-02)
 =================================
 
