@@ -5,7 +5,7 @@ import sys
 import time
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Dict, Iterable, List, Optional, Tuple, Type
+from typing import Callable, Dict, Iterable, List, Optional, Tuple, Type
 
 import humanize
 from rich import box
@@ -20,7 +20,7 @@ from rich.text import Text, TextType
 from neuro_sdk import JobDescription, JobRestartPolicy, JobStatus, JobTelemetry
 
 from neuro_cli.formatters.utils import DatetimeFormatter
-from neuro_cli.parse_utils import JobColumnInfo, JobTelemetryKeyFunc
+from neuro_cli.parse_utils import JobTableFormat, JobTelemetryKeyFunc
 from neuro_cli.utils import format_size
 
 from .utils import (
@@ -308,7 +308,7 @@ class JobTelemetryFormatter(RenderHook):
         console: Console,
         username: str,
         sort_keys: List[Tuple[JobTelemetryKeyFunc, bool]],
-        columns: List[JobColumnInfo],
+        columns: JobTableFormat,
         image_formatter: ImageFormatter,
         datetime_formatter: DatetimeFormatter,
         maxrows: Optional[int] = None,
@@ -357,13 +357,14 @@ class JobTelemetryFormatter(RenderHook):
                 gpu=f"{info.gpu_duty_cycle}" if info.gpu_duty_cycle else "0",
                 gpu_memory=f"{info.gpu_memory:.3f}" if info.gpu_memory else "0",
             )
-            fields = [
-                telemetry_data[column.id]
-                if column.id in telemetry_data
-                else getattr(job_data, column.id)
-                for column in self._columns
-            ]
-            table.add_row(*fields)
+
+            def get(id: str) -> TextType:
+                if id in telemetry_data:
+                    return telemetry_data[id]
+                else:
+                    return getattr(job_data, id)
+
+            table.add_row(*_format_row(self._columns, get))
 
         if self._console.is_terminal:
             self._live_render.set_renderable(table)
@@ -462,15 +463,34 @@ class TabularJobRow:
             preset=job.preset_name or "",
         )
 
-    def to_list(self, columns: List[JobColumnInfo]) -> List[TextType]:
-        return [getattr(self, column.id) for column in columns]
+    def to_list(self, columns: JobTableFormat) -> List[TextType]:
+        return _format_row(columns, lambda id: getattr(self, id))
+
+
+def _format_row(
+    columns: JobTableFormat, get: Callable[[str], TextType]
+) -> List[TextType]:
+    result: List[TextType] = []
+    for column in columns:
+        if "/" in column.id:
+            cell: List[TextType] = []
+            for id in column.id.split("/"):
+                if cell:
+                    cell.append("\n ")
+                    cell.append(Text(get(id), style="italic"))
+                else:
+                    cell.append(get(id))
+            result.append(Text.assemble(*cell))
+        else:
+            result.append(get(column.id))
+    return result
 
 
 class TabularJobsFormatter(BaseJobsFormatter):
     def __init__(
         self,
         username: str,
-        columns: List[JobColumnInfo],
+        columns: JobTableFormat,
         image_formatter: ImageFormatter,
         datetime_formatter: DatetimeFormatter,
     ) -> None:
@@ -541,7 +561,7 @@ class JobStartProgress:
         pass
 
 
-def _add_columns(table: Table, columns: List[JobColumnInfo]) -> None:
+def _add_columns(table: Table, columns: JobTableFormat) -> None:
     column = columns[0]
     table.add_column(
         column.title,

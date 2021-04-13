@@ -1,3 +1,4 @@
-ID                                         NAME   STATUS   WHEN           IMAGE   OWNER   COMMAND  
- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
-  j                                          name   failed   a second ago   i:l     alice   c
+ID/NAME                                    STATUS/WHEN     IMAGE   OWNER   COMMAND  
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+  j                                          failed          i:l     alice   c        
+   name                                       a second ago

@@ -60,7 +60,7 @@ from .formatters.jobs import (
     TabularJobsFormatter,
 )
 from .parse_utils import (
-    JobColumnInfo,
+    JobTableFormat,
     get_default_ps_columns,
     get_default_top_columns,
     parse_ps_columns,
@@ -366,7 +366,7 @@ async def ls(
     until: str,
     description: str,
     wide: bool,
-    format: Optional[List[JobColumnInfo]],
+    format: Optional[JobTableFormat],
     full_uri: bool,
 ) -> None:
     """
@@ -603,7 +603,7 @@ async def top(
     until: str,
     description: str,
     sort: str,
-    format: Optional[List[JobColumnInfo]],
+    format: Optional[JobTableFormat],
     full_uri: bool,
     timeout: float,
 ) -> None:
@@ -1328,8 +1328,8 @@ def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
 
 
 async def calc_ps_columns(
-    client: Client, format: Optional[List[JobColumnInfo]]
-) -> List[JobColumnInfo]:
+    client: Client, format: Optional[JobTableFormat]
+) -> JobTableFormat:
     if format is None:
         config = await client.config.get_user_config()
         section = config.get("job")
@@ -1342,8 +1342,8 @@ async def calc_ps_columns(
 
 
 async def calc_top_columns(
-    client: Client, format: Optional[List[JobColumnInfo]]
-) -> List[JobColumnInfo]:
+    client: Client, format: Optional[JobTableFormat]
+) -> JobTableFormat:
     if format is None:
         config = await client.config.get_user_config()
         section = config.get("job")
