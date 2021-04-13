@@ -68,7 +68,7 @@ from .tracing import gen_trace_id
 from .users import Action, Permission, Share, Users
 from .utils import _ContextManager, find_project_root
 
-__version__ = "21.4.12"
+__version__ = "21.4.13"
 
 
 __all__ = (
