@@ -152,6 +152,10 @@ def test_parse_ps_columns_props_width() -> None:
 def test_parse_ps_columns_multi_id() -> None:
     ci1 = PS_COLUMNS_MAP["id"]
     ci2 = PS_COLUMNS_MAP["name"]
+    assert ci1.width is not None
+    assert ci1.max_width is None
+    assert ci2.width is None
+    assert ci2.max_width is not None
     expected = [
         JobColumnInfo(
             "id/name", "ID/NAME", ci1.justify, ci1.width, None, ci2.max_width + 1

@@ -475,11 +475,14 @@ def _format_row(
         if "/" in column.id:
             cell: List[TextType] = []
             for id in column.id.split("/"):
+                value = get(id)
                 if cell:
-                    cell.append("\n ")
-                    cell.append(Text(get(id), style="italic"))
-                else:
-                    cell.append(get(id))
+                    cell.append("\n ")  # new line and indentation
+                    if isinstance(value, Text):
+                        value.stylize("italic")
+                    else:
+                        value = Text(value, style="italic")
+                cell.append(value)
             result.append(Text.assemble(*cell))
         else:
             result.append(get(column.id))
