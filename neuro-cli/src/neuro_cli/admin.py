@@ -1,9 +1,12 @@
+import asyncio
 import configparser
 import json
+import logging
 import os
 import pathlib
+from dataclasses import replace
 from decimal import Decimal
-from typing import IO, Optional
+from typing import IO, Any, Mapping, Optional
 
 import click
 import yaml
@@ -19,6 +22,8 @@ from .formatters.admin import ClustersFormatter, ClusterUserFormatter
 from .formatters.config import QuotaFormatter
 from .root import Root
 from .utils import argument, command, group, option
+
+log = logging.getLogger(__name__)
 
 
 @group()
@@ -445,8 +450,39 @@ async def add_user_quota(
     root.print(fmt(user_with_quota.quota))
 
 
+async def _update_presets_and_fetch(root: Root, presets: Mapping[str, Preset]) -> None:
+    cluster_name = root.client.config.cluster_name
+    await root.client._admin.update_cluster_resource_presets(cluster_name, presets)
+
+    if root.verbosity >= 1:
+        _print = root.print
+    else:
+
+        def _print(*args: Any, **kwargs: Any) -> None:
+            pass
+
+    _print("Requested presets update")
+
+    async def _sync_local_config() -> None:
+        _print("Fetching new server config", end="")
+        try:
+            while dict(root.client.config.presets) != presets:
+                _print(".", end="")
+                await root.client.config.fetch()
+                await asyncio.sleep(0.5)
+        finally:
+            _print("")
+
+    try:
+        await asyncio.wait_for(_sync_local_config(), 10)
+    except TimeoutError:
+        log.warning(
+            "Fetched server presets are not same as new values. "
+            "Maybe there was some concurrent update?"
+        )
+
+
 @command()
-@argument("cluster_name")
 @argument("preset_name")
 @option(
     "--credits-per-hour",
@@ -507,9 +543,8 @@ async def add_user_quota(
     default=False,
     show_default=True,
 )
-async def update_resource_preset(
+async def add_resource_preset(
     root: Root,
-    cluster_name: str,
     preset_name: str,
     credits_per_hour: str,
     cpu: float,
@@ -522,9 +557,11 @@ async def update_resource_preset(
     preemptible_node: bool,
 ) -> None:
     """
-    Add/update resource preset
+    Add new resource preset
     """
-    presets = dict(root.client.presets)
+    presets = dict(root.client.config.presets)
+    if preset_name in presets:
+        raise ValueError(f"Preset '{preset_name}' already exists")
     presets[preset_name] = Preset(
         credits_per_hour=Decimal(credits_per_hour),
         cpu=cpu,
@@ -536,35 +573,130 @@ async def update_resource_preset(
         scheduler_enabled=scheduler,
         preemptible_node=preemptible_node,
     )
-    await root.client._admin.update_cluster_resource_presets(cluster_name, presets)
-    await root.client.config.fetch()
+    await _update_presets_and_fetch(root, presets)
     if not root.quiet:
         root.print(
-            f"Updated resource preset [b]{rich_escape(preset_name)}[/b] "
-            f"in cluster [b]{rich_escape(cluster_name)}[/b]",
+            f"Added resource preset [b]{rich_escape(preset_name)}[/b] "
+            f"in cluster [b]{rich_escape(root.client.config.cluster_name)}[/b]",
             markup=True,
         )
 
 
 @command()
-@argument("cluster_name")
 @argument("preset_name")
-async def remove_resource_preset(
-    root: Root, cluster_name: str, preset_name: str
+@option(
+    "--credits-per-hour",
+    metavar="AMOUNT",
+    type=str,
+    help="Price of running job of this preset for an hour in credits",
+)
+@option(
+    "-c",
+    "--cpu",
+    metavar="NUMBER",
+    type=float,
+    help="Number of CPUs",
+)
+@option(
+    "-m",
+    "--memory",
+    metavar="AMOUNT",
+    type=MEGABYTE,
+    help="Memory amount",
+)
+@option(
+    "-g",
+    "--gpu",
+    metavar="NUMBER",
+    type=int,
+    help="Number of GPUs",
+)
+@option(
+    "--gpu-model",
+    metavar="MODEL",
+    help="GPU model",
+)
+@option("--tpu-type", metavar="TYPE", type=str, help="TPU type")
+@option(
+    "tpu_software_version",
+    "--tpu-sw-version",
+    metavar="VERSION",
+    type=str,
+    help="TPU software version",
+)
+@option(
+    "--scheduler/--no-scheduler",
+    "-p/-P",
+    help="Use round robin scheduler for jobs",
+)
+@option(
+    "--preemptible-node/--non-preemptible-node",
+    help="Use a lower-cost preemptible instance",
+)
+async def update_resource_preset(
+    root: Root,
+    preset_name: str,
+    credits_per_hour: Optional[str],
+    cpu: Optional[float],
+    memory: Optional[int],
+    gpu: Optional[int],
+    gpu_model: Optional[str],
+    tpu_type: Optional[str],
+    tpu_software_version: Optional[str],
+    scheduler: Optional[bool],
+    preemptible_node: Optional[bool],
 ) -> None:
+    """
+    Update existing resource preset
+    """
+    presets = dict(root.client.config.presets)
+    try:
+        preset = presets[preset_name]
+    except KeyError:
+        raise ValueError(f"Preset '{preset_name}' does not exists")
+
+    kwargs = {
+        "credits_per_hour": Decimal(credits_per_hour)
+        if credits_per_hour is not None
+        else None,
+        "cpu": cpu,
+        "memory_mb": memory,
+        "gpu": gpu,
+        "gpu_model": gpu_model,
+        "tpu_type": tpu_type,
+        "tpu_software_version": tpu_software_version,
+        "scheduler_enabled": scheduler,
+        "preemptible_node": preemptible_node,
+    }
+    kwargs = {key: value for key, value in kwargs.items() if value is not None}
+
+    presets[preset_name] = replace(preset, **kwargs)
+
+    await _update_presets_and_fetch(root, presets)
+
+    if not root.quiet:
+        root.print(
+            f"Updated resource preset [b]{rich_escape(preset_name)}[/b] "
+            f"in cluster [b]{rich_escape(root.client.config.cluster_name)}[/b]",
+            markup=True,
+        )
+
+
+@command()
+@argument("preset_name")
+async def remove_resource_preset(root: Root, preset_name: str) -> None:
     """
     Remove resource preset
     """
-    presets = dict(root.client.presets)
+    presets = dict(root.client.config.presets)
     if preset_name not in presets:
         raise ValueError(f"Preset '{preset_name}' not found")
     del presets[preset_name]
-    await root.client._admin.update_cluster_resource_presets(cluster_name, presets)
-    await root.client.config.fetch()
+    await _update_presets_and_fetch(root, presets)
     if not root.quiet:
         root.print(
             f"Removed resource preset [b]{rich_escape(preset_name)}[/b] "
-            f"from cluster [b]{rich_escape(cluster_name)}[/b]",
+            f"from cluster [b]{rich_escape(root.client.config.cluster_name)}[/b]",
             markup=True,
         )
 
@@ -581,5 +713,6 @@ admin.add_command(remove_cluster_user)
 admin.add_command(set_user_quota)
 admin.add_command(add_user_quota)
 
+admin.add_command(add_resource_preset)
 admin.add_command(update_resource_preset)
 admin.add_command(remove_resource_preset)
