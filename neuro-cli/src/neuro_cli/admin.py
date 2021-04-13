@@ -475,7 +475,7 @@ async def _update_presets_and_fetch(root: Root, presets: Mapping[str, Preset]) -
 
     try:
         await asyncio.wait_for(_sync_local_config(), 10)
-    except TimeoutError:
+    except asyncio.TimeoutError:
         log.warning(
             "Fetched server presets are not same as new values. "
             "Maybe there was some concurrent update?"
