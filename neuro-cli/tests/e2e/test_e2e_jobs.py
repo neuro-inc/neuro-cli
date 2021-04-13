@@ -559,7 +559,7 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
                 "true",
             ]
         )
-    assert cm.value.returncode == 65
+    assert cm.value.returncode == 72
 
 
 @pytest.mark.e2e
