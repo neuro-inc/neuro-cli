@@ -1017,10 +1017,10 @@ def test_e2e_job_top_default_format(helper: Helper) -> None:
         helper.run_cli(["job", "top", "--timeout", "0.1"])
     assert excinfo.value.returncode == 124
     stdout = excinfo.value.output
-    assert "ID" in stdout
+    assert "ID/NAME" in stdout
     assert "CPU" in stdout
     assert "GPU" in stdout
-    assert "NAME" not in stdout
+    assert "STATUS" not in stdout
 
 
 @pytest.mark.e2e

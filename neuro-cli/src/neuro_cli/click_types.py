@@ -10,7 +10,7 @@ from click import BadParameter
 from neuro_sdk import LocalImage, RemoteImage, TagOption
 
 from .parse_utils import (
-    JobColumnInfo,
+    JobTableFormat,
     parse_ps_columns,
     parse_top_columns,
     to_megabytes,
@@ -192,10 +192,10 @@ class JobColumnsType(click.ParamType):
 
     def convert(
         self,
-        value: Union[str, List[JobColumnInfo]],
+        value: Union[str, JobTableFormat],
         param: Optional[click.Parameter],
         ctx: Optional[click.Context],
-    ) -> List[JobColumnInfo]:
+    ) -> JobTableFormat:
         if isinstance(value, list):
             return value
         return parse_ps_columns(value)
@@ -209,10 +209,10 @@ class TopColumnsType(click.ParamType):
 
     def convert(
         self,
-        value: Union[str, List[JobColumnInfo]],
+        value: Union[str, JobTableFormat],
         param: Optional[click.Parameter],
         ctx: Optional[click.Context],
-    ) -> List[JobColumnInfo]:
+    ) -> JobTableFormat:
         if isinstance(value, list):
             return value
         return parse_top_columns(value)

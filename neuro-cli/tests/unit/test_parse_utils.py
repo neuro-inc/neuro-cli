@@ -90,7 +90,7 @@ def test_parse_ps_columns_partial() -> None:
     ci = PS_COLUMNS_MAP["description"]
     assert parse_ps_columns("{DESC}") == [
         JobColumnInfo(
-            "description", ci.title, ci.justify, ci.width, ci.min_width, ci.max_width
+            "desc", ci.title, ci.justify, ci.width, ci.min_width, ci.max_width
         )
     ]
 
@@ -146,6 +146,36 @@ def test_parse_ps_columns_props_width() -> None:
     ci = PS_COLUMNS_MAP["id"]
     assert parse_ps_columns("{id;max=30;min=5;width=10}") == [
         JobColumnInfo("id", ci.title, ci.justify, width=10, min_width=5, max_width=30)
+    ]
+
+
+def test_parse_ps_columns_multi_id() -> None:
+    ci1 = PS_COLUMNS_MAP["id"]
+    ci2 = PS_COLUMNS_MAP["name"]
+    assert ci1.width is not None
+    assert ci1.max_width is None
+    assert ci2.width is None
+    assert ci2.max_width is not None
+    expected = [
+        JobColumnInfo(
+            "id/name", "ID/NAME", ci1.justify, ci1.width, None, ci2.max_width + 1
+        )
+    ]
+    assert parse_ps_columns("id/name") == expected
+    assert parse_ps_columns("{id/name}") == expected
+    assert parse_ps_columns("{id/name;ID/NAME}") == expected
+    expected = [
+        JobColumnInfo(
+            "name/id", "NAME/ID", ci2.justify, ci1.width + 1, None, ci2.max_width
+        )
+    ]
+    assert parse_ps_columns("name/id") == expected
+
+
+def test_parse_ps_columns_multi_id_props_full() -> None:
+    ci1 = PS_COLUMNS_MAP["id"]
+    assert parse_ps_columns("{id/name;max=30;min=5;align=center;Id (Name)}") == [
+        JobColumnInfo("id/name", "Id (Name)", "center", ci1.width, 5, 30)
     ]
 
 

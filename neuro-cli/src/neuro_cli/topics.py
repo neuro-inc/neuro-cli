@@ -96,6 +96,11 @@ async def ps_format() -> None:
     If all of these properties are skipped, the default value is used for
     the specified column ID.
 
+    Multiple values can be output on different lines in one cell if several
+    column IDs are specified separated with "/":
+
+    * `id/name {status/when;align=center;min=10;max=30;width=20;TITLE}`
+
     The system recognizes the following columns:
 
     * **id** (ID): Job id.

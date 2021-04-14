@@ -1,7 +1,17 @@
 import dataclasses
 import re
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    TypeVar,
+)
 
 import click
 from rich.console import JustifyMethod
@@ -68,6 +78,9 @@ class JobColumnInfo:
     max_width: Optional[int] = None
 
 
+JobTableFormat = List[JobColumnInfo]
+
+
 # Note: please keep the help for format specs in sync with the following data
 # structures.
 
@@ -92,21 +105,7 @@ PS_COLUMNS = [
     JobColumnInfo("preset", "PRESET", "left"),
 ]
 
-PS_COLUMNS_DEFAULT_IGNORE = {
-    "tags",
-    "life_span",
-    "created",
-    "started",
-    "finished",
-    "cluster_name",
-    "description",
-    "workdir",
-    "preset",
-}
-
-PS_COLUMNS_DEFAULT = {
-    col.id for col in PS_COLUMNS if col.id not in PS_COLUMNS_DEFAULT_IGNORE
-}
+PS_COLUMNS_DEFAULT_FORMAT = "id/name status/when image owner command"
 
 TOP_COLUMNS = PS_COLUMNS + [
     JobColumnInfo("cpu", "CPU", "right", width=15),
@@ -115,30 +114,14 @@ TOP_COLUMNS = PS_COLUMNS + [
     JobColumnInfo("gpu_memory", "GPU_MEMORY (MB)", "right", width=15),
 ]
 
-TOP_COLUMNS_DEFAULT = {
-    "id",
-    "when",
-    "cpu",
-    "memory",
-    "gpu",
-    "gpu_memory",
-}
-
-
-def get_default_ps_columns() -> List[JobColumnInfo]:
-    return [col for col in PS_COLUMNS if col.id in PS_COLUMNS_DEFAULT]
-
-
-def get_default_top_columns() -> List[JobColumnInfo]:
-    return [col for col in TOP_COLUMNS if col.id in TOP_COLUMNS_DEFAULT]
-
+TOP_COLUMNS_DEFAULT_FORMAT = "id/name when cpu memory gpu gpu_memory"
 
 PS_COLUMNS_MAP = {column.id: column for column in PS_COLUMNS}
 TOP_COLUMNS_MAP = {column.id: column for column in TOP_COLUMNS}
 
 COLUMNS_RE = re.compile(
     r"""
-    (?P<id>\w+)|
+    (?P<id>\w+(?:/\w+)*)|
     (?:\{(?P<col>[^}]+)\})|
     (?P<sep>\s*(?:,\s*|\s))|
     (?P<miss>.)
@@ -147,7 +130,7 @@ COLUMNS_RE = re.compile(
 )
 COLUMN_RE = re.compile(
     r"""
-    (?P<id>\w+)
+    (?P<id>\w+(?:/\w+)*)
     (?:
       (?:;align=(?P<align>\w+))|
       (?:;min=(?P<min>\w+))|
@@ -158,6 +141,27 @@ COLUMN_RE = re.compile(
     """,
     re.VERBOSE,
 )
+
+
+def _get_column(
+    id: str, columns_map: Dict[str, JobColumnInfo], fmt: str
+) -> JobColumnInfo:
+    column = columns_map.get(id)
+    if column is None:
+        for name in columns_map:
+            if name.startswith(id):
+                if column is not None:
+                    variants = ", ".join(
+                        name for name in columns_map if name.startswith(id)
+                    )
+                    raise ValueError(
+                        f"Ambiguous column {id!r} in format {fmt!r};"
+                        f" available variants: {variants}"
+                    )
+                column = columns_map[name]
+        if column is None:
+            raise ValueError(f"Unknown column {id!r} in format {fmt!r}")
+    return column
 
 
 def _get(
@@ -184,22 +188,27 @@ def _justify(arg: str) -> JustifyMethod:
     return arg  # type: ignore
 
 
-def parse_ps_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
-    return _parse_columns(fmt, PS_COLUMNS_MAP) or get_default_ps_columns()
-
-
-def parse_top_columns(fmt: Optional[str]) -> List[JobColumnInfo]:
-    return _parse_columns(fmt, TOP_COLUMNS_MAP) or get_default_top_columns()
+def _max_width(widths: Iterable[Optional[int]], indent: int = 1) -> Optional[int]:
+    max_width: Optional[int] = None
+    for i, width in enumerate(widths):
+        if width is not None:
+            if i:
+                width += indent
+            if max_width is not None:
+                max_width = max(max_width, width)
+            else:
+                max_width = width
+    return max_width
 
 
 def _parse_columns(
-    fmt: Optional[str], columns_map: Dict[str, JobColumnInfo]
-) -> Optional[List[JobColumnInfo]]:
+    fmt: Optional[str], columns_map: Dict[str, JobColumnInfo], default_fmt: str
+) -> JobTableFormat:
     # Column format is "{id[;field=val][;title]}",
     # columns are separated by commas or spaces
     # spaces in title are forbidden
     if not fmt:
-        return None
+        fmt = default_fmt
     ret = []
     for m1 in COLUMNS_RE.finditer(fmt):
         if m1.lastgroup == "sep":
@@ -216,33 +225,25 @@ def _parse_columns(
         if m2 is None:
             raise ValueError(f"Invalid format {fmt!r}")
         groups = m2.groupdict()
-        id = groups["id"].lower()
-        default = columns_map.get(id)
-        if default is None:
-            for name in columns_map:
-                if name.startswith(id):
-                    if default is not None:
-                        variants = ", ".join(
-                            name for name in columns_map if name.startswith(id)
-                        )
-                        raise ValueError(
-                            f"Ambiguous column {id!r} in format {fmt!r};"
-                            f" available variants: {variants}"
-                        )
-                    default = columns_map[name]
-            if default is None:
-                raise ValueError(f"Unknown column {id!r} in format {fmt!r}")
-        title = _get(groups, "title", fmt, str, default.title)
+        ids = groups["id"].lower()
+        defaults = [_get_column(id, columns_map, fmt) for id in ids.split("/")]
+
+        title = "/".join(column.title for column in defaults)
+        title = _get(groups, "title", fmt, str, title)  # type: ignore
         assert title is not None
 
-        justify: JustifyMethod = _get(groups, "align", fmt, _justify, default.justify)  # type: ignore  # noqa
+        justify: JustifyMethod = _get(groups, "align", fmt, _justify, defaults[0].justify)  # type: ignore  # noqa
 
-        min_width = _get(groups, "min", fmt, int, default.min_width)
-        max_width = _get(groups, "max", fmt, int, default.max_width)
-        width = _get(groups, "width", fmt, int, default.width)
+        min_width = _max_width(column.min_width for column in defaults)
+        max_width = _max_width(column.max_width for column in defaults)
+        width = _max_width(column.width for column in defaults)
+
+        min_width = _get(groups, "min", fmt, int, min_width)
+        max_width = _get(groups, "max", fmt, int, max_width)
+        width = _get(groups, "width", fmt, int, width)
 
         info = JobColumnInfo(
-            id=default.id,  # canonical name
+            id=ids,
             title=title,
             justify=justify,
             width=width,
@@ -253,6 +254,22 @@ def _parse_columns(
     if not ret:
         raise ValueError(f"Invalid format {fmt!r}")
     return ret
+
+
+def get_default_ps_columns() -> JobTableFormat:
+    return parse_ps_columns(None)
+
+
+def get_default_top_columns() -> JobTableFormat:
+    return parse_top_columns(None)
+
+
+def parse_ps_columns(fmt: Optional[str]) -> JobTableFormat:
+    return _parse_columns(fmt, PS_COLUMNS_MAP, PS_COLUMNS_DEFAULT_FORMAT)
+
+
+def parse_top_columns(fmt: Optional[str]) -> JobTableFormat:
+    return _parse_columns(fmt, TOP_COLUMNS_MAP, TOP_COLUMNS_DEFAULT_FORMAT)
 
 
 class InvertKey:
