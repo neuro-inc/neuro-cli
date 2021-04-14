@@ -18,7 +18,8 @@ async def mocked_share_client(
     async def handler(request: web.Request) -> web.Response:
         data = await request.json()
         assert data[0]["action"] in [item.value for item in Action]
-        raise web.HTTPCreated()
+        data[0]["action"] = Action.MANAGE.value
+        return web.json_response(data, status=web.HTTPCreated.status_code)
 
     app = web.Application()
     app.router.add_post("/users/bill/permissions", handler)
@@ -97,7 +98,7 @@ class TestUsersShare:
             user="bill",
             permission=Permission(URL("storage://bob/resource"), Action.READ),
         )
-        assert ret is None  # at this moment no result
+        assert ret == Permission(URL("storage://bob/resource"), Action.MANAGE)
 
     async def test_revoke_unknown_user(self, mocked_revoke_client: Client) -> None:
         with pytest.raises(ResourceNotFound):

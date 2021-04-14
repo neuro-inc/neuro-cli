@@ -54,7 +54,15 @@ async def grant(root: Root, uri: str, user: str, permission: str) -> None:
         permission_obj = Permission(uri=uri_obj, action=action_obj)
         log.info(f"Using resource '{permission_obj.uri}'")
 
-        await root.client.users.share(user, permission_obj)
+        actual_permission = await root.client.users.share(user, permission_obj)
+
+        if actual_permission != permission_obj:
+            log.warning(
+                Text.assemble(
+                    f"User already had higher permission: {actual_permission.action}"
+                )
+            )
+        log.info("Grant succeeded")
 
     except ValueError as e:
         raise ValueError(f"Could not share resource '{uri}': {e}") from e
