@@ -1,5 +1,5 @@
 Fixed unexpected behavior in `neuro admin update-resource-preset` when working with existing preset:
 Now there are two commands:
 - `neuro admin add-resource-preset` to add new preset, options use default values if not specified
-- `neuro admin add-resource-preset` to add new preset, options use previous value if not specified
+- `neuro admin update-resource-preset` to update existing preset, options use previous values if not specified
 Also dropped `cluster_name` argument to fix bug when presets were overwritten by active cluster presets.
