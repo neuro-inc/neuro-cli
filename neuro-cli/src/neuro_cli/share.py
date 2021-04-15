@@ -59,7 +59,7 @@ async def grant(root: Root, uri: str, user: str, permission: str) -> None:
         if actual_permission != permission_obj:
             log.warning(
                 Text.assemble(
-                    f"User already had higher permission: {actual_permission.action}"
+                    f"User already has higher permission: {actual_permission.action}"
                 )
             )
         log.info("Grant succeeded")
