@@ -72,16 +72,19 @@ class Users(metaclass=NoPublicConstructor):
             ret.append(Share(item["user"], Permission(uri, action)))
         return ret
 
-    async def share(self, user: str, permission: Permission) -> None:
+    async def share(self, user: str, permission: Permission) -> Permission:
         url = self._get_user_url(user) / "permissions"
         payload = [_permission_to_api(permission)]
         auth = await self._config._api_auth()
         async with self._core.request("POST", url, json=payload, auth=auth) as resp:
-            #  TODO: server part contain TODO record for returning more then
-            #  HTTPCreated, this part must me refactored then
             if resp.status != HTTPCreated.status_code:
                 raise ClientError("Server return unexpected result.")
-        return None
+            payload = await resp.json()
+            perm = payload[0]
+            return Permission(
+                uri=URL(perm["uri"]),
+                action=Action(perm["action"]),
+            )
 
     async def revoke(self, user: str, uri: URL) -> None:
         url = self._get_user_url(user) / "permissions"
