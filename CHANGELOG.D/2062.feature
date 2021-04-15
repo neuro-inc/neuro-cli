@@ -1,1 +1,0 @@
-Commands `neuro ps` and `neuro top` support now outputting several fields in one table cell. By default fields ID and NAME and fields STATUS and WHEN are merged. This saves horisontal space and improves output of long fields (e.g. COMMAND, DESCRIPTION or TAGS).

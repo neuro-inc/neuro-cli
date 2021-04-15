@@ -5,6 +5,31 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.4.15 (2021-04-15)
+==================================
+
+Features
+--------
+
+
+- Commands `neuro ps` and `neuro top` support now outputting several fields in one table cell. By default fields ID and NAME and fields STATUS and WHEN are merged. This saves horisontal space and improves output of long fields (e.g. COMMAND, DESCRIPTION or TAGS). ([#2062](https://github.com/neuro-inc/platform-client-python/issues/2062))
+
+- Added automatic re-attach if container is still alive after `neuro run`/`neuro attach` disconnects. ([#2085](https://github.com/neuro-inc/platform-client-python/issues/2085))
+
+- Added warning about actual privilege level if `neuro grant` grants privilege less then user already has. ([#2092](https://github.com/neuro-inc/platform-client-python/issues/2092))
+
+
+Bugfixes
+--------
+
+
+- Fixed unexpected behavior in `neuro admin update-resource-preset` when working with existing preset:
+  Now there are two commands:
+  - `neuro admin add-resource-preset` to add new preset, options use default values if not specified
+  - `neuro admin update-resource-preset` to update existing preset, options use previous values if not specified
+  Also dropped `cluster_name` argument to fix bug when presets were overwritten by active cluster presets. ([#2091](https://github.com/neuro-inc/platform-client-python/issues/2091))
+
+
 Neuro SDK/CLI 21.4.13 (2021-04-13)
 ==================================
 
