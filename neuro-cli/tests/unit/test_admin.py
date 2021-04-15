@@ -71,7 +71,7 @@ def test_show_cluster_config_options(run_cli: _RunCli) -> None:
         assert json.loads(capture.out) == sample_data
 
 
-def test_update_resource_preset(run_cli: _RunCli) -> None:
+def test_add_resource_preset(run_cli: _RunCli) -> None:
     with ExitStack() as exit_stack:
         admin_mocked = exit_stack.enter_context(
             mock.patch.object(_Admin, "update_cluster_resource_presets")
@@ -94,6 +94,9 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
                 scheduler_enabled=True,
                 preemptible_node=True,
             )
+            exit_stack.enter_context(
+                mock.patch.object(Config, "presets", dict(presets))
+            )
 
         async def fetch() -> None:
             pass
@@ -104,8 +107,7 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
         capture = run_cli(
             [
                 "admin",
-                "update-resource-preset",
-                "default",
+                "add-resource-preset",
                 "cpu-micro",
                 "--credits-per-hour",
                 "10.00",
@@ -125,10 +127,10 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
                 "--preemptible-node",
             ]
         )
-        assert capture.code == 0
+        assert capture.code == 0, capture.out + capture.err
 
 
-def test_update_resource_preset_print_result(run_cli: _RunCli) -> None:
+def test_add_existing_resource_preset_not_alloed(run_cli: _RunCli) -> None:
     with ExitStack() as exit_stack:
         admin_mocked = exit_stack.enter_context(
             mock.patch.object(_Admin, "update_cluster_resource_presets")
@@ -146,14 +148,80 @@ def test_update_resource_preset_print_result(run_cli: _RunCli) -> None:
         admin_mocked.side_effect = update_cluster_resource_presets
         config_mocked.side_effect = fetch
 
-        capture = run_cli(["admin", "update-resource-preset", "default", "cpu-micro"])
+        capture = run_cli(
+            [
+                "admin",
+                "add-resource-preset",
+                "cpu-small",
+            ]
+        )
+        assert capture.code == 127, capture.out + capture.err
+        assert "Preset 'cpu-small' already exists" in capture.err
+
+
+def test_update_resource_preset(run_cli: _RunCli) -> None:
+    with ExitStack() as exit_stack:
+        admin_mocked = exit_stack.enter_context(
+            mock.patch.object(_Admin, "update_cluster_resource_presets")
+        )
+        config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
+
+        async def update_cluster_resource_presets(
+            cluster_name: str, presets: Mapping[str, Preset]
+        ) -> None:
+            assert cluster_name == "default"
+            assert "cpu-small" in presets
+            assert presets["cpu-small"] == Preset(
+                credits_per_hour=Decimal("122"), cpu=7, memory_mb=2 * 1024
+            )
+            exit_stack.enter_context(
+                mock.patch.object(Config, "presets", dict(presets))
+            )
+
+        async def fetch() -> None:
+            pass
+
+        admin_mocked.side_effect = update_cluster_resource_presets
+        config_mocked.side_effect = fetch
+
+        capture = run_cli(
+            [
+                "admin",
+                "update-resource-preset",
+                "cpu-small",
+                "--credits-per-hour",
+                "122.00",
+            ]
+        )
+        assert capture.code == 0, capture.out + capture.err
+
+
+def test_add_resource_preset_print_result(run_cli: _RunCli) -> None:
+    with ExitStack() as exit_stack:
+        admin_mocked = exit_stack.enter_context(
+            mock.patch.object(_Admin, "update_cluster_resource_presets")
+        )
+        config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
+
+        async def update_cluster_resource_presets(
+            cluster_name: str, presets: Mapping[str, Preset]
+        ) -> None:
+            exit_stack.enter_context(
+                mock.patch.object(Config, "presets", dict(presets))
+            )
+
+        async def fetch() -> None:
+            pass
+
+        admin_mocked.side_effect = update_cluster_resource_presets
+        config_mocked.side_effect = fetch
+
+        capture = run_cli(["admin", "add-resource-preset", "cpu-micro"])
         assert not capture.err
-        assert capture.out == "Updated resource preset cpu-micro in cluster default"
+        assert capture.out == "Added resource preset cpu-micro in cluster default"
 
         # Same with quiet mode
-        capture = run_cli(
-            ["-q", "admin", "update-resource-preset", "default", "cpu-micro"]
-        )
+        capture = run_cli(["-q", "admin", "add-resource-preset", "cpu-micro-2"])
         assert not capture.err
         assert not capture.out
 
@@ -168,7 +236,9 @@ def test_remove_resource_preset_print_result(run_cli: _RunCli) -> None:
         async def update_cluster_resource_presets(
             cluster_name: str, presets: Mapping[str, Preset]
         ) -> None:
-            pass
+            exit_stack.enter_context(
+                mock.patch.object(Config, "presets", dict(presets))
+            )
 
         async def fetch() -> None:
             pass
@@ -176,14 +246,12 @@ def test_remove_resource_preset_print_result(run_cli: _RunCli) -> None:
         admin_mocked.side_effect = update_cluster_resource_presets
         config_mocked.side_effect = fetch
 
-        capture = run_cli(["admin", "remove-resource-preset", "default", "cpu-small"])
+        capture = run_cli(["admin", "remove-resource-preset", "cpu-small"])
         assert not capture.err
         assert capture.out == "Removed resource preset cpu-small from cluster default"
 
         # Same with quiet mode
-        capture = run_cli(
-            ["-q", "admin", "remove-resource-preset", "default", "cpu-small"]
-        )
+        capture = run_cli(["-q", "admin", "remove-resource-preset", "cpu-large"])
         assert not capture.err
         assert not capture.out
 
@@ -206,6 +274,6 @@ def test_remove_resource_preset_not_exists(run_cli: _RunCli) -> None:
         admin_mocked.side_effect = update_cluster_resource_presets
         config_mocked.side_effect = fetch
 
-        capture = run_cli(["admin", "remove-resource-preset", "default", "unknown"])
+        capture = run_cli(["admin", "remove-resource-preset", "unknown"])
         assert capture.code
         assert "Preset 'unknown' not found" in capture.err

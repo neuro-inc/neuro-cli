@@ -12,6 +12,7 @@
 		* [neuro admin remove-cluster-user](#neuro-admin-remove-cluster-user)
 		* [neuro admin set-user-quota](#neuro-admin-set-user-quota)
 		* [neuro admin add-user-quota](#neuro-admin-add-user-quota)
+		* [neuro admin add-resource-preset](#neuro-admin-add-resource-preset)
 		* [neuro admin update-resource-preset](#neuro-admin-update-resource-preset)
 		* [neuro admin remove-resource-preset](#neuro-admin-remove-resource-preset)
 	* [neuro job](#neuro-job)
@@ -207,7 +208,8 @@ Name | Description|
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
 | _[neuro admin set\-user-quota](#neuro-admin-set-user-quota)_| Set user quota to given values |
 | _[neuro admin add\-user-quota](#neuro-admin-add-user-quota)_| Add given values to user quota |
-| _[neuro admin update\-resource-preset](#neuro-admin-update-resource-preset)_| Add/update resource preset |
+| _[neuro admin add\-resource-preset](#neuro-admin-add-resource-preset)_| Add new resource preset |
+| _[neuro admin update\-resource-preset](#neuro-admin-update-resource-preset)_| Update existing resource preset |
 | _[neuro admin remove\-resource-preset](#neuro-admin-remove-resource-preset)_| Remove resource preset |
 
 
@@ -393,14 +395,14 @@ Name | Description|
 
 
 
-### neuro admin update-resource-preset
+### neuro admin add-resource-preset
 
-Add/update resource preset
+Add new resource preset
 
 **Usage:**
 
 ```bash
-neuro admin update-resource-preset [OPTIONS] CLUSTER_NAME PRESET_NAME
+neuro admin add-resource-preset [OPTIONS] PRESET_NAME
 ```
 
 **Options:**
@@ -421,6 +423,34 @@ Name | Description|
 
 
 
+### neuro admin update-resource-preset
+
+Update existing resource preset
+
+**Usage:**
+
+```bash
+neuro admin update-resource-preset [OPTIONS] PRESET_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\-c, --cpu NUMBER_|Number of CPUs|
+|_\--credits-per-hour AMOUNT_|Price of running job of this preset for an hour in credits|
+|_\-g, --gpu NUMBER_|Number of GPUs|
+|_\--gpu-model MODEL_|GPU model|
+|_\-m, --memory AMOUNT_|Memory amount|
+|_\--preemptible-node / --non-preemptible-node_|Use a lower-cost preemptible instance|
+|_\-p, --scheduler / -P, --no-scheduler_|Use round robin scheduler for jobs|
+|_\--tpu-sw-version VERSION_|TPU software version|
+|_\--tpu-type TYPE_|TPU type|
+
+
+
+
 ### neuro admin remove-resource-preset
 
 Remove resource preset
@@ -428,7 +458,7 @@ Remove resource preset
 **Usage:**
 
 ```bash
-neuro admin remove-resource-preset [OPTIONS] CLUSTER_NAME PRESET_NAME
+neuro admin remove-resource-preset [OPTIONS] PRESET_NAME
 ```
 
 **Options:**
