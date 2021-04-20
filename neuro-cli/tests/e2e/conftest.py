@@ -12,7 +12,7 @@ import tempfile
 from collections import namedtuple
 from contextlib import contextmanager, suppress
 from datetime import datetime, timedelta
-from functools import cached_property
+from functools import lru_cache
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
@@ -133,17 +133,20 @@ class Helper:
             for job in self._executed_jobs:
                 self.kill_job(job, wait=False)
 
-    @cached_property
+    @property
+    @lru_cache()
     def username(self) -> str:
         config = self.get_config()
         return config.username
 
-    @cached_property
+    @property
+    @lru_cache()
     def cluster_name(self) -> str:
         config = self.get_config()
         return config.cluster_name
 
-    @cached_property
+    @property
+    @lru_cache()
     def token(self) -> str:
         config = self.get_config()
 
@@ -153,7 +156,8 @@ class Helper:
 
         return get_token()
 
-    @cached_property
+    @property
+    @lru_cache()
     def registry_url(self) -> URL:
         config = self.get_config()
         return config.registry_url
