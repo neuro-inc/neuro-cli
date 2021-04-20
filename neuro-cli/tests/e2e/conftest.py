@@ -12,6 +12,7 @@ import tempfile
 from collections import namedtuple
 from contextlib import contextmanager, suppress
 from datetime import datetime, timedelta
+from functools import cached_property
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
@@ -132,17 +133,17 @@ class Helper:
             for job in self._executed_jobs:
                 self.kill_job(job, wait=False)
 
-    @property
+    @cached_property
     def username(self) -> str:
         config = self.get_config()
         return config.username
 
-    @property
+    @cached_property
     def cluster_name(self) -> str:
         config = self.get_config()
         return config.cluster_name
 
-    @property
+    @cached_property
     def token(self) -> str:
         config = self.get_config()
 
@@ -152,7 +153,7 @@ class Helper:
 
         return get_token()
 
-    @property
+    @cached_property
     def registry_url(self) -> URL:
         config = self.get_config()
         return config.registry_url
@@ -469,7 +470,7 @@ class Helper:
     ) -> SysCap:
         __tracebackhide__ = True
 
-        log.info("Run 'neuro %s'", " ".join(arguments))
+        log.warning("Run 'neuro %s'", " ".join(arguments))
 
         # 5 min timeout is overkill
         proc = subprocess.run(
