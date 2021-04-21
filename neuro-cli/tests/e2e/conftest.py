@@ -66,6 +66,15 @@ from neuro_cli.utils import resolve_job
 
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
 
+if sys.version_info >= (3, 8):  # pragma: no cover
+    from functools import cached_property
+else:
+    from functools import lru_cache
+
+    def cached_property(func):
+        return property(lru_cache()(func))
+
+
 JOB_TIMEOUT = 5 * 60
 JOB_WAIT_SLEEP_SECONDS = 2
 JOB_OUTPUT_TIMEOUT = 5 * 60
@@ -132,17 +141,17 @@ class Helper:
             for job in self._executed_jobs:
                 self.kill_job(job, wait=False)
 
-    @property
+    @cached_property
     def username(self) -> str:
         config = self.get_config()
         return config.username
 
-    @property
+    @cached_property
     def cluster_name(self) -> str:
         config = self.get_config()
         return config.cluster_name
 
-    @property
+    @cached_property
     def token(self) -> str:
         config = self.get_config()
 
@@ -152,7 +161,7 @@ class Helper:
 
         return get_token()
 
-    @property
+    @cached_property
     def registry_url(self) -> URL:
         config = self.get_config()
         return config.registry_url

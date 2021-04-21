@@ -5,6 +5,7 @@ import shlex
 import subprocess
 import sys
 import uuid
+from asyncio import AbstractEventLoop
 from contextlib import suppress
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -964,7 +965,7 @@ def test_e2e_job_top(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_e2e_job_top_filtering(helper: Helper) -> None:
+def test_e2e_job_top_filtering(helper: Helper, loop: AbstractEventLoop) -> None:
     job_name = f"test-job-{str(uuid4())[:8]}"
     description = str(uuid4())
     command = "sleep 1000"
@@ -978,34 +979,54 @@ def test_e2e_job_top_filtering(helper: Helper) -> None:
     )
     print("... done")
 
-    for stdout in try_job_top(helper, "--name", job_name):
-        if job2_id in stdout:
-            # got response from job top telemetery
-            assert job1_id not in stdout
-            break
+    def _check1() -> None:
+        for stdout in try_job_top(helper, "--name", job_name):
+            if job2_id in stdout:
+                # got response from job top telemetery
+                assert job1_id not in stdout
+                break
 
-    for stdout in try_job_top(helper, "--owner", helper.username):
-        if job1_id in stdout and job2_id in stdout:
-            # got response from job top telemetery
-            break
+    def _check2() -> None:
+        for stdout in try_job_top(helper, "--owner", helper.username):
+            if job1_id in stdout and job2_id in stdout:
+                # got response from job top telemetery
+                break
 
-    for stdout in try_job_top(helper, "--owner", "ME", "--description", description):
-        if job1_id in stdout:
-            # got response from job top telemetery
-            assert job2_id not in stdout
-            break
+    def _check3() -> None:
+        for stdout in try_job_top(
+            helper, "--owner", "ME", "--description", description
+        ):
+            if job1_id in stdout:
+                # got response from job top telemetery
+                assert job2_id not in stdout
+                break
 
-    for stdout in try_job_top(helper, "--owner", helper.username, "--sort", "created"):
-        if job1_id in stdout and job2_id in stdout:
-            # got response from job top telemetery
-            assert stdout.index(job1_id) < stdout.index(job2_id)
-            break
+    def _check4() -> None:
+        for stdout in try_job_top(
+            helper, "--owner", helper.username, "--sort", "created"
+        ):
+            if job1_id in stdout and job2_id in stdout:
+                # got response from job top telemetery
+                assert stdout.index(job1_id) < stdout.index(job2_id)
+                break
 
-    for stdout in try_job_top(helper, "--owner", helper.username, "--sort", "-created"):
-        if job1_id in stdout and job2_id in stdout:
-            # got response from job top telemetery
-            assert stdout.index(job1_id) > stdout.index(job2_id)
-            break
+    def _check5() -> None:
+        for stdout in try_job_top(
+            helper, "--owner", helper.username, "--sort", "-created"
+        ):
+            if job1_id in stdout and job2_id in stdout:
+                # got response from job top telemetery
+                assert stdout.index(job1_id) > stdout.index(job2_id)
+                break
+
+    checks = [
+        loop.run_in_executor(None, _check1),
+        loop.run_in_executor(None, _check2),
+        loop.run_in_executor(None, _check3),
+        loop.run_in_executor(None, _check4),
+        loop.run_in_executor(None, _check5),
+    ]
+    loop.run_until_complete(asyncio.gather(*checks))
 
     helper.kill_job(job1_id, wait=True)
     helper.kill_job(job2_id, wait=True)
