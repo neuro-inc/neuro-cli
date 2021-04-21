@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Awaitable, Callable, Optional
+from typing import Awaitable, Callable, List, Optional
 
 import aiohttp
 from yarl import URL
@@ -154,13 +154,20 @@ __all__ = (
 
 
 def get(
-    *, path: Optional[Path] = None, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT
+    *,
+    path: Optional[Path] = None,
+    timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
+    trace_configs: Optional[List[aiohttp.TraceConfig]] = None,
 ) -> _ContextManager[Client]:
-    return _ContextManager[Client](_get(path, timeout))
+    return _ContextManager[Client](_get(path, timeout, trace_configs))
 
 
-async def _get(path: Optional[Path], timeout: aiohttp.ClientTimeout) -> Client:
-    return await Factory(path).get(timeout=timeout)
+async def _get(
+    path: Optional[Path],
+    timeout: aiohttp.ClientTimeout,
+    trace_configs: Optional[List[aiohttp.TraceConfig]],
+) -> Client:
+    return await Factory(path, trace_configs).get(timeout=timeout)
 
 
 async def login(
