@@ -204,6 +204,8 @@ async def test_images_delete(
         captured = helper.run_cli(["-q", "image", "ls"])
         if img_name in captured.out:
             time.sleep(5)
+        else:
+            break
 
     assert img_name not in captured.out
 
