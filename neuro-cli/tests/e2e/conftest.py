@@ -529,6 +529,7 @@ class Helper:
             self._default_args(verbosity, network_timeout) + arguments,
             encoding=encoding,
             echo=echo,
+            timeout=JOB_OUTPUT_TIMEOUT,
         )
 
     def autocomplete(
@@ -537,7 +538,7 @@ class Helper:
         *,
         verbosity: int = 0,
         network_timeout: float = NETWORK_TIMEOUT,
-        timeout: float = 30,
+        timeout: float = JOB_OUTPUT_TIMEOUT,
     ) -> str:
         __tracebackhide__ = True
 
