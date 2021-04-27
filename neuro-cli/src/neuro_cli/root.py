@@ -75,7 +75,7 @@ class Status(RichStatus):
         spinner: Optional[str] = None,
         spinner_style: Optional[StyleType] = None,
         speed: Optional[float] = None,
-    ):
+    ) -> None:
         if status is not None:
             self.status = status
         if spinner is not None:

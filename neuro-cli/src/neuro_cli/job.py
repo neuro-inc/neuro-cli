@@ -437,11 +437,11 @@ async def ls(
             datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
         )
 
-    with root.status("Fetching jobs") as status:
+    with root.status("Fetching jobs") as rich_status:
         jobs_list = []
         async for job in jobs:
             jobs_list.append(job)
-            status.update(f"Fetching jobs ({len(jobs_list)} loaded)")
+            rich_status.update(f"Fetching jobs ({len(jobs_list)} loaded)")
 
     with root.pager():
         root.print(formatter(jobs_list))
