@@ -21,7 +21,7 @@ setup(
         "aiodocker>=0.18.7",
         "neuro-sdk>=21.4.23",
         "click>=7.0",
-        "humanize>=0.5",
+        "humanize>=3.3",
         "typing_extensions>=3.7.4",
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead

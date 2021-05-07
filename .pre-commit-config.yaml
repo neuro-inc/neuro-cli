@@ -17,7 +17,7 @@ repos:
   - id: check-merge-conflict
     exclude: "rst$"
 - repo: https://github.com/asottile/yesqa
-  rev: v1.2.2
+  rev: v1.2.3
   hooks:
   - id: yesqa
 - repo: https://github.com/aio-libs/sort-all
@@ -29,7 +29,7 @@ repos:
   hooks:
   - id: isort
 - repo: https://github.com/psf/black
-  rev: '20.8b1'
+  rev: '21.5b0'
   hooks:
   - id: black
     language_version: python3 # Should be a command that runs python3.6+
@@ -56,7 +56,7 @@ repos:
         neuro-sdk/docs/spelling_wordlist.txt
       )$
 - repo: https://github.com/asottile/pyupgrade
-  rev: 'v2.12.0'
+  rev: 'v2.14.0'
   hooks:
   - id: pyupgrade
     args: ['--py36-plus']
