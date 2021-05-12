@@ -291,6 +291,10 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     help="Filter out jobs by status (multiple option).",
 )
 @option(
+    "--cluster",
+    help="Show jobs on a specified cluster (the current cluster by default).",
+)
+@option(
     "-o",
     "--owner",
     multiple=True,
@@ -366,6 +370,7 @@ async def ls(
     root: Root,
     status: Sequence[str],
     all: bool,
+    cluster: str,
     name: str,
     distinct: bool,
     recent_first: bool,
@@ -399,7 +404,8 @@ async def ls(
         owners.remove("ME")
         owners.add(root.client.config.username)
     tags = set(tag)
-    cluster_name = root.client.config.cluster_name
+    if not cluster:
+        cluster = root.client.config.cluster_name
     jobs = root.client.jobs.list(
         statuses=statuses,
         name=name,
@@ -408,7 +414,7 @@ async def ls(
         since=_parse_date(since),
         until=_parse_date(until),
         reverse=recent_first,
-        cluster_name=cluster_name,
+        cluster_name=cluster,
     )
 
     # client-side filtering
@@ -543,6 +549,10 @@ async def browse(root: Root, job: str) -> None:
 @command()
 @argument("jobs", nargs=-1, required=False, type=JOB)
 @option(
+    "--cluster",
+    help="Show jobs on a specified cluster (the current cluster by default).",
+)
+@option(
     "-o",
     "--owner",
     multiple=True,
@@ -613,6 +623,7 @@ async def browse(root: Root, job: str) -> None:
 async def top(
     root: Root,
     jobs: Sequence[str],
+    cluster: str,
     name: str,
     tag: Sequence[str],
     owner: Sequence[str],
@@ -638,7 +649,8 @@ async def top(
 
     sort_keys = parse_sort_keys(sort)
     format = await calc_top_columns(root.client, format)
-    cluster_name = root.client.config.cluster_name
+    if not cluster:
+        cluster = root.client.config.cluster_name
 
     observed: Set[str] = set()
     loop = asyncio.get_event_loop()
@@ -694,7 +706,7 @@ async def top(
                     tags=tags,
                     since=since_dt,
                     until=until_dt,
-                    cluster_name=cluster_name,
+                    cluster_name=cluster,
                 )
 
                 # client-side filtering
