@@ -33,9 +33,10 @@ async def show(root: Root) -> None:
     """
     Print current settings.
     """
+    cluster_name = root.client.config.cluster_name
     fmt = ConfigFormatter()
     try:
-        jobs_capacity = await root.client.jobs.get_capacity()
+        jobs_capacity = await root.client.jobs.get_capacity(cluster_name=cluster_name)
     except ClientConnectionError:
         jobs_capacity = {}
     root.print(fmt(root.client.config, jobs_capacity))
@@ -234,8 +235,9 @@ async def get_clusters(root: Root) -> None:
     Fetch and display the list of available clusters.
 
     """
-    root.print("Fetch the list of available clusters...", style="dim")
-    await root.client.config.fetch()
+
+    with root.status("Fetching the list of available clusters"):
+        await root.client.config.fetch()
     fmt = ClustersFormatter()
     with root.pager():
         root.print(
@@ -252,8 +254,8 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
     name is omitted (default).
 
     """
-    root.print("Fetch the list of available clusters...", style="dim")
-    await root.client.config.fetch()
+    with root.status("Fetching the list of available clusters"):
+        await root.client.config.fetch()
     if cluster_name is None:
         if not root.tty:
             raise click.BadArgumentUsage(
