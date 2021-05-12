@@ -13,14 +13,14 @@ Blob storage operations.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_cp_](blob.md#cp) | Simple utility to copy files and... |
+| [_cp_](blob.md#cp) | Simple utility to copy files and directories... |
 | [_ls_](blob.md#ls) | List buckets or bucket contents |
 | [_glob_](blob.md#glob) | List resources that match PATTERNS |
 
 
 ### cp
 
-Simple utility to copy files and...
+Simple utility to copy files and directories...
 
 
 #### Usage
@@ -67,7 +67,7 @@ Blob Storage metadata during upload.
 | _--exclude-from-files FILES_ | A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp-exclude-from-files configuration variable documented in "neuro help user-config" |
 | _--exclude_ | Exclude files and directories that match the specified pattern. |
 | _--include_ | Don't exclude files and directories that match the specified pattern. |
-| _--glob / --no-glob_ | Expand glob patterns in SOURCES with explicit scheme.  _\[default: glob\]_ |
+| _--glob / --no-glob_ | Expand glob patterns in SOURCES with explicit scheme.  _\[default: True\]_ |
 | _-T, --no-target-directory_ | Treat DESTINATION as a normal file. |
 | _-p, --progress / -P, --no-progress_ | Show progress, on by default. |
 | _-r, --recursive_ | Recursive copy, off by default |

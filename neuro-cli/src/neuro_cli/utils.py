@@ -151,7 +151,7 @@ class NeuroClickMixin:
         args = [i for i in ret if not isinstance(i, click.Option)]
         opts = [i for i in ret if isinstance(i, click.Option)]
 
-        help_names = set(self.get_help_option_names(ctx))
+        help_names = set(self.get_help_option_names(ctx))  # type: ignore
 
         def sort_key(opt: click.Option) -> Tuple[bool, str]:
             flag = set(opt.opts) & help_names or set(opt.secondary_opts) & help_names

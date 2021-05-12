@@ -15,7 +15,7 @@ Client configuration.
 | :--- | :--- |
 | [_login_](config.md#login) | Log into Neuro Platform |
 | [_login-with-token_](config.md#login-with-token) | Log into Neuro Platform with token |
-| [_login-headless_](config.md#login-headless) | Log into Neuro Platform from non-GUI... |
+| [_login-headless_](config.md#login-headless) | Log into Neuro Platform from non-GUI server... |
 | [_show_](config.md#show) | Print current settings |
 | [_show-token_](config.md#show-token) | Print current authorization token |
 | [_show-quota_](config.md#show-quota) | Print quota and remaining computation time... |
@@ -76,7 +76,7 @@ by administration team.
 
 ### login-headless
 
-Log into Neuro Platform from non-GUI...
+Log into Neuro Platform from non-GUI server...
 
 
 #### Usage

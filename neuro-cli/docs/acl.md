@@ -28,7 +28,7 @@ Shares resource with another user
 #### Usage
 
 ```bash
-neuro acl grant [OPTIONS] URI USER {read|write|manage}
+neuro acl grant [OPTIONS] URI USER [read|write|manage]
 ```
 
 Shares resource with another user.
