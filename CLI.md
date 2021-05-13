@@ -414,9 +414,9 @@ Name | Description|
 |_\--credits-per-hour AMOUNT_|Price of running job of this preset for an hour in credits  \[default: 0]|
 |_\-g, --gpu NUMBER_|Number of GPUs|
 |_\--gpu-model MODEL_|GPU model|
-|_\-m, --memory AMOUNT_|Memory amount  \[default: 1G]|
-|_\--preemptible-node / --non-preemptible-node_|Use a lower-cost preemptible instance  \[default: False]|
-|_\-p, --scheduler / -P, --no-scheduler_|Use round robin scheduler for jobs  \[default: False]|
+|_\-m, --memory AMOUNT_|Memory amount  \[default: 1024]|
+|_\--preemptible-node / --non-preemptible-node_|Use a lower\-cost preemptible instance  \[default: non-preemptible-node]|
+|_\-p, --scheduler / -P, --no-scheduler_|Use round robin scheduler for jobs  \[default: no-scheduler]|
 |_\--tpu-sw-version VERSION_|TPU software version|
 |_\--tpu-type TYPE_|TPU type|
 
@@ -546,12 +546,12 @@ Name | Description|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables.|
 |_\--env-file PATH_|File with environment variables to pass|
-|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
+|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: x]|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\-n, --name NAME_|Optional job name|
-|_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
+|_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_--privileged_|Run job in privileged mode, if it is supported by cluster.  \[default: False]|
@@ -562,8 +562,8 @@ Name | Description|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files.|
-|_\--wait-for-seat / --no-wait-for-seat_|Wait for total running jobs quota  \[default: False]|
-|_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_\--wait-for-seat / --no-wait-for-seat_|Wait for total running jobs quota  \[default: no\-wait-for-seat]|
+|_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: wait-start]|
 |_\-w, --workdir TEXT_|Working directory inside the container|
 
 
@@ -806,7 +806,7 @@ Name | Description|
 |_--since DATE\_OR_TIMEDELTA_|Show jobs created after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_--sort COLUMNS_|Sort rows by specified column. Add "-" prefix to revert the sorting order. Multiple columns can be specified \(comma separated).  \[default: cpu]|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
-|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
+|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0.0]|
 |_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 
 
@@ -992,7 +992,7 @@ Name | Description|
 
 ### neuro storage cp
 
-Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/><br/>Use /dev/stdin and /dev/stdout file names to copy a file from terminal and<br/>print the content of file on the storage to console.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters<br/>that appear later in the command take precedence over filters that appear<br/>earlier in the command.  If neither \--exclude nor --include options are<br/>specified the default can be changed using the storage.cp-exclude<br/>configuration variable documented in "neuro help user-config".<br/>
+Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/><br/>Use /dev/stdin and /dev/stdout file names to copy a file from terminal and<br/>print the content of file on the storage to console.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters that<br/>appear later in the command take precedence over filters that appear earlier<br/>in the command.  If neither \--exclude nor --include options are specified the<br/>default can be changed using the storage.cp-exclude configuration variable<br/>documented in "neuro help user-config".<br/>
 
 **Usage:**
 
@@ -1039,7 +1039,7 @@ Name | Description|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
 |_--exclude_|Exclude files and directories that match the specified pattern.|
 |_--include_|Don't exclude files and directories that match the specified pattern.|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: glob]|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_\-r, --recursive_|Recursive copy, off by default|
@@ -1118,7 +1118,7 @@ neuro rm storage:foo/**/*.tmp
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: glob]|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_\-r, --recursive_|remove directories and their contents recursively|
 
@@ -1147,7 +1147,7 @@ Name | Description|
 
 ### neuro storage mv
 
-Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage,<br/>and DESTINATION must contain the full path to the target file or directory.<br/>
+Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage, and<br/>DESTINATION must contain the full path to the target file or directory.<br/>
 
 **Usage:**
 
@@ -1184,7 +1184,7 @@ neuro mv storage://{username}/foo.txt storage:bar.dat
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: glob]|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 
@@ -1239,8 +1239,8 @@ Name | Description|
 | _[neuro image push](#neuro-image-push)_| Push an image to platform registry |
 | _[neuro image pull](#neuro-image-pull)_| Pull an image from platform registry |
 | _[neuro image rm](#neuro-image-rm)_| Remove image from platform registry |
-| _[neuro image size](#neuro-image-size)_| Get image size Image name must be URL with image:// scheme |
-| _[neuro image digest](#neuro-image-digest)_| Get digest of an image from remote registry Image name must be URL with image://... |
+| _[neuro image size](#neuro-image-size)_| Get image size |
+| _[neuro image digest](#neuro-image-digest)_| Get digest of an image from remote registry |
 | _[neuro image tags](#neuro-image-tags)_| List tags for image in platform registry |
 
 
@@ -1269,7 +1269,7 @@ Name | Description|
 
 ### neuro image push
 
-Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contain tag.<br/>If tags not specified 'latest' will be used as value.<br/>
+Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contain tag. If<br/>tags not specified 'latest' will be used as value.<br/>
 
 **Usage:**
 
@@ -1517,7 +1517,7 @@ Name | Description|
 
 ### neuro config login-headless
 
-Log into Neuro Platform from non-GUI server environment.<br/><br/>URL is a platform entrypoint URL.<br/><br/>The command works similar to "neuro login" but instead of opening a browser<br/>for performing OAuth registration prints an URL that should be open on guest<br/>host.<br/><br/>Then user inputs a code displayed in a browser after successful login back<br/>in neuro command to finish the login process.
+Log into Neuro Platform from non-GUI server environment.<br/><br/>URL is a platform entrypoint URL.<br/><br/>The command works similar to "neuro login" but instead of opening a browser<br/>for performing OAuth registration prints an URL that should be open on guest<br/>host.<br/><br/>Then user inputs a code displayed in a browser after successful login back in<br/>neuro command to finish the login process.
 
 **Usage:**
 
@@ -1631,7 +1631,7 @@ Name | Description|
 
 ### neuro config switch-cluster
 
-Switch the active cluster.<br/><br/>CLUSTER_NAME is the cluster name to select.  The interactive prompt is used<br/>if the name is omitted \(default).
+Switch the active cluster.<br/><br/>CLUSTER_NAME is the cluster name to select.  The interactive prompt is used if<br/>the name is omitted \(default).
 
 **Usage:**
 
@@ -1721,7 +1721,7 @@ Provide an instruction for shell completion generation.
 **Usage:**
 
 ```bash
-neuro completion generate [OPTIONS] [bash|zsh]
+neuro completion generate [OPTIONS] {bash|zsh}
 ```
 
 **Options:**
@@ -1740,7 +1740,7 @@ Automatically patch shell configuration profile to enable completion
 **Usage:**
 
 ```bash
-neuro completion patch [OPTIONS] [bash|zsh]
+neuro completion patch [OPTIONS] {bash|zsh}
 ```
 
 **Options:**
@@ -1789,7 +1789,7 @@ Shares resource with another user.<br/><br/>URI shared resource.<br/><br/>USER u
 **Usage:**
 
 ```bash
-neuro acl grant [OPTIONS] URI USER [read|write|manage]
+neuro acl grant [OPTIONS] URI USER {read|write|manage}
 ```
 
 **Examples:**
@@ -1842,7 +1842,7 @@ Name | Description|
 
 ### neuro acl list
 
-List shared resources.<br/><br/>The command displays a list of resources shared BY current user \(default).<br/><br/>To display a list of resources shared WITH current user apply --shared<br/>option.<br/>
+List shared resources.<br/><br/>The command displays a list of resources shared BY current user \(default).<br/><br/>To display a list of resources shared WITH current user apply --shared option.<br/>
 
 **Usage:**
 
@@ -1958,7 +1958,7 @@ Name | Description|
 
 ### neuro blob cp
 
-Simple utility to copy files and directories into and from Blob Storage.<br/><br/>Either SOURCES or DESTINATION should have `blob://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy<br/>files between Blob Storage \(`blob://`) destination, nor with `storage://`<br/>scheme paths.<br/><br/>Use `/dev/stdin` and `/dev/stdout` file names to upload a file from standard<br/>input or output to stdout.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters<br/>that appear later in the command take precedence over filters that appear<br/>earlier in the command.  If neither \--exclude nor --include options are<br/>specified the default can be changed using the storage.cp-exclude<br/>configuration variable documented in "neuro help user-config".<br/><br/>File permissions, modification times and other attributes will not be passed<br/>to Blob Storage metadata during upload.
+Simple utility to copy files and directories into and from Blob Storage.<br/><br/>Either SOURCES or DESTINATION should have `blob://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy files<br/>between Blob Storage \(`blob://`) destination, nor with `storage://` scheme<br/>paths.<br/><br/>Use `/dev/stdin` and `/dev/stdout` file names to upload a file from standard<br/>input or output to stdout.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters that<br/>appear later in the command take precedence over filters that appear earlier<br/>in the command.  If neither \--exclude nor --include options are specified the<br/>default can be changed using the storage.cp-exclude configuration variable<br/>documented in "neuro help user-config".<br/><br/>File permissions, modification times and other attributes will not be passed<br/>to Blob Storage metadata during upload.
 
 **Usage:**
 
@@ -1975,7 +1975,7 @@ Name | Description|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
 |_--exclude_|Exclude files and directories that match the specified pattern.|
 |_--include_|Don't exclude files and directories that match the specified pattern.|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: glob]|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
 |_\-r, --recursive_|Recursive copy, off by default|
@@ -2174,7 +2174,7 @@ Name | Description|
 
 ### neuro disk create
 
-Create a disk with at least storage amount STORAGE.<br/><br/>To specify the amount, you can use the following suffixes: "kKMGTPEZY" To<br/>use decimal quantities, append "b" or "B". For example: - 1K or 1k is 1024<br/>bytes - 1Kb or 1KB is 1000 bytes - 20G is 20 * 2 ^ 30 bytes - 20Gb or 20GB<br/>is 20.000.000.000 bytes<br/><br/>Note that server can have big granularity \(for example, 1G) so it will<br/>possibly round-up the amount you requested.<br/>
+Create a disk with at least storage amount STORAGE.<br/><br/>To specify the amount, you can use the following suffixes: "kKMGTPEZY" To use<br/>decimal quantities, append "b" or "B". For example: - 1K or 1k is 1024 bytes -<br/>1Kb or 1KB is 1000 bytes - 20G is 20 * 2 ^ 30 bytes - 20Gb or 20GB is<br/>20.000.000.000 bytes<br/><br/>Note that server can have big granularity \(for example, 1G) so it will<br/>possibly round-up the amount you requested.<br/>
 
 **Usage:**
 
@@ -2298,12 +2298,12 @@ Name | Description|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables.|
 |_\--env-file PATH_|File with environment variables to pass|
-|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: True]|
+|_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: x]|
 |_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\-n, --name NAME_|Optional job name|
-|_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: False]|
+|_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_--privileged_|Run job in privileged mode, if it is supported by cluster.  \[default: False]|
@@ -2314,8 +2314,8 @@ Name | Description|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
 |_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files.|
-|_\--wait-for-seat / --no-wait-for-seat_|Wait for total running jobs quota  \[default: False]|
-|_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: True]|
+|_\--wait-for-seat / --no-wait-for-seat_|Wait for total running jobs quota  \[default: no\-wait-for-seat]|
+|_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: wait-start]|
 |_\-w, --workdir TEXT_|Working directory inside the container|
 
 
@@ -2550,7 +2550,7 @@ Name | Description|
 |_--since DATE\_OR_TIMEDELTA_|Show jobs created after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_--sort COLUMNS_|Sort rows by specified column. Add "-" prefix to revert the sorting order. Multiple columns can be specified \(comma separated).  \[default: cpu]|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
-|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
+|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0.0]|
 |_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 
 
@@ -2625,7 +2625,7 @@ Name | Description|
 
 ## neuro cp
 
-Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/><br/>Use /dev/stdin and /dev/stdout file names to copy a file from terminal and<br/>print the content of file on the storage to console.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters<br/>that appear later in the command take precedence over filters that appear<br/>earlier in the command.  If neither \--exclude nor --include options are<br/>specified the default can be changed using the storage.cp-exclude<br/>configuration variable documented in "neuro help user-config".<br/>
+Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/><br/>Use /dev/stdin and /dev/stdout file names to copy a file from terminal and<br/>print the content of file on the storage to console.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters that<br/>appear later in the command take precedence over filters that appear earlier<br/>in the command.  If neither \--exclude nor --include options are specified the<br/>default can be changed using the storage.cp-exclude configuration variable<br/>documented in "neuro help user-config".<br/>
 
 **Usage:**
 
@@ -2672,7 +2672,7 @@ Name | Description|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
 |_--exclude_|Exclude files and directories that match the specified pattern.|
 |_--include_|Don't exclude files and directories that match the specified pattern.|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: glob]|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_\-r, --recursive_|Recursive copy, off by default|
@@ -2732,7 +2732,7 @@ neuro rm storage:foo/**/*.tmp
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: glob]|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_\-r, --recursive_|remove directories and their contents recursively|
 
@@ -2761,7 +2761,7 @@ Name | Description|
 
 ## neuro mv
 
-Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage,<br/>and DESTINATION must contain the full path to the target file or directory.<br/>
+Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage, and<br/>DESTINATION must contain the full path to the target file or directory.<br/>
 
 **Usage:**
 
@@ -2798,7 +2798,7 @@ neuro mv storage://{username}/foo.txt storage:bar.dat
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: True]|
+|_\--glob / --no-glob_|Expand glob patterns in SOURCES  \[default: glob]|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file|
 |_\-t, --target-directory DIRECTORY_|Copy all SOURCES into DIRECTORY|
 
@@ -2828,7 +2828,7 @@ Name | Description|
 
 ## neuro push
 
-Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contain tag.<br/>If tags not specified 'latest' will be used as value.<br/>
+Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contain tag. If<br/>tags not specified 'latest' will be used as value.<br/>
 
 **Usage:**
 
@@ -2893,7 +2893,7 @@ Shares resource with another user.<br/><br/>URI shared resource.<br/><br/>USER u
 **Usage:**
 
 ```bash
-neuro share [OPTIONS] URI USER [read|write|manage]
+neuro share [OPTIONS] URI USER {read|write|manage}
 ```
 
 **Examples:**

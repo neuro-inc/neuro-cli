@@ -19,7 +19,7 @@ Storage operations.
 | [_rm_](storage.md#rm) | Remove files or directories |
 | [_mkdir_](storage.md#mkdir) | Make directories |
 | [_mv_](storage.md#mv) | Move or rename files and directories |
-| [_tree_](storage.md#tree) | List contents of directories in a tree-like... |
+| [_tree_](storage.md#tree) | List contents of directories in a... |
 
 
 ### cp
@@ -94,7 +94,7 @@ $ neuro cp storage:results/*.out .
 | _--exclude-from-files FILES_ | A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp-exclude-from-files configuration variable documented in "neuro help user-config" |
 | _--exclude_ | Exclude files and directories that match the specified pattern. |
 | _--include_ | Don't exclude files and directories that match the specified pattern. |
-| _--glob / --no-glob_ | Expand glob patterns in SOURCES with explicit scheme.  _\[default: True\]_ |
+| _--glob / --no-glob_ | Expand glob patterns in SOURCES with explicit scheme.  _\[default: glob\]_ |
 | _-T, --no-target-directory_ | Treat DESTINATION as a normal file. |
 | _-p, --progress / -P, --no-progress_ | Show progress, on by default in TTY mode, off otherwise. |
 | _-r, --recursive_ | Recursive copy, off by default |
@@ -181,7 +181,7 @@ $ neuro rm storage:foo/**/*.tmp
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _--glob / --no-glob_ | Expand glob patterns in PATHS  _\[default: True\]_ |
+| _--glob / --no-glob_ | Expand glob patterns in PATHS  _\[default: glob\]_ |
 | _-p, --progress / -P, --no-progress_ | Show progress, on by default in TTY mode, off otherwise. |
 | _-r, --recursive_ | remove directories and their contents recursively |
 
@@ -256,7 +256,7 @@ $ neuro mv storage://{username}/foo.txt storage:bar.dat
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _--glob / --no-glob_ | Expand glob patterns in SOURCES  _\[default: True\]_ |
+| _--glob / --no-glob_ | Expand glob patterns in SOURCES  _\[default: glob\]_ |
 | _-T, --no-target-directory_ | Treat DESTINATION as a normal file |
 | _-t, --target-directory DIRECTORY_ | Copy all SOURCES into DIRECTORY |
 
@@ -264,7 +264,7 @@ $ neuro mv storage://{username}/foo.txt storage:bar.dat
 
 ### tree
 
-List contents of directories in a tree-like...
+List contents of directories in a...
 
 
 #### Usage

@@ -250,9 +250,9 @@ Add new resource preset
 | _--credits-per-hour AMOUNT_ | Price of running job of this preset for an hour in credits  _\[default: 0\]_ |
 | _-g, --gpu NUMBER_ | Number of GPUs |
 | _--gpu-model MODEL_ | GPU model |
-| _-m, --memory AMOUNT_ | Memory amount  _\[default: 1G\]_ |
-| _--preemptible-node / --non-preemptible-node_ | Use a lower-cost preemptible instance  _\[default: False\]_ |
-| _-p, --scheduler / -P, --no-scheduler_ | Use round robin scheduler for jobs  _\[default: False\]_ |
+| _-m, --memory AMOUNT_ | Memory amount  _\[default: 1024\]_ |
+| _--preemptible-node / --non-preemptible-node_ | Use a lower-cost preemptible instance  _\[default: non-preemptible-node\]_ |
+| _-p, --scheduler / -P, --no-scheduler_ | Use round robin scheduler for jobs  _\[default: no-scheduler\]_ |
 | _--tpu-sw-version VERSION_ | TPU software version |
 | _--tpu-type TYPE_ | TPU type |
 
