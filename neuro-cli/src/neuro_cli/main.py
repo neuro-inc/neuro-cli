@@ -124,8 +124,8 @@ class MainGroup(Group):
 
     def make_context(
         self,
-        info_name: str,
-        args: Sequence[str],
+        info_name: Optional[str],
+        args: List[str],
         parent: Optional[click.Context] = None,
         **extra: Any,
     ) -> Context:
@@ -137,7 +137,7 @@ class MainGroup(Group):
         kwargs = {}
         for param in self.params:
             if param.expose_value:
-                val = ctx.params.get(param.name)
+                val = ctx.params.get(param.name or "")
                 if val is not None:
                     kwargs[param.name] = val
                 else:
@@ -553,7 +553,7 @@ def main(args: Optional[List[str]] = None) -> None:
         e.show()
         sys.exit(e.exit_code)
     except ClickExit as e:
-        sys.exit(e.exit_code)  # type: ignore
+        sys.exit(e.exit_code)
 
     except asyncio.TimeoutError:
         LOG_ERROR("Timeout")
