@@ -768,7 +768,7 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
 
     def _hint(self, hints: Iterable[Tuple[str, str]]) -> None:
         for title, hint in hints:
-            self._console.print("title:", style="dim yellow")
+            self._console.print(f"{title}:", style="dim yellow")
             self._console.print(f"  {hint}", style="dim")
 
     def detach(self, job: JobDescription) -> None:
@@ -780,7 +780,7 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
             [
                 ("Re-attach to job", f"neuro attach {job.id}"),
                 ("Check job status", f"neuro status {job.id}"),
-                ("Kill job", f"neuro attach {job.id}"),
+                ("Kill job", f"neuro kill {job.id}"),
                 ("Fetch job logs", f"neuro logs {job.id}"),
             ]
         )
