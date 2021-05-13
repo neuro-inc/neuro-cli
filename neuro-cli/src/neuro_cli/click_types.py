@@ -129,6 +129,8 @@ class MegabyteType(click.ParamType):
     def convert(
         self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
     ) -> int:
+        if isinstance(value, int):
+            return int(value / (1024 ** 2))
         return to_megabytes(value)
 
 
