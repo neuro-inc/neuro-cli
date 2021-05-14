@@ -122,7 +122,7 @@ jobs:
           os: windows
       fail-fast: false
     runs-on: ${{ matrix.os }}-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -147,7 +147,7 @@ jobs:
       with:
         path: requirements/ci.txt
     - name: Run E2E tests
-      timeout-minutes: 30
+      timeout-minutes: 45
       env:
         E2E_TOKEN: ${{ secrets.E2E_TOKEN }}
         E2E_USER_TOKEN: ${{ secrets.E2E_USER_TOKEN }}
