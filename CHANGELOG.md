@@ -5,6 +5,30 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.5.14 (2021-05-14)
+==================================
+
+Features
+--------
+
+
+- Ignore files in parent directories are now used when upload a directory to storage or blob storage. ([#1901](https://github.com/neuro-inc/platform-client-python/issues/1901))
+
+- Add spinners to the some commands that take time to execute. ([#2105](https://github.com/neuro-inc/platform-client-python/issues/2105))
+
+- All job related commands support now jobs on other clusters. Commands `neuro exec`, `neuro port-forward`, `neuro logs` and `neuro job save` only support jobs on other clusters if they are specified by URI (jobs on the current cluster can be also specified by bare ID or name). ([#2116](https://github.com/neuro-inc/platform-client-python/issues/2116))
+
+
+Bugfixes
+--------
+
+
+- Provide forward compatibility with click 8.0 ([#2126](https://github.com/neuro-inc/platform-client-python/issues/2126))
+
+- Fix hints for 'neuro run' command. ([#2127](https://github.com/neuro-inc/platform-client-python/issues/2127))
+
+- Fix compatibility with click==8.0. ([#2126](https://github.com/neuro-inc/platform-client-python/issues/2126))
+
 
 Neuro SDK/CLI 21.4.15 (2021-04-15)
 ==================================
