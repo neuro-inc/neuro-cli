@@ -533,8 +533,8 @@ async def _process_stdout_tty(
                 if helper.log_printed:
                     s = ATTACH_STARTED_AFTER_LOGS
                     if root.tty:
-                        s = click.style("√ ", fg="green") + s
-                    stdout.write_raw(s + "\n")
+                        s = "[green]√[/green] " + s
+                    root.print(s, markup=True)
             helper.attach_ready = True
             stdout.write_raw(txt)
             stdout.flush()
