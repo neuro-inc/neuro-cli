@@ -13,6 +13,9 @@ from tests.e2e.utils import FILE_SIZE_B
 _Data = Tuple[str, str]
 
 
+pytestmark = pytest.mark.skipif(True, reason="Temporarily skip blob tests")
+
+
 @pytest.mark.e2e
 def test_e2e_blob_storage_upload_download(
     data: Tuple[Path, str], tmp_path: Path, helper: Helper, tmp_bucket: str
