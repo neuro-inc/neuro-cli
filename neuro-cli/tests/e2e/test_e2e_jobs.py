@@ -449,7 +449,7 @@ def test_e2e_ssh_exec_false(helper: Helper) -> None:
                 "--timeout",
                 str(EXEC_TIMEOUT),
                 job_id,
-                "false",
+                "bash -c 'echo test_e2e_ssh_exec_false; false'",
             ]
         )
     assert cm.value.returncode == 1
@@ -968,7 +968,7 @@ def test_e2e_job_top(helper: Helper) -> None:
 def test_e2e_job_top_filtering(helper: Helper, loop: AbstractEventLoop) -> None:
     job_name = f"test-job-{str(uuid4())[:8]}"
     description = str(uuid4())
-    command = "sleep 1000"
+    command = "bash -c 'sleep 1000; echo test_e2e_job_top_filtering'"
 
     print("Run jobs... ")
     job1_id = helper.run_job_and_wait_state(
@@ -1067,7 +1067,7 @@ def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
             "on-failure",
             "--detach",
             UBUNTU_IMAGE_NAME,
-            "false",
+            "bash -c 'echo test_e2e_restart_failing; false'",
         ]
     )
     job_id = captured.out
