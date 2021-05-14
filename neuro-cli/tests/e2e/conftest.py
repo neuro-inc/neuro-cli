@@ -546,7 +546,7 @@ class Helper:
 
         args = self._default_args(verbosity, network_timeout)
         env = dict(os.environ)
-        env["_NEURO_COMPLETE"] = "complete_zsh"
+        env["_NEURO_COMPLETE"] = "zsh_complete"
         env["COMP_WORDS"] = " ".join(shlex.quote(arg) for arg in args + arguments)
         env["COMP_CWORD"] = str(len(args + arguments) - 1)
         env["NEURO_CLI_JOB_AUTOCOMPLETE_LIMIT"] = "500"
@@ -559,7 +559,7 @@ class Helper:
             env=env,
             timeout=timeout,
         )
-        assert proc.returncode == 1
+        assert proc.returncode == 0
         assert not proc.stderr
         return proc.stdout
 

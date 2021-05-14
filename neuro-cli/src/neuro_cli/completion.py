@@ -8,7 +8,7 @@ from .root import Root
 from .utils import argument, group
 
 CFG_FILE = {"bash": Path("~/.bashrc"), "zsh": Path("~/.zshrc")}
-SOURCE_CMD = {"bash": "source", "zsh": "source_zsh"}
+SOURCE_CMD = {"bash": "bash_source", "zsh": "zsh_source"}
 
 ACTIVATION_TEMPLATE = 'eval "$(_NEURO_COMPLETE={cmd} {exe})"'
 
