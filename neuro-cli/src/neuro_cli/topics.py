@@ -1,4 +1,4 @@
-from typing import Any, Callable, Iterable, Optional, Type, cast
+from typing import Any, Callable, List, Optional, Type, cast
 
 import click
 from click.utils import make_default_short_help
@@ -50,7 +50,7 @@ class Group(click.Group):
 
         return decorator
 
-    def list_commands(self, ctx: click.Context) -> Iterable[str]:
+    def list_commands(self, ctx: click.Context) -> List[str]:
         return sorted(self.commands)
 
 

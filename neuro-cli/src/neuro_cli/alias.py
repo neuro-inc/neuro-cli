@@ -32,10 +32,10 @@ class InternalAlias(NeuroClickMixin, click.Command):
         cmd = parent_cmd.get_command(parent, sub_cmd)
         if cmd is None:
             ctx.fail(f'Alias {self.name} refers to unknown command "{sub_cmd}"')
-        with ctx:  # type: ignore
+        with ctx:
             ctx.invoked_subcommand = self.name
             sub_ctx = cmd.make_context(self.name, sub_args + ctx.args, parent=ctx)
-            with sub_ctx:  # type: ignore
+            with sub_ctx:
                 sub_ctx.command.invoke(sub_ctx)
 
     def get_short_help_str(self, limit: int = 45) -> str:
@@ -72,8 +72,8 @@ class ExternalAlias(NeuroClickMixin, click.Command):
         args = _parse_args(alias.get("args", ""))
         simplified = _validate_exec(
             alias["exec"],
-            {param.name for param in options},
-            {param.name for param in args},
+            {param.name for param in options if param.name},
+            {param.name for param in args if param.name},
         )
         super().__init__(name, params=options + args)
         self.alias = alias
@@ -92,7 +92,7 @@ class ExternalAlias(NeuroClickMixin, click.Command):
         cmd = self.alias["exec"]
         ret = shlex.split(cmd)
         for param in self.params:
-            val = ctx.params[param.name]
+            val = ctx.params[param.name or ""]
             ret.extend(_process_param(param, val))
         return ret
 
@@ -174,6 +174,8 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
         opts = []
         is_flag = True
         metavar = None
+        flag_value: Optional[bool] = True
+        default: Optional[bool] = True
         options, _, description = od.strip().partition("  ")
         options = options.replace(",", " ").replace("=", " ")
         for s in options.split():
@@ -187,18 +189,28 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
                 opts.append(s)
             else:
                 is_flag = False
+                flag_value = None
+                default = None
                 metavar = s
                 metavar = metavar.upper()
                 if not metavar.isidentifier():
                     raise ConfigError(f"Cannot parse option {od}")
         description = description.strip()
+        kwargs = {}
+        if default is not None:
+            if is_flag:
+                kwargs["default"] = [False]
+            else:
+                kwargs["default"] = [default]
         ret.append(
             Option(
                 opts,
                 is_flag=is_flag,
+                flag_value=flag_value,
                 multiple=True,
                 metavar=metavar,
                 help=description,
+                **kwargs,  # type: ignore
             )
         )
     return ret  # type: ignore
@@ -325,8 +337,9 @@ def _process_param(
             # parser doesn't allow --true / --false flags
             assert not param.secondary_opts
             vals = []
-            for item in val:
-                vals.append(_longest(param.opts))
+            for isset in val:
+                if isset:
+                    vals.append(_longest(param.opts))
             return vals
         else:
             vals = []

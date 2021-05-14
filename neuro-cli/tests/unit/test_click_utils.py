@@ -130,7 +130,7 @@ def test_print_deprecated_group() -> None:
 
         Commands:
           sub-command  Sub-command
-          alias        Alias for sub-command
+          alias        (Deprecated) Alias for sub-command
     """
     )
 

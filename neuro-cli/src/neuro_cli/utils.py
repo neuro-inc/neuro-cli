@@ -18,7 +18,6 @@ from typing import (
     Iterator,
     List,
     Optional,
-    Sequence,
     Set,
     Tuple,
     Type,
@@ -110,7 +109,9 @@ def _wrap_async_callback(
 
 
 class HelpFormatter(click.HelpFormatter):
-    def write_usage(self, prog: str, args: str = "", prefix: str = "Usage:") -> None:
+    def write_usage(
+        self, prog: str, args: str = "", prefix: Optional[str] = "Usage:"
+    ) -> None:
         super().write_usage(prog, args, prefix=click.style(prefix, bold=True) + " ")
 
     def write_heading(self, heading: str) -> None:
@@ -153,7 +154,7 @@ class NeuroClickMixin:
 
         help_names = set(self.get_help_option_names(ctx))  # type: ignore
 
-        def sort_key(opt: click.Option) -> Tuple[bool, str]:
+        def sort_key(opt: click.Option) -> Tuple[bool, Optional[str]]:
             flag = set(opt.opts) & help_names or set(opt.secondary_opts) & help_names
             return (not flag, opt.name)
 
@@ -208,8 +209,8 @@ class NeuroClickMixin:
 
     def make_context(
         self,
-        info_name: str,
-        args: Sequence[str],
+        info_name: Optional[str],
+        args: List[str],
         parent: Optional[click.Context] = None,
         **extra: Any,
     ) -> Context:
@@ -314,8 +315,8 @@ class Group(NeuroGroupMixin, click.Group):
 
         return decorator
 
-    def list_commands(self, ctx: click.Context) -> Iterable[str]:
-        return self.commands
+    def list_commands(self, ctx: click.Context) -> List[str]:
+        return list(self.commands)
 
     def invoke(self, ctx: click.Context) -> None:
         if not ctx.args and not ctx.protected_args:
@@ -355,7 +356,7 @@ class DeprecatedGroup(NeuroGroupMixin, click.MultiCommand):
     def get_command(self, ctx: click.Context, cmd_name: str) -> Optional[click.Command]:
         return self.origin.get_command(ctx, cmd_name)
 
-    def list_commands(self, ctx: click.Context) -> Iterable[str]:
+    def list_commands(self, ctx: click.Context) -> List[str]:
         return self.origin.list_commands(ctx)
 
 
@@ -564,6 +565,8 @@ def parse_permission_action(action: str) -> Action:
 def do_deprecated_quiet(
     ctx: click.Context, param: Union[click.Option, click.Parameter], value: Any
 ) -> Any:
+    if ctx.obj is None:
+        return
     if value and not ctx.obj.quiet:
         ctx.obj.verbosity = -2
         click.echo(

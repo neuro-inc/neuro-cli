@@ -17,8 +17,8 @@ Container image operations.
 | [_push_](image.md#push) | Push an image to platform registry |
 | [_pull_](image.md#pull) | Pull an image from platform registry |
 | [_rm_](image.md#rm) | Remove image from platform registry |
-| [_size_](image.md#size) | Get image size Image name must be URL with... |
-| [_digest_](image.md#digest) | Get digest of an image from remote registry... |
+| [_size_](image.md#size) | Get image size |
+| [_digest_](image.md#digest) | Get digest of an image from remote registry |
 | [_tags_](image.md#tags) | List tags for image in platform registry |
 
 
@@ -153,7 +153,7 @@ $ neuro image rm image:myimage:latest
 
 ### size
 
-Get image size Image name must be URL with...
+Get image size
 
 
 #### Usage
@@ -186,7 +186,7 @@ $ neuro image size image:myimage:latest
 
 ### digest
 
-Get digest of an image from remote registry...
+Get digest of an image from remote registry
 
 
 #### Usage

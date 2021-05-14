@@ -203,14 +203,16 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
 
 class FileFilterParserOption(click.parser.Option):
     def process(self, value: str, state: click.parser.ParsingState) -> None:
-        super().process((self.const, value), state)
+        assert self.action == "append"
+        state.opts.setdefault(self.dest, []).append((self.const, value))  # type: ignore
+        state.order.append(self.obj)
 
 
 class FileFilterOption(Option):
     def add_to_parser(self, parser: click.parser.OptionParser, ctx: Any) -> None:
         option = FileFilterParserOption(
-            self.opts,
-            self.name,
+            opts=self.opts,
+            dest=self.name,
             action="append",
             nargs=self.nargs,
             const=self.flag_value,

@@ -71,12 +71,12 @@ $ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg
 | _--entrypoint TEXT_ | Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image\) |
 | _-e, --env VAR=VAL_ | Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables. |
 | _--env-file PATH_ | File with environment variables to pass |
-| _-x, --extshm / -X, --no-extshm_ | Request extended '/dev/shm' space  _\[default: True\]_ |
+| _-x, --extshm / -X, --no-extshm_ | Request extended '/dev/shm' space  _\[default: x\]_ |
 | _--http PORT_ | Enable HTTP port forwarding to container  _\[default: 80\]_ |
 | _--http-auth / --no-http-auth_ | Enable HTTP authentication for forwarded HTTP port  _\[default: True\]_ |
 | _--life-span TIMEDELTA_ | Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing\). Set '0' to disable. Default value '1d' can be changed in the user config. |
 | _-n, --name NAME_ | Optional job name |
-| _--pass-config / --no-pass-config_ | Upload neuro config to the job  _\[default: False\]_ |
+| _--pass-config / --no-pass-config_ | Upload neuro config to the job  _\[default: no-pass-config\]_ |
 | _--port-forward LOCAL\_PORT:REMOTE\_RORT_ | Forward port\(s\) of a running job to local port\(s\) \(use multiple times for forwarding several ports\) |
 | _-s, --preset PRESET_ | Predefined resource configuration \(to see available values, run `neuro config show`\) |
 | _--privileged_ | Run job in privileged mode, if it is supported by cluster.  _\[default: False\]_ |
@@ -87,8 +87,8 @@ $ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg
 | _--tag TAG_ | Optional job tag, multiple values allowed |
 | _-t, --tty / -T, --no-tty_ | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script. |
 | _-v, --volume MOUNT_ | Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files. |
-| _--wait-for-seat / --no-wait-for-seat_ | Wait for total running jobs quota  _\[default: False\]_ |
-| _--wait-start / --no-wait-start_ | Wait for a job start or failure  _\[default: True\]_ |
+| _--wait-for-seat / --no-wait-for-seat_ | Wait for total running jobs quota  _\[default: no-wait-for-seat\]_ |
+| _--wait-start / --no-wait-start_ | Wait for a job start or failure  _\[default: wait-start\]_ |
 | _-w, --workdir TEXT_ | Working directory inside the container |
 
 
@@ -335,7 +335,7 @@ $ neuro top -t tag1 -t tag2
 | _--since DATE\_OR\_TIMEDELTA_ | Show jobs created after a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
 | _--sort COLUMNS_ | Sort rows by specified column. Add "-" prefix to revert the sorting order. Multiple columns can be specified \(comma separated\).  _\[default: cpu\]_ |
 | _-t, --tag TAG_ | Filter out jobs by tag \(multiple option\) |
-| _--timeout FLOAT_ | Maximum allowed time for executing the command, 0 for no timeout  _\[default: 0\]_ |
+| _--timeout FLOAT_ | Maximum allowed time for executing the command, 0 for no timeout  _\[default: 0.0\]_ |
 | _--until DATE\_OR\_TIMEDELTA_ | Show jobs created before a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
 
 
@@ -485,7 +485,7 @@ $ neuro cp storage:results/*.out .
 | _--exclude-from-files FILES_ | A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp-exclude-from-files configuration variable documented in "neuro help user-config" |
 | _--exclude_ | Exclude files and directories that match the specified pattern. |
 | _--include_ | Don't exclude files and directories that match the specified pattern. |
-| _--glob / --no-glob_ | Expand glob patterns in SOURCES with explicit scheme.  _\[default: True\]_ |
+| _--glob / --no-glob_ | Expand glob patterns in SOURCES with explicit scheme.  _\[default: glob\]_ |
 | _-T, --no-target-directory_ | Treat DESTINATION as a normal file. |
 | _-p, --progress / -P, --no-progress_ | Show progress, on by default in TTY mode, off otherwise. |
 | _-r, --recursive_ | Recursive copy, off by default |
@@ -551,7 +551,7 @@ $ neuro rm storage:foo/**/*.tmp
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _--glob / --no-glob_ | Expand glob patterns in PATHS  _\[default: True\]_ |
+| _--glob / --no-glob_ | Expand glob patterns in PATHS  _\[default: glob\]_ |
 | _-p, --progress / -P, --no-progress_ | Show progress, on by default in TTY mode, off otherwise. |
 | _-r, --recursive_ | remove directories and their contents recursively |
 
@@ -626,7 +626,7 @@ $ neuro mv storage://{username}/foo.txt storage:bar.dat
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _--glob / --no-glob_ | Expand glob patterns in SOURCES  _\[default: True\]_ |
+| _--glob / --no-glob_ | Expand glob patterns in SOURCES  _\[default: glob\]_ |
 | _-T, --no-target-directory_ | Treat DESTINATION as a normal file |
 | _-t, --target-directory DIRECTORY_ | Copy all SOURCES into DIRECTORY |
 
@@ -735,7 +735,7 @@ Shares resource with another user
 #### Usage
 
 ```bash
-neuro share [OPTIONS] URI USER [read|write|manage]
+neuro share [OPTIONS] URI USER {read|write|manage}
 ```
 
 Shares resource with another user.
