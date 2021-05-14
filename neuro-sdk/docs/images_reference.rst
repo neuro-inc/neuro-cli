@@ -86,9 +86,13 @@ Images
 
 
 
-   .. comethod:: ls() -> List[RemoteImage]
+   .. comethod:: ls(cluster_name: Optional[str] = None) -> List[RemoteImage]
 
       List images on Neuro registry available to the user.
+
+      :param str cluster_name: name of the cluster.
+
+                               ``None`` means the current cluster (default).
 
       :return: list of remote images not including tags
                (:class:`List[RemoteImage]`)

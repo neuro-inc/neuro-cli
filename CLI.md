@@ -1263,6 +1263,7 @@ neuro image ls [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster TEXT_|Show images on a specified cluster \(the current cluster by default).|
 |_-l_|List in long format.|
 |_\--full-uri_|Output full image URI.|
 
@@ -2824,6 +2825,7 @@ neuro images [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster TEXT_|Show images on a specified cluster \(the current cluster by default).|
 |_-l_|List in long format.|
 |_\--full-uri_|Output full image URI.|
 
