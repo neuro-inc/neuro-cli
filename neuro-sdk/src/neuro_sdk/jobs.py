@@ -549,10 +549,18 @@ class Jobs(metaclass=NoPublicConstructor):
 
     @asynccontextmanager
     async def port_forward(
-        self, id: str, local_port: int, job_port: int, *, no_key_check: bool = False
+        self,
+        id: str,
+        local_port: int,
+        job_port: int,
+        *,
+        no_key_check: bool = False,
+        cluster_name: Optional[str] = None,
     ) -> AsyncIterator[None]:
         srv = await asyncio.start_server(
-            partial(self._port_forward, id=id, job_port=job_port),
+            partial(
+                self._port_forward, id=id, job_port=job_port, cluster_name=cluster_name
+            ),
             "localhost",
             local_port,
         )
