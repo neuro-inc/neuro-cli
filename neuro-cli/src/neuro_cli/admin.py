@@ -272,7 +272,7 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     required=False,
     default=_ClusterUserRoleType.USER.value,
     metavar="[ROLE]",
-    type=click.Choice(list(_ClusterUserRoleType)),
+    type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
 )
 async def add_cluster_user(
     root: Root, cluster_name: str, user_name: str, role: str
