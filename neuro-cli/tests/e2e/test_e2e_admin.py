@@ -61,8 +61,7 @@ def test_add_cluster_user_invalid_role(helper: Helper) -> None:
             ["admin", "add-cluster-user", helper.cluster_name, username, "my_role"]
         )
     assert cm.value.returncode == 2
-    assert "invalid choice:" in cm.value.stderr
-    assert "(choose from admin, manager, user)" in cm.value.stderr
+    assert "Invalid value for '[ROLE]'" in cm.value.stderr
 
 
 @pytest.mark.e2e
