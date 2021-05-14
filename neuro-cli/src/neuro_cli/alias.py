@@ -174,8 +174,8 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
         opts = []
         is_flag = True
         metavar = None
-        flag_value = True
-        default = True
+        flag_value: Optional[bool] = True
+        default: Optional[bool] = True
         options, _, description = od.strip().partition("  ")
         options = options.replace(",", " ").replace("=", " ")
         for s in options.split():
@@ -210,7 +210,7 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
                 multiple=True,
                 metavar=metavar,
                 help=description,
-                **kwargs,
+                **kwargs,  # type: ignore
             )
         )
     return ret  # type: ignore
