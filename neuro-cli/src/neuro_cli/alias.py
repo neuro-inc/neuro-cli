@@ -174,6 +174,8 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
         opts = []
         is_flag = True
         metavar = None
+        flag_value = True
+        default = True
         options, _, description = od.strip().partition("  ")
         options = options.replace(",", " ").replace("=", " ")
         for s in options.split():
@@ -187,18 +189,28 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
                 opts.append(s)
             else:
                 is_flag = False
+                flag_value = None
+                default = None
                 metavar = s
                 metavar = metavar.upper()
                 if not metavar.isidentifier():
                     raise ConfigError(f"Cannot parse option {od}")
         description = description.strip()
+        kwargs = {}
+        if default is not None:
+            if is_flag:
+                kwargs["default"] = [False]
+            else:
+                kwargs["default"] = [default]
         ret.append(
             Option(
                 opts,
                 is_flag=is_flag,
+                flag_value=flag_value,
                 multiple=True,
                 metavar=metavar,
                 help=description,
+                **kwargs,
             )
         )
     return ret  # type: ignore
@@ -325,8 +337,9 @@ def _process_param(
             # parser doesn't allow --true / --false flags
             assert not param.secondary_opts
             vals = []
-            for item in val:
-                vals.append(_longest(param.opts))
+            for isset in val:
+                if isset:
+                    vals.append(_longest(param.opts))
             return vals
         else:
             vals = []
