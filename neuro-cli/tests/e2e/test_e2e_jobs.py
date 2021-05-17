@@ -943,7 +943,7 @@ def try_job_top(helper: Helper, *args: str) -> Iterator[str]:
 
 @pytest.mark.e2e
 def test_e2e_job_top(helper: Helper) -> None:
-    command = "sleep 400"
+    command = "bash -c 'sleep 1000; echo test_e2e_job_top'"
 
     print("Run job... ")
     job_id = helper.run_job_and_wait_state(image=UBUNTU_IMAGE_NAME, command=command)
@@ -1144,7 +1144,7 @@ def test_job_run_stdout(helper: Helper) -> None:
 def test_job_attach_tty(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(
         UBUNTU_IMAGE_NAME,
-        "timeout 300 bash --norc",
+        "timeout 1000 bash --norc",
         tty=True,
         env={"PS1": "# "},
     )

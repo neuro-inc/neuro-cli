@@ -72,13 +72,29 @@ def test_images_complete_lifecycle(
     image_url = URL(image_full_str)
 
     # Check if image available on registry
-    captured = helper.run_cli(["image", "ls", "--full-uri"])
+    image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
+    image_short_str = f"image:{image}"
+    assert captured.out.endswith(image_full_str)
 
-    image_urls = [URL(line.strip()) for line in captured.out.splitlines()[2:] if line]
-    for url in image_urls:
-        assert url.scheme == "image", url
-    image_url_without_tag = image_url.with_path(image_url.path.replace(f":{tag}", ""))
-    assert image_url_without_tag in image_urls
+    image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
+    image_short_str_no_tag = image_short_str.replace(f":{tag}", "")
+
+    # check ls short mode
+    captured = helper.run_cli(["image", "ls"])
+    assert image_short_str_no_tag in [
+        line.strip() for line in captured.out.splitlines()
+    ]
+
+    captured = helper.run_cli(["image", "ls", "--full-uri"])
+    assert image_full_str_no_tag in [line.strip() for line in captured.out.splitlines()]
+
+    # check ls long mode
+    captured = helper.run_cli(["image", "ls", "-l"])
+    for line in captured.out.splitlines():
+        if image_short_str_no_tag in line:
+            break
+    else:
+        assert False, f"Not found {image_short_str_no_tag} in {captured.out}"
 
     # delete local
     loop.run_until_complete(docker.images.delete(image, force=True))
@@ -152,36 +168,6 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     )
     assertion_msg = f"Command {cmd} should fail: {result.stdout!r} {result.stderr!r}"
     assert result.returncode, assertion_msg
-
-
-@pytest.mark.e2e
-def test_image_ls(helper: Helper, image: str, tag: str) -> None:
-    # push image
-    captured = helper.run_cli(["image", "push", image])
-
-    image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
-    image_short_str = f"image:{image}"
-    assert captured.out.endswith(image_full_str)
-
-    image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
-    image_short_str_no_tag = image_short_str.replace(f":{tag}", "")
-
-    # check ls short mode
-    captured = helper.run_cli(["image", "ls"])
-    assert image_short_str_no_tag in [
-        line.strip() for line in captured.out.splitlines()
-    ]
-
-    captured = helper.run_cli(["image", "ls", "--full-uri"])
-    assert image_full_str_no_tag in [line.strip() for line in captured.out.splitlines()]
-
-    # check ls long mode
-    captured = helper.run_cli(["image", "ls", "-l"])
-    for line in captured.out.splitlines():
-        if image_short_str_no_tag in line:
-            break
-    else:
-        assert False, f"Not found {image_short_str_no_tag} in {captured.out}"
 
 
 @pytest.mark.e2e
