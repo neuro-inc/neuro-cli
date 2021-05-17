@@ -30,7 +30,7 @@ Bugfixes
 - Fix compatibility with click==8.0. ([#2126](https://github.com/neuro-inc/platform-client-python/issues/2126))
 
 
-Neuro SDK/CLI 21.4.15 (2021-04-15)
+Neuro SDK/CLI 21.4.17 (2021-04-17)
 ==================================
 
 Features
