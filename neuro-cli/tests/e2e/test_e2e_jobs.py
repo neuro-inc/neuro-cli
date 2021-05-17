@@ -482,22 +482,30 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
     command = 'bash -c "sleep 15m; false"'
     job_id = helper.run_job_and_wait_state(UBUNTU_IMAGE_NAME, command)
 
-    captured = helper.run_cli(
-        [
-            "--quiet",
-            "job",
-            "exec",
-            "--no-tty",
-            "--no-key-check",
-            "--timeout",
-            str(EXEC_TIMEOUT),
-            job_id,
-            'bash -c "sleep 30; echo ok"',
-        ]
-    )
-    assert captured.err == ""
-    assert captured.out == "ok"
-    helper.kill_job(job_id, wait=False)
+    for i in range(10):
+        captured = helper.run_cli(
+            [
+                "--quiet",
+                "job",
+                "exec",
+                "--no-tty",
+                "--no-key-check",
+                "--timeout",
+                str(EXEC_TIMEOUT),
+                job_id,
+                'bash -c "sleep 30; echo ok"',
+            ]
+        )
+        if captured.out == "":
+            continue
+        assert captured.err == ""
+        assert captured.out == "ok"
+        helper.kill_job(job_id, wait=False)
+        break
+    else:
+        raise AssertionError(
+            f"Cannot exec echo after 10 tries, the last output is {captured}"
+        )
 
 
 @pytest.mark.e2e
