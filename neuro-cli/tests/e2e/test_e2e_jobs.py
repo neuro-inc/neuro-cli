@@ -930,7 +930,7 @@ def try_job_top(helper: Helper, *args: str) -> Iterator[str]:
         assert excinfo.value.returncode == 124
         i = stdout.rfind(" ID/NAME ")
         yield (stdout if i < 0 else stdout[i:])
-        if time() - t0 > 10 * 60:
+        if time() - t0 > 20 * 60:
             # timeout is reached without info from server
             raise AssertionError(
                 f"Cannot get response from server "
