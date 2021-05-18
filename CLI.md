@@ -626,6 +626,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-a, --all_|Show all jobs regardless the status.|
+|_--cluster TEXT_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--distinct_|Show only first job if names are same.|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
@@ -798,6 +799,7 @@ neuro top -t tag1 -t tag2
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster TEXT_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--format COLUMNS_|Output table format, see "neuro help top\-format" for more info about the format specification. The default can be changed using the job.top-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
@@ -1261,6 +1263,7 @@ neuro image ls [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster TEXT_|Show images on a specified cluster \(the current cluster by default).|
 |_-l_|List in long format.|
 |_\--full-uri_|Output full image URI.|
 
@@ -2350,6 +2353,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-a, --all_|Show all jobs regardless the status.|
+|_--cluster TEXT_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--distinct_|Show only first job if names are same.|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
@@ -2542,6 +2546,7 @@ neuro top -t tag1 -t tag2
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster TEXT_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--format COLUMNS_|Output table format, see "neuro help top\-format" for more info about the format specification. The default can be changed using the job.top-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
@@ -2820,6 +2825,7 @@ neuro images [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster TEXT_|Show images on a specified cluster \(the current cluster by default).|
 |_-l_|List in long format.|
 |_\--full-uri_|Output full image URI.|
 

@@ -184,10 +184,13 @@ class Images(metaclass=NoPublicConstructor):
 
         return local
 
-    async def ls(self) -> List[RemoteImage]:
+    async def ls(self, cluster_name: Optional[str] = None) -> List[RemoteImage]:
         auth = await self._config._registry_auth()
-        prefix = f"image://{self._config.cluster_name}/"
-        url = self._config.registry_url.with_path("/v2/") / "_catalog"
+        if cluster_name is None:
+            cluster_name = self._config.cluster_name
+        prefix = f"image://{cluster_name}/"
+        url = self._config.get_cluster(cluster_name).registry_url
+        url = url.with_path("/v2/") / "_catalog"
         result: List[RemoteImage] = []
         while True:
             url = url.update_query(n=str(REPOS_PER_PAGE))

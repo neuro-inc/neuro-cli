@@ -107,15 +107,21 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 
 
 @command()
+@option(
+    "--cluster",
+    help="Show images on a specified cluster (the current cluster by default).",
+)
 @option("-l", "format_long", is_flag=True, help="List in long format.")
 @option("--full-uri", is_flag=True, help="Output full image URI.")
-async def ls(root: Root, format_long: bool, full_uri: bool) -> None:
+async def ls(root: Root, cluster: str, format_long: bool, full_uri: bool) -> None:
     """
     List images.
     """
 
+    if not cluster:
+        cluster = root.client.config.cluster_name
     with root.status("Fetching images"):
-        images = await root.client.images.ls()
+        images = await root.client.images.ls(cluster_name=cluster)
 
     image_fmtr: ImageFormatter
     if full_uri:
