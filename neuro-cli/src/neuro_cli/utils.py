@@ -112,7 +112,9 @@ class HelpFormatter(click.HelpFormatter):
     def write_usage(
         self, prog: str, args: str = "", prefix: Optional[str] = "Usage:"
     ) -> None:
-        super().write_usage(prog, args, prefix=click.style(prefix, bold=True) + " ")
+        super().write_usage(
+            prog, args, prefix=click.style(prefix or "", bold=True) + " "
+        )
 
     def write_heading(self, heading: str) -> None:
         self.write(

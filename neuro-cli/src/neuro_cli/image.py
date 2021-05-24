@@ -1,5 +1,6 @@
 import contextlib
 import logging
+import re
 from dataclasses import replace
 from typing import Optional, Sequence
 
@@ -121,7 +122,13 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
     "Supports `ME` option to filter by the current user.",
     secure=True,
 )
-@option("-n", "--name", metavar="NAME", help="Filter out images by name.", secure=True)
+@option(
+    "-n",
+    "--name",
+    metavar="PATTERN",
+    help="Filter out images by name regex.",
+    secure=True,
+)
 async def ls(
     root: Root,
     cluster: str,
@@ -145,8 +152,10 @@ async def ls(
             owners.remove("ME")
             owners.add(root.client.config.username)
         images = [image for image in images if image.owner in owners]
+
     if name:
-        images = [image for image in images if image.name == name]
+        name_re = re.compile(name)
+        images = [image for image in images if name_re.fullmatch(image.name)]
 
     image_fmtr: ImageFormatter
     if full_uri:
