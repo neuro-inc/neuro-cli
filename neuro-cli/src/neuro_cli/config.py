@@ -15,7 +15,7 @@ from yarl import URL
 
 from neuro_sdk import DEFAULT_API_URL, ConfigError
 
-from neuro_cli.formatters.config import ClustersFormatter, QuotaInfoFormatter
+from neuro_cli.formatters.config import ClustersFormatter, QuotaFormatter
 
 from .alias import list_aliases
 from .formatters.config import AliasesFormatter, ConfigFormatter
@@ -56,7 +56,8 @@ async def show_quota(root: Root, user: Optional[str]) -> None:
     """
     Print quota and remaining computation time for active cluster.
     """
-    quotas = await root.client._quota.get(user)
+    username = user or root.client.config.username
+    quotas = await root.client._users.get_quota(username)
     cluster_name = root.client.config.cluster_name
     if cluster_name not in quotas:
         raise ValueError(
@@ -64,7 +65,7 @@ async def show_quota(root: Root, user: Optional[str]) -> None:
             "Please logout and login again."
         )
     cluster_quota = quotas[cluster_name]
-    fmt = QuotaInfoFormatter()
+    fmt = QuotaFormatter()
     root.print(fmt(cluster_quota))
 
 

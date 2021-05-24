@@ -15,6 +15,7 @@ from neuro_sdk.admin import (
     _Storage,
 )
 from neuro_sdk.server_cfg import Preset
+from neuro_sdk.users import Quota
 
 from tests import _TestServerFactory
 
@@ -303,9 +304,15 @@ async def test_list_cluster_users_explicit_cluster(
     async with make_client(srv.make_url("/api/v1")) as client:
         resp = await client._admin.list_cluster_users("my_cluster")
         assert resp == [
-            _ClusterUser(user_name="denis", role=_ClusterUserRoleType("admin")),
-            _ClusterUser(user_name="andrew", role=_ClusterUserRoleType("manager")),
-            _ClusterUser(user_name="ivan", role=_ClusterUserRoleType("user")),
+            _ClusterUser(
+                user_name="denis", role=_ClusterUserRoleType("admin"), quota=Quota()
+            ),
+            _ClusterUser(
+                user_name="andrew", role=_ClusterUserRoleType("manager"), quota=Quota()
+            ),
+            _ClusterUser(
+                user_name="ivan", role=_ClusterUserRoleType("user"), quota=Quota()
+            ),
         ]
         assert requested_clusters == ["my_cluster"]
 
@@ -334,11 +341,46 @@ async def test_list_cluster_users_default_cluster(
     async with make_client(srv.make_url("/api/v1")) as client:
         resp = await client._admin.list_cluster_users()
         assert resp == [
-            _ClusterUser(user_name="denis", role=_ClusterUserRoleType("admin")),
-            _ClusterUser(user_name="andrew", role=_ClusterUserRoleType("manager")),
-            _ClusterUser(user_name="ivan", role=_ClusterUserRoleType("user")),
+            _ClusterUser(
+                user_name="denis", role=_ClusterUserRoleType("admin"), quota=Quota()
+            ),
+            _ClusterUser(
+                user_name="andrew", role=_ClusterUserRoleType("manager"), quota=Quota()
+            ),
+            _ClusterUser(
+                user_name="ivan", role=_ClusterUserRoleType("user"), quota=Quota()
+            ),
         ]
         assert requested_clusters == ["default"]
+
+
+async def test_get_cluster_user(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    requested_clusters = []
+    requested_users = []
+
+    async def handle_get_cluster_user(request: web.Request) -> web.StreamResponse:
+        requested_clusters.append(request.match_info["cluster_name"])
+        requested_users.append(request.match_info["username"])
+        data = {"user_name": "denis", "role": "admin"}
+        return web.json_response(data)
+
+    app = web.Application()
+    app.router.add_get(
+        "/apis/admin/v1/clusters/{cluster_name}/users/{username}",
+        handle_get_cluster_user,
+    )
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        resp = await client._admin.get_cluster_user("default", "test")
+        assert resp == _ClusterUser(
+            user_name="denis", role=_ClusterUserRoleType("admin"), quota=Quota()
+        )
+        assert requested_clusters == ["default"]
+        assert requested_users == ["test"]
 
 
 async def test_add_cluster_user(
@@ -362,7 +404,9 @@ async def test_add_cluster_user(
 
     async with make_client(srv.make_url("/api/v1")) as client:
         resp = await client._admin.add_cluster_user("default", "ivan", "user")
-        assert resp == _ClusterUser(user_name="ivan", role=_ClusterUserRoleType("user"))
+        assert resp == _ClusterUser(
+            user_name="ivan", role=_ClusterUserRoleType("user"), quota=Quota()
+        )
         assert requested_clusters == ["default"]
         assert requested_payloads == [{"role": "user", "user_name": "ivan"}]
 
@@ -412,6 +456,7 @@ async def test_set_user_quota(
         payload = await request.json()
         requested_payloads.append(dict(payload))
         payload["role"] = "user"
+        payload["user_name"] = request.match_info["user_name"]
         return web.json_response(payload, status=HTTPOk.status_code)
 
     app = web.Application()
@@ -423,27 +468,20 @@ async def test_set_user_quota(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/api/v1")) as client:
-        await client._admin.set_user_quota(
-            "default", "ivan", Decimal("1000"), 10, 100, 200
-        )
-        await client._admin.set_user_quota("neuro", "user2", None, None, None, None)
-        await client._admin.set_user_quota("neuro-ai", "user3", None, None, 150, None)
+        await client._admin.set_user_quota("default", "ivan", Decimal("1000"), 10)
+        await client._admin.set_user_quota("neuro", "user2", None, None)
         assert requested_cluster_users == [
             ("default", "ivan"),
             ("neuro", "user2"),
-            ("neuro-ai", "user3"),
         ]
-        assert len(requested_payloads) == 3
+        assert len(requested_payloads) == 2
         assert {
             "quota": {
                 "credits": "1000",
                 "total_running_jobs": 10,
-                "total_gpu_run_time_minutes": 100,
-                "total_non_gpu_run_time_minutes": 200,
             },
         } in requested_payloads
         assert {"quota": {}} in requested_payloads
-        assert {"quota": {"total_gpu_run_time_minutes": 150}} in requested_payloads
 
 
 async def test_add_user_quota(
@@ -464,6 +502,7 @@ async def test_add_user_quota(
         payload = await request.json()
         requested_payloads.append(dict(payload))
         payload["role"] = "user"
+        payload["user_name"] = request.match_info["user_name"]
         return web.json_response(payload, status=HTTPOk.status_code)
 
     app = web.Application()
@@ -475,26 +514,19 @@ async def test_add_user_quota(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/api/v1")) as client:
-        await client._admin.add_user_quota("default", "ivan", Decimal("1000"), 100, 200)
-        await client._admin.add_user_quota("neuro", "user2", None, None, None)
-        await client._admin.add_user_quota("neuro-ai", "user3", None, 150, None)
+        await client._admin.add_user_quota("default", "ivan", Decimal("1000"))
+        await client._admin.add_user_quota("neuro", "user2", None)
         assert requested_cluster_users == [
             ("default", "ivan"),
             ("neuro", "user2"),
-            ("neuro-ai", "user3"),
         ]
-        assert len(requested_payloads) == 3
+        assert len(requested_payloads) == 2
         assert {
             "additional_quota": {
                 "credits": "1000",
-                "total_gpu_run_time_minutes": 100,
-                "total_non_gpu_run_time_minutes": 200,
             },
         } in requested_payloads
         assert {"additional_quota": {}} in requested_payloads
-        assert {
-            "additional_quota": {"total_gpu_run_time_minutes": 150},
-        } in requested_payloads
 
 
 async def test_get_cloud_provider_options(

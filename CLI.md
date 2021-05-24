@@ -10,6 +10,7 @@
 		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
 		* [neuro admin add-cluster-user](#neuro-admin-add-cluster-user)
 		* [neuro admin remove-cluster-user](#neuro-admin-remove-cluster-user)
+		* [neuro admin get-user-quota](#neuro-admin-get-user-quota)
 		* [neuro admin set-user-quota](#neuro-admin-set-user-quota)
 		* [neuro admin add-user-quota](#neuro-admin-add-user-quota)
 		* [neuro admin add-resource-preset](#neuro-admin-add-resource-preset)
@@ -206,6 +207,7 @@ Name | Description|
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
 | _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster |
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
+| _[neuro admin get\-user-quota](#neuro-admin-get-user-quota)_| Get info about user quota in given cluster |
 | _[neuro admin set\-user-quota](#neuro-admin-set-user-quota)_| Set user quota to given values |
 | _[neuro admin add\-user-quota](#neuro-admin-add-user-quota)_| Add given values to user quota |
 | _[neuro admin add\-resource-preset](#neuro-admin-add-resource-preset)_| Add new resource preset |
@@ -350,6 +352,25 @@ Name | Description|
 
 
 
+### neuro admin get-user-quota
+
+Get info about user quota in given cluster
+
+**Usage:**
+
+```bash
+neuro admin get-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ### neuro admin set-user-quota
 
 Set user quota to given values
@@ -366,9 +387,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-c, --credits AMOUNT_|Maximum running jobs quota|
-|_\-g, --gpu AMOUNT_|GPU quota value in hours \(h) or minutes \(m).|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota|
-|_\-n, --non-gpu AMOUNT_|Non-GPU quota value in hours \(h) or minutes \(m).|
 
 
 
@@ -389,8 +408,6 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-c, --credits AMOUNT_|Maximum running jobs quota|
-|_\-g, --gpu AMOUNT_|Additional GPU quota value in hours \(h) or minutes \(m).|
-|_\-n, --non-gpu AMOUNT_|Additional non-GPU quota value in hours \(h) or minutes \(m).|
 
 
 

@@ -3,6 +3,8 @@ from decimal import Decimal
 from enum import Enum, unique
 from typing import Any, Dict, List, Mapping, Optional
 
+from neuro_sdk.users import Quota
+
 from .config import Config
 from .core import _Core
 from .server_cfg import Preset
@@ -23,19 +25,7 @@ class _ClusterUserRoleType(str, Enum):
 class _ClusterUser:
     user_name: str
     role: _ClusterUserRoleType
-
-
-@dataclass(frozen=True)
-class _Quota:
-    credits: Optional[Decimal]
-    total_running_jobs: Optional[int]
-    total_gpu_run_time_minutes: Optional[int]
-    total_non_gpu_run_time_minutes: Optional[int]
-
-
-@dataclass(frozen=True)
-class _ClusterUserWithQuota(_ClusterUser):
-    quota: _Quota
+    quota: Quota
 
 
 @dataclass(frozen=True)
@@ -125,6 +115,19 @@ class _Admin(metaclass=NoPublicConstructor):
             res = await resp.json()
             return [_cluster_user_from_api(payload) for payload in res]
 
+    async def get_cluster_user(
+        self,
+        cluster_name: Optional[str] = None,
+        user_name: Optional[str] = None,
+    ) -> _ClusterUser:
+        cluster_name = cluster_name or self._config.cluster_name
+        user_name = user_name or self._config.username
+        url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            res = await resp.json()
+            return _cluster_user_from_api(res)
+
     async def add_cluster_user(
         self, cluster_name: str, user_name: str, role: str
     ) -> _ClusterUser:
@@ -150,9 +153,7 @@ class _Admin(metaclass=NoPublicConstructor):
         user_name: str,
         credits: Optional[Decimal],
         total_running_jobs: Optional[int],
-        gpu_value_minutes: Optional[int],
-        non_gpu_value_minutes: Optional[int],
-    ) -> _ClusterUserWithQuota:
+    ) -> _ClusterUser:
         url = (
             self._config.admin_url
             / "clusters"
@@ -165,8 +166,6 @@ class _Admin(metaclass=NoPublicConstructor):
             "quota": {
                 "credits": str(credits) if credits else None,
                 "total_running_jobs": total_running_jobs,
-                "total_gpu_run_time_minutes": gpu_value_minutes,
-                "total_non_gpu_run_time_minutes": non_gpu_value_minutes,
             },
         }
         payload["quota"] = {k: v for k, v in payload["quota"].items() if v is not None}
@@ -175,16 +174,14 @@ class _Admin(metaclass=NoPublicConstructor):
 
         async with self._core.request("PATCH", url, json=payload, auth=auth) as resp:
             payload = await resp.json()
-            return _cluster_user_with_quota_from_api(user_name, payload)
+            return _cluster_user_from_api(payload)
 
     async def add_user_quota(
         self,
         cluster_name: str,
         user_name: str,
         additional_credits: Optional[Decimal],
-        additional_gpu_value_minutes: Optional[float],
-        additional_non_gpu_value_minutes: Optional[float],
-    ) -> _ClusterUserWithQuota:
+    ) -> _ClusterUser:
         url = (
             self._config.admin_url
             / "clusters"
@@ -196,8 +193,6 @@ class _Admin(metaclass=NoPublicConstructor):
         payload = {
             "additional_quota": {
                 "credits": str(additional_credits) if additional_credits else None,
-                "total_gpu_run_time_minutes": additional_gpu_value_minutes,
-                "total_non_gpu_run_time_minutes": additional_non_gpu_value_minutes,
             },
         }
         payload["additional_quota"] = {
@@ -207,7 +202,7 @@ class _Admin(metaclass=NoPublicConstructor):
 
         async with self._core.request("PATCH", url, json=payload, auth=auth) as resp:
             payload = await resp.json()
-            return _cluster_user_with_quota_from_api(user_name, payload)
+            return _cluster_user_from_api(payload)
 
     async def get_cloud_provider_options(
         self, cloud_provider_name: str
@@ -219,23 +214,13 @@ class _Admin(metaclass=NoPublicConstructor):
 
 
 def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
-    return _ClusterUser(
-        user_name=payload["user_name"], role=_ClusterUserRoleType(payload["role"])
-    )
-
-
-def _cluster_user_with_quota_from_api(
-    user_name: str, payload: Dict[str, Any]
-) -> _ClusterUserWithQuota:
     quota_dict = payload.get("quota", {})
-    return _ClusterUserWithQuota(
-        user_name=user_name,
+    return _ClusterUser(
+        user_name=payload["user_name"],
         role=_ClusterUserRoleType(payload["role"]),
-        quota=_Quota(
+        quota=Quota(
             Decimal(quota_dict["credits"]) if "credits" in quota_dict else None,
             quota_dict.get("total_running_jobs"),
-            quota_dict.get("total_gpu_run_time_minutes"),
-            quota_dict.get("total_non_gpu_run_time_minutes"),
         ),
     )
 

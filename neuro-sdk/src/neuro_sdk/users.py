@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from decimal import Decimal
 from enum import Enum
 from typing import Any, Dict, Optional, Sequence
 
@@ -29,10 +30,32 @@ class Share:
     permission: Permission
 
 
+@dataclass(frozen=True)
+class Quota:
+    credits: Optional[Decimal] = None
+    total_running_jobs: Optional[int] = None
+
+
 class Users(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core
         self._config = config
+
+    async def get_quota(self, user: str) -> Dict[str, Quota]:
+        url = self._get_user_url(user)
+        auth = await self._config._api_auth()
+        res = {}
+        async with self._core.request("GET", url, auth=auth) as resp:
+            payload = await resp.json()
+            for cluster_dict in payload["clusters"]:
+                quota_dict = cluster_dict.get("quota", {})
+                res[cluster_dict["name"]] = Quota(
+                    credits=Decimal(quota_dict["credits"])
+                    if "credits" in quota_dict
+                    else None,
+                    total_running_jobs=quota_dict.get("total_running_jobs"),
+                )
+        return res
 
     async def get_acl(
         self, user: str, scheme: Optional[str] = None, *, uri: Optional[URL] = None
