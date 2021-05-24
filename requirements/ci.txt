@@ -7,7 +7,7 @@ isort==5.8.0
 markdown-toc==1.2.6
 mypy==0.812
 pexpect==4.8.0
-pre-commit==2.12.1
+pre-commit==2.13.0
 pytest==6.2.4
 pytest-aiohttp==0.3.0
 pytest-cov==2.12.0
