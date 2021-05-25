@@ -1,5 +1,6 @@
 import contextlib
 import logging
+import re
 from dataclasses import replace
 from typing import Optional, Sequence
 
@@ -113,7 +114,29 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 )
 @option("-l", "format_long", is_flag=True, help="List in long format.")
 @option("--full-uri", is_flag=True, help="Output full image URI.")
-async def ls(root: Root, cluster: str, format_long: bool, full_uri: bool) -> None:
+@option(
+    "-o",
+    "--owner",
+    multiple=True,
+    help="Filter out images by owner (multiple option). "
+    "Supports `ME` option to filter by the current user.",
+    secure=True,
+)
+@option(
+    "-n",
+    "--name",
+    metavar="PATTERN",
+    help="Filter out images by name regex.",
+    secure=True,
+)
+async def ls(
+    root: Root,
+    cluster: str,
+    format_long: bool,
+    full_uri: bool,
+    owner: Sequence[str],
+    name: Optional[str],
+) -> None:
     """
     List images.
     """
@@ -122,6 +145,17 @@ async def ls(root: Root, cluster: str, format_long: bool, full_uri: bool) -> Non
         cluster = root.client.config.cluster_name
     with root.status("Fetching images"):
         images = await root.client.images.ls(cluster_name=cluster)
+
+    if owner:
+        owners = set(owner)
+        if "ME" in owners:
+            owners.remove("ME")
+            owners.add(root.client.config.username)
+        images = [image for image in images if image.owner in owners]
+
+    if name:
+        name_re = re.compile(name)
+        images = [image for image in images if name_re.fullmatch(image.name)]
 
     image_fmtr: ImageFormatter
     if full_uri:
