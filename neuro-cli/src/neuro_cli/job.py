@@ -1361,7 +1361,7 @@ def calc_statuses(status: Sequence[str], all: bool) -> Set[JobStatus]:
     statuses = set(status)
     if all:
         if statuses:
-            opt = " ".join([f"--status={s}" for s in status])
+            opt = " ".join(f"--status={s}" for s in status)
             log.warning(f"Option `-a/--all` overwrites option(s) `{opt}`")
         statuses = set()
     elif not statuses:

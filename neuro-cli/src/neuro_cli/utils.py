@@ -556,7 +556,7 @@ def parse_permission_action(action: str) -> Action:
     try:
         return Action[action.upper()]
     except KeyError:
-        valid_actions = ", ".join([a.value for a in Action])
+        valid_actions = ", ".join(a.value for a in Action)
         raise ValueError(
             f"invalid permission action '{action}', allowed values: {valid_actions}"
         )

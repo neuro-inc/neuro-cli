@@ -433,7 +433,7 @@ class TestLogout:
     async def test_logout_no_browser_callback(self, config_dir: Path) -> None:
         await Factory().logout()
         assert not config_dir.exists(), "Config not removed after logout\n" + "\n".join(
-            [p.name for p in config_dir.iterdir()]
+            p.name for p in config_dir.iterdir()
         )
 
     async def test_logout_with_browser_callback(
@@ -447,7 +447,7 @@ class TestLogout:
 
         await Factory().logout(show_browser)
         assert not config_dir.exists(), "Config not removed after logout\n" + "\n".join(
-            [p.name for p in config_dir.iterdir()]
+            p.name for p in config_dir.iterdir()
         )
 
 

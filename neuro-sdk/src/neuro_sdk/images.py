@@ -139,7 +139,7 @@ class Images(metaclass=NoPublicConstructor):
             headers={"Accept": "application/vnd.docker.distribution.manifest.v2+json"},
         ) as resp:
             data = await resp.json()
-            size = sum([layer["size"] for layer in data["layers"]])
+            size = sum(layer["size"] for layer in data["layers"])
             return Tag(name=remote.tag, size=size)
 
     async def rm(self, remote: RemoteImage, digest: str) -> None:
