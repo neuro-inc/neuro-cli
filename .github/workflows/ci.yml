@@ -6,6 +6,8 @@ on:
     tags: [v*]
   pull_request:
     branches: [master]
+  pull_request_target:
+    branches: [master]
   schedule:
   - cron: 0 6 * * *       # Daily 6AM UTC build
 
@@ -15,6 +17,9 @@ jobs:
   lint:
     name: Linter
     runs-on: ubuntu-latest
+    if: |
+      (github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]') ||
+      (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]')
     timeout-minutes: 5
     steps:
     - name: Checkout
