@@ -9,6 +9,7 @@ from rich.table import Table
 
 from neuro_sdk.admin import _Cluster, _ClusterUser, _NodePool
 
+from neuro_cli.formatters.config import format_quota_details
 from neuro_cli.utils import format_size
 
 
@@ -17,10 +18,19 @@ class ClusterUserFormatter:
         table = Table(box=box.MINIMAL_HEAVY_HEAD)
         table.add_column("Name", style="bold")
         table.add_column("Role")
+        table.add_column("Credits")
+        table.add_column("Max jobs")
         rows = []
 
         for user in clusters_users:
-            rows.append((user.user_name, user.role.value))
+            rows.append(
+                (
+                    user.user_name,
+                    user.role.value,
+                    format_quota_details(user.quota.credits),
+                    format_quota_details(user.quota.total_running_jobs),
+                )
+            )
         rows.sort(key=operator.itemgetter(0))
 
         for row in rows:

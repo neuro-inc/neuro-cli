@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Callable
 
 from rich.console import RenderableType
@@ -10,6 +11,7 @@ from neuro_sdk.admin import (
     _NodePool,
     _Storage,
 )
+from neuro_sdk.users import Quota
 
 from neuro_cli.formatters.admin import ClustersFormatter, ClusterUserFormatter
 
@@ -20,10 +22,24 @@ class TestClusterUserFormatter:
     def test_cluster_list(self, rich_cmp: RichCmp) -> None:
         formatter = ClusterUserFormatter()
         users = [
-            _ClusterUser(user_name="denis", role=_ClusterUserRoleType("admin")),
-            _ClusterUser(user_name="andrew", role=_ClusterUserRoleType("manager")),
-            _ClusterUser(user_name="ivan", role=_ClusterUserRoleType("user")),
-            _ClusterUser(user_name="alex", role=_ClusterUserRoleType("user")),
+            _ClusterUser(
+                user_name="denis", role=_ClusterUserRoleType("admin"), quota=Quota()
+            ),
+            _ClusterUser(
+                user_name="andrew",
+                role=_ClusterUserRoleType("manager"),
+                quota=Quota(credits=Decimal(100)),
+            ),
+            _ClusterUser(
+                user_name="ivan",
+                role=_ClusterUserRoleType("user"),
+                quota=Quota(total_running_jobs=1),
+            ),
+            _ClusterUser(
+                user_name="alex",
+                role=_ClusterUserRoleType("user"),
+                quota=Quota(credits=Decimal(10), total_running_jobs=2),
+            ),
         ]
         rich_cmp(formatter(users))
 

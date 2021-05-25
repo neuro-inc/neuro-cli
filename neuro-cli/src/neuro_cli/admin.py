@@ -259,9 +259,9 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     with root.status(
         f"Fetching the list of cluster users of cluster [b]cluster_name[/b]"
     ):
-        clusters = await root.client._admin.list_cluster_users(cluster_name)
+        users = await root.client._admin.list_cluster_users(cluster_name)
     with root.pager():
-        root.print(fmt(clusters))
+        root.print(fmt(users))
 
 
 @command()
@@ -341,6 +341,30 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
 @command()
 @argument("cluster_name", required=True, type=str)
 @argument("user_name", required=True, type=str)
+async def get_user_quota(
+    root: Root,
+    cluster_name: str,
+    user_name: str,
+) -> None:
+    """
+    Get info about user quota in given cluster
+    """
+    user_with_quota = await root.client._admin.get_cluster_user(
+        cluster_name=cluster_name,
+        user_name=user_name,
+    )
+    fmt = QuotaFormatter()
+    root.print(
+        f"Quotas for [u]{rich_escape(user_with_quota.user_name)}[/u] "
+        f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
+        markup=True,
+    )
+    root.print(fmt(user_with_quota.quota))
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("user_name", required=True, type=str)
 @option(
     "-c",
     "--credits",
@@ -355,42 +379,22 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
     type=int,
     help="Maximum running jobs quota",
 )
-@option(
-    "-g",
-    "--gpu",
-    metavar="AMOUNT",
-    type=str,
-    help="GPU quota value in hours (h) or minutes (m).",
-)
-@option(
-    "-n",
-    "--non-gpu",
-    metavar="AMOUNT",
-    type=str,
-    help="Non-GPU quota value in hours (h) or minutes (m).",
-)
 async def set_user_quota(
     root: Root,
     cluster_name: str,
     user_name: str,
     credits: Optional[str],
     jobs: Optional[int],
-    gpu: Optional[str],
-    non_gpu: Optional[str],
 ) -> None:
     """
     Set user quota to given values
     """
     credits_decimal = _parse_credits_value(credits)
-    gpu_value_minutes = _parse_quota_value(gpu, allow_infinity=True)
-    non_gpu_value_minutes = _parse_quota_value(non_gpu, allow_infinity=True)
     user_with_quota = await root.client._admin.set_user_quota(
         cluster_name=cluster_name,
         user_name=user_name,
         credits=credits_decimal,
         total_running_jobs=jobs,
-        gpu_value_minutes=gpu_value_minutes,
-        non_gpu_value_minutes=non_gpu_value_minutes,
     )
     fmt = QuotaFormatter()
     root.print(
@@ -411,40 +415,20 @@ async def set_user_quota(
     type=str,
     help="Maximum running jobs quota",
 )
-@option(
-    "-g",
-    "--gpu",
-    metavar="AMOUNT",
-    type=str,
-    help="Additional GPU quota value in hours (h) or minutes (m).",
-)
-@option(
-    "-n",
-    "--non-gpu",
-    metavar="AMOUNT",
-    type=str,
-    help="Additional non-GPU quota value in hours (h) or minutes (m).",
-)
 async def add_user_quota(
     root: Root,
     cluster_name: str,
     user_name: str,
     credits: str,
-    gpu: Optional[str],
-    non_gpu: Optional[str],
 ) -> None:
     """
     Add given values to user quota
     """
     additional_credits = _parse_credits_value(credits)
-    additional_gpu_value_minutes = _parse_quota_value(gpu, False)
-    additional_non_gpu_value_minutes = _parse_quota_value(non_gpu, False)
     user_with_quota = await root.client._admin.add_user_quota(
         cluster_name,
         user_name,
         additional_credits=additional_credits,
-        additional_gpu_value_minutes=additional_gpu_value_minutes,
-        additional_non_gpu_value_minutes=additional_non_gpu_value_minutes,
     )
     fmt = QuotaFormatter()
     root.print(
@@ -715,6 +699,7 @@ admin.add_command(get_cluster_users)
 admin.add_command(add_cluster_user)
 admin.add_command(remove_cluster_user)
 
+admin.add_command(get_user_quota)
 admin.add_command(set_user_quota)
 admin.add_command(add_user_quota)
 

@@ -12,7 +12,6 @@ from .disks import Disks
 from .images import Images
 from .jobs import Jobs
 from .parser import Parser
-from .quota import _Quota
 from .secrets import Secrets
 from .server_cfg import Preset
 from .storage import Storage
@@ -45,7 +44,6 @@ class Client(metaclass=NoPublicConstructor):
         self._jobs = Jobs._create(self._core, self._config, self._parser)
         self._blob_storage = BlobStorage._create(self._core, self._config)
         self._storage = Storage._create(self._core, self._config)
-        self._quota = _Quota._create(self._core, self._config)
         self._users = Users._create(self._core, self._config)
         self._secrets = Secrets._create(self._core, self._config)
         self._disks = Disks._create(self._core, self._config)

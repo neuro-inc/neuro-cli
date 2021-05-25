@@ -20,6 +20,7 @@ Cluster administration commands.
 | [_get-cluster-users_](admin.md#get-cluster-users) | Print the list of all users in the cluster... |
 | [_add-cluster-user_](admin.md#add-cluster-user) | Add user access to specified cluster |
 | [_remove-cluster-user_](admin.md#remove-cluster-user) | Remove user access from the cluster |
+| [_get-user-quota_](admin.md#get-user-quota) | Get info about user quota in given cluster |
 | [_set-user-quota_](admin.md#set-user-quota) | Set user quota to given values |
 | [_add-user-quota_](admin.md#add-user-quota) | Add given values to user quota |
 | [_add-resource-preset_](admin.md#add-resource-preset) | Add new resource preset |
@@ -179,6 +180,27 @@ Remove user access from the cluster.
 
 
 
+### get-user-quota
+
+Get info about user quota in given cluster
+
+
+#### Usage
+
+```bash
+neuro admin get-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+Get info about user quota in given cluster
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
 ### set-user-quota
 
 Set user quota to given values
@@ -198,9 +220,7 @@ Set user quota to given values
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _-c, --credits AMOUNT_ | Maximum running jobs quota |
-| _-g, --gpu AMOUNT_ | GPU quota value in hours \(h\) or minutes \(m\). |
 | _-j, --jobs AMOUNT_ | Maximum running jobs quota |
-| _-n, --non-gpu AMOUNT_ | Non-GPU quota value in hours \(h\) or minutes \(m\). |
 
 
 
@@ -223,8 +243,6 @@ Add given values to user quota
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _-c, --credits AMOUNT_ | Maximum running jobs quota |
-| _-g, --gpu AMOUNT_ | Additional GPU quota value in hours \(h\) or minutes \(m\). |
-| _-n, --non-gpu AMOUNT_ | Additional non-GPU quota value in hours \(h\) or minutes \(m\). |
 
 
 

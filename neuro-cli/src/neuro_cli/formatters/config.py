@@ -10,8 +10,7 @@ from rich.table import Table
 from rich.text import Text
 
 from neuro_sdk import Cluster, Config, Preset
-from neuro_sdk.admin import _Quota
-from neuro_sdk.quota import _QuotaInfo
+from neuro_sdk.users import Quota
 
 from neuro_cli.utils import format_size
 
@@ -39,70 +38,14 @@ class ConfigFormatter:
         )
 
 
-class QuotaInfoFormatter:
-    QUOTA_NOT_SET = "infinity"
-
-    def __call__(self, quota: _QuotaInfo) -> RenderableType:
-        gpu_details = self._format_quota_details(
-            quota.gpu_time_spent, quota.gpu_time_limit, quota.gpu_time_left
-        )
-        cpu_details = self._format_quota_details(
-            quota.cpu_time_spent, quota.cpu_time_limit, quota.cpu_time_left
-        )
-        return RenderGroup(
-            Text.assemble(Text("GPU", style="bold"), f": ", gpu_details),
-            Text.assemble(Text("CPU", style="bold"), f": ", cpu_details),
-        )
-
-    def _format_quota_details(
-        self, time_spent: float, time_limit: float, time_left: float
-    ) -> str:
-        spent_str = f"spent: {self._format_time(time_spent)}"
-        quota_str = "quota: "
-        if time_limit < float("inf"):
-            assert time_left < float("inf")
-            quota_str += self._format_time(time_limit)
-            quota_str += f", left: {self._format_time(time_left)}"
-        else:
-            quota_str += self.QUOTA_NOT_SET
-        return f"{spent_str} ({quota_str})"
-
-    def _format_time(self, total_seconds: float) -> str:
-        # Since API for `GET /stats/users/{name}` returns time in minutes,
-        #  we need to display it in minutes as well.
-        total_minutes = int(total_seconds // 60)
-        hours, minutes = divmod(total_minutes, 60)
-        return f"{hours:02d}h {minutes:02d}m"
-
-
 class QuotaFormatter:
-    QUOTA_NOT_SET = "infinity"
-
-    def __call__(self, quota: _Quota) -> RenderableType:
-        credits_details = self._format_quota_details(quota.credits, is_minutes=False)
-        jobs_details = self._format_quota_details(
-            quota.total_running_jobs, is_minutes=False
-        )
-        gpu_details = self._format_quota_details(quota.total_gpu_run_time_minutes)
-        non_gpu_details = self._format_quota_details(
-            quota.total_non_gpu_run_time_minutes
-        )
+    def __call__(self, quota: Quota) -> RenderableType:
+        credits_details = format_quota_details(quota.credits)
+        jobs_details = format_quota_details(quota.total_running_jobs)
         return RenderGroup(
             Text.assemble(Text("Credits", style="bold"), f": ", credits_details),
             Text.assemble(Text("Jobs", style="bold"), f": ", jobs_details),
-            Text.assemble(Text("GPU", style="bold"), f": ", gpu_details),
-            Text.assemble(Text("CPU", style="bold"), f": ", non_gpu_details),
         )
-
-    def _format_quota_details(
-        self, quota: Optional[Union[int, Decimal]], *, is_minutes: bool = True
-    ) -> str:
-        if quota is None:
-            return self.QUOTA_NOT_SET
-        elif is_minutes:
-            return f"{quota}m"
-        else:
-            return str(quota)
 
 
 class ClustersFormatter:
@@ -187,3 +130,13 @@ class AliasesFormatter:
         for alias in sorted(aliases, key=operator.attrgetter("name")):
             table.add_row(alias.name, alias.get_short_help_str())
         return table
+
+
+_QUOTA_NOT_SET = "infinity"
+
+
+def format_quota_details(quota: Optional[Union[int, Decimal]]) -> str:
+    if quota is None:
+        return _QUOTA_NOT_SET
+    else:
+        return str(quota)

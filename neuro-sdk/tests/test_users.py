@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import AsyncIterator, Callable
 
 import pytest
@@ -5,6 +6,7 @@ from aiohttp import web
 from yarl import URL
 
 from neuro_sdk import Action, Client, Permission, ResourceNotFound
+from neuro_sdk.users import Quota
 
 from tests import _TestServerFactory
 
@@ -78,7 +80,48 @@ async def mocked_remove_role_client(
     await client.close()
 
 
-class TestUsersShare:
+@pytest.fixture()
+async def mocked_get_user_client(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> AsyncIterator[Client]:
+    async def handler(request: web.Request) -> web.Response:
+        assert request.match_info["name"] == "test_user"
+        return web.json_response(
+            {
+                "user_name": "test_user",
+                "clusters": [
+                    {"name": "cluster1"},
+                    {"name": "cluster2", "quota": {}},
+                    {"name": "cluster3", "quota": {"credits": "100"}},
+                    {"name": "cluster4", "quota": {"total_running_jobs": 5}},
+                    {
+                        "name": "cluster5",
+                        "quota": {"credits": "100", "total_running_jobs": 5},
+                    },
+                ],
+            },
+            status=web.HTTPOk.status_code,
+        )
+
+    app = web.Application()
+    app.router.add_get("/users/{name}", handler)
+    srv = await aiohttp_server(app)
+    client = make_client(srv.make_url("/"))
+    yield client
+    await client.close()
+
+
+class TestUsers:
+    async def test_get_quota(self, mocked_get_user_client: Client) -> None:
+        res = await mocked_get_user_client.users.get_quota(
+            user="test_user",
+        )
+        assert res["cluster1"] == Quota()
+        assert res["cluster2"] == Quota()
+        assert res["cluster3"] == Quota(credits=Decimal("100"))
+        assert res["cluster4"] == Quota(total_running_jobs=5)
+        assert res["cluster5"] == Quota(credits=Decimal("100"), total_running_jobs=5)
+
     async def test_share_unknown_user(self, mocked_share_client: Client) -> None:
         with pytest.raises(ResourceNotFound):
             await mocked_share_client.users.share(

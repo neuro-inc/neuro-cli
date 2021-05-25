@@ -1,8 +1,8 @@
-╷          
-  Name   │ Role     
-╺━━━━━━━━┿━━━━━━━━━╸
-  alex   │ user     
-  andrew │ manager  
-  denis  │ admin    
-  ivan   │ user     
-         ╵
+╷         ╷          ╷           
+  Name   │ Role    │ Credits  │ Max jobs  
+╺━━━━━━━━┿━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━╸
+  alex   │ user    │ 10       │ 2         
+  andrew │ manager │ 100      │ infinity  
+  denis  │ admin   │ infinity │ infinity  
+  ivan   │ user    │ infinity │ 1         
+         ╵         ╵          ╵
