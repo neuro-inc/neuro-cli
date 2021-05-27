@@ -30,6 +30,11 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: 3.9
+    - name: Cache pre-commit hooks
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pre-commit
+        key: pre-commit|py3.9|${{ hashFiles('.pre-commit-config.yaml') }}
     - name: Cache PyPI
       uses: actions/cache@v2
       with:
