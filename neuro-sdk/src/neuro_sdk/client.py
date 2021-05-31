@@ -4,6 +4,8 @@ from typing import Mapping, Optional, Type
 
 import aiohttp
 
+from neuro_sdk.service_accounts import ServiceAccounts
+
 from .admin import _Admin
 from .blob_storage import BlobStorage
 from .config import Config
@@ -47,6 +49,7 @@ class Client(metaclass=NoPublicConstructor):
         self._users = Users._create(self._core, self._config)
         self._secrets = Secrets._create(self._core, self._config)
         self._disks = Disks._create(self._core, self._config)
+        self._service_accounts = ServiceAccounts._create(self._core, self._config)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
@@ -118,6 +121,10 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def disks(self) -> Disks:
         return self._disks
+
+    @property
+    def service_accounts(self) -> ServiceAccounts:
+        return self._service_accounts
 
     @property
     def parse(self) -> Parser:

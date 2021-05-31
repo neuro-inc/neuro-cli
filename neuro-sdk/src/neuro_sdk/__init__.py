@@ -63,6 +63,7 @@ from .parsing_utils import LocalImage, RemoteImage, Tag, TagOption
 from .plugins import ConfigBuilder, PluginManager
 from .secrets import Secret, Secrets
 from .server_cfg import Cluster
+from .service_accounts import ServiceAccount, ServiceAccounts
 from .storage import FileStatus, FileStatusType, Storage
 from .tracing import gen_trace_id
 from .users import Action, Permission, Share, Users
@@ -130,6 +131,8 @@ __all__ = (
     "SecretFile",
     "Secrets",
     "ServerNotAvailable",
+    "ServiceAccount",
+    "ServiceAccounts",
     "Share",
     "StdStream",
     "Storage",
