@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class ServiceAccount:
     id: str
-    name: str
+    name: Optional[str]
     owner: str
     default_cluster: str
     role: str
@@ -49,8 +49,8 @@ class ServiceAccounts(metaclass=NoPublicConstructor):
 
     async def create(
         self,
-        name: str,
         role: str,
+        name: Optional[str] = None,
         default_cluster: Optional[str] = None,
     ) -> Tuple[ServiceAccount, str]:
         url = self._config.service_accounts_url

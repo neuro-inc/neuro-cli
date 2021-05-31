@@ -82,6 +82,11 @@
 		* [neuro disk create](#neuro-disk-create)
 		* [neuro disk get](#neuro-disk-get)
 		* [neuro disk rm](#neuro-disk-rm)
+	* [neuro service-account](#neuro-service-account)
+		* [neuro service-account ls](#neuro-service-account-ls)
+		* [neuro service-account create](#neuro-service-account-create)
+		* [neuro service-account get](#neuro-service-account-get)
+		* [neuro service-account rm](#neuro-service-account-rm)
 	* [neuro help](#neuro-help)
 	* [neuro run](#neuro-run)
 	* [neuro ps](#neuro-ps)
@@ -147,6 +152,7 @@ Name | Description|
 | _[neuro blob](#neuro-blob)_| Blob storage operations |
 | _[neuro secret](#neuro-secret)_| Operations with secrets |
 | _[neuro disk](#neuro-disk)_| Operations with disks |
+| _[neuro service-account](#neuro-service-account)_| Operations with service accounts |
 
 
 **Commands:**
@@ -2252,6 +2258,113 @@ Remove disk DISK_ID.
 
 ```bash
 neuro disk rm [OPTIONS] DISKS...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+## neuro service-account
+
+Operations with service accounts.
+
+**Usage:**
+
+```bash
+neuro service-account [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro service-account ls](#neuro-service-account-ls)_| List service accounts |
+| _[neuro service-account create](#neuro-service-account-create)_| Create a service account |
+| _[neuro service-account get](#neuro-service-account-get)_| Get service account SERVICE_ACCOUNT |
+| _[neuro service-account rm](#neuro-service-account-rm)_| Remove service accounts SERVICE_ACCOUNT |
+
+
+
+
+### neuro service-account ls
+
+List service accounts.
+
+**Usage:**
+
+```bash
+neuro service-account ls [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro service-account create
+
+Create a service account.
+
+**Usage:**
+
+```bash
+neuro service-account create [OPTIONS] ROLE
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\--default-cluster CLUSTER_NAME_|Service account default cluster. Current cluster will be used if not specified|
+|_--name NAME_|Optional service account name|
+
+
+
+
+### neuro service-account get
+
+Get service account SERVICE_ACCOUNT.
+
+**Usage:**
+
+```bash
+neuro service-account get [OPTIONS] SERVICE_ACCOUNT
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro service-account rm
+
+Remove service accounts SERVICE_ACCOUNT.
+
+**Usage:**
+
+```bash
+neuro service-account rm [OPTIONS] SERVICE_ACCOUNTS...
 ```
 
 **Options:**
