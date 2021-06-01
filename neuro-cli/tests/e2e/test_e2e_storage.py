@@ -517,8 +517,6 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
         f"storage://{helper.cluster_name}/{helper.username}/"
         f"{helper.tmpstorage.path}"
     )
-    while True:
-        pass
     assert sorted(captured.out.splitlines()) == [
         prefix.rstrip("/"),
         prefix + "/folder",
