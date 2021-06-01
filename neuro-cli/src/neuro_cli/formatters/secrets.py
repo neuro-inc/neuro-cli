@@ -20,7 +20,7 @@ class BaseSecretsFormatter:
 
 class SimpleSecretsFormatter(BaseSecretsFormatter):
     def __call__(self, secrets: Sequence[Secret]) -> RenderableType:
-        return RenderGroup(*[Text(secret.key) for secret in secrets])
+        return RenderGroup(*(Text(secret.key) for secret in secrets))
 
 
 class SecretsFormatter(BaseSecretsFormatter):

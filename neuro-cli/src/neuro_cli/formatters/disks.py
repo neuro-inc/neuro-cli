@@ -22,7 +22,7 @@ class BaseDisksFormatter:
 
 class SimpleDisksFormatter(BaseDisksFormatter):
     def __call__(self, disks: Sequence[Disk]) -> RenderableType:
-        return RenderGroup(*[Text(disk.id) for disk in disks])
+        return RenderGroup(*(Text(disk.id) for disk in disks))
 
 
 class DisksFormatter(BaseDisksFormatter):
