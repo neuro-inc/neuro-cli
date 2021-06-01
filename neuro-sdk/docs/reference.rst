@@ -22,6 +22,7 @@ Reference
    users_reference
    secrets_reference
    disks_reference
+   service_accounts_reference
    parse_reference
    plugin_reference
    glossary
