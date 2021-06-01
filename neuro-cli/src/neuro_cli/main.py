@@ -14,6 +14,7 @@ import click
 from aiodocker.exceptions import DockerError
 from click.exceptions import Abort as ClickAbort
 from click.exceptions import Exit as ClickExit
+from packaging import version
 
 import neuro_sdk
 
@@ -545,7 +546,13 @@ def main(args: Optional[List[str]] = None) -> None:
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ResourceWarning)
-            cli.main(args=args, standalone_mode=False)
+            kwargs = dict(
+                args=args,
+                standalone_mode=False,
+            )
+            if version.parse(click.__version__) >= version.parse("8.0.0"):
+                kwargs["windows_expand_args"] = False
+            cli.main(**kwargs)
     except ClickAbort:
         LOG_ERROR("Aborting.")
         sys.exit(130)
