@@ -192,7 +192,9 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
     List resources that match PATTERNS.
     """
     for pattern in patterns:
+        print("Pattern: ", pattern)
         uri = parse_file_resource(pattern, root)
+        print("URI: ", uri)
         if root.verbosity > 0:
             painter = get_painter(root.color)
             uri_text = painter.paint(str(uri), FileStatusType.FILE)
