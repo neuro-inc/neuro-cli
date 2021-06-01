@@ -26,7 +26,7 @@ class BaseServiceAccountsFormatter:
 
 class SimpleServiceAccountsFormatter(BaseServiceAccountsFormatter):
     def __call__(self, accounts: Sequence[ServiceAccount]) -> RenderableType:
-        return RenderGroup(*[Text(account.id) for account in accounts])
+        return RenderGroup(*(Text(account.id) for account in accounts))
 
 
 class ServiceAccountsFormatter(BaseServiceAccountsFormatter):
