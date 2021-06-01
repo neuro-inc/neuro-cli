@@ -41,7 +41,7 @@ update-deps: ### Update dependencies
 		--color=$(COLOR) \
 		--durations 10 \
 		$(PYTEST_ARGS) \
-	        neuro-cli/tests
+	        neuro-cli/tests/e2e/test_e2e_storage.py::test_e2e_glob
 
 .PHONY: e2e
 e2e: .update-deps .e2e ### Run end-to-end tests
