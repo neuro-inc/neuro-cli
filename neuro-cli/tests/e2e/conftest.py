@@ -128,7 +128,7 @@ class Helper:
         self._nmrc_path = nmrc_path
         self._tmp = tmp_path
         self.tmpstoragename = f"test_e2e/{uuid()}"
-        self._tmpstorage = f"storage:{self.tmpstoragename}/"
+        self._tmpstorage = URL(f"storage:{self.tmpstoragename}")
         self._closed = False
         self._executed_jobs: List[str] = []
 
@@ -167,14 +167,14 @@ class Helper:
         return config.registry_url
 
     @property
-    def tmpstorage(self) -> str:
+    def tmpstorage(self) -> URL:
         return self._tmpstorage
 
     def make_uri(self, path: str, *, fromhome: bool = False) -> URL:
         if fromhome:
             return URL(f"storage://{self.cluster_name}/{self.username}/{path}")
         else:
-            return URL(self.tmpstorage + path)
+            return self.tmpstorage / path
 
     @run_async
     async def get_config(self) -> Config:
@@ -185,14 +185,14 @@ class Helper:
     @run_async
     async def mkdir(self, path: str, **kwargs: bool) -> None:
         __tracebackhide__ = True
-        url = URL(self.tmpstorage + path)
+        url = self.tmpstorage / path
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mkdir(url, **kwargs)
 
     @run_async
     async def rm(self, path: str, *, recursive: bool = False) -> None:
         __tracebackhide__ = True
-        url = URL(self.tmpstorage + path)
+        url = self.tmpstorage / path
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.rm(url, recursive=recursive)
 
@@ -225,7 +225,7 @@ class Helper:
     @run_async
     async def check_dir_exists_on_storage(self, name: str, path: str) -> None:
         __tracebackhide__ = True
-        url = URL(self.tmpstorage + path)
+        url = self.tmpstorage / path
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             async for file in client.storage.ls(url):
                 if file.type == FileStatusType.DIRECTORY and file.path == name:
@@ -235,7 +235,7 @@ class Helper:
     @run_async
     async def check_dir_absent_on_storage(self, name: str, path: str) -> None:
         __tracebackhide__ = True
-        url = URL(self.tmpstorage + path)
+        url = self.tmpstorage / path
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             async for file in client.storage.ls(url):
                 if file.type == FileStatusType.DIRECTORY and file.path == name:
@@ -244,7 +244,7 @@ class Helper:
     @run_async
     async def check_file_absent_on_storage(self, name: str, path: str) -> None:
         __tracebackhide__ = True
-        url = URL(self.tmpstorage + path)
+        url = self.tmpstorage / path
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             async for file in client.storage.ls(url):
                 if file.type == FileStatusType.FILE and file.path == name:
@@ -255,7 +255,7 @@ class Helper:
         self, name: str, path: str, checksum: str, tmpdir: str, tmpname: str
     ) -> None:
         __tracebackhide__ = True
-        url = URL(self.tmpstorage + path)
+        url = self.tmpstorage / path
         if tmpname:
             target = join(tmpdir, tmpname)
             target_file = target
@@ -282,7 +282,7 @@ class Helper:
         self, name: str, path: str, local_file: str
     ) -> None:
         __tracebackhide__ = True
-        url = URL(self.tmpstorage + path)
+        url = self.tmpstorage / path
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             if name is None:
                 await client.storage.upload_file(URL("file:" + local_file), url)
@@ -298,18 +298,16 @@ class Helper:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mv(
-                URL(f"{self.tmpstorage}{path_from}/{name_from}"),
-                URL(f"{self.tmpstorage}{path_to}/{name_to}"),
+                self.tmpstorage / path_from / name_from,
+                self.tmpstorage / path_to / name_to,
             )
             names1 = {
-                f.name
-                async for f in client.storage.ls(URL(f"{self.tmpstorage}{path_from}"))
+                f.name async for f in client.storage.ls(self.tmpstorage / path_from)
             }
             assert name_from not in names1
 
             names2 = {
-                f.name
-                async for f in client.storage.ls(URL(f"{self.tmpstorage}{path_to}"))
+                f.name async for f in client.storage.ls(self.tmpstorage / path_to)
             }
             assert name_to in names2
 
@@ -320,7 +318,7 @@ class Helper:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             await client.storage.mv(
-                URL(f"{self.tmpstorage}{path_from}"), URL(f"{self.tmpstorage}{path_to}")
+                self.tmpstorage / path_from, self.tmpstorage / path_to
             )
 
     def hash_hex(self, file: Union[str, Path]) -> str:
@@ -469,7 +467,7 @@ class Helper:
 
     def run_cli(
         self,
-        arguments: List[str],
+        arguments: List[Any],
         *,
         verbosity: int = 0,
         network_timeout: float = NETWORK_TIMEOUT,
@@ -477,12 +475,13 @@ class Helper:
         timeout: float = 300,
     ) -> SysCap:
         __tracebackhide__ = True
+        _arguments = [str(arg) for arg in arguments]
 
-        log.info("Run 'neuro %s'", " ".join(arguments))
+        log.info("Run 'neuro %s'", " ".join(_arguments))
 
         # 5 min timeout is overkill
         proc = subprocess.run(
-            ["neuro"] + self._default_args(verbosity, network_timeout) + arguments,
+            ["neuro"] + self._default_args(verbosity, network_timeout) + _arguments,
             timeout=timeout,
             encoding="utf8",
             errors="replace",
@@ -498,7 +497,7 @@ class Helper:
             raise
         out = click.unstyle(proc.stdout)
         err = click.unstyle(proc.stderr)
-        if any(run_cmd in arguments for run_cmd in ("submit", "run")):
+        if any(run_cmd in _arguments for run_cmd in ("submit", "run")):
             job_id = self.find_job_id(out)
             if job_id:
                 self._executed_jobs.append(job_id)
