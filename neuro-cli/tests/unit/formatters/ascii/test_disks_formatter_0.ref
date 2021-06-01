@@ -1,0 +1,6 @@
+Id                                                     Name    Role                  Default cluster   Created At   
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+  account-1                                              test1   test-role             cluster           Mar 04 2017  
+  account-2                                              test2   test-role (deleted)   cluster           Mar 04 2017  
+  account-3                                              test3   test-role             cluster           Mar 04 2017  
+  account-4                                              test4   test-role             cluster           Mar 04 2017

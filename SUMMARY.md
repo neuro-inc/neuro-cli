@@ -13,6 +13,7 @@
 * [job](neuro-cli/docs/job.md)
 * [project](neuro-cli/docs/project.md)
 * [secret](neuro-cli/docs/secret.md)
+* [service-account](neuro-cli/docs/service-account.md)
 * [shortcuts](neuro-cli/docs/shortcuts.md)
 * [storage](neuro-cli/docs/storage.md)
 

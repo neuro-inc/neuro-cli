@@ -186,7 +186,7 @@ class DiskNameType(click.ParamType):
         return value
 
 
-DISK_NAME = JobNameType()
+DISK_NAME = DiskNameType()
 
 
 class JobColumnsType(click.ParamType):
@@ -325,3 +325,35 @@ class DiskType(AsyncType[str]):
 
 
 DISK = DiskType()
+
+
+class ServiceAccountType(AsyncType[str]):
+    name = "disk"
+
+    async def async_convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> str:
+        return value
+
+    async def async_complete(
+        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
+    ) -> List[Tuple[str, Optional[str]]]:
+        async with await root.init_client() as client:
+            ret: List[Tuple[str, Optional[str]]] = []
+            async for account in client.service_accounts.list():
+                account_name = account.name or ""
+                for test in (
+                    account.id,
+                    account_name,
+                ):
+                    if test.startswith(incomplete):
+                        ret.append((test, account_name))
+
+            return ret
+
+
+SERVICE_ACCOUNT = ServiceAccountType()

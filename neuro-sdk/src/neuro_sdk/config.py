@@ -188,6 +188,11 @@ class Config(metaclass=NoPublicConstructor):
         return self._config_data.admin_url
 
     @property
+    def service_accounts_url(self) -> URL:
+        # TODO: use URL returned from server when available
+        return self._config_data.url / "service_accounts"
+
+    @property
     def monitoring_url(self) -> URL:
         return self._cluster.monitoring_url
 
