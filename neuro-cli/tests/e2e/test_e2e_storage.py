@@ -101,7 +101,7 @@ def test_copy_local_file_to_platform_directory(helper: Helper, data2: _Data) -> 
 
     helper.mkdir("folder", parents=True)
     # Upload local file to existing directory
-    helper.run_cli(["storage", "cp", srcfile, helper.tmpstorage + "/folder"])
+    helper.run_cli(["storage", "cp", srcfile, helper.tmpstorage + "folder"])
 
     # Ensure file is there
     helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B // 3)
@@ -116,7 +116,7 @@ def test_copy_local_file_to_platform_directory_explicit(
 
     helper.mkdir("folder", parents=True)
     # Upload local file to existing directory
-    helper.run_cli(["storage", "cp", "-t", helper.tmpstorage + "/folder", srcfile])
+    helper.run_cli(["storage", "cp", "-t", helper.tmpstorage + "folder", srcfile])
 
     # Ensure file is there
     helper.check_file_exists_on_storage(file_name, "folder", FILE_SIZE_B // 3)
@@ -131,7 +131,7 @@ def test_copy_local_single_file_to_platform_file(helper: Helper, data: _Data) ->
     helper.mkdir("folder", parents=True)
     # Upload local file to platform
     helper.run_cli(
-        ["storage", "cp", srcfile, helper.tmpstorage + "/folder/different_name.txt"]
+        ["storage", "cp", srcfile, helper.tmpstorage + "folder/different_name.txt"]
     )
 
     # Ensure file is there
@@ -155,7 +155,7 @@ def test_copy_local_single_file_to_platform_file_explicit(
             "cp",
             "-T",
             srcfile,
-            helper.tmpstorage + "/folder/different_name.txt",
+            helper.tmpstorage + "folder/different_name.txt",
         ]
     )
 
@@ -176,7 +176,7 @@ def test_copy_local_to_platform_single_file_3(helper: Helper, data: _Data) -> No
     # Upload local file to non existing directory
     with pytest.raises(subprocess.CalledProcessError, match=str(EX_OSFILE)):
         captured = helper.run_cli(
-            ["storage", "cp", srcfile, helper.tmpstorage + "/non_existing_dir/"]
+            ["storage", "cp", srcfile, helper.tmpstorage + "non_existing_dir/"]
         )
         assert not captured.err
         assert captured.out == ""
@@ -195,7 +195,7 @@ def test_e2e_copy_non_existing_platform_to_non_existing_local(
             [
                 "storage",
                 "cp",
-                helper.tmpstorage + "/not-exist-foo",
+                helper.tmpstorage + "not-exist-foo",
                 str(tmp_path / "not-exist-bar"),
             ]
         )
@@ -207,7 +207,7 @@ def test_e2e_copy_non_existing_platform_to_____existing_local(
 ) -> None:
     # Try downloading non existing file
     with pytest.raises(subprocess.CalledProcessError, match=str(EX_OSFILE)):
-        helper.run_cli(["storage", "cp", helper.tmpstorage + "/foo", str(tmp_path)])
+        helper.run_cli(["storage", "cp", helper.tmpstorage + "foo", str(tmp_path)])
 
 
 @pytest.mark.e2e
@@ -277,8 +277,8 @@ def test_copy_and_remove_multiple_files(
         [
             "storage",
             "cp",
-            f"{helper.tmpstorage}/{srcname}",
-            f"{helper.tmpstorage}/{srcname2}",
+            f"{helper.tmpstorage}{srcname}",
+            f"{helper.tmpstorage}{srcname2}",
             str(targetdir),
         ]
     )
@@ -290,8 +290,8 @@ def test_copy_and_remove_multiple_files(
         [
             "storage",
             "rm",
-            f"{helper.tmpstorage}/{srcname}",
-            f"{helper.tmpstorage}/{srcname2}",
+            f"{helper.tmpstorage}{srcname}",
+            f"{helper.tmpstorage}{srcname2}",
         ]
     )
     assert captured.out == ""
@@ -443,9 +443,9 @@ def test_e2e_move_target_directory_no_target_directory(helper: Helper) -> None:
                 "storage",
                 "mv",
                 "-t",
-                helper.tmpstorage + "/foo",
+                helper.tmpstorage + "foo",
                 "-T",
-                helper.tmpstorage + "/bar",
+                helper.tmpstorage + "bar",
             ]
         )
     assert "Cannot combine" in cm.value.stderr
@@ -459,9 +459,9 @@ def test_e2e_move_no_target_directory_extra_operand(helper: Helper) -> None:
                 "storage",
                 "mv",
                 "-T",
-                helper.tmpstorage + "/foo",
-                helper.tmpstorage + "/bar",
-                helper.tmpstorage + "/baz",
+                helper.tmpstorage + "foo",
+                helper.tmpstorage + "bar",
+                helper.tmpstorage + "baz",
             ]
         )
     assert "Extra operand after " in cm.value.stderr
@@ -483,10 +483,10 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
             "cp",
             "-r",
             tmp_path.as_uri() + "/f*",
-            helper.tmpstorage + "/folder",
+            helper.tmpstorage + "folder",
         ]
     )
-    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/folder"])
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "folder"])
     assert sorted(captured.out.splitlines()) == ["bar", "baz", "foo", "subfolder"]
 
     # Move files with pattern
@@ -494,30 +494,26 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
         [
             "storage",
             "mv",
-            helper.tmpstorage + "/folder/[bf]*",
-            helper.tmpstorage + "/folder/subfolder",
+            helper.tmpstorage + "folder/[bf]*",
+            helper.tmpstorage + "folder/subfolder",
         ]
     )
-    captured = helper.run_cli(
-        ["storage", "ls", helper.tmpstorage + "/folder/subfolder"]
-    )
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "folder/subfolder"])
     assert sorted(captured.out.splitlines()) == ["bar", "baz", "foo"]
 
     # Download files with pattern
     download = tmp_path / "download"
     download.mkdir()
-    helper.run_cli(["storage", "cp", helper.tmpstorage + "/**/b*", str(download)])
+    helper.run_cli(["storage", "cp", helper.tmpstorage + "**/b*", str(download)])
     assert sorted(download.iterdir()) == [download / "bar", download / "baz"]
 
     # Remove files with pattern
-    helper.run_cli(["storage", "rm", helper.tmpstorage + "/**/b*"])
-    captured = helper.run_cli(
-        ["storage", "ls", helper.tmpstorage + "/folder/subfolder"]
-    )
+    helper.run_cli(["storage", "rm", helper.tmpstorage + "**/b*"])
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "folder/subfolder"])
     assert sorted(captured.out.splitlines()) == ["foo"]
 
     # Test subcommand "glob"
-    captured = helper.run_cli(["storage", "glob", helper.tmpstorage + "/**"])
+    captured = helper.run_cli(["storage", "glob", helper.tmpstorage + "**"])
     prefix = (
         f"storage://{helper.cluster_name}/{helper.username}/"
         f"{URL(helper.tmpstorage).path}"
@@ -545,13 +541,13 @@ def test_e2e_no_glob(tmp_path: Path, helper: Helper) -> None:
             "-r",
             "--no-glob",
             tmp_path.as_uri() + "/[d]",
-            helper.tmpstorage + "/d",
+            helper.tmpstorage + "d",
         ]
     )
 
     # Move files with literal path
     helper.run_cli(
-        ["storage", "mv", "--no-glob", helper.tmpstorage + "/d/[df]", helper.tmpstorage]
+        ["storage", "mv", "--no-glob", helper.tmpstorage + "d/[df]", helper.tmpstorage]
     )
     captured = helper.run_cli(["storage", "ls", helper.tmpstorage])
     assert sorted(captured.out.splitlines()) == ["[df]", "d"]
@@ -560,12 +556,12 @@ def test_e2e_no_glob(tmp_path: Path, helper: Helper) -> None:
     download = tmp_path / "download"
     download.mkdir()
     helper.run_cli(
-        ["storage", "cp", "--no-glob", helper.tmpstorage + "/[df]", str(download)]
+        ["storage", "cp", "--no-glob", helper.tmpstorage + "[df]", str(download)]
     )
     assert sorted(download.iterdir()) == [download / "[df]"]
 
     # Remove files with literal path
-    helper.run_cli(["storage", "rm", "--no-glob", helper.tmpstorage + "/[df]"])
+    helper.run_cli(["storage", "rm", "--no-glob", helper.tmpstorage + "[df]"])
     captured = helper.run_cli(["storage", "ls", helper.tmpstorage])
     assert sorted(captured.out.splitlines()) == ["d"]
 
@@ -593,10 +589,10 @@ def test_e2e_cp_filter(tmp_path: Path, helper: Helper) -> None:
             "--exclude",
             "*z",
             tmp_path.as_uri() + "/folder",
-            helper.tmpstorage + "/filtered",
+            helper.tmpstorage + "filtered",
         ]
     )
-    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/filtered"])
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "filtered"])
     assert captured.out.splitlines() == ["bar"]
 
     # Copy all files to storage
@@ -606,7 +602,7 @@ def test_e2e_cp_filter(tmp_path: Path, helper: Helper) -> None:
             "cp",
             "-r",
             tmp_path.as_uri() + "/folder",
-            helper.tmpstorage + "/folder",
+            helper.tmpstorage + "folder",
         ]
     )
 
@@ -622,7 +618,7 @@ def test_e2e_cp_filter(tmp_path: Path, helper: Helper) -> None:
             "b??",
             "--exclude",
             "*z",
-            helper.tmpstorage + "/folder",
+            helper.tmpstorage + "folder",
             tmp_path.as_uri() + "/filtered",
         ]
     )
@@ -642,7 +638,7 @@ def test_e2e_ls_skip_hidden(tmp_path: Path, helper: Helper) -> None:
         ["storage", "cp", "-r", tmp_path.as_uri() + "/folder", helper.tmpstorage]
     )
 
-    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "/folder"])
+    captured = helper.run_cli(["storage", "ls", helper.tmpstorage + "folder"])
     assert captured.out.splitlines() == ["foo"]
 
 
@@ -659,7 +655,7 @@ def test_e2e_ls_show_hidden(tmp_path: Path, helper: Helper) -> None:
         ["storage", "cp", "-r", tmp_path.as_uri() + "/folder", helper.tmpstorage]
     )
 
-    captured = helper.run_cli(["storage", "ls", "--all", helper.tmpstorage + "/folder"])
+    captured = helper.run_cli(["storage", "ls", "--all", helper.tmpstorage + "folder"])
     assert captured.out.splitlines() == [".bar", "foo"]
 
 
