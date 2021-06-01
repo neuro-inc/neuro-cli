@@ -29,10 +29,11 @@ ServiceAccounts
 
       :param str role: Authorization role to use for this service account.
 
-      :param ~typing.Optional[str] name: Name of the service account. Should be unique among all user's
+      :param ~typing.Optional[str] name: Optional name of the service account. Should be unique among all user's
                                          service accounts.
 
-      :param ~typing.Optional[str] default_cluster: Default cluster to embed into generated token.
+      :param ~typing.Optional[str] default_cluster: Default cluster to embed into generated token. Defaults
+                                                    to current cluster.
 
       :return: Pair of newly created service account info and token. This is the only way to
                get token of a service account.
