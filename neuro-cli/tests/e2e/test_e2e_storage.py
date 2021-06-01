@@ -519,7 +519,7 @@ def test_e2e_glob(tmp_path: Path, helper: Helper) -> None:
         f"{URL(helper.tmpstorage).path}"
     )
     assert sorted(captured.out.splitlines()) == [
-        prefix,
+        prefix.rstrip("/"),
         prefix + "folder",
         prefix + "folder/subfolder",
         prefix + "folder/subfolder/foo",
