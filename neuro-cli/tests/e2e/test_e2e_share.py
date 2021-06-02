@@ -231,5 +231,5 @@ def test_add_grant_remove_role(request: Any, helper: Helper) -> None:
     captured = helper.run_cli(["acl", "list", "--full-uri", "-u", "public"])
     assert captured.err == ""
     result = [line.split() for line in captured.out.splitlines()]
-    assert [f"role://{role_name}", "read"] in result
+    assert [f"role://{role_name}", "read"] not in result
     assert [uri, "read"] not in result
