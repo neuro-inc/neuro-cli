@@ -5,6 +5,32 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.6.3 (2021-06-03)
+==================================
+
+Features
+--------
+
+
+- Add support of `--owner` and `--name` options to `neuro image ls`. ([#2104](https://github.com/neuro-inc/platform-client-python/issues/2104))
+
+- Add option `--cluster` in commands `neuro ps`, `neuro top` and `neuro images`. ([#2125](https://github.com/neuro-inc/platform-client-python/issues/2125))
+
+- Removed support of old runtime quota:
+  - `neuro config show-quota` shows credits and max parallel jobs
+  - `neuro admin add-user-quota/set-user-quota` only support credits and max parallel jobs
+  - Added new command `neuro admin get-user-quota` to print user quota
+  - `neuro admin get-cluster-user` now prints table with quota info for each user ([#2140](https://github.com/neuro-inc/platform-client-python/issues/2140))
+
+- Added `neuro service-account` command group. The service account allow to create auth token that can be used
+  for integration with third-party services.
+
+  - `neuro service-account create --name optional-name ROLE` creates new service account
+  - `neuro service-account ls` lists service accounts
+  - `neuro service-account get ID_OR_NAME` retrives single service account
+  - `nuero service-account rm ID_OR_NAME` removes service account and revokes token. ([#2147](https://github.com/neuro-inc/platform-client-python/issues/2147))
+
+
 Neuro SDK/CLI 21.5.14 (2021-05-14)
 ==================================
 
