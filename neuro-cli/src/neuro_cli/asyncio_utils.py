@@ -7,7 +7,7 @@ import ssl
 import sys
 import threading
 import warnings
-from asyncio.events import AbstractEventLoop
+from asyncio import AbstractEventLoop
 from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, TypeVar
