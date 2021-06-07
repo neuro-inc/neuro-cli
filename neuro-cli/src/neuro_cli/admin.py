@@ -257,7 +257,7 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     fmt = ClusterUserFormatter()
     cluster_name = cluster_name or root.client.config.cluster_name
     with root.status(
-        f"Fetching the list of cluster users of cluster [b]cluster_name[/b]"
+        f"Fetching the list of cluster users of cluster [b]{cluster_name}[/b]"
     ):
         users = await root.client._admin.list_cluster_users(cluster_name)
     with root.pager():
