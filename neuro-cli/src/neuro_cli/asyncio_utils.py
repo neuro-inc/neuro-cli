@@ -7,6 +7,7 @@ import ssl
 import sys
 import threading
 import warnings
+from asyncio import AbstractEventLoop
 from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, TypeVar
@@ -30,6 +31,7 @@ class Runner:
         self._started = False
         self._stopped = False
         self._executor = ThreadPoolExecutor()
+        self._old_loop: Optional[AbstractEventLoop] = None
         self._loop = asyncio.new_event_loop()
         self._loop.set_default_executor(self._executor)
         _setup_exception_handler(self._loop, self._debug)
@@ -67,6 +69,7 @@ class Runner:
                 raise RuntimeError(
                     "asyncio.run() cannot be called from a running event loop"
                 )
+            self._old_loop = current_loop
 
         asyncio.set_event_loop(self._loop)
         self._loop.set_debug(self._debug)
@@ -82,7 +85,7 @@ class Runner:
             self._loop.run_until_complete(self._loop.shutdown_asyncgens())
         finally:
             self._executor.shutdown(wait=True)
-            asyncio.set_event_loop(None)
+            asyncio.set_event_loop(self._old_loop)
             # simple workaround for:
             # http://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
             with warnings.catch_warnings():
