@@ -1,11 +1,11 @@
 -r base.txt
+-r mypy.txt
 asynctest==0.13.0
 black==21.5b2
 cmarkgfm==0.5.3
 flake8==3.9.2
 isort==5.8.0
 markdown-toc==1.2.6
-mypy==0.901
 pexpect==4.8.0
 pre-commit==2.13.0
 pytest==6.2.4
