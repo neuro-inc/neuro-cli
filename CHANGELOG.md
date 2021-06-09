@@ -5,6 +5,15 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.6.9 (2021-06-09)
+=================================
+
+Bugfixes
+--------
+
+- Add missing requirement to `packaging`. ([#2160](https://github.com/neuro-inc/platform-client-python/issues/2160))
+
+
 Neuro SDK/CLI 21.6.3 (2021-06-03)
 ==================================
 
