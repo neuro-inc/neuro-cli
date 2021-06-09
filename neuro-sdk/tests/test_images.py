@@ -1,8 +1,8 @@
 import os
 import sys
 from typing import Any, AsyncIterator, Callable, Dict, Iterator
+from unittest import mock
 
-import asynctest
 import pytest
 from aiodocker.exceptions import DockerError
 from aiohttp import web
@@ -19,14 +19,15 @@ from neuro_sdk.parsing_utils import (
 
 from tests import _TestServerFactory
 
+if sys.version_info < (3, 8):
+    pytest.skip("Async mocks require Python 3.8+", allow_module_level=True)
+
 _MakeClient = Callable[..., Client]
 
 
 @pytest.fixture()
 def patch_docker_host() -> Iterator[None]:
-    with asynctest.mock.patch.dict(
-        os.environ, values={"DOCKER_HOST": "http://localhost:45678"}
-    ):
+    with mock.patch.dict(os.environ, values={"DOCKER_HOST": "http://localhost:45678"}):
         yield
 
 
@@ -975,7 +976,7 @@ class TestImages:
         registry_urls={"default": URL("https://registry-dev.neu.ro")},
     )
 
-    @asynctest.mock.patch(
+    @mock.patch(
         "aiodocker.Docker.__init__",
         side_effect=ValueError(
             "text Either DOCKER_HOST or local sockets are not available text"
@@ -990,7 +991,7 @@ class TestImages:
             with pytest.raises(DockerError, match=r"Docker engine is not available.+"):
                 await client.images.pull(image, local_image)
 
-    @asynctest.mock.patch(
+    @mock.patch(
         "aiodocker.Docker.__init__", side_effect=ValueError("something went wrong")
     )
     async def test_unknown_docker_error(
@@ -1002,7 +1003,7 @@ class TestImages:
             with pytest.raises(ValueError, match=r"something went wrong"):
                 await client.images.pull(image, local_image)
 
-    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
+    @mock.patch("aiodocker.images.DockerImages.tag")
     async def test_push_non_existent_image(
         self, patched_tag: Any, make_client: _MakeClient
     ) -> None:
@@ -1015,8 +1016,8 @@ class TestImages:
             with pytest.raises(ValueError, match=r"not found"):
                 await client.images.push(local_image, image)
 
-    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
-    @asynctest.mock.patch("aiodocker.images.DockerImages.push")
+    @mock.patch("aiodocker.images.DockerImages.tag")
+    @mock.patch("aiodocker.images.DockerImages.push")
     async def test_push_image_to_foreign_repo(
         self, patched_push: Any, patched_tag: Any, make_client: _MakeClient
     ) -> None:
@@ -1030,8 +1031,8 @@ class TestImages:
             with pytest.raises(AuthorizationError):
                 await client.images.push(local_image, image)
 
-    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
-    @asynctest.mock.patch("aiodocker.images.DockerImages.push")
+    @mock.patch("aiodocker.images.DockerImages.tag")
+    @mock.patch("aiodocker.images.DockerImages.push")
     async def test_push_image_with_docker_api_error(
         self, patched_push: Any, patched_tag: Any, make_client: _MakeClient
     ) -> None:
@@ -1050,8 +1051,8 @@ class TestImages:
         assert exc_info.value.status == 900
         assert exc_info.value.message == "Mocked message"
 
-    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
-    @asynctest.mock.patch("aiodocker.images.DockerImages.push")
+    @mock.patch("aiodocker.images.DockerImages.tag")
+    @mock.patch("aiodocker.images.DockerImages.push")
     async def test_success_push_image(
         self, patched_push: Any, patched_tag: Any, make_client: _MakeClient
     ) -> None:
@@ -1068,8 +1069,8 @@ class TestImages:
             result = await client.images.push(local_image, image)
         assert result == image
 
-    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
-    @asynctest.mock.patch("aiodocker.images.DockerImages.push")
+    @mock.patch("aiodocker.images.DockerImages.tag")
+    @mock.patch("aiodocker.images.DockerImages.push")
     async def test_success_push_image_no_target(
         self, patched_push: Any, patched_tag: Any, make_client: _MakeClient
     ) -> None:
@@ -1084,7 +1085,7 @@ class TestImages:
             result = await client.images.push(local_image)
         assert result == image
 
-    @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
+    @mock.patch("aiodocker.images.DockerImages.pull")
     async def test_pull_non_existent_image(
         self, patched_pull: Any, make_client: _MakeClient
     ) -> None:
@@ -1097,7 +1098,7 @@ class TestImages:
             with pytest.raises(ValueError, match=r"not found"):
                 await client.images.pull(image, local_image)
 
-    @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
+    @mock.patch("aiodocker.images.DockerImages.pull")
     async def test_pull_image_from_foreign_repo(
         self, patched_pull: Any, make_client: _MakeClient
     ) -> None:
@@ -1110,7 +1111,7 @@ class TestImages:
             with pytest.raises(AuthorizationError):
                 await client.images.pull(image, local_image)
 
-    @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
+    @mock.patch("aiodocker.images.DockerImages.pull")
     async def test_pull_image_with_docker_api_error(
         self, patched_pull: Any, make_client: Any
     ) -> None:
@@ -1125,8 +1126,8 @@ class TestImages:
         assert exc_info.value.status == 900
         assert exc_info.value.message == "Mocked message"
 
-    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
-    @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
+    @mock.patch("aiodocker.images.DockerImages.tag")
+    @mock.patch("aiodocker.images.DockerImages.pull")
     async def test_success_pull_image(
         self, patched_pull: Any, patched_tag: Any, make_client: _MakeClient
     ) -> None:
@@ -1141,8 +1142,8 @@ class TestImages:
             result = await client.images.pull(image, local_image)
         assert result == local_image
 
-    @asynctest.mock.patch("aiodocker.images.DockerImages.tag")
-    @asynctest.mock.patch("aiodocker.images.DockerImages.pull")
+    @mock.patch("aiodocker.images.DockerImages.tag")
+    @mock.patch("aiodocker.images.DockerImages.pull")
     async def test_success_pull_image_no_target(
         self, patched_pull: Any, patched_tag: Any, make_client: _MakeClient
     ) -> None:
