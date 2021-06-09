@@ -147,7 +147,7 @@ def _parse_max_version(pypi_response: Dict[str, Any]) -> Optional[str]:
     try:
         ret = [version for version in pypi_response["releases"].keys()]
         return max(
-            ver for ver in ret if not pkg_resources.parse_version(ver).is_prerelease  # type: ignore  # noqa
+            ver for ver in ret if not pkg_resources.parse_version(ver).is_prerelease
         )
     except (KeyError, ValueError):
         return None
