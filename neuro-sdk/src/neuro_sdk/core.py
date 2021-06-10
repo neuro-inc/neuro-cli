@@ -119,6 +119,8 @@ class _Core:
         timeout: Optional[aiohttp.ClientTimeout] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
         assert url.is_absolute()
+        if params:
+            url = url.with_query(params)
         log.debug("Fetch [%s] %s", method, url)
         if headers is not None:
             real_headers: CIMultiDict[str] = CIMultiDict(headers)
@@ -134,8 +136,6 @@ class _Core:
             trace_id = gen_trace_id()
         trace_request_ctx.trace_id = trace_id
         trace_request_ctx.trace_sampled = self._trace_sampled
-        if params:
-            url = url.with_query(params)
         async with self._session.request(
             method,
             url,
