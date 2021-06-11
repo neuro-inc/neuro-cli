@@ -45,7 +45,6 @@ async def ls(root: Root) -> None:
 
 
 @command()
-@argument("role", required=True)
 @option(
     "--name",
     metavar="NAME",
@@ -61,7 +60,6 @@ async def ls(root: Root) -> None:
 )
 async def create(
     root: Root,
-    role: str,
     name: Optional[str],
     default_cluster: Optional[str],
 ) -> None:
@@ -70,7 +68,6 @@ async def create(
     """
 
     account, token = await root.client.service_accounts.create(
-        role=role,
         name=name,
         default_cluster=default_cluster,
     )

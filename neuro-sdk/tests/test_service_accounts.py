@@ -60,7 +60,6 @@ async def test_list(
             owner="user",
             default_cluster="cluster1",
             created_at=created_at,
-            role_deleted=False,
         ),
         ServiceAccount(
             id="account-2",
@@ -69,7 +68,6 @@ async def test_list(
             owner="user",
             default_cluster="cluster2",
             created_at=created_at,
-            role_deleted=True,
         ),
     ]
 
@@ -85,7 +83,6 @@ async def test_add(
         data = await request.json()
         assert data == {
             "name": "test-account",
-            "role": "test-role",
             "default_cluster": "cluster",
         }
         return web.json_response(
@@ -108,7 +105,7 @@ async def test_add(
 
     async with make_client(srv.make_url("/")) as client:
         account, token = await client.service_accounts.create(
-            name="test-account", role="test-role", default_cluster="cluster"
+            name="test-account", default_cluster="cluster"
         )
         assert account == ServiceAccount(
             id="account-1",
@@ -117,7 +114,6 @@ async def test_add(
             owner="user",
             default_cluster="cluster",
             created_at=created_at,
-            role_deleted=False,
         )
         assert token == "fake-token"
 
@@ -157,7 +153,6 @@ async def test_get(
             owner="user",
             default_cluster="cluster",
             created_at=created_at,
-            role_deleted=False,
         )
 
 

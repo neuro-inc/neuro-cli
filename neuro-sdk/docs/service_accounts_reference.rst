@@ -20,17 +20,13 @@ ServiceAccounts
       List user's service accounts, async iterator. Yields :class:`ServiceAccount` instances.
 
    .. comethod:: create(  \
-                        role: str, \
                         name: typing.Optional[str], \
                         default_cluster: typing.Optional[str], \
                  ) -> typing.Tuple[ServiceAccount, str]
 
-      Create a service account based on role *role*.
+      Create a service account.
 
       :param str role: Authorization role to use for this service account.
-
-      :param ~typing.Optional[str] name: Optional name of the service account. Should be unique among all user's
-                                         service accounts.
 
       :param ~typing.Optional[str] default_cluster: Default cluster to embed into generated token. Defaults
                                                     to current cluster.
