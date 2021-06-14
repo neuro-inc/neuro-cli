@@ -98,15 +98,17 @@ class JobStatus(str, enum.Enum):
 
     @property
     def is_pending(self) -> bool:
-        return self in (self.PENDING, self.SUSPENDED)
+        cls = type(self)
+        return self in (cls.PENDING, cls.SUSPENDED)
 
     @property
     def is_running(self) -> bool:
-        return self == self.RUNNING
+        return self == type(self).RUNNING
 
     @property
     def is_finished(self) -> bool:
-        return self in (self.SUCCEEDED, self.FAILED, self.CANCELLED)
+        cls = type(self)
+        return self in (cls.SUCCEEDED, cls.FAILED, cls.CANCELLED)
 
     @classmethod
     def items(cls) -> Set["JobStatus"]:
@@ -119,6 +121,9 @@ class JobStatus(str, enum.Enum):
     @classmethod
     def finished_items(cls) -> Set["JobStatus"]:
         return {item for item in cls.items() if item.is_finished}
+
+    __format__ = str.__format__
+    __str__ = str.__str__
 
 
 @dataclass(frozen=True)

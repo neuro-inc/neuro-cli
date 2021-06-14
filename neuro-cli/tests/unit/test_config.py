@@ -1,4 +1,3 @@
-import asyncio
 import sys
 from decimal import Decimal
 from pathlib import Path
@@ -75,7 +74,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
     root._client = root.run(_async_make_client())
 
     session = mock.Mock()
-    loop = asyncio.get_event_loop()
+    loop = root._runner._loop
     fut = loop.create_future()
     fut.set_result("second")
     session.prompt_async.return_value = fut
@@ -145,7 +144,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
     root._client = root.run(_async_make_client())
 
     session = mock.Mock()
-    loop = asyncio.get_event_loop()
+    loop = root._runner._loop
     fut = loop.create_future()
     fut.set_result("")
     session.prompt_async.return_value = fut
