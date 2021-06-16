@@ -14,10 +14,6 @@ from neuro_sdk import ServiceAccount
 from neuro_cli.formatters.utils import DatetimeFormatter
 
 
-def _format_role_name(account: ServiceAccount) -> str:
-    return account.role + (" (deleted)" if account.role_deleted else "")
-
-
 class BaseServiceAccountsFormatter:
     @abc.abstractmethod
     def __call__(self, accounts: Sequence[ServiceAccount]) -> RenderableType:
@@ -40,7 +36,7 @@ class ServiceAccountsFormatter(BaseServiceAccountsFormatter):
         line = [
             account.id,
             account.name or "",
-            _format_role_name(account),
+            account.role,
             account.default_cluster,
             self._datetime_formatter(account.created_at),
         ]
@@ -75,7 +71,7 @@ class ServiceAccountFormatter:
         table.add_column(style="bold")
         table.add_row("Id", account.id)
         table.add_row("Name", account.name or "")
-        table.add_row("Role", _format_role_name(account))
+        table.add_row("Role", account.role)
         table.add_row("Owner", account.owner)
         table.add_row("Default cluster", account.default_cluster)
         table.add_row("Created at", self._datetime_formatter(account.created_at))

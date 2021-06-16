@@ -21,7 +21,6 @@ def test_service_account_formatter(rich_cmp: Any) -> None:
         owner="user",
         default_cluster="cluster",
         created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
-        role_deleted=False,
     )
     fmtr = ServiceAccountFormatter(datetime_formatter=format_datetime_human)
     rich_cmp(fmtr(account))
@@ -37,7 +36,6 @@ def service_accounts_list() -> List[ServiceAccount]:
             owner="user",
             default_cluster="cluster",
             created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
-            role_deleted=False,
         ),
         ServiceAccount(
             id="account-2",
@@ -46,7 +44,6 @@ def service_accounts_list() -> List[ServiceAccount]:
             owner="user",
             default_cluster="cluster",
             created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
-            role_deleted=True,
         ),
         ServiceAccount(
             id="account-3",
@@ -55,7 +52,6 @@ def service_accounts_list() -> List[ServiceAccount]:
             owner="user",
             default_cluster="cluster",
             created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
-            role_deleted=False,
         ),
         ServiceAccount(
             id="account-4",
@@ -64,7 +60,6 @@ def service_accounts_list() -> List[ServiceAccount]:
             owner="user",
             default_cluster="cluster",
             created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
-            role_deleted=False,
         ),
     ]
 

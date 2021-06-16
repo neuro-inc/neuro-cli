@@ -48,7 +48,7 @@ Create a service account
 #### Usage
 
 ```bash
-neuro service-account create [OPTIONS] ROLE
+neuro service-account create [OPTIONS]
 ```
 
 Create a service account.

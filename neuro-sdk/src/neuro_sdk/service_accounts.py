@@ -20,7 +20,6 @@ class ServiceAccount:
     default_cluster: str
     role: str
     created_at: datetime
-    role_deleted: bool
 
 
 class ServiceAccounts(metaclass=NoPublicConstructor):
@@ -35,7 +34,6 @@ class ServiceAccounts(metaclass=NoPublicConstructor):
             name=payload["name"],
             default_cluster=payload["default_cluster"],
             role=payload["role"],
-            role_deleted=payload["role_deleted"],
             created_at=isoparse(payload["created_at"]),
         )
 
@@ -49,7 +47,6 @@ class ServiceAccounts(metaclass=NoPublicConstructor):
 
     async def create(
         self,
-        role: str,
         name: Optional[str] = None,
         default_cluster: Optional[str] = None,
     ) -> Tuple[ServiceAccount, str]:
@@ -57,7 +54,6 @@ class ServiceAccounts(metaclass=NoPublicConstructor):
         auth = await self._config._api_auth()
         data = {
             "name": name,
-            "role": role,
             "default_cluster": default_cluster or self._config.cluster_name,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
