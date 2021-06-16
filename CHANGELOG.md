@@ -5,6 +5,17 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.6.16 (2021-06-16)
+=================================
+
+Features
+--------
+
+
+- Dropped `role` argument from `neuro service-account create`: platform automatically generates
+  new role for service account without any permissions. ([#2167](https://github.com/neuro-inc/platform-client-python/issues/2167))
+
+
 Neuro SDK/CLI 21.6.9 (2021-06-09)
 =================================
 
