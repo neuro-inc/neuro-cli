@@ -5,8 +5,18 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.6.17 (2021-06-17)
+==================================
+
+Bugfixes
+--------
+
+
+- Expose `neuro_sdk.EnvParseResult` and `neuro_sdk.VolumeParseResult` names. ([#2177](https://github.com/neuro-inc/platform-client-python/issues/2177))
+
+
 Neuro SDK/CLI 21.6.16 (2021-06-16)
-=================================
+==================================
 
 Features
 --------
