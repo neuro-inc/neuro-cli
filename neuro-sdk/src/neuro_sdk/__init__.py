@@ -58,7 +58,14 @@ from .jobs import (
     Resources,
     StdStream,
 )
-from .parser import DiskVolume, Parser, SecretFile, Volume
+from .parser import (
+    DiskVolume,
+    EnvParseResult,
+    Parser,
+    SecretFile,
+    Volume,
+    VolumeParseResult,
+)
 from .parsing_utils import LocalImage, RemoteImage, Tag, TagOption
 from .plugins import ConfigBuilder, PluginManager
 from .secrets import Secret, Secrets
@@ -99,6 +106,7 @@ __all__ = (
     "Disk",
     "DiskVolume",
     "Disks",
+    "EnvParseResult",
     "Factory",
     "FileStatus",
     "FileStatusType",
@@ -147,6 +155,7 @@ __all__ = (
     "TagOption",
     "Users",
     "Volume",
+    "VolumeParseResult",
     "find_project_root",
     "gen_trace_id",
     "get",
