@@ -229,13 +229,22 @@ class Parser(metaclass=NoPublicConstructor):
         return secret_env_dict
 
     def volumes(self, volume: Sequence[str]) -> VolumeParseResult:
-        input_secret_files = {vol for vol in volume if vol.startswith("secret:")}
-        input_disk_volumes = {vol for vol in volume if vol.startswith("disk:")}
-        input_volumes = set(volume) - input_secret_files - input_disk_volumes
+        # N.B. Preserve volumes order when splitting the whole 'volumes' sequence.
+
+        secret_files = []
+        disk_volumes = []
+        volumes = []
+        for vol in volume:
+            if vol.startswith("secret:"):
+                secret_files.append(vol)
+            elif vol.startswith("disk:"):
+                disk_volumes.append(vol)
+            else:
+                volumes.append(vol)
         return VolumeParseResult(
-            volumes=self._build_volumes(input_volumes),
-            secret_files=self._build_secret_files(input_secret_files),
-            disk_volumes=self._build_disk_volumes(input_disk_volumes),
+            volumes=self._build_volumes(volumes),
+            secret_files=self._build_secret_files(secret_files),
+            disk_volumes=self._build_disk_volumes(disk_volumes),
         )
 
 
