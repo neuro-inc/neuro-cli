@@ -42,6 +42,7 @@ from .errors import (
     ClientError,
     ConfigError,
     IllegalArgumentError,
+    NDJSONError,
     ResourceNotFound,
     ServerNotAvailable,
 )
@@ -126,6 +127,7 @@ __all__ = (
     "JobTelemetry",
     "Jobs",
     "LocalImage",
+    "NDJSONError",
     "PASS_CONFIG_ENV_NAME",
     "Parser",
     "Permission",

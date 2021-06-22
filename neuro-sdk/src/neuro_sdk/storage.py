@@ -47,7 +47,7 @@ from .abc import (
 )
 from .config import Config
 from .core import _Core
-from .errors import ResourceNotFound
+from .errors import NDJSONError, ResourceNotFound
 from .file_filter import AsyncFilterFunc, FileFilter
 from .url_utils import (
     _extract_path,
@@ -383,7 +383,7 @@ class Storage(metaclass=NoPublicConstructor):
             if os_errno is not None:
                 os_errno = errno.__dict__.get(os_errno, os_errno)
                 raise OSError(os_errno, err_text)
-            raise Exception(err_text)
+            raise NDJSONError(err_text)
 
     async def _rm(
         self, uri: URL, *, recursive: bool, progress: _AsyncAbstractDeleteProgress
