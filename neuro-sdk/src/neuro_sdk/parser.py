@@ -1,7 +1,7 @@
 import os
 import warnings
 from dataclasses import dataclass
-from typing import Any, Dict, Iterator, List, Sequence, Set, Tuple, overload
+from typing import Any, Dict, Iterator, List, Sequence, Tuple, overload
 
 from typing_extensions import Literal
 from yarl import URL
@@ -113,7 +113,7 @@ class Parser(metaclass=NoPublicConstructor):
             storage_uri=storage_uri, container_path=container_path, read_only=read_only
         )
 
-    def _build_volumes(self, input_volumes: Set[str]) -> List[Volume]:
+    def _build_volumes(self, input_volumes: List[str]) -> List[Volume]:
         if "HOME" in input_volumes:
             raise ValueError("--volume=HOME no longer supported")
         if "ALL" in input_volumes:
@@ -121,7 +121,7 @@ class Parser(metaclass=NoPublicConstructor):
 
         return [self.volume(vol) for vol in input_volumes]
 
-    def _build_secret_files(self, input_volumes: Set[str]) -> List[SecretFile]:
+    def _build_secret_files(self, input_volumes: List[str]) -> List[SecretFile]:
         secret_files: List[SecretFile] = []
         for volume in input_volumes:
             raw_uri, container_path, _ = self._parse_generic_volume(
@@ -139,7 +139,7 @@ class Parser(metaclass=NoPublicConstructor):
             allowed_schemes=("secret",),
         )
 
-    def _build_disk_volumes(self, input_volumes: Set[str]) -> List[DiskVolume]:
+    def _build_disk_volumes(self, input_volumes: List[str]) -> List[DiskVolume]:
         disk_volumes: List[DiskVolume] = []
         for volume in input_volumes:
             raw_uri, container_path, read_only = self._parse_generic_volume(
@@ -229,13 +229,22 @@ class Parser(metaclass=NoPublicConstructor):
         return secret_env_dict
 
     def volumes(self, volume: Sequence[str]) -> VolumeParseResult:
-        input_secret_files = {vol for vol in volume if vol.startswith("secret:")}
-        input_disk_volumes = {vol for vol in volume if vol.startswith("disk:")}
-        input_volumes = set(volume) - input_secret_files - input_disk_volumes
+        # N.B. Preserve volumes order when splitting the whole 'volumes' sequence.
+
+        secret_files = []
+        disk_volumes = []
+        volumes = []
+        for vol in volume:
+            if vol.startswith("secret:"):
+                secret_files.append(vol)
+            elif vol.startswith("disk:"):
+                disk_volumes.append(vol)
+            else:
+                volumes.append(vol)
         return VolumeParseResult(
-            volumes=self._build_volumes(input_volumes),
-            secret_files=self._build_secret_files(input_secret_files),
-            disk_volumes=self._build_disk_volumes(input_disk_volumes),
+            volumes=self._build_volumes(volumes),
+            secret_files=self._build_secret_files(secret_files),
+            disk_volumes=self._build_disk_volumes(disk_volumes),
         )
 
 

@@ -186,3 +186,20 @@ def test_get_url_authority_without_host() -> None:
     url = URL("scheme://")
     with pytest.raises(AssertionError):
         _get_url_authority(url)
+
+
+async def test_parse_secret_files_keeps_order(make_client: _MakeClient) -> None:
+    # Check for regression
+    volumes = [
+        "secret:first:/var/secrets/first",
+        "secret:second:/var/secrets/second",
+        "secret:third:/var/secrets/third",
+    ]
+    async with make_client("https://example.com") as client:
+        volumes_parsed = client.parse.volumes(volumes)
+
+    assert volumes_parsed.secret_files == [
+        SecretFile(URL("secret://default/user/first"), "/var/secrets/first"),
+        SecretFile(URL("secret://default/user/second"), "/var/secrets/second"),
+        SecretFile(URL("secret://default/user/third"), "/var/secrets/third"),
+    ]
