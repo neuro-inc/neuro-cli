@@ -32,3 +32,7 @@ class ServerNotAvailable(ValueError):
 
 class ConfigLoadException(Exception):
     pass
+
+
+class NDJSONError(ValueError):
+    pass

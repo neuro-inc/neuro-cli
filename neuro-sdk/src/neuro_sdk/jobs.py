@@ -38,6 +38,7 @@ from .abc import (
 )
 from .config import Config
 from .core import _Core
+from .errors import NDJSONError
 from .images import (
     _DummyProgress,
     _raise_on_error_chunk,
@@ -433,7 +434,7 @@ class Jobs(metaclass=NoPublicConstructor):
                 async for line in resp.content:
                     server_message = json.loads(line)
                     if "error" in server_message:
-                        raise Exception(server_message["error"])
+                        raise NDJSONError(server_message["error"])
                     yield _job_description_from_api(server_message, self._parse)
             else:
                 ret = await resp.json()
