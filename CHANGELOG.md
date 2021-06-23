@@ -5,6 +5,21 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.6.23 (2021-06-23)
+Features
+--------
+
+
+- Introduce NDJSONError exception, raise it instead of bare Exception in case of error in ndjson stream. ([#2187](https://github.com/neuro-inc/platform-client-python/issues/2187))
+
+
+Bugfixes
+--------
+
+
+- Preserve volumes order in `client.parse.volumes(...)` call. ([#2183](https://github.com/neuro-inc/platform-client-python/issues/2183))
+
+
 Neuro SDK/CLI 21.6.17 (2021-06-17)
 ==================================
 
