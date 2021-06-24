@@ -55,7 +55,7 @@ from .url_utils import (
     normalize_storage_path_uri,
 )
 from .users import Action
-from .utils import NoPublicConstructor, QueuedCall, queue_calls, retries
+from .utils import NoPublicConstructor, QueuedCall, aclosing, queue_calls, retries
 
 log = logging.getLogger(__name__)
 
@@ -197,27 +197,31 @@ class Storage(metaclass=NoPublicConstructor):
             glob_in_dir = self._glob1
         else:
             glob_in_dir = self._glob2
-        async for parent in self.glob(uri.parent, dironly=True):
-            async for x in glob_in_dir(parent, basename, dironly):
-                yield x
+        async with aclosing(self.glob(uri.parent, dironly=True)) as parent_iter:
+            async for parent in parent_iter:
+                async with aclosing(glob_in_dir(parent, basename, dironly)) as it:
+                    async for x in it:
+                        yield x
 
     async def _glob2(
         self, parent: URL, pattern: str, dironly: bool
     ) -> AsyncIterator[URL]:
         assert _isrecursive(pattern)
         yield parent
-        async for x in self._rlistdir(parent, dironly):
-            yield x
+        async with aclosing(self._rlistdir(parent, dironly)) as it:
+            async for x in it:
+                yield x
 
     async def _glob1(
         self, parent: URL, pattern: str, dironly: bool
     ) -> AsyncIterator[URL]:
         allow_hidden = _ishidden(pattern)
         match = re.compile(fnmatch.translate(pattern)).fullmatch
-        async for stat in self._iterdir(parent, dironly):
-            name = stat.path
-            if (allow_hidden or not _ishidden(name)) and match(name):
-                yield parent / name
+        async with aclosing(self._iterdir(parent, dironly)) as it:
+            async for stat in it:
+                name = stat.path
+                if (allow_hidden or not _ishidden(name)) and match(name):
+                    yield parent / name
 
     async def _glob0(
         self, parent: URL, basename: str, dironly: bool
@@ -230,19 +234,22 @@ class Storage(metaclass=NoPublicConstructor):
         yield uri
 
     async def _iterdir(self, uri: URL, dironly: bool) -> AsyncIterator[FileStatus]:
-        async for stat in self.ls(uri):
-            if not dironly or stat.is_dir():
-                yield stat
+        async with aclosing(self.ls(uri)) as it:
+            async for stat in it:
+                if not dironly or stat.is_dir():
+                    yield stat
 
     async def _rlistdir(self, uri: URL, dironly: bool) -> AsyncIterator[URL]:
-        async for stat in self._iterdir(uri, dironly):
-            name = stat.path
-            if not _ishidden(name):
-                x = uri / name
-                yield x
-                if stat.is_dir():
-                    async for y in self._rlistdir(x, dironly):
-                        yield y
+        async with aclosing(self._iterdir(uri, dironly)) as it:
+            async for stat in it:
+                name = stat.path
+                if not _ishidden(name):
+                    x = uri / name
+                    yield x
+                    if stat.is_dir():
+                        async with aclosing(self._rlistdir(x, dironly)) as it2:
+                            async for y in it2:
+                                yield y
 
     async def mkdir(
         self, uri: URL, *, parents: bool = False, exist_ok: bool = False
@@ -593,11 +600,12 @@ class Storage(metaclass=NoPublicConstructor):
                 try:
                     for retry in retries(f"Fail to list {dst}"):
                         async with retry:
-                            dst_files = {
-                                item.name: item
-                                async for item in self.ls(dst)
-                                if item.is_file()
-                            }
+                            async with aclosing(self.ls(dst)) as it:
+                                dst_files = {
+                                    item.name: item
+                                    async for item in it
+                                    if item.is_file()
+                                }
                     exists = True
                 except ResourceNotFound:
                     update = continue_ = False
@@ -729,15 +737,15 @@ class Storage(metaclass=NoPublicConstructor):
                     if pos >= size:
                         break
                     async with retry:
-                        it = self.open(src, offset=pos)
-                        async for chunk in it:
-                            pos += len(chunk)
-                            await progress.step(
-                                StorageProgressStep(src, dst, pos, size)
-                            )
-                            await loop.run_in_executor(None, stream.write, chunk)
-                            if chunk:
-                                retry.reset()
+                        async with aclosing(self.open(src, offset=pos)) as it:
+                            async for chunk in it:
+                                pos += len(chunk)
+                                await progress.step(
+                                    StorageProgressStep(src, dst, pos, size)
+                                )
+                                await loop.run_in_executor(None, stream.write, chunk)
+                                if chunk:
+                                    retry.reset()
 
             await progress.complete(StorageProgressComplete(src, dst, size))
 
@@ -802,7 +810,8 @@ class Storage(metaclass=NoPublicConstructor):
 
         for retry in retries(f"Fail to list {src}"):
             async with retry:
-                folder = [item async for item in self.ls(src)]
+                async with aclosing(self.ls(src)) as it:
+                    folder = [item async for item in it]
 
         for child in folder:
             name = child.name

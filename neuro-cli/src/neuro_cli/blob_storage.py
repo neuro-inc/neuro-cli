@@ -18,6 +18,7 @@ from neuro_sdk import (
 )
 from neuro_sdk.file_filter import FileFilter
 from neuro_sdk.url_utils import _extract_path
+from neuro_sdk.utils import aclosing
 
 from .const import EX_OSFILE
 from .formatters.blob_storage import (
@@ -150,8 +151,9 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
             uri_text = painter.paint(str(short_uri), FileStatusType.FILE)
             root.print(Text.assemble("Using pattern ", uri_text, ":"))
 
-        async for blob in blob_storage.glob_blobs(bucket_name, pattern):
-            root.print(blob.uri)
+        async with aclosing(blob_storage.glob_blobs(bucket_name, pattern)) as blob_iter:
+            async for blob in blob_iter:
+                root.print(blob.uri)
 
 
 @command()
@@ -406,10 +408,13 @@ async def _expand(
                         "You can not glob on bucket names. Please provide name "
                         "explicitly."
                     )
-                async for blob in root.client.blob_storage.glob_blobs(
-                    bucket_name=bucket_name, pattern=key
-                ):
-                    uris.append(blob.uri)
+                async with aclosing(
+                    root.client.blob_storage.glob_blobs(
+                        bucket_name=bucket_name, pattern=key
+                    )
+                ) as blob_iter:
+                    async for blob in blob_iter:
+                        uris.append(blob.uri)
             elif allow_file and uri.scheme == "file":
                 for p in globmodule.iglob(uri_path, recursive=True):
                     uris.append(uri.with_path(p))

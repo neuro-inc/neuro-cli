@@ -24,6 +24,7 @@ from prompt_toolkit.shortcuts import PromptSession
 from typing_extensions import NoReturn
 
 from neuro_sdk import IllegalArgumentError, JobDescription, JobStatus, StdStream
+from neuro_sdk.utils import aclosing
 
 from .const import EX_IOERR, EX_PLATFORMERROR
 from .formatters.jobs import ExecStopProgress, JobStopProgress
@@ -79,23 +80,24 @@ async def process_logs(
 ) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
-    async for chunk in root.client.jobs.monitor(job, cluster_name=cluster_name):
-        if not chunk:
-            txt = decoder.decode(b"", final=True)
-            if not txt:
-                break
-        else:
-            txt = decoder.decode(chunk)
-        if helper is not None:
-            if helper.attach_ready:
-                return
-            async with helper.write_sem:
-                helper.log_printed = True
+    async with aclosing(root.client.jobs.monitor(job, cluster_name=cluster_name)) as it:
+        async for chunk in it:
+            if not chunk:
+                txt = decoder.decode(b"", final=True)
+                if not txt:
+                    break
+            else:
+                txt = decoder.decode(chunk)
+            if helper is not None:
+                if helper.attach_ready:
+                    return
+                async with helper.write_sem:
+                    helper.log_printed = True
+                    sys.stdout.write(txt)
+                    sys.stdout.flush()
+            else:
                 sys.stdout.write(txt)
                 sys.stdout.flush()
-        else:
-            sys.stdout.write(txt)
-            sys.stdout.flush()
 
 
 async def process_exec(

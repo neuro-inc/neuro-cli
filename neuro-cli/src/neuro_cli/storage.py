@@ -12,6 +12,7 @@ from yarl import URL
 from neuro_sdk import Client, FileStatusType, IllegalArgumentError, ResourceNotFound
 from neuro_sdk.file_filter import FileFilter
 from neuro_sdk.url_utils import _extract_path
+from neuro_sdk.utils import aclosing
 
 from .const import EX_OSFILE
 from .formatters.storage import (
@@ -158,8 +159,9 @@ async def ls(
                     uri_text = painter.paint(str(uri), FileStatusType.DIRECTORY)
                     root.print(Text.assemble("List of ", uri_text, ":"))
 
-                files = [file async for file in root.client.storage.ls(uri)]
-                files = sorted(files, key=FilesSorter(sort).key())
+                async with aclosing(root.client.storage.ls(uri)) as it:
+                    files = [file async for file in it]
+                files.sort(key=FilesSorter(sort).key())
         except (OSError, ResourceNotFound, IllegalArgumentError) as error:
             log.error(f"cannot access {uri}: {error}")
             errors = True
@@ -197,8 +199,9 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
             painter = get_painter(root.color)
             uri_text = painter.paint(str(uri), FileStatusType.FILE)
             root.print(Text.assemble("Using pattern ", uri_text, ":"))
-        async for file in root.client.storage.glob(uri):
-            root.print(file)
+        async with aclosing(root.client.storage.glob(uri)) as it:
+            async for file in it:
+                root.print(file)
 
 
 class FileFilterParserOption(click.parser.Option):
@@ -687,8 +690,9 @@ async def _expand(
         uri_path = str(_extract_path(uri))
         if glob and globmodule.has_magic(uri_path):
             if uri.scheme == "storage":
-                async for file in root.client.storage.glob(uri):
-                    uris.append(file)
+                async with aclosing(root.client.storage.glob(uri)) as it:
+                    async for file in it:
+                        uris.append(file)
             elif allow_file and path.startswith("file:"):
                 for p in globmodule.iglob(uri_path, recursive=True):
                     uris.append(uri.with_path(p))
@@ -757,16 +761,17 @@ async def fetch_tree(client: Client, uri: URL, show_all: bool) -> Tree:
     files = []
     tasks = []
     size = 0
-    async for item in client.storage.ls(uri):
-        if not show_all and item.name.startswith("."):
-            continue
-        if item.is_dir():
-            tasks.append(
-                loop.create_task(fetch_tree(client, uri / item.name, show_all))
-            )
-        else:
-            files.append(item)
-            size += item.size
+    async with aclosing(client.storage.ls(uri)) as it:
+        async for item in it:
+            if not show_all and item.name.startswith("."):
+                continue
+            if item.is_dir():
+                tasks.append(
+                    loop.create_task(fetch_tree(client, uri / item.name, show_all))
+                )
+            else:
+                files.append(item)
+                size += item.size
     for task in tasks:
         subtree = await task
         folders.append(subtree)

@@ -1,5 +1,7 @@
 import pathlib
 
+from neuro_sdk.utils import aclosing
+
 from neuro_cli.formatters.secrets import (
     BaseSecretsFormatter,
     SecretsFormatter,
@@ -39,9 +41,10 @@ async def ls(root: Root, full_uri: bool) -> None:
 
     secrets = []
     with root.status("Fetching secrets") as status:
-        async for secret in root.client.secrets.list():
-            secrets.append(secret)
-            status.update(f"Fetching secrets ({len(secrets)} loaded)")
+        async with aclosing(root.client.secrets.list()) as it:
+            async for secret in it:
+                secrets.append(secret)
+                status.update(f"Fetching secrets ({len(secrets)} loaded)")
 
     with root.pager():
         root.print(secrets_fmtr(secrets))

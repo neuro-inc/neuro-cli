@@ -58,7 +58,7 @@ from .storage import (
 )
 from .url_utils import _extract_path, normalize_blob_path_uri, normalize_local_path_uri
 from .users import Action
-from .utils import NoPublicConstructor, queue_calls, retries
+from .utils import NoPublicConstructor, aclosing, queue_calls, retries
 
 if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import asynccontextmanager
@@ -211,11 +211,14 @@ class BlobStorage(metaclass=NoPublicConstructor):
         contents: List[BlobListing] = []
         common_prefixes: List[PrefixListing] = []
 
-        async for blobs, prefixes in self._iter_blob_pages(
-            bucket_name, prefix, recursive=recursive, max_keys=max_keys
-        ):
-            contents.extend(blobs)
-            common_prefixes.extend(prefixes)
+        async with aclosing(
+            self._iter_blob_pages(
+                bucket_name, prefix, recursive=recursive, max_keys=max_keys
+            )
+        ) as page_iter:
+            async for blobs, prefixes in page_iter:
+                contents.extend(blobs)
+                common_prefixes.extend(prefixes)
         return contents, common_prefixes
 
     async def _iter_blob_pages(
@@ -275,8 +278,9 @@ class BlobStorage(metaclass=NoPublicConstructor):
     ) -> AsyncIterator[BlobListing]:
         pattern = pattern.lstrip("/")
 
-        async for blob in self._glob_search(bucket_name, "", pattern):
-            yield blob
+        async with aclosing(self._glob_search(bucket_name, "", pattern)) as blob_iter:
+            async for blob in blob_iter:
+                yield blob
 
     async def _glob_search(
         self, bucket_name: str, prefix: str, pattern: str
@@ -287,13 +291,14 @@ class BlobStorage(metaclass=NoPublicConstructor):
         # **/.json
         if _isrecursive(part):
             full_match = re.compile(translate(pattern)).fullmatch
-            async for blobs, prefixes in self._iter_blob_pages(
-                bucket_name, prefix, recursive=True
-            ):
-                assert not prefixes, "No prefixes in recursive mode"
-                for blob in blobs:
-                    if full_match(blob.key[len(prefix) :]):
-                        yield blob
+            async with aclosing(
+                self._iter_blob_pages(bucket_name, prefix, recursive=True)
+            ) as page_iter:
+                async for blobs, prefixes in page_iter:
+                    assert not prefixes, "No prefixes in recursive mode"
+                    for blob in blobs:
+                        if full_match(blob.key[len(prefix) :]):
+                            yield blob
             return
 
         has_magic = _has_magic(part)
@@ -307,12 +312,13 @@ class BlobStorage(metaclass=NoPublicConstructor):
         # just prefixes
         if not remaining:
             if has_magic:
-                async for blobs, _ in self._iter_blob_pages(
-                    bucket_name, opt_prefix, recursive=False
-                ):
-                    for blob in blobs:
-                        if match(blob.name):
-                            yield blob
+                async with aclosing(
+                    self._iter_blob_pages(bucket_name, opt_prefix, recursive=False)
+                ) as page_iter:
+                    async for blobs, _ in page_iter:
+                        for blob in blobs:
+                            if match(blob.name):
+                                yield blob
             else:
                 try:
                     blob = await self.head_blob(bucket_name, prefix + part)
@@ -324,22 +330,25 @@ class BlobStorage(metaclass=NoPublicConstructor):
         # We can be sure no blobs on this level will match the pattern, as results are
         # deeper down the tree. Recursively scan folders only.
         if has_magic:
-            async for blobs, prefixes in self._iter_blob_pages(
-                bucket_name, opt_prefix, recursive=False
-            ):
-                for folder in prefixes:
-                    if not match(folder.name):
-                        continue
-                    async for blob in self._glob_search(
-                        bucket_name, folder.prefix, remaining
-                    ):
-                        yield blob
+            async with aclosing(
+                self._iter_blob_pages(bucket_name, opt_prefix, recursive=False)
+            ) as page_iter:
+                async for blobs, prefixes in page_iter:
+                    for folder in prefixes:
+                        if not match(folder.name):
+                            continue
+                        async with aclosing(
+                            self._glob_search(bucket_name, folder.prefix, remaining)
+                        ) as blob_iter:
+                            async for blob in blob_iter:
+                                yield blob
 
         else:
-            async for blob in self._glob_search(
-                bucket_name, prefix + part + "/", remaining
-            ):
-                yield blob
+            async with aclosing(
+                self._glob_search(bucket_name, prefix + part + "/", remaining)
+            ) as blob_iter:
+                async for blob in blob_iter:
+                    yield blob
 
     async def head_blob(self, bucket_name: str, key: str) -> BlobListing:
         url = self._config.blob_storage_url / "o" / bucket_name / key
@@ -836,16 +845,19 @@ class BlobStorage(metaclass=NoPublicConstructor):
                         break
                     async with retry:
                         bucket_name, key = self._extract_bucket_and_key(src)
-                        async for chunk in self.fetch_blob(
-                            bucket_name=bucket_name, key=key, offset=pos
-                        ):
-                            pos += len(chunk)
-                            await progress.step(
-                                StorageProgressStep(src, dst, pos, size)
+                        async with aclosing(
+                            self.fetch_blob(
+                                bucket_name=bucket_name, key=key, offset=pos
                             )
-                            await loop.run_in_executor(None, stream.write, chunk)
-                            if chunk:
-                                retry.reset()
+                        ) as it:
+                            async for chunk in it:
+                                pos += len(chunk)
+                                await progress.step(
+                                    StorageProgressStep(src, dst, pos, size)
+                                )
+                                await loop.run_in_executor(None, stream.write, chunk)
+                                if chunk:
+                                    retry.reset()
             await progress.complete(StorageProgressComplete(src, dst, size))
 
     async def download_dir(
