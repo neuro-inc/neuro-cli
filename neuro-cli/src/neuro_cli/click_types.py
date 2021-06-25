@@ -8,7 +8,6 @@ import click
 from click import BadParameter
 
 from neuro_sdk import LocalImage, RemoteImage, TagOption
-from neuro_sdk.utils import aclosing
 
 from .parse_utils import (
     JobTableFormat,
@@ -276,10 +275,8 @@ class JobType(AsyncType[str]):
             ret: List[Tuple[str, Optional[str]]] = []
             now = datetime.now()
             limit = int(os.environ.get(JOB_LIMIT_ENV, 100))
-            async with aclosing(
-                client.jobs.list(
-                    since=now - timedelta(days=7), reverse=True, limit=limit
-                )
+            async with client.jobs.list(
+                since=now - timedelta(days=7), reverse=True, limit=limit
             ) as it:
                 async for job in it:
                     job_name = job.name or ""
@@ -316,7 +313,7 @@ class DiskType(AsyncType[str]):
     ) -> List[Tuple[str, Optional[str]]]:
         async with await root.init_client() as client:
             ret: List[Tuple[str, Optional[str]]] = []
-            async with aclosing(client.disks.list()) as it:
+            async with client.disks.list() as it:
                 async for disk in it:
                     disk_name = disk.name or ""
                     for test in (
@@ -349,7 +346,7 @@ class ServiceAccountType(AsyncType[str]):
     ) -> List[Tuple[str, Optional[str]]]:
         async with await root.init_client() as client:
             ret: List[Tuple[str, Optional[str]]] = []
-            async with aclosing(client.service_accounts.list()) as it:
+            async with client.service_accounts.list() as it:
                 async for account in it:
                     account_name = account.name or ""
                     for test in (

@@ -14,7 +14,8 @@ Secrets
    Secured secrets subsystems.  Secrets can be passed as mounted files and environment
    variables into a running job.
 
-   .. comethod:: list() -> AsyncIterator[Secret]
+   .. comethod:: list() -> AsyncContextManager[AsyncIterator[Secret]]
+      :async-with:
       :async-for:
 
       List user's secrets, async iterator. Yields :class:`Secret` instances.

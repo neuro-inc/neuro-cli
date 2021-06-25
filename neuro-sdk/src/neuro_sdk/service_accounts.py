@@ -7,7 +7,7 @@ from dateutil.parser import isoparse
 
 from .config import Config
 from .core import _Core
-from .utils import NoPublicConstructor
+from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +37,7 @@ class ServiceAccounts(metaclass=NoPublicConstructor):
             created_at=isoparse(payload["created_at"]),
         )
 
+    @asyncgeneratorcontextmanager
     async def list(self) -> AsyncIterator[ServiceAccount]:
         url = self._config.service_accounts_url
         auth = await self._config._api_auth()

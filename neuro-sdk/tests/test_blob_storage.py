@@ -596,8 +596,9 @@ async def test_blob_storage_fetch_blob(
 
     async with make_client(srv.make_url("/")) as client:
         buf = b""
-        async for data in client.blob_storage.fetch_blob(bucket_name, key=key):
-            buf += data
+        async with client.blob_storage.fetch_blob(bucket_name, key=key) as it:
+            async for data in it:
+                buf += data
         assert buf == body
 
 
@@ -632,23 +633,27 @@ async def test_blob_storage_fetch_blob_partial_read(
 
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
-        async for chunk in client.blob_storage.fetch_blob(bucket_name, key, 5):
-            buf.extend(chunk)
+        async with client.blob_storage.fetch_blob(bucket_name, key, 5) as it:
+            async for chunk in it:
+                buf.extend(chunk)
         assert buf == b"halamaha"
 
         buf = bytearray()
-        async for chunk in client.blob_storage.fetch_blob(bucket_name, key, 5, 4):
-            buf.extend(chunk)
+        async with client.blob_storage.fetch_blob(bucket_name, key, 5, 4) as it:
+            async for chunk in it:
+                buf.extend(chunk)
         assert buf == b"hala"
 
         buf = bytearray()
-        async for chunk in client.blob_storage.fetch_blob(bucket_name, key, 5, 20):
-            buf.extend(chunk)
+        async with client.blob_storage.fetch_blob(bucket_name, key, 5, 20) as it:
+            async for chunk in it:
+                buf.extend(chunk)
         assert buf == b"halamaha"
 
         with pytest.raises(ValueError):
-            async for chunk in client.blob_storage.fetch_blob(bucket_name, key, 5, 0):
-                pass
+            async with client.blob_storage.fetch_blob(bucket_name, key, 5, 0) as it:
+                async for chunk in it:
+                    pass
 
 
 async def test_blob_storage_fetch_blob_unsupported_partial_read(
@@ -679,13 +684,15 @@ async def test_blob_storage_fetch_blob_unsupported_partial_read(
 
     async with make_client(srv.make_url("/")) as client:
         buf = b""
-        async for data in client.blob_storage.fetch_blob(bucket_name, key):
-            buf += data
+        async with client.blob_storage.fetch_blob(bucket_name, key) as it:
+            async for data in it:
+                buf += data
         assert buf == body
 
         with pytest.raises(RuntimeError):
-            async for data in client.blob_storage.fetch_blob(bucket_name, key, 5):
-                pass
+            async with client.blob_storage.fetch_blob(bucket_name, key, 5) as it:
+                async for data in it:
+                    pass
 
 
 async def test_blob_storage_put_blob(
@@ -1334,10 +1341,8 @@ async def test_blob_storage_glob_blobs(
     }
 
     async with make_client(blob_storage_server.make_url("/")) as client:
-        ret = [
-            x.key
-            async for x in client.blob_storage.glob_blobs(bucket_name, pattern=pattern)
-        ]
+        async with client.blob_storage.glob_blobs(bucket_name, pattern=pattern) as it:
+            ret = [x.key async for x in it]
         assert ret == expected_keys
 
 

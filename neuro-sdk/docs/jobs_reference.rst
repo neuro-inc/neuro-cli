@@ -144,7 +144,8 @@ Jobs
                       reverse: bool = False, \
                       limit: Optional[int] = None, \
                       cluster_name: Optional[str] = None, \
-                 ) -> AsyncIterator[JobDescription]
+                 ) -> AsyncContextManager[AsyncIterator[JobDescription]]
+      :async-with:
       :async-for:
 
       List user jobs, all scheduled, running and finished jobs by default.
@@ -219,13 +220,15 @@ Jobs
 
    .. comethod:: monitor(id: str, *, \
                          cluster_name: Optional[str] = None, \
-                 ) -> AsyncIterator[bytes]
+                 ) -> AsyncContextManager[AsyncIterator[bytes]]
+      :async-with:
       :async-for:
 
       Get job logs as a sequence of data chunks, e.g.::
 
-         async for chunk in client.jobs.monitor(job_id):
-             print(chunk.encode('utf8', errors='replace')
+         async with client.jobs.monitor(job_id) as it:
+             async for chunk in it:
+                 print(chunk.encode('utf8', errors='replace')
 
       :param str id: job :attr:`~JobDescription.id` to retrieve logs.
 
@@ -448,13 +451,15 @@ Jobs
 
    .. comethod:: top(id: str, *, \
                      cluster_name: Optional[str] = None, \
-                 ) -> AsyncIterator[JobTelemetry]
+                 ) -> AsyncContextManager[AsyncIterator[JobTelemetry]]
+      :async-with:
       :async-for:
 
       Get job usage statistics, e.g.::
 
-          async for data in client.jobs.top(job_id):
-              print(data.cpu, data.memory)
+          async with client.jobs.top(job_id) as top:
+              async for data in top:
+                  print(data.cpu, data.memory)
 
       :param str id: job :attr:`~JobDescription.id` to get telemetry data.
 

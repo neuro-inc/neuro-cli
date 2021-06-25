@@ -50,8 +50,9 @@ async def test_list(
     ret = []
 
     async with make_client(srv.make_url("/")) as client:
-        async for s in client.disks.list():
-            ret.append(s)
+        async with client.disks.list() as it:
+            async for s in it:
+                ret.append(s)
 
     assert ret == [
         Disk(

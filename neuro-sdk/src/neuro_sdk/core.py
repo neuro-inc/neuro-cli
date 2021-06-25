@@ -23,6 +23,7 @@ from .errors import (
     ServerNotAvailable,
 )
 from .tracing import gen_trace_id
+from .utils import asyncgeneratorcontextmanager
 
 if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import asynccontextmanager
@@ -167,6 +168,7 @@ class _Core:
             else:
                 yield resp
 
+    @asyncgeneratorcontextmanager
     async def ws_connect(
         self, abs_url: URL, auth: str, *, headers: Optional[Dict[str, str]] = None
     ) -> AsyncIterator[WSMessage]:

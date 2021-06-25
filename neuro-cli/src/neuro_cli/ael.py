@@ -24,7 +24,6 @@ from prompt_toolkit.shortcuts import PromptSession
 from typing_extensions import NoReturn
 
 from neuro_sdk import IllegalArgumentError, JobDescription, JobStatus, StdStream
-from neuro_sdk.utils import aclosing
 
 from .const import EX_IOERR, EX_PLATFORMERROR
 from .formatters.jobs import ExecStopProgress, JobStopProgress
@@ -80,7 +79,7 @@ async def process_logs(
 ) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
-    async with aclosing(root.client.jobs.monitor(job, cluster_name=cluster_name)) as it:
+    async with root.client.jobs.monitor(job, cluster_name=cluster_name) as it:
         async for chunk in it:
             if not chunk:
                 txt = decoder.decode(b"", final=True)
