@@ -59,15 +59,16 @@ class Runner:
         assert not self._stopped
         self._started = True
 
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            # there is no current loop
-            pass
-        else:
-            raise RuntimeError(
-                "asyncio.run() cannot be called from a running event loop"
-            )
+        if sys.version_info >= (3, 7):
+            try:
+                asyncio.get_running_loop()
+            except RuntimeError:
+                # there is no current loop
+                pass
+            else:
+                raise RuntimeError(
+                    "asyncio.run() cannot be called from a running event loop"
+                )
         try:
             current_loop = asyncio.get_event_loop_policy().get_event_loop()
         except RuntimeError:
