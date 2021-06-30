@@ -8,6 +8,7 @@ import click
 from click import BadParameter
 
 from neuro_sdk import LocalImage, RemoteImage, TagOption
+from neuro_sdk.utils import aclosing
 
 from .parse_utils import (
     JobTableFormat,
@@ -275,19 +276,22 @@ class JobType(AsyncType[str]):
             ret: List[Tuple[str, Optional[str]]] = []
             now = datetime.now()
             limit = int(os.environ.get(JOB_LIMIT_ENV, 100))
-            async for job in client.jobs.list(
-                since=now - timedelta(days=7), reverse=True, limit=limit
-            ):
-                job_name = job.name or ""
-                for test in (
-                    job.id,
-                    job_name,
-                    f"job:{job.id}",
-                    f"job:/{job.owner}/{job.id}",
-                    f"job://{job.cluster_name}/{job.owner}/{job.id}",
-                ):
-                    if test.startswith(incomplete):
-                        ret.append((test, job_name))
+            async with aclosing(
+                client.jobs.list(
+                    since=now - timedelta(days=7), reverse=True, limit=limit
+                )
+            ) as it:
+                async for job in it:
+                    job_name = job.name or ""
+                    for test in (
+                        job.id,
+                        job_name,
+                        f"job:{job.id}",
+                        f"job:/{job.owner}/{job.id}",
+                        f"job://{job.cluster_name}/{job.owner}/{job.id}",
+                    ):
+                        if test.startswith(incomplete):
+                            ret.append((test, job_name))
 
             return ret
 
@@ -312,14 +316,15 @@ class DiskType(AsyncType[str]):
     ) -> List[Tuple[str, Optional[str]]]:
         async with await root.init_client() as client:
             ret: List[Tuple[str, Optional[str]]] = []
-            async for disk in client.disks.list():
-                disk_name = disk.name or ""
-                for test in (
-                    disk.id,
-                    disk_name,
-                ):
-                    if test.startswith(incomplete):
-                        ret.append((test, disk_name))
+            async with aclosing(client.disks.list()) as it:
+                async for disk in it:
+                    disk_name = disk.name or ""
+                    for test in (
+                        disk.id,
+                        disk_name,
+                    ):
+                        if test.startswith(incomplete):
+                            ret.append((test, disk_name))
 
             return ret
 
@@ -344,14 +349,15 @@ class ServiceAccountType(AsyncType[str]):
     ) -> List[Tuple[str, Optional[str]]]:
         async with await root.init_client() as client:
             ret: List[Tuple[str, Optional[str]]] = []
-            async for account in client.service_accounts.list():
-                account_name = account.name or ""
-                for test in (
-                    account.id,
-                    account_name,
-                ):
-                    if test.startswith(incomplete):
-                        ret.append((test, account_name))
+            async with aclosing(client.service_accounts.list()) as it:
+                async for account in it:
+                    account_name = account.name or ""
+                    for test in (
+                        account.id,
+                        account_name,
+                    ):
+                        if test.startswith(incomplete):
+                            ret.append((test, account_name))
 
             return ret
 

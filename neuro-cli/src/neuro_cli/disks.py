@@ -1,6 +1,8 @@
 from datetime import timedelta
 from typing import Optional, Sequence
 
+from neuro_sdk.utils import aclosing
+
 from neuro_cli.click_types import DISK, DISK_NAME
 from neuro_cli.formatters.utils import get_datetime_formatter
 from neuro_cli.utils import resolve_disk
@@ -50,9 +52,10 @@ async def ls(root: Root, full_uri: bool, long_format: bool) -> None:
 
     disks = []
     with root.status("Fetching disks") as status:
-        async for disk in root.client.disks.list():
-            disks.append(disk)
-            status.update(f"Fetching disks ({len(disks)} loaded)")
+        async with aclosing(root.client.disks.list()) as it:
+            async for disk in it:
+                disks.append(disk)
+                status.update(f"Fetching disks ({len(disks)} loaded)")
 
     with root.pager():
         root.print(disks_fmtr(disks))

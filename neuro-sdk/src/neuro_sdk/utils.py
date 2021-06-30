@@ -42,6 +42,26 @@ else:
             pass  # pragma: no cover
 
 
+if sys.version_info >= (3, 10):
+    from contextlib import aclosing
+else:
+
+    class aclosing(AsyncContextManager[_T]):
+        def __init__(self, thing: _T):
+            self.thing = thing
+
+        async def __aenter__(self) -> _T:
+            return self.thing
+
+        async def __aexit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc: Optional[BaseException],
+            tb: Optional[TracebackType],
+        ) -> None:
+            await self.thing.aclose()  # type: ignore
+
+
 class NoPublicConstructor(type):
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         raise TypeError("no public constructor")

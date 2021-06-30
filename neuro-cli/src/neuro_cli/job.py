@@ -28,6 +28,7 @@ from neuro_sdk import (
     RemoteImage,
     Volume,
 )
+from neuro_sdk.utils import aclosing
 
 from neuro_cli.formatters.images import DockerImageProgress
 from neuro_cli.formatters.utils import (
@@ -406,35 +407,6 @@ async def ls(
     tags = set(tag)
     if not cluster:
         cluster = root.client.config.cluster_name
-    jobs = root.client.jobs.list(
-        statuses=statuses,
-        name=name,
-        owners=owners,
-        tags=tags,
-        since=_parse_date(since),
-        until=_parse_date(until),
-        reverse=recent_first,
-        cluster_name=cluster,
-    )
-
-    # client-side filtering
-    if description:
-        jobs = (job async for job in jobs if job.description == description)
-
-    if distinct:
-
-        async def _filter_distinct(
-            jobs_iter: AsyncIterator[JobDescription],
-        ) -> AsyncIterator[JobDescription]:
-            names: Set[str] = set()
-            async for job in jobs_iter:
-                if job.name in names:
-                    continue
-                if job.name is not None:
-                    names.add(job.name)
-                yield job
-
-        jobs = _filter_distinct(jobs)
 
     uri_fmtr: URIFormatter
     if full_uri:
@@ -454,11 +426,43 @@ async def ls(
             datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
         )
 
-    with root.status("Fetching jobs") as rich_status:
-        jobs_list = []
-        async for job in jobs:
-            jobs_list.append(job)
-            rich_status.update(f"Fetching jobs ({len(jobs_list)} loaded)")
+    async with aclosing(
+        root.client.jobs.list(
+            statuses=statuses,
+            name=name,
+            owners=owners,
+            tags=tags,
+            since=_parse_date(since),
+            until=_parse_date(until),
+            reverse=recent_first,
+            cluster_name=cluster,
+        )
+    ) as jobs:
+
+        # client-side filtering
+        if description:
+            jobs = (job async for job in jobs if job.description == description)
+
+        if distinct:
+
+            async def _filter_distinct(
+                jobs_iter: AsyncIterator[JobDescription],
+            ) -> AsyncIterator[JobDescription]:
+                names: Set[str] = set()
+                async for job in jobs_iter:
+                    if job.name in names:
+                        continue
+                    if job.name is not None:
+                        names.add(job.name)
+                    yield job
+
+            jobs = _filter_distinct(jobs)
+
+        with root.status("Fetching jobs") as rich_status:
+            jobs_list = []
+            async for job in jobs:
+                jobs_list.append(job)
+                rich_status.update(f"Fetching jobs ({len(jobs_list)} loaded)")
 
     with root.pager():
         root.print(formatter(jobs_list))
@@ -699,42 +703,47 @@ async def top(
         async def create_pollers() -> None:
             nonlocal since_dt
             while True:
-                jobs = root.client.jobs.list(
-                    statuses=JobStatus.active_items(),
-                    name=name,
-                    owners=owners,
-                    tags=tags,
-                    since=since_dt,
-                    until=until_dt,
-                    cluster_name=cluster,
-                )
+                async with aclosing(
+                    root.client.jobs.list(
+                        statuses=JobStatus.active_items(),
+                        name=name,
+                        owners=owners,
+                        tags=tags,
+                        since=since_dt,
+                        until=until_dt,
+                        cluster_name=cluster,
+                    )
+                ) as jobs:
 
-                # client-side filtering
-                if description:
-                    jobs = (job async for job in jobs if job.description == description)
+                    # client-side filtering
+                    if description:
+                        jobs = (
+                            job async for job in jobs if job.description == description
+                        )
 
-                dt: Optional[datetime]
-                dt = datetime.now(timezone.utc) - timedelta(minutes=1)
-                if since_dt is None or since_dt < dt:
-                    since_dt = dt
-                async for job in jobs:
-                    job_id = job.id
-                    if job_id in observed:
-                        continue
-                    observed.add(job_id)
-                    dt = job.history.created_at
-                    if dt is not None and since_dt < dt:
+                    dt: Optional[datetime]
+                    dt = datetime.now(timezone.utc) - timedelta(minutes=1)
+                    if since_dt is None or since_dt < dt:
                         since_dt = dt
-                    loop.create_task(poller(job))
+                    async for job in jobs:
+                        job_id = job.id
+                        if job_id in observed:
+                            continue
+                        observed.add(job_id)
+                        dt = job.history.created_at
+                        if dt is not None and since_dt < dt:
+                            since_dt = dt
+                        loop.create_task(poller(job))
                 await asyncio.sleep(TOP_NEW_JOBS_DELAY)
 
     async def poller(job: JobDescription) -> None:
         try:
-            async for info in root.client.jobs.top(
-                job.id, cluster_name=job.cluster_name
-            ):
-                formatter.update(job, info)
-                await asyncio.sleep(0)
+            async with aclosing(
+                root.client.jobs.top(job.id, cluster_name=job.cluster_name)
+            ) as it:
+                async for info in it:
+                    formatter.update(job, info)
+                    await asyncio.sleep(0)
         except ValueError:
             pass  # Job is finished.
         finally:

@@ -23,7 +23,7 @@ from .core import _Core
 from .errors import AuthorizationError
 from .parser import Parser
 from .parsing_utils import LocalImage, RemoteImage, Tag, TagOption, _as_repo_str
-from .utils import NoPublicConstructor
+from .utils import NoPublicConstructor, aclosing
 
 REPOS_PER_PAGE = 30
 TAGS_PER_PAGE = 30
@@ -100,10 +100,13 @@ class Images(metaclass=NoPublicConstructor):
                 ) from error
         auth = await self._config._docker_auth()
         try:
-            async for obj in self._docker.images.push(repo, auth=auth, stream=True):
-                step = _try_parse_image_progress_step(obj, remote.tag)
-                if step:
-                    progress.step(step)
+            async with aclosing(
+                self._docker.images.push(repo, auth=auth, stream=True)
+            ) as it:
+                async for obj in it:
+                    step = _try_parse_image_progress_step(obj, remote.tag)
+                    if step:
+                        progress.step(step)
         except DockerError as error:
             # TODO check this part when registry fixed
             if error.status == 403:
@@ -165,11 +168,14 @@ class Images(metaclass=NoPublicConstructor):
         repo = _as_repo_str(remote)
         auth = await self._config._docker_auth()
         try:
-            async for obj in self._docker.pull(repo, auth=auth, repo=repo, stream=True):
-                self._temporary_images.add(repo)
-                step = _try_parse_image_progress_step(obj, remote.tag)
-                if step:
-                    progress.step(step)
+            async with aclosing(
+                self._docker.pull(repo, auth=auth, repo=repo, stream=True)
+            ) as it:
+                async for obj in it:
+                    self._temporary_images.add(repo)
+                    step = _try_parse_image_progress_step(obj, remote.tag)
+                    if step:
+                        progress.step(step)
         except DockerError as error:
             if error.status == 404:
                 raise ValueError(
