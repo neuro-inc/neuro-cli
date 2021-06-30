@@ -59,8 +59,18 @@ class Runner:
         assert not self._stopped
         self._started = True
 
+        if sys.version_info >= (3, 7):
+            try:
+                asyncio.get_running_loop()
+            except RuntimeError:
+                # there is no current loop
+                pass
+            else:
+                raise RuntimeError(
+                    "asyncio.run() cannot be called from a running event loop"
+                )
         try:
-            current_loop = asyncio.get_event_loop()
+            current_loop = asyncio.get_event_loop_policy().get_event_loop()
         except RuntimeError:
             # there is no current loop
             pass
@@ -157,9 +167,7 @@ def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
     for task in to_cancel:
         task.cancel()
 
-    loop.run_until_complete(
-        asyncio.gather(*to_cancel, loop=loop, return_exceptions=True)
-    )
+    loop.run_until_complete(asyncio.gather(*to_cancel, return_exceptions=True))
 
     # temporary shut up the logger until aiohttp will be fixed
     # the message scares people :)

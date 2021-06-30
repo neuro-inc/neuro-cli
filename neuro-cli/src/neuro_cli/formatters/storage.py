@@ -520,11 +520,12 @@ class FilesSorter(str, enum.Enum):
 
     def key(self) -> Any:
         field = None
-        if self == self.NAME:
+        cls = type(self)
+        if self == cls.NAME:
             field = "name"
-        elif self == self.SIZE:
+        elif self == cls.SIZE:
             field = "size"
-        elif self == self.TIME:
+        elif self == cls.TIME:
             field = "modification_time"
         assert field
         return operator.attrgetter(field)
