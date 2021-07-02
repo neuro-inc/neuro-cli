@@ -22,22 +22,25 @@ Storage
 
    .. rubric:: Remote filesystem operations
 
-   .. comethod:: glob(uri: URL, *, dironly: bool = False) -> AsyncIterator[URL]
+   .. comethod:: glob(uri: URL, *, dironly: bool = False) -> AsyncContextManager[AsyncIterator[URL]]
+      :async-with:
       :async-for:
 
       Glob the given relative pattern *uri* in the directory represented by this *uri*,
       yielding all matching remote files (of any kind)::
 
           folder = yarl.URL("storage:folder/*")
-          async for url in client.storage.glob(folder):
-              print(url)
+          async with client.storage.glob(folder) as uris:
+              async for uri in uris:
+                  print(uri)
 
       The ``“**”`` pattern means “this directory and all sub-directories,
       recursively”. In other words, it enables recursive globbing::
 
           folder = yarl.URL("storage:folder/**/*.py")
-          async for url in client.storage.glob(folder):
-              print(url)
+          async with client.storage.glob(folder) as uris:
+              async for uri in uris:
+                  print(uri)
 
       :param ~yarl.URL uri: a pattern to glob.
 
@@ -46,14 +49,16 @@ Storage
       :return: asynchronous iterator that can be used for enumerating found files and
                directories.
 
-   .. comethod:: ls(uri: URL) -> AsyncIterator[FileStatus]
+   .. comethod:: ls(uri: URL) -> AsyncContextManager[AsyncIterator[FileStatus]]
+      :async-with:
       :async-for:
 
       List a directory *uri* on the storage, e.g.::
 
          folder = yarl.URL("storage:folder")
-         async for status in client.storage.ls(folder):
-             print(status.name, status.size)
+         async with client.storage.ls(folder) as statuses:
+             async for status in statuses:
+                 print(status.name, status.size)
 
       :param ~yarl.URL uri: directory to list
 
@@ -130,7 +135,9 @@ Storage
                  yield str(i) * 10
 
          file = yarl.URL("storage:folder/file.bin")
-         await client.storage.create(file, gen())
+         source = gen()
+         await client.storage.create(file, source)
+         await source.aclose()
 
       :param ~yarl.URL uri: path to created file,
                             e.g. ``yarl.URL("storage:folder/file.txt")``.
@@ -149,14 +156,16 @@ Storage
 
       :param int offset: position in file from which to write.
 
-   .. comethod:: open(uri: URL, offset: int = 0, size: Optional[int] = None) -> AsyncIterator[bytes]
+   .. comethod:: open(uri: URL, offset: int = 0, size: Optional[int] = None) -> AsyncContextManager[AsyncIterator[bytes]]
+      :async-with:
       :async-for:
 
       Get the content of remote file *uri* or its fragment as asynchronous iterator, e.g.::
 
          file = yarl.URL("storage:folder/file.txt")
-         async for data in client.storage.open(file):
-             print(data)
+         async with client.storage.open(file) as content:
+             async for data in content:
+                 print(data)
 
       :param ~yarl.URL uri: storage path of remote file, e.g.
                             ``yarl.URL("storage:folder/file.txt")``.

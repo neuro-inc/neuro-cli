@@ -61,8 +61,9 @@ async def test_jobs_monitor(
 
     lst = []
     async with make_client(srv.make_url("/")) as client:
-        async for data in client.jobs.monitor("job-id"):
-            lst.append(data)
+        async with client.jobs.monitor("job-id") as it:
+            async for data in it:
+                lst.append(data)
 
     assert b"".join(lst) == b"".join(
         [
@@ -94,8 +95,9 @@ async def test_monitor_notexistent_job(
     lst = []
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(ResourceNotFound):
-            async for data in client.jobs.monitor("job-id"):
-                lst.append(data)
+            async with client.jobs.monitor("job-id") as it:
+                async for data in it:
+                    lst.append(data)
     assert lst == []
 
 
@@ -133,8 +135,9 @@ async def test_job_top(
 
     lst = []
     async with make_client(srv.make_url("/")) as client:
-        async for data in client.jobs.top("job-id"):
-            lst.append(data)
+        async with client.jobs.top("job-id") as it:
+            async for data in it:
+                lst.append(data)
 
     assert lst == [get_job_telemetry(i) for i in range(10)]
 
@@ -157,8 +160,9 @@ async def test_top_finished_job(
     lst = []
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(ValueError, match="not running"):
-            async for data in client.jobs.top("job-id"):
-                lst.append(data)
+            async with client.jobs.top("job-id") as it:
+                async for data in it:
+                    lst.append(data)
     assert lst == []
 
 
@@ -176,8 +180,9 @@ async def test_top_nonexisting_job(
     lst = []
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(ValueError, match="not found"):
-            async for data in client.jobs.top("job-id"):
-                lst.append(data)
+            async with client.jobs.top("job-id") as it:
+                async for data in it:
+                    lst.append(data)
     assert lst == []
 
 
@@ -1893,8 +1898,9 @@ async def test_list_error_in_stream_response(
 
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(Exception) as err:
-            async for _ in client.jobs.list():
-                pass
+            async with client.jobs.list() as it:
+                async for _ in it:
+                    pass
         assert err.value.args[0] == "Failed"
 
 
@@ -1917,7 +1923,8 @@ async def test_list_no_filter(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = [job async for job in client.jobs.list()]
+        async with client.jobs.list() as it:
+            ret = [job async for job in it]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1955,7 +1962,8 @@ async def test_list_filter_by_name(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = [job async for job in client.jobs.list(name=name_1)]
+        async with client.jobs.list(name=name_1) as it:
+            ret = [job async for job in it]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -1995,7 +2003,8 @@ async def test_list_filter_by_statuses(
 
     statuses = {JobStatus.FAILED, JobStatus.SUCCEEDED, JobStatus.CANCELLED}
     async with make_client(srv.make_url("/")) as client:
-        ret = [job async for job in client.jobs.list(statuses=statuses)]
+        async with client.jobs.list(statuses=statuses) as it:
+            ret = [job async for job in it]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -2027,7 +2036,8 @@ async def test_list_incorrect_image(
 
     statuses = {JobStatus.FAILED, JobStatus.SUCCEEDED}
     async with make_client(srv.make_url("/")) as client:
-        ret = [job async for job in client.jobs.list(statuses=statuses)]
+        async with client.jobs.list(statuses=statuses) as it:
+            ret = [job async for job in it]
     for job in ret:
         if job.status == JobStatus.FAILED:
             assert job.container.image.name == INVALID_IMAGE_NAME
@@ -2152,7 +2162,8 @@ async def test_list_filter_by_name_and_statuses(
     statuses = {JobStatus.PENDING, JobStatus.SUCCEEDED}
     name = "job-name-1"
     async with make_client(srv.make_url("/")) as client:
-        ret = [job async for job in client.jobs.list(statuses=statuses, name=name)]
+        async with client.jobs.list(statuses=statuses, name=name) as it:
+            ret = [job async for job in it]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -2189,7 +2200,8 @@ async def test_list_filter_by_tags(
 
     tags = {"t1", "t2"}
     async with make_client(srv.make_url("/")) as client:
-        ret = [job async for job in client.jobs.list(tags=tags)]
+        async with client.jobs.list(tags=tags) as it:
+            ret = [job async for job in it]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -2236,12 +2248,8 @@ async def test_list_filter_by_name_and_statuses_and_owners(
     name = name_1
     owners = {owner_1, owner_2}
     async with make_client(srv.make_url("/")) as client:
-        ret = [
-            job
-            async for job in client.jobs.list(
-                statuses=statuses, name=name, owners=owners
-            )
-        ]
+        async with client.jobs.list(statuses=statuses, name=name, owners=owners) as it:
+            ret = [job async for job in it]
 
         job_descriptions = [
             _job_description_from_api(job, client.parse) for job in jobs
@@ -2281,25 +2289,32 @@ async def test_list_filter_by_date_range(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = [job async for job in client.jobs.list()]
+        async with client.jobs.list() as it:
+            ret = [job async for job in it]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2", "job-id-3"}
 
-        ret = [job async for job in client.jobs.list(since=t2)]
+        async with client.jobs.list(since=t2) as it:
+            ret = [job async for job in it]
         assert {job.id for job in ret} == {"job-id-2", "job-id-3"}
 
-        ret = [job async for job in client.jobs.list(until=t2)]
+        async with client.jobs.list(until=t2) as it:
+            ret = [job async for job in it]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
 
-        ret = [job async for job in client.jobs.list(since=t1, until=t2)]
+        async with client.jobs.list(since=t1, until=t2) as it:
+            ret = [job async for job in it]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
 
-        ret = [job async for job in client.jobs.list(since=t1, until=t3)]
+        async with client.jobs.list(since=t1, until=t3) as it:
+            ret = [job async for job in it]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2", "job-id-3"}
 
-        ret = [job async for job in client.jobs.list(since=t2naive)]
+        async with client.jobs.list(since=t2naive) as it:
+            ret = [job async for job in it]
         assert {job.id for job in ret} == {"job-id-2", "job-id-3"}
 
-        ret = [job async for job in client.jobs.list(until=t2naive)]
+        async with client.jobs.list(until=t2naive) as it:
+            ret = [job async for job in it]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
 
 

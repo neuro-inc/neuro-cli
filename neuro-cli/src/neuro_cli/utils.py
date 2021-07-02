@@ -34,7 +34,6 @@ from yarl import URL
 
 from neuro_sdk import Action, Client, JobStatus, Volume
 from neuro_sdk.url_utils import uri_from_cli
-from neuro_sdk.utils import aclosing
 
 from .parse_utils import parse_timedelta
 from .root import Root
@@ -461,14 +460,12 @@ async def resolve_job_ex(
         return id_or_name, cluster_name
 
     try:
-        async with aclosing(
-            client.jobs.list(
-                name=id_or_name,
-                owners={owner},
-                reverse=True,
-                limit=1,
-                cluster_name=cluster_name,
-            )
+        async with client.jobs.list(
+            name=id_or_name,
+            owners={owner},
+            reverse=True,
+            limit=1,
+            cluster_name=cluster_name,
         ) as it:
             async for job in it:
                 log.debug(f"Job name '{id_or_name}' resolved to job ID '{job.id}'")

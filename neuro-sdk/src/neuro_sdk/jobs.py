@@ -51,7 +51,7 @@ from .url_utils import (
     normalize_secret_uri,
     normalize_storage_path_uri,
 )
-from .utils import NoPublicConstructor, aclosing
+from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import asynccontextmanager
@@ -391,6 +391,7 @@ class Jobs(metaclass=NoPublicConstructor):
             res = await resp.json()
             return _job_description_from_api(res, self._parse)
 
+    @asyncgeneratorcontextmanager
     async def list(
         self,
         *,
@@ -463,6 +464,7 @@ class Jobs(metaclass=NoPublicConstructor):
             # an error is raised for status >= 400
             return None  # 201 status code
 
+    @asyncgeneratorcontextmanager
     async def monitor(
         self, id: str, *, cluster_name: Optional[str] = None
     ) -> AsyncIterator[bytes]:
@@ -493,6 +495,7 @@ class Jobs(metaclass=NoPublicConstructor):
             ret = await resp.json()
             return ret["tags"]
 
+    @asyncgeneratorcontextmanager
     async def top(
         self, id: str, *, cluster_name: Optional[str] = None
     ) -> AsyncIterator[JobTelemetry]:
@@ -500,7 +503,7 @@ class Jobs(metaclass=NoPublicConstructor):
         auth = await self._config._api_auth()
         try:
             received_any = False
-            async with aclosing(self._core.ws_connect(url, auth=auth)) as ws:
+            async with self._core.ws_connect(url, auth=auth) as ws:
                 async for resp in ws:
                     yield _job_telemetry_from_api(resp.json())
                     received_any = True

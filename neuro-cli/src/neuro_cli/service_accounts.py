@@ -1,7 +1,5 @@
 from typing import Optional, Sequence
 
-from neuro_sdk.utils import aclosing
-
 from neuro_cli.click_types import SERVICE_ACCOUNT
 from neuro_cli.formatters.service_accounts import (
     BaseServiceAccountsFormatter,
@@ -38,7 +36,7 @@ async def ls(root: Root) -> None:
 
     accounts = []
     with root.status("Fetching service accounts") as status:
-        async with aclosing(root.client.service_accounts.list()) as it:
+        async with root.client.service_accounts.list() as it:
             async for account in it:
                 accounts.append(account)
                 status.update(f"Fetching service accounts ({len(accounts)} loaded)")

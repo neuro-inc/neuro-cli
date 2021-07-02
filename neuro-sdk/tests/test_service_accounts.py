@@ -49,8 +49,9 @@ async def test_list(
     ret = []
 
     async with make_client(srv.make_url("/")) as client:
-        async for s in client.service_accounts.list():
-            ret.append(s)
+        async with client.service_accounts.list() as it:
+            async for s in it:
+                ret.append(s)
 
     assert ret == [
         ServiceAccount(

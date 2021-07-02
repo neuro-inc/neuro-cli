@@ -13,7 +13,7 @@ Disks
 
    Persistent disks subsystems. Disks can be passed as mounted volumes into a running job.
 
-   .. comethod:: list() -> AsyncIterator[Disk]
+   .. comethod:: list() -> AsyncContextManager[AsyncIterator[Disk]]
       :async-for:
 
       List user's disks, async iterator. Yields :class:`Disk` instances.

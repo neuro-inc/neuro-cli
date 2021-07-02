@@ -6,7 +6,7 @@ from yarl import URL
 
 from .config import Config
 from .core import _Core
-from .utils import NoPublicConstructor
+from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 
 @dataclass(frozen=True)
@@ -25,6 +25,7 @@ class Secrets(metaclass=NoPublicConstructor):
         self._core = core
         self._config = config
 
+    @asyncgeneratorcontextmanager
     async def list(self) -> AsyncIterator[Secret]:
         url = self._config.secrets_url
         auth = await self._config._api_auth()

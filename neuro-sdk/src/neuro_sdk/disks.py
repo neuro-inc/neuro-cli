@@ -9,7 +9,7 @@ from yarl import URL
 
 from .config import Config
 from .core import _Core
-from .utils import NoPublicConstructor
+from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +74,7 @@ class Disks(metaclass=NoPublicConstructor):
             timeout_unused=timeout_unused,
         )
 
+    @asyncgeneratorcontextmanager
     async def list(self) -> AsyncIterator[Disk]:
         url = self._config.disk_api_url
         auth = await self._config._api_auth()

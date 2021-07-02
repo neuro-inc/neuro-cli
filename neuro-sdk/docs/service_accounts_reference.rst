@@ -14,7 +14,8 @@ ServiceAccounts
    Service accounts subsystems. Service accounts can be used to generate tokens that can be
    used in automated environments by third-party services.
 
-   .. comethod:: list() -> AsyncIterator[ServiceAccount]
+   .. comethod:: list() -> AsyncContextManager[AsyncIterator[ServiceAccount]]
+      :async-with:
       :async-for:
 
       List user's service accounts, async iterator. Yields :class:`ServiceAccount` instances.

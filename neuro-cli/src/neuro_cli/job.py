@@ -28,7 +28,6 @@ from neuro_sdk import (
     RemoteImage,
     Volume,
 )
-from neuro_sdk.utils import aclosing
 
 from neuro_cli.formatters.images import DockerImageProgress
 from neuro_cli.formatters.utils import (
@@ -426,19 +425,16 @@ async def ls(
             datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
         )
 
-    async with aclosing(
-        root.client.jobs.list(
-            statuses=statuses,
-            name=name,
-            owners=owners,
-            tags=tags,
-            since=_parse_date(since),
-            until=_parse_date(until),
-            reverse=recent_first,
-            cluster_name=cluster,
-        )
+    async with root.client.jobs.list(
+        statuses=statuses,
+        name=name,
+        owners=owners,
+        tags=tags,
+        since=_parse_date(since),
+        until=_parse_date(until),
+        reverse=recent_first,
+        cluster_name=cluster,
     ) as jobs:
-
         # client-side filtering
         if description:
             jobs = (job async for job in jobs if job.description == description)
@@ -703,18 +699,15 @@ async def top(
         async def create_pollers() -> None:
             nonlocal since_dt
             while True:
-                async with aclosing(
-                    root.client.jobs.list(
-                        statuses=JobStatus.active_items(),
-                        name=name,
-                        owners=owners,
-                        tags=tags,
-                        since=since_dt,
-                        until=until_dt,
-                        cluster_name=cluster,
-                    )
+                async with root.client.jobs.list(
+                    statuses=JobStatus.active_items(),
+                    name=name,
+                    owners=owners,
+                    tags=tags,
+                    since=since_dt,
+                    until=until_dt,
+                    cluster_name=cluster,
                 ) as jobs:
-
                     # client-side filtering
                     if description:
                         jobs = (
@@ -738,8 +731,8 @@ async def top(
 
     async def poller(job: JobDescription) -> None:
         try:
-            async with aclosing(
-                root.client.jobs.top(job.id, cluster_name=job.cluster_name)
+            async with root.client.jobs.top(
+                job.id, cluster_name=job.cluster_name
             ) as it:
                 async for info in it:
                     formatter.update(job, info)

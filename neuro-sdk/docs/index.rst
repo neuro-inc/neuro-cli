@@ -35,7 +35,8 @@ configuration file::
   import neuro_sdk
 
   async with neuro_sdk.get() as client:
-      jobs = [job async for job in client.jobs.list()]
+      async with client.jobs.list() as job_iter:
+          jobs = [job async for job in job_iter]
 
 
 The example above instantiates a ``client`` object in *async context manager* and

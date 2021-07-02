@@ -213,13 +213,14 @@ class Helper:
         __tracebackhide__ = True
         url = self.make_uri(path, fromhome=fromhome)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            async for file in client.storage.ls(url):
-                if (
-                    file.type == FileStatusType.FILE
-                    and file.name == name
-                    and file.size == size
-                ):
-                    return
+            async with client.storage.ls(url) as it:
+                async for file in it:
+                    if (
+                        file.type == FileStatusType.FILE
+                        and file.name == name
+                        and file.size == size
+                    ):
+                        return
         raise AssertionError(f"File {name} with size {size} not found in {url}")
 
     @run_async
@@ -227,9 +228,10 @@ class Helper:
         __tracebackhide__ = True
         url = self.tmpstorage / path
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            async for file in client.storage.ls(url):
-                if file.type == FileStatusType.DIRECTORY and file.path == name:
-                    return
+            async with client.storage.ls(url) as it:
+                async for file in it:
+                    if file.type == FileStatusType.DIRECTORY and file.path == name:
+                        return
         raise AssertionError(f"Dir {name} not found in {url}")
 
     @run_async
@@ -237,18 +239,20 @@ class Helper:
         __tracebackhide__ = True
         url = self.tmpstorage / path
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            async for file in client.storage.ls(url):
-                if file.type == FileStatusType.DIRECTORY and file.path == name:
-                    raise AssertionError(f"Dir {name} found in {url}")
+            async with client.storage.ls(url) as it:
+                async for file in it:
+                    if file.type == FileStatusType.DIRECTORY and file.path == name:
+                        raise AssertionError(f"Dir {name} found in {url}")
 
     @run_async
     async def check_file_absent_on_storage(self, name: str, path: str) -> None:
         __tracebackhide__ = True
         url = self.tmpstorage / path
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            async for file in client.storage.ls(url):
-                if file.type == FileStatusType.FILE and file.path == name:
-                    raise AssertionError(f"File {name} found in {url}")
+            async with client.storage.ls(url) as it:
+                async for file in it:
+                    if file.type == FileStatusType.FILE and file.path == name:
+                        raise AssertionError(f"File {name} found in {url}")
 
     @run_async
     async def check_file_on_storage_checksum(
@@ -301,14 +305,12 @@ class Helper:
                 self.tmpstorage / path_from / name_from,
                 self.tmpstorage / path_to / name_to,
             )
-            names1 = {
-                f.name async for f in client.storage.ls(self.tmpstorage / path_from)
-            }
+            async with client.storage.ls(self.tmpstorage / path_from) as it:
+                names1 = {f.name async for f in it}
             assert name_from not in names1
 
-            names2 = {
-                f.name async for f in client.storage.ls(self.tmpstorage / path_to)
-            }
+            async with client.storage.ls(self.tmpstorage / path_to) as it:
+                names2 = {f.name async for f in it}
             assert name_to in names2
 
     @run_async
@@ -403,23 +405,20 @@ class Helper:
         """
         __tracebackhide__ = True
 
-        async def _check_job_output() -> AsyncIterator[bytes]:
-            async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-                async for chunk in client.jobs.monitor(job_id):
-                    yield chunk
-
         started_at = time()
         while time() - started_at < JOB_OUTPUT_TIMEOUT:
             chunks = []
-            async for chunk in _check_job_output():
-                if not chunk:
-                    break
-                chunks.append(chunk.decode())
-                if re.search(expected, "".join(chunks), flags):
-                    return
-                if time() - started_at < JOB_OUTPUT_TIMEOUT:
-                    break
-                await asyncio.sleep(JOB_OUTPUT_SLEEP_SECONDS)
+            async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+                async with client.jobs.monitor(job_id) as it:
+                    async for chunk in it:
+                        if not chunk:
+                            break
+                        chunks.append(chunk.decode())
+                        if re.search(expected, "".join(chunks), flags):
+                            return
+                        if time() - started_at < JOB_OUTPUT_TIMEOUT:
+                            break
+                        await asyncio.sleep(JOB_OUTPUT_SLEEP_SECONDS)
 
         raise AssertionError(
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"

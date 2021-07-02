@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import logging
 import sys
 from functools import partial
@@ -6,6 +7,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import (
     Any,
+    AsyncIterator,
     Awaitable,
     Callable,
     Coroutine,
@@ -23,6 +25,8 @@ import aiohttp
 from .errors import ConfigError
 
 _T = TypeVar("_T")
+_T_co = TypeVar("_T_co", covariant=True)
+_T_contra = TypeVar("_T_contra", contravariant=True)
 
 
 if sys.version_info >= (3, 7):
@@ -60,6 +64,52 @@ else:
             tb: Optional[TracebackType],
         ) -> None:
             await self.thing.aclose()  # type: ignore
+
+
+# TODO (S Storchaka 2021-06-01): Methods __aiter__ and __anext__
+# are supported for compatibility, but using the iterator without
+# "async with" is strongly discouraged. In future these methods
+# will be deprecated and finally removed. It will be just a context
+# manager returning an iterator.
+class _AsyncIteratorAndContextManager(
+    Generic[_T_co],
+    AsyncIterator[_T_co],
+    AsyncContextManager[AsyncIterator[_T_co]],
+):
+    def __init__(self, gen: AsyncIterator[_T_co]) -> None:
+        self._gen = gen
+
+    async def __aenter__(self) -> AsyncIterator[_T_co]:
+        return self._gen
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc: Optional[BaseException],
+        tb: Optional[TracebackType],
+    ) -> None:
+        # Actually it is an AsyncGenerator.
+        await self._gen.aclose()  # type: ignore
+
+    def __aiter__(self) -> AsyncIterator[_T_co]:
+        return self._gen.__aiter__()
+
+    def __anext__(self) -> Awaitable[_T_co]:
+        return self._gen.__anext__()
+
+
+# XXX (S Storchaka 2021-06-01): The decorated function should actually
+# return an AsyncGenerator, but all of our generator functions are annotated
+# as returning an AsyncIterator.
+def asyncgeneratorcontextmanager(
+    func: Callable[..., AsyncIterator[_T_co]]
+) -> Callable[..., _AsyncIteratorAndContextManager[_T_co]]:
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> _AsyncIteratorAndContextManager[_T_co]:
+        gen = func(*args, **kwargs)
+        return _AsyncIteratorAndContextManager[_T_co](gen)
+
+    return wrapper
 
 
 class NoPublicConstructor(type):

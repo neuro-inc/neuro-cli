@@ -24,8 +24,9 @@ API functions
    The usage is::
 
       async with neuro_sdk.get() as client:
-          async for job in client.jobs.list():
-              print(job.id)
+          async with client.jobs.list() as jobs:
+              async for job in jobs:
+                  print(job.id)
 
    See :meth:`Factory.get` for optional function arguments meaning.
 

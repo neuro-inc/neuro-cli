@@ -116,14 +116,16 @@ Blob Storage
       :raises: :exc:`FileNotFound` if key does not exist *or* you don't have access
           to it.
 
-   .. comethod:: fetch_blob(bucket_name: str, key: str, offset: int = 0, size: Optional[int] = None) -> AsyncIterator[bytes]
+   .. comethod:: fetch_blob(bucket_name: str, key: str, offset: int = 0, size: Optional[int] = None) -> AsyncContextManager[AsyncIterator[bytes]]
+      :async-with:
       :async-for:
 
       Look up the blob and return it's body content only. The content will be streamed
       using an asynchronous iterator, e.g.::
 
-         async for data in client.blob_storage.fetch_blob("my_bucket", key: "file.txt"):
-             print("Next chunk of data:", data)
+         async with client.blob_storage.fetch_blob("my_bucket", key="file.txt") as content:
+             async for data in content:
+                 print("Next chunk of data:", data)
 
       :param str bucket_name: Name of the bucket.
       :param str key: Key of the blob.

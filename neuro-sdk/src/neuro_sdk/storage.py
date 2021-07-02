@@ -55,7 +55,14 @@ from .url_utils import (
     normalize_storage_path_uri,
 )
 from .users import Action
-from .utils import NoPublicConstructor, QueuedCall, aclosing, queue_calls, retries
+from .utils import (
+    NoPublicConstructor,
+    QueuedCall,
+    aclosing,
+    asyncgeneratorcontextmanager,
+    queue_calls,
+    retries,
+)
 
 log = logging.getLogger(__name__)
 
@@ -162,6 +169,7 @@ class Storage(metaclass=NoPublicConstructor):
                 return local.st_size
         return 0
 
+    @asyncgeneratorcontextmanager
     async def ls(self, uri: URL) -> AsyncIterator[FileStatus]:
         uri = self._normalize_uri(uri)
         url = self._get_storage_url(uri, normalized=True)
@@ -185,6 +193,7 @@ class Storage(metaclass=NoPublicConstructor):
                 for status in res["FileStatuses"]["FileStatus"]:
                     yield _file_status_from_api_ls(uri, status)
 
+    @asyncgeneratorcontextmanager
     async def glob(self, uri: URL, *, dironly: bool = False) -> AsyncIterator[URL]:
         if not _has_magic(uri.path):
             yield uri
@@ -197,7 +206,7 @@ class Storage(metaclass=NoPublicConstructor):
             glob_in_dir = self._glob1
         else:
             glob_in_dir = self._glob2
-        async with aclosing(self.glob(uri.parent, dironly=True)) as parent_iter:
+        async with self.glob(uri.parent, dironly=True) as parent_iter:
             async for parent in parent_iter:
                 async with aclosing(glob_in_dir(parent, basename, dironly)) as it:
                     async for x in it:
@@ -234,7 +243,7 @@ class Storage(metaclass=NoPublicConstructor):
         yield uri
 
     async def _iterdir(self, uri: URL, dironly: bool) -> AsyncIterator[FileStatus]:
-        async with aclosing(self.ls(uri)) as it:
+        async with self.ls(uri) as it:
             async for stat in it:
                 if not dironly or stat.is_dir():
                     yield stat
@@ -322,6 +331,7 @@ class Storage(metaclass=NoPublicConstructor):
             res = await resp.json()
             return _file_status_from_api_stat(uri.host, res["FileStatus"])
 
+    @asyncgeneratorcontextmanager
     async def open(
         self, uri: URL, offset: int = 0, size: Optional[int] = None
     ) -> AsyncIterator[bytes]:
@@ -600,7 +610,7 @@ class Storage(metaclass=NoPublicConstructor):
                 try:
                     for retry in retries(f"Fail to list {dst}"):
                         async with retry:
-                            async with aclosing(self.ls(dst)) as it:
+                            async with self.ls(dst) as it:
                                 dst_files = {
                                     item.name: item
                                     async for item in it
@@ -737,7 +747,7 @@ class Storage(metaclass=NoPublicConstructor):
                     if pos >= size:
                         break
                     async with retry:
-                        async with aclosing(self.open(src, offset=pos)) as it:
+                        async with self.open(src, offset=pos) as it:
                             async for chunk in it:
                                 pos += len(chunk)
                                 await progress.step(
@@ -810,7 +820,7 @@ class Storage(metaclass=NoPublicConstructor):
 
         for retry in retries(f"Fail to list {src}"):
             async with retry:
-                async with aclosing(self.ls(src)) as it:
+                async with self.ls(src) as it:
                     folder = [item async for item in it]
 
         for child in folder:

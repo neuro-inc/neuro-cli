@@ -198,7 +198,8 @@ async def test_storage_ls_legacy(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = [file async for file in client.storage.ls(URL("storage:folder"))]
+        async with client.storage.ls(URL("storage:folder")) as it:
+            ret = [file async for file in it]
 
     assert ret == [
         FileStatus(
@@ -265,7 +266,8 @@ async def test_storage_ls(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = [file async for file in client.storage.ls(URL("storage:folder"))]
+        async with client.storage.ls(URL("storage:folder")) as it:
+            ret = [file async for file in it]
 
     assert ret == [
         FileStatus(
@@ -319,10 +321,8 @@ async def test_storage_ls_another_cluster(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = [
-            file
-            async for file in client.storage.ls(URL("storage://another/user/folder"))
-        ]
+        async with client.storage.ls(URL("storage://another/user/folder")) as it:
+            ret = [file async for file in it]
 
     assert ret == [
         FileStatus(
@@ -366,8 +366,9 @@ async def test_storage_ls_error_in_server_response(
 
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(OSError) as err:
-            async for _ in client.storage.ls(URL("storage:folder")):
-                pass
+            async with client.storage.ls(URL("storage:folder")) as it:
+                async for _ in it:
+                    pass
         assert err.value.strerror == "Server is to busy"
         assert err.value.errno == errno.EBUSY
 
@@ -492,7 +493,8 @@ async def test_storage_glob(
     async with make_client(srv.make_url("/")) as client:
 
         async def glob(pattern: str) -> List[URL]:
-            return [uri async for uri in client.storage.glob(URL(pattern))]
+            async with client.storage.glob(URL(pattern)) as it:
+                return [uri async for uri in it]
 
         assert await glob("storage:folder") == [URL("storage:folder")]
         assert await glob("storage:folder/") == [URL("storage:folder/")]
@@ -1112,8 +1114,9 @@ async def test_storage_open(
 
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
-        async for chunk in client.storage.open(URL("storage:file")):
-            buf.extend(chunk)
+        async with client.storage.open(URL("storage:file")) as it:
+            async for chunk in it:
+                buf.extend(chunk)
         assert buf == b"01234"
 
 
@@ -1138,8 +1141,9 @@ async def test_storage_open_another_cluster(
 
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
-        async for chunk in client.storage.open(URL("storage://another/user/file")):
-            buf.extend(chunk)
+        async with client.storage.open(URL("storage://another/user/file")) as it:
+            async for chunk in it:
+                buf.extend(chunk)
         assert buf == b"01234"
 
 
@@ -1167,23 +1171,27 @@ async def test_storage_open_partial_read(
 
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
-        async for chunk in client.storage.open(URL("storage:file"), 5):
-            buf.extend(chunk)
+        async with client.storage.open(URL("storage:file"), 5) as it:
+            async for chunk in it:
+                buf.extend(chunk)
         assert buf == b"halamaha"
 
         buf = bytearray()
-        async for chunk in client.storage.open(URL("storage:file"), 5, 4):
-            buf.extend(chunk)
+        async with client.storage.open(URL("storage:file"), 5, 4) as it:
+            async for chunk in it:
+                buf.extend(chunk)
         assert buf == b"hala"
 
         buf = bytearray()
-        async for chunk in client.storage.open(URL("storage:file"), 5, 20):
-            buf.extend(chunk)
+        async with client.storage.open(URL("storage:file"), 5, 20) as it:
+            async for chunk in it:
+                buf.extend(chunk)
         assert buf == b"halamaha"
 
         buf = bytearray()
-        async for chunk in client.storage.open(URL("storage:file"), 5, 0):
-            buf.extend(chunk)
+        async with client.storage.open(URL("storage:file"), 5, 0) as it:
+            async for chunk in it:
+                buf.extend(chunk)
         assert buf == b""
 
 
@@ -1208,13 +1216,15 @@ async def test_storage_open_unsupported_partial_read(
 
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
-        async for chunk in client.storage.open(URL("storage:file"), 0):
-            buf.extend(chunk)
+        async with client.storage.open(URL("storage:file"), 0) as it:
+            async for chunk in it:
+                buf.extend(chunk)
         assert buf == b"01234"
 
         with pytest.raises(RuntimeError):
-            async for chunk in client.storage.open(URL("storage:file"), 5):
-                pass
+            async with client.storage.open(URL("storage:file"), 5) as it:
+                async for chunk in it:
+                    pass
 
 
 async def test_storage_open_directory(
@@ -1243,8 +1253,9 @@ async def test_storage_open_directory(
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
         with pytest.raises((IsADirectoryError, IllegalArgumentError)):
-            async for chunk in client.storage.open(URL("storage:folder")):
-                buf.extend(chunk)
+            async with client.storage.open(URL("storage:folder")) as it:
+                async for chunk in it:
+                    buf.extend(chunk)
         assert not buf
 
 
