@@ -257,7 +257,7 @@ neuro admin generate-cluster-config [OPTIONS] [CONFIG]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_--type \[aws &#124; gcp &#124; azure]_||
+|_--type \[aws &#124; gcp &#124; azure &#124; vcd]_||
 
 
 

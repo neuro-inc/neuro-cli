@@ -325,7 +325,7 @@ async def generate_vcd(root: Root, session: PromptSession[str]) -> str:
     args["edge_name"] = await session.prompt_async(
         "Edge name: ",
         default=cloud_provider.get("edge_name_template", "").format(
-            vdc=args["virtual_data_center"]
+            organization=args["organization"], vdc=args["virtual_data_center"]
         ),
     )
     args["edge_ip"] = await session.prompt_async("Edge IP: ")
