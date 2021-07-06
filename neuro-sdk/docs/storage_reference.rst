@@ -122,6 +122,14 @@ Storage
 
       :return: data structure for given *uri*, :class:`FileStatus` object.
 
+   .. comethod:: disk_usage(cluster_name: Optional[str] = None) -> DiskUsageInfo
+
+      Return information about disk usage in given cluster.
+
+      :param str cluster_name: cluster name to retrieve info. If ``None`` current
+                               cluster will be used.
+
+      :return: data structure for given cluster, :class:`DiskUsageInfo` object.
 
    .. rubric:: File operations
 
@@ -526,3 +534,28 @@ StorageProgress event classes
    .. attribute:: is_dir
 
       **True** if removed item was a directory; **False** otherwise. :class:`bool`
+
+
+DiskUsageInfo
+=============
+
+.. class:: DiskUsageInfo
+
+   *Read-only* :class:`~dataclasses.dataclass` for describing disk usage in particular
+   cluster
+
+   .. attribute:: cluster_name
+
+      Name of cluster, :class:`str`.
+
+   .. attribute:: total
+
+      Total storage size in bytes, :class:`int`.
+
+   .. attribute:: used
+
+      Used storage size in bytes, :class:`int`.
+
+   .. attribute:: free
+
+      Free storage size in bytes, :class:`int`.

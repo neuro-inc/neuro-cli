@@ -20,6 +20,7 @@ Storage operations.
 | [_mkdir_](storage.md#mkdir) | Make directories |
 | [_mv_](storage.md#mv) | Move or rename files and directories |
 | [_tree_](storage.md#tree) | List contents of directories in a... |
+| [_du_](storage.md#du) | Show current usage of storage |
 
 
 ### cp
@@ -301,5 +302,26 @@ home dir (storage:)
 | _-a, --all_ | do not ignore entries starting with . |
 | _-s, --size_ | Print the size in bytes of each file. |
 | _--sort \[name &#124; size &#124; time\]_ | sort by given field, default is name |
+
+
+
+### du
+
+Show current usage of storage
+
+
+#### Usage
+
+```bash
+neuro storage du [OPTIONS]
+```
+
+Show current usage of storage.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
 
 

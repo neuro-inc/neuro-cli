@@ -5,11 +5,13 @@ import pytest
 from yarl import URL
 
 from neuro_sdk import Action, FileStatus, FileStatusType
+from neuro_sdk.storage import DiskUsageInfo
 
 from neuro_cli.formatters.storage import (
     BaseFilesFormatter,
     BSDAttributes,
     BSDPainter,
+    DiskUsageFormatter,
     FilesSorter,
     GnuIndicators,
     GnuPainter,
@@ -342,3 +344,12 @@ class TestFilesFormatter:
             self.files[1],
             self.files[2],
         ]
+
+
+class TestUsageFormatter:
+    def test_formatter(self, rich_cmp: Any) -> None:
+        usage = DiskUsageInfo(
+            total=100000, used=80000, free=20000, cluster_name="default"
+        )
+        formatter = DiskUsageFormatter()
+        rich_cmp(formatter(usage))

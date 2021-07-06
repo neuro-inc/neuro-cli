@@ -17,6 +17,7 @@ from .const import EX_OSFILE
 from .formatters.storage import (
     BaseFilesFormatter,
     DeleteProgress,
+    DiskUsageFormatter,
     FilesSorter,
     LongFilesFormatter,
     SimpleFilesFormatter,
@@ -201,6 +202,15 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
         async with root.client.storage.glob(uri) as it:
             async for file in it:
                 root.print(file)
+
+
+@command()
+async def du(root: Root) -> None:
+    """
+    Show current usage of storage.
+    """
+    usage = await root.client.storage.disk_usage()
+    root.print(DiskUsageFormatter()(usage))
 
 
 class FileFilterParserOption(click.parser.Option):
@@ -722,6 +732,7 @@ storage.add_command(rm)
 storage.add_command(mkdir)
 storage.add_command(mv)
 storage.add_command(tree)
+storage.add_command(du)
 
 
 async def calc_filters(
