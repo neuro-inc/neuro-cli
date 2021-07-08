@@ -205,7 +205,7 @@ async def glob(root: Root, patterns: Sequence[str]) -> None:
 
 
 @command()
-async def du(root: Root) -> None:
+async def df(root: Root) -> None:
     """
     Show current usage of storage.
     """
@@ -732,7 +732,7 @@ storage.add_command(rm)
 storage.add_command(mkdir)
 storage.add_command(mv)
 storage.add_command(tree)
-storage.add_command(du)
+storage.add_command(df)
 
 
 async def calc_filters(

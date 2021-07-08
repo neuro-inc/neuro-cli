@@ -20,7 +20,7 @@ Storage operations.
 | [_mkdir_](storage.md#mkdir) | Make directories |
 | [_mv_](storage.md#mv) | Move or rename files and directories |
 | [_tree_](storage.md#tree) | List contents of directories in a... |
-| [_du_](storage.md#du) | Show current usage of storage |
+| [_df_](storage.md#df) | Show current usage of storage |
 
 
 ### cp
@@ -305,7 +305,7 @@ home dir (storage:)
 
 
 
-### du
+### df
 
 Show current usage of storage
 
@@ -313,7 +313,7 @@ Show current usage of storage
 #### Usage
 
 ```bash
-neuro storage du [OPTIONS]
+neuro storage df [OPTIONS]
 ```
 
 Show current usage of storage.
