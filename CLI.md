@@ -40,6 +40,7 @@
 		* [neuro storage mkdir](#neuro-storage-mkdir)
 		* [neuro storage mv](#neuro-storage-mv)
 		* [neuro storage tree](#neuro-storage-tree)
+		* [neuro storage df](#neuro-storage-df)
 	* [neuro image](#neuro-image)
 		* [neuro image ls](#neuro-image-ls)
 		* [neuro image push](#neuro-image-push)
@@ -1011,6 +1012,7 @@ Name | Description|
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
 | _[neuro storage tree](#neuro-storage-tree)_| List contents of directories in a tree-like format |
+| _[neuro storage df](#neuro-storage-df)_| Show current usage of storage |
 
 
 
@@ -1235,6 +1237,25 @@ Name | Description|
 |_\-a, --all_|do not ignore entries starting with .|
 |_\-s, --size_|Print the size in bytes of each file.|
 |_--sort \[name &#124; size &#124; time]_|sort by given field, default is name|
+
+
+
+
+### neuro storage df
+
+Show current usage of storage.
+
+**Usage:**
+
+```bash
+neuro storage df [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
 
 
 

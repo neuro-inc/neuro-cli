@@ -24,7 +24,7 @@ from neuro_sdk import (
     StorageProgressStep,
 )
 from neuro_sdk.abc import StorageProgressDelete
-from neuro_sdk.storage import _parse_content_range
+from neuro_sdk.storage import DiskUsageInfo, _parse_content_range
 
 from tests import _RawTestServerFactory, _TestServerFactory
 
@@ -287,6 +287,46 @@ async def test_storage_ls(
             uri=URL("storage://default/user/folder/bar"),
         ),
     ]
+
+
+async def test_storage_disk_usage(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.path == "/storage/user"
+        assert request.query == {"op": "GETDISKUSAGE"}
+        return web.json_response({"total": 100, "used": 20, "free": 80})
+
+    app = web.Application()
+    app.router.add_get("/storage/user", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        res = await client.storage.disk_usage()
+
+    assert res == DiskUsageInfo(total=100, used=20, free=80, cluster_name="default")
+
+
+async def test_storage_disk_usage_another_cluster(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.path == "/storage2/user"
+        assert request.query == {"op": "GETDISKUSAGE"}
+        return web.json_response({"total": 100, "used": 20, "free": 80})
+
+    app = web.Application()
+    app.router.add_get("/storage2/user", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        res = await client.storage.disk_usage(cluster_name="another")
+
+    assert res == DiskUsageInfo(total=100, used=20, free=80, cluster_name="another")
 
 
 async def test_storage_ls_another_cluster(

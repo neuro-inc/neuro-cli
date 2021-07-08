@@ -42,6 +42,7 @@ from neuro_sdk import (
     StorageProgressStart,
     StorageProgressStep,
 )
+from neuro_sdk.storage import DiskUsageInfo
 from neuro_sdk.url_utils import _extract_path
 
 from neuro_cli.root import Root
@@ -852,3 +853,12 @@ class TreeFormatter:
 
     def _none(self, size: int) -> str:
         return ""
+
+
+class DiskUsageFormatter:
+    def __call__(self, usage: DiskUsageInfo) -> Text:
+        ret = Text.from_markup(f"Disk usage for cluster [b]{usage.cluster_name}[/]:\n")
+        ret.append(f"Total: {format_size(usage.total)}\n")
+        ret.append(f"Used:  {format_size(usage.used)}\n")
+        ret.append(f"Free:  {format_size(usage.free)}")
+        return ret
