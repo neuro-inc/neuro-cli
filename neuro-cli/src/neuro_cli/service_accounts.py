@@ -81,7 +81,7 @@ async def create(
         # No pager here as it can make it harder to copy generated token
         root.print(fmtr(account))
         root.print("")
-        root.print(service_account_token_fmtr(token))
+        root.print(service_account_token_fmtr(token), soft_wrap=True)
 
 
 @command()

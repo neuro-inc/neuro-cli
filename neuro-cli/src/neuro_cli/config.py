@@ -47,7 +47,7 @@ async def show_token(root: Root) -> None:
     """
     Print current authorization token.
     """
-    root.print(await root.client.config.token())
+    root.print(await root.client.config.token(), soft_wrap=True)
 
 
 @command()
