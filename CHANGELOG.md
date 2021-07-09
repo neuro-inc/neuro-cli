@@ -5,6 +5,26 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.7.9 (2021-07-09)Neuro SDK/CLI 21.7.9 (2021-07-09)
+=================================
+
+Features
+--------
+
+- All asynchronous iterators returned by API support now an asynchronous manager protocol. It is strongly preferable to use "asyn with" before iterating them. For example::
+
+            async with client.jobs.list() as jobs:
+                async for job in jobs:
+                    print(job.id) ([#2192](https://github.com/neuro-inc/platform-client-python/issues/2192))
+- Added `neuro storage df` command that allows to retrieve cluster's storage disk usage. ([#2201](https://github.com/neuro-inc/platform-client-python/issues/2201))
+
+
+Bugfixes
+--------
+
+- Removed additional '\n' from output of commands that print tokens. ([#2200](https://github.com/neuro-inc/platform-client-python/issues/2200))
+
+
 Neuro SDK/CLI 21.6.23 (2021-06-23)
 ==================================
 
