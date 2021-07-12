@@ -698,6 +698,11 @@ JobDescription
       cannot be scheduled because the lack of computation
       cluster resources (memory, CPU/GPU etc), :class:`float`
 
+   .. attribute:: _internal
+
+      Some internal info about job used by platform. Should not be used.
+
+
 JobRestartPolicy
 ================
 

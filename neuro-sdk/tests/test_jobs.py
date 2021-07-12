@@ -518,6 +518,71 @@ async def test_status_failed(
         assert ret.preemptible_node
 
 
+async def test_status_being_dropped(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = {
+        "status": "failed",
+        "id": "job-id",
+        "description": "This is job description, not a history description",
+        "http_url": "http://my_host:8889",
+        "history": {
+            "created_at": "2018-08-29T12:23:13.981621+00:00",
+            "started_at": "2018-08-29T12:23:15.988054+00:00",
+            "finished_at": "2018-08-29T12:59:31.427795+00:00",
+            "reason": "ContainerCannotRun",
+            "description": "Not enough coffee",
+        },
+        "scheduler_enabled": True,
+        "preemptible_node": True,
+        "pass_config": False,
+        "being_dropped": True,
+        "logs_removed": True,
+        "owner": "owner",
+        "cluster_name": "default",
+        "uri": "job://default/owner/job-id",
+        "container": {
+            "image": "submit-image-name",
+            "command": "submit-command",
+            "http": {"port": 8181},
+            "resources": {
+                "memory_mb": "4096",
+                "cpu": 7.0,
+                "shm": True,
+                "gpu": 1,
+                "gpu_model": "test-gpu-model",
+            },
+            "volumes": [
+                {
+                    "src_storage_uri": "storage://test-user/path_read_only",
+                    "dst_path": "/container/read_only",
+                    "read_only": True,
+                },
+                {
+                    "src_storage_uri": "storage://test-user/path_read_write",
+                    "dst_path": "/container/path_read_write",
+                    "read_only": False,
+                },
+            ],
+        },
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs/job-id", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.status("job-id")
+
+        assert ret == _job_description_from_api(JSON, client.parse)
+        assert ret._internal.being_dropped
+        assert ret._internal.logs_removed
+
+
 async def test_status_with_http(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
