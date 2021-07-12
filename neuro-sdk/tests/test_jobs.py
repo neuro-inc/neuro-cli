@@ -579,8 +579,8 @@ async def test_status_being_dropped(
         ret = await client.jobs.status("job-id")
 
         assert ret == _job_description_from_api(JSON, client.parse)
-        assert ret.being_dropped
-        assert ret.logs_removed
+        assert ret._internal.being_dropped
+        assert ret._internal.logs_removed
 
 
 async def test_status_with_http(

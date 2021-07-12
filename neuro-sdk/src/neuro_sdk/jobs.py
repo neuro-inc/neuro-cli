@@ -198,6 +198,13 @@ class JobRestartPolicy(str, enum.Enum):
 
 
 @dataclass(frozen=True)
+class JobDescriptionInternal:
+    materialized: bool = False
+    being_dropped: bool = False
+    logs_removed: bool = False
+
+
+@dataclass(frozen=True)
 class JobDescription:
     id: str
     owner: str
@@ -220,9 +227,7 @@ class JobDescription:
     preset_name: Optional[str] = None
     preemptible_node: bool = False
     privileged: bool = False
-    materialized: bool = False
-    being_dropped: bool = False
-    logs_removed: bool = False
+    _internal: JobDescriptionInternal = JobDescriptionInternal()
 
 
 @dataclass(frozen=True)
@@ -407,9 +412,9 @@ class Jobs(metaclass=NoPublicConstructor):
         reverse: bool = False,
         limit: Optional[int] = None,
         cluster_name: Optional[str] = None,
-        materialized: Optional[bool] = None,
-        being_dropped: Optional[bool] = False,
-        logs_removed: Optional[bool] = False,
+        _materialized: Optional[bool] = None,
+        _being_dropped: Optional[bool] = False,
+        _logs_removed: Optional[bool] = False,
     ) -> AsyncIterator[JobDescription]:
         url = self._config.api_url / "jobs"
         headers = {"Accept": "application/x-ndjson"}
@@ -438,12 +443,12 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("reverse", "1")
         if limit is not None:
             params.add("limit", str(limit))
-        if materialized is not None:
-            params.add("materialized", str(materialized))
-        if being_dropped is not None:
-            params.add("being_dropped", str(being_dropped))
-        if logs_removed is not None:
-            params.add("logs_removed", str(logs_removed))
+        if _materialized is not None:
+            params.add("materialized", str(_materialized))
+        if _being_dropped is not None:
+            params.add("being_dropped", str(_being_dropped))
+        if _logs_removed is not None:
+            params.add("logs_removed", str(_logs_removed))
         auth = await self._config._api_auth()
         async with self._core.request(
             "GET", url, headers=headers, params=params, auth=auth
@@ -1017,9 +1022,11 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         life_span=life_span,
         schedule_timeout=res.get("schedule_timeout", None),
         preset_name=res.get("preset_name"),
-        materialized=res.get("materialized", False),
-        being_dropped=res.get("being_dropped", False),
-        logs_removed=res.get("logs_removed", False),
+        _internal=JobDescriptionInternal(
+            materialized=res.get("materialized", False),
+            being_dropped=res.get("being_dropped", False),
+            logs_removed=res.get("logs_removed", False),
+        ),
     )
 
 

@@ -144,9 +144,6 @@ Jobs
                       reverse: bool = False, \
                       limit: Optional[int] = None, \
                       cluster_name: Optional[str] = None, \
-                      materialized: Optional[bool] = None, \
-                      being_dropped: Optional[bool] = False, \
-                      logs_removed: Optional[bool] = False, \
                  ) -> AsyncContextManager[AsyncIterator[JobDescription]]
       :async-with:
       :async-for:
@@ -217,13 +214,6 @@ Jobs
       :param str cluster_name: list jobs on specified cluster.
 
                                ``None`` means the current cluster (default).
-
-      :param bool materialized: filter jobs by :attr:`JobDescription.materialized` flag.
-
-      :param bool being_dropped: filter jobs by :attr:`JobDescription.being_dropped` flag.
-
-      :param bool logs_removed: filter jobs by :attr:`JobDescription.logs_removed` flag.
-
 
       :return: asynchronous iterator which emits :class:`JobDescription` objects.
 
@@ -708,19 +698,9 @@ JobDescription
       cannot be scheduled because the lack of computation
       cluster resources (memory, CPU/GPU etc), :class:`float`
 
-   .. attribute:: materialized
+   .. attribute:: _internal
 
-      Is low-level execution instance (e.g. k8s pod) exists for this job, :class:`bool`
-
-   .. attribute:: being_dropped
-
-      Is this job being removed from servers database. Some functionality can
-      work improperly for such job. :class:`bool`
-
-   .. attribute:: logs_removed
-
-      Is logs were removed from this job. This flag can only be set when
-      :attr:`~JobDescription.being_dropped` flag is set. :class:`bool`
+      Some internal info about job used by platform. Should not be used.
 
 
 JobRestartPolicy
