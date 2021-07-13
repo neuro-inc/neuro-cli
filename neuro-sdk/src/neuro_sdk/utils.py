@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import logging
+import os
 import sys
 from functools import partial
 from pathlib import Path
@@ -66,6 +67,9 @@ else:
             await self.thing.aclose()  # type: ignore
 
 
+NEURO_STRICT_TYPE_CHECKING = os.environ.get("NEURO_STRICT_TYPE_CHECKING", "") != ""
+
+
 # TODO (S Storchaka 2021-06-01): Methods __aiter__ and __anext__
 # are supported for compatibility, but using the iterator without
 # "async with" is strongly discouraged. In future these methods
@@ -92,10 +96,22 @@ class _AsyncIteratorAndContextManager(
         await self._gen.aclose()  # type: ignore
 
     def __aiter__(self) -> AsyncIterator[_T_co]:
+        if NEURO_STRICT_TYPE_CHECKING:
+            what = getattr(self._gen, "__qualname__", repr(self._gen))
+            raise TypeError(f'Use "async with" with {what}')
         return self._gen.__aiter__()
 
     def __anext__(self) -> Awaitable[_T_co]:
+        if NEURO_STRICT_TYPE_CHECKING:
+            what = getattr(self._gen, "__qualname__", repr(self._gen))
+            raise TypeError(f'Use "async with" with {what}')
         return self._gen.__anext__()
+
+
+if NEURO_STRICT_TYPE_CHECKING:
+    asyncgeneratorcontextmanager_type = AsyncContextManager[AsyncIterator[_T_co]]
+else:
+    asyncgeneratorcontextmanager_type = _AsyncIteratorAndContextManager[_T_co]
 
 
 # XXX (S Storchaka 2021-06-01): The decorated function should actually
@@ -103,9 +119,9 @@ class _AsyncIteratorAndContextManager(
 # as returning an AsyncIterator.
 def asyncgeneratorcontextmanager(
     func: Callable[..., AsyncIterator[_T_co]]
-) -> Callable[..., _AsyncIteratorAndContextManager[_T_co]]:
+) -> Callable[..., asyncgeneratorcontextmanager_type[_T_co]]:
     @functools.wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> _AsyncIteratorAndContextManager[_T_co]:
+    def wrapper(*args: Any, **kwargs: Any) -> asyncgeneratorcontextmanager_type[_T_co]:
         gen = func(*args, **kwargs)
         return _AsyncIteratorAndContextManager[_T_co](gen)
 

@@ -94,8 +94,8 @@ endif
 
 .PHONY: lint
 lint: fmt ### Reformat files, run linters and mypy checks
-	mypy neuro-sdk
-	mypy neuro-cli
+	mypy --always-true=NEURO_STRICT_TYPE_CHECKING neuro-sdk
+	mypy --always-true=NEURO_STRICT_TYPE_CHECKING neuro-cli
 
 .PHONY: publish-lint
 publish-lint: ### Check for publishing safety

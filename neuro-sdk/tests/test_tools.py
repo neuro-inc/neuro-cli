@@ -1,13 +1,13 @@
 import asyncio
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, AsyncIterator, List
 from unittest.mock import Mock, call
 
 import pytest
 
 from neuro_sdk import ConfigError, find_project_root
-from neuro_sdk.utils import queue_calls
+from neuro_sdk.utils import asyncgeneratorcontextmanager, queue_calls
 
 
 @pytest.fixture()
@@ -112,3 +112,43 @@ async def test_queue_calls_no_errors_for_none() -> None:
     queue, foo = queue_calls(None, allow_any_for_none=True)
     await foo.bar()
     await foo.baz()
+
+
+async def test_asyncgeneratorcontextmanager() -> None:
+    @asyncgeneratorcontextmanager
+    async def mygen(err: bool = False) -> AsyncIterator[int]:
+        logs.append("enter")
+        try:
+            yield 1
+            if err:
+                raise ValueError("my error")
+            yield 2
+        finally:
+            logs.append("exit")
+        logs.append("return")
+
+    logs: List[str] = []
+    res = []
+    async with mygen() as it:
+        async for x in it:
+            res.append(x)
+    assert res == [1, 2]
+    assert logs == ["enter", "exit", "return"]
+
+    logs = []
+    res = []
+    async with mygen(True) as it:
+        with pytest.raises(ValueError, match="my error"):
+            async for x in it:
+                res.append(x)
+            res = [x async for x in it]
+    assert res == [1]
+    assert logs == ["enter", "exit"]
+
+    logs = []
+    res = []
+    with pytest.raises(TypeError, match="mygen"):
+        async for x in mygen():  # type: ignore
+            res.append(x)
+    assert res == []
+    assert logs == []
