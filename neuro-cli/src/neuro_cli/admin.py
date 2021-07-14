@@ -83,7 +83,9 @@ async def show_cluster_options(root: Root, type: str) -> None:
     default="cluster.yml",
 )
 @option(
-    "--type", prompt="Select cluster type", type=click.Choice(["aws", "gcp", "azure"])
+    "--type",
+    prompt="Select cluster type",
+    type=click.Choice(["aws", "gcp", "azure", "vcd"]),
 )
 async def generate_cluster_config(root: Root, config: str, type: str) -> None:
     """
@@ -102,6 +104,8 @@ async def generate_cluster_config(root: Root, config: str, type: str) -> None:
         content = await generate_gcp(session)
     elif type == "azure":
         content = await generate_azure(session)
+    elif type == "vcd":
+        content = await generate_vcd(root, session)
     else:
         assert False, "Prompt should prevent this case"
     config_path.write_text(content, encoding="utf-8")
@@ -120,13 +124,13 @@ credentials:
   access_key_id: {access_key_id}
   secret_access_key: {secret_access_key}
 node_pools:
-- id: m5_2xlarge
+- id: m5_2xlarge_8
   min_size: 1
   max_size: 4
-- id: p2_xlarge_1x_nvidia_tesla_k80
+- id: p2_xlarge_4
   min_size: 1
   max_size: 4
-- id: p3_2xlarge_1x_nvidia_tesla_v100
+- id: p3_2xlarge_8
   min_size: 0
   max_size: 1
 storage:
@@ -177,12 +181,16 @@ node_pools:
 - id: n1_highmem_8
   min_size: 1
   max_size: 4
-- id: n1_highmem_8_1x_nvidia_tesla_k80
+- id: n1_highmem_8
   min_size: 1
   max_size: 4
-- id: n1_highmem_8_1x_nvidia_tesla_v100
+  gpu: 1
+  gpu_model: nvidia-tesla-k80
+- id: n1_highmem_8
   min_size: 0
   max_size: 1
+  gpu: 1
+  gpu_model: nvidia-tesla-v100
 storage:
   id: gcs-nfs
 """
@@ -212,13 +220,13 @@ credentials:
   client_id: {client_id}
   client_secret: {client_secret}
 node_pools:
-- id: standard_d8s_v3
+- id: standard_d8_v3_8
   min_size: 1
   max_size: 4
-- id: standard_nc6_1x_nvidia_tesla_k80
+- id: standard_nc6_6
   min_size: 1
   max_size: 4
-- id: standard_nc6s_v3_1x_nvidia_tesla_v100
+- id: standard_nc6s_v3_6
   min_size: 0
   max_size: 1
 storage:
@@ -246,6 +254,96 @@ async def generate_azure(session: PromptSession[str]) -> str:
         "Azure Files storage size (Gib): "
     )
     return AZURE_TEMPLATE.format_map(args)
+
+
+VCD_TEMPLATE = """\
+type: vcd_{vcd_provider}
+url: {url}
+organization: {organization}
+virtual_data_center: {virtual_data_center}
+edge_name: {edge_name}
+edge_public_ip: {edge_ip}
+edge_external_network_name: {edge_external_network_name}
+catalog_name: {catalog_name}
+credentials:
+  user: {user}
+  password: {password}
+node_pools:
+- id: {kubernetes_node_pool_id}
+  role: kubernetes
+  name: kubernetes
+  min_size: 3
+  max_size: 3
+  disk_type: {storage_profile_name}
+  disk_size_gb: 40
+- id: {platform_node_pool_id}
+  role: platform
+  name: platform
+  min_size: 3
+  max_size: 3
+  disk_type: {storage_profile_name}
+  disk_size_gb: 100
+storage:
+  profile_name: {storage_profile_name}
+  size_gib: {storage_size_gib}
+"""
+
+
+async def generate_vcd(root: Root, session: PromptSession[str]) -> str:
+    args = {}
+    cloud_providers = await root.client._admin.list_cloud_providers()
+    cloud_providers = {k: v for k, v in cloud_providers.items() if k.startswith("vcd_")}
+
+    if len(cloud_providers) == 1:
+        args["vcd_provider"] = next(iter(cloud_providers.keys()))[4:]
+    else:
+        args["vcd_provider"] = await session.prompt_async(
+            "VCD provider: ", default=os.environ.get("VCD_PROVIDER", "").lower()
+        )
+    cloud_provider = cloud_providers[f"vcd_{args['vcd_provider']}"]
+
+    args["url"] = await session.prompt_async(
+        "Url: ",
+        default=os.environ.get("VCD_URL", cloud_provider.get("url", "")),
+    )
+    args["organization"] = await session.prompt_async(
+        "Organization: ",
+        default=os.environ.get(
+            "VCD_ORGANIZATION", cloud_provider.get("organization", "")
+        ),
+    )
+    args["virtual_data_center"] = await session.prompt_async(
+        "Virtual data center: ",
+        default=os.environ.get("VCD_VIRTUAL_DATA_CENTER", ""),
+    )
+    args["user"] = await session.prompt_async(
+        "User: ", default=os.environ.get("VCD_USER", "")
+    )
+    args["password"] = await session.prompt_async(
+        "Password: ", default=os.environ.get("VCD_PASSWORD", "")
+    )
+    args["edge_name"] = await session.prompt_async(
+        "Edge name: ",
+        default=cloud_provider.get("edge_name_template", "").format(
+            organization=args["organization"], vdc=args["virtual_data_center"]
+        ),
+    )
+    args["edge_ip"] = await session.prompt_async("Edge IP: ")
+    args["edge_external_network_name"] = await session.prompt_async(
+        "Edge external network: ",
+        default=cloud_provider.get("edge_external_network_name", ""),
+    )
+    args["catalog_name"] = await session.prompt_async(
+        "Catalog: ", default=cloud_provider.get("catalog_name", "")
+    )
+    args["storage_profile_name"] = await session.prompt_async(
+        "Storage profile: ",
+        default=(cloud_provider.get("storage_profile_names") or [""])[0],
+    )
+    args["storage_size_gib"] = await session.prompt_async("Storage size (Gib): ")
+    args["kubernetes_node_pool_id"] = cloud_provider["kubernetes_node_pool_id"]
+    args["platform_node_pool_id"] = cloud_provider["platform_node_pool_id"]
+    return VCD_TEMPLATE.format_map(args)
 
 
 @command()

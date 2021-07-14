@@ -70,6 +70,12 @@ class _Admin(metaclass=NoPublicConstructor):
         self._core = core
         self._config = config
 
+    async def list_cloud_providers(self) -> Dict[str, Dict[str, Any]]:
+        url = self._config.api_url / "cloud_providers"
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            return await resp.json()
+
     async def list_clusters(self) -> Dict[str, _Cluster]:
         url = (self._config.api_url / "clusters").with_query(
             include="cloud_provider_infra"
