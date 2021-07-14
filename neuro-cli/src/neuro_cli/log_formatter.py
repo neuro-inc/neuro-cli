@@ -1,3 +1,4 @@
+import copy
 import logging
 import sys
 
@@ -5,7 +6,7 @@ from rich.console import Console
 
 
 class ConsoleHandler(logging.Handler):
-    def __init__(self, color: bool) -> None:
+    def __init__(self, color: bool, show_traceback: bool) -> None:
         logging.Handler.__init__(self)
         self.console = Console(
             file=sys.stderr,
@@ -16,6 +17,13 @@ class ConsoleHandler(logging.Handler):
             log_path=False,
             width=2048,
         )
+        self._show_traceback = show_traceback
+
+    def handle(self, record: logging.LogRecord) -> bool:
+        if not self._show_traceback:
+            record = copy.copy(record)
+            record.exc_info = None
+        return super().handle(record)
 
     def emit(self, record: logging.LogRecord) -> None:
         try:
