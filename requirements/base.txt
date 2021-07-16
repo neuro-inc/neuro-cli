@@ -11,7 +11,7 @@ humanize==3.10.0
 python-dateutil==2.8.1
 python-jose==3.3.0
 pyyaml==5.4.1
-requests==2.25.1
+requests==2.26.0
 rich==10.6.0
 toml==0.10.2
 typing_extensions==3.10.0.0
