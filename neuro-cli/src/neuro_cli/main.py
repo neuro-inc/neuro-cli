@@ -19,7 +19,7 @@ from packaging import version
 import neuro_sdk
 
 import neuro_cli
-from neuro_cli import service_accounts
+from neuro_cli import file_logging, service_accounts
 
 from . import (
     admin,
@@ -91,15 +91,17 @@ setup_child_watcher()
 log = logging.getLogger(__name__)
 
 
-def setup_logging(verbosity: int, color: bool) -> ConsoleHandler:
+def setup_logging(verbosity: int, color: bool, show_traceback: bool) -> ConsoleHandler:
     root_logger = logging.getLogger()
-    handler = ConsoleHandler(color=color)
-    root_logger.addHandler(handler)
+    console_handler = ConsoleHandler(color=color, show_traceback=show_traceback)
+    file_handler = file_logging.get_handler()
+    root_logger.addHandler(console_handler)
+    root_logger.addHandler(file_handler)
     root_logger.setLevel(logging.DEBUG)
 
     if verbosity > 1:
         formatter = logging.Formatter("%(name)s.%(funcName)s: %(message)s")
-        handler.setFormatter(formatter)
+        console_handler.setFormatter(formatter)
 
     if verbosity < -1:
         loglevel = logging.CRITICAL
@@ -112,12 +114,9 @@ def setup_logging(verbosity: int, color: bool) -> ConsoleHandler:
     else:
         loglevel = logging.DEBUG
 
-    handler.setLevel(loglevel)
+    console_handler.setLevel(loglevel)
 
-    return handler
-
-
-LOG_ERROR = log.error
+    return console_handler
 
 
 class MainGroup(Group):
@@ -145,10 +144,7 @@ class MainGroup(Group):
                 else:
                     kwargs[param.name] = param.get_default(ctx)
 
-        global LOG_ERROR
         show_traceback = kwargs.get("show_traceback", False)
-        if show_traceback:
-            LOG_ERROR = log.exception
         tty = all(f.isatty() for f in [sys.stdin, sys.stdout, sys.stderr])
         COLORS = {"yes": True, "no": False, "auto": None}
         real_color: Optional[bool] = COLORS[kwargs["color"]]
@@ -156,7 +152,9 @@ class MainGroup(Group):
             real_color = tty
         ctx.color = real_color
         verbosity = kwargs["verbose"] - kwargs["quiet"]
-        handler = setup_logging(verbosity=verbosity, color=real_color)
+        handler = setup_logging(
+            verbosity=verbosity, color=real_color, show_traceback=show_traceback
+        )
         if kwargs["hide_token"] is None:
             hide_token_bool = True
         else:
@@ -194,6 +192,8 @@ class MainGroup(Group):
         handler.setConsole(root.err_console)
         ctx.obj = root
         ctx.call_on_close(root.close)
+
+        logging.debug(f"Executing command {sys.argv}")
         return ctx
 
     def resolve_command(
@@ -556,7 +556,7 @@ def main(args: Optional[List[str]] = None) -> None:
                 kwargs["windows_expand_args"] = False
             cli.main(**kwargs)
     except ClickAbort:
-        LOG_ERROR("Aborting.")
+        log.exception("Aborting.")
         sys.exit(130)
     except click.ClickException as e:
         e.show()
@@ -565,79 +565,80 @@ def main(args: Optional[List[str]] = None) -> None:
         sys.exit(e.exit_code)
 
     except asyncio.TimeoutError:
-        LOG_ERROR("Timeout")
+        log.exception("Timeout")
         sys.exit(EX_TIMEOUT)
 
     except neuro_sdk.IllegalArgumentError as error:
-        LOG_ERROR(f"Illegal argument(s) ({_err_to_str(error)})")
+        log.exception(f"Illegal argument(s) ({_err_to_str(error)})")
         sys.exit(EX_DATAERR)
 
     except neuro_sdk.ResourceNotFound as error:
-        LOG_ERROR(f"{_err_to_str(error)}")
+        log.exception(f"{_err_to_str(error)}")
         sys.exit(EX_OSFILE)
 
     except neuro_sdk.AuthenticationError as error:
-        LOG_ERROR(f"Cannot authenticate ({_err_to_str(error)})")
+        log.exception(f"Cannot authenticate ({_err_to_str(error)})")
         sys.exit(EX_NOPERM)
     except neuro_sdk.AuthorizationError as error:
-        LOG_ERROR(f"Not enough permissions ({_err_to_str(error)})")
+        log.exception(f"Not enough permissions ({_err_to_str(error)})")
         sys.exit(EX_NOPERM)
 
     except neuro_sdk.ClientError as error:
-        LOG_ERROR(f"Application error ({_err_to_str(error)})")
+        log.exception(f"Application error ({_err_to_str(error)})")
         sys.exit(EX_SOFTWARE)
 
     except neuro_sdk.ServerNotAvailable as error:
-        LOG_ERROR(f"Application error ({_err_to_str(error)})")
+        log.exception(f"Application error ({_err_to_str(error)})")
         sys.exit(EX_PLATFORMERROR)
 
     except neuro_sdk.ConfigError as error:
-        LOG_ERROR(f"{_err_to_str(error)}")
+        log.exception(f"{_err_to_str(error)}")
         sys.exit(EX_SOFTWARE)
 
     except aiohttp.ClientError as error:
-        LOG_ERROR(f"Connection error ({_err_to_str(error)})")
+        log.exception(f"Connection error ({_err_to_str(error)})")
         sys.exit(EX_IOERR)
 
     except DockerError as error:
-        LOG_ERROR(f"Docker API error: {error.message}")
+        log.exception(f"Docker API error: {error.message}")
         sys.exit(EX_PROTOCOL)
 
     except NotImplementedError as error:
-        LOG_ERROR(f"{_err_to_str(error)}")
+        log.exception(f"{_err_to_str(error)}")
         sys.exit(EX_SOFTWARE)
 
     except FileNotFoundError as error:
-        LOG_ERROR(f"File not found ({_err_to_str(error)})")
+        log.exception(f"File not found ({_err_to_str(error)})")
         sys.exit(EX_OSFILE)
 
     except NotADirectoryError as error:
-        LOG_ERROR(f"{_err_to_str(error)}")
+        log.exception(f"{_err_to_str(error)}")
         sys.exit(EX_OSFILE)
 
     except PermissionError as error:
-        LOG_ERROR(f"Cannot access file ({_err_to_str(error)})")
+        log.exception(f"Cannot access file ({_err_to_str(error)})")
         sys.exit(EX_NOPERM)
 
     except OSError as error:
-        LOG_ERROR(f"I/O Error ({_err_to_str(error)})")
+        log.exception(f"I/O Error ({_err_to_str(error)})")
         sys.exit(EX_IOERR)
 
     except asyncio.CancelledError:
-        LOG_ERROR("Cancelled")
+        log.exception("Cancelled")
         sys.exit(130)
 
     except KeyboardInterrupt:
-        LOG_ERROR("Aborting.")
+        log.exception("Aborting.")
         sys.exit(130)
 
     except ValueError as e:
-        LOG_ERROR(_err_to_str(e))
+        log.exception(_err_to_str(e))
         sys.exit(127)
 
     except SystemExit:
         raise
 
     except Exception as e:
-        LOG_ERROR(f"{_err_to_str(e)}")
+        log.exception(f"{_err_to_str(e)}")
+        print(f"Full logs are available under {str(file_logging.get_log_file_path())}")
         sys.exit(1)

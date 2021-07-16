@@ -147,7 +147,6 @@ async def ls(
     if not paths:
         paths = ["storage:"]
     uris = [parse_file_resource(path, root) for path in paths]
-
     errors = False
     for uri in uris:
         try:
@@ -185,6 +184,8 @@ async def ls(
 
     if errors:
         sys.exit(EX_OSFILE)
+
+    raise Exception("Foo")
 
 
 @command()

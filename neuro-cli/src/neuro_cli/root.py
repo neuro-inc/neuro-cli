@@ -198,14 +198,9 @@ class Root:
     @property
     def factory(self) -> Factory:
         if self._factory is None:
-            trace_configs: Optional[List[aiohttp.TraceConfig]]
-            if self.trace:
-                trace_configs = [self._create_trace_config()]
-            else:
-                trace_configs = None
             self._factory = Factory(
                 path=self.config_path,
-                trace_configs=trace_configs,
+                trace_configs=[self._create_trace_config()],
                 trace_id=gen_trace_id(),
                 trace_sampled=True if self.force_trace_all else None,
             )
@@ -235,9 +230,11 @@ class Root:
         trace_config.on_response_chunk_received.append(self._on_response_chunk_received)
         return trace_config
 
-    def _print_debug(self, lines: List[str]) -> None:
+    def _print_trace(self, lines: List[str]) -> None:
         for line in lines:
-            self.print(line, style="dim", err=True)
+            if self.trace:
+                self.print(line, style="dim", err=True)
+            log.debug(line)
 
     def _process_chunk(self, chunk: bytes, printable: bool) -> List[str]:
         if not chunk:
@@ -262,7 +259,7 @@ class Root:
                 val = self._sanitize_header_value(val)
             lines.append(f"> {key}: {val}")
         lines.append("> ")
-        self._print_debug(lines)
+        self._print_trace(lines)
 
         content_type = data.headers.get("Content-Type", "")
         context.request_printable = content_type.startswith(TEXT_TYPE)
@@ -278,7 +275,7 @@ class Root:
             "> " + line
             for line in self._process_chunk(chunk, context.request_printable)
         ]
-        self._print_debug(lines)
+        self._print_trace(lines)
 
     async def _on_request_end(
         self,
@@ -289,7 +286,7 @@ class Root:
         lines = [f"< HTTP/1.1 {data.response.status} {data.response.reason}"]
         for key, val in data.response.headers.items():
             lines.append(f"< {key}: {val}")
-        self._print_debug(lines)
+        self._print_trace(lines)
 
         content_type = data.response.headers.get("Content-Type", "")
         context.response_printable = content_type.startswith(TEXT_TYPE)
@@ -305,7 +302,7 @@ class Root:
             "< " + line
             for line in self._process_chunk(chunk, context.response_printable)
         ]
-        self._print_debug(lines)
+        self._print_trace(lines)
 
     def _sanitize_header_value(self, text: str) -> str:
         for token in self._find_all_tokens(text):
