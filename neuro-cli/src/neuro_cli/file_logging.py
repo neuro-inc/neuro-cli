@@ -35,6 +35,8 @@ def _get_handler() -> logging.FileHandler:
 
 def _do_rotation(delay: timedelta) -> None:
     now = datetime.now(timezone.utc)
+    if not LOGS_DIR.exists():
+        return
     for log_file in LOGS_DIR.iterdir():
         if not log_file.is_file():
             continue
