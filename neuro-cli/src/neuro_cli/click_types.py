@@ -2,12 +2,22 @@ import abc
 import os
 import re
 from datetime import datetime, timedelta
-from typing import Generic, List, Optional, Sequence, Tuple, TypeVar, Union, cast
+from typing import (
+    Generic,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import click
 from click import BadParameter
 
-from neuro_sdk import LocalImage, RemoteImage, TagOption
+from neuro_sdk import Client, LocalImage, Preset, RemoteImage, TagOption
 
 from .parse_utils import (
     JobTableFormat,
@@ -100,8 +110,11 @@ class RemoteImageType(click.ParamType):
     ) -> RemoteImage:
         assert ctx is not None
         root = cast(Root, ctx.obj)
+        cluster_name = ctx.params.get("cluster")
         client = root.run(root.init_client())
-        return client.parse.remote_image(value, tag_option=self.tag_option)
+        return client.parse.remote_image(
+            value, tag_option=self.tag_option, cluster_name=cluster_name
+        )
 
 
 class LocalRemotePortParamType(click.ParamType):
@@ -226,6 +239,16 @@ TOP_COLUMNS = TopColumnsType()
 class PresetType(AsyncType[str]):
     name = "preset"
 
+    def _get_presets(
+        self, ctx: Optional[click.Context], client: Client
+    ) -> Mapping[str, Preset]:
+        cluster_name = client.cluster_name
+        if ctx:
+            cluster_name = ctx.params.get("cluster", client.cluster_name)
+        if cluster_name not in client.config.clusters:
+            return {}
+        return client.config.clusters[cluster_name].presets
+
     async def async_convert(
         self,
         root: Root,
@@ -234,10 +257,19 @@ class PresetType(AsyncType[str]):
         ctx: Optional[click.Context],
     ) -> str:
         client = await root.init_client()
-        if value not in client.presets:
-            raise click.BadParameter(
-                f"Preset {value} is not valid, "
+        if value not in self._get_presets(ctx, client):
+            cluster_name = None
+            if ctx:
+                cluster_name = ctx.params.get("cluster", client.cluster_name)
+            if cluster_name != client.cluster_name:
+                error_message = (
+                    f"Preset {value} is not valid for cluster {cluster_name}."
+                )
+            else:
+                error_message = f"Preset {value} is not valid, "
                 "run 'neuro config show' to get a list of available presets",
+            raise click.BadParameter(
+                error_message,
                 ctx,
                 param,
             )
@@ -249,11 +281,44 @@ class PresetType(AsyncType[str]):
         # async context manager is used to prevent a message about
         # unclosed session
         async with await root.init_client() as client:
-            presets = list(client.config.presets)
+            presets = list(self._get_presets(ctx, client))
             return [(p, None) for p in presets if p.startswith(incomplete)]
 
 
 PRESET = PresetType()
+
+
+class ClusterType(AsyncType[str]):
+    name = "cluster"
+
+    async def async_convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> str:
+        client = await root.init_client()
+        if value not in client.config.clusters.keys():
+            raise click.BadParameter(
+                f"Cluster {value} is not valid, "
+                "run 'neuro config get-clusters' to get a list of available clusters",
+                ctx,
+                param,
+            )
+        return value
+
+    async def async_complete(
+        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
+    ) -> List[Tuple[str, Optional[str]]]:
+        # async context manager is used to prevent a message about
+        # unclosed session
+        async with await root.init_client() as client:
+            presets = list(client.config.clusters)
+            return [(p, None) for p in presets if p.startswith(incomplete)]
+
+
+CLUSTER = ClusterType()
 
 
 class JobType(AsyncType[str]):
@@ -313,7 +378,7 @@ class DiskType(AsyncType[str]):
     ) -> List[Tuple[str, Optional[str]]]:
         async with await root.init_client() as client:
             ret: List[Tuple[str, Optional[str]]] = []
-            async with client.disks.list() as it:
+            async with client.disks.list(cluster_name=ctx.params.get("cluster")) as it:
                 async for disk in it:
                     disk_name = disk.name or ""
                     for test in (

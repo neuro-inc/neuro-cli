@@ -565,6 +565,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--browse_|Open a job's URL in a web browser|
+|_--cluster CLUSTER_|Run job in a specified cluster|
 |_\-d, --description DESC_|Optional job description in free format|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
@@ -650,7 +651,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-a, --all_|Show all jobs regardless the status.|
-|_--cluster TEXT_|Show jobs on a specified cluster \(the current cluster by default).|
+|_--cluster CLUSTER_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--distinct_|Show only first job if names are same.|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
@@ -823,7 +824,7 @@ neuro top -t tag1 -t tag2
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_--cluster TEXT_|Show jobs on a specified cluster \(the current cluster by default).|
+|_--cluster CLUSTER_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--format COLUMNS_|Output table format, see "neuro help top\-format" for more info about the format specification. The default can be changed using the job.top-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
@@ -1307,7 +1308,7 @@ neuro image ls [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_--cluster TEXT_|Show images on a specified cluster \(the current cluster by default).|
+|_--cluster CLUSTER_|Show images on a specified cluster \(the current cluster by default).|
 |_-l_|List in long format.|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name PATTERN_|Filter out images by name regex.|
@@ -2215,6 +2216,7 @@ neuro disk ls [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Show disks on a specified cluster \(the current cluster by default).|
 |_\--full-uri_|Output full disk URI.|
 |_\--long-format_|Output all info about disk.|
 
@@ -2245,6 +2247,7 @@ neuro disk create 500M
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Create disk in a specified cluster \(the current cluster by default).|
 |_--name NAME_|Optional disk name|
 |_\--timeout-unused TIMEDELTA_|Optional disk lifetime limit after last usage in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 
@@ -2266,6 +2269,7 @@ neuro disk get [OPTIONS] DISK
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
 |_\--full-uri_|Output full disk URI.|
 
 
@@ -2286,6 +2290,7 @@ neuro disk rm [OPTIONS] DISKS...
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Perform on a specified cluster \(the current cluster by default).|
 
 
 
@@ -2449,6 +2454,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--browse_|Open a job's URL in a web browser|
+|_--cluster CLUSTER_|Run job in a specified cluster|
 |_\-d, --description DESC_|Optional job description in free format|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
@@ -2506,7 +2512,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-a, --all_|Show all jobs regardless the status.|
-|_--cluster TEXT_|Show jobs on a specified cluster \(the current cluster by default).|
+|_--cluster CLUSTER_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--distinct_|Show only first job if names are same.|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
@@ -2699,7 +2705,7 @@ neuro top -t tag1 -t tag2
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_--cluster TEXT_|Show jobs on a specified cluster \(the current cluster by default).|
+|_--cluster CLUSTER_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--format COLUMNS_|Output table format, see "neuro help top\-format" for more info about the format specification. The default can be changed using the job.top-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
@@ -2978,7 +2984,7 @@ neuro images [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_--cluster TEXT_|Show images on a specified cluster \(the current cluster by default).|
+|_--cluster CLUSTER_|Show images on a specified cluster \(the current cluster by default).|
 |_-l_|List in long format.|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name PATTERN_|Filter out images by name regex.|

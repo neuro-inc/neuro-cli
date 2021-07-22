@@ -74,9 +74,14 @@ class Disks(metaclass=NoPublicConstructor):
             timeout_unused=timeout_unused,
         )
 
+    def _get_disks_url(self, cluster_name: Optional[str]) -> URL:
+        if cluster_name is None:
+            cluster_name = self._config.cluster_name
+        return self._config.get_cluster(cluster_name).disks_url
+
     @asyncgeneratorcontextmanager
-    async def list(self) -> AsyncIterator[Disk]:
-        url = self._config.disk_api_url
+    async def list(self, cluster_name: Optional[str] = None) -> AsyncIterator[Disk]:
+        url = self._get_disks_url(cluster_name)
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, auth=auth) as resp:
             ret = await resp.json()
@@ -88,8 +93,9 @@ class Disks(metaclass=NoPublicConstructor):
         storage: int,
         timeout_unused: Optional[timedelta] = None,
         name: Optional[str] = None,
+        cluster_name: Optional[str] = None,
     ) -> Disk:
-        url = self._config.disk_api_url
+        url = self._get_disks_url(cluster_name)
         auth = await self._config._api_auth()
         data = {
             "storage": storage,
@@ -100,15 +106,19 @@ class Disks(metaclass=NoPublicConstructor):
             payload = await resp.json()
             return self._parse_disk_payload(payload)
 
-    async def get(self, disk_id_or_name: str) -> Disk:
-        url = self._config.disk_api_url / disk_id_or_name
+    async def get(
+        self, disk_id_or_name: str, cluster_name: Optional[str] = None
+    ) -> Disk:
+        url = self._get_disks_url(cluster_name) / disk_id_or_name
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, auth=auth) as resp:
             payload = await resp.json()
             return self._parse_disk_payload(payload)
 
-    async def rm(self, disk_id_or_name: str) -> None:
-        url = self._config.disk_api_url / disk_id_or_name
+    async def rm(
+        self, disk_id_or_name: str, cluster_name: Optional[str] = None
+    ) -> None:
+        url = self._get_disks_url(cluster_name) / disk_id_or_name
         auth = await self._config._api_auth()
         async with self._core.request("DELETE", url, auth=auth):
             pass

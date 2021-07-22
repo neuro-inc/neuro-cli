@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Optional, Sequence
 
-from neuro_cli.click_types import DISK, DISK_NAME
+from neuro_cli.click_types import CLUSTER, DISK, DISK_NAME
 from neuro_cli.formatters.utils import get_datetime_formatter
 from neuro_cli.utils import resolve_disk
 
@@ -27,9 +27,16 @@ def disk() -> None:
 
 
 @command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Show disks on a specified cluster (the current cluster by default).",
+)
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
 @option("--long-format", is_flag=True, help="Output all info about disk.")
-async def ls(root: Root, full_uri: bool, long_format: bool) -> None:
+async def ls(
+    root: Root, full_uri: bool, long_format: bool, cluster: Optional[str]
+) -> None:
     """
     List disks.
     """
@@ -50,7 +57,7 @@ async def ls(root: Root, full_uri: bool, long_format: bool) -> None:
 
     disks = []
     with root.status("Fetching disks") as status:
-        async with root.client.disks.list() as it:
+        async with root.client.disks.list(cluster_name=cluster) as it:
             async for disk in it:
                 disks.append(disk)
                 status.update(f"Fetching disks ({len(disks)} loaded)")
@@ -61,6 +68,11 @@ async def ls(root: Root, full_uri: bool, long_format: bool) -> None:
 
 @command()
 @argument("storage")
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Create disk in a specified cluster (the current cluster by default).",
+)
 @option(
     "--timeout-unused",
     type=str,
@@ -84,6 +96,7 @@ async def create(
     storage: str,
     timeout_unused: Optional[str] = None,
     name: Optional[str] = None,
+    cluster: Optional[str] = None,
 ) -> None:
     """
     Create a disk with at least storage amount STORAGE.
@@ -111,7 +124,10 @@ async def create(
         disk_timeout_unused = timedelta(seconds=timeout_unused_seconds)
 
     disk = await root.client.disks.create(
-        parse_memory(storage), timeout_unused=disk_timeout_unused, name=name
+        parse_memory(storage),
+        timeout_unused=disk_timeout_unused,
+        name=name,
+        cluster_name=cluster,
     )
     disk_fmtr = DiskFormatter(
         str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
@@ -121,14 +137,19 @@ async def create(
 
 
 @command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Look on a specified cluster (the current cluster by default).",
+)
 @argument("disk", type=DISK)
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
-async def get(root: Root, disk: str, full_uri: bool) -> None:
+async def get(root: Root, cluster: Optional[str], disk: str, full_uri: bool) -> None:
     """
     Get disk DISK_ID.
     """
-    disk_id = await resolve_disk(disk, client=root.client)
-    disk_obj = await root.client.disks.get(disk_id)
+    disk_id = await resolve_disk(disk, client=root.client, cluster_name=cluster)
+    disk_obj = await root.client.disks.get(disk_id, cluster_name=cluster)
     if full_uri:
         uri_fmtr: URIFormatter = str
     else:
@@ -143,14 +164,19 @@ async def get(root: Root, disk: str, full_uri: bool) -> None:
 
 
 @command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Perform on a specified cluster (the current cluster by default).",
+)
 @argument("disks", type=DISK, nargs=-1, required=True)
-async def rm(root: Root, disks: Sequence[str]) -> None:
+async def rm(root: Root, cluster: Optional[str], disks: Sequence[str]) -> None:
     """
     Remove disk DISK_ID.
     """
     for disk in disks:
-        disk_id = await resolve_disk(disk, client=root.client)
-        await root.client.disks.rm(disk_id)
+        disk_id = await resolve_disk(disk, client=root.client, cluster_name=cluster)
+        await root.client.disks.rm(disk_id, cluster_name=cluster)
         if root.verbosity >= 0:
             root.print(f"Disk with id '{disk_id}' was successfully removed.")
 
