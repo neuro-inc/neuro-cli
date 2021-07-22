@@ -185,8 +185,6 @@ async def ls(
     if errors:
         sys.exit(EX_OSFILE)
 
-    raise Exception("Foo")
-
 
 @command()
 @argument("patterns", nargs=-1, required=False)
