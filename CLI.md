@@ -2120,6 +2120,7 @@ neuro secret ls [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
 |_\--full-uri_|Output full disk URI.|
 
 
@@ -2149,6 +2150,7 @@ neuro secret add KEY_NAME @path/to/file.txt
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Perform on a specified cluster \(the current cluster by default).|
 
 
 
@@ -2168,6 +2170,7 @@ neuro secret rm [OPTIONS] KEY
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Perform on a specified cluster \(the current cluster by default).|
 
 
 
@@ -2216,7 +2219,7 @@ neuro disk ls [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_--cluster CLUSTER_|Show disks on a specified cluster \(the current cluster by default).|
+|_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
 |_\--full-uri_|Output full disk URI.|
 |_\--long-format_|Output all info about disk.|
 
@@ -2247,7 +2250,7 @@ neuro disk create 500M
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_--cluster CLUSTER_|Create disk in a specified cluster \(the current cluster by default).|
+|_--cluster CLUSTER_|Perform in a specified cluster \(the current cluster by default).|
 |_--name NAME_|Optional disk name|
 |_\--timeout-unused TIMEDELTA_|Optional disk lifetime limit after last usage in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 

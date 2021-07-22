@@ -30,7 +30,7 @@ def disk() -> None:
 @option(
     "--cluster",
     type=CLUSTER,
-    help="Show disks on a specified cluster (the current cluster by default).",
+    help="Look on a specified cluster (the current cluster by default).",
 )
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
 @option("--long-format", is_flag=True, help="Output all info about disk.")
@@ -47,7 +47,8 @@ async def ls(
             uri_fmtr: URIFormatter = str
         else:
             uri_fmtr = uri_formatter(
-                username=root.client.username, cluster_name=root.client.cluster_name
+                username=root.client.username,
+                cluster_name=cluster or root.client.cluster_name,
             )
         disks_fmtr = DisksFormatter(
             uri_fmtr,
@@ -71,7 +72,7 @@ async def ls(
 @option(
     "--cluster",
     type=CLUSTER,
-    help="Create disk in a specified cluster (the current cluster by default).",
+    help="Perform in a specified cluster (the current cluster by default).",
 )
 @option(
     "--timeout-unused",
@@ -154,7 +155,8 @@ async def get(root: Root, cluster: Optional[str], disk: str, full_uri: bool) -> 
         uri_fmtr: URIFormatter = str
     else:
         uri_fmtr = uri_formatter(
-            username=root.client.username, cluster_name=root.client.cluster_name
+            username=root.client.username,
+            cluster_name=cluster or root.client.cluster_name,
         )
     disk_fmtr = DiskFormatter(
         uri_fmtr, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)

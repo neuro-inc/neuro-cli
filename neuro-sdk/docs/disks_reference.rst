@@ -18,7 +18,7 @@ Disks
 
       List user's disks, async iterator. Yields :class:`Disk` instances.
 
-      :param str cluster_name: cluster to list a disks. Default is current cluster.
+      :param str cluster_name: cluster to list disks. Default is current cluster.
 
    .. comethod:: create(  \
                         storage: int, \

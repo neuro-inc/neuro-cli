@@ -1,6 +1,6 @@
 import base64
 from dataclasses import dataclass
-from typing import AsyncIterator
+from typing import AsyncIterator, Optional
 
 from yarl import URL
 
@@ -25,9 +25,14 @@ class Secrets(metaclass=NoPublicConstructor):
         self._core = core
         self._config = config
 
+    def _get_secrets_url(self, cluster_name: Optional[str]) -> URL:
+        if cluster_name is None:
+            cluster_name = self._config.cluster_name
+        return self._config.get_cluster(cluster_name).secrets_url
+
     @asyncgeneratorcontextmanager
-    async def list(self) -> AsyncIterator[Secret]:
-        url = self._config.secrets_url
+    async def list(self, cluster_name: Optional[str] = None) -> AsyncIterator[Secret]:
+        url = self._get_secrets_url(cluster_name)
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, auth=auth) as resp:
             ret = await resp.json()
@@ -38,8 +43,10 @@ class Secrets(metaclass=NoPublicConstructor):
                     cluster_name=self._config.cluster_name,
                 )
 
-    async def add(self, key: str, value: bytes) -> None:
-        url = self._config.secrets_url
+    async def add(
+        self, key: str, value: bytes, cluster_name: Optional[str] = None
+    ) -> None:
+        url = self._get_secrets_url(cluster_name)
         auth = await self._config._api_auth()
         data = {
             "key": key,
@@ -48,8 +55,8 @@ class Secrets(metaclass=NoPublicConstructor):
         async with self._core.request("POST", url, auth=auth, json=data):
             pass
 
-    async def rm(self, key: str) -> None:
-        url = self._config.secrets_url / key
+    async def rm(self, key: str, cluster_name: Optional[str] = None) -> None:
+        url = self._get_secrets_url(cluster_name) / key
         auth = await self._config._api_auth()
         async with self._core.request("DELETE", url, auth=auth):
             pass
