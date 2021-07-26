@@ -258,7 +258,7 @@ class PresetType(AsyncType[str]):
     ) -> str:
         client = await root.init_client()
         if value not in self._get_presets(ctx, client):
-            cluster_name = None
+            cluster_name = client.cluster_name
             if ctx:
                 cluster_name = ctx.params.get("cluster", client.cluster_name)
             if cluster_name != client.cluster_name:
@@ -267,7 +267,7 @@ class PresetType(AsyncType[str]):
                 )
             else:
                 error_message = f"Preset {value} is not valid, "
-                "run 'neuro config show' to get a list of available presets",
+                "run 'neuro config show' to get a list of available presets"
             raise click.BadParameter(
                 error_message,
                 ctx,
@@ -299,7 +299,7 @@ class ClusterType(AsyncType[str]):
         ctx: Optional[click.Context],
     ) -> str:
         client = await root.init_client()
-        if value not in client.config.clusters.keys():
+        if value not in client.config.clusters:
             raise click.BadParameter(
                 f"Cluster {value} is not valid, "
                 "run 'neuro config get-clusters' to get a list of available clusters",
@@ -314,8 +314,8 @@ class ClusterType(AsyncType[str]):
         # async context manager is used to prevent a message about
         # unclosed session
         async with await root.init_client() as client:
-            presets = list(client.config.clusters)
-            return [(p, None) for p in presets if p.startswith(incomplete)]
+            clusters = list(client.config.clusters)
+            return [(c, None) for c in clusters if c.startswith(incomplete)]
 
 
 CLUSTER = ClusterType()
