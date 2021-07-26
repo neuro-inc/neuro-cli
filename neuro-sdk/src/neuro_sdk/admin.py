@@ -170,7 +170,7 @@ class _Admin(metaclass=NoPublicConstructor):
         )
         payload = {
             "quota": {
-                "credits": str(credits) if credits else None,
+                "credits": str(credits) if credits is not None else None,
                 "total_running_jobs": total_running_jobs,
             },
         }
