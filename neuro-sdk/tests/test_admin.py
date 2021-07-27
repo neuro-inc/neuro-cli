@@ -470,11 +470,13 @@ async def test_set_user_quota(
     async with make_client(srv.make_url("/api/v1")) as client:
         await client._admin.set_user_quota("default", "ivan", Decimal("1000"), 10)
         await client._admin.set_user_quota("neuro", "user2", None, None)
+        await client._admin.set_user_quota("neuro", "user3", 0, None)
         assert requested_cluster_users == [
             ("default", "ivan"),
             ("neuro", "user2"),
+            ("neuro", "user3"),
         ]
-        assert len(requested_payloads) == 2
+        assert len(requested_payloads) == 3
         assert {
             "quota": {
                 "credits": "1000",
@@ -482,6 +484,11 @@ async def test_set_user_quota(
             },
         } in requested_payloads
         assert {"quota": {}} in requested_payloads
+        assert {
+            "quota": {
+                "credits": "0",
+            },
+        } in requested_payloads
 
 
 async def test_add_user_quota(

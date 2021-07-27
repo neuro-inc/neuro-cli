@@ -1,0 +1,1 @@
+`_Admin.set_user_quota` method is fixed for cases, when the amount of credits equals to zero.
