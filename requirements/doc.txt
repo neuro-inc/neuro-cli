@@ -1,4 +1,4 @@
 -r base.txt
-sphinx==4.1.1
+sphinx==4.1.2
 sphinxcontrib-spelling==7.2.1; platform_system!="Windows"
 sphinxcontrib.asyncio==0.3.0
