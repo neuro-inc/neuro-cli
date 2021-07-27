@@ -328,6 +328,7 @@ Jobs
    .. comethod:: start(*, \
                        image: RemoteImage, \
                        preset_name: str, \
+                       cluster_name: Optional[str] = None, \
                        entrypoint: Optional[str] = None, \
                        command: Optional[str] = None, \
                        working_dir: Optional[str] = None, \
@@ -355,6 +356,8 @@ Jobs
       :param RemoteImage image: image used for starting a container.
 
       :param str preset_name: name of the preset of resources given to a container on a node.
+
+      :param str cluster_name: cluster to start a job. Default is current cluster.
 
       :param str entrypoint: optional Docker ENTRYPOINT_ used for overriding image entry-point
                              (:class:`str`), default ``None`` is used to pick entry-point

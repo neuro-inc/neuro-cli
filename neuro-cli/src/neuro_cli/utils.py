@@ -486,12 +486,14 @@ async def resolve_job_ex(
 DISK_ID_PATTERN = r"disk-[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12}"
 
 
-async def resolve_disk(id_or_name: str, *, client: Client) -> str:
+async def resolve_disk(
+    id_or_name: str, *, client: Client, cluster_name: Optional[str] = None
+) -> str:
     # Temporary fast path.
     if re.fullmatch(DISK_ID_PATTERN, id_or_name):
         return id_or_name
 
-    disk = await client.disks.get(id_or_name)
+    disk = await client.disks.get(id_or_name, cluster_name)
     return disk.id
 
 

@@ -21,7 +21,7 @@ from neuro_cli.formatters.images import (
 )
 from neuro_cli.formatters.utils import ImageFormatter, image_formatter, uri_formatter
 
-from .click_types import RemoteImageType
+from .click_types import CLUSTER, RemoteImageType
 from .root import Root
 from .utils import (
     argument,
@@ -110,6 +110,7 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 @command()
 @option(
     "--cluster",
+    type=CLUSTER,
     help="Show images on a specified cluster (the current cluster by default).",
 )
 @option("-l", "format_long", is_flag=True, help="List in long format.")

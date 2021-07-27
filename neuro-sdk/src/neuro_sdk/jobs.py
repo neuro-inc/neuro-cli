@@ -307,7 +307,7 @@ class Jobs(metaclass=NoPublicConstructor):
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
         payload = _job_to_api(
-            config=self._config,
+            cluster_name=self._config.cluster_name,
             name=name,
             tags=tags,
             description=description,
@@ -343,6 +343,7 @@ class Jobs(metaclass=NoPublicConstructor):
         *,
         image: RemoteImage,
         preset_name: str,
+        cluster_name: Optional[str] = None,
         entrypoint: Optional[str] = None,
         command: Optional[str] = None,
         working_dir: Optional[str] = None,
@@ -381,7 +382,7 @@ class Jobs(metaclass=NoPublicConstructor):
             shm=shm,
         )
         payload = _job_to_api(
-            config=self._config,
+            cluster_name=cluster_name or self._config.cluster_name,
             name=name,
             preset_name=preset_name,
             tags=tags,
@@ -1031,7 +1032,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
 
 
 def _job_to_api(
-    config: Config,
+    cluster_name: str,
     name: Optional[str] = None,
     preset_name: Optional[str] = None,
     tags: Sequence[str] = (),
@@ -1062,7 +1063,7 @@ def _job_to_api(
         primitive["wait_for_jobs_quota"] = wait_for_jobs_quota
     if privileged:
         primitive["privileged"] = privileged
-    primitive["cluster_name"] = config.cluster_name
+    primitive["cluster_name"] = cluster_name
     return primitive
 
 

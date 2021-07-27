@@ -40,7 +40,7 @@ List images.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _--cluster TEXT_ | Show images on a specified cluster \(the current cluster by default\). |
+| _--cluster CLUSTER_ | Show images on a specified cluster \(the current cluster by default\). |
 | _-l_ | List in long format. |
 | _--full-uri_ | Output full image URI. |
 | _-n, --name PATTERN_ | Filter out images by name regex. |

@@ -41,6 +41,7 @@ from neuro_cli.utils import resolve_disk
 
 from .ael import process_attach, process_exec, process_logs
 from .click_types import (
+    CLUSTER,
     JOB,
     JOB_COLUMNS,
     JOB_NAME,
@@ -292,6 +293,7 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
 )
 @option(
     "--cluster",
+    type=CLUSTER,
     help="Show jobs on a specified cluster (the current cluster by default).",
 )
 @option(
@@ -550,6 +552,7 @@ async def browse(root: Root, job: str) -> None:
 @argument("jobs", nargs=-1, required=False, type=JOB)
 @option(
     "--cluster",
+    type=CLUSTER,
     help="Show jobs on a specified cluster (the current cluster by default).",
 )
 @option(
@@ -826,6 +829,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 @argument("image", type=RemoteImageType())
 @argument("cmd", nargs=-1, type=click.UNPROCESSED)
 @option(
+    "--cluster",
+    type=CLUSTER,
+    help="Run job in a specified cluster",
+    default=None,
+)
+@option(
     "-s",
     "--preset",
     type=PRESET,
@@ -1016,6 +1025,7 @@ async def run(
     root: Root,
     image: RemoteImage,
     preset: str,
+    cluster: Optional[str],
     extshm: bool,
     http: int,
     http_auth: Optional[bool],
@@ -1062,9 +1072,11 @@ async def run(
     # registry, run /script.sh and pass arg1 and arg2 as its arguments:
     neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
     """
+    cluster_name = cluster or root.client.cluster_name
+    cluster_config = root.client.config.clusters[cluster_name]
     if not preset:
-        preset = next(iter(root.client.config.presets.keys()))
-    job_preset = root.client.config.presets[preset]
+        preset = next(iter(cluster_config.presets.keys()))
+    job_preset = cluster_config.presets[preset]
     if preemptible is not None:
         root.print(
             "-p/-P option is deprecated and ignored. Use corresponding presets instead."
@@ -1100,7 +1112,7 @@ async def run(
         schedule_timeout=schedule_timeout,
         privileged=privileged,
         share=share,
-        cluster_name=root.client.cluster_name,
+        cluster_name=cluster or root.client.cluster_name,
     )
 
 
@@ -1206,7 +1218,7 @@ async def run_job(
         job_schedule_timeout = parse_timedelta(schedule_timeout).total_seconds()
     log.debug(f"Job schedule timeout: {job_schedule_timeout}")
 
-    env_parse_result = root.client.parse.envs(env, env_file)
+    env_parse_result = root.client.parse.envs(env, env_file, cluster_name=cluster_name)
     env_dict, secret_env_dict = env_parse_result.env, env_parse_result.secret_env
     real_cmd = _parse_cmd(cmd)
 
@@ -1215,13 +1227,15 @@ async def run_job(
 
     log.info(f"Using image '{image}'")
 
-    volume_parse_result = root.client.parse.volumes(volume)
+    volume_parse_result = root.client.parse.volumes(volume, cluster_name=cluster_name)
     volumes = list(volume_parse_result.volumes)
     secret_files = volume_parse_result.secret_files
 
     # Replace disk names with disk ids
     async def _force_disk_id(disk_uri: URL) -> URL:
-        disk_id = await resolve_disk(disk_uri.parts[-1], client=root.client)
+        disk_id = await resolve_disk(
+            disk_uri.parts[-1], client=root.client, cluster_name=cluster_name
+        )
         return disk_uri / f"../{disk_id}"
 
     disk_volumes = [
@@ -1258,6 +1272,7 @@ async def run_job(
     job = await root.client.jobs.start(
         image=image,
         preset_name=preset,
+        cluster_name=cluster_name,
         entrypoint=entrypoint,
         command=real_cmd,
         working_dir=working_dir,

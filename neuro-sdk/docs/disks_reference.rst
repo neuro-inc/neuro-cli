@@ -13,15 +13,18 @@ Disks
 
    Persistent disks subsystems. Disks can be passed as mounted volumes into a running job.
 
-   .. comethod:: list() -> AsyncContextManager[AsyncIterator[Disk]]
+   .. comethod:: list(cluster_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[Disk]]
       :async-for:
 
       List user's disks, async iterator. Yields :class:`Disk` instances.
+
+      :param str cluster_name: cluster to list disks. Default is current cluster.
 
    .. comethod:: create(  \
                         storage: int, \
                         life_span: typing.Optional[datetime.timedelta], \
                         name: typing.Optional[str], \
+                        cluster_name: Optional[str] = None, \
                  ) -> Disk
 
       Create a disk with capacity of *storage* bytes.
@@ -35,21 +38,28 @@ Disks
       :param ~typing.Optional[str] name: Name of the disk. Should be unique among all user's
                                          disk.
 
+      :param str cluster_name: cluster to create a disk. Default is current cluster.
+
+
       :return: Newly created disk info (:class:`Disk`)
 
-   .. comethod:: get(disk_id_or_name: str) -> Disk
+   .. comethod:: get(disk_id_or_name: str, cluster_name: Optional[str] = None) -> Disk
 
       Get a disk with id or name *disk_id_or_name*.
 
       :param str disk_id_or_name: disk's id or name.
 
+      :param str cluster_name: cluster to look for a disk. Default is current cluster.
+
       :return: Disk info (:class:`Disk`)
 
-   .. comethod:: rm(disk_id_or_name: str) -> None
+   .. comethod:: rm(disk_id_or_name: str, cluster_name: Optional[str] = None) -> None
 
       Delete a disk with id or name *disk_id_or_name*.
 
       :param str disk_id_or_name: disk's id or name.
+
+      :param str cluster_name: cluster to look for a disk. Default is current cluster.
 
 
 Disk
