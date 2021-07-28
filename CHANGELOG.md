@@ -5,6 +5,26 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.7.28 (2021-07-28)
+==================================
+
+Features
+--------
+
+- Support VCD cluster config in generate-cluster-config command. ([#2193](https://github.com/neuro-inc/platform-client-python/issues/2193))
+- Enabled writing of full logs for each CLI run to a file. Logs are generated under `~/.neuro/logs` folder and
+  automatically removed after 3 days. ([#2211](https://github.com/neuro-inc/platform-client-python/issues/2211))
+- Added `--cluster` option to `neuro run` command and `neuro disk`, `neuro secret` command groups. This option
+  allows to perform actions for a specific cluster instead of current one. ([#2225](https://github.com/neuro-inc/platform-client-python/issues/2225))
+
+
+Bugfixes
+--------
+
+- `_Admin.set_user_quota` method is fixed for cases, when the amount of credits equals to zero. ([#2229](https://github.com/neuro-inc/platform-client-python/issues/2229))
+- Recover cursor after an abnormal exit (Ctrl-C). ([#2231](https://github.com/neuro-inc/platform-client-python/issues/2231))
+
+
 Neuro SDK/CLI 21.7.9 (2021-07-09)
 =================================
 
