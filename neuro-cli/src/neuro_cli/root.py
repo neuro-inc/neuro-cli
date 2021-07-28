@@ -168,6 +168,8 @@ class Root:
         finally:
             sys.stderr = sys.__stderr__
 
+        self.soft_reset_tty()
+
     def run(self, main: Awaitable[_T]) -> _T:
         return self._runner.run(main)
 
