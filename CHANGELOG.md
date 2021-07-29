@@ -5,6 +5,20 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.7.29 (2021-07-29)
+==================================
+
+Bugfixes
+--------
+
+- Fix config permission bits for --pass-config mode ([#2233](https://github.com/neuro-inc/platform-client-python/issues/2233))
+
+Deprecations and Removals
+-------------------------
+
+- Drop legacy code that puts configuration files for pass-config on storage. ([#2233](https://github.com/neuro-inc/platform-client-python/issues/2233))
+
+
 Neuro SDK/CLI 21.7.28 (2021-07-28)
 ==================================
 

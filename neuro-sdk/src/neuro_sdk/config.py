@@ -282,7 +282,8 @@ def load_user_config(path: Path) -> Mapping[str, Any]:
 def _open_db_rw(
     path: Path, suppress_errors: bool = True
 ) -> Iterator[sqlite3.Connection]:
-    path.mkdir(0o700, parents=True, exist_ok=True)
+    path.mkdir(0o700, parents=True, exist_ok=True)  # atomically set proper bits
+    path.chmod(0o700)  # fix security if config folder already exists
 
     config_file = path / "db"
     with sqlite3.connect(str(config_file)) as db:
