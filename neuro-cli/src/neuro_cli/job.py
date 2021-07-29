@@ -4,7 +4,6 @@ import dataclasses
 import logging
 import shlex
 import sys
-import uuid
 import webbrowser
 from datetime import datetime, timedelta, timezone
 from typing import AsyncIterator, List, Optional, Sequence, Set, Tuple
@@ -26,7 +25,6 @@ from neuro_sdk import (
     JobStatus,
     Permission,
     RemoteImage,
-    Volume,
 )
 
 from neuro_cli.formatters.images import DockerImageProgress
@@ -1250,19 +1248,6 @@ async def run_job(
         if env_name in env_dict:
             raise ValueError(f"{env_name} is already set to {env_dict[env_name]}")
 
-        # The following code is compatibility layer with old images
-        # TODO: remove this and upload_and_map_config function
-        old_env_name = "NEURO_STEAL_CONFIG"
-        if old_env_name in env_dict:
-            raise ValueError(
-                f"{old_env_name} is already set to {env_dict[old_env_name]}"
-            )
-
-        env_var, secret_volume = await upload_and_map_config(root, cluster_name)
-        env_dict[old_env_name] = env_var
-        volumes.append(secret_volume)
-        # End of compatibility layer
-
     if volumes:
         log.info(
             "Using volumes: \n"
@@ -1331,38 +1316,6 @@ def _parse_cmd(cmd: Sequence[str]) -> str:
     else:
         real_cmd = " ".join(shlex.quote(arg) for arg in cmd)
     return real_cmd
-
-
-async def upload_and_map_config(root: Root, cluster_name: str) -> Tuple[str, Volume]:
-
-    # store the Neuro CLI config on the storage under some random path
-    nmrc_path = URL(root.config_path.expanduser().resolve().as_uri())
-    random_nmrc_filename = f"{uuid.uuid4()}-cfg"
-    storage_nmrc_folder = URL(
-        f"storage://{cluster_name}/{root.client.username}/.neuro/"
-    )
-    storage_nmrc_path = storage_nmrc_folder / random_nmrc_filename
-    local_nmrc_folder = f"{STORAGE_MOUNTPOINT}/.neuro/"
-    local_nmrc_path = f"{local_nmrc_folder}{random_nmrc_filename}"
-    if not root.quiet:
-        root.print(f"Temporary config file created on storage: {storage_nmrc_path}.")
-        root.print(f"Inside container it will be available at: {local_nmrc_path}.")
-    await root.client.storage.mkdir(storage_nmrc_folder, parents=True, exist_ok=True)
-
-    async def skip_tmp(fname: str) -> bool:
-        return not fname.endswith(("-shm", "-wal", "-journal"))
-
-    await root.client.storage.upload_dir(nmrc_path, storage_nmrc_path, filter=skip_tmp)
-    # specify a container volume and mount the storage path
-    # into specific container path
-    return (
-        local_nmrc_path,
-        Volume(
-            storage_uri=storage_nmrc_folder,
-            container_path=local_nmrc_folder,
-            read_only=False,
-        ),
-    )
 
 
 async def browse_job(root: Root, job: JobDescription) -> None:
@@ -1460,8 +1413,6 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
     if job.description:
         res += ["--description", shlex.quote(job.description)]
     for volume in job.container.volumes:
-        if volume.container_path == "/var/storage/.neuro" and job.pass_config:
-            continue
         res += [
             "--volume",
             (
@@ -1481,7 +1432,7 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
     if job.container.working_dir:
         res += ["--workdir", job.container.working_dir]
     for env_name, env_value in job.container.env.items():
-        if env_name in (PASS_CONFIG_ENV_NAME, "NEURO_STEAL_CONFIG") and job.pass_config:
+        if env_name == PASS_CONFIG_ENV_NAME and job.pass_config:
             continue  # Do not specify value for pass config env variable
         res += ["--env", f"{env_name}={env_value}"]
     for env_name, secret_uri in job.container.secret_env.items():
