@@ -120,6 +120,7 @@ async def test_get_server_config_with_token_legacy(
     monitoring_url = "https://dev.neu.ro/monitoring"
     secrets_url = "https://dev.neu.ro/secrets"
     disks_url = "https://dev.neu.ro/disks"
+    buckets_url = "https://dev.neu.ro/bucketss"  # TODO: fix this ss
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
@@ -146,6 +147,7 @@ async def test_get_server_config_with_token_legacy(
                 "users_url": users_url,
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
+                "buckets_url": buckets_url,
                 "resource_presets": [
                     {
                         "name": "gpu-small",
@@ -219,6 +221,7 @@ async def test_get_server_config_with_token_legacy(
                 monitoring_url=URL(monitoring_url),
                 secrets_url=URL(secrets_url),
                 disks_url=URL(disks_url),
+                buckets_url=URL(buckets_url),
                 presets={
                     "gpu-small": Preset(
                         credits_per_hour=Decimal("10"),
@@ -264,6 +267,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
     monitoring_url = "https://dev.neu.ro/monitoring"
     secrets_url = "https://dev.neu.ro/secrets"
     disks_url = "https://dev.neu.ro/disks"
+    buckets_url = "https://dev.neu.ro/bucketss"  # TODO: fix this ss
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
@@ -318,6 +322,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
                 "monitoring_url": monitoring_url,
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
+                "buckets_url": buckets_url,
                 "resource_presets": [
                     {
                         "name": "gpu-small",
@@ -391,6 +396,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
         monitoring_url=URL(monitoring_url),
         secrets_url=URL(secrets_url),
         disks_url=URL(disks_url),
+        buckets_url=URL(buckets_url),
         presets={
             "gpu-small": Preset(
                 credits_per_hour=Decimal("10"),

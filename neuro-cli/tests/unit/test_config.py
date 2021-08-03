@@ -27,6 +27,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
             monitoring_url=URL("https://monitoring-dev.neu.ro"),
             secrets_url=URL("https://secrets-dev.neu.ro"),
             disks_url=URL("https://disks-dev.neu.ro"),
+            buckets_url=URL("https://buckets-dev.neu.ro"),
             presets={
                 "cpu-small": Preset(
                     credits_per_hour=Decimal("10"), cpu=1, memory_mb=1024
@@ -42,6 +43,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
             monitoring_url=URL("https://monitoring2-dev.neu.ro"),
             secrets_url=URL("https://secrets2-dev.neu.ro"),
             disks_url=URL("https://disks2-dev.neu.ro"),
+            buckets_url=URL("https://buckets2-dev.neu.ro"),
             presets={
                 "cpu-small": Preset(
                     credits_per_hour=Decimal("10"), cpu=2, memory_mb=1024
@@ -97,6 +99,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
             monitoring_url=URL("https://monitoring-dev.neu.ro"),
             secrets_url=URL("https://secrets-dev.neu.ro"),
             disks_url=URL("https://disks-dev.neu.ro"),
+            buckets_url=URL("https://buckets-dev.neu.ro"),
             presets={
                 "cpu-small": Preset(
                     credits_per_hour=Decimal("10"), cpu=1, memory_mb=1024
@@ -112,6 +115,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
             monitoring_url=URL("https://monitoring2-dev.neu.ro"),
             secrets_url=URL("https://secrets2-dev.neu.ro"),
             disks_url=URL("https://disks2-dev.neu.ro"),
+            buckets_url=URL("https://disks2-dev.neu.ro"),
             presets={
                 "cpu-small": Preset(
                     credits_per_hour=Decimal("10"), cpu=2, memory_mb=1024

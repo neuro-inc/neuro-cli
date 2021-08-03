@@ -1,0 +1,6 @@
+Id           bucket                     
+ Uri          blob://cluster/user/bucket 
+ Name         test-bucket                
+ Provider     aws                        
+ Credentials   Key   Value               
+               test  value

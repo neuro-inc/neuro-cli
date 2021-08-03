@@ -24,6 +24,7 @@ from .abc import (
     StorageProgressStep,
 )
 from .blob_storage import Blob, BlobListing, BlobStorage, BucketListing, PrefixListing
+from .buckets import Bucket, Buckets
 from .client import Client, Preset
 from .config import Config
 from .config_factory import (
@@ -93,7 +94,9 @@ __all__ = (
     "Blob",
     "BlobListing",
     "BlobStorage",
+    "Bucket",
     "BucketListing",
+    "Buckets",
     "CONFIG_ENV_NAME",
     "Client",
     "ClientError",

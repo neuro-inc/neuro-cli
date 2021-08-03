@@ -88,6 +88,11 @@
 		* [neuro service-account create](#neuro-service-account-create)
 		* [neuro service-account get](#neuro-service-account-get)
 		* [neuro service-account rm](#neuro-service-account-rm)
+	* [neuro bucket](#neuro-bucket)
+		* [neuro bucket ls](#neuro-bucket-ls)
+		* [neuro bucket create](#neuro-bucket-create)
+		* [neuro bucket get](#neuro-bucket-get)
+		* [neuro bucket rm](#neuro-bucket-rm)
 	* [neuro help](#neuro-help)
 	* [neuro run](#neuro-run)
 	* [neuro ps](#neuro-ps)
@@ -154,6 +159,7 @@ Name | Description|
 | _[neuro secret](#neuro-secret)_| Operations with secrets |
 | _[neuro disk](#neuro-disk)_| Operations with disks |
 | _[neuro service-account](#neuro-service-account)_| Operations with service accounts |
+| _[neuro bucket](#neuro-bucket)_| Operations with buckets |
 
 
 **Commands:**
@@ -2401,6 +2407,118 @@ neuro service-account rm [OPTIONS] SERVICE_ACCOUNTS...
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+
+
+
+
+## neuro bucket
+
+Operations with buckets.
+
+**Usage:**
+
+```bash
+neuro bucket [OPTIONS] COMMAND [ARGS]...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+**Commands:**
+
+|Usage|Description|
+|---|---|
+| _[neuro bucket ls](#neuro-bucket-ls)_| List buckets |
+| _[neuro bucket create](#neuro-bucket-create)_| Create a new bucket |
+| _[neuro bucket get](#neuro-bucket-get)_| Get bucket BUCKET_ID |
+| _[neuro bucket rm](#neuro-bucket-rm)_| Remove bucket DISK_ID |
+
+
+
+
+### neuro bucket ls
+
+List buckets.
+
+**Usage:**
+
+```bash
+neuro bucket ls [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
+|_\--full-uri_|Output full bucket URI.|
+
+
+
+
+### neuro bucket create
+
+Create a new bucket.
+
+**Usage:**
+
+```bash
+neuro bucket create [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Perform in a specified cluster \(the current cluster by default).|
+|_--name NAME_|Optional bucket name|
+
+
+
+
+### neuro bucket get
+
+Get bucket BUCKET_ID.
+
+**Usage:**
+
+```bash
+neuro bucket get [OPTIONS] BUCKET
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
+|_\--full-uri_|Output full bucket URI.|
+
+
+
+
+### neuro bucket rm
+
+Remove bucket DISK_ID.
+
+**Usage:**
+
+```bash
+neuro bucket rm [OPTIONS] BUCKETS...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Perform on a specified cluster \(the current cluster by default).|
 
 
 
