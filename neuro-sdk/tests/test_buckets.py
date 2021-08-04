@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import Callable
 
 from aiohttp import web
@@ -14,6 +15,8 @@ async def test_list(
     make_client: _MakeClient,
     cluster_config: Cluster,
 ) -> None:
+    created_at = datetime.now() - timedelta(days=1)
+
     async def handler(request: web.Request) -> web.Response:
         return web.json_response(
             [
@@ -22,6 +25,7 @@ async def test_list(
                     "owner": "user",
                     "name": None,
                     "provider": "aws",
+                    "created_at": created_at.isoformat(),
                     "credentials": {"test": "value"},
                 },
                 {
@@ -29,6 +33,7 @@ async def test_list(
                     "owner": "user",
                     "name": "test-bucket",
                     "provider": "aws",
+                    "created_at": created_at.isoformat(),
                     "credentials": {"test": "value2"},
                 },
             ]
@@ -52,6 +57,7 @@ async def test_list(
             owner="user",
             cluster_name=cluster_config.name,
             name=None,
+            created_at=created_at,
             provider=Bucket.Provider.AWS,
             credentials={"test": "value"},
         ),
@@ -60,6 +66,7 @@ async def test_list(
             owner="user",
             cluster_name=cluster_config.name,
             name="test-bucket",
+            created_at=created_at,
             provider=Bucket.Provider.AWS,
             credentials={"test": "value2"},
         ),
@@ -71,6 +78,8 @@ async def test_add(
     make_client: _MakeClient,
     cluster_config: Cluster,
 ) -> None:
+    created_at = datetime.now()
+
     async def handler(request: web.Request) -> web.Response:
         data = await request.json()
         assert data == {
@@ -81,6 +90,7 @@ async def test_add(
                 "id": "bucket-1",
                 "owner": "user",
                 "name": "test-bucket",
+                "created_at": created_at.isoformat(),
                 "provider": "aws",
                 "credentials": {"test": "value"},
             }
@@ -98,6 +108,7 @@ async def test_add(
             owner="user",
             cluster_name=cluster_config.name,
             name="test-bucket",
+            created_at=created_at,
             provider=Bucket.Provider.AWS,
             credentials={"test": "value"},
         )
@@ -108,6 +119,8 @@ async def test_get(
     make_client: _MakeClient,
     cluster_config: Cluster,
 ) -> None:
+    created_at = datetime.now()
+
     async def handler(request: web.Request) -> web.Response:
         assert request.match_info["key"] == "name"
         return web.json_response(
@@ -116,6 +129,7 @@ async def test_get(
                 "owner": "user",
                 "name": "name",
                 "provider": "aws",
+                "created_at": created_at.isoformat(),
                 "credentials": {"test": "value"},
             }
         )
@@ -132,6 +146,7 @@ async def test_get(
             owner="user",
             cluster_name=cluster_config.name,
             name="name",
+            created_at=created_at,
             provider=Bucket.Provider.AWS,
             credentials={"test": "value"},
         )

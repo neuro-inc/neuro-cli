@@ -82,6 +82,10 @@ Bucket
 
       Cluster this bucket belongs to, :class:`str`.
 
+   .. attribute:: created_at
+
+      Bucket creation timestamp, :class:`~datetime.datetime`.
+
    .. attribute:: provider
 
       Blob storage provider this bucket belongs to, :class:`Bucket.Provider`.

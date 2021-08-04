@@ -9,7 +9,7 @@ from .formatters.buckets import (
     BucketsFormatter,
     SimpleBucketsFormatter,
 )
-from .formatters.utils import URIFormatter, uri_formatter
+from .formatters.utils import URIFormatter, get_datetime_formatter, uri_formatter
 from .root import Root
 from .utils import argument, command, group, option
 
@@ -28,7 +28,10 @@ def bucket() -> None:
     help="Look on a specified cluster (the current cluster by default).",
 )
 @option("--full-uri", is_flag=True, help="Output full bucket URI.")
-async def ls(root: Root, full_uri: bool, cluster: Optional[str]) -> None:
+@option("--long-format", is_flag=True, help="Output all info about bucket.")
+async def ls(
+    root: Root, full_uri: bool, long_format: bool, cluster: Optional[str]
+) -> None:
     """
     List buckets.
     """
@@ -42,7 +45,11 @@ async def ls(root: Root, full_uri: bool, cluster: Optional[str]) -> None:
                 username=root.client.username,
                 cluster_name=cluster or root.client.cluster_name,
             )
-        buckets_fmtr = BucketsFormatter(uri_fmtr)
+        buckets_fmtr = BucketsFormatter(
+            uri_fmtr,
+            datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
+            long_format=long_format,
+        )
 
     buckets = []
     with root.status("Fetching buckets") as status:
@@ -80,7 +87,9 @@ async def create(
         name=name,
         cluster_name=cluster,
     )
-    bucket_fmtr = BucketFormatter(str)
+    bucket_fmtr = BucketFormatter(
+        str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
+    )
     with root.pager():
         root.print(bucket_fmtr(bucket))
 
@@ -106,7 +115,9 @@ async def get(root: Root, cluster: Optional[str], bucket: str, full_uri: bool) -
             username=root.client.username,
             cluster_name=cluster or root.client.cluster_name,
         )
-    bucket_fmtr = BucketFormatter(uri_fmtr)
+    bucket_fmtr = BucketFormatter(
+        uri_fmtr, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
+    )
     with root.pager():
         root.print(bucket_fmtr(bucket_obj))
 

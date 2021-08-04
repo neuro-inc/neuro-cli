@@ -10,7 +10,7 @@ from rich.text import Text
 
 from neuro_sdk import Bucket
 
-from neuro_cli.formatters.utils import URIFormatter
+from neuro_cli.formatters.utils import DatetimeFormatter, URIFormatter
 
 
 class BaseBucketsFormatter:
@@ -28,8 +28,13 @@ class BucketsFormatter(BaseBucketsFormatter):
     def __init__(
         self,
         uri_formatter: URIFormatter,
+        datetime_formatter: DatetimeFormatter,
+        *,
+        long_format: bool = False,
     ) -> None:
         self._uri_formatter = uri_formatter
+        self._datetime_formatter = datetime_formatter
+        self._long_format = long_format
 
     def _bucket_to_table_row(self, bucket: Bucket) -> Sequence[str]:
         line = [
@@ -38,6 +43,8 @@ class BucketsFormatter(BaseBucketsFormatter):
             bucket.provider,
             self._uri_formatter(bucket.uri),
         ]
+        if self._long_format:
+            line += [self._datetime_formatter(bucket.created_at)]
         return line
 
     def __call__(self, buckets: Sequence[Bucket]) -> RenderableType:
@@ -49,13 +56,18 @@ class BucketsFormatter(BaseBucketsFormatter):
         table.add_column("Name")
         table.add_column("Provider")
         table.add_column("Uri")
+        if self._long_format:
+            table.add_column("Created at")
         for bucket in buckets:
             table.add_row(*self._bucket_to_table_row(bucket))
         return table
 
 
 class BucketFormatter:
-    def __init__(self, uri_formatter: URIFormatter) -> None:
+    def __init__(
+        self, uri_formatter: URIFormatter, datetime_formatter: DatetimeFormatter
+    ) -> None:
+        self._datetime_formatter = datetime_formatter
         self._uri_formatter = uri_formatter
 
     def __call__(self, bucket: Bucket) -> RenderableType:
@@ -70,6 +82,7 @@ class BucketFormatter:
         table.add_row("Uri", self._uri_formatter(bucket.uri))
         if bucket.name:
             table.add_row("Name", bucket.name)
+        table.add_row("Created at", self._datetime_formatter(bucket.created_at))
         table.add_row("Provider", bucket.provider)
         credentials = Table(box=None, show_header=True, show_edge=False)
         credentials.add_column("Key")

@@ -2,8 +2,10 @@ import enum
 import json
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any, AsyncIterator, Mapping, Optional
 
+from dateutil.parser import isoparse
 from yarl import URL
 
 from .config import Config
@@ -21,6 +23,7 @@ class Bucket:
     cluster_name: str
     provider: "Bucket.Provider"
     credentials: Mapping[str, str]
+    created_at: datetime
     name: Optional[str] = None
 
     @property
@@ -41,6 +44,7 @@ class Buckets(metaclass=NoPublicConstructor):
             id=payload["id"],
             owner=payload["owner"],
             name=payload.get("name"),
+            created_at=isoparse(payload["created_at"]),
             provider=Bucket.Provider(payload["provider"]),
             cluster_name=self._config.cluster_name,
             credentials=payload["credentials"],
