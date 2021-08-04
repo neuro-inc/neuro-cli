@@ -79,7 +79,10 @@ async def process_logs(
 ) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
-    async with root.client.jobs.monitor(job, cluster_name=cluster_name) as it:
+    separator = "<================ Live logs ==============>"
+    async with root.client.jobs.monitor(
+        job, cluster_name=cluster_name, separator=separator
+    ) as it:
         async for chunk in it:
             if not chunk:
                 txt = decoder.decode(b"", final=True)

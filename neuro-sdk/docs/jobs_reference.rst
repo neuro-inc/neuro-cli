@@ -220,6 +220,7 @@ Jobs
 
    .. comethod:: monitor(id: str, *, \
                          cluster_name: Optional[str] = None, \
+                         separator: Optional[str] = None,
                  ) -> AsyncContextManager[AsyncIterator[bytes]]
       :async-with:
       :async-for:
@@ -235,6 +236,12 @@ Jobs
       :param str cluster_name: cluster on which the job is running.
 
                                ``None`` means the current cluster (default).
+
+      :param str separator: string which will separate archive and live logs
+                            (if both parts are present).
+
+                            By default a string containing random characters are used.
+                            Empty *separator* suppresses output of separator.
 
       :return: :class:`~collections.abc.AsyncIterator` over :class:`bytes` log chunks.
 

@@ -484,9 +484,15 @@ class Jobs(metaclass=NoPublicConstructor):
 
     @asyncgeneratorcontextmanager
     async def monitor(
-        self, id: str, *, cluster_name: Optional[str] = None
+        self,
+        id: str,
+        *,
+        cluster_name: Optional[str] = None,
+        separator: Optional[str] = None,
     ) -> AsyncIterator[bytes]:
         url = self._get_monitoring_url(cluster_name) / id / "log"
+        if separator is not None:
+            url = url.update_query(separator=separator)
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         auth = await self._config._api_auth()
         async with self._core.request(
