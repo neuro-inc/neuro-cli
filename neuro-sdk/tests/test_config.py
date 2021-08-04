@@ -355,7 +355,7 @@ async def test_fetch(
     monitoring_url = "https://jobs2-dev.neu.ro"
     secrets_url = "https://secrets2-dev.neu.ro"
     disks_url = "https://disks2-dev.neu.ro"
-    buckets_url = "https://bucketss2-dev.neu.ro"  # TODO: fix this
+    buckets_url = "https://buckets2-dev.neu.ro"
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"

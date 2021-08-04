@@ -120,7 +120,7 @@ async def test_get_server_config_with_token_legacy(
     monitoring_url = "https://dev.neu.ro/monitoring"
     secrets_url = "https://dev.neu.ro/secrets"
     disks_url = "https://dev.neu.ro/disks"
-    buckets_url = "https://dev.neu.ro/bucketss"  # TODO: fix this ss
+    buckets_url = "https://dev.neu.ro/buckets"
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
@@ -267,7 +267,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
     monitoring_url = "https://dev.neu.ro/monitoring"
     secrets_url = "https://dev.neu.ro/secrets"
     disks_url = "https://dev.neu.ro/disks"
-    buckets_url = "https://dev.neu.ro/bucketss"  # TODO: fix this ss
+    buckets_url = "https://dev.neu.ro/buckets"
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"

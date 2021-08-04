@@ -72,9 +72,7 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
         monitoring_url=URL(payload["monitoring_url"]),
         secrets_url=URL(payload["secrets_url"]),
         disks_url=URL(payload["disks_url"]),
-        buckets_url=URL(
-            payload["disks_url"].replace("disk", "buckets")
-        ),  # TODO: replace when config is ready
+        buckets_url=URL(payload["buckets_url"]),
         presets=presets,
     )
     return cluster_config
