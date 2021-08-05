@@ -7,7 +7,7 @@ from urllib.parse import quote_from_bytes
 
 from yarl import URL
 
-CLUSTER_SCHEMES = ("storage", "image", "job", "secret", "disk")
+CLUSTER_SCHEMES = ("storage", "image", "job", "secret", "disk", "blob")
 
 
 def uri_from_cli(
@@ -54,8 +54,6 @@ def uri_from_cli(
     _check_uri_str(path_or_uri, uri.scheme)
     if uri.scheme == "file":
         uri = normalize_local_path_uri(uri)
-    elif uri.scheme == "blob":
-        uri = normalize_blob_path_uri(uri, cluster_name)
     else:
         uri = _normalize_uri(uri, username, cluster_name)
     return uri

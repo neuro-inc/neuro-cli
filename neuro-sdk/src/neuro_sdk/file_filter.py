@@ -61,6 +61,21 @@ class FileFilter:
         return await self.default(path)
 
 
+_magic_check = re.compile("(?:[*?[])")
+
+
+def _has_magic(s: str) -> bool:
+    return _magic_check.search(s) is not None
+
+
+def _glob_safe_prefix(pattern: str) -> str:
+    return _magic_check.split(pattern, 1)[0]
+
+
+def _isrecursive(pattern: str) -> bool:
+    return pattern == "**"
+
+
 def translate(pat: str) -> str:
     """Translate a shell PATTERN to a regular expression."""
 

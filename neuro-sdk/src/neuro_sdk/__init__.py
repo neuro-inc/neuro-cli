@@ -24,7 +24,7 @@ from .abc import (
     StorageProgressStep,
 )
 from .blob_storage import Blob, BlobListing, BlobStorage, BucketListing, PrefixListing
-from .buckets import Bucket, Buckets
+from .buckets import BlobCommonPrefix, BlobObject, Bucket, BucketEntry, Buckets
 from .client import Client, Preset
 from .config import Config
 from .config_factory import (
@@ -92,9 +92,12 @@ __all__ = (
     "AuthenticationError",
     "AuthorizationError",
     "Blob",
+    "BlobCommonPrefix",
     "BlobListing",
+    "BlobObject",
     "BlobStorage",
     "Bucket",
+    "BucketEntry",
     "BucketListing",
     "Buckets",
     "CONFIG_ENV_NAME",
