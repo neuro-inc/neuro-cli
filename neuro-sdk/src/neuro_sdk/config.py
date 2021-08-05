@@ -216,6 +216,10 @@ class Config(metaclass=NoPublicConstructor):
     def disk_api_url(self) -> URL:
         return self._cluster.disks_url
 
+    @property
+    def bucket_api_url(self) -> URL:
+        return self._cluster.buckets_url
+
     async def token(self) -> str:
         token = self._config_data.auth_token
         if not token.is_expired():
@@ -430,6 +434,7 @@ def _deserialize_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
             monitoring_url=URL(cluster_config["monitoring_url"]),
             secrets_url=URL(cluster_config["secrets_url"]),
             disks_url=URL(cluster_config["disks_url"]),
+            buckets_url=URL(cluster_config["buckets_url"]),
             presets=dict(
                 _deserialize_resource_preset(data)
                 for data in cluster_config.get("presets", [])
@@ -545,6 +550,7 @@ def _serialize_clusters(clusters: Mapping[str, Cluster]) -> str:
             "monitoring_url": str(cluster.monitoring_url),
             "secrets_url": str(cluster.secrets_url),
             "disks_url": str(cluster.disks_url),
+            "buckets_url": str(cluster.buckets_url),
             "presets": [
                 _serialize_resource_preset(name, preset)
                 for name, preset in cluster.presets.items()

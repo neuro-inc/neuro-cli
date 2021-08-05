@@ -6,6 +6,7 @@
 * [acl](neuro-cli/docs/acl.md)
 * [admin](neuro-cli/docs/admin.md)
 * [blob](neuro-cli/docs/blob.md)
+* [bucket](neuro-cli/docs/bucket.md)
 * [completion](neuro-cli/docs/completion.md)
 * [config](neuro-cli/docs/config.md)
 * [disk](neuro-cli/docs/disk.md)

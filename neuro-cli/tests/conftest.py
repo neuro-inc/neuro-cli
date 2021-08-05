@@ -71,6 +71,7 @@ def cluster_config() -> Cluster:
         monitoring_url=URL("https://monitoring-dev.neu.ro"),
         secrets_url=URL("https://secrets-dev.neu.ro"),
         disks_url=URL("https://disks-storage-dev.neu.ro"),
+        buckets_url=URL("https://buckets-storage-dev.neu.ro"),
         presets={
             "gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
@@ -126,6 +127,7 @@ def make_client(
                 users_url=url,
                 secrets_url=(url / "secrets"),
                 disks_url=(url / "disks"),
+                buckets_url=(url / "disks"),
                 presets={
                     "gpu-small": Preset(
                         credits_per_hour=Decimal("10"),

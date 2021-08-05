@@ -140,6 +140,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
             monitoring_url=URL("https://jobs-dev.neu.ro"),
             secrets_url=URL("https://secrets-dev.neu.ro"),
             disks_url=URL("https://disks-dev.neu.ro"),
+            buckets_url=URL("https://buckets-dev.neu.ro"),
             presets={
                 "cpu-small": Preset(
                     credits_per_hour=Decimal("10"), cpu=1, memory_mb=2 * 1024
@@ -154,7 +155,8 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
             users_url=URL("https://users2-dev.neu.ro"),
             monitoring_url=URL("https://jobs2-dev.neu.ro"),
             secrets_url=URL("https://secrets2-dev.neu.ro"),
-            disks_url=URL("https://disks-dev.neu.ro"),
+            disks_url=URL("https://disks2-dev.neu.ro"),
+            buckets_url=URL("https://buckets2-dev.neu.ro"),
             presets={
                 "cpu-large": Preset(
                     credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
@@ -183,6 +185,8 @@ async def test_get_cluster_name_from_local(
         assert client.config.blob_storage_url == URL("https://blob-storage-dev.neu.ro")
         assert client.config.monitoring_url == URL("https://jobs-dev.neu.ro")
         assert client.config.secrets_url == URL("https://secrets-dev.neu.ro")
+        assert client.config.disk_api_url == URL("https://disks-dev.neu.ro")
+        assert client.config.bucket_api_url == URL("https://buckets-dev.neu.ro")
         assert client.config.presets == {
             "cpu-small": Preset(
                 credits_per_hour=Decimal("10"), cpu=1, memory_mb=2 * 1024
@@ -196,6 +200,8 @@ async def test_get_cluster_name_from_local(
         assert client.config.storage_url == URL("https://storage2-dev.neu.ro")
         assert client.config.monitoring_url == URL("https://jobs2-dev.neu.ro")
         assert client.config.secrets_url == URL("https://secrets2-dev.neu.ro")
+        assert client.config.disk_api_url == URL("https://disks2-dev.neu.ro")
+        assert client.config.bucket_api_url == URL("https://buckets2-dev.neu.ro")
         assert client.config.presets == {
             "cpu-large": Preset(
                 credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
@@ -320,6 +326,7 @@ async def test_clusters(
                 monitoring_url=srv.make_url("/jobs"),
                 secrets_url=srv.make_url("/secrets"),
                 disks_url=srv.make_url("/disk"),
+                buckets_url=srv.make_url("/buckets"),
                 presets=mock.ANY,
             ),
             "another": Cluster(
@@ -331,6 +338,7 @@ async def test_clusters(
                 monitoring_url=srv.make_url("/jobs2"),
                 secrets_url=srv.make_url("/secrets2"),
                 disks_url=srv.make_url("/disk2"),
+                buckets_url=srv.make_url("/buckets2"),
                 presets=mock.ANY,
             ),
         }
@@ -347,6 +355,7 @@ async def test_fetch(
     monitoring_url = "https://jobs2-dev.neu.ro"
     secrets_url = "https://secrets2-dev.neu.ro"
     disks_url = "https://disks2-dev.neu.ro"
+    buckets_url = "https://buckets2-dev.neu.ro"
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
@@ -373,6 +382,7 @@ async def test_fetch(
                 "monitoring_url": monitoring_url,
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
+                "buckets_url": buckets_url,
                 "resource_presets": [
                     {
                         "name": "cpu-small",
@@ -404,6 +414,7 @@ async def test_fetch(
                 monitoring_url=URL(monitoring_url),
                 secrets_url=URL(secrets_url),
                 disks_url=URL(disks_url),
+                buckets_url=URL(buckets_url),
                 presets={
                     "cpu-small": Preset(
                         credits_per_hour=Decimal("10"),

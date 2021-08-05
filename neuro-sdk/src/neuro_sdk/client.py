@@ -8,6 +8,7 @@ from neuro_sdk.service_accounts import ServiceAccounts
 
 from .admin import _Admin
 from .blob_storage import BlobStorage
+from .buckets import Buckets
 from .config import Config
 from .core import _Core
 from .disks import Disks
@@ -50,6 +51,7 @@ class Client(metaclass=NoPublicConstructor):
         self._secrets = Secrets._create(self._core, self._config)
         self._disks = Disks._create(self._core, self._config)
         self._service_accounts = ServiceAccounts._create(self._core, self._config)
+        self._buckets = Buckets._create(self._core, self._config)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
@@ -125,6 +127,10 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def service_accounts(self) -> ServiceAccounts:
         return self._service_accounts
+
+    @property
+    def buckets(self) -> Buckets:
+        return self._buckets
 
     @property
     def parse(self) -> Parser:
