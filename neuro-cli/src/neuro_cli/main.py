@@ -364,7 +364,8 @@ def print_options(
 @option(
     "--disable-pypi-version-check",
     is_flag=True,
-    default=click.BOOL(os.environ.get("NEURO_CLI_DISABLE_PYPI_VERSION_CHECK", False)),
+    envvar="NEURO_CLI_DISABLE_PYPI_VERSION_CHECK",
+    show_envvar=True,
     help="Don't periodically check PyPI to determine whether a new version of "
     "Neuro Platform CLI is available for download.",
 )

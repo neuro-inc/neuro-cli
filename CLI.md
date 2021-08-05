@@ -125,7 +125,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--color \[yes &#124; no &#124; auto]_|Color mode.|
-|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuro Platform CLI is available for download.|
+|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuro Platform CLI is available for download.  \[env var: NEURO\_CLI_DISABLE_PYPI_VERSION_CHECK]|
 |_\--hide-token / --no-hide-token_|Prevent user's token sent in HTTP headers from being printed out to stderr during HTTP tracing. Can be used only together with option '--trace'. On by default.|
 |_\--iso-datetime-format / --no-iso-datetime-format_|Use ISO 8601 format for printing date and time|
 |_\--network-timeout FLOAT_|Network read timeout, seconds.|
