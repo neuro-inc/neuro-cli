@@ -1,17 +1,13 @@
 import abc
-import asyncio
 import enum
-import errno
 import json
 import logging
-import os
 import re
 import sys
 from dataclasses import dataclass
 from datetime import datetime
-from pathlib import Path, PurePosixPath
-from stat import S_ISREG
-from typing import AbstractSet, Any, AsyncIterator, Awaitable, Mapping, Optional, Union
+from pathlib import PurePosixPath
+from typing import AbstractSet, Any, AsyncIterator, Mapping, Optional, Tuple, Union
 
 import aiobotocore as aiobotocore
 import botocore.exceptions
@@ -20,44 +16,26 @@ from dateutil.parser import isoparse
 from yarl import URL
 
 from neuro_sdk import AbstractRecursiveFileProgress
-from neuro_sdk.abc import (
-    AbstractFileProgress,
-    StorageProgressComplete,
-    StorageProgressEnterDir,
-    StorageProgressFail,
-    StorageProgressLeaveDir,
-    StorageProgressStart,
-    StorageProgressStep,
-    _AsyncAbstractFileProgress,
-    _AsyncAbstractRecursiveFileProgress,
-)
+from neuro_sdk.abc import AbstractFileProgress
 from neuro_sdk.file_filter import (
     AsyncFilterFunc,
-    FileFilter,
     _glob_safe_prefix,
     _has_magic,
     _isrecursive,
     translate,
 )
-from neuro_sdk.storage import (
-    TIME_THRESHOLD,
-    _always,
-    load_parent_ignore_files,
-    run_concurrently,
-    run_progress,
+from neuro_sdk.file_utils import FileSystem, FileTransferer, LocalFS
+from neuro_sdk.url_utils import (
+    _extract_path,
+    normalize_blob_path_uri,
+    normalize_local_path_uri,
 )
-from neuro_sdk.url_utils import _extract_path, normalize_local_path_uri
 from neuro_sdk.utils import AsyncContextManager
 
 from .config import Config
 from .core import _Core
 from .errors import NDJSONError, ResourceNotFound
-from .utils import (
-    NoPublicConstructor,
-    asyncgeneratorcontextmanager,
-    queue_calls,
-    retries,
-)
+from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 if sys.version_info >= (3, 7):
     from contextlib import asynccontextmanager
@@ -126,6 +104,8 @@ class BucketProvider(abc.ABC):
     Defines how to execute generic blob operations in a specific bucket provider
     """
 
+    bucket: "Bucket"
+
     @abc.abstractmethod
     def list_blobs(
         self, prefix: str, recursive: bool = False, limit: Optional[int] = None
@@ -151,536 +131,123 @@ class BucketProvider(abc.ABC):
     ) -> AsyncContextManager[AsyncIterator[bytes]]:
         pass
 
+    @abc.abstractmethod
+    async def delete_blob(
+        self,
+        key: str,
+    ) -> None:
+        pass
 
-class BucketOperations:
-    def __init__(self, bucket: "Bucket", provider: BucketProvider) -> None:
-        self._bucket = bucket
+
+class BucketFS(FileSystem[PurePosixPath]):
+    fs_name = "Bucket"
+    supports_offset_read = True
+    supports_offset_write = False
+
+    def __init__(self, provider: BucketProvider) -> None:
         self._provider = provider
-        self._file_sem = asyncio.BoundedSemaphore(MAX_OPEN_FILES)
-        self._min_time_diff = 0.0
-        self._max_time_diff = 0.0
 
-    def head_blob(self, key: str) -> Awaitable[BucketEntry]:
-        return self._provider.head_blob(key)
+    def _as_file_key(self, path: PurePosixPath) -> str:
+        if not path.is_absolute():
+            path = "/" / path
+        return str(path).lstrip("/")
 
-    def list_blobs(
-        self, prefix: str, recursive: bool = False, limit: Optional[int] = None
-    ) -> AsyncContextManager[AsyncIterator[BucketEntry]]:
-        return self._provider.list_blobs(prefix, recursive, limit)
+    def _as_dir_key(self, path: PurePosixPath) -> str:
+        return (self._as_file_key(path) + "/").lstrip("/")
 
-    @asyncgeneratorcontextmanager
-    async def glob_blobs(self, pattern: str) -> AsyncIterator[BucketEntry]:
-        async with self._glob_blobs("", pattern) as it:
-            async for entry in it:
-                yield entry
-
-    @asyncgeneratorcontextmanager
-    async def _glob_blobs(
-        self, prefix: str, pattern: str
-    ) -> AsyncIterator[BucketEntry]:
-        part, _, remaining = pattern.partition("/")
-
-        if _isrecursive(part):
-            # Patter starts with ** => any key may match it
-            full_match = re.compile(translate(pattern)).fullmatch
-            async with self.list_blobs(prefix, recursive=True) as it:
-                async for entry in it:
-                    if full_match(entry.key[len(prefix) :]):
-                        yield entry
-            return
-
-        has_magic = _has_magic(part)
-        # Optimize the prefix for matching. If we have a pattern `folder1/b*/*.json`
-        # it's better to scan with prefix `folder1/b` on the 2nd step, not `folder1/`
-        if has_magic:
-            opt_prefix = prefix + _glob_safe_prefix(part)
-        else:
-            opt_prefix = prefix
-        match = re.compile(translate(part)).fullmatch
-
-        # If this is the last part in the search pattern we have to scan keys, not
-        # just prefixes
-        if not remaining:
-            async with self.list_blobs(opt_prefix, recursive=False) as it:
-                async for entry in it:
-                    if match(entry.name):
-                        yield entry
-            return
-
-        # We can be sure no blobs on this level will match the pattern, as results are
-        # deeper down the tree. Recursively scan folders only.
-        if has_magic:
-            async with self.list_blobs(opt_prefix, recursive=False) as it:
-                async for entry in it:
-                    if not entry.is_dir() or not match(entry.name):
-                        continue
-                    async with self._glob_blobs(entry.key, remaining) as blob_iter:
-                        async for blob in blob_iter:
-                            yield blob
-        else:
-            async with self._glob_blobs(prefix + part + "/", remaining) as blob_iter:
-                async for blob in blob_iter:
-                    yield blob
-
-    async def _check_is_existing_file(self, path: Path) -> None:
+    async def exists(self, path: PurePosixPath) -> bool:
+        if self._as_dir_key(path) == "":
+            return True
         try:
-            if not path.exists():
-                raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
-            if path.is_dir():
-                raise IsADirectoryError(
-                    errno.EISDIR, "Is a directory, use recursive copy", str(path)
-                )
-        except OSError as e:
-            if getattr(e, "winerror", None) not in (1, 87):
-                raise
-            # Ignore stat errors for device files like NUL or CON on Windows.
-            # See https://bugs.python.org/issue37074
-
-    def _check_upload(
-        self, local: os.stat_result, remote: BucketEntry
-    ) -> Optional[int]:
-        if (
-            remote.modified_at is None
-            or local.st_mtime - remote.modified_at.timestamp()
-            > self._min_time_diff - TIME_THRESHOLD
-        ):
-            # Local is likely newer.
-            return 0
-        # Remote is definitely newer.
-        return None
-
-    def _check_download(
-        self, local: os.stat_result, remote: BucketEntry, update: bool, continue_: bool
-    ) -> Optional[int]:
-        # Add 1 because remote.modification_time has been truncated
-        # and can be up to 1 second less than the actual value.
-        if (
-            remote.modified_at is None
-            or local.st_mtime - remote.modified_at.timestamp()
-            < self._max_time_diff + TIME_THRESHOLD + 1.0
-        ):
-            # Remote is likely newer.
-            return 0
-        # Local is definitely newer.
-        if update:
-            return None
-        if continue_:
-            if local.st_size == remote.size:  # complete
-                return None
-            if local.st_size < remote.size:  # partial
-                return local.st_size
-        return 0
-
-    @asyncgeneratorcontextmanager
-    async def _iterate_file(
-        self,
-        src: Path,
-        dst_uri: URL,
-        size: int,
-        *,
-        progress: _AsyncAbstractFileProgress,
-    ) -> AsyncIterator[bytes]:
-        loop = asyncio.get_event_loop()
-        src_url = URL(src.as_uri())
-        async with self._file_sem:
-            with src.open("rb") as stream:
-                await progress.start(StorageProgressStart(src_url, dst_uri, size))
-                chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
-                pos = len(chunk)
-                while chunk:
-                    await progress.step(
-                        StorageProgressStep(src_url, dst_uri, pos, size)
-                    )
-                    yield chunk
-                    chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
-                    pos += len(chunk)
-                await progress.complete(StorageProgressComplete(src_url, dst_uri, size))
-
-    async def upload_file(
-        self,
-        src: URL,
-        dst: PurePosixPath,
-        *,
-        update: bool = False,
-        progress: Optional[AbstractFileProgress] = None,
-    ) -> None:
-        src = normalize_local_path_uri(src)
-        dst_key = str(dst).lstrip("/")
-
-        src_path = _extract_path(src)
-        await self._check_is_existing_file(src_path)
-
-        if await self.is_dir(dst_key):
-            raise IsADirectoryError(errno.EISDIR, "Is a directory", dst)
-
-        # TODO: extract method
-        if update:
-            try:
-                dst_stat = await self._provider.head_blob(key=dst_key)
-            except ResourceNotFound:
-                pass
-            else:
-                try:
-                    src_stat = src_path.stat()
-                except OSError:
-                    pass
-                else:
-                    if S_ISREG(src_stat.st_mode):
-                        offset = self._check_upload(src_stat, dst_stat)
-                        if offset is None:
-                            return
-
-        async_progress: _AsyncAbstractFileProgress
-        queue, async_progress = queue_calls(progress)
-        await run_progress(
-            queue, self._upload_file(src_path, dst_key, progress=async_progress)
-        )
-
-    async def _upload_file(
-        self,
-        src_path: Path,
-        dst: str,
-        *,
-        progress: _AsyncAbstractFileProgress,
-    ) -> None:
-        size = src_path.stat().st_size
-
-        for retry in retries(f"Fail to upload {dst}"):
-            async with retry:
-                async with self._iterate_file(
-                    src_path, self._bucket.uri / dst, size, progress=progress
-                ) as body:
-                    await self._provider.put_blob(
-                        key=dst,
-                        body=body,
-                        size=size,
-                    )
-
-    async def upload_dir(
-        self,
-        src: URL,
-        dst: PurePosixPath,
-        *,
-        update: bool = False,
-        filter: Optional[AsyncFilterFunc] = None,
-        ignore_file_names: AbstractSet[str] = frozenset(),
-        progress: Optional[AbstractRecursiveFileProgress] = None,
-    ) -> None:
-        src = normalize_local_path_uri(src)
-        dst_key = str(dst).lstrip("/")
-        path = _extract_path(src).resolve()
-        if not path.exists():
-            raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
-        if not path.is_dir():
-            raise NotADirectoryError(errno.ENOTDIR, "Not a directory", str(path))
-
-        if filter is None:
-            filter = _always
-        if ignore_file_names:
-            filter = load_parent_ignore_files(filter, ignore_file_names, path)
-
-        async_progress: _AsyncAbstractRecursiveFileProgress
-        queue, async_progress = queue_calls(progress)
-        await run_progress(
-            queue,
-            self._upload_dir(
-                src,
-                path,
-                dst_key,
-                "",
-                update=update,
-                filter=filter,
-                ignore_file_names=ignore_file_names,
-                progress=async_progress,
-            ),
-        )
-
-    async def _upload_dir(
-        self,
-        src: URL,
-        src_path: Path,
-        dst: str,
-        rel_path: str,
-        *,
-        update: bool,
-        filter: AsyncFilterFunc,
-        ignore_file_names: AbstractSet[str],
-        progress: _AsyncAbstractRecursiveFileProgress,
-    ) -> None:
-        tasks = []
-        dst_uri = URL(str(self._bucket.uri) + dst)  # Key can start with "/"
-        dst_files = {}
-        if update:
-            for retry in retries(f"Fail to list {dst}"):
-                async with retry:
-                    async with self.list_blobs(dst, recursive=False) as it:
-                        dst_files = {x.name: x async for x in it}
-        try:
-            await self._provider.head_blob(dst)
+            await self._provider.head_blob(self._as_file_key(path))
+            return True
         except ResourceNotFound:
-            pass
-        else:
-            raise NotADirectoryError(errno.ENOTDIR, "Not a directory", dst)
-
-        await progress.enter(StorageProgressEnterDir(src, dst_uri))
-        loop = asyncio.get_event_loop()
-        async with self._file_sem:
-            folder = await loop.run_in_executor(None, lambda: list(src_path.iterdir()))
-
-        if ignore_file_names:
-            for child in folder:
-                if child.name in ignore_file_names and child.is_file():
-                    logger.debug(f"Load ignore file {rel_path}{child.name}")
-                    file_filter = FileFilter(filter)
-                    file_filter.read_from_file(child, prefix=rel_path)
-                    filter = file_filter.match
-
-        for child in folder:
-            name = child.name
-            child_rel_path = f"{rel_path}{name}"
-            if child.is_dir():
-                child_rel_path += "/"
-            if not await filter(child_rel_path):
-                logger.debug(f"Skip {child_rel_path}")
-                continue
-            if child.is_file():
-                if update and name in dst_files:
-                    offset = self._check_upload(child.stat(), dst_files[name])
-                    if offset is None:
-                        continue
-                tasks.append(
-                    self._upload_file(
-                        src_path / name, dst + "/" + name, progress=progress
-                    )
-                )
-            elif child.is_dir():
-                tasks.append(
-                    self._upload_dir(
-                        src / name,
-                        src_path / name,
-                        dst + "/" + name,
-                        child_rel_path,
-                        update=update,
-                        filter=filter,
-                        ignore_file_names=ignore_file_names,
-                        progress=progress,
-                    )
-                )
-            else:
-                await progress.fail(
-                    StorageProgressFail(
-                        src / name,
-                        dst_uri / name,
-                        f"Cannot upload {child}, not regular file/directory",
-                    )
-                )
-        await run_concurrently(tasks)
-        await progress.leave(StorageProgressLeaveDir(src, dst_uri))
-
-    async def download_file(
-        self,
-        src: PurePosixPath,
-        dst: URL,
-        *,
-        update: bool = False,
-        continue_: bool = False,
-        progress: Optional[AbstractFileProgress] = None,
-    ) -> None:
-        src_key = str(src).lstrip("/")
-
-        if await self.is_dir(src_key):
-            raise IsADirectoryError(
-                errno.EISDIR, "Is a directory, use recursive copy:", str(src)
-            )
-
-        dst = normalize_local_path_uri(dst)
-        path = _extract_path(dst)
-        src_stat = await self.head_blob(key=src_key)
-
-        offset: Optional[int] = 0
-        if update or continue_:
-            try:
-                dst_stat = path.stat()
-            except OSError:
-                pass
-            else:
-                if S_ISREG(dst_stat.st_mode):
-                    offset = self._check_download(dst_stat, src_stat, update, continue_)
-        if offset is None:
-            return
-
-        async_progress: _AsyncAbstractFileProgress
-        queue, async_progress = queue_calls(progress)
-        await run_progress(
-            queue,
-            self._download_file(
-                src_key, dst, path, src_stat.size, offset, progress=async_progress
-            ),
-        )
-
-    async def _download_file(
-        self,
-        src: str,
-        dst: URL,
-        dst_path: Path,
-        size: int,
-        offset: int,
-        *,
-        progress: _AsyncAbstractFileProgress,
-    ) -> None:
-        loop = asyncio.get_event_loop()
-        src_uri = self._bucket.uri / src
-        async with self._file_sem:
-            await progress.start(StorageProgressStart(src_uri, dst, size))
-            with dst_path.open("rb+" if offset else "wb") as stream:
-                if offset:
-                    stream.seek(offset)
-                for retry in retries(f"Fail to download {src}"):
-                    pos = stream.tell()
-                    if pos >= size:
-                        break
-                    async with retry:
-                        async with self._provider.fetch_blob(key=src, offset=pos) as it:
-                            async for chunk in it:
-                                pos += len(chunk)
-                                await progress.step(
-                                    StorageProgressStep(src_uri, dst, pos, size)
-                                )
-                                await loop.run_in_executor(None, stream.write, chunk)
-                                if chunk:
-                                    retry.reset()
-            await progress.complete(StorageProgressComplete(src_uri, dst, size))
-
-    async def download_dir(
-        self,
-        src: PurePosixPath,
-        dst: URL,
-        *,
-        update: bool = False,
-        continue_: bool = False,
-        filter: Optional[AsyncFilterFunc] = None,
-        progress: Optional[AbstractRecursiveFileProgress] = None,
-    ) -> None:
-        if filter is None:
-            filter = _always
-        src_key = str(src).lstrip("/")
-        dst = normalize_local_path_uri(dst)
-        path = _extract_path(dst)
-        async_progress: _AsyncAbstractRecursiveFileProgress
-        queue, async_progress = queue_calls(progress)
-        await run_progress(
-            queue,
-            self._download_dir(
-                src_key,
-                dst,
-                path,
-                update=update,
-                continue_=continue_,
-                filter=filter,
-                progress=async_progress,
-            ),
-        )
-
-    async def _download_dir(
-        self,
-        src: str,
-        dst: URL,
-        dst_path: Path,
-        *,
-        update: bool,
-        continue_: bool,
-        filter: AsyncFilterFunc,
-        progress: _AsyncAbstractRecursiveFileProgress,
-    ) -> None:
-        src_uri = self._bucket.uri / src
-        dst_path.mkdir(parents=True, exist_ok=True)
-        await progress.enter(StorageProgressEnterDir(src_uri, dst))
-        tasks = []
-        if update or continue_:
-            loop = asyncio.get_event_loop()
-            async with self._file_sem:
-                dst_files = await loop.run_in_executor(
-                    None,
-                    lambda: {
-                        item.name: item for item in dst_path.iterdir() if item.is_file()
-                    },
-                )
-
-        prefix_path = src.strip("/")
-        # If we are downloading the whole bucket we need to specify an empty prefix '',
-        # not "/", thus only add it if path not empty
-        if prefix_path:
-            prefix_path += "/"
-        for retry in retries(f"Fail to list {src}"):
-            async with retry, self.list_blobs(
-                prefix=prefix_path, recursive=False
+            # Maybe this is a directory?
+            async with self._provider.list_blobs(
+                prefix=self._as_dir_key(path), recursive=False, limit=1
             ) as it:
-                async for entry in it:
-                    # Skip "folder" keys, as they can be returned back as they
-                    # have same prefix
-                    if entry.key == prefix_path:
-                        continue
+                return bool([entry async for entry in it])
 
-                    name = entry.name
-                    if entry.is_dir():
-                        name += "/"
-                    if not await filter(name):
-                        logging.debug(f"Skip {name}")
-                        continue
-                    if entry.is_file():
-                        offset: Optional[int] = 0
-                        if (update or continue_) and name in dst_files:
-                            offset = self._check_download(
-                                dst_files[name].stat(), entry, update, continue_
-                            )
-                        if offset is None:
-                            continue
-                        tasks.append(
-                            self._download_file(
-                                entry.key,
-                                dst / name,
-                                dst_path / name,
-                                entry.size,
-                                offset,
-                                progress=progress,
-                            )
-                        )
-                    else:
-                        tasks.append(
-                            self._download_dir(
-                                entry.key,
-                                dst / name,
-                                dst_path / name,
-                                update=update,
-                                continue_=continue_,
-                                filter=filter,
-                                progress=progress,
-                            )
-                        )
-        await run_concurrently(tasks)
-        await progress.leave(StorageProgressLeaveDir(src_uri, dst))
+    async def is_dir(self, path: PurePosixPath) -> bool:
+        if self._as_dir_key(path) == "":
+            return True
+        async with self._provider.list_blobs(
+            prefix=self._as_dir_key(path), recursive=False, limit=1
+        ) as it:
+            return bool([entry async for entry in it])
 
-    async def mkdir(self, key_path: PurePosixPath) -> None:
-        key = str(key_path) + "/"
-        if not key.strip("/"):
+    async def is_file(self, path: PurePosixPath) -> bool:
+        try:
+            await self._provider.head_blob(self._as_file_key(path))
+            return True
+        except ResourceNotFound:
+            return False
+
+    async def stat(self, path: PurePosixPath) -> "FileSystem.BasicStat[PurePosixPath]":
+        blob = await self._provider.head_blob(self._as_file_key(path))
+        return FileSystem.BasicStat(
+            name=path.name,
+            path=path,
+            size=blob.size,
+            modification_time=blob.modified_at.timestamp()
+            if blob.modified_at
+            else None,
+        )
+
+    @asyncgeneratorcontextmanager
+    async def read_chunks(
+        self, path: PurePosixPath, offset: int = 0
+    ) -> AsyncIterator[bytes]:
+        async with self._provider.fetch_blob(self._as_file_key(path), offset) as it:
+            async for chunk in it:
+                yield chunk
+
+    async def write_chunks(
+        self, path: PurePosixPath, body: AsyncIterator[bytes], offset: int = 0
+    ) -> None:
+        assert offset == 0, "Buckets do not support offset write"
+        await self._provider.put_blob(self._as_file_key(path), body)
+
+    @asyncgeneratorcontextmanager
+    async def iter_dir(self, path: PurePosixPath) -> AsyncIterator[PurePosixPath]:
+        async with self._provider.list_blobs(
+            prefix=self._as_dir_key(path), recursive=False
+        ) as it:
+            async for item in it:
+                res = PurePosixPath(item.key)
+                if res != path:  # Directory can be listed as self child
+                    yield res
+
+    async def mkdir(self, path: PurePosixPath) -> None:
+        key = self._as_dir_key(path)
+        if key == "":
             raise ValueError("Can not create a bucket root folder")
         await self._provider.put_blob(key=key, body=b"")
 
-    async def is_dir(self, key: str) -> bool:
-        if key.endswith("/") or key == "":
-            return True
-        async with self.list_blobs(prefix=key + "/", recursive=False, limit=1) as it:
-            return bool([entry async for entry in it])
+    def to_url(self, path: PurePosixPath) -> URL:
+        return self._provider.bucket.uri / self._as_file_key(path)
+
+    async def get_time_diff_to_local(self) -> float:
+        return 0  # TODO: implement it
+
+    def parent(self, path: PurePosixPath) -> PurePosixPath:
+        return path.parent
+
+    def name(self, path: PurePosixPath) -> str:
+        return path.name
+
+    def child(self, path: PurePosixPath, child: str) -> PurePosixPath:
+        return path / child
 
 
 class AWSS3Provider(BucketProvider):
     def __init__(self, client: AioBaseClient, bucket: "Bucket") -> None:
-        self._bucket = bucket
+        self.bucket = bucket
         self._client = client
 
     @property
     def _bucket_name(self) -> str:
-        return self._bucket.credentials["bucket_name"]
+        return self.bucket.credentials["bucket_name"]
 
     @classmethod
     @asynccontextmanager
@@ -705,7 +272,7 @@ class AWSS3Provider(BucketProvider):
         async for result in paginator.paginate(**kwargs):
             for common_prefix in result.get("CommonPrefixes", []):
                 yield BlobCommonPrefix(
-                    bucket=self._bucket,
+                    bucket=self.bucket,
                     size=0,
                     key=common_prefix["Prefix"],
                 )
@@ -714,7 +281,7 @@ class AWSS3Provider(BucketProvider):
                     return
             for blob in result.get("Contents", []):
                 yield BlobObject(
-                    bucket=self._bucket,
+                    bucket=self.bucket,
                     key=blob["Key"],
                     modified_at=blob["LastModified"],
                     size=blob["Size"],
@@ -727,15 +294,15 @@ class AWSS3Provider(BucketProvider):
         try:
             blob = await self._client.head_object(Bucket=self._bucket_name, Key=key)
             return BlobObject(
-                bucket=self._bucket,
-                key=blob["Key"],
+                bucket=self.bucket,
+                key=key,
                 modified_at=blob["LastModified"],
-                size=blob["Size"],
+                size=blob["ContentLength"],
             )
         except botocore.exceptions.ClientError as e:
             if e.response["Error"]["Code"] == "404":
                 raise ResourceNotFound(
-                    f"There is no object with key {key} in bucket {self._bucket.name}"
+                    f"There is no object with key {key} in bucket {self.bucket.name}"
                 )
             raise
 
@@ -761,10 +328,12 @@ class AWSS3Provider(BucketProvider):
         response = await self._client.get_object(
             Bucket=self._bucket_name, Key=key, Range=f"bytes={offset}-"
         )
-        # this will ensure the connection is correctly re-used/closed
         async with response["Body"] as stream:
             async for chunk in stream.iter_chunks():
                 yield chunk[0]
+
+    async def delete_blob(self, key: str) -> None:
+        await self._client.delete_object(Bucket=self._bucket_name, Key=key)
 
 
 @dataclass(frozen=True)
@@ -779,15 +348,10 @@ class Bucket:
 
     @property
     def uri(self) -> URL:
-        return URL(f"blob://{self.cluster_name}/{self.owner}/{self.id}")
+        return URL(f"blob://{self.cluster_name}/{self.owner}/{self.name or self.id}")
 
     class Provider(str, enum.Enum):
         AWS = "aws"
-
-    @asynccontextmanager
-    async def get_operations(self) -> AsyncIterator[BucketOperations]:
-        async with AWSS3Provider.create(self) as provider:
-            yield BucketOperations(self, provider)
 
 
 class Buckets(metaclass=NoPublicConstructor):
@@ -858,3 +422,251 @@ class Buckets(metaclass=NoPublicConstructor):
         auth = await self._config._api_auth()
         async with self._core.request("DELETE", url, auth=auth):
             pass
+
+    # Helper functions
+
+    @asynccontextmanager
+    async def _get_provider(
+        self, bucket_name: str, cluster_name: Optional[str] = None
+    ) -> AsyncIterator[BucketProvider]:
+        bucket = await self.get(bucket_name, cluster_name)
+        if bucket.provider == Bucket.Provider.AWS:
+            async with AWSS3Provider.create(bucket) as provider:
+                yield provider
+        else:
+            assert False, f"Unknown provider {bucket.provider}"
+
+    @asynccontextmanager
+    async def _get_bucket_fs(
+        self, bucket_name: str, cluster_name: Optional[str] = None
+    ) -> AsyncIterator[FileSystem[PurePosixPath]]:
+        async with self._get_provider(bucket_name, cluster_name) as provider:
+            yield BucketFS(provider)
+
+    def _split_blob_uri(self, uri: URL) -> Tuple[str, str, str]:
+        uri = normalize_blob_path_uri(
+            uri, self._config.username, self._config.cluster_name
+        )
+        cluster_name = uri.host
+        assert cluster_name
+        parts = uri.path.lstrip("/").split("/", 2)
+        if len(parts) == 3:
+            _, bucket_id, key = parts
+        else:
+            _, bucket_id = parts
+            key = ""
+        return cluster_name, bucket_id, key
+
+    # Low level operations
+
+    async def head_blob(
+        self, bucket_name: str, key: str, cluster_name: Optional[str] = None
+    ) -> BucketEntry:
+        async with self._get_provider(bucket_name, cluster_name) as provider:
+            return await provider.head_blob(key)
+
+    async def put_blob(
+        self,
+        bucket_name: str,
+        key: str,
+        body: Union[AsyncIterator[bytes], bytes],
+        cluster_name: Optional[str] = None,
+    ) -> None:
+        async with self._get_provider(bucket_name, cluster_name) as provider:
+            await provider.put_blob(key, body)
+
+    @asyncgeneratorcontextmanager
+    async def fetch_blob(
+        self,
+        bucket_name: str,
+        key: str,
+        offset: int = 0,
+        cluster_name: Optional[str] = None,
+    ) -> AsyncIterator[bytes]:
+        async with self._get_provider(bucket_name, cluster_name) as provider:
+            async with provider.fetch_blob(key, offset=offset) as it:
+                async for chunk in it:
+                    yield chunk
+
+    async def delete_blob(
+        self, bucket_name: str, key: str, cluster_name: Optional[str] = None
+    ) -> None:
+        async with self._get_provider(bucket_name, cluster_name) as provider:
+            return await provider.delete_blob(key)
+
+    # Listing operations
+
+    @asyncgeneratorcontextmanager
+    async def list_blobs(
+        self,
+        uri: URL,
+        recursive: bool = False,
+        limit: Optional[int] = None,
+    ) -> AsyncIterator[BucketEntry]:
+        cluster_name, bucket_name, key = self._split_blob_uri(uri)
+        async with self._get_provider(bucket_name, cluster_name) as provider:
+            async with provider.list_blobs(key, recursive=recursive, limit=limit) as it:
+                async for entry in it:
+                    yield entry
+
+    @asyncgeneratorcontextmanager
+    async def glob_blobs(self, uri: URL) -> AsyncIterator[BucketEntry]:
+        cluster_name, bucket_name, key = self._split_blob_uri(uri)
+        if _has_magic(bucket_name):
+            raise ValueError(
+                "You can not glob on bucket names. Please provide name explicitly."
+            )
+
+        async with self._get_provider(bucket_name, cluster_name) as provider:
+            async with self._glob_blobs("", key, provider) as it:
+                async for entry in it:
+                    yield entry
+
+    @asyncgeneratorcontextmanager
+    async def _glob_blobs(
+        self, prefix: str, pattern: str, provider: BucketProvider
+    ) -> AsyncIterator[BucketEntry]:
+        # TODO: factor out code with storage
+
+        part, _, remaining = pattern.partition("/")
+
+        if _isrecursive(part):
+            # Patter starts with ** => any key may match it
+            full_match = re.compile(translate(pattern)).fullmatch
+            async with provider.list_blobs(prefix, recursive=True) as it:
+                async for entry in it:
+                    if full_match(entry.key[len(prefix) :]):
+                        yield entry
+            return
+
+        has_magic = _has_magic(part)
+        # Optimize the prefix for matching. If we have a pattern `folder1/b*/*.json`
+        # it's better to scan with prefix `folder1/b` on the 2nd step, not `folder1/`
+        if has_magic:
+            opt_prefix = prefix + _glob_safe_prefix(part)
+        else:
+            opt_prefix = prefix
+        match = re.compile(translate(part)).fullmatch
+
+        # If this is the last part in the search pattern we have to scan keys, not
+        # just prefixes
+        if not remaining:
+            async with provider.list_blobs(opt_prefix, recursive=False) as it:
+                async for entry in it:
+                    if match(entry.name) and not entry.key == opt_prefix:
+                        yield entry
+            return
+
+        # We can be sure no blobs on this level will match the pattern, as results are
+        # deeper down the tree. Recursively scan folders only.
+        if has_magic:
+            async with provider.list_blobs(opt_prefix, recursive=False) as it:
+                async for entry in it:
+                    if not entry.is_dir() or not match(entry.name):
+                        continue
+                    async with self._glob_blobs(
+                        entry.key, remaining, provider
+                    ) as blob_iter:
+                        async for blob in blob_iter:
+                            yield blob
+        else:
+            async with self._glob_blobs(
+                prefix + part + "/", remaining, provider
+            ) as blob_iter:
+                async for blob in blob_iter:
+                    yield blob
+
+    # High level transfer operations
+
+    async def upload_file(
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        update: bool = False,
+        progress: Optional[AbstractFileProgress] = None,
+    ) -> None:
+        src = normalize_local_path_uri(src)
+        cluster_name, bucket_name, key = self._split_blob_uri(dst)
+        async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
+            transferer = FileTransferer(LocalFS(), bucket_fs)
+            await transferer.transfer_file(
+                src=_extract_path(src),
+                dst=PurePosixPath(key),
+                update=update,
+                progress=progress,
+            )
+
+    async def download_file(
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        update: bool = False,
+        continue_: bool = False,
+        progress: Optional[AbstractFileProgress] = None,
+    ) -> None:
+        cluster_name, bucket_name, key = self._split_blob_uri(src)
+        dst = normalize_local_path_uri(dst)
+        async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
+            transferer = FileTransferer(bucket_fs, LocalFS())
+            await transferer.transfer_file(
+                src=PurePosixPath(key),
+                dst=_extract_path(dst),
+                update=update,
+                continue_=continue_,
+                progress=progress,
+            )
+
+    async def upload_dir(
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        update: bool = False,
+        filter: Optional[AsyncFilterFunc] = None,
+        ignore_file_names: AbstractSet[str] = frozenset(),
+        progress: Optional[AbstractRecursiveFileProgress] = None,
+    ) -> None:
+        src = normalize_local_path_uri(src)
+        cluster_name, bucket_name, key = self._split_blob_uri(dst)
+        async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
+            transferer = FileTransferer(LocalFS(), bucket_fs)
+            await transferer.transfer_dir(
+                src=_extract_path(src),
+                dst=PurePosixPath(key),
+                filter=filter,
+                ignore_file_names=ignore_file_names,
+                update=update,
+                progress=progress,
+            )
+
+    async def download_dir(
+        self,
+        src: URL,
+        dst: URL,
+        *,
+        update: bool = False,
+        continue_: bool = False,
+        filter: Optional[AsyncFilterFunc] = None,
+        progress: Optional[AbstractRecursiveFileProgress] = None,
+    ) -> None:
+        cluster_name, bucket_name, key = self._split_blob_uri(src)
+        dst = normalize_local_path_uri(dst)
+        async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
+            transferer = FileTransferer(bucket_fs, LocalFS())
+            await transferer.transfer_dir(
+                src=PurePosixPath(key),
+                dst=_extract_path(dst),
+                update=update,
+                continue_=continue_,
+                filter=filter,
+                progress=progress,
+            )
+
+    async def blob_is_dir(self, uri: URL) -> bool:
+        cluster_name, bucket_name, key = self._split_blob_uri(uri)
+        if key.endswith("/"):
+            return True
+        async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
+            return await bucket_fs.is_dir(PurePosixPath(key))

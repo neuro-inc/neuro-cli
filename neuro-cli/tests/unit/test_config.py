@@ -22,7 +22,6 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
         "first": Cluster(
             registry_url=URL("https://registry-dev.neu.ro"),
             storage_url=URL("https://storage-dev.neu.ro"),
-            blob_storage_url=URL("https://blob-storage-dev.neu.ro"),
             users_url=URL("https://users-dev.neu.ro"),
             monitoring_url=URL("https://monitoring-dev.neu.ro"),
             secrets_url=URL("https://secrets-dev.neu.ro"),
@@ -38,7 +37,6 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
         "second": Cluster(
             registry_url=URL("https://registry2-dev.neu.ro"),
             storage_url=URL("https://storage2-dev.neu.ro"),
-            blob_storage_url=URL("https://blob-storage2-dev.neu.ro"),
             users_url=URL("https://users2-dev.neu.ro"),
             monitoring_url=URL("https://monitoring2-dev.neu.ro"),
             secrets_url=URL("https://secrets2-dev.neu.ro"),
@@ -94,7 +92,6 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
         "first": Cluster(
             registry_url=URL("https://registry-dev.neu.ro"),
             storage_url=URL("https://storage-dev.neu.ro"),
-            blob_storage_url=URL("https://blob-storage-dev.neu.ro"),
             users_url=URL("https://users-dev.neu.ro"),
             monitoring_url=URL("https://monitoring-dev.neu.ro"),
             secrets_url=URL("https://secrets-dev.neu.ro"),
@@ -110,7 +107,6 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
         "second": Cluster(
             registry_url=URL("https://registry2-dev.neu.ro"),
             storage_url=URL("https://storage2-dev.neu.ro"),
-            blob_storage_url=URL("https://blob-storage2-dev.neu.ro"),
             users_url=URL("https://users2-dev.neu.ro"),
             monitoring_url=URL("https://monitoring2-dev.neu.ro"),
             secrets_url=URL("https://secrets2-dev.neu.ro"),

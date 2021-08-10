@@ -23,7 +23,6 @@ from .abc import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from .blob_storage import Blob, BlobListing, BlobStorage, BucketListing, PrefixListing
 from .buckets import BlobCommonPrefix, BlobObject, Bucket, BucketEntry, Buckets
 from .client import Client, Preset
 from .config import Config
@@ -91,14 +90,10 @@ __all__ = (
     "AuthError",
     "AuthenticationError",
     "AuthorizationError",
-    "Blob",
     "BlobCommonPrefix",
-    "BlobListing",
     "BlobObject",
-    "BlobStorage",
     "Bucket",
     "BucketEntry",
-    "BucketListing",
     "Buckets",
     "CONFIG_ENV_NAME",
     "Client",
@@ -138,7 +133,6 @@ __all__ = (
     "Parser",
     "Permission",
     "PluginManager",
-    "PrefixListing",
     "Preset",
     "RemoteImage",
     "ResourceNotFound",

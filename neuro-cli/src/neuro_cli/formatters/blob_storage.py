@@ -6,6 +6,7 @@ from rich.table import Table
 
 from neuro_sdk import Bucket, BucketEntry, FileStatusType
 
+from neuro_cli.formatters.utils import URIFormatter
 from neuro_cli.utils import format_size
 
 from .storage import TIME_FORMAT, get_painter
@@ -27,17 +28,19 @@ class BaseBlobFormatter:
 
 
 class SimpleBlobFormatter(BaseBlobFormatter):
-    def __init__(self, color: bool):
+    def __init__(self, color: bool, uri_formatter: URIFormatter):
         self.painter = get_painter(color)
+        self.uri_formatter = uri_formatter
 
     def __call__(self, file: BlobListing) -> RenderableType:
-        return self.painter.paint(str(file.uri), get_file_type(file))
+        return self.painter.paint(self.uri_formatter(file.uri), get_file_type(file))
 
 
 class LongBlobFormatter(BaseBlobFormatter):
-    def __init__(self, human_readable: bool, color: bool):
+    def __init__(self, human_readable: bool, color: bool, uri_formatter: URIFormatter):
         self.human_readable = human_readable
         self.painter = get_painter(color)
+        self.uri_formatter = uri_formatter
 
     def to_row(self, file: BlobListing) -> Sequence[RenderableType]:
         if isinstance(file, Bucket):
@@ -47,7 +50,7 @@ class LongBlobFormatter(BaseBlobFormatter):
 
     def to_row_bucket(self, file: Bucket) -> Sequence[RenderableType]:
         date = file.created_at.strftime(TIME_FORMAT)
-        name = self.painter.paint(str(file.uri), get_file_type(file))
+        name = self.painter.paint(self.uri_formatter(file.uri), get_file_type(file))
         return [f"bucket", f"", f"{date}", name]
 
     def to_row_blob(self, file: BucketEntry) -> Sequence[RenderableType]:
@@ -61,7 +64,7 @@ class LongBlobFormatter(BaseBlobFormatter):
             size = format_size(file.size).rstrip("B")
         else:
             size = str(file.size)
-        name = self.painter.paint(str(file.uri), get_file_type(file))
+        name = self.painter.paint(self.uri_formatter(file.uri), get_file_type(file))
         if file.is_dir():
             type_ = "dir"
         else:

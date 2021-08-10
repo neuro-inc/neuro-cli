@@ -115,7 +115,6 @@ async def test_get_server_config_with_token_legacy(
     admin_url = "https://admin-dev.neu.ro"
     registry_url = "https://registry.dev.neu.ro"
     storage_url = "https://storage.dev.neu.ro"
-    blob_storage_url = "https://blob-storage.dev.neu.ro"
     users_url = "https://dev.neu.ro/users"
     monitoring_url = "https://dev.neu.ro/monitoring"
     secrets_url = "https://dev.neu.ro/secrets"
@@ -142,7 +141,6 @@ async def test_get_server_config_with_token_legacy(
                 "name": "default",
                 "monitoring_url": monitoring_url,
                 "storage_url": storage_url,
-                "blob_storage_url": blob_storage_url,
                 "registry_url": registry_url,
                 "users_url": users_url,
                 "secrets_url": secrets_url,
@@ -216,7 +214,6 @@ async def test_get_server_config_with_token_legacy(
             "default": Cluster(
                 registry_url=URL(registry_url),
                 storage_url=URL(storage_url),
-                blob_storage_url=URL(blob_storage_url),
                 users_url=URL(users_url),
                 monitoring_url=URL(monitoring_url),
                 secrets_url=URL(secrets_url),
@@ -262,7 +259,6 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
     admin_url = "https://admin-dev.neu.ro"
     registry_url = "https://registry.dev.neu.ro"
     storage_url = "https://storage.dev.neu.ro"
-    blob_storage_url = "https://blob-storage.dev.neu.ro"
     users_url = "https://dev.neu.ro/users"
     monitoring_url = "https://dev.neu.ro/monitoring"
     secrets_url = "https://dev.neu.ro/secrets"
@@ -317,7 +313,6 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
                 "name": "default",
                 "registry_url": registry_url,
                 "storage_url": storage_url,
-                "blob_storage_url": blob_storage_url,
                 "users_url": users_url,
                 "monitoring_url": monitoring_url,
                 "secrets_url": secrets_url,
@@ -391,7 +386,6 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
     cluster_config = Cluster(
         registry_url=URL(registry_url),
         storage_url=URL(storage_url),
-        blob_storage_url=URL(blob_storage_url),
         users_url=URL(users_url),
         monitoring_url=URL(monitoring_url),
         secrets_url=URL(secrets_url),

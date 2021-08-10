@@ -197,10 +197,6 @@ class Config(metaclass=NoPublicConstructor):
         return self._cluster.monitoring_url
 
     @property
-    def blob_storage_url(self) -> URL:
-        return self._cluster.blob_storage_url
-
-    @property
     def storage_url(self) -> URL:
         return self._cluster.storage_url
 
@@ -429,7 +425,6 @@ def _deserialize_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
             name=cluster_config["name"],
             registry_url=URL(cluster_config["registry_url"]),
             storage_url=URL(cluster_config["storage_url"]),
-            blob_storage_url=URL(cluster_config["blob_storage_url"]),
             users_url=URL(cluster_config["users_url"]),
             monitoring_url=URL(cluster_config["monitoring_url"]),
             secrets_url=URL(cluster_config["secrets_url"]),
@@ -545,7 +540,6 @@ def _serialize_clusters(clusters: Mapping[str, Cluster]) -> str:
             "name": cluster.name,
             "registry_url": str(cluster.registry_url),
             "storage_url": str(cluster.storage_url),
-            "blob_storage_url": str(cluster.blob_storage_url),
             "users_url": str(cluster.users_url),
             "monitoring_url": str(cluster.monitoring_url),
             "secrets_url": str(cluster.secrets_url),

@@ -86,27 +86,13 @@ def normalize_disk_uri(uri: URL, username: str, cluster_name: str) -> URL:
     return _normalize_uri(uri, username, cluster_name)
 
 
-def normalize_blob_path_uri(uri: URL, cluster_name: str) -> URL:
-    """Normalize Blob Storage url."""
+def normalize_blob_path_uri(uri: URL, username: str, cluster_name: str) -> URL:
+    """Normalize disk url."""
     if uri.scheme != "blob":
         raise ValueError(
             f"Invalid storage scheme '{uri.scheme}:' (only 'blob:' is allowed)"
         )
-    _check_uri(uri)
-
-    stripped_path = uri.path.lstrip("/")
-    # We treat all those as same URL's:
-    #   blob:my_bucket/object_name
-    #   blob:/my_bucket/object_name
-    #   blob:///my_bucket/object_name
-    # For full URL we require it to have cluster name as host:
-    #   blob://my_cluster/my_bucket/object_name
-
-    if not uri.host:
-        if not stripped_path:
-            raise ValueError(f"Bucket name is missing '{str(uri)}'")
-        uri = URL.build(scheme=uri.scheme, host=cluster_name, path="/" + stripped_path)
-    return uri
+    return _normalize_uri(uri, username, cluster_name)
 
 
 def _normalize_uri(uri: URL, username: str, cluster_name: str) -> URL:

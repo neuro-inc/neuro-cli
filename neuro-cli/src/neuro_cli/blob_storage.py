@@ -1,23 +1,17 @@
 import glob as globmodule  # avoid conflict with subcommand "glob"
 import logging
 import sys
-from pathlib import PurePosixPath
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple
 
 import click
 from rich.text import Text
 from yarl import URL
 
-from neuro_sdk import (
-    BlobListing,
-    BucketListing,
-    FileStatusType,
-    IllegalArgumentError,
-    PrefixListing,
-    ResourceNotFound,
-)
+from neuro_sdk import FileStatusType, IllegalArgumentError, ResourceNotFound
 from neuro_sdk.file_filter import FileFilter
 from neuro_sdk.url_utils import _extract_path
+
+from neuro_cli.formatters.utils import URIFormatter, uri_formatter
 
 from .const import EX_OSFILE
 from .formatters.blob_storage import (
@@ -44,9 +38,6 @@ def blob_storage() -> None:
     """
     Blob storage operations.
     """
-
-
-BlobListings = Union[BucketListing, BlobListing, PrefixListing]
 
 
 def _parse_blob_uri(uri: URL) -> Tuple[str, str, str]:
@@ -82,6 +73,7 @@ def _parse_blob_uri(uri: URL) -> Tuple[str, str, str]:
     is_flag=True,
     help="List all keys under the URL path provided, not just 1 level depths.",
 )
+@option("--full-uri", is_flag=True, help="Output full bucket URI.")
 async def ls(
     root: Root,
     paths: Sequence[str],
@@ -89,6 +81,7 @@ async def ls(
     format_long: bool,
     sort: str,
     recursive: bool,
+    full_uri: bool,
 ) -> None:
     """
     List buckets or bucket contents.
@@ -96,13 +89,22 @@ async def ls(
     uris = [parse_blob_resource(path, root) for path in paths]
 
     formatter: BaseBlobFormatter
+    if full_uri:
+        uri_fmtr: URIFormatter = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username,
+            cluster_name=root.client.cluster_name,
+        )
     if format_long:
         # Similar to `ls -l`
-        formatter = LongBlobFormatter(human_readable=human_readable, color=root.color)
+        formatter = LongBlobFormatter(
+            human_readable=human_readable, color=root.color, uri_formatter=uri_fmtr
+        )
     else:
         # Similar to `ls -1`, default for non-terminal on UNIX. We show full uris of
         # blobs, thus column formatting does not work too well.
-        formatter = SimpleBlobFormatter(root.color)
+        formatter = SimpleBlobFormatter(root.color, uri_fmtr)
 
     errors = False
     if not uris:
@@ -114,55 +116,48 @@ async def ls(
                     root.print(formatter(bucket))
     else:
         for uri, path in zip(uris, paths):
-            cluster_name, bucket_name, key = _parse_blob_uri(uri)
-            bucket = await root.client.buckets.get(
-                bucket_id_or_name=bucket_name, cluster_name=cluster_name
-            )
             if root.verbosity > 0:
                 painter = get_painter(root.color)
                 uri_text = painter.paint(str(path), FileStatusType.DIRECTORY)
                 root.print(Text.assemble("List of ", uri_text, ":"))
 
             with root.pager():
-                async with bucket.get_operations() as operations:
-                    async with operations.list_blobs(
-                        prefix=key, recursive=recursive
-                    ) as blobs_it:
-                        async for entry in blobs_it:
-                            root.print(formatter(entry))
+                async with root.client.buckets.list_blobs(
+                    uri=uri,
+                    recursive=recursive,
+                ) as blobs_it:
+                    async for entry in blobs_it:
+                        root.print(formatter(entry))
     if errors:
         sys.exit(EX_OSFILE)
 
 
 @command()
+@option("--full-uri", is_flag=True, help="Output full bucket URI.")
 @click.argument("patterns", nargs=-1, required=False)
-async def glob(root: Root, patterns: Sequence[str]) -> None:
+async def glob(root: Root, full_uri: bool, patterns: Sequence[str]) -> None:
     """
     List resources that match PATTERNS.
     """
+    if full_uri:
+        uri_fmtr: URIFormatter = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username,
+            cluster_name=root.client.cluster_name,
+        )
     for pattern in patterns:
 
         uri = parse_blob_resource(pattern, root)
-        cluster_name, bucket_name, key_pattern = _parse_blob_uri(uri)
-
-        if globmodule.has_magic(bucket_name):
-            raise ValueError(
-                "You can not glob on bucket names. Please provide name explicitly."
-            )
 
         if root.verbosity > 0:
             painter = get_painter(root.color)
             uri_text = painter.paint(pattern, FileStatusType.FILE)
             root.print(Text.assemble("Using pattern ", uri_text, ":"))
 
-        bucket = await root.client.buckets.get(
-            bucket_id_or_name=bucket_name, cluster_name=cluster_name
-        )
-
-        async with bucket.get_operations() as operations:
-            async with operations.glob_blobs(key_pattern) as it:
-                async for entry in it:
-                    root.print(entry.uri)
+        async with root.client.buckets.glob_blobs(uri=uri) as blobs_it:
+            async for entry in blobs_it:
+                root.print(uri_fmtr(entry.uri))
 
 
 @command()
@@ -343,45 +338,38 @@ async def cp(
                             "Option --continue is not supported for copying to "
                             "Blob Storage"
                         )
-                    cluster_name, bucket_id, key = _parse_blob_uri(dst)
-                    key_path = PurePosixPath(key)
-                    bucket = await root.client.buckets.get(bucket_id, cluster_name)
-                    async with bucket.get_operations() as ops:
-                        if recursive and await _is_dir(root, src):
-                            await ops.upload_dir(
-                                src,
-                                key_path,
-                                update=update,
-                                filter=file_filter.match,
-                                ignore_file_names=frozenset(ignore_file_names),
-                                progress=progress_blob,
-                            )
-                        else:
-                            await ops.upload_file(
-                                src, key_path, update=update, progress=progress_blob
-                            )
+
+                    if recursive and await _is_dir(root, src):
+                        await root.client.buckets.upload_dir(
+                            src,
+                            dst,
+                            update=update,
+                            filter=file_filter.match,
+                            ignore_file_names=frozenset(ignore_file_names),
+                            progress=progress_blob,
+                        )
+                    else:
+                        await root.client.buckets.upload_file(
+                            src, dst, update=update, progress=progress_blob
+                        )
                 elif src.scheme == "blob" and dst.scheme == "file":
-                    cluster_name, bucket_id, key = _parse_blob_uri(src)
-                    key_path = PurePosixPath(key)
-                    bucket = await root.client.buckets.get(bucket_id, cluster_name)
-                    async with bucket.get_operations() as ops:
-                        if recursive and await _is_dir(root, src):
-                            await ops.download_dir(
-                                key_path,
-                                dst,
-                                update=update,
-                                continue_=continue_,
-                                filter=file_filter.match,
-                                progress=progress_blob,
-                            )
-                        else:
-                            await ops.download_file(
-                                key_path,
-                                dst,
-                                update=update,
-                                continue_=continue_,
-                                progress=progress_blob,
-                            )
+                    if recursive and await _is_dir(root, src):
+                        await root.client.buckets.download_dir(
+                            src,
+                            dst,
+                            continue_=continue_,
+                            update=update,
+                            filter=file_filter.match,
+                            progress=progress_blob,
+                        )
+                    else:
+                        await root.client.buckets.download_file(
+                            src,
+                            dst,
+                            continue_=continue_,
+                            update=update,
+                            progress=progress_blob,
+                        )
                 else:
                     raise RuntimeError(
                         f"Copy operation of the file with scheme '{src.scheme}'"
@@ -398,10 +386,7 @@ async def cp(
 
 async def _is_dir(root: Root, uri: URL) -> bool:
     if uri.scheme == "blob":
-        cluster_name, bucket_name, key = _parse_blob_uri(uri)
-        bucket = await root.client.buckets.get(bucket_name, cluster_name)
-        async with bucket.get_operations() as ops:
-            return await ops.is_dir(key)
+        return await root.client.buckets.blob_is_dir(uri)
 
     elif uri.scheme == "file":
         path = _extract_path(uri)
@@ -419,21 +404,14 @@ async def _expand(
             painter = get_painter(root.color)
             uri_text = painter.paint(str(uri), FileStatusType.FILE)
             root.print(Text.assemble("Expand", uri_text))
-        uri_path = str(_extract_path(uri))
-        if glob and globmodule.has_magic(uri_path):
+
+        if glob and globmodule.has_magic(uri.path):
             if uri.scheme == "blob":
-                bucket_name, key = root.client.blob_storage._extract_bucket_and_key(uri)
-                if globmodule.has_magic(bucket_name):
-                    raise ValueError(
-                        "You can not glob on bucket names. Please provide name "
-                        "explicitly."
-                    )
-                async with root.client.blob_storage.glob_blobs(
-                    bucket_name=bucket_name, pattern=key
-                ) as blob_iter:
+                async with root.client.buckets.glob_blobs(uri) as blob_iter:
                     async for blob in blob_iter:
                         uris.append(blob.uri)
             elif allow_file and uri.scheme == "file":
+                uri_path = str(_extract_path(uri))
                 for p in globmodule.iglob(uri_path, recursive=True):
                     uris.append(uri.with_path(p))
             else:

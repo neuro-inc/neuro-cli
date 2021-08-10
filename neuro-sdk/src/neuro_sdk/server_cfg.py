@@ -27,7 +27,6 @@ class Cluster:
     name: str
     registry_url: URL
     storage_url: URL
-    blob_storage_url: URL
     users_url: URL
     monitoring_url: URL
     secrets_url: URL
@@ -67,7 +66,6 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
         name=payload["name"],
         registry_url=URL(payload["registry_url"]),
         storage_url=URL(payload["storage_url"]),
-        blob_storage_url=URL(payload["blob_storage_url"]),
         users_url=URL(payload["users_url"]),
         monitoring_url=URL(payload["monitoring_url"]),
         secrets_url=URL(payload["secrets_url"]),

@@ -80,11 +80,10 @@ class TestBlobFormatter:
     @pytest.mark.parametrize(
         "formatter",
         [
-            (SimpleBlobFormatter(color=False)),
-            (LongBlobFormatter(human_readable=False, color=False)),
+            (SimpleBlobFormatter(color=False, uri_formatter=str)),
+            (LongBlobFormatter(human_readable=False, color=False, uri_formatter=str)),
         ],
     )
     def test_long_formatter(self, rich_cmp: Any, formatter: BaseBlobFormatter) -> None:
-        formatter = LongBlobFormatter(human_readable=False, color=False)
         for index, item in enumerate(self.all):
             rich_cmp(formatter(item), index=index)
