@@ -2,20 +2,11 @@ import abc
 import os
 import re
 from datetime import datetime, timedelta
-from typing import (
-    Generic,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    TypeVar,
-    Union,
-    cast,
-)
+from typing import Generic, List, Mapping, Optional, Tuple, TypeVar, Union, cast
 
 import click
 from click import BadParameter
+from click.shell_completion import CompletionItem
 
 from neuro_sdk import Client, LocalImage, Preset, RemoteImage, TagOption
 
@@ -62,16 +53,16 @@ class AsyncType(click.ParamType, Generic[_T], abc.ABC):
     ) -> _T:
         pass
 
-    def complete(
-        self, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    def shell_complete(
+        self, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         root = cast(Root, ctx.obj)
-        return root.run(self.async_complete(root, ctx, args, incomplete))
+        return root.run(self.async_shell_complete(root, ctx, param, incomplete))
 
     @abc.abstractmethod
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         pass
 
 
@@ -275,14 +266,14 @@ class PresetType(AsyncType[str]):
             )
         return value
 
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         # async context manager is used to prevent a message about
         # unclosed session
         async with await root.init_client() as client:
             presets = list(self._get_presets(ctx, client))
-            return [(p, None) for p in presets if p.startswith(incomplete)]
+            return [CompletionItem(p) for p in presets if p.startswith(incomplete)]
 
 
 PRESET = PresetType()
@@ -308,14 +299,14 @@ class ClusterType(AsyncType[str]):
             )
         return value
 
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         # async context manager is used to prevent a message about
         # unclosed session
         async with await root.init_client() as client:
             clusters = list(client.config.clusters)
-            return [(c, None) for c in clusters if c.startswith(incomplete)]
+            return [CompletionItem(c) for c in clusters if c.startswith(incomplete)]
 
 
 CLUSTER = ClusterType()
@@ -333,11 +324,11 @@ class JobType(AsyncType[str]):
     ) -> str:
         return value
 
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         async with await root.init_client() as client:
-            ret: List[Tuple[str, Optional[str]]] = []
+            ret: List[CompletionItem] = []
             now = datetime.now()
             limit = int(os.environ.get(JOB_LIMIT_ENV, 100))
             async with client.jobs.list(
@@ -353,7 +344,7 @@ class JobType(AsyncType[str]):
                         f"job://{job.cluster_name}/{job.owner}/{job.id}",
                     ):
                         if test.startswith(incomplete):
-                            ret.append((test, job_name))
+                            ret.append(CompletionItem(test, help=job_name))
 
             return ret
 
@@ -373,11 +364,11 @@ class DiskType(AsyncType[str]):
     ) -> str:
         return value
 
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         async with await root.init_client() as client:
-            ret: List[Tuple[str, Optional[str]]] = []
+            ret: List[CompletionItem] = []
             async with client.disks.list(cluster_name=ctx.params.get("cluster")) as it:
                 async for disk in it:
                     disk_name = disk.name or ""
@@ -386,7 +377,7 @@ class DiskType(AsyncType[str]):
                         disk_name,
                     ):
                         if test.startswith(incomplete):
-                            ret.append((test, disk_name))
+                            ret.append(CompletionItem(test, help=disk_name))
 
             return ret
 
@@ -406,11 +397,11 @@ class ServiceAccountType(AsyncType[str]):
     ) -> str:
         return value
 
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         async with await root.init_client() as client:
-            ret: List[Tuple[str, Optional[str]]] = []
+            ret: List[CompletionItem] = []
             async with client.service_accounts.list() as it:
                 async for account in it:
                     account_name = account.name or ""
@@ -419,7 +410,7 @@ class ServiceAccountType(AsyncType[str]):
                         account_name,
                     ):
                         if test.startswith(incomplete):
-                            ret.append((test, account_name))
+                            ret.append(CompletionItem(test, help=account_name))
 
             return ret
 

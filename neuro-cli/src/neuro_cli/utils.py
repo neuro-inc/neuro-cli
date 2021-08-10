@@ -29,7 +29,6 @@ from typing import (
 import click
 import humanize
 from aiohttp import ClientResponseError
-from click.types import convert_type
 from yarl import URL
 
 from neuro_sdk import Action, Client, JobStatus, Volume
@@ -400,18 +399,11 @@ class Option(click.Option):
 def option(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
     option_attrs = attrs.copy()
     option_attrs.setdefault("cls", Option)
-    typ = convert_type(attrs.get("type"), attrs.get("default"))
-    autocompletion = getattr(typ, "complete", None)
-    option_attrs.setdefault("autocompletion", autocompletion)
     return click.option(*param_decls, **option_attrs)
 
 
 def argument(*param_decls: Any, **attrs: Any) -> Callable[..., Any]:
-    arg_attrs = attrs.copy()
-    typ = convert_type(attrs.get("type"), attrs.get("default"))
-    autocompletion = getattr(typ, "complete", None)
-    arg_attrs.setdefault("autocompletion", autocompletion)
-    return click.argument(*param_decls, **arg_attrs)
+    return click.argument(*param_decls, **attrs)
 
 
 def volume_to_verbose_str(volume: Volume) -> str:

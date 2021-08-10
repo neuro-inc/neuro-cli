@@ -20,7 +20,7 @@ setup(
         "python-dateutil>=2.7.0",
         "aiodocker>=0.18.7",
         "neuro-sdk>=21.7.29",
-        "click>=7.0",
+        "click>=8.0",
         "humanize>=3.3",
         "typing_extensions>=3.7.4",
         # certifi has no version requirement
