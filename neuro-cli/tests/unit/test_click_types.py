@@ -1,9 +1,11 @@
+from pathlib import Path
 from typing import Tuple
+from unittest import mock
 
 import click
 import pytest
 
-from neuro_cli.click_types import JOB_NAME, LocalRemotePortParamType
+from neuro_cli.click_types import JOB_NAME, LocalRemotePortParamType, StoragePathType
 
 
 @pytest.mark.parametrize(
@@ -61,3 +63,31 @@ class TestJobNameType:
     def test_invalid_pattern(self, name: str) -> None:
         with pytest.raises(ValueError, match="Invalid job name"):
             JOB_NAME.convert(name, param=None, ctx=None)
+
+
+class TestStoragePathType:
+    async def test_find_matches_file(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType()
+        fobj = Path(__file__)
+        ret = await spt._find_matches(fobj.as_uri(), root)
+        assert [i.value for i in ret] == [fobj.name]
+
+    async def test_find_matches_dir(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType()
+        fobj = Path(__file__).parent
+        ret = await spt._find_matches(fobj.as_uri(), root)
+        assert [i.value for i in ret] == [
+            f.name + "/" if f.is_dir() else f.name for f in fobj.iterdir()
+        ]
+
+    async def test_find_matches_partial(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType()
+        fobj = Path(__file__).parent
+        incomplete = fobj.as_uri() + "/test_"
+        ret = await spt._find_matches(incomplete, root)
+        assert [i.value for i in ret] == [
+            f.name + "/" if f.is_dir() else f.name for f in fobj.glob("test_*")
+        ]

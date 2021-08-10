@@ -13,6 +13,7 @@ from neuro_sdk import Client, FileStatusType, IllegalArgumentError, ResourceNotF
 from neuro_sdk.file_filter import FileFilter
 from neuro_sdk.url_utils import _extract_path
 
+from .click_types import StoragePathType
 from .const import EX_OSFILE
 from .formatters.storage import (
     BaseFilesFormatter,
@@ -103,7 +104,7 @@ async def rm(
 
 
 @command()
-@argument("paths", nargs=-1)
+@argument("paths", nargs=-1, type=StoragePathType())
 @option(
     "-a",
     "--all",
@@ -132,7 +133,7 @@ async def rm(
 )
 async def ls(
     root: Root,
-    paths: Sequence[str],
+    paths: Sequence[URL],
     human_readable: bool,
     format_long: bool,
     sort: str,
@@ -145,10 +146,9 @@ async def ls(
     By default PATH is equal user's home dir (storage:)
     """
     if not paths:
-        paths = ["storage:"]
-    uris = [parse_file_resource(path, root) for path in paths]
+        paths = [URL("storage:")]
     errors = False
-    for uri in uris:
+    for uri in paths:
         try:
             if directory:
                 files = [await root.client.storage.stat(uri)]
