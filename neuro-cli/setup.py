@@ -26,7 +26,7 @@ setup(
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead
         "certifi",
-        "cookiecutter>=0.9.0",
+        "cookiecutter>=1.5",
         "wcwidth>=0.1.7",
         "toml>=0.10.0",
         "prompt-toolkit>=3.0.13",
