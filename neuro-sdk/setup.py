@@ -23,7 +23,6 @@ setup(
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead
         "certifi",
-        "atomicwrites>=1.0",
         "toml>=0.10.0",
     ],
     include_package_data=True,

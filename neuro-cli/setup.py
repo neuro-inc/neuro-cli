@@ -27,7 +27,6 @@ setup(
         # CLI raises a warning for outdated package instead
         "certifi",
         "cookiecutter>=0.9.0",
-        "atomicwrites>=1.0",
         "wcwidth>=0.1.7",
         "toml>=0.10.0",
         "prompt-toolkit>=3.0.13",
