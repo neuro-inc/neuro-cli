@@ -32,6 +32,7 @@ setup(
         "prompt-toolkit>=3.0.13",
         "rich>=10.0.1",
         "packaging>=20.0",
+        "jedi>=0.16",
     ],
     include_package_data=True,
     description="Neuro Platform API client",
