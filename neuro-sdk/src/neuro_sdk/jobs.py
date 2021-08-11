@@ -297,7 +297,7 @@ class StdStream:
     async def resize(self, h: int, w: int) -> None:
         if self._closing:
             return
-        await self._ws.send_bytes(b"\x04" + f'{{"Height":{h},"Width":{w}}}'.encode())
+        await self._ws.send_bytes(b"\x04" + f'{{"height":{h},"width":{w}}}'.encode())
 
 
 class Jobs(metaclass=NoPublicConstructor):
