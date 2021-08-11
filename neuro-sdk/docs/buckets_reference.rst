@@ -11,7 +11,11 @@ Buckets
 
 .. class:: Buckets
 
-   Blob storage buckets subsystems.
+   Blob storage buckets subsystems, available as :attr:`Client.buckets`.
+
+   The subsystem helps take advantage of many basic functionality of Blob Storage
+   solutions different cloud providers support. For AWS it would be S3, for GCP -
+   Cloud Storage, etc.
 
    .. comethod:: list(cluster_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[Bucket]]
       :async-for:
@@ -53,6 +57,243 @@ Buckets
 
       :param str cluster_name: cluster to look for a bucket. Default is current cluster.
 
+   .. comethod:: head_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None) -> BucketEntry
+
+      Look up the blob and return it's metadata.
+
+      :param str bucket_id_or_name: bucket's id or name.
+      :param str key: key of the blob.
+      :param str cluster_name: cluster to look for a bucket. Default is current cluster.
+
+      :return: :class:`BucketEntry` object.
+
+      :raises: :exc:`ResourceNotFound` if key does not exist.
+
+   .. comethod:: put_blob(  \
+                             bucket_id_or_name: str,  \
+                             key: str,  \
+                             body: Union[AsyncIterator[bytes], bytes], \
+                             cluster_name: Optional[str] = None,  \
+                          ) -> None
+
+      Create or replace blob identified by ``key`` in the bucket, e.g::
+
+         large_file = Path("large_file.dat")
+         size = large_file.stat().st_size
+         file_md5 = await calc_md5(large_file)
+
+         async def body_stream():
+             with large_file.open("r") as f:
+                 for line in f:
+                     yield f
+
+         await client.buckets.put_blob(
+             bucket_id_or_name="my_bucket",
+             key="large_file.dat",
+             body=body_stream,
+         )
+
+      :param str bucket_id_or_name: bucket's id or name.
+      :param str key: Key of the blob.
+      :param bytes body: Body of the blob. Can be passed as either :class:`bytes`
+         or as an ``AsyncIterator[bytes]``.
+      :param str cluster_name: cluster to look for a bucket. Default is current cluster.
+
+   .. comethod:: fetch_blob(  \
+                             bucket_id_or_name: str,  \
+                             key: str,  \
+                             offset: int = 0, \
+                             cluster_name: Optional[str] = None,  \
+                          ) -> AsyncIterator[bytes]
+
+      Look up the blob and return it's body content only. The content will be streamed
+      using an asynchronous iterator, e.g.::
+
+         async with client.buckets.fetch_blob("my_bucket", key="file.txt") as content:
+             async for data in content:
+                 print("Next chunk of data:", data)
+
+      :param str bucket_id_or_name: bucket's id or name.
+      :param str key: Key of the blob.
+      :param int offset: Position in blob from which to read.
+      :param str cluster_name: cluster to look for a bucket. Default is current cluster.
+
+   .. comethod:: delete_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None) -> None
+
+      Remove blob from the bucket.
+
+      :param str bucket_id_or_name: bucket's id or name.
+      :param str key: key of the blob.
+      :param str cluster_name: cluster to look for a bucket. Default is current cluster.
+
+   .. comethod:: list_blobs(uri: URL, \
+                              recursive: bool = False, limit: int = 10000 \
+                  ) -> AsyncContextManager[AsyncIterator[BucketEntry]]
+
+      List blobs in the bucket. You can filter by prefix and return results similar
+      to a folder structure if ``recursive=False`` is provided.
+
+      :param URL uri: URL that specifies bucket and prefix to list blobs,
+                      e.g. ``yarl.URL("blob:bucket_name/path/in/bucket")``.
+      :param recursive bool: If ``True`` listing will contain *all* keys filtered by
+          prefix, while with ``False`` only ones up to next ``/`` will be returned.
+          To indicate missing keys, all that were listed will be combined under a
+          common prefix and returned as :class:`BlobCommonPrefix`.
+      :param limit int: Maximum number of :class:`BucketEntry` objects returned.
+
+
+   .. comethod:: glob_blobs(uri: URL) -> AsyncContextManager[AsyncIterator[BucketEntry]]
+
+      Glob search for blobs in the bucket::
+
+          async with client.buckets.glob_blobs(
+              uri=URL("blob:my_bucket/folder1/**/*.txt")
+          ) as blobs:
+              async for blob in blobs:
+                  print(blob.key)
+
+      Similar to :meth:`Storage.glob` the ``“**”`` pattern means “this directory and
+      all sub-directories, recursively”.
+
+      :param URL uri: URL that specifies bucket and pattern to glob blobs,
+                      e.g. ``yarl.URL("blob:bucket_name/path/**/*.bin")``.
+
+   .. comethod:: upload_file(src: URL, dst: URL, \
+                             *, update: bool = False, \
+                             progress: Optional[AbstractFileProgress] = None \
+                 ) -> None:
+
+      Similarly to :meth:`Storage.upload_file`, allows to upload local file *src* to
+      bucket URL *dst*.
+
+      :param ~yarl.URL src: path to uploaded file on local disk,
+                            e.g. ``yarl.URL("file:///home/andrew/folder/file.txt")``.
+
+      :param ~yarl.URL dst: URL that specifies bucket and key to upload file
+                            e.g. ``yarl.URL("blob:bucket_name/folder/file.txt")``.
+
+      :param bool update: if true, upload only when the source file is newer
+                          than the destination file or when the destination
+                          file is missing.
+
+      :param AbstractFileProgress progress:
+
+         a callback interface for reporting uploading progress, ``None`` for no progress
+         report (default).
+
+   .. comethod:: download_file(src: URL, dst: URL, \
+                               *, update: bool = False, \
+                               continue_: bool = False, \
+                               progress: Optional[AbstractFileProgress] = None \
+                 ) -> None:
+
+      Similarly to :meth:`Storage.download_file`, allows to download remote file
+      *src* to local path *dst*.
+
+      :param ~yarl.URL src: URL that specifies bucket and blob key to download
+                            e.g. ``yarl.URL("blob:bucket_name/folder/file.bin")``.
+
+      :param ~yarl.URL dst: local path to save downloaded file,
+                            e.g. ``yarl.URL("file:///home/andrew/folder/file.bin")``.
+
+      :param bool update: if true, download only when the source file is newer
+                          than the destination file or when the destination
+                          file is missing.
+
+      :param bool continue_: if true, download only the part of the source file
+                             past the end of the destination file and append it
+                             to the destination file if the destination file is
+                             newer and not longer than the source file.
+                             Otherwise download and overwrite the whole file.
+
+      :param AbstractFileProgress progress:
+
+         a callback interface for reporting downloading progress, ``None`` for
+         no progress report (default).
+
+
+   .. comethod:: upload_dir(src: URL, dst: URL, \
+                            *, update: bool = False, \
+                            filter: Optional[Callable[[str], Awaitable[bool]]] = None, \
+                            ignore_file_names: AbstractSet[str] = frozenset(), \
+                            progress: Optional[AbstractRecursiveFileProgress] = None \
+                 ) -> None:
+
+      Similarly to :meth:`Storage.upload_dir`, allows to recursively upload local
+      directory *src* to Blob Storage URL *dst*.
+
+
+      :param ~yarl.URL src: path to uploaded directory on local disk,
+                            e.g. ``yarl.URL("file:///home/andrew/folder")``.
+
+      :param ~yarl.URL dst: path on Blob Storage for saving uploading directory
+                            e.g. ``yarl.URL("blob:bucket_name/folder/")``.
+
+
+      :param bool update: if true, download only when the source file is newer
+                          than the destination file or when the destination
+                          file is missing.
+
+      :param Callable[[str], Awaitable[bool]] filter:
+
+         a callback function for determining which files and subdirectories
+         be uploaded. It is called with a relative path of file or directory
+         and if the result is false the file or directory will be skipped.
+
+      :param AbstractSet[str] ignore_file_names:
+
+         a set of names of files which specify filters for skipping files and
+         subdirectories. The format of ignore files is the same as
+         ``.gitignore``.
+
+      :param AbstractRecursiveFileProgress progress:
+
+         a callback interface for reporting uploading progress, ``None`` for no progress
+         report (default).
+
+   .. comethod:: download_dir(src: URL, dst: URL, \
+                              *, update: bool = False, \
+                              continue_: bool = False, \
+                              filter: Optional[Callable[[str], Awaitable[bool]]] = None, \
+                              progress: Optional[AbstractRecursiveFileProgress] = None \
+                 ) -> None:
+
+      Similarly to :meth:`Storage.download_dir`, allows to recursively download
+      remote directory *src* to local path *dst*.
+
+      :param ~yarl.URL src: path on Blob Storage to download a directory from
+                            e.g. ``yarl.URL("blob:bucket_name/folder/")``.
+
+      :param ~yarl.URL dst: local path to save downloaded directory,
+                            e.g. ``yarl.URL("file:///home/andrew/folder")``.
+
+      :param bool update: if true, download only when the source file is newer
+                          than the destination file or when the destination
+                          file is missing.
+
+      :param bool continue_: if true, download only the part of the source file
+                             past the end of the destination file and append it
+                             to the destination file if the destination file is
+                             newer and not longer than the source file.
+                             Otherwise download and overwrite the whole file.
+
+      :param Callable[[str], Awaitable[bool]] filter:
+
+         a callback function for determining which files and subdirectories
+         be downloaded. It is called with a relative path of file or directory
+         and if the result is false the file or directory will be skipped.
+
+      :param AbstractRecursiveFileProgress progress:
+
+         a callback interface for reporting downloading progress, ``None`` for no
+         progress report (default).
+
+   .. comethod:: blob_is_dir(uri: URL) -> bool
+
+      Check weather *uri* specifies a "folder" blob in a bucket.
+
+      :param ~yarl.URL src: URL that specifies bucket and blob key
+                            e.g. ``yarl.URL("blob:bucket_name/folder/sub_folder")``.
 
 Bucket
 ======
@@ -107,3 +348,68 @@ Bucket.Provider
    .. attribute:: AWS
 
       Amazon Web Services S3 bucket
+
+
+BucketEntry
+===========
+
+.. class:: BucketEntry
+
+   An abstract class :class:`~dataclasses.dataclass` for describing bucket contents entries.
+
+   .. attribute:: key
+
+      Key of the blob, :class:`str`.
+
+   .. attribute:: bucket
+
+      Containing bucket, :class:`Bucket`.
+
+   .. attribute:: size
+
+      Size of the data in *bytes*, :class:`int`.
+
+   .. attribute:: created_at
+
+      Blob creation timestamp, :class:`~datetime.datetime` or ``None``
+      if underlying blob engine do not store such information
+
+   .. attribute:: modified_at
+
+      Blob modification timestamp, :class:`~datetime.datetime` or ``None``
+      if underlying blob engine do not store such information
+
+   .. attribute:: uri
+
+      URI identifying the blob, :class:`~yarl.URL`, e.g.
+      ``blob://cluster_name/username/my_bucket/file.txt``.
+
+   .. attribute:: name
+
+      Name of blob, part of key after last ``/``, :class:`str`
+
+   .. method:: is_dir(uri: URL) -> bool
+
+      ``True`` if entry is directory blob object
+
+   .. method:: is_file(uri: URL) -> bool
+
+      ``True`` if entry is file blob object
+
+
+BlobObject
+==========
+
+.. class:: BlobObject
+
+   An ancestor of :class:`BucketEntry` used for key that are present directly in underlying blob storage.
+
+
+BlobCommonPrefix
+================
+
+.. class:: BlobCommonPrefix
+
+   An ancestor of :class:`BucketEntry` for describing common prefixes for
+   blobs in non-recursive listing. You can treat it as a kind of *folder* on Blob
+   Storage.

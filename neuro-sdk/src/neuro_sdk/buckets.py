@@ -419,9 +419,9 @@ class Buckets(metaclass=NoPublicConstructor):
 
     @asynccontextmanager
     async def _get_provider(
-        self, bucket_name: str, cluster_name: Optional[str] = None
+        self, bucket_id_or_name: str, cluster_name: Optional[str] = None
     ) -> AsyncIterator[BucketProvider]:
-        bucket = await self.get(bucket_name, cluster_name)
+        bucket = await self.get(bucket_id_or_name, cluster_name)
         if bucket.provider == Bucket.Provider.AWS:
             async with AWSS3Provider.create(bucket) as provider:
                 yield provider
@@ -452,38 +452,38 @@ class Buckets(metaclass=NoPublicConstructor):
     # Low level operations
 
     async def head_blob(
-        self, bucket_name: str, key: str, cluster_name: Optional[str] = None
+        self, bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None
     ) -> BucketEntry:
-        async with self._get_provider(bucket_name, cluster_name) as provider:
+        async with self._get_provider(bucket_id_or_name, cluster_name) as provider:
             return await provider.head_blob(key)
 
     async def put_blob(
         self,
-        bucket_name: str,
+        bucket_id_or_name: str,
         key: str,
         body: Union[AsyncIterator[bytes], bytes],
         cluster_name: Optional[str] = None,
     ) -> None:
-        async with self._get_provider(bucket_name, cluster_name) as provider:
+        async with self._get_provider(bucket_id_or_name, cluster_name) as provider:
             await provider.put_blob(key, body)
 
     @asyncgeneratorcontextmanager
     async def fetch_blob(
         self,
-        bucket_name: str,
+        bucket_id_or_name: str,
         key: str,
         offset: int = 0,
         cluster_name: Optional[str] = None,
     ) -> AsyncIterator[bytes]:
-        async with self._get_provider(bucket_name, cluster_name) as provider:
+        async with self._get_provider(bucket_id_or_name, cluster_name) as provider:
             async with provider.fetch_blob(key, offset=offset) as it:
                 async for chunk in it:
                     yield chunk
 
     async def delete_blob(
-        self, bucket_name: str, key: str, cluster_name: Optional[str] = None
+        self, bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None
     ) -> None:
-        async with self._get_provider(bucket_name, cluster_name) as provider:
+        async with self._get_provider(bucket_id_or_name, cluster_name) as provider:
             return await provider.delete_blob(key)
 
     # Listing operations
