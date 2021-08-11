@@ -4,6 +4,7 @@ from unittest import mock
 
 import click
 import pytest
+from yarl import URL
 
 from neuro_cli.click_types import JOB_NAME, LocalRemotePortParamType, StoragePathType
 
@@ -71,15 +72,23 @@ class TestStoragePathType:
         spt = StoragePathType()
         fobj = Path(__file__)
         ret = await spt._find_matches(fobj.as_uri(), root)
-        assert [i.value for i in ret] == [fobj.name]
+        assert [i.value for i in ret] == [
+            spt._calc_relative(
+                URL(fobj.parent.as_uri()), fobj.name, Path.cwd().as_uri()
+            )
+        ]
 
     async def test_find_matches_dir(self) -> None:
         root = mock.Mock()
         spt = StoragePathType()
         fobj = Path(__file__).parent
         ret = await spt._find_matches(fobj.as_uri(), root)
+        cwd = Path.cwd().as_uri()
         assert [i.value for i in ret] == [
-            f.name + "/" if f.is_dir() else f.name for f in fobj.iterdir()
+            spt._calc_relative(URL(fobj.as_uri()), f.name, cwd) + "/"
+            if f.is_dir()
+            else spt._calc_relative(URL(fobj.as_uri()), f.name, cwd)
+            for f in fobj.iterdir()
         ]
 
     async def test_find_matches_partial(self) -> None:
@@ -88,6 +97,10 @@ class TestStoragePathType:
         fobj = Path(__file__).parent
         incomplete = fobj.as_uri() + "/test_"
         ret = await spt._find_matches(incomplete, root)
+        cwd = Path.cwd().as_uri()
         assert [i.value for i in ret] == [
-            f.name + "/" if f.is_dir() else f.name for f in fobj.glob("test_*")
+            spt._calc_relative(URL(fobj.as_uri()), f.name, cwd) + "/"
+            if f.is_dir()
+            else spt._calc_relative(URL(fobj.as_uri()), f.name, cwd)
+            for f in fobj.glob("test_*")
         ]

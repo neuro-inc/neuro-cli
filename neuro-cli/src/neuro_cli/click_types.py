@@ -2,6 +2,7 @@ import abc
 import os
 import re
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Generic, List, Mapping, Optional, Tuple, TypeVar, Union, cast
 
 import click
@@ -443,11 +444,27 @@ class StoragePathType(AsyncType[URL]):
         await root.init_client()
         return parse_file_resource(value, root)
 
-    def _make_item(self, parent: URL, name: str, is_dir: bool) -> CompletionItem:
+    def _calc_relative(self, parent: URL, name: str, prefix: str) -> str:
+        uri = str(parent / name)
+        if uri.startswith(prefix):
+            relative = uri[len(prefix) :]
+            if relative[0] == "/":
+                # drop trailing slash
+                relative = relative[1:]
+            uri = parent.scheme + ":" + relative
+        return uri
+
+    def _make_item(
+        self, parent: URL, name: str, is_dir: bool, prefix: str
+    ) -> CompletionItem:
         if is_dir:
-            return CompletionItem(str(parent / name) + "/", uri="1")
+            return CompletionItem(
+                name + "/", uri="1", prefix=self._calc_relative(parent, "", prefix)
+            )
         else:
-            return CompletionItem(str(parent / name), uri="1")
+            return CompletionItem(
+                name, uri="1", prefix=self._calc_relative(parent, "", prefix)
+            )
 
     async def _collect_names(
         self, uri: URL, root: Root, incomplete: str
@@ -457,26 +474,30 @@ class StoragePathType(AsyncType[URL]):
         if uri.scheme == "file":
             path = _extract_path(uri)
             if not path.is_dir():
-                raise ResourceNotFound
+                raise NotADirectoryError
+            cwd = Path.cwd().as_uri()
             for item in path.iterdir():
                 if str(item.name).startswith(incomplete):
-                    ret.append(self._make_item(uri, item.name, item.is_dir()))
+                    ret.append(self._make_item(uri, item.name, item.is_dir(), str(cwd)))
         else:
+            home = parse_file_resource("storage:", root)
             async with root.client.storage.ls(uri) as it:
                 async for fstat in it:
                     if str(fstat.name).startswith(incomplete):
-                        ret.append(self._make_item(uri, fstat.name, fstat.is_dir()))
+                        ret.append(
+                            self._make_item(uri, fstat.name, fstat.is_dir(), str(home))
+                        )
         return ret
 
     async def _find_matches(self, incomplete: str, root: Root) -> List[CompletionItem]:
         uri = parse_file_resource(incomplete, root)
         try:
             return await self._collect_names(uri, root, "")
-        except ResourceNotFound:
+        except (ResourceNotFound, NotADirectoryError):
             try:
                 return await self._collect_names(uri.parent, root, uri.name)
             except ResourceNotFound:
-                return [CompletionItem(str(uri), uri="1")]
+                return []
 
     async def async_shell_complete(
         self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
@@ -489,7 +510,7 @@ class StoragePathType(AsyncType[URL]):
                     # found valid scheme, try to resolve path
                     break
                 if scheme.startswith(incomplete):
-                    ret.append(CompletionItem(scheme, uri="1"))
+                    ret.append(CompletionItem(scheme, uri="1", prefix=""))
             else:
                 return ret
             return await self._find_matches(incomplete, root)
@@ -503,15 +524,17 @@ _SOURCE_ZSH = """\
     local -a completions_with_descriptions
     local -a response
     local -a uris
+    local uri_prefix
     (( ! $+commands[%(prog_name)s] )) && return 1
 
     response=("${(@f)$(env COMP_WORDS="${words[*]}" COMP_CWORD=$((CURRENT-1)) \
 %(complete_var)s=zsh_complete %(prog_name)s)}")
 
-    for type key descr uri in ${response}; do
+    for type key descr uri prefix in ${response}; do
         if [[ "$type" == "plain" ]]; then
             if [[ "$uri" == "1" ]]; then
                 uris+=("$key")
+                uri_prefix="$prefix"
             else
                 if [[ "$descr" == "_" ]]; then
                     completions+=("$key")
@@ -535,9 +558,10 @@ _SOURCE_ZSH = """\
     fi
 
     if [ -n "$uris" ]; then
-        compadd -Qf -U -V unsorted -a uris
-        # compadd -Qf -J -default- -J -default- -M 'm:{a-zA-Z}={A-Za-z}' \
-        # -M 'm:{a-zA-Z}={A-Za-z}' -p '' -s '' -W '' -M 'r:|/=* r:|=*' -a uris
+        # compadd -Qf -U -V unsorted -a uris
+        compadd -Qf -J -default- -J -default- -M 'm:{a-zA-Z}={A-Za-z}' \
+           -M 'm:{a-zA-Z}={A-Za-z}' -p "$uri_prefix" -s '' -M 'r:|/=* r:|=*' \
+           -a uris && ret=0
     fi
 }
 
@@ -552,7 +576,7 @@ class NewZshComplete(ZshComplete):
     def format_completion(self, item: CompletionItem) -> str:
         return (
             f"{item.type}\n{item.value}\n{item.help if item.help else '_'}\n"
-            f"{getattr(item, 'uri', '')}"
+            f"{item.uri}\n{item.prefix}"
         )
 
 
