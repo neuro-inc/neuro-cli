@@ -95,10 +95,6 @@ class BlobCommonPrefix(BucketEntry):
         return True
 
 
-MAX_OPEN_FILES = 20
-READ_SIZE = 2 ** 20  # 1 MiB
-
-
 class BucketProvider(abc.ABC):
     """
     Defines how to execute generic blob operations in a specific bucket provider
@@ -121,13 +117,12 @@ class BucketProvider(abc.ABC):
         self,
         key: str,
         body: Union[AsyncIterator[bytes], bytes],
-        size: Optional[int] = None,
     ) -> None:
         pass
 
     @abc.abstractmethod
     def fetch_blob(
-        self, key: str, offset: int = 0, size: Optional[int] = None
+        self, key: str, offset: int = 0
     ) -> AsyncContextManager[AsyncIterator[bytes]]:
         pass
 
@@ -310,7 +305,6 @@ class AWSS3Provider(BucketProvider):
         self,
         key: str,
         body: Union[AsyncIterator[bytes], bytes],
-        size: Optional[int] = None,
     ) -> None:
         # TODO support multipart upload
         if not isinstance(body, bytes):
@@ -322,9 +316,7 @@ class AWSS3Provider(BucketProvider):
         )
 
     @asyncgeneratorcontextmanager
-    async def fetch_blob(
-        self, key: str, offset: int = 0, size: Optional[int] = None
-    ) -> AsyncIterator[bytes]:
+    async def fetch_blob(self, key: str, offset: int = 0) -> AsyncIterator[bytes]:
         response = await self._client.get_object(
             Bucket=self._bucket_name, Key=key, Range=f"bytes={offset}-"
         )

@@ -237,7 +237,7 @@ class FileTransferer(Generic[S_PATH, D_PATH]):
             if src_stat.size == dst_stat.size:  # complete
                 return None
             if dst_stat.size < src_stat.size:  # partial
-                return src_stat.size
+                return dst_stat.size
         return 0
 
     async def transfer_file(
