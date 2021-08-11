@@ -18,6 +18,7 @@ Jobs
    User can start new job, terminate it, get status, list running jobs etc.
 
    .. comethod:: attach(id: str, *, \
+                      tty: bool = False, \
                       stdin: bool = False, \
                       stdout: bool = False, \
                       stderr: bool = False, \
@@ -28,6 +29,8 @@ Jobs
       Get access to standard input, output, and error streams of a running job.
 
       :param str id: job :attr:`~JobDescription.id` to use for command execution.
+
+      :param bool tty: ``True`` if :term:`tty` mode is requested, default is ``False``.
 
       :param bool stdin: ``True`` to attach stdin, default is ``False``.
 
@@ -42,65 +45,28 @@ Jobs
       :return: Asynchronous context manager which can be used to access
                stdin/stdout/stderr, see :class:`StdStream` for details.
 
-   .. comethod:: exec_create(id: str, cmd: List[str], *, \
+   .. comethod:: exec(id: str, cmd: str, *, \
                       tty: bool = False, \
+                      stdin: bool = False, \
+                      stdout: bool = False, \
+                      stderr: bool = False, \
                       cluster_name: Optional[str] = None, \
-                 ) -> str
+                 ) -> AsyncContextManager[StdStream]
+      :async-with:
 
-      Create an exec session to run a command in a running job.
+      Start an exec session, get access to session's standard input, output, and error streams.
 
       :param str id: job :attr:`~JobDescription.id` to use for command execution.
 
-      :param ~typing.Iterable[str] cmd: the command to execute, a sequence of
-                                        :class:`str`, e.g. :class:`list` of strings.
+      :param str cmd: the command to execute.
 
-      :param bool tty: ``True`` if :term:`tty` mode is requested, default is
-                       ``False``.
+      :param bool tty: ``True`` if :term:`tty` mode is requested, default is ``False``.
 
-      :param str cluster_name: cluster on which the job is running.
+      :param bool stdin: ``True`` to attach stdin, default is ``False``.
 
-                               ``None`` means the current cluster (default).
+      :param bool stdout: ``True`` to attach stdout, default is ``False``.
 
-      :return: Exec session id (:class:`str`).
-
-   .. comethod:: exec_inspect(id: str, exec_id: str, *. \
-                              cluster_name: Optional[str] = None, \
-                 ) -> ExecInspect
-
-      Get exec session info.
-
-      :param str id: job :attr:`~JobDescription.id`.
-
-      :param str exec_id: exec id.
-
-      :return: Exec session info, :class:`ExecInspect` instance.
-
-   .. comethod:: exec_resize(id: str, exec_id: str, *, w: int, h: int) -> None
-
-      Resize created TTY exec session.
-
-      :param str id: job :attr:`~JobDescription.id`.
-
-      :param str exec_id: exec id.
-
-      :param int w: New screen width.
-
-      :param int h: New screen height.
-
-      :param str cluster_name: cluster on which the job is running.
-
-                               ``None`` means the current cluster (default).
-
-   .. comethod:: exec_start(id: str, exec_id: str, *, \
-                            cluster_name: Optional[str] = None, \
-                 ) -> StdStream
-      :async-with:
-
-      Start an exec session, get access to session's stdin/stdout/stderr.
-
-      :param str id: job :attr:`~JobDescription.id`.
-
-      :param str exec_id: exec id.
+      :param bool stderr: ``True`` to attach stderr, default is ``False``.
 
       :param str cluster_name: cluster on which the job is running.
 
@@ -267,23 +233,6 @@ Jobs
 
                                ``None`` means the current cluster (default).
 
-   .. comethod:: resize(id: str, *, \
-                        w: int, h: int, \
-                        cluster_name: Optional[str] = None, \
-                 ) -> None
-
-      Resize existing TTY job.
-
-      :param str id: job :attr:`~JobDescription.id`.
-
-      :param int w: New screen width.
-
-      :param int h: New screen height.
-
-      :param str cluster_name: cluster on which the job is running.
-
-                               ``None`` means the current cluster (default).
-
    .. comethod:: run(container: Container, \
                      *, \
                      name: Optional[str] = None, \
@@ -429,17 +378,13 @@ Jobs
 
       :return: :class:`JobDescription` instance with information about started job.
 
-   .. comethod:: send_signal(id: str, signal: Union[str, int], *, \
+   .. comethod:: send_signal(id: str, *, \
                              cluster_name: Optional[str] = None, \
                  ) -> None
 
-      Send signal to a job.
+      Send ``SIGKILL`` signal to a job.
 
       :param str id: job :attr:`~JobDescription.id`.
-
-      :param signal: The signal number or literal name, e.g. ``9`` or ``"SIGKILL"``. See
-                     https://www.man7.org/linux/man-pages/man7/signal.7.html for more
-                     details about signal types.
 
       :param str cluster_name: cluster on which the job is running.
 

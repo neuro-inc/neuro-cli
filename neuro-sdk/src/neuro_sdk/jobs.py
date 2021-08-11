@@ -17,11 +17,11 @@ from typing import (
     Optional,
     Sequence,
     Set,
-    Union,
     overload,
 )
 
 import aiohttp
+import aiohttp.hdrs
 import attr
 from aiodocker.exceptions import DockerError
 from aiohttp import WSMsgType, WSServerHandshakeError
@@ -38,7 +38,7 @@ from .abc import (
 )
 from .config import Config
 from .core import _Core
-from .errors import NDJSONError
+from .errors import NDJSONError, ResourceNotFound
 from .images import (
     _DummyProgress,
     _raise_on_error_chunk,
@@ -256,6 +256,13 @@ class Message:
     data: bytes
 
 
+class StdStreamError(Exception):
+    def __init__(self, exit_code: int) -> None:
+        super().__init__(f"Stream finished with exit code {exit_code}")
+
+        self.exit_code = exit_code
+
+
 class StdStream:
     def __init__(self, ws: aiohttp.ClientWebSocketResponse) -> None:
         self._ws = ws
@@ -272,12 +279,25 @@ class StdStream:
         if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSING, WSMsgType.CLOSED):
             self._closing = True
             return None
+        if msg.data[0] == 3:
+            try:
+                details = json.loads(msg.data[1:])
+                exit_code = details["exit_code"]
+            except Exception:
+                exit_code = 1
+            self._closing = True
+            raise StdStreamError(exit_code)
         return Message(msg.data[0], msg.data[1:])
 
     async def write_in(self, data: bytes) -> None:
         if self._closing:
             return
-        await self._ws.send_bytes(data)
+        await self._ws.send_bytes(b"\x00" + data)
+
+    async def resize(self, h: int, w: int) -> None:
+        if self._closing:
+            return
+        await self._ws.send_bytes(b"\x04" + f'{{"Height":{h},"Width":{w}}}'.encode())
 
 
 class Jobs(metaclass=NoPublicConstructor):
@@ -678,120 +698,84 @@ class Jobs(metaclass=NoPublicConstructor):
         self,
         id: str,
         *,
+        tty: bool = False,
         stdin: bool = False,
         stdout: bool = False,
         stderr: bool = False,
-        logs: bool = False,
         cluster_name: Optional[str] = None,
     ) -> AsyncIterator[StdStream]:
         url = self._get_monitoring_url(cluster_name) / id / "attach"
         url = url.with_query(
+            tty=str(int(tty)),
             stdin=str(int(stdin)),
             stdout=str(int(stdout)),
             stderr=str(int(stderr)),
-            logs=str(int(logs)),
         )
         auth = await self._config._api_auth()
-        ws = await self._core._session.ws_connect(
-            url,
-            headers={"Authorization": auth},
-            timeout=None,  # type: ignore
-            receive_timeout=None,
-            heartbeat=30,
-        )
+
+        try:
+            ws = await self._core._session.ws_connect(
+                url,
+                headers={
+                    "Authorization": auth,
+                    aiohttp.hdrs.SEC_WEBSOCKET_PROTOCOL: "v2.channels.neu.ro",
+                },
+                timeout=None,  # type: ignore
+                receive_timeout=None,
+                heartbeat=30,
+            )
+        except aiohttp.ClientResponseError as ex:
+            if ex.status == 404:
+                raise ResourceNotFound(f"Job {id!r} is not running")
+            raise
 
         try:
             yield StdStream(ws)
         finally:
             await ws.close()
 
-    async def resize(
-        self, id: str, *, w: int, h: int, cluster_name: Optional[str] = None
-    ) -> None:
-        url = self._get_monitoring_url(cluster_name) / id / "resize"
-        url = url.with_query(w=w, h=h)
-        auth = await self._config._api_auth()
-        async with self._core.request("POST", url, auth=auth):
-            pass
-
-    async def exec_create(
+    @asynccontextmanager
+    async def exec(
         self,
         id: str,
         cmd: str,
         *,
         tty: bool = False,
+        stdin: bool = False,
+        stdout: bool = False,
+        stderr: bool = False,
         cluster_name: Optional[str] = None,
-    ) -> str:
-        payload = {
-            "command": cmd,
-            "stdin": True,
-            "stdout": True,
-            "stderr": True,
-            "tty": tty,
-        }
-        url = self._get_monitoring_url(cluster_name) / id / "exec_create"
-        auth = await self._config._api_auth()
-        async with self._core.request("POST", url, json=payload, auth=auth) as resp:
-            ret = await resp.json()
-            return ret["exec_id"]
-
-    async def exec_resize(
-        self,
-        id: str,
-        exec_id: str,
-        *,
-        w: int,
-        h: int,
-        cluster_name: Optional[str] = None,
-    ) -> None:
-        url = self._get_monitoring_url(cluster_name) / id / exec_id / "exec_resize"
-        url = url.with_query(w=w, h=h)
-        auth = await self._config._api_auth()
-        async with self._core.request("POST", url, auth=auth) as resp:
-            resp
-
-    async def exec_inspect(
-        self, id: str, exec_id: str, *, cluster_name: Optional[str] = None
-    ) -> ExecInspect:
-        url = self._get_monitoring_url(cluster_name) / id / exec_id / "exec_inspect"
-        auth = await self._config._api_auth()
-        async with self._core.request("GET", url, auth=auth) as resp:
-            data = await resp.json()
-            return ExecInspect(
-                id=data["id"],
-                running=data["running"],
-                exit_code=data["exit_code"],
-                job_id=data["job_id"],
-                tty=data["tty"],
-                entrypoint=data["entrypoint"],
-                command=data["command"],
-            )
-
-    @asynccontextmanager
-    async def exec_start(
-        self, id: str, exec_id: str, *, cluster_name: Optional[str] = None
     ) -> AsyncIterator[StdStream]:
-        url = self._get_monitoring_url(cluster_name) / id / exec_id / "exec_start"
+        url = self._get_monitoring_url(cluster_name) / id / "exec"
+        url = url.with_query(
+            cmd=cmd,
+            tty=str(int(tty)),
+            stdin=str(int(stdin)),
+            stdout=str(int(stdout)),
+            stderr=str(int(stderr)),
+        )
         auth = await self._config._api_auth()
 
-        ws = await self._core._session.ws_connect(
-            url,
-            headers={"Authorization": auth},
-            timeout=None,  # type: ignore
-            receive_timeout=None,
-            heartbeat=30,
-        )
+        try:
+            ws = await self._core._session.ws_connect(
+                url,
+                headers={"Authorization": auth},
+                timeout=None,  # type: ignore
+                receive_timeout=None,
+                heartbeat=30,
+            )
+        except aiohttp.ClientResponseError as ex:
+            if ex.status == 404:
+                raise ResourceNotFound(f"Job {id!r} is not running")
+            raise
 
         try:
             yield StdStream(ws)
         finally:
             await ws.close()
 
-    async def send_signal(
-        self, id: str, signal: Union[str, int], *, cluster_name: Optional[str] = None
-    ) -> None:
+    async def send_signal(self, id: str, *, cluster_name: Optional[str] = None) -> None:
         url = self._get_monitoring_url(cluster_name) / id / "kill"
-        url = url.with_query(signal=signal)
         auth = await self._config._api_auth()
         async with self._core.request("POST", url, auth=auth) as resp:
             resp
