@@ -104,7 +104,7 @@ async def rm(
 
 
 @command()
-@argument("paths", nargs=-1, type=StoragePathType())
+@argument("paths", nargs=-1, type=StoragePathType(allowed_schemes=["storage"]))
 @option(
     "-a",
     "--all",

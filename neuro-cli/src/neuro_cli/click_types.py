@@ -3,7 +3,17 @@ import os
 import re
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Generic, List, Mapping, Optional, Tuple, TypeVar, Union, cast
+from typing import (
+    Generic,
+    Iterable,
+    List,
+    Mapping,
+    Optional,
+    Tuple,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import click
 from click import BadParameter
@@ -18,7 +28,7 @@ from neuro_sdk import (
     ResourceNotFound,
     TagOption,
 )
-from neuro_sdk.url_utils import _extract_path
+from neuro_sdk.url_utils import _extract_path, uri_from_cli
 
 from .parse_utils import (
     JobTableFormat,
@@ -27,7 +37,6 @@ from .parse_utils import (
     to_megabytes,
 )
 from .root import Root
-from .utils import parse_file_resource
 
 # NOTE: these job name defaults are taken from `platform_api` file `validators.py`
 JOB_NAME_MIN_LENGTH = 3
@@ -432,7 +441,8 @@ SERVICE_ACCOUNT = ServiceAccountType()
 class StoragePathType(AsyncType[URL]):
     name = "storage"
 
-    SCHEMAS = ("file", "storage")
+    def __init__(self, *, allowed_schemes: Iterable[str] = ("file", "storage")) -> None:
+        self._allowed_schemes = list(allowed_schemes)
 
     async def async_convert(
         self,
@@ -442,7 +452,15 @@ class StoragePathType(AsyncType[URL]):
         ctx: Optional[click.Context],
     ) -> URL:
         await root.init_client()
-        return parse_file_resource(value, root)
+        return self._parse_uri(value, root)
+
+    def _parse_uri(self, value: str, root: Root) -> URL:
+        return uri_from_cli(
+            value,
+            root.client.username,
+            root.client.cluster_name,
+            allowed_schemes=self._allowed_schemes,
+        )
 
     def _calc_relative(self, parent: URL, name: str, prefix: str) -> str:
         uri = str(parent / name)
@@ -455,19 +473,31 @@ class StoragePathType(AsyncType[URL]):
         return uri
 
     def _make_item(
-        self, parent: URL, name: str, is_dir: bool, prefix: str
+        self,
+        parent: URL,
+        name: str,
+        is_dir: bool,
+        prefix: str,
     ) -> CompletionItem:
+        uri = self._calc_relative(parent, name, prefix)
         if is_dir:
             return CompletionItem(
-                name + "/", uri="1", prefix=self._calc_relative(parent, "", prefix)
+                uri + "/",
+                uri="1",
+                display_name=name + "/",
             )
         else:
             return CompletionItem(
-                name, uri="1", prefix=self._calc_relative(parent, "", prefix)
+                uri,
+                uri="1",
+                display_name=name,
             )
 
     async def _collect_names(
-        self, uri: URL, root: Root, incomplete: str
+        self,
+        uri: URL,
+        root: Root,
+        incomplete: str,
     ) -> List[CompletionItem]:
         ret: List[CompletionItem] = []
 
@@ -478,19 +508,31 @@ class StoragePathType(AsyncType[URL]):
             cwd = Path.cwd().as_uri()
             for item in path.iterdir():
                 if str(item.name).startswith(incomplete):
-                    ret.append(self._make_item(uri, item.name, item.is_dir(), str(cwd)))
+                    ret.append(
+                        self._make_item(
+                            uri,
+                            item.name,
+                            item.is_dir(),
+                            str(cwd),
+                        ),
+                    )
         else:
-            home = parse_file_resource("storage:", root)
+            home = self._parse_uri("storage:", root)
             async with root.client.storage.ls(uri) as it:
                 async for fstat in it:
                     if str(fstat.name).startswith(incomplete):
                         ret.append(
-                            self._make_item(uri, fstat.name, fstat.is_dir(), str(home))
+                            self._make_item(
+                                uri,
+                                fstat.name,
+                                fstat.is_dir(),
+                                str(home),
+                            )
                         )
         return ret
 
     async def _find_matches(self, incomplete: str, root: Root) -> List[CompletionItem]:
-        uri = parse_file_resource(incomplete, root)
+        uri = self._parse_uri(incomplete, root)
         try:
             return await self._collect_names(uri, root, "")
         except (ResourceNotFound, NotADirectoryError):
@@ -504,13 +546,13 @@ class StoragePathType(AsyncType[URL]):
     ) -> List[CompletionItem]:
         async with await root.init_client():
             ret: List[CompletionItem] = []
-            for scheme in self.SCHEMAS:
+            for scheme in self._allowed_schemes:
                 scheme += ":"
                 if incomplete.startswith(scheme):
                     # found valid scheme, try to resolve path
                     break
                 if scheme.startswith(incomplete):
-                    ret.append(CompletionItem(scheme, uri="1", prefix=""))
+                    ret.append(CompletionItem(scheme, uri="1", display_name=scheme))
             else:
                 return ret
             return await self._find_matches(incomplete, root)
@@ -524,17 +566,17 @@ _SOURCE_ZSH = """\
     local -a completions_with_descriptions
     local -a response
     local -a uris
-    local uri_prefix
+    local -a display_names
     (( ! $+commands[%(prog_name)s] )) && return 1
 
     response=("${(@f)$(env COMP_WORDS="${words[*]}" COMP_CWORD=$((CURRENT-1)) \
 %(complete_var)s=zsh_complete %(prog_name)s)}")
 
-    for type key descr uri prefix in ${response}; do
+    for type key descr uri display_name in ${response}; do
         if [[ "$type" == "plain" ]]; then
             if [[ "$uri" == "1" ]]; then
                 uris+=("$key")
-                uri_prefix="$prefix"
+                display_names+=("$display_name")
             else
                 if [[ "$descr" == "_" ]]; then
                     completions+=("$key")
@@ -558,10 +600,8 @@ _SOURCE_ZSH = """\
     fi
 
     if [ -n "$uris" ]; then
-        # compadd -Qf -U -V unsorted -a uris
-        compadd -Qf -J -default- -J -default- -M 'm:{a-zA-Z}={A-Za-z}' \
-           -M 'm:{a-zA-Z}={A-Za-z}' -p "$uri_prefix" -s '' -M 'r:|/=* r:|=*' \
-           -a uris && ret=0
+        compset -S '[^:/]*' && compstate[to_end]=''
+        compadd -Q -S '' -d display_names -U -V unsorted -a uris
     fi
 }
 
@@ -576,7 +616,7 @@ class NewZshComplete(ZshComplete):
     def format_completion(self, item: CompletionItem) -> str:
         return (
             f"{item.type}\n{item.value}\n{item.help if item.help else '_'}\n"
-            f"{item.uri}\n{item.prefix}"
+            f"{item.uri}\n{item.display_name}"
         )
 
 
