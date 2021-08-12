@@ -1,9 +1,13 @@
+from pathlib import Path
 from typing import Tuple
+from unittest import mock
 
 import click
 import pytest
+from yarl import URL
 
-from neuro_cli.click_types import JOB_NAME, LocalRemotePortParamType
+from neuro_cli.click_types import JOB_NAME, LocalRemotePortParamType, StoragePathType
+from neuro_cli.utils import _calc_relative_uri
 
 
 @pytest.mark.parametrize(
@@ -61,3 +65,89 @@ class TestJobNameType:
     def test_invalid_pattern(self, name: str) -> None:
         with pytest.raises(ValueError, match="Invalid job name"):
             JOB_NAME.convert(name, param=None, ctx=None)
+
+
+class TestStoragePathType:
+    async def test_find_matches_scheme(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType()
+        ret = await spt._find_matches("st", root)
+        assert len(ret) == 1
+        assert "storage:" == ret[0].value
+
+    async def test_find_matches_invalid_scheme(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType()
+        ret = await spt._find_matches("unknown", root)
+        assert ret == []
+
+    async def test_find_matches_file(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType()
+        fobj = Path(__file__)
+        ret = await spt._find_matches(fobj.as_uri(), root)
+        assert [i.value for i in ret] == [
+            _calc_relative_uri(
+                URL(fobj.parent.as_uri()), fobj.name, Path.cwd().as_uri()
+            )
+        ]
+
+    async def test_find_matches_files_only(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType(complete_dir=False)
+        fobj = Path(__file__).parent
+        incomplete = fobj.as_uri()
+        ret = await spt._find_matches(incomplete, root)
+        cwd = Path.cwd().as_uri()
+        assert [i.value for i in ret] == [
+            _calc_relative_uri(URL(fobj.as_uri()), f.name, cwd)
+            for f in fobj.iterdir()
+            if not f.is_dir()
+        ]
+
+    async def test_find_matches_dir(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType()
+        fobj = Path(__file__).parent
+        ret = await spt._find_matches(fobj.as_uri(), root)
+        cwd = Path.cwd().as_uri()
+        assert [i.value for i in ret] == [
+            _calc_relative_uri(URL(fobj.as_uri()), f.name, cwd) + "/"
+            if f.is_dir()
+            else _calc_relative_uri(URL(fobj.as_uri()), f.name, cwd)
+            for f in fobj.iterdir()
+        ]
+
+    async def test_find_matches_dir_only(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType(complete_file=False)
+        fobj = Path(__file__).parent
+        ret = await spt._find_matches(fobj.as_uri(), root)
+        cwd = Path.cwd().as_uri()
+        assert [i.value for i in ret] == [
+            _calc_relative_uri(URL(fobj.as_uri()), f.name, cwd) + "/"
+            for f in fobj.iterdir()
+            if f.is_dir()
+        ]
+
+    async def test_find_matches_partial(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType()
+        fobj = Path(__file__).parent
+        incomplete = fobj.as_uri() + "/test_"
+        ret = await spt._find_matches(incomplete, root)
+        cwd = Path.cwd().as_uri()
+        assert [i.value for i in ret] == [
+            _calc_relative_uri(URL(fobj.as_uri()), f.name, cwd) + "/"
+            if f.is_dir()
+            else _calc_relative_uri(URL(fobj.as_uri()), f.name, cwd)
+            for f in fobj.glob("test_*")
+        ]
+
+    async def test_find_matches_not_exists(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType()
+        fobj = Path(__file__).parent
+        incomplete = fobj.as_uri() + "/file-not-found.txt"
+        ret = await spt._find_matches(incomplete, root)
+        assert [] == ret
