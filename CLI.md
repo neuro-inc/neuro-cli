@@ -26,6 +26,7 @@
 		* [neuro job logs](#neuro-job-logs)
 		* [neuro job kill](#neuro-job-kill)
 		* [neuro job top](#neuro-job-top)
+		* [neuro job save](#neuro-job-save)
 		* [neuro job browse](#neuro-job-browse)
 		* [neuro job attach](#neuro-job-attach)
 		* [neuro job bump-life-span](#neuro-job-bump-life-span)
@@ -97,6 +98,7 @@
 	* [neuro logs](#neuro-logs)
 	* [neuro kill](#neuro-kill)
 	* [neuro top](#neuro-top)
+	* [neuro save](#neuro-save)
 	* [neuro login](#neuro-login)
 	* [neuro logout](#neuro-logout)
 	* [neuro cp](#neuro-cp)
@@ -168,6 +170,7 @@ Name | Description|
 | _[neuro logs](#neuro-logs)_| Print the logs for a job |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
+| _[neuro save](#neuro-save)_| Save job's state to an image |
 | _[neuro login](#neuro-login)_| Log into Neuro Platform |
 | _[neuro logout](#neuro-logout)_| Log out |
 | _[neuro cp](#neuro-cp)_| Copy files and directories |
@@ -521,6 +524,7 @@ Name | Description|
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a job |
 | _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
+| _[neuro job save](#neuro-job-save)_| Save job's state to an image |
 | _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
 | _[neuro job attach](#neuro-job-attach)_| Attach local standard input, output, and error streams to a running job |
 | _[neuro job bump\-life-span](#neuro-job-bump-life-span)_| Increase job life span |
@@ -831,6 +835,35 @@ Name | Description|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0.0]|
 |_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
+
+
+
+
+### neuro job save
+
+Save job's state to an image.<br/>
+
+**Usage:**
+
+```bash
+neuro job save [OPTIONS] JOB IMAGE
+```
+
+**Examples:**
+
+```bash
+
+neuro job save job-id image:ubuntu-patched
+neuro job save my-favourite-job image:ubuntu-patched:v1
+neuro job save my-favourite-job image://bob/ubuntu-patched
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
 
 
 
@@ -2686,6 +2719,35 @@ Name | Description|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0.0]|
 |_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
+
+
+
+
+## neuro save
+
+Save job's state to an image.<br/>
+
+**Usage:**
+
+```bash
+neuro save [OPTIONS] JOB IMAGE
+```
+
+**Examples:**
+
+```bash
+
+neuro job save job-id image:ubuntu-patched
+neuro job save my-favourite-job image:ubuntu-patched:v1
+neuro job save my-favourite-job image://bob/ubuntu-patched
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
 
 
 

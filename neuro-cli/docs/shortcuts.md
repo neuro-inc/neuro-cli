@@ -11,6 +11,7 @@
 | [_neuro logs_](shortcuts.md#logs) | Print the logs for a job |
 | [_neuro kill_](shortcuts.md#kill) | Kill job\(s\) |
 | [_neuro top_](shortcuts.md#top) | Display GPU/CPU/Memory usage |
+| [_neuro save_](shortcuts.md#save) | Save job's state to an image |
 | [_neuro login_](shortcuts.md#login) | Log into Neuro Platform |
 | [_neuro logout_](shortcuts.md#logout) | Log out |
 | [_neuro cp_](shortcuts.md#cp) | Copy files and directories |
@@ -339,6 +340,35 @@ $ neuro top -t tag1 -t tag2
 | _-t, --tag TAG_ | Filter out jobs by tag \(multiple option\) |
 | _--timeout FLOAT_ | Maximum allowed time for executing the command, 0 for no timeout  _\[default: 0.0\]_ |
 | _--until DATE\_OR\_TIMEDELTA_ | Show jobs created before a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
+
+
+
+### save
+
+Save job's state to an image
+
+
+#### Usage
+
+```bash
+neuro save [OPTIONS] JOB IMAGE
+```
+
+Save job's state to an image.
+
+#### Examples
+
+```bash
+$ neuro job save job-id image:ubuntu-patched
+$ neuro job save my-favourite-job image:ubuntu-patched:v1
+$ neuro job save my-favourite-job image://bob/ubuntu-patched
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
 
 
 
