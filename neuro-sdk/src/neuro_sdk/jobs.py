@@ -240,17 +240,6 @@ class JobTelemetry:
 
 
 @dataclass(frozen=True)
-class ExecInspect:
-    id: str
-    running: bool
-    exit_code: int
-    job_id: str
-    tty: bool
-    entrypoint: str
-    command: str
-
-
-@dataclass(frozen=True)
 class Message:
     fileno: int
     data: bytes

@@ -494,43 +494,6 @@ Container
       of :class:`DiskVolume` objects. Empty :class:`list` by default.
 
 
-ExecInspect
-===========
-
-.. class:: ExecInspect
-
-   *Read-only* :class:`~dataclasses.dataclass` with information about an exec session,
-   returned by :meth:`Jobs.exec_inspect`.
-
-   .. attribute:: job_id
-
-      Job id which is used for creating the exec session, :class:`str`.
-
-   .. attribute:: id
-
-      The exec session id, :class:`str`.
-
-   .. attribute:: running
-
-      ``True`` if the exec session is running, :class:`bool`.
-
-   .. attribute:: exit_code
-
-      Exit code of the executed command.
-
-   .. attribute:: tty
-
-      ``True`` if the exec session was created in TTY mode, :class:`bool`.
-
-   .. attribute:: entrypoint
-
-      Entrypoint for exec session, :class:`str`.
-
-   .. attribute:: command
-
-      Command line to execute inside the exec session, :class:`str`.
-
-
 
 HTTPPort
 ========
@@ -948,7 +911,7 @@ StdStream
 .. class:: StdStream
 
    A class for communicating with attached job (:meth:`Jobs.attach`) or exec session
-   (:meth:`Jobs.exec_start`). Use :meth:`read_out` for reading from stdout/stderr and
+   (:meth:`Jobs.exec`). Use :meth:`read_out` for reading from stdout/stderr and
    :meth:`write_in` for writing into stdin.
 
    .. comethod:: close() -> None
