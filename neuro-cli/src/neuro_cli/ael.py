@@ -25,7 +25,7 @@ from typing_extensions import NoReturn
 from neuro_sdk import JobDescription, JobStatus, StdStream
 from neuro_sdk.jobs import StdStreamError
 
-from .const import EX_IOERR, EX_PLATFORMERROR, EX_UNAVAILABLE
+from .const import EX_IOERR, EX_PLATFORMERROR
 from .formatters.jobs import JobStopProgress
 from .root import Root
 from .utils import AsyncExitStack
@@ -137,7 +137,7 @@ async def _exec_tty(
         status = await root.client.jobs.status(job)
 
         if status.status is not JobStatus.RUNNING:
-            return EX_UNAVAILABLE
+            raise ValueError(f"Job {job!r} is not running")
 
         await stream.resize(h=h, w=w)
 
@@ -174,7 +174,7 @@ async def _exec_non_tty(
         status = await root.client.jobs.status(job)
 
         if status.status is not JobStatus.RUNNING:
-            return EX_UNAVAILABLE
+            raise ValueError(f"Job {job!r} is not running")
 
         input_task = None
         if root.tty:
