@@ -40,18 +40,6 @@ def blob_storage() -> None:
     """
 
 
-def _parse_blob_uri(uri: URL) -> Tuple[str, str, str]:
-    cluster_name = uri.host
-    assert cluster_name
-    parts = uri.path.lstrip("/").split("/", 2)
-    if len(parts) == 3:
-        _, bucket_id, key = parts
-    else:
-        _, bucket_id = parts
-        key = ""
-    return cluster_name, bucket_id, key
-
-
 @command()
 @click.argument("paths", nargs=-1)
 @option(
@@ -61,12 +49,6 @@ def _parse_blob_uri(uri: URL) -> Tuple[str, str, str]:
     help="with -l print human readable sizes (e.g., 2K, 540M).",
 )
 @option("-l", "format_long", is_flag=True, help="use a long listing format.")
-@option(
-    "--sort",
-    type=click.Choice(["name", "size", "time"]),
-    default="name",
-    help="sort by given field, default is name.",
-)
 @option(
     "-r",
     "--recursive",
@@ -79,7 +61,6 @@ async def ls(
     paths: Sequence[str],
     human_readable: bool,
     format_long: bool,
-    sort: str,
     recursive: bool,
     full_uri: bool,
 ) -> None:

@@ -98,7 +98,6 @@ List buckets or bucket contents.
 | _--full-uri_ | Output full bucket URI. |
 | _-h, --human-readable_ | with -l print human readable sizes \(e.g., 2K, 540M\). |
 | _-r, --recursive_ | List all keys under the URL path provided, not just 1 level depths. |
-| _--sort \[name &#124; size &#124; time\]_ | sort by given field, default is name. |
 
 
 
