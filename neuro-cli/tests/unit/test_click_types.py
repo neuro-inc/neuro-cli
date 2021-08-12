@@ -7,6 +7,7 @@ import pytest
 from yarl import URL
 
 from neuro_cli.click_types import JOB_NAME, LocalRemotePortParamType, StoragePathType
+from neuro_cli.utils import _calc_relative_uri
 
 
 @pytest.mark.parametrize(
@@ -86,7 +87,7 @@ class TestStoragePathType:
         fobj = Path(__file__)
         ret = await spt._find_matches(fobj.as_uri(), root)
         assert [i.value for i in ret] == [
-            spt._calc_relative(
+            _calc_relative_uri(
                 URL(fobj.parent.as_uri()), fobj.name, Path.cwd().as_uri()
             )
         ]
@@ -99,7 +100,7 @@ class TestStoragePathType:
         ret = await spt._find_matches(incomplete, root)
         cwd = Path.cwd().as_uri()
         assert [i.value for i in ret] == [
-            spt._calc_relative(URL(fobj.as_uri()), f.name, cwd)
+            _calc_relative_uri(URL(fobj.as_uri()), f.name, cwd)
             for f in fobj.iterdir()
             if not f.is_dir()
         ]
@@ -111,9 +112,9 @@ class TestStoragePathType:
         ret = await spt._find_matches(fobj.as_uri(), root)
         cwd = Path.cwd().as_uri()
         assert [i.value for i in ret] == [
-            spt._calc_relative(URL(fobj.as_uri()), f.name, cwd) + "/"
+            _calc_relative_uri(URL(fobj.as_uri()), f.name, cwd) + "/"
             if f.is_dir()
-            else spt._calc_relative(URL(fobj.as_uri()), f.name, cwd)
+            else _calc_relative_uri(URL(fobj.as_uri()), f.name, cwd)
             for f in fobj.iterdir()
         ]
 
@@ -124,7 +125,7 @@ class TestStoragePathType:
         ret = await spt._find_matches(fobj.as_uri(), root)
         cwd = Path.cwd().as_uri()
         assert [i.value for i in ret] == [
-            spt._calc_relative(URL(fobj.as_uri()), f.name, cwd) + "/"
+            _calc_relative_uri(URL(fobj.as_uri()), f.name, cwd) + "/"
             for f in fobj.iterdir()
             if f.is_dir()
         ]
@@ -137,9 +138,9 @@ class TestStoragePathType:
         ret = await spt._find_matches(incomplete, root)
         cwd = Path.cwd().as_uri()
         assert [i.value for i in ret] == [
-            spt._calc_relative(URL(fobj.as_uri()), f.name, cwd) + "/"
+            _calc_relative_uri(URL(fobj.as_uri()), f.name, cwd) + "/"
             if f.is_dir()
-            else spt._calc_relative(URL(fobj.as_uri()), f.name, cwd)
+            else _calc_relative_uri(URL(fobj.as_uri()), f.name, cwd)
             for f in fobj.glob("test_*")
         ]
 

@@ -29,7 +29,15 @@ from .formatters.storage import (
     get_painter,
 )
 from .root import Root
-from .utils import Option, argument, command, group, option, parse_file_resource
+from .utils import (
+    Option,
+    _calc_relative_uri,
+    argument,
+    command,
+    group,
+    option,
+    parse_file_resource,
+)
 
 NEUROIGNORE_FILENAME = ".neuroignore"
 
@@ -701,7 +709,13 @@ async def tree(
     errors = False
     try:
         tree = await fetch_tree(root.client, path, show_all)
-        tree = dataclasses.replace(tree, name=str(path))
+        name = str(
+            _calc_relative_uri(path, "", str(parse_file_resource("storage:", root)))
+        ).rstrip("\\/")
+        tree = dataclasses.replace(
+            tree,
+            name=name,
+        )
     except (OSError, ResourceNotFound) as error:
         log.error(f"cannot fetch tree for {path}: {error}")
         errors = True

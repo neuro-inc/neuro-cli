@@ -38,6 +38,7 @@ from .parse_utils import (
     to_megabytes,
 )
 from .root import Root
+from .utils import _calc_relative_uri
 
 # NOTE: these job name defaults are taken from `platform_api` file `validators.py`
 JOB_NAME_MIN_LENGTH = 3
@@ -471,16 +472,6 @@ class StoragePathType(AsyncType[URL]):
             allowed_schemes=self._allowed_schemes,
         )
 
-    def _calc_relative(self, parent: URL, name: str, prefix: str) -> str:
-        uri = str(parent / name)
-        if uri.startswith(prefix):
-            relative = uri[len(prefix) :]
-            if relative[0] == "/":
-                # drop trailing slash
-                relative = relative[1:]
-            uri = parent.scheme + ":" + relative
-        return uri
-
     def _make_item(
         self,
         parent: URL,
@@ -488,7 +479,7 @@ class StoragePathType(AsyncType[URL]):
         is_dir: bool,
         prefix: str,
     ) -> CompletionItem:
-        uri = self._calc_relative(parent, name, prefix)
+        uri = _calc_relative_uri(parent, name, prefix)
         if is_dir:
             return CompletionItem(
                 uri + "/",
