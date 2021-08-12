@@ -142,3 +142,11 @@ class TestStoragePathType:
             else spt._calc_relative(URL(fobj.as_uri()), f.name, cwd)
             for f in fobj.glob("test_*")
         ]
+
+    async def test_find_matches_not_exists(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType()
+        fobj = Path(__file__).parent
+        incomplete = fobj.as_uri() + "/file-not-found.txt"
+        ret = await spt._find_matches(incomplete, root)
+        assert [] == ret
