@@ -91,6 +91,19 @@ class TestStoragePathType:
             )
         ]
 
+    async def test_find_matches_files_only(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType(complete_dir=False)
+        fobj = Path(__file__).parent
+        incomplete = fobj.as_uri()
+        ret = await spt._find_matches(incomplete, root)
+        cwd = Path.cwd().as_uri()
+        assert [i.value for i in ret] == [
+            spt._calc_relative(URL(fobj.as_uri()), f.name, cwd)
+            for f in fobj.iterdir()
+            if not f.is_dir()
+        ]
+
     async def test_find_matches_dir(self) -> None:
         root = mock.Mock()
         spt = StoragePathType()
@@ -102,6 +115,18 @@ class TestStoragePathType:
             if f.is_dir()
             else spt._calc_relative(URL(fobj.as_uri()), f.name, cwd)
             for f in fobj.iterdir()
+        ]
+
+    async def test_find_matches_dir_only(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType(complete_file=False)
+        fobj = Path(__file__).parent
+        ret = await spt._find_matches(fobj.as_uri(), root)
+        cwd = Path.cwd().as_uri()
+        assert [i.value for i in ret] == [
+            spt._calc_relative(URL(fobj.as_uri()), f.name, cwd) + "/"
+            for f in fobj.iterdir()
+            if f.is_dir()
         ]
 
     async def test_find_matches_partial(self) -> None:
