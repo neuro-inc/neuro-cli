@@ -4,7 +4,7 @@ import errno
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import AbstractSet, AsyncIterator, Generic, Optional, TypeVar
+from typing import AbstractSet, AsyncIterator, Generic, Optional, Tuple, TypeVar
 
 from yarl import URL
 
@@ -103,7 +103,8 @@ class FileSystem(Generic[FS_PATH], abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def get_time_diff_to_local(self) -> float:
+    async def get_time_diff_to_local(self) -> Tuple[float, float]:
+        # Returns possible interval (min_diff, max_diff)
         pass
 
     @abc.abstractmethod
@@ -179,8 +180,8 @@ class LocalFS(FileSystem[Path]):
     def to_url(self, path: Path) -> URL:
         return URL(path.as_uri())
 
-    async def get_time_diff_to_local(self) -> float:
-        return 0
+    async def get_time_diff_to_local(self) -> Tuple[float, float]:
+        return 0, 0
 
     def parent(self, path: Path) -> Path:
         return path.parent
@@ -221,9 +222,11 @@ class FileTransferer(Generic[S_PATH, D_PATH]):
 
         if src_stat.modification_time is None or dst_stat.modification_time is None:
             return 0  # Cannot check, re-transfer required
-        time_diff = (
-            dst_stat.modification_time - await self.dst_fs.get_time_diff_to_local()
-        ) - (src_stat.modification_time - await self.src_fs.get_time_diff_to_local())
+        src_diff_min, _ = await self.src_fs.get_time_diff_to_local()
+        _, dst_diff_max = await self.dst_fs.get_time_diff_to_local()
+        time_diff = (dst_stat.modification_time - dst_diff_max) - (
+            src_stat.modification_time - src_diff_min
+        )
 
         # Add 1 because modification_time can been truncated
         # and can be up to 1 second less than the actual value.

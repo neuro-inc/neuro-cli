@@ -4,10 +4,22 @@ import json
 import logging
 import re
 import sys
+import time
 from dataclasses import dataclass
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 from pathlib import PurePosixPath
-from typing import AbstractSet, Any, AsyncIterator, Mapping, Optional, Tuple, Union
+from typing import (
+    AbstractSet,
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import aiobotocore as aiobotocore
 import botocore.exceptions
@@ -133,6 +145,10 @@ class BucketProvider(abc.ABC):
     ) -> None:
         pass
 
+    @abc.abstractmethod
+    async def get_time_diff_to_local(self) -> Tuple[float, float]:
+        pass
+
 
 class BucketFS(FileSystem[PurePosixPath]):
     fs_name = "Bucket"
@@ -222,8 +238,8 @@ class BucketFS(FileSystem[PurePosixPath]):
     def to_url(self, path: PurePosixPath) -> URL:
         return self._provider.bucket.uri / self._as_file_key(path)
 
-    async def get_time_diff_to_local(self) -> float:
-        return 0  # TODO: implement it
+    async def get_time_diff_to_local(self) -> Tuple[float, float]:
+        return await self._provider.get_time_diff_to_local()
 
     def parent(self, path: PurePosixPath) -> PurePosixPath:
         return path.parent
@@ -238,7 +254,43 @@ class BucketFS(FileSystem[PurePosixPath]):
 class AWSS3Provider(BucketProvider):
     def __init__(self, client: AioBaseClient, bucket: "Bucket") -> None:
         self.bucket = bucket
+        client._make_api_call = self._wrap_api_call(client._make_api_call)
         self._client = client
+        self._min_time_diff: Optional[float] = 0
+        self._max_time_diff: Optional[float] = 0
+
+    def _wrap_api_call(
+        self, _make_call: Callable[..., Awaitable[Any]]
+    ) -> Callable[..., Awaitable[Any]]:
+        def _average(cur_approx: Optional[float], new_val: float) -> float:
+            if cur_approx is None:
+                return new_val
+            return cur_approx * 0.9 + new_val * 0.1
+
+        async def _wrapper(*args: Any, **kwargs: Any) -> Any:
+            before = time.time()
+            res = await _make_call(*args, **kwargs)
+            after = time.time()
+            try:
+                date_str = res["ResponseMetadata"]["HTTPHeaders"]["date"]
+                server_dt = parsedate_to_datetime(date_str)
+            except (KeyError, TypeError, ValueError):
+                pass
+            else:
+                server_time = server_dt.timestamp()
+                # Remove 1 because server time has been truncated
+                # and can be up to 1 second less than the actual value.
+                self._min_time_diff = _average(
+                    cur_approx=self._min_time_diff,
+                    new_val=before - server_time - 1.0,
+                )
+                self._max_time_diff = _average(
+                    cur_approx=self._min_time_diff,
+                    new_val=after - server_time,
+                )
+            return res
+
+        return _wrapper
 
     @property
     def _bucket_name(self) -> str:
@@ -373,6 +425,11 @@ class AWSS3Provider(BucketProvider):
 
     async def delete_blob(self, key: str) -> None:
         await self._client.delete_object(Bucket=self._bucket_name, Key=key)
+
+    async def get_time_diff_to_local(self) -> Tuple[float, float]:
+        if self._min_time_diff is None or self._max_time_diff is None:
+            return 0, 0
+        return self._min_time_diff, self._max_time_diff
 
 
 @dataclass(frozen=True)

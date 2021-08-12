@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from pathlib import PurePosixPath
-from typing import Any, AsyncIterator, Dict, Mapping, Optional, Union
+from typing import Any, AsyncIterator, Dict, Mapping, Optional, Tuple, Union
 
 import pytest
 
@@ -68,6 +68,9 @@ class MockBucketProvider(BucketProvider):
 
     async def delete_blob(self, key: str) -> None:
         self.keys.pop(key)
+
+    async def get_time_diff_to_local(self) -> Tuple[float, float]:
+        return 0, 0
 
 
 @pytest.fixture()
