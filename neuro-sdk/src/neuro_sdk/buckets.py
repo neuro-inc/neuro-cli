@@ -301,19 +301,66 @@ class AWSS3Provider(BucketProvider):
                 )
             raise
 
+    MIN_CHUNK_SIZE = 10 * (2 ** 20)  # 10mb
+
     async def put_blob(
         self,
         key: str,
         body: Union[AsyncIterator[bytes], bytes],
     ) -> None:
-        # TODO support multipart upload
-        if not isinstance(body, bytes):
-            body = b"".join([chunk async for chunk in body])
-        await self._client.put_object(
-            Bucket=self._bucket_name,
-            Key=key,
-            Body=body,
-        )
+        if isinstance(body, bytes):
+            await self._client.put_object(
+                Bucket=self._bucket_name,
+                Key=key,
+                Body=body,
+            )
+            return
+        upload_id = (
+            await self._client.create_multipart_upload(
+                Bucket=self._bucket_name,
+                Key=key,
+            )
+        )["UploadId"]
+        try:
+            part_id = 1
+            parts_info = []
+            buffer = b""
+
+            async def _upload_chunk() -> None:
+                nonlocal buffer, part_id
+                part = await self._client.upload_part(
+                    Bucket=self._bucket_name,
+                    Key=key,
+                    UploadId=upload_id,
+                    PartNumber=part_id,
+                    Body=buffer,
+                )
+                buffer = b""
+                parts_info.append({"ETag": part["ETag"], "PartNumber": part_id})
+                part_id += 1
+
+            async for chunk in body:
+                buffer += chunk
+                if len(buffer) > self.MIN_CHUNK_SIZE:
+                    await _upload_chunk()
+            if buffer:
+                await _upload_chunk()
+        except Exception:
+            await self._client.abort_multipart_upload(
+                Bucket=self._bucket_name,
+                Key=key,
+                UploadId=upload_id,
+            )
+            raise
+        else:
+            await self._client.complete_multipart_upload(
+                Bucket=self._bucket_name,
+                Key=key,
+                UploadId=upload_id,
+                MultipartUpload={
+                    "Parts": parts_info,
+                },
+            )
 
     @asyncgeneratorcontextmanager
     async def fetch_blob(self, key: str, offset: int = 0) -> AsyncIterator[bytes]:
