@@ -14,11 +14,11 @@ Features
 - Added possibility to disable PyPi version check via environment variable 'NEURO_CLI_DISABLE_PYPI_VERSION_CHECK'. ([#2237](https://github.com/neuro-inc/platform-client-python/issues/2237))
 - Add parameter *separator* in jobs.monitor(). ([#2239](https://github.com/neuro-inc/platform-client-python/issues/2239))
 
+- Support URI autocompletion in storage commands for ZSH shell. ([#2248](https://github.com/neuro-inc/platform-client-python/issues/2248))
 
 Deprecations and Removals
 -------------------------
 
-- Support URI autocompletion in storage commands for ZSH shell. ([#2248](https://github.com/neuro-inc/platform-client-python/issues/2248))
 - `neuro save` command is deprecated and will be removed in future CLI release. ([#2249](https://github.com/neuro-inc/platform-client-python/issues/2249))
 
 
