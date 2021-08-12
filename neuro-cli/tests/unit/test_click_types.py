@@ -67,6 +67,19 @@ class TestJobNameType:
 
 
 class TestStoragePathType:
+    async def test_find_matches_scheme(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType()
+        ret = await spt._find_matches("st", root)
+        assert len(ret) == 1
+        assert "storage:" == ret[0].value
+
+    async def test_find_matches_invalid_scheme(self) -> None:
+        root = mock.Mock()
+        spt = StoragePathType()
+        ret = await spt._find_matches("unknown", root)
+        assert ret == []
+
     async def test_find_matches_file(self) -> None:
         root = mock.Mock()
         spt = StoragePathType()

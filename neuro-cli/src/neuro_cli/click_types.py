@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import (
+    AsyncIterator,
     Generic,
     Iterable,
     List,
@@ -441,8 +442,16 @@ SERVICE_ACCOUNT = ServiceAccountType()
 class StoragePathType(AsyncType[URL]):
     name = "storage"
 
-    def __init__(self, *, allowed_schemes: Iterable[str] = ("file", "storage")) -> None:
+    def __init__(
+        self,
+        *,
+        allowed_schemes: Iterable[str] = ("file", "storage"),
+        complete_dir: bool = True,
+        complete_file: bool = True,
+    ) -> None:
         self._allowed_schemes = list(allowed_schemes)
+        self._complete_dir = complete_dir
+        self._complete_file = complete_file
 
     async def async_convert(
         self,
@@ -498,9 +507,7 @@ class StoragePathType(AsyncType[URL]):
         uri: URL,
         root: Root,
         incomplete: str,
-    ) -> List[CompletionItem]:
-        ret: List[CompletionItem] = []
-
+    ) -> AsyncIterator[CompletionItem]:
         if uri.scheme == "file":
             path = _extract_path(uri)
             if not path.is_dir():
@@ -508,53 +515,62 @@ class StoragePathType(AsyncType[URL]):
             cwd = Path.cwd().as_uri()
             for item in path.iterdir():
                 if str(item.name).startswith(incomplete):
-                    ret.append(
-                        self._make_item(
-                            uri,
-                            item.name,
-                            item.is_dir(),
-                            str(cwd),
-                        ),
+                    is_dir = item.is_dir()
+                    if is_dir and not self._complete_dir:
+                        continue
+                    if not is_dir and not self._complete_file:
+                        continue
+                    yield self._make_item(
+                        uri,
+                        item.name,
+                        is_dir,
+                        str(cwd),
                     )
         else:
             home = self._parse_uri("storage:", root)
             async with root.client.storage.ls(uri) as it:
                 async for fstat in it:
                     if str(fstat.name).startswith(incomplete):
-                        ret.append(
-                            self._make_item(
-                                uri,
-                                fstat.name,
-                                fstat.is_dir(),
-                                str(home),
-                            )
+                        is_dir = fstat.is_dir()
+                        if is_dir and not self._complete_dir:
+                            continue
+                        if not is_dir and not self._complete_file:
+                            continue
+                        yield self._make_item(
+                            uri,
+                            fstat.name,
+                            is_dir,
+                            str(home),
                         )
-        return ret
 
     async def _find_matches(self, incomplete: str, root: Root) -> List[CompletionItem]:
+        ret: List[CompletionItem] = []
+        for scheme in self._allowed_schemes:
+            scheme += ":"
+            if incomplete.startswith(scheme):
+                # found valid scheme, try to resolve path
+                break
+            if scheme.startswith(incomplete):
+                ret.append(CompletionItem(scheme, uri="1", display_name=scheme))
+        else:
+            return ret
+
         uri = self._parse_uri(incomplete, root)
         try:
-            return await self._collect_names(uri, root, "")
+            return [item async for item in self._collect_names(uri, root, "")]
         except (ResourceNotFound, NotADirectoryError):
             try:
-                return await self._collect_names(uri.parent, root, uri.name)
-            except ResourceNotFound:
+                return [
+                    item
+                    async for item in self._collect_names(uri.parent, root, uri.name)
+                ]
+            except (ResourceNotFound, NotADirectoryError):
                 return []
 
     async def async_shell_complete(
         self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
     ) -> List[CompletionItem]:
         async with await root.init_client():
-            ret: List[CompletionItem] = []
-            for scheme in self._allowed_schemes:
-                scheme += ":"
-                if incomplete.startswith(scheme):
-                    # found valid scheme, try to resolve path
-                    break
-                if scheme.startswith(incomplete):
-                    ret.append(CompletionItem(scheme, uri="1", display_name=scheme))
-            else:
-                return ret
             return await self._find_matches(incomplete, root)
 
 
