@@ -87,7 +87,6 @@ async def ls(
         # blobs, thus column formatting does not work too well.
         formatter = SimpleBlobFormatter(root.color, uri_fmtr)
 
-    errors = False
     if not uris:
         # List Buckets instead of blobs in bucket
 
@@ -109,8 +108,6 @@ async def ls(
                 ) as blobs_it:
                     async for entry in blobs_it:
                         root.print(formatter(entry))
-    if errors:
-        sys.exit(EX_OSFILE)
 
 
 @command()
