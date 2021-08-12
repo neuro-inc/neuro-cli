@@ -3,7 +3,7 @@ import dataclasses
 import glob as globmodule  # avoid conflict with subcommand "glob"
 import logging
 import sys
-from typing import Any, Callable, List, Optional, Sequence, Tuple
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 
 import click
 from rich.text import Text
@@ -44,7 +44,12 @@ def storage() -> None:
 
 
 @command()
-@argument("paths", nargs=-1, required=True)
+@argument(
+    "paths",
+    nargs=-1,
+    required=True,
+    type=StoragePathType(allowed_schemes=["storage"]),
+)
 @option(
     "--recursive",
     "-r",
@@ -67,7 +72,7 @@ def storage() -> None:
 )
 async def rm(
     root: Root,
-    paths: Sequence[str],
+    paths: Sequence[URL],
     recursive: bool,
     glob: bool,
     progress: Optional[bool],
@@ -80,7 +85,7 @@ async def rm(
     neuro rm storage:foo/bar
     neuro rm storage://{username}/foo/bar
     neuro rm --recursive storage://{username}/foo/
-    neuro rm storage:foo/**/*.tmp
+    neuro rm 'storage:foo/**/*.tmp'
     """
     errors = False
     show_progress = root.tty if progress is None else progress
@@ -191,13 +196,17 @@ async def ls(
 
 
 @command()
-@argument("patterns", nargs=-1, required=False)
-async def glob(root: Root, patterns: Sequence[str]) -> None:
+@argument(
+    "patterns",
+    nargs=-1,
+    required=False,
+    type=StoragePathType(allowed_schemes=["storage"]),
+)
+async def glob(root: Root, patterns: Sequence[URL]) -> None:
     """
     List resources that match PATTERNS.
     """
-    for pattern in patterns:
-        uri = parse_file_resource(pattern, root)
+    for uri in patterns:
         if root.verbosity > 0:
             painter = get_painter(root.color)
             uri_text = painter.paint(str(uri), FileStatusType.FILE)
@@ -253,8 +262,17 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
 
 
 @command()
-@argument("sources", nargs=-1, required=False)
-@argument("destination", required=False)
+@argument(
+    "sources",
+    nargs=-1,
+    required=False,
+    type=StoragePathType(allowed_schemes=["storage", "file"]),
+)
+@argument(
+    "destination",
+    required=False,
+    type=StoragePathType(allowed_schemes=["storage", "file"]),
+)
 @option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
 @option(
     "--glob/--no-glob",
@@ -268,6 +286,7 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
+    type=StoragePathType(allowed_schemes=["storage", "file"], complete_file=False),
     help="Copy all SOURCES into DIRECTORY.",
 )
 @option(
@@ -320,11 +339,11 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
 )
 async def cp(
     root: Root,
-    sources: Sequence[str],
-    destination: Optional[str],
+    sources: Sequence[URL],
+    destination: Optional[URL],
     recursive: bool,
     glob: bool,
-    target_directory: Optional[str],
+    target_directory: Optional[URL],
     no_target_directory: bool,
     update: bool,
     continue_: bool,
@@ -374,8 +393,6 @@ async def cp(
     # download only files with extension `.out` into the current directory
     neuro cp storage:results/*.out .
     """
-    target_dir: Optional[URL]
-    dst: Optional[URL]
     if target_directory:
         if no_target_directory:
             raise click.UsageError(
@@ -386,8 +403,7 @@ async def cp(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         sources = *sources, destination
-        target_dir = parse_file_resource(target_directory, root)
-        dst = None
+        destination = None
     else:
         if destination is None:
             raise click.MissingParameter(
@@ -397,12 +413,11 @@ async def cp(
             raise click.MissingParameter(
                 param_type="argument", param_hint='"SOURCES..."'
             )
-        dst = parse_file_resource(destination, root)
-        if no_target_directory or not await _is_dir(root, dst):
-            target_dir = None
+        if no_target_directory or not await _is_dir(root, destination):
+            target_directory = None
         else:
-            target_dir = dst
-            dst = None
+            target_directory = destination
+            destination = None
 
     ignore_file_names = await calc_ignore_file_names(root.client, exclude_from_files)
     filters = await calc_filters(root.client, filters)
@@ -419,18 +434,18 @@ async def cp(
 
     errors = False
     for src in srcs:
-        if target_dir:
-            dst = target_dir / src.name
-        assert dst
+        if target_directory:
+            destination = target_directory / src.name
+        assert destination
 
         progress_obj = create_storage_progress(root, show_progress)
         try:
-            with progress_obj.begin(src, dst):
-                if src.scheme == "file" and dst.scheme == "storage":
+            with progress_obj.begin(src, destination):
+                if src.scheme == "file" and destination.scheme == "storage":
                     if recursive and await _is_dir(root, src):
                         await root.client.storage.upload_dir(
                             src,
-                            dst,
+                            destination,
                             update=update,
                             continue_=continue_,
                             filter=file_filter.match,
@@ -440,16 +455,16 @@ async def cp(
                     else:
                         await root.client.storage.upload_file(
                             src,
-                            dst,
+                            destination,
                             update=update,
                             continue_=continue_,
                             progress=progress_obj,
                         )
-                elif src.scheme == "storage" and dst.scheme == "file":
+                elif src.scheme == "storage" and destination.scheme == "file":
                     if recursive and await _is_dir(root, src):
                         await root.client.storage.download_dir(
                             src,
-                            dst,
+                            destination,
                             update=update,
                             continue_=continue_,
                             filter=file_filter.match,
@@ -458,7 +473,7 @@ async def cp(
                     else:
                         await root.client.storage.download_file(
                             src,
-                            dst,
+                            destination,
                             update=update,
                             continue_=continue_,
                             progress=progress_obj,
@@ -466,11 +481,11 @@ async def cp(
                 else:
                     raise RuntimeError(
                         f"Copy operation of the file with scheme '{src.scheme}'"
-                        f" to the file with scheme '{dst.scheme}'"
+                        f" to the file with scheme '{destination.scheme}'"
                         f" is not supported"
                     )
         except (OSError, ResourceNotFound, IllegalArgumentError) as error:
-            log.error(f"cannot copy {src} to {dst}: {error}")
+            log.error(f"cannot copy {src} to {destination}: {error}")
             errors = True
 
     if errors:
@@ -478,21 +493,24 @@ async def cp(
 
 
 @command()
-@argument("paths", nargs=-1, required=True)
+@argument(
+    "paths",
+    nargs=-1,
+    required=True,
+    type=StoragePathType(allowed_schemes=["storage"], complete_file=False),
+)
 @option(
     "-p",
     "--parents",
     is_flag=True,
     help="No error if existing, make parent directories as needed",
 )
-async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
+async def mkdir(root: Root, paths: Sequence[URL], parents: bool) -> None:
     """
     Make directories.
     """
-    uris = [parse_file_resource(path, root) for path in paths]
-
     errors = False
-    for uri in uris:
+    for uri in paths:
         try:
             await root.client.storage.mkdir(uri, parents=parents, exist_ok=parents)
         except (OSError, ResourceNotFound, IllegalArgumentError) as error:
@@ -510,8 +528,17 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
 
 
 @command()
-@argument("sources", nargs=-1, required=False)
-@argument("destination", required=False)
+@argument(
+    "sources",
+    nargs=-1,
+    required=False,
+    type=StoragePathType(allowed_schemes=["storage"]),
+)
+@argument(
+    "destination",
+    type=StoragePathType(allowed_schemes=["storage"]),
+    required=False,
+)
 @option(
     "--glob/--no-glob",
     is_flag=True,
@@ -524,6 +551,7 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
+    type=StoragePathType(allowed_schemes=["storage"], complete_file=False),
     help="Copy all SOURCES into DIRECTORY",
 )
 @option(
@@ -534,10 +562,10 @@ async def mkdir(root: Root, paths: Sequence[str], parents: bool) -> None:
 )
 async def mv(
     root: Root,
-    sources: Sequence[str],
-    destination: Optional[str],
+    sources: Sequence[URL],
+    destination: Optional[URL],
     glob: bool,
-    target_directory: Optional[str],
+    target_directory: Optional[URL],
     no_target_directory: bool,
 ) -> None:
     """
@@ -567,8 +595,6 @@ async def mv(
     # move remote file from other user's directory
     neuro mv storage://{username}/foo.txt storage:bar.dat
     """
-    target_dir: Optional[URL]
-    dst: Optional[URL]
     if target_directory:
         if no_target_directory:
             raise click.UsageError(
@@ -579,8 +605,7 @@ async def mv(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         sources = *sources, destination
-        target_dir = parse_file_resource(target_directory, root)
-        dst = None
+        destination = None
     else:
         if destination is None:
             raise click.MissingParameter(
@@ -590,12 +615,11 @@ async def mv(
             raise click.MissingParameter(
                 param_type="argument", param_hint='"SOURCES..."'
             )
-        dst = parse_file_resource(destination, root)
-        if no_target_directory or not await _is_dir(root, dst):
-            target_dir = None
+        if no_target_directory or not await _is_dir(root, destination):
+            target_directory = None
         else:
-            target_dir = dst
-            dst = None
+            target_directory = destination
+            destination = None
 
     srcs = await _expand(sources, root, glob)
     if no_target_directory and len(srcs) > 1:
@@ -603,21 +627,21 @@ async def mv(
 
     errors = False
     for src in srcs:
-        if target_dir:
-            dst = target_dir / src.name
-        assert dst
+        if target_directory:
+            destination = target_directory / src.name
+        assert destination
         try:
             if root.verbosity > 0:
                 painter = get_painter(root.color)
                 src_status = await root.client.storage.stat(src)
-            await root.client.storage.mv(src, dst)
+            await root.client.storage.mv(src, destination)
         except (OSError, ResourceNotFound, IllegalArgumentError) as error:
-            log.error(f"cannot move {src} to {dst}: {error}")
+            log.error(f"cannot move {src} to {destination}: {error}")
             errors = True
         else:
             if root.verbosity > 0:
                 src_text = painter.paint(str(src), src_status.type)
-                dst_text = painter.paint(str(dst), src_status.type)
+                dst_text = painter.paint(str(destination), src_status.type)
                 root.print(Text.assemble(src_text, " -> ", dst_text))
 
     if errors:
@@ -625,7 +649,11 @@ async def mv(
 
 
 @command()
-@click.argument("path", required=False)
+@click.argument(
+    "path",
+    required=False,
+    type=StoragePathType(allowed_schemes=["storage"], complete_file=False),
+)
 @option(
     "-a",
     "--all",
@@ -652,7 +680,7 @@ async def mv(
     help="sort by given field, default is name",
 )
 async def tree(
-    root: Root, path: str, size: bool, human_readable: bool, sort: str, show_all: bool
+    root: Root, path: URL, size: bool, human_readable: bool, sort: str, show_all: bool
 ) -> None:
     """List contents of directories in a tree-like format.
 
@@ -668,15 +696,14 @@ async def tree(
 
     """
     if not path:
-        path = "storage:"
-    uri = parse_file_resource(path, root)
+        path = URL("storage:")
 
     errors = False
     try:
-        tree = await fetch_tree(root.client, uri, show_all)
+        tree = await fetch_tree(root.client, path, show_all)
         tree = dataclasses.replace(tree, name=str(path))
     except (OSError, ResourceNotFound) as error:
-        log.error(f"cannot fetch tree for {uri}: {error}")
+        log.error(f"cannot fetch tree for {path}: {error}")
         errors = True
     else:
         formatter = TreeFormatter(
@@ -690,10 +717,13 @@ async def tree(
 
 
 async def _expand(
-    paths: Sequence[str], root: Root, glob: bool, allow_file: bool = False
+    paths: Sequence[Union[str, URL]], root: Root, glob: bool, allow_file: bool = False
 ) -> List[URL]:
     uris = []
     for path in paths:
+        if isinstance(path, URL):
+            # URL may be in relative form, normalization is required anyway
+            path = str(path)
         uri = parse_file_resource(path, root)
         if root.verbosity > 0:
             painter = get_painter(root.color)
