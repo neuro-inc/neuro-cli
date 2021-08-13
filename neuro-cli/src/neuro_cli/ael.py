@@ -81,7 +81,7 @@ async def process_logs(
     decoder = codec_info.incrementaldecoder("replace")
     separator = "<================ Live logs ==============>"
     async with root.client.jobs.monitor(
-        job, cluster_name=cluster_name, separator=separator
+        job, cluster_name=cluster_name, separator=separator, debug=root.verbosity >= 2
     ) as it:
         async for chunk in it:
             if not chunk:

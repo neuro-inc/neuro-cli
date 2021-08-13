@@ -489,10 +489,13 @@ class Jobs(metaclass=NoPublicConstructor):
         *,
         cluster_name: Optional[str] = None,
         separator: Optional[str] = None,
+        debug: bool = False,
     ) -> AsyncIterator[bytes]:
         url = self._get_monitoring_url(cluster_name) / id / "log"
         if separator is not None:
             url = url.update_query(separator=separator)
+        if debug:
+            url = url.update_query(debug="true")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         auth = await self._config._api_auth()
         async with self._core.request(
