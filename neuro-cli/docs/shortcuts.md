@@ -275,6 +275,7 @@ Print the logs for a job.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--timestamps_ | Include timestamps on each line in the log output. |
 
 
 

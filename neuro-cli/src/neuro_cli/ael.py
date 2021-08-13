@@ -75,13 +75,22 @@ class AttachHelper:
 
 
 async def process_logs(
-    root: Root, job: str, helper: Optional[AttachHelper], *, cluster_name: Optional[str]
+    root: Root,
+    job: str,
+    helper: Optional[AttachHelper],
+    *,
+    cluster_name: Optional[str],
+    timestamps: bool = False,
 ) -> None:
     codec_info = codecs.lookup("utf8")
     decoder = codec_info.incrementaldecoder("replace")
     separator = "<================ Live logs ==============>"
     async with root.client.jobs.monitor(
-        job, cluster_name=cluster_name, separator=separator, debug=root.verbosity >= 2
+        job,
+        cluster_name=cluster_name,
+        timestamps=timestamps,
+        separator=separator,
+        debug=root.verbosity >= 2,
     ) as it:
         async for chunk in it:
             if not chunk:
