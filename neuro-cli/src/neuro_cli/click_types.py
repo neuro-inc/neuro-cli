@@ -18,7 +18,12 @@ from typing import (
 
 import click
 from click import BadParameter
-from click.shell_completion import CompletionItem, ZshComplete, add_completion_class
+from click.shell_completion import (
+    BashComplete,
+    CompletionItem,
+    ZshComplete,
+    add_completion_class,
+)
 from yarl import URL
 
 from neuro_sdk import (
@@ -481,17 +486,13 @@ class StoragePathType(AsyncType[URL]):
     ) -> CompletionItem:
         uri = _calc_relative_uri(parent, name, prefix)
         if is_dir:
-            return CompletionItem(
-                uri + "/",
-                uri="1",
-                display_name=name + "/",
-            )
-        else:
-            return CompletionItem(
-                uri,
-                uri="1",
-                display_name=name,
-            )
+            uri += "/"
+            name += "/"
+        return CompletionItem(
+            name,
+            type="uri",
+            prefix=uri[: -len(name)],
+        )
 
     async def _collect_names(
         self,
@@ -542,7 +543,7 @@ class StoragePathType(AsyncType[URL]):
                 # found valid scheme, try to resolve path
                 break
             if scheme.startswith(incomplete):
-                ret.append(CompletionItem(scheme, uri="1", display_name=scheme))
+                ret.append(CompletionItem(scheme, type="uri", prefix=""))
         else:
             return ret
 
@@ -562,7 +563,11 @@ class StoragePathType(AsyncType[URL]):
         self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
     ) -> List[CompletionItem]:
         async with await root.init_client():
-            return await self._find_matches(incomplete, root)
+            ret = await self._find_matches(incomplete, root)
+            raise ValueError(
+                repr((incomplete, ctx.params, ctx.args, [i.value for i in ret]))
+            )
+            return ret
 
 
 _SOURCE_ZSH = """\
@@ -573,23 +578,21 @@ _SOURCE_ZSH = """\
     local -a completions_with_descriptions
     local -a response
     local -a uris
-    local -a display_names
+    local prefix
     (( ! $+commands[%(prog_name)s] )) && return 1
 
     response=("${(@f)$(env COMP_WORDS="${words[*]}" COMP_CWORD=$((CURRENT-1)) \
 %(complete_var)s=zsh_complete %(prog_name)s)}")
 
-    for type key descr uri display_name in ${response}; do
-        if [[ "$type" == "plain" ]]; then
-            if [[ "$uri" == "1" ]]; then
-                uris+=("$key")
-                display_names+=("$display_name")
+    for type key descr pre in ${response}; do
+        if [[ "$type" == "uri" ]]; then
+            uris+=("$key")
+            prefix="$pre"
+        elif [[ "$type" == "plain" ]]; then
+            if [[ "$descr" == "_" ]]; then
+                completions+=("$key")
             else
-                if [[ "$descr" == "_" ]]; then
-                    completions+=("$key")
-                else
-                    completions_with_descriptions+=("$key":"$descr")
-                fi
+                completions_with_descriptions+=("$key":"$descr")
             fi
         elif [[ "$type" == "dir" ]]; then
             _path_files -/
@@ -608,10 +611,9 @@ _SOURCE_ZSH = """\
 
     if [ -n "$uris" ]; then
         compset -S '[^:/]*' && compstate[to_end]=''
-        compadd -Q -S '' -d display_names -U -V unsorted -a uris
+        compadd -P "$prefix" -S '' -U -V unsorted -a uris
     fi
 }
-
 
 compdef %(complete_func)s %(prog_name)s;
 """
@@ -620,11 +622,70 @@ compdef %(complete_func)s %(prog_name)s;
 class NewZshComplete(ZshComplete):
     source_template = _SOURCE_ZSH
 
+    def complete(self) -> str:
+        ret = super().complete()
+        return ret
+        raise ValueError(ret)
+
     def format_completion(self, item: CompletionItem) -> str:
         return (
             f"{item.type}\n{item.value}\n{item.help if item.help else '_'}\n"
-            f"{item.uri}\n{item.display_name}"
+            f"{item.prefix}"
         )
 
 
 add_completion_class(NewZshComplete)
+
+
+_SOURCE_BASH = """\
+%(complete_func)s() {
+    local IFS=$'\\n'
+    local response
+
+    response=$(env COMP_WORDS="${COMP_WORDS[*]}" COMP_CWORD=$COMP_CWORD \
+%(complete_var)s=bash_complete $1)
+
+    for completion in $response; do
+        IFS=',' read type value uri display_name <<< "$completion"
+
+        if [[ $type == 'dir' ]]; then
+            COMREPLY=()
+            compopt -o dirnames
+        elif [[ $type == 'file' ]]; then
+            COMREPLY=()
+            compopt -o default
+        elif [[ $type == 'plain' ]]; then
+            COMPREPLY+=($value)
+            if [[ $uri == '1' ]]; then
+                compopt -o nospace
+            fi
+        fi
+    done
+
+    return 0
+}
+
+%(complete_func)s_setup() {
+    complete -o nosort -F %(complete_func)s %(prog_name)s
+}
+
+%(complete_func)s_setup;
+"""
+
+
+class NewBashComplete(BashComplete):
+    source_template = _SOURCE_BASH
+
+    def get_completion_args(self) -> Tuple[List[str], str]:
+        args, incomplete = super().get_completion_args()
+        if incomplete == ":" and args:
+            incomplete = args[-1] + incomplete
+            args = args[:-1]
+        # raise ValueError(repr((args, incomplete)))
+        return args, incomplete
+
+    def format_completion(self, item: CompletionItem) -> str:
+        return f"{item.type},{item.value},{item.uri},{item.display_name}"
+
+
+add_completion_class(NewBashComplete)
