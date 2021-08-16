@@ -497,10 +497,13 @@ class Jobs(metaclass=NoPublicConstructor):
         id: str,
         *,
         cluster_name: Optional[str] = None,
+        timestamps: bool = False,
         separator: Optional[str] = None,
         debug: bool = False,
     ) -> AsyncIterator[bytes]:
         url = self._get_monitoring_url(cluster_name) / id / "log"
+        if timestamps:
+            url = url.update_query(timestamps="true")
         if separator is not None:
             url = url.update_query(separator=separator)
         if debug:

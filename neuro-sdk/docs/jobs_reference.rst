@@ -186,6 +186,7 @@ Jobs
 
    .. comethod:: monitor(id: str, *, \
                          cluster_name: Optional[str] = None, \
+                         timestamps: bool = False,
                          separator: Optional[str] = None,
                  ) -> AsyncContextManager[AsyncIterator[bytes]]
       :async-with:
@@ -202,6 +203,8 @@ Jobs
       :param str cluster_name: cluster on which the job is running.
 
                                ``None`` means the current cluster (default).
+
+      :param bool timestamps: if true, include timestamps on each line in the log output.
 
       :param str separator: string which will separate archive and live logs
                             (if both parts are present).
