@@ -232,7 +232,12 @@ async def port_forward(
 
 @command()
 @argument("job", type=JOB)
-async def logs(root: Root, job: str) -> None:
+@option(
+    "--timestamps",
+    is_flag=True,
+    help="Include timestamps on each line in the log output.",
+)
+async def logs(root: Root, job: str, timestamps: bool) -> None:
     """
     Print the logs for a job.
     """
@@ -241,7 +246,7 @@ async def logs(root: Root, job: str) -> None:
         client=root.client,
         status=JobStatus.items(),
     )
-    await process_logs(root, id, None, cluster_name=cluster_name)
+    await process_logs(root, id, None, cluster_name=cluster_name, timestamps=timestamps)
 
 
 @command()

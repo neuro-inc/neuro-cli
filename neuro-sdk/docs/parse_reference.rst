@@ -69,8 +69,9 @@ Parser
 
    .. method:: volumes(volume: Sequence[str]) -> VolumeParseResult
 
-      Parse a sequence of volume definition into a tuple of three mappings - first one for
-      all regular volumes, second one for volumes using secrets and third for disk volumes.
+      Parse a sequence of volume definition into a tuple of three mappings - first one
+      for all regular volumes, second one for volumes using secrets and third for disk
+      volumes.
 
       :param ~typing.Sequence[str] env: Sequence of volumes specification. Each
                                         element can be either:
@@ -79,6 +80,74 @@ Parser
                                         - `DISK_URI:MOUNT_PATH:RW_FLAG`.
 
       :return: :class:`VolumeParseResult` with parsing result
+
+
+   .. method:: uri_to_str(uri: URL) -> str
+
+      Convert :class:`~yarl.URL` object into :class:`str`.
+
+   .. method:: str_to_uri(uri: str, *, allowed_schemes: Iterable[str] = (), \
+                          cluster_name: Optional[str] = None) -> URL
+
+      Parse a string into *normalized* :class:`URL` for future usage by SDK methods.
+
+      :param str uri: an URI (``'storage:folder/file.txt'``) or local file path
+                      (``'/home/user/folder/file.txt'``) to parse.
+
+      :param ~typing.Iterable[str] allowed_schemes: an *iterable* of accepted URI
+                                                    schemes, e.g. ``('file',
+                                                    'storage')``.  No scheme check is
+                                                    performed by default.
+
+      :param ~typing.Optional[str] cluster_name: optional cluster name, the default
+                                                 cluster is used if not specified.
+
+      :return: :class:`~yarl.URL` with parsed URI.
+
+      :raise ValueError: if ``uri`` is invalid or provides a scheme not enumerated by
+                         ``allowed_schemes`` argument.
+
+   .. method:: uri_to_path(uri: URL, *, cluster_name: Optional[str] = None) -> Path
+
+      Convert :class:`~yarl.URL` into :class:`~pathlib.Path`.
+
+      :raise ValueError: if ``uri`` has no ``'file:'`` scheme.
+
+   .. method:: path_to_uri(path: Path) -> URL
+
+      Convert :class:`~pathlib.Path` object into *normalized* :class:`~yarl.URL` with
+      ``'file:'`` scheme.
+
+      :param ~pathlib.Path path: a path to convert.
+
+      :param ~typing.Optional[str] cluster_name: optional cluster name, the default
+                                                 cluster is used if not specified.
+
+      :return: :class:`~yarl.URL` that represent a ``path``.
+
+   .. method:: normalize_uri(uri: URL, *, allowed_schemes: Iterable[str] = (), \
+                          cluster_name: Optional[str] = None) -> URL
+
+      Normalize ``uri`` according to current user name, cluster and allowed schemes.
+
+      *Normalized* form is the minimal possible representation of URI. For example, the
+      user is omitted if it is equal to default SDK user given by logging in. The same
+      is for cluster name: it is omitted if equal to default cluster.
+
+      :param ~yarl.URL uri: an URI to normalize.
+
+      :param ~typing.Iterable[str] allowed_schemes: an *iterable* of accepted URI
+                                                    schemes, e.g. ``('file',
+                                                    'storage')``.  No scheme check is
+                                                    performed by default.
+
+      :param ~typing.Optional[str] cluster_name: optional cluster name, the default
+                                                 cluster is used if not specified.
+
+      :return: :class:`~yarl.URL` with normalized URI.
+
+      :raise ValueError: if ``uri`` is invalid or provides a scheme not enumerated by
+                         ``allowed_schemes`` argument.
 
 
 EnvParseResult

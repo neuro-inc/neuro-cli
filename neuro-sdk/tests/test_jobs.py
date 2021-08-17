@@ -46,6 +46,7 @@ async def test_jobs_monitor(
 ) -> None:
     async def log_stream(request: web.Request) -> web.StreamResponse:
         assert request.headers["Accept-Encoding"] == "identity"
+        assert request.query.get("timestamps", "false") == "false"
         resp = web.StreamResponse()
         resp.enable_chunked_encoding()
         resp.enable_compression(web.ContentCoding.identity)
@@ -77,6 +78,47 @@ async def test_jobs_monitor(
             b"chunk 7\n",
             b"chunk 8\n",
             b"chunk 9\n",
+        ]
+    )
+
+
+async def test_jobs_monitor_timestamps(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def log_stream(request: web.Request) -> web.StreamResponse:
+        assert request.headers["Accept-Encoding"] == "identity"
+        assert request.query.get("timestamps", "false") == "true"
+        resp = web.StreamResponse()
+        resp.enable_chunked_encoding()
+        resp.enable_compression(web.ContentCoding.identity)
+        await resp.prepare(request)
+        for i in range(10):
+            await resp.write(f"2021-08-13T09:23:{i:02}.123456789Z chunk {i}\n".encode())
+        return resp
+
+    app = web.Application()
+    app.router.add_get("/jobs/job-id/log", log_stream)
+
+    srv = await aiohttp_server(app)
+
+    lst = []
+    async with make_client(srv.make_url("/")) as client:
+        async with client.jobs.monitor("job-id", timestamps=True) as it:
+            async for data in it:
+                lst.append(data)
+
+    assert b"".join(lst) == b"".join(
+        [
+            b"2021-08-13T09:23:00.123456789Z chunk 0\n",
+            b"2021-08-13T09:23:01.123456789Z chunk 1\n",
+            b"2021-08-13T09:23:02.123456789Z chunk 2\n",
+            b"2021-08-13T09:23:03.123456789Z chunk 3\n",
+            b"2021-08-13T09:23:04.123456789Z chunk 4\n",
+            b"2021-08-13T09:23:05.123456789Z chunk 5\n",
+            b"2021-08-13T09:23:06.123456789Z chunk 6\n",
+            b"2021-08-13T09:23:07.123456789Z chunk 7\n",
+            b"2021-08-13T09:23:08.123456789Z chunk 8\n",
+            b"2021-08-13T09:23:09.123456789Z chunk 9\n",
         ]
     )
 

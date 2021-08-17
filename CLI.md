@@ -770,6 +770,7 @@ neuro job logs [OPTIONS] JOB
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--timestamps_|Include timestamps on each line in the log output.|
 
 
 
@@ -2625,6 +2626,7 @@ neuro logs [OPTIONS] JOB
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--timestamps_|Include timestamps on each line in the log output.|
 
 
 

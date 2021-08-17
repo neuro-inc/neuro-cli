@@ -2,7 +2,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Sequence
+from typing import Iterable
 from urllib.parse import quote_from_bytes
 
 from yarl import URL
@@ -15,8 +15,10 @@ def uri_from_cli(
     username: str,
     cluster_name: str,
     *,
-    allowed_schemes: Sequence[str] = ("file", "storage"),
+    allowed_schemes: Iterable[str] = ("file", "storage"),
 ) -> URL:
+    if not isinstance(allowed_schemes, tuple):
+        allowed_schemes = tuple(allowed_schemes)
     if "file" in allowed_schemes and path_or_uri.startswith("~"):
         path_or_uri = os.path.expanduser(path_or_uri)
         if path_or_uri.startswith("~"):
@@ -45,11 +47,7 @@ def uri_from_cli(
             f"URI Scheme not specified. "
             f"Please specify one of {', '.join(allowed_schemes)}."
         )
-    if uri.scheme not in allowed_schemes:
-        raise ValueError(
-            f"Unsupported URI scheme: {uri.scheme}. "
-            f"Please specify one of {', '.join(allowed_schemes)}."
-        )
+    _check_scheme(uri.scheme, allowed_schemes)
     # Check string representation to detect also trailing "?" and "#".
     _check_uri_str(path_or_uri, uri.scheme)
     if uri.scheme == "file":
@@ -59,6 +57,22 @@ def uri_from_cli(
     else:
         uri = _normalize_uri(uri, username, cluster_name)
     return uri
+
+
+def _check_scheme(scheme: str, allowed: Iterable[str]) -> None:
+    if not isinstance(allowed, tuple):
+        allowed = tuple(allowed)
+    if not allowed:
+        return
+    if scheme not in allowed:
+        allowed_str = ", ".join(f"'{item}:'" for item in allowed)
+        if len(allowed) > 1:
+            verb = "are"
+        else:
+            verb = "is"
+        raise ValueError(
+            f"Invalid scheme '{scheme}:' (only {allowed_str} {verb} allowed)"
+        )
 
 
 def normalize_storage_path_uri(uri: URL, username: str, cluster_name: str) -> URL:
