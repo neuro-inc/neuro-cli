@@ -11,7 +11,6 @@ from typing import Any, Awaitable, Callable, List, Optional, Sequence, Tuple
 
 import aiohttp
 import click
-from aiohttp import WSServerHandshakeError
 from prompt_toolkit.formatted_text import HTML, merge_formatted_text
 from prompt_toolkit.input import create_input
 from prompt_toolkit.key_binding import KeyPress
