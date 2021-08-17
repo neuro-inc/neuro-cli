@@ -186,6 +186,7 @@ Jobs
 
    .. comethod:: monitor(id: str, *, \
                          cluster_name: Optional[str] = None, \
+                         since: Optional[datetime] = None,
                          timestamps: bool = False,
                          separator: Optional[str] = None,
                  ) -> AsyncContextManager[AsyncIterator[bytes]]
@@ -203,6 +204,12 @@ Jobs
       :param str cluster_name: cluster on which the job is running.
 
                                ``None`` means the current cluster (default).
+
+      :param ~datetime.datetime since: Retrieves only logs after the specified date
+                                       (including) if it is not ``None``.  If the parameter
+                                       is a naive datetime object, it represents local time.
+
+                                       ``None`` means that no filter is applied (default).
 
       :param bool timestamps: if true, include timestamps on each line in the log output.
 

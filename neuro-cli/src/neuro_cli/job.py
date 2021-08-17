@@ -233,11 +233,18 @@ async def port_forward(
 @command()
 @argument("job", type=JOB)
 @option(
+    "--since",
+    metavar="DATE_OR_TIMEDELTA",
+    help="Only return logs after a specific date (including). "
+    "Use value of format '1d2h3m4s' to specify moment in "
+    "past relatively to current time.",
+)
+@option(
     "--timestamps",
     is_flag=True,
     help="Include timestamps on each line in the log output.",
 )
-async def logs(root: Root, job: str, timestamps: bool) -> None:
+async def logs(root: Root, since: str, job: str, timestamps: bool) -> None:
     """
     Print the logs for a job.
     """
@@ -246,7 +253,14 @@ async def logs(root: Root, job: str, timestamps: bool) -> None:
         client=root.client,
         status=JobStatus.items(),
     )
-    await process_logs(root, id, None, cluster_name=cluster_name, timestamps=timestamps)
+    await process_logs(
+        root,
+        id,
+        None,
+        cluster_name=cluster_name,
+        since=_parse_date(since),
+        timestamps=timestamps,
+    )
 
 
 @command()

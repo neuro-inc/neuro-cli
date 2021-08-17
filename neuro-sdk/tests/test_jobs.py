@@ -1,6 +1,7 @@
 import asyncio
 import json
 import sys
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Optional
 
 import pytest
@@ -46,6 +47,7 @@ async def test_jobs_monitor(
 ) -> None:
     async def log_stream(request: web.Request) -> web.StreamResponse:
         assert request.headers["Accept-Encoding"] == "identity"
+        assert "since" not in request.query
         assert request.query.get("timestamps", "false") == "false"
         resp = web.StreamResponse()
         resp.enable_chunked_encoding()
@@ -82,12 +84,52 @@ async def test_jobs_monitor(
     )
 
 
+async def test_jobs_monitor_since(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def log_stream(request: web.Request) -> web.StreamResponse:
+        assert request.headers["Accept-Encoding"] == "identity"
+        assert request.query["since"] == "2021-08-17T00:00:00+00:00"
+        assert request.query.get("timestamps", "false") == "false"
+        resp = web.StreamResponse()
+        resp.enable_chunked_encoding()
+        resp.enable_compression(web.ContentCoding.identity)
+        await resp.prepare(request)
+        for i in range(5, 10):
+            await resp.write(b"chunk " + str(i).encode("ascii") + b"\n")
+        return resp
+
+    app = web.Application()
+    app.router.add_get("/jobs/job-id/log", log_stream)
+
+    srv = await aiohttp_server(app)
+
+    lst = []
+    async with make_client(srv.make_url("/")) as client:
+        async with client.jobs.monitor(
+            "job-id", since=datetime(2021, 8, 17, tzinfo=timezone.utc)
+        ) as it:
+            async for data in it:
+                lst.append(data)
+
+    assert b"".join(lst) == b"".join(
+        [
+            b"chunk 5\n",
+            b"chunk 6\n",
+            b"chunk 7\n",
+            b"chunk 8\n",
+            b"chunk 9\n",
+        ]
+    )
+
+
 async def test_jobs_monitor_timestamps(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def log_stream(request: web.Request) -> web.StreamResponse:
         assert request.headers["Accept-Encoding"] == "identity"
-        assert request.query.get("timestamps", "false") == "true"
+        assert "since" not in request.query
+        assert request.query["timestamps"] == "true"
         resp = web.StreamResponse()
         resp.enable_chunked_encoding()
         resp.enable_compression(web.ContentCoding.identity)
