@@ -57,6 +57,16 @@ Buckets
 
       :param str cluster_name: cluster to look for a bucket. Default is current cluster.
 
+   .. comethod:: request_tmp_credentials(bucket_id_or_name: str, cluster_name: Optional[str] = None) -> BucketCredentials
+
+      Get a temporary provider credentials to bucket with id or name *bucket_id_or_name*.
+
+      :param str bucket_id_or_name: bucket's id or name.
+
+      :param str cluster_name: cluster to look for a bucket. Default is current cluster.
+
+      :return: Bucket credentials info (:class:`BucketCredentials`)
+
    .. comethod:: head_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None) -> BucketEntry
 
       Look up the blob and return it's metadata.
@@ -331,9 +341,25 @@ Bucket
 
       Blob storage provider this bucket belongs to, :class:`Bucket.Provider`.
 
+
+BucketCredentials
+=================
+
+.. class:: BucketCredentials
+
+   *Read-only* :class:`~dataclasses.dataclass` for describing credentials to single bucket.
+
+   .. attribute:: bucket_id
+
+      The bucket id, :class:`str`.
+
+   .. attribute:: provider
+
+      Blob storage provider this bucket belongs to, :class:`Bucket.Provider`.
+
    .. attribute:: credentials
 
-      Credentials to access a bucket inside the provider, :class:`Mapping[str, str]`
+      Raw credentials to access a bucket inside the provider, :class:`Mapping[str, str]`
 
 
 Bucket.Provider

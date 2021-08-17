@@ -26,7 +26,6 @@ async def test_list(
                     "name": None,
                     "provider": "aws",
                     "created_at": created_at.isoformat(),
-                    "credentials": {"test": "value"},
                 },
                 {
                     "id": "bucket-2",
@@ -34,7 +33,6 @@ async def test_list(
                     "name": "test-bucket",
                     "provider": "aws",
                     "created_at": created_at.isoformat(),
-                    "credentials": {"test": "value2"},
                 },
             ]
         )
@@ -59,7 +57,6 @@ async def test_list(
             name=None,
             created_at=created_at,
             provider=Bucket.Provider.AWS,
-            credentials={"test": "value"},
         ),
         Bucket(
             id="bucket-2",
@@ -68,7 +65,6 @@ async def test_list(
             name="test-bucket",
             created_at=created_at,
             provider=Bucket.Provider.AWS,
-            credentials={"test": "value2"},
         ),
     ]
 
@@ -92,7 +88,6 @@ async def test_add(
                 "name": "test-bucket",
                 "created_at": created_at.isoformat(),
                 "provider": "aws",
-                "credentials": {"test": "value"},
             }
         )
 
@@ -110,7 +105,6 @@ async def test_add(
             name="test-bucket",
             created_at=created_at,
             provider=Bucket.Provider.AWS,
-            credentials={"test": "value"},
         )
 
 
@@ -130,7 +124,6 @@ async def test_get(
                 "name": "name",
                 "provider": "aws",
                 "created_at": created_at.isoformat(),
-                "credentials": {"test": "value"},
             }
         )
 
@@ -148,7 +141,6 @@ async def test_get(
             name="name",
             created_at=created_at,
             provider=Bucket.Provider.AWS,
-            credentials={"test": "value"},
         )
 
 
