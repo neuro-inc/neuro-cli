@@ -2057,9 +2057,9 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_-l_|use a long listing format.|
+|_\--full-uri_|Output full bucket URI.|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
 |_\-r, --recursive_|List all keys under the URL path provided, not just 1 level depths.|
-|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
 
 
 
@@ -2079,6 +2079,7 @@ neuro blob glob [OPTIONS] [PATTERNS]...
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--full-uri_|Output full bucket URI.|
 
 
 

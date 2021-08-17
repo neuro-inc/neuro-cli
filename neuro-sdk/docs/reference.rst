@@ -17,7 +17,6 @@ Reference
    config_reference
    jobs_reference
    storage_reference
-   blob_storage_reference
    images_reference
    users_reference
    secrets_reference

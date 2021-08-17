@@ -548,14 +548,12 @@ def parse_file_resource(uri: str, root: Root) -> URL:
 
 
 def parse_blob_resource(uri: str, root: Root) -> URL:
-    # Username will not be used, just part of the signature
     return uri_from_cli(
         uri, root.client.username, root.client.cluster_name, allowed_schemes=("blob",)
     )
 
 
 def parse_blob_or_file_resource(uri: str, root: Root) -> URL:
-    # Username will not be used, just part of the signature
     return uri_from_cli(
         uri,
         root.client.username,

@@ -7,7 +7,6 @@ import aiohttp
 from neuro_sdk.service_accounts import ServiceAccounts
 
 from .admin import _Admin
-from .blob_storage import BlobStorage
 from .buckets import Buckets
 from .config import Config
 from .core import _Core
@@ -45,7 +44,6 @@ class Client(metaclass=NoPublicConstructor):
         self._parser = Parser._create(self._config)
         self._admin = _Admin._create(self._core, self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)
-        self._blob_storage = BlobStorage._create(self._core, self._config)
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core, self._config)
         self._secrets = Secrets._create(self._core, self._config)
@@ -97,10 +95,6 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def jobs(self) -> Jobs:
         return self._jobs
-
-    @property
-    def blob_storage(self) -> BlobStorage:
-        return self._blob_storage
 
     @property
     def storage(self) -> Storage:
