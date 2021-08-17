@@ -284,15 +284,8 @@ async def _process_attach_single_try(
                     progress.detach(job)
                     sys.exit(0)
         except ResourceNotFound:
+            # Container already stopped, so we can ignore such error.
             pass
-        except WSServerHandshakeError as e:
-            # Websocket handshake error has no access to response body, so we can only
-            # check the status here. Status 404 can mean:
-            # - wrong job id (cannot happen here as it is checked above)
-            # - container already stopped, so we can ignore such error
-
-            if e.status != 404:
-                raise
         finally:
             root.soft_reset_tty()
 
