@@ -475,9 +475,9 @@ def test_parse_file_resource_no_scheme(root: Root) -> None:
 
 
 def test_parse_file_resource_unsupported_scheme(root: Root) -> None:
-    with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
+    with pytest.raises(ValueError, match=r"Invalid scheme"):
         parse_file_resource("http://neu.ro", root)
-    with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
+    with pytest.raises(ValueError, match=r"Invalid scheme"):
         parse_file_resource("image:ubuntu", root)
 
 
@@ -554,11 +554,11 @@ def test_parse_resource_for_sharing_no_scheme(root: Root) -> None:
 
 
 def test_parse_resource_for_sharing_unsupported_scheme(root: Root) -> None:
-    with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
+    with pytest.raises(ValueError, match=r"Invalid scheme"):
         parse_resource_for_sharing("http://neu.ro", root)
-    with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
+    with pytest.raises(ValueError, match=r"Invalid scheme"):
         parse_resource_for_sharing("file:///etc/password", root)
-    with pytest.raises(ValueError, match=r"Unsupported URI scheme"):
+    with pytest.raises(ValueError, match=r"Invalid scheme"):
         parse_resource_for_sharing(r"c:scheme-less/resource", root)
 
 
