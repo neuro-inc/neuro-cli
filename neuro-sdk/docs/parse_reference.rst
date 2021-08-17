@@ -123,7 +123,7 @@ Parser
       :param ~typing.Optional[str] cluster_name: optional cluster name, the default
                                                  cluster is used if not specified.
 
-      :return: :class:`~yarl.URL` that represend a ``path``.
+      :return: :class:`~yarl.URL` that represent a ``path``.
 
    .. method:: normalize_uri(uri: URL, *, allowed_schemes: Iterable[str] = (), \
                           cluster_name: Optional[str] = None) -> URL
