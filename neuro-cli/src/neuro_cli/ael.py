@@ -23,6 +23,7 @@ from prompt_toolkit.shortcuts import PromptSession
 from typing_extensions import NoReturn
 
 from neuro_sdk import JobDescription, JobStatus, StdStream
+from neuro_sdk.errors import ResourceNotFound
 from neuro_sdk.jobs import StdStreamError
 
 from .const import EX_IOERR, EX_PLATFORMERROR
@@ -282,6 +283,8 @@ async def _process_attach_single_try(
                 elif action == InterruptAction.DETACH:
                     progress.detach(job)
                     sys.exit(0)
+        except ResourceNotFound:
+            pass
         except WSServerHandshakeError as e:
             # Websocket handshake error has no access to response body, so we can only
             # check the status here. Status 404 can mean:
