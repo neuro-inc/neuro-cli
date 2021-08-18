@@ -19,6 +19,7 @@ from neuro_sdk import (
     StorageProgressLeaveDir,
     StorageProgressStart,
     StorageProgressStep,
+    file_utils,
 )
 from neuro_sdk.file_utils import READ_SIZE, FileTransferer, LocalFS
 
@@ -427,3 +428,41 @@ async def test_transfer_dir_ignore_file_names(
     for skip_dir in skip_dirs:
         shutil.rmtree(src / skip_dir)
     assert await cmp_dirs(src, dst_dir / "sub_dir")
+
+
+async def test_rm_file(
+    src_dir: Path,
+) -> None:
+    file_path = src_dir / "file"
+    file_path.touch()
+    await file_utils.rm(LocalFS(), file_path, recursive=False)
+    assert not file_path.exists()
+
+
+async def test_rm_dir(
+    src_dir: Path,
+) -> None:
+    dir_path = src_dir / "sub_dir"
+    dir_path.mkdir()
+    await gen_file_tree(dir_path, depths=1)
+    await file_utils.rm(LocalFS(), dir_path, recursive=True)
+    assert not dir_path.exists()
+
+
+async def test_rm_not_exists(
+    src_dir: Path,
+) -> None:
+    file_path = src_dir / "file"
+    with pytest.raises(FileNotFoundError) as e:
+        await file_utils.rm(LocalFS(), file_path, recursive=False)
+    assert e.value.args[0] == errno.ENOENT
+
+
+async def test_rm_dir_not_recursive(
+    src_dir: Path,
+) -> None:
+    dir_path = src_dir / "sub_dir"
+    dir_path.mkdir()
+    with pytest.raises(IsADirectoryError) as e:
+        await file_utils.rm(LocalFS(), dir_path, recursive=False)
+    assert e.value.args[0] == errno.EISDIR

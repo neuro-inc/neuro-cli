@@ -16,6 +16,7 @@ Blob storage operations.
 | [_cp_](blob.md#cp) | Simple utility to copy files and... |
 | [_ls_](blob.md#ls) | List buckets or bucket contents |
 | [_glob_](blob.md#glob) | List resources that match PATTERNS |
+| [_rm_](blob.md#rm) | Remove blobs from bucket |
 
 
 ### cp
@@ -120,5 +121,29 @@ List resources that match `PATTERNS`.
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _--full-uri_ | Output full bucket URI. |
+
+
+
+### rm
+
+Remove blobs from bucket
+
+
+#### Usage
+
+```bash
+neuro blob rm [OPTIONS] PATHS...
+```
+
+Remove blobs from bucket.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--glob / --no-glob_ | Expand glob patterns in PATHS  _\[default: glob\]_ |
+| _-p, --progress / -P, --no-progress_ | Show progress, on by default in TTY mode, off otherwise. |
+| _-r, --recursive_ | remove directories and their contents recursively |
 
 

@@ -4,7 +4,6 @@ from typing import Sequence
 
 from rich import box
 from rich.console import RenderableType, RenderGroup
-from rich.styled import Styled
 from rich.table import Table
 from rich.text import Text
 
@@ -84,10 +83,4 @@ class BucketFormatter:
             table.add_row("Name", bucket.name)
         table.add_row("Created at", self._datetime_formatter(bucket.created_at))
         table.add_row("Provider", bucket.provider)
-        credentials = Table(box=None, show_header=True, show_edge=False)
-        credentials.add_column("Key")
-        credentials.add_column("Value")
-        for key, value in bucket.credentials.items():
-            credentials.add_row(key, value)
-        table.add_row("Credentials", Styled(credentials, style="reset"))
         return table

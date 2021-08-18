@@ -74,6 +74,7 @@
 		* [neuro blob cp](#neuro-blob-cp)
 		* [neuro blob ls](#neuro-blob-ls)
 		* [neuro blob glob](#neuro-blob-glob)
+		* [neuro blob rm](#neuro-blob-rm)
 	* [neuro secret](#neuro-secret)
 		* [neuro secret ls](#neuro-secret-ls)
 		* [neuro secret add](#neuro-secret-add)
@@ -2008,6 +2009,7 @@ Name | Description|
 | _[neuro blob cp](#neuro-blob-cp)_| Simple utility to copy files and directories into and from Blob Storage |
 | _[neuro blob ls](#neuro-blob-ls)_| List buckets or bucket contents |
 | _[neuro blob glob](#neuro-blob-glob)_| List resources that match PATTERNS |
+| _[neuro blob rm](#neuro-blob-rm)_| Remove blobs from bucket |
 
 
 
@@ -2080,6 +2082,28 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\--full-uri_|Output full bucket URI.|
+
+
+
+
+### neuro blob rm
+
+Remove blobs from bucket.
+
+**Usage:**
+
+```bash
+neuro blob rm [OPTIONS] PATHS...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: glob]|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
+|_\-r, --recursive_|remove directories and their contents recursively|
 
 
 

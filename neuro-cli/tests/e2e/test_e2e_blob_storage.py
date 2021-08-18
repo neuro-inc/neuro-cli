@@ -280,3 +280,37 @@ def test_e2e_blob_storage_cp_filter(
         ]
     )
     assert os.listdir(tmp_path / "filtered") == ["bar"]
+
+
+@pytest.mark.e2e
+def test_e2e_blob_storage_rm_file(
+    helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path, tmp_bucket: str
+) -> None:
+    srcfile = tmp_path / "testfile"
+    srcfile.write_bytes(b"abc")
+
+    captured = helper.run_cli(["blob", "cp", str(srcfile), f"blob:{tmp_bucket}"])
+    assert not captured.out
+
+    helper.run_cli(["blob", "rm", f"blob:{tmp_bucket}/testfile"])
+
+    captured = helper.run_cli(["blob", "ls", f"blob:{tmp_bucket}/testfile"])
+    assert not captured.out
+
+
+@pytest.mark.e2e
+def test_e2e_blob_storage_rm_dir(
+    helper: Helper, nested_data: Tuple[str, str, str], tmp_path: Path, tmp_bucket: str
+) -> None:
+    srcfile = tmp_path / "testfile"
+    srcfile.write_bytes(b"abc")
+
+    captured = helper.run_cli(
+        ["blob", "cp", str(srcfile), f"blob:{tmp_bucket}/some_dir/"]
+    )
+    assert not captured.out
+
+    helper.run_cli(["blob", "rm", "-r", f"blob:{tmp_bucket}/some_dir/"])
+
+    captured = helper.run_cli(["blob", "ls", f"blob:{tmp_bucket}/some_dir/"])
+    assert not captured.out

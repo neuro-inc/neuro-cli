@@ -27,8 +27,8 @@ from aiobotocore.client import AioBaseClient
 from dateutil.parser import isoparse
 from yarl import URL
 
-from neuro_sdk import AbstractRecursiveFileProgress
-from neuro_sdk.abc import AbstractFileProgress
+from neuro_sdk import AbstractRecursiveFileProgress, file_utils
+from neuro_sdk.abc import AbstractDeleteProgress, AbstractFileProgress
 from neuro_sdk.file_filter import (
     AsyncFilterFunc,
     _glob_safe_prefix,
@@ -235,6 +235,19 @@ class BucketFS(FileSystem[PurePosixPath]):
             raise ValueError("Can not create a bucket root folder")
         await self._provider.put_blob(key=key, body=b"")
 
+    async def rmdir(self, path: PurePosixPath) -> None:
+        key = self._as_dir_key(path)
+        if key == "":
+            return  # Root dir cannot be removed
+        try:
+            await self._provider.delete_blob(key=key)
+        except ResourceNotFound:
+            pass  # Dir already removed/was a prefix - just ignore
+
+    async def rm(self, path: PurePosixPath) -> None:
+        key = self._as_file_key(path)
+        await self._provider.delete_blob(key=key)
+
     def to_url(self, path: PurePosixPath) -> URL:
         return self._provider.bucket.uri / self._as_file_key(path)
 
@@ -252,12 +265,15 @@ class BucketFS(FileSystem[PurePosixPath]):
 
 
 class AWSS3Provider(BucketProvider):
-    def __init__(self, client: AioBaseClient, bucket: "Bucket") -> None:
+    def __init__(
+        self, client: AioBaseClient, bucket: "Bucket", bucket_name: str
+    ) -> None:
         self.bucket = bucket
         client._make_api_call = self._wrap_api_call(client._make_api_call)
         self._client = client
         self._min_time_diff: Optional[float] = 0
         self._max_time_diff: Optional[float] = 0
+        self._bucket_name = bucket_name
 
     def _wrap_api_call(
         self, _make_call: Callable[..., Awaitable[Any]]
@@ -292,20 +308,19 @@ class AWSS3Provider(BucketProvider):
 
         return _wrapper
 
-    @property
-    def _bucket_name(self) -> str:
-        return self.bucket.credentials["bucket_name"]
-
     @classmethod
     @asynccontextmanager
-    async def create(cls, bucket: "Bucket") -> AsyncIterator["AWSS3Provider"]:
+    async def create(
+        cls, bucket: "Bucket", credentials: "BucketCredentials"
+    ) -> AsyncIterator["AWSS3Provider"]:
         session = aiobotocore.get_session()
         async with session.create_client(
             "s3",
-            aws_access_key_id=bucket.credentials["access_key_id"],
-            aws_secret_access_key=bucket.credentials["secret_access_key"],
+            aws_access_key_id=credentials.credentials["access_key_id"],
+            aws_secret_access_key=credentials.credentials["secret_access_key"],
+            aws_session_token=credentials.credentials.get("session_token"),
         ) as client:
-            yield cls(client, bucket)
+            yield cls(client, bucket, credentials.credentials["bucket_name"])
 
     @asyncgeneratorcontextmanager
     async def list_blobs(
@@ -395,7 +410,8 @@ class AWSS3Provider(BucketProvider):
                 buffer += chunk
                 if len(buffer) > self.MIN_CHUNK_SIZE:
                     await _upload_chunk()
-            if buffer:
+            if buffer or len(parts_info) == 0:
+                # Either there is final part of file or file is zero-length file
                 await _upload_chunk()
         except Exception:
             await self._client.abort_multipart_upload(
@@ -438,7 +454,6 @@ class Bucket:
     owner: str
     cluster_name: str
     provider: "Bucket.Provider"
-    credentials: Mapping[str, str]
     created_at: datetime
     name: Optional[str] = None
 
@@ -448,6 +463,13 @@ class Bucket:
 
     class Provider(str, enum.Enum):
         AWS = "aws"
+
+
+@dataclass(frozen=True)
+class BucketCredentials:
+    bucket_id: str
+    provider: "Bucket.Provider"
+    credentials: Mapping[str, str]
 
 
 class Buckets(metaclass=NoPublicConstructor):
@@ -463,13 +485,21 @@ class Buckets(metaclass=NoPublicConstructor):
             created_at=isoparse(payload["created_at"]),
             provider=Bucket.Provider(payload["provider"]),
             cluster_name=self._config.cluster_name,
+        )
+
+    def _parse_bucket_credentials_payload(
+        self, payload: Mapping[str, Any]
+    ) -> BucketCredentials:
+        return BucketCredentials(
+            bucket_id=payload["bucket_id"],
+            provider=Bucket.Provider(payload["provider"]),
             credentials=payload["credentials"],
         )
 
     def _get_buckets_url(self, cluster_name: Optional[str]) -> URL:
         if cluster_name is None:
             cluster_name = self._config.cluster_name
-        return self._config.get_cluster(cluster_name).buckets_url
+        return self._config.get_cluster(cluster_name).buckets_url / "buckets"
 
     @asyncgeneratorcontextmanager
     async def list(self, cluster_name: Optional[str] = None) -> AsyncIterator[Bucket]:
@@ -519,6 +549,19 @@ class Buckets(metaclass=NoPublicConstructor):
         async with self._core.request("DELETE", url, auth=auth):
             pass
 
+    async def request_tmp_credentials(
+        self, bucket_id_or_name: str, cluster_name: Optional[str] = None
+    ) -> BucketCredentials:
+        url = (
+            self._get_buckets_url(cluster_name)
+            / bucket_id_or_name
+            / "make_tmp_credentials"
+        )
+        auth = await self._config._api_auth()
+        async with self._core.request("POST", url, auth=auth) as resp:
+            payload = await resp.json()
+            return self._parse_bucket_credentials_payload(payload)
+
     # Helper functions
 
     @asynccontextmanager
@@ -526,8 +569,11 @@ class Buckets(metaclass=NoPublicConstructor):
         self, bucket_id_or_name: str, cluster_name: Optional[str] = None
     ) -> AsyncIterator[BucketProvider]:
         bucket = await self.get(bucket_id_or_name, cluster_name)
+        credentials = await self.request_tmp_credentials(
+            bucket_id_or_name, cluster_name
+        )
         if bucket.provider == Bucket.Provider.AWS:
-            async with AWSS3Provider.create(bucket) as provider:
+            async with AWSS3Provider.create(bucket, credentials) as provider:
                 yield provider
         else:
             assert False, f"Unknown provider {bucket.provider}"
@@ -766,3 +812,14 @@ class Buckets(metaclass=NoPublicConstructor):
             return True
         async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
             return await bucket_fs.is_dir(PurePosixPath(key))
+
+    async def blob_rm(
+        self,
+        uri: URL,
+        *,
+        recursive: bool = False,
+        progress: Optional[AbstractDeleteProgress] = None,
+    ) -> None:
+        cluster_name, bucket_name, key = self._split_blob_uri(uri)
+        async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
+            await file_utils.rm(bucket_fs, PurePosixPath(key), recursive, progress)

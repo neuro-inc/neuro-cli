@@ -81,7 +81,6 @@ def mock_bucket() -> Bucket:
         cluster_name="test-cluster",
         owner="test-user",
         created_at=datetime.now(timezone.utc),
-        credentials={},
         provider=Bucket.Provider.AWS,
     )
 

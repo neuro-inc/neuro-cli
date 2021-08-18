@@ -10,13 +10,16 @@ from yarl import URL
 
 from neuro_sdk import AbstractFileProgress
 from neuro_sdk.abc import (
+    AbstractDeleteProgress,
     AbstractRecursiveFileProgress,
     StorageProgressComplete,
+    StorageProgressDelete,
     StorageProgressEnterDir,
     StorageProgressFail,
     StorageProgressLeaveDir,
     StorageProgressStart,
     StorageProgressStep,
+    _AsyncAbstractDeleteProgress,
     _AsyncAbstractFileProgress,
     _AsyncAbstractRecursiveFileProgress,
 )
@@ -91,11 +94,19 @@ class FileSystem(Generic[FS_PATH], abc.ABC):
         pass
 
     @abc.abstractmethod
+    async def rm(self, path: FS_PATH) -> None:
+        pass
+
+    @abc.abstractmethod
     def iter_dir(self, path: FS_PATH) -> AsyncContextManager[AsyncIterator[FS_PATH]]:
         pass
 
     @abc.abstractmethod
     async def mkdir(self, dst: FS_PATH) -> None:
+        pass
+
+    @abc.abstractmethod
+    async def rmdir(self, path: FS_PATH) -> None:
         pass
 
     @abc.abstractmethod
@@ -191,6 +202,61 @@ class LocalFS(FileSystem[Path]):
 
     def child(self, path: Path, child: str) -> Path:
         return path / child
+
+    async def rm(self, path: Path) -> None:
+        path.unlink()
+
+    async def rmdir(self, path: Path) -> None:
+        path.rmdir()
+
+
+async def rm(
+    fs: FileSystem[FS_PATH],
+    path: FS_PATH,
+    recursive: bool,
+    progress: Optional[AbstractDeleteProgress] = None,
+) -> None:
+    if not await fs.exists(path):
+        raise FileNotFoundError(errno.ENOENT, "No such file or directory", str(path))
+    if not recursive and await fs.is_dir(path):
+        raise IsADirectoryError(
+            errno.EISDIR, "Is a directory, use recursive remove", str(path)
+        )
+
+    async_progress: _AsyncAbstractDeleteProgress
+    queue, async_progress = queue_calls(progress)
+
+    async def _rm_file(file_path: FS_PATH) -> None:
+        await fs.rm(file_path)
+        await async_progress.delete(
+            StorageProgressDelete(uri=fs.to_url(file_path), is_dir=False)
+        )
+
+    async def _rm_dir(dir_path: FS_PATH) -> None:
+        tasks = []
+        async with fs.iter_dir(dir_path) as dir_it:
+            async for sub_path in dir_it:
+                if await fs.is_dir(sub_path):
+                    tasks.append(_rm_dir(sub_path))
+                elif await fs.is_file(sub_path):
+                    tasks.append(_rm_file(sub_path))
+                else:
+                    raise ValueError(
+                        f"Cannot delete {sub_path}, not regular file/directory"
+                    )
+        await run_concurrently(tasks)
+        await fs.rmdir(dir_path)
+        await async_progress.delete(
+            StorageProgressDelete(uri=fs.to_url(dir_path), is_dir=True)
+        )
+
+    async def _rm() -> None:
+        if recursive:
+            await _rm_dir(dir_path=path)
+        else:
+            await _rm_file(file_path=path)
+
+    await run_progress(queue, _rm())
 
 
 S_PATH = TypeVar("S_PATH")

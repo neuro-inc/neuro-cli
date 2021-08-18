@@ -19,10 +19,11 @@ from .formatters.blob_storage import (
     LongBlobFormatter,
     SimpleBlobFormatter,
 )
-from .formatters.storage import create_storage_progress, get_painter
+from .formatters.storage import DeleteProgress, create_storage_progress, get_painter
 from .root import Root
 from .storage import calc_filters, calc_ignore_file_names, filter_option
 from .utils import (
+    argument,
     command,
     group,
     option,
@@ -399,6 +400,60 @@ async def _expand(
     return uris
 
 
+@command()
+@argument("paths", nargs=-1, required=True)
+@option(
+    "--recursive",
+    "-r",
+    is_flag=True,
+    help="remove directories and their contents recursively",
+)
+@option(
+    "--glob/--no-glob",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Expand glob patterns in PATHS",
+)
+@option(
+    "-p/-P",
+    "--progress/--no-progress",
+    is_flag=True,
+    default=None,
+    help="Show progress, on by default in TTY mode, off otherwise.",
+)
+async def rm(
+    root: Root,
+    paths: Sequence[str],
+    recursive: bool,
+    glob: bool,
+    progress: Optional[bool],
+) -> None:
+    """
+    Remove blobs from bucket.
+    """
+    errors = False
+    show_progress = root.tty if progress is None else progress
+
+    for uri in await _expand(paths, root, glob):
+        try:
+            progress_obj = DeleteProgress(root) if show_progress else None
+            await root.client.buckets.blob_rm(
+                uri, recursive=recursive, progress=progress_obj
+            )
+        except (OSError, ResourceNotFound, IllegalArgumentError) as error:
+            log.error(f"cannot remove {uri}: {error}")
+            errors = True
+        else:
+            if root.verbosity > 0:
+                painter = get_painter(root.color)
+                uri_text = painter.paint(str(uri), FileStatusType.FILE)
+                root.print(Text.assemble(f"removed ", uri_text))
+    if errors:
+        sys.exit(EX_OSFILE)
+
+
 blob_storage.add_command(cp)
 blob_storage.add_command(ls)
 blob_storage.add_command(glob)
+blob_storage.add_command(rm)

@@ -57,6 +57,16 @@ Buckets
 
       :param str cluster_name: cluster to look for a bucket. Default is current cluster.
 
+   .. comethod:: request_tmp_credentials(bucket_id_or_name: str, cluster_name: Optional[str] = None) -> BucketCredentials
+
+      Get a temporary provider credentials to bucket with id or name *bucket_id_or_name*.
+
+      :param str bucket_id_or_name: bucket's id or name.
+
+      :param str cluster_name: cluster to look for a bucket. Default is current cluster.
+
+      :return: Bucket credentials info (:class:`BucketCredentials`)
+
    .. comethod:: head_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None) -> BucketEntry
 
       Look up the blob and return it's metadata.
@@ -295,6 +305,24 @@ Buckets
       :param ~yarl.URL src: URL that specifies bucket and blob key
                             e.g. ``yarl.URL("blob:bucket_name/folder/sub_folder")``.
 
+   .. comethod:: blob_rm(uri: URL, *, recursive: bool = False, progress: Optional[AbstractDeleteProgress] = None) -> None
+
+      Remove blobs from bucket.
+
+      :param ~yarl.URL uri: URL that specifies bucket and blob key
+                            e.g. ``yarl.URL("blob:bucket_name/folder/sub_folder")``.
+
+      :param bool recursive: remove a directory recursively with all nested files and
+                             folders if ``True`` (``False`` by default).
+
+      :param AbstractDeleteProgress progress:
+
+         a callback interface for reporting delete progress, ``None`` for no progress
+         report (default).
+
+      :raises: :exc:`IsADirectoryError` if *uri* points on a directory and *recursive*
+               flag is not set.
+
 Bucket
 ======
 
@@ -331,9 +359,25 @@ Bucket
 
       Blob storage provider this bucket belongs to, :class:`Bucket.Provider`.
 
+
+BucketCredentials
+=================
+
+.. class:: BucketCredentials
+
+   *Read-only* :class:`~dataclasses.dataclass` for describing credentials to single bucket.
+
+   .. attribute:: bucket_id
+
+      The bucket id, :class:`str`.
+
+   .. attribute:: provider
+
+      Blob storage provider this bucket belongs to, :class:`Bucket.Provider`.
+
    .. attribute:: credentials
 
-      Credentials to access a bucket inside the provider, :class:`Mapping[str, str]`
+      Raw credentials to access a bucket inside the provider, :class:`Mapping[str, str]`
 
 
 Bucket.Provider
