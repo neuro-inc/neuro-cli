@@ -305,6 +305,24 @@ Buckets
       :param ~yarl.URL src: URL that specifies bucket and blob key
                             e.g. ``yarl.URL("blob:bucket_name/folder/sub_folder")``.
 
+   .. comethod:: blob_rm(uri: URL, *, recursive: bool = False, progress: Optional[AbstractDeleteProgress] = None) -> None
+
+      Remove blobs from bucket.
+
+      :param ~yarl.URL uri: URL that specifies bucket and blob key
+                            e.g. ``yarl.URL("blob:bucket_name/folder/sub_folder")``.
+
+      :param bool recursive: remove a directory recursively with all nested files and
+                             folders if ``True`` (``False`` by default).
+
+      :param AbstractDeleteProgress progress:
+
+         a callback interface for reporting delete progress, ``None`` for no progress
+         report (default).
+
+      :raises: :exc:`IsADirectoryError` if *uri* points on a directory and *recursive*
+               flag is not set.
+
 Bucket
 ======
 

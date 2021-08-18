@@ -27,8 +27,8 @@ from aiobotocore.client import AioBaseClient
 from dateutil.parser import isoparse
 from yarl import URL
 
-from neuro_sdk import AbstractRecursiveFileProgress
-from neuro_sdk.abc import AbstractFileProgress
+from neuro_sdk import AbstractRecursiveFileProgress, file_utils
+from neuro_sdk.abc import AbstractDeleteProgress, AbstractFileProgress
 from neuro_sdk.file_filter import (
     AsyncFilterFunc,
     _glob_safe_prefix,
@@ -235,6 +235,19 @@ class BucketFS(FileSystem[PurePosixPath]):
             raise ValueError("Can not create a bucket root folder")
         await self._provider.put_blob(key=key, body=b"")
 
+    async def rmdir(self, path: PurePosixPath) -> None:
+        key = self._as_dir_key(path)
+        if key == "":
+            return  # Root dir cannot be removed
+        try:
+            await self._provider.delete_blob(key=key)
+        except ResourceNotFound:
+            pass  # Dir already removed/was a prefix - just ignore
+
+    async def rm(self, path: PurePosixPath) -> None:
+        key = self._as_file_key(path)
+        await self._provider.delete_blob(key=key)
+
     def to_url(self, path: PurePosixPath) -> URL:
         return self._provider.bucket.uri / self._as_file_key(path)
 
@@ -397,7 +410,8 @@ class AWSS3Provider(BucketProvider):
                 buffer += chunk
                 if len(buffer) > self.MIN_CHUNK_SIZE:
                     await _upload_chunk()
-            if buffer:
+            if buffer or len(parts_info) == 0:
+                # Either there is final part of file or file is zero-length file
                 await _upload_chunk()
         except Exception:
             await self._client.abort_multipart_upload(
@@ -798,3 +812,14 @@ class Buckets(metaclass=NoPublicConstructor):
             return True
         async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
             return await bucket_fs.is_dir(PurePosixPath(key))
+
+    async def blob_rm(
+        self,
+        uri: URL,
+        *,
+        recursive: bool = False,
+        progress: Optional[AbstractDeleteProgress] = None,
+    ) -> None:
+        cluster_name, bucket_name, key = self._split_blob_uri(uri)
+        async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
+            await file_utils.rm(bucket_fs, PurePosixPath(key), recursive, progress)
