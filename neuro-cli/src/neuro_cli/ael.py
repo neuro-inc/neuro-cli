@@ -7,6 +7,7 @@ import logging
 import signal
 import sys
 import threading
+from datetime import datetime
 from typing import Any, Awaitable, Callable, List, Optional, Sequence, Tuple
 
 import aiohttp
@@ -80,6 +81,7 @@ async def process_logs(
     helper: Optional[AttachHelper],
     *,
     cluster_name: Optional[str],
+    since: Optional[datetime] = None,
     timestamps: bool = False,
 ) -> None:
     codec_info = codecs.lookup("utf8")
@@ -88,6 +90,7 @@ async def process_logs(
     async with root.client.jobs.monitor(
         job,
         cluster_name=cluster_name,
+        since=since,
         timestamps=timestamps,
         separator=separator,
         debug=root.verbosity >= 2,

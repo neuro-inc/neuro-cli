@@ -770,6 +770,7 @@ neuro job logs [OPTIONS] JOB
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--since DATE\_OR_TIMEDELTA_|Only return logs after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_--timestamps_|Include timestamps on each line in the log output.|
 
 
@@ -2626,6 +2627,7 @@ neuro logs [OPTIONS] JOB
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--since DATE\_OR_TIMEDELTA_|Only return logs after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_--timestamps_|Include timestamps on each line in the log output.|
 
 

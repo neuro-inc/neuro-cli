@@ -497,11 +497,17 @@ class Jobs(metaclass=NoPublicConstructor):
         id: str,
         *,
         cluster_name: Optional[str] = None,
+        since: Optional[datetime] = None,
         timestamps: bool = False,
         separator: Optional[str] = None,
         debug: bool = False,
     ) -> AsyncIterator[bytes]:
         url = self._get_monitoring_url(cluster_name) / id / "log"
+        if since is not None:
+            if since.tzinfo is None:
+                # Interpret naive datetime object as local time.
+                since = since.astimezone(timezone.utc)
+            url = url.update_query(since=since.isoformat())
         if timestamps:
             url = url.update_query(timestamps="true")
         if separator is not None:
