@@ -1479,7 +1479,7 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
     return res
 
 
-def _fix_cmd(cmd_name, tmpl: str, cmd: Sequence[str]) -> Sequence[str]:
+def _fix_cmd(cmd_name: str, tmpl: str, cmd: Sequence[str]) -> Sequence[str]:
     if cmd:
         if cmd[0] != "--":
             old_pre, sep, old_suff = tmpl.partition("--")
