@@ -291,13 +291,17 @@ class Parser(metaclass=NoPublicConstructor):
         *,
         allowed_schemes: Iterable[str] = (),
         cluster_name: Optional[str] = None,
+        short: bool = False,
     ) -> URL:
-        return uri_from_cli(
+        ret = uri_from_cli(
             uri,
             self._config.username,
             cluster_name or self._config.cluster_name,
             allowed_schemes=allowed_schemes,
         )
+        if short:
+            ret = self._short(ret)
+        return ret
 
     def uri_to_path(self, uri: URL) -> Path:
         if uri.scheme != "file":
@@ -309,13 +313,11 @@ class Parser(metaclass=NoPublicConstructor):
     def path_to_uri(
         self,
         path: Path,
-        *,
-        cluster_name: Optional[str] = None,
     ) -> URL:
         return uri_from_cli(
             str(path),
             self._config.username,
-            cluster_name or self._config.cluster_name,
+            self._config.cluster_name,
             allowed_schemes=("file",),
         )
 
@@ -325,13 +327,35 @@ class Parser(metaclass=NoPublicConstructor):
         *,
         allowed_schemes: Iterable[str] = (),
         cluster_name: Optional[str] = None,
+        short: bool = False,
     ) -> URL:
         _check_scheme(uri.scheme, allowed_schemes)
-        return _normalize_uri(
+        ret = _normalize_uri(
             uri,
             self._config.username,
             cluster_name or self._config.cluster_name,
         )
+        if short:
+            ret = self._short(ret)
+        return ret
+
+    def _short(self, uri: URL) -> URL:
+        ret = uri
+        if uri.scheme != "file":
+            if ret.host == self._config.cluster_name and ret.parts[:2] == (
+                "/",
+                self._config.username,
+            ):
+                ret = URL.build(
+                    scheme=ret.scheme, host="", path="/".join(ret.parts[2:])
+                )
+        else:
+            # file scheme doesn't support relative URLs.
+            pass
+        while ret.path.endswith("/"):
+            # drop trailing slashes if any
+            ret = URL.build(scheme=ret.scheme, host="", path=ret.path[:-1])
+        return ret
 
 
 def _read_lines(env_file: str) -> Iterator[str]:
