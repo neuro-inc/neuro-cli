@@ -701,7 +701,9 @@ async def tree(
     errors = False
     try:
         tree = await fetch_tree(root.client, path, show_all)
-        name = root.client.parse.uri_to_str(root.client.parse.normalize_uri(path))
+        name = root.client.parse.uri_to_str(
+            root.client.parse.normalize_uri(path, short=True)
+        )
         tree = dataclasses.replace(
             tree,
             name=name,
