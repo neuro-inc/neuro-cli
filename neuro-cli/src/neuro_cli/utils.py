@@ -689,14 +689,3 @@ async def calc_timeout_unused(
     return await _calc_timedelta_key(
         client, value, default, config_section, "timeout-unused"
     )
-
-
-def _calc_relative_uri(parent: URL, name: str, prefix: str) -> str:
-    uri = str(parent / name)
-    if uri.startswith(prefix):
-        relative = uri[len(prefix) :]
-        if relative[0] == "/":
-            # drop trailing slash
-            relative = relative[1:]
-        uri = parent.scheme + ":" + relative
-    return uri

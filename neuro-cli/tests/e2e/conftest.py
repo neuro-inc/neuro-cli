@@ -915,7 +915,7 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
                     description += " with authentication"
         args += ["-d", description]
         capture = helper.run_cli(
-            ["-q", "job", "run", "--detach", *args, NGINX_IMAGE_NAME, command]
+            ["-q", "job", "run", "--detach", *args, NGINX_IMAGE_NAME, "--", command]
         )
         http_job_id = capture.out
         status: JobDescription = helper.job_info(http_job_id, wait_start=True)

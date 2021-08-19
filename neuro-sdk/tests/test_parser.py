@@ -203,3 +203,15 @@ async def test_parse_secret_files_keeps_order(make_client: _MakeClient) -> None:
         SecretFile(URL("secret://default/user/second"), "/var/secrets/second"),
         SecretFile(URL("secret://default/user/third"), "/var/secrets/third"),
     ]
+
+
+async def test_normalize_uri_short_from_short(make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        ret = client.parse.normalize_uri(URL("storage:dir"), short=True)
+        assert ret == URL("storage:dir")
+
+
+async def test_normalize_uri_short_from_long(make_client: _MakeClient) -> None:
+    async with make_client("https://example.com") as client:
+        ret = client.parse.normalize_uri(URL("storage:dir/"), short=True)
+        assert ret == URL("storage:dir")

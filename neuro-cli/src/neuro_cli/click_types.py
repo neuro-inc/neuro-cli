@@ -2,7 +2,6 @@ import abc
 import os
 import re
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import (
     AsyncIterator,
     Generic,
@@ -18,7 +17,12 @@ from typing import (
 
 import click
 from click import BadParameter
-from click.shell_completion import CompletionItem, ZshComplete, add_completion_class
+from click.shell_completion import (
+    BashComplete,
+    CompletionItem,
+    ZshComplete,
+    add_completion_class,
+)
 from yarl import URL
 
 from neuro_sdk import (
@@ -29,7 +33,6 @@ from neuro_sdk import (
     ResourceNotFound,
     TagOption,
 )
-from neuro_sdk.url_utils import _extract_path, uri_from_cli
 
 from .parse_utils import (
     JobTableFormat,
@@ -38,7 +41,6 @@ from .parse_utils import (
     to_megabytes,
 )
 from .root import Root
-from .utils import _calc_relative_uri
 
 # NOTE: these job name defaults are taken from `platform_api` file `validators.py`
 JOB_NAME_MIN_LENGTH = 3
@@ -498,14 +500,10 @@ class StoragePathType(AsyncType[URL]):
         ctx: Optional[click.Context],
     ) -> URL:
         await root.init_client()
-        return self._parse_uri(value, root)
-
-    def _parse_uri(self, value: str, root: Root) -> URL:
-        return uri_from_cli(
+        return root.client.parse.str_to_uri(
             value,
-            root.client.username,
-            root.client.cluster_name,
             allowed_schemes=self._allowed_schemes,
+            short=False,
         )
 
     def _make_item(
@@ -513,21 +511,14 @@ class StoragePathType(AsyncType[URL]):
         parent: URL,
         name: str,
         is_dir: bool,
-        prefix: str,
     ) -> CompletionItem:
-        uri = _calc_relative_uri(parent, name, prefix)
         if is_dir:
-            return CompletionItem(
-                uri + "/",
-                uri="1",
-                display_name=name + "/",
-            )
-        else:
-            return CompletionItem(
-                uri,
-                uri="1",
-                display_name=name,
-            )
+            name += "/"
+        return CompletionItem(
+            name,
+            type="uri",
+            prefix=str(parent) + "/" if parent.path else str(parent),
+        )
 
     async def _collect_names(
         self,
@@ -536,12 +527,11 @@ class StoragePathType(AsyncType[URL]):
         incomplete: str,
     ) -> AsyncIterator[CompletionItem]:
         if uri.scheme == "file":
-            path = _extract_path(uri)
+            path = root.client.parse.uri_to_path(uri)
             if not path.is_dir():
                 raise NotADirectoryError
-            cwd = Path.cwd().as_uri()
             for item in path.iterdir():
-                if str(item.name).startswith(incomplete):
+                if str(uri / item.name).startswith(incomplete):
                     is_dir = item.is_dir()
                     if is_dir and not self._complete_dir:
                         continue
@@ -551,13 +541,11 @@ class StoragePathType(AsyncType[URL]):
                         uri,
                         item.name,
                         is_dir,
-                        str(cwd),
                     )
         else:
-            home = self._parse_uri("storage:", root)
             async with root.client.storage.ls(uri) as it:
                 async for fstat in it:
-                    if str(fstat.name).startswith(incomplete):
+                    if str(uri / fstat.name).startswith(incomplete):
                         is_dir = fstat.is_dir()
                         if is_dir and not self._complete_dir:
                             continue
@@ -567,7 +555,6 @@ class StoragePathType(AsyncType[URL]):
                             uri,
                             fstat.name,
                             is_dir,
-                            str(home),
                         )
 
     async def _find_matches(self, incomplete: str, root: Root) -> List[CompletionItem]:
@@ -578,18 +565,25 @@ class StoragePathType(AsyncType[URL]):
                 # found valid scheme, try to resolve path
                 break
             if scheme.startswith(incomplete):
-                ret.append(CompletionItem(scheme, uri="1", display_name=scheme))
+                ret.append(CompletionItem(scheme, type="uri", prefix=""))
         else:
             return ret
 
-        uri = self._parse_uri(incomplete, root)
+        # while incomplete.endswith("/"):
+        #     incomplete = incomplete[:-1]
+
+        uri = root.client.parse.str_to_uri(
+            incomplete,
+            allowed_schemes=self._allowed_schemes,
+            short=True,
+        )
         try:
-            return [item async for item in self._collect_names(uri, root, "")]
+            return [item async for item in self._collect_names(uri, root, incomplete)]
         except (ResourceNotFound, NotADirectoryError):
             try:
                 return [
                     item
-                    async for item in self._collect_names(uri.parent, root, uri.name)
+                    async for item in self._collect_names(uri.parent, root, incomplete)
                 ]
             except (ResourceNotFound, NotADirectoryError):
                 return []
@@ -598,7 +592,8 @@ class StoragePathType(AsyncType[URL]):
         self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
     ) -> List[CompletionItem]:
         async with await root.init_client():
-            return await self._find_matches(incomplete, root)
+            ret = await self._find_matches(incomplete, root)
+            return ret
 
 
 _SOURCE_ZSH = """\
@@ -609,23 +604,21 @@ _SOURCE_ZSH = """\
     local -a completions_with_descriptions
     local -a response
     local -a uris
-    local -a display_names
+    local prefix
     (( ! $+commands[%(prog_name)s] )) && return 1
 
     response=("${(@f)$(env COMP_WORDS="${words[*]}" COMP_CWORD=$((CURRENT-1)) \
 %(complete_var)s=zsh_complete %(prog_name)s)}")
 
-    for type key descr uri display_name in ${response}; do
-        if [[ "$type" == "plain" ]]; then
-            if [[ "$uri" == "1" ]]; then
-                uris+=("$key")
-                display_names+=("$display_name")
+    for type key descr pre in ${response}; do
+        if [[ "$type" == "uri" ]]; then
+            uris+=("$key")
+            prefix="$pre"
+        elif [[ "$type" == "plain" ]]; then
+            if [[ "$descr" == "_" ]]; then
+                completions+=("$key")
             else
-                if [[ "$descr" == "_" ]]; then
-                    completions+=("$key")
-                else
-                    completions_with_descriptions+=("$key":"$descr")
-                fi
+                completions_with_descriptions+=("$key":"$descr")
             fi
         elif [[ "$type" == "dir" ]]; then
             _path_files -/
@@ -644,10 +637,9 @@ _SOURCE_ZSH = """\
 
     if [ -n "$uris" ]; then
         compset -S '[^:/]*' && compstate[to_end]=''
-        compadd -Q -S '' -d display_names -U -V unsorted -a uris
+        compadd -P "$prefix" -S '' -U -V unsorted -a uris
     fi
 }
-
 
 compdef %(complete_func)s %(prog_name)s;
 """
@@ -659,11 +651,90 @@ class NewZshComplete(ZshComplete):
     def format_completion(self, item: CompletionItem) -> str:
         return (
             f"{item.type}\n{item.value}\n{item.help if item.help else '_'}\n"
-            f"{item.uri}\n{item.display_name}"
+            f"{item.prefix}"
         )
 
 
 add_completion_class(NewZshComplete)
+
+
+_SOURCE_BASH = """\
+%(complete_func)s() {
+    local IFS=$'\\n'
+    local response
+
+    response=$(env COMP_WORDS="${COMP_WORDS[*]}" COMP_CWORD=$COMP_CWORD \
+%(complete_var)s=bash_complete $1)
+
+    for completion in $response; do
+        IFS=',' read type value prefix <<< "$completion"
+
+        if [[ $type == 'uri' ]]; then
+            COMPREPLY+=("$prefix$value")
+            compopt -o nospace
+        elif [[ $type == 'dir' ]]; then
+            COMREPLY=()
+            compopt -o dirnames
+        elif [[ $type == 'file' ]]; then
+            COMREPLY=()
+            compopt -o default
+        elif [[ $type == 'plain' ]]; then
+            COMPREPLY+=($value)
+        fi
+    done
+
+    return 0
+}
+
+%(complete_func)s_setup() {
+    complete -o nosort -F %(complete_func)s %(prog_name)s
+}
+
+%(complete_func)s_setup;
+"""
+
+
+def _merge_autocompletion_args(
+    args: List[str], incomplete: str
+) -> Tuple[List[str], str]:
+    new_args: List[str] = []
+    for arg in args:
+        if arg == ":":
+            if new_args:
+                new_args[-1] += ":"
+            else:
+                new_args.append(":")
+        else:
+            if new_args and new_args[-1].endswith(":"):
+                new_args[-1] += arg
+            else:
+                new_args.append(arg)
+
+    if new_args:
+        if new_args[-1].endswith(":"):
+            incomplete = new_args[-1] + incomplete
+            del new_args[-1]
+        elif incomplete == ":":
+            incomplete = new_args[-1] + ":"
+            del new_args[-1]
+    return new_args, incomplete
+
+
+class NewBashComplete(BashComplete):
+    source_template = _SOURCE_BASH
+
+    def get_completion_args(self) -> Tuple[List[str], str]:
+        args, incomplete = super().get_completion_args()
+        args, incomplete = _merge_autocompletion_args(args, incomplete)
+        return args, incomplete
+
+    def format_completion(self, item: CompletionItem) -> str:
+        # bash assumes ':' as a word separator along with ' '
+        pre, sep, prefix = (item.prefix or "").rpartition(":")
+        return f"{item.type},{item.value},{prefix}"
+
+
+add_completion_class(NewBashComplete)
 
 
 class BucketType(AsyncType[str]):
