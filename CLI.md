@@ -26,7 +26,6 @@
 		* [neuro job logs](#neuro-job-logs)
 		* [neuro job kill](#neuro-job-kill)
 		* [neuro job top](#neuro-job-top)
-		* [neuro job save](#neuro-job-save)
 		* [neuro job browse](#neuro-job-browse)
 		* [neuro job attach](#neuro-job-attach)
 		* [neuro job bump-life-span](#neuro-job-bump-life-span)
@@ -104,7 +103,6 @@
 	* [neuro logs](#neuro-logs)
 	* [neuro kill](#neuro-kill)
 	* [neuro top](#neuro-top)
-	* [neuro save](#neuro-save)
 	* [neuro login](#neuro-login)
 	* [neuro logout](#neuro-logout)
 	* [neuro cp](#neuro-cp)
@@ -131,7 +129,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--color \[yes &#124; no &#124; auto]_|Color mode.|
-|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuro Platform CLI is available for download.|
+|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuro Platform CLI is available for download.  \[env var: NEURO\_CLI_DISABLE_PYPI_VERSION_CHECK]|
 |_\--hide-token / --no-hide-token_|Prevent user's token sent in HTTP headers from being printed out to stderr during HTTP tracing. Can be used only together with option '--trace'. On by default.|
 |_\--iso-datetime-format / --no-iso-datetime-format_|Use ISO 8601 format for printing date and time|
 |_\--network-timeout FLOAT_|Network read timeout, seconds.|
@@ -177,7 +175,6 @@ Name | Description|
 | _[neuro logs](#neuro-logs)_| Print the logs for a job |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
-| _[neuro save](#neuro-save)_| Save job's state to an image |
 | _[neuro login](#neuro-login)_| Log into Neuro Platform |
 | _[neuro logout](#neuro-logout)_| Log out |
 | _[neuro cp](#neuro-cp)_| Copy files and directories |
@@ -531,7 +528,6 @@ Name | Description|
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a job |
 | _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
-| _[neuro job save](#neuro-job-save)_| Save job's state to an image |
 | _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
 | _[neuro job attach](#neuro-job-attach)_| Attach local standard input, output, and error streams to a running job |
 | _[neuro job bump\-life-span](#neuro-job-bump-life-span)_| Increase job life span |
@@ -781,6 +777,8 @@ neuro job logs [OPTIONS] JOB
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--since DATE\_OR_TIMEDELTA_|Only return logs after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
+|_--timestamps_|Include timestamps on each line in the log output.|
 
 
 
@@ -842,35 +840,6 @@ Name | Description|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0.0]|
 |_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
-
-
-
-
-### neuro job save
-
-Save job's state to an image.<br/>
-
-**Usage:**
-
-```bash
-neuro job save [OPTIONS] JOB IMAGE
-```
-
-**Examples:**
-
-```bash
-
-neuro job save job-id image:ubuntu-patched
-neuro job save my-favourite-job image:ubuntu-patched:v1
-neuro job save my-favourite-job image://bob/ubuntu-patched
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
 
 
 
@@ -2802,6 +2771,8 @@ neuro logs [OPTIONS] JOB
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--since DATE\_OR_TIMEDELTA_|Only return logs after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
+|_--timestamps_|Include timestamps on each line in the log output.|
 
 
 
@@ -2863,35 +2834,6 @@ Name | Description|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0.0]|
 |_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
-
-
-
-
-## neuro save
-
-Save job's state to an image.<br/>
-
-**Usage:**
-
-```bash
-neuro save [OPTIONS] JOB IMAGE
-```
-
-**Examples:**
-
-```bash
-
-neuro job save job-id image:ubuntu-patched
-neuro job save my-favourite-job image:ubuntu-patched:v1
-neuro job save my-favourite-job image://bob/ubuntu-patched
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
 
 
 

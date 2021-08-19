@@ -5,6 +5,23 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.8.12 (2021-08-12)
+==================================
+
+Features
+--------
+
+- Added possibility to disable PyPi version check via environment variable 'NEURO_CLI_DISABLE_PYPI_VERSION_CHECK'. ([#2237](https://github.com/neuro-inc/platform-client-python/issues/2237))
+- Add parameter *separator* in jobs.monitor(). ([#2239](https://github.com/neuro-inc/platform-client-python/issues/2239))
+
+- Support URI autocompletion in storage commands for ZSH shell. ([#2248](https://github.com/neuro-inc/platform-client-python/issues/2248))
+
+Deprecations and Removals
+-------------------------
+
+- `neuro save` command is deprecated and will be removed in future CLI release. ([#2249](https://github.com/neuro-inc/platform-client-python/issues/2249))
+
+
 Neuro SDK/CLI 21.7.29 (2021-07-29)
 ==================================
 

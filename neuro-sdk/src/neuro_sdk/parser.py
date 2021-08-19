@@ -1,14 +1,25 @@
 import os
 import warnings
 from dataclasses import dataclass
-from typing import Any, Dict, Iterator, List, Optional, Sequence, Tuple, overload
+from pathlib import Path
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    overload,
+)
 
 from typing_extensions import Literal
 from yarl import URL
 
 from .config import Config
 from .parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
-from .url_utils import uri_from_cli
+from .url_utils import _check_scheme, _extract_path, _normalize_uri, uri_from_cli
 from .utils import NoPublicConstructor
 
 
@@ -269,6 +280,57 @@ class Parser(metaclass=NoPublicConstructor):
             volumes=self._build_volumes(volumes, cluster_name),
             secret_files=self._build_secret_files(secret_files, cluster_name),
             disk_volumes=self._build_disk_volumes(disk_volumes, cluster_name),
+        )
+
+    def uri_to_str(self, uri: URL) -> str:
+        return str(uri)
+
+    def str_to_uri(
+        self,
+        uri: str,
+        *,
+        allowed_schemes: Iterable[str] = (),
+        cluster_name: Optional[str] = None,
+    ) -> URL:
+        return uri_from_cli(
+            uri,
+            self._config.username,
+            cluster_name or self._config.cluster_name,
+            allowed_schemes=allowed_schemes,
+        )
+
+    def uri_to_path(self, uri: URL) -> Path:
+        if uri.scheme != "file":
+            raise ValueError(
+                f"Invalid scheme '{uri.scheme}:' (only 'file:' is allowed)"
+            )
+        return _extract_path(uri)
+
+    def path_to_uri(
+        self,
+        path: Path,
+        *,
+        cluster_name: Optional[str] = None,
+    ) -> URL:
+        return uri_from_cli(
+            str(path),
+            self._config.username,
+            cluster_name or self._config.cluster_name,
+            allowed_schemes=("file",),
+        )
+
+    def normalize_uri(
+        self,
+        uri: URL,
+        *,
+        allowed_schemes: Iterable[str] = (),
+        cluster_name: Optional[str] = None,
+    ) -> URL:
+        _check_scheme(uri.scheme, allowed_schemes)
+        return _normalize_uri(
+            uri,
+            self._config.username,
+            cluster_name or self._config.cluster_name,
         )
 
 

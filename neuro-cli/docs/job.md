@@ -22,7 +22,6 @@ Job operations.
 | [_logs_](job.md#logs) | Print the logs for a job |
 | [_kill_](job.md#kill) | Kill job\(s\) |
 | [_top_](job.md#top) | Display GPU/CPU/Memory usage |
-| [_save_](job.md#save) | Save job's state to an image |
 | [_browse_](job.md#browse) | Opens a job's URL in a web browser |
 | [_attach_](job.md#attach) | Attach local standard input, output, and... |
 | [_bump-life-span_](job.md#bump-life-span) | Increase job life span |
@@ -286,6 +285,8 @@ Print the logs for a job.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--since DATE\_OR\_TIMEDELTA_ | Only return logs after a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
+| _--timestamps_ | Include timestamps on each line in the log output. |
 
 
 
@@ -350,35 +351,6 @@ $ neuro top -t tag1 -t tag2
 | _-t, --tag TAG_ | Filter out jobs by tag \(multiple option\) |
 | _--timeout FLOAT_ | Maximum allowed time for executing the command, 0 for no timeout  _\[default: 0.0\]_ |
 | _--until DATE\_OR\_TIMEDELTA_ | Show jobs created before a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
-
-
-
-### save
-
-Save job's state to an image
-
-
-#### Usage
-
-```bash
-neuro job save [OPTIONS] JOB IMAGE
-```
-
-Save job's state to an image.
-
-#### Examples
-
-```bash
-$ neuro job save job-id image:ubuntu-patched
-$ neuro job save my-favourite-job image:ubuntu-patched:v1
-$ neuro job save my-favourite-job image://bob/ubuntu-patched
-```
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
 
 
 

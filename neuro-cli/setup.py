@@ -6,7 +6,7 @@ with open("README.md") as f:
 
 setup(
     name="neuro-cli",
-    version="21.7.29",
+    version="21.8.12",
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
@@ -19,21 +19,21 @@ setup(
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
         "aiodocker>=0.18.7",
-        "neuro-sdk>=21.7.29",
-        "click>=7.0",
+        "neuro-sdk>=21.8.12",
+        "click>=8.0",
         "humanize>=3.3",
         "typing_extensions>=3.7.4",
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead
         "certifi",
-        "cookiecutter>=0.9.0",
-        "atomicwrites>=1.0",
+        "cookiecutter>=1.5",
         "wcwidth>=0.1.7",
         "toml>=0.10.0",
         "prompt-toolkit>=3.0.13",
         "rich>=10.0.1",
         "packaging>=20.0",
         "aiobotocore==1.3.3",
+        "jedi>=0.16",
     ],
     include_package_data=True,
     description="Neuro Platform API client",

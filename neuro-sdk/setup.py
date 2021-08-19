@@ -6,7 +6,7 @@ with open("README.md") as f:
 
 setup(
     name="neuro-sdk",
-    version="21.7.29",
+    version="21.8.12",
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
@@ -23,7 +23,6 @@ setup(
         # certifi has no version requirement
         # CLI raises a warning for outdated package instead
         "certifi",
-        "atomicwrites>=1.0",
         "toml>=0.10.0",
     ],
     include_package_data=True,

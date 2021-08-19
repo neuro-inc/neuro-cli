@@ -78,7 +78,6 @@ else:
 JOB_TIMEOUT = 5 * 60
 JOB_WAIT_SLEEP_SECONDS = 2
 JOB_OUTPUT_TIMEOUT = 10 * 60
-JOB_OUTPUT_SLEEP_SECONDS = 2
 CLI_MAX_WAIT = 5 * 60
 NETWORK_TIMEOUT = 3 * 60.0
 CLIENT_TIMEOUT = aiohttp.ClientTimeout(None, None, NETWORK_TIMEOUT, NETWORK_TIMEOUT)
@@ -406,19 +405,17 @@ class Helper:
         __tracebackhide__ = True
 
         started_at = time()
-        while time() - started_at < JOB_OUTPUT_TIMEOUT:
-            chunks = []
-            async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-                async with client.jobs.monitor(job_id) as it:
-                    async for chunk in it:
-                        if not chunk:
-                            break
-                        chunks.append(chunk.decode())
-                        if re.search(expected, "".join(chunks), flags):
-                            return
-                        if time() - started_at < JOB_OUTPUT_TIMEOUT:
-                            break
-                        await asyncio.sleep(JOB_OUTPUT_SLEEP_SECONDS)
+        chunks = []
+        async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
+            async with client.jobs.monitor(job_id, separator="") as it:
+                async for chunk in it:
+                    if not chunk:
+                        break
+                    chunks.append(chunk.decode())
+                    if re.search(expected, "".join(chunks), flags):
+                        return
+                    if time() - started_at > JOB_OUTPUT_TIMEOUT:
+                        break
 
         raise AssertionError(
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"

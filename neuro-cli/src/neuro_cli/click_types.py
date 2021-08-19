@@ -2,12 +2,14 @@ import abc
 import os
 import re
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import (
+    AsyncIterator,
     Generic,
+    Iterable,
     List,
     Mapping,
     Optional,
-    Sequence,
     Tuple,
     TypeVar,
     Union,
@@ -16,8 +18,18 @@ from typing import (
 
 import click
 from click import BadParameter
+from click.shell_completion import CompletionItem, ZshComplete, add_completion_class
+from yarl import URL
 
-from neuro_sdk import Client, LocalImage, Preset, RemoteImage, TagOption
+from neuro_sdk import (
+    Client,
+    LocalImage,
+    Preset,
+    RemoteImage,
+    ResourceNotFound,
+    TagOption,
+)
+from neuro_sdk.url_utils import _extract_path, uri_from_cli
 
 from .parse_utils import (
     JobTableFormat,
@@ -26,6 +38,7 @@ from .parse_utils import (
     to_megabytes,
 )
 from .root import Root
+from .utils import _calc_relative_uri
 
 # NOTE: these job name defaults are taken from `platform_api` file `validators.py`
 JOB_NAME_MIN_LENGTH = 3
@@ -71,16 +84,16 @@ class AsyncType(click.ParamType, Generic[_T], abc.ABC):
     ) -> _T:
         pass
 
-    def complete(
-        self, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    def shell_complete(
+        self, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         root = cast(Root, ctx.obj)
-        return root.run(self.async_complete(root, ctx, args, incomplete))
+        return root.run(self.async_shell_complete(root, ctx, param, incomplete))
 
     @abc.abstractmethod
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         pass
 
 
@@ -311,14 +324,14 @@ class PresetType(AsyncType[str]):
             )
         return value
 
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         # async context manager is used to prevent a message about
         # unclosed session
         async with await root.init_client() as client:
             presets = list(self._get_presets(ctx, client))
-            return [(p, None) for p in presets if p.startswith(incomplete)]
+            return [CompletionItem(p) for p in presets if p.startswith(incomplete)]
 
 
 PRESET = PresetType()
@@ -344,14 +357,14 @@ class ClusterType(AsyncType[str]):
             )
         return value
 
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         # async context manager is used to prevent a message about
         # unclosed session
         async with await root.init_client() as client:
             clusters = list(client.config.clusters)
-            return [(c, None) for c in clusters if c.startswith(incomplete)]
+            return [CompletionItem(c) for c in clusters if c.startswith(incomplete)]
 
 
 CLUSTER = ClusterType()
@@ -369,11 +382,11 @@ class JobType(AsyncType[str]):
     ) -> str:
         return value
 
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         async with await root.init_client() as client:
-            ret: List[Tuple[str, Optional[str]]] = []
+            ret: List[CompletionItem] = []
             now = datetime.now()
             limit = int(os.environ.get(JOB_LIMIT_ENV, 100))
             async with client.jobs.list(
@@ -389,7 +402,7 @@ class JobType(AsyncType[str]):
                         f"job://{job.cluster_name}/{job.owner}/{job.id}",
                     ):
                         if test.startswith(incomplete):
-                            ret.append((test, job_name))
+                            ret.append(CompletionItem(test, help=job_name))
 
             return ret
 
@@ -409,11 +422,11 @@ class DiskType(AsyncType[str]):
     ) -> str:
         return value
 
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         async with await root.init_client() as client:
-            ret: List[Tuple[str, Optional[str]]] = []
+            ret: List[CompletionItem] = []
             async with client.disks.list(cluster_name=ctx.params.get("cluster")) as it:
                 async for disk in it:
                     disk_name = disk.name or ""
@@ -422,7 +435,7 @@ class DiskType(AsyncType[str]):
                         disk_name,
                     ):
                         if test.startswith(incomplete):
-                            ret.append((test, disk_name))
+                            ret.append(CompletionItem(test, help=disk_name))
 
             return ret
 
@@ -442,11 +455,11 @@ class ServiceAccountType(AsyncType[str]):
     ) -> str:
         return value
 
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         async with await root.init_client() as client:
-            ret: List[Tuple[str, Optional[str]]] = []
+            ret: List[CompletionItem] = []
             async with client.service_accounts.list() as it:
                 async for account in it:
                     account_name = account.name or ""
@@ -455,12 +468,202 @@ class ServiceAccountType(AsyncType[str]):
                         account_name,
                     ):
                         if test.startswith(incomplete):
-                            ret.append((test, account_name))
+                            ret.append(CompletionItem(test, help=account_name))
 
             return ret
 
 
 SERVICE_ACCOUNT = ServiceAccountType()
+
+
+class StoragePathType(AsyncType[URL]):
+    name = "storage"
+
+    def __init__(
+        self,
+        *,
+        allowed_schemes: Iterable[str] = ("file", "storage"),
+        complete_dir: bool = True,
+        complete_file: bool = True,
+    ) -> None:
+        self._allowed_schemes = list(allowed_schemes)
+        self._complete_dir = complete_dir
+        self._complete_file = complete_file
+
+    async def async_convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> URL:
+        await root.init_client()
+        return self._parse_uri(value, root)
+
+    def _parse_uri(self, value: str, root: Root) -> URL:
+        return uri_from_cli(
+            value,
+            root.client.username,
+            root.client.cluster_name,
+            allowed_schemes=self._allowed_schemes,
+        )
+
+    def _make_item(
+        self,
+        parent: URL,
+        name: str,
+        is_dir: bool,
+        prefix: str,
+    ) -> CompletionItem:
+        uri = _calc_relative_uri(parent, name, prefix)
+        if is_dir:
+            return CompletionItem(
+                uri + "/",
+                uri="1",
+                display_name=name + "/",
+            )
+        else:
+            return CompletionItem(
+                uri,
+                uri="1",
+                display_name=name,
+            )
+
+    async def _collect_names(
+        self,
+        uri: URL,
+        root: Root,
+        incomplete: str,
+    ) -> AsyncIterator[CompletionItem]:
+        if uri.scheme == "file":
+            path = _extract_path(uri)
+            if not path.is_dir():
+                raise NotADirectoryError
+            cwd = Path.cwd().as_uri()
+            for item in path.iterdir():
+                if str(item.name).startswith(incomplete):
+                    is_dir = item.is_dir()
+                    if is_dir and not self._complete_dir:
+                        continue
+                    if not is_dir and not self._complete_file:
+                        continue
+                    yield self._make_item(
+                        uri,
+                        item.name,
+                        is_dir,
+                        str(cwd),
+                    )
+        else:
+            home = self._parse_uri("storage:", root)
+            async with root.client.storage.ls(uri) as it:
+                async for fstat in it:
+                    if str(fstat.name).startswith(incomplete):
+                        is_dir = fstat.is_dir()
+                        if is_dir and not self._complete_dir:
+                            continue
+                        if not is_dir and not self._complete_file:
+                            continue
+                        yield self._make_item(
+                            uri,
+                            fstat.name,
+                            is_dir,
+                            str(home),
+                        )
+
+    async def _find_matches(self, incomplete: str, root: Root) -> List[CompletionItem]:
+        ret: List[CompletionItem] = []
+        for scheme in self._allowed_schemes:
+            scheme += ":"
+            if incomplete.startswith(scheme):
+                # found valid scheme, try to resolve path
+                break
+            if scheme.startswith(incomplete):
+                ret.append(CompletionItem(scheme, uri="1", display_name=scheme))
+        else:
+            return ret
+
+        uri = self._parse_uri(incomplete, root)
+        try:
+            return [item async for item in self._collect_names(uri, root, "")]
+        except (ResourceNotFound, NotADirectoryError):
+            try:
+                return [
+                    item
+                    async for item in self._collect_names(uri.parent, root, uri.name)
+                ]
+            except (ResourceNotFound, NotADirectoryError):
+                return []
+
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
+        async with await root.init_client():
+            return await self._find_matches(incomplete, root)
+
+
+_SOURCE_ZSH = """\
+#compdef %(prog_name)s
+
+%(complete_func)s() {
+    local -a completions
+    local -a completions_with_descriptions
+    local -a response
+    local -a uris
+    local -a display_names
+    (( ! $+commands[%(prog_name)s] )) && return 1
+
+    response=("${(@f)$(env COMP_WORDS="${words[*]}" COMP_CWORD=$((CURRENT-1)) \
+%(complete_var)s=zsh_complete %(prog_name)s)}")
+
+    for type key descr uri display_name in ${response}; do
+        if [[ "$type" == "plain" ]]; then
+            if [[ "$uri" == "1" ]]; then
+                uris+=("$key")
+                display_names+=("$display_name")
+            else
+                if [[ "$descr" == "_" ]]; then
+                    completions+=("$key")
+                else
+                    completions_with_descriptions+=("$key":"$descr")
+                fi
+            fi
+        elif [[ "$type" == "dir" ]]; then
+            _path_files -/
+        elif [[ "$type" == "file" ]]; then
+            _path_files -f
+        fi
+    done
+
+    if [ -n "$completions_with_descriptions" ]; then
+        _describe -V unsorted completions_with_descriptions -U
+    fi
+
+    if [ -n "$completions" ]; then
+        compadd -U -V unsorted -a completions
+    fi
+
+    if [ -n "$uris" ]; then
+        compset -S '[^:/]*' && compstate[to_end]=''
+        compadd -Q -S '' -d display_names -U -V unsorted -a uris
+    fi
+}
+
+
+compdef %(complete_func)s %(prog_name)s;
+"""
+
+
+class NewZshComplete(ZshComplete):
+    source_template = _SOURCE_ZSH
+
+    def format_completion(self, item: CompletionItem) -> str:
+        return (
+            f"{item.type}\n{item.value}\n{item.help if item.help else '_'}\n"
+            f"{item.uri}\n{item.display_name}"
+        )
+
+
+add_completion_class(NewZshComplete)
 
 
 class BucketType(AsyncType[str]):
@@ -475,11 +678,11 @@ class BucketType(AsyncType[str]):
     ) -> str:
         return value
 
-    async def async_complete(
-        self, root: Root, ctx: click.Context, args: Sequence[str], incomplete: str
-    ) -> List[Tuple[str, Optional[str]]]:
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
         async with await root.init_client() as client:
-            ret: List[Tuple[str, Optional[str]]] = []
+            ret: List[CompletionItem] = []
             async with client.buckets.list(
                 cluster_name=ctx.params.get("cluster")
             ) as it:
@@ -490,7 +693,7 @@ class BucketType(AsyncType[str]):
                         bucket_name,
                     ):
                         if test.startswith(incomplete):
-                            ret.append((test, bucket_name))
+                            ret.append(CompletionItem(test, help=bucket_name))
 
             return ret
 

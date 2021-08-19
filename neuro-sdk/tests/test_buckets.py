@@ -38,7 +38,7 @@ async def test_list(
         )
 
     app = web.Application()
-    app.router.add_get("/buckets", handler)
+    app.router.add_get("/buckets/buckets", handler)
 
     srv = await aiohttp_server(app)
 
@@ -92,7 +92,7 @@ async def test_add(
         )
 
     app = web.Application()
-    app.router.add_post("/buckets", handler)
+    app.router.add_post("/buckets/buckets", handler)
 
     srv = await aiohttp_server(app)
 
@@ -128,7 +128,7 @@ async def test_get(
         )
 
     app = web.Application()
-    app.router.add_get("/buckets/{key}", handler)
+    app.router.add_get("/buckets/buckets/{key}", handler)
 
     srv = await aiohttp_server(app)
 
@@ -150,7 +150,7 @@ async def test_rm(aiohttp_server: _TestServerFactory, make_client: _MakeClient) 
         raise web.HTTPNoContent
 
     app = web.Application()
-    app.router.add_delete("/buckets/{key}", handler)
+    app.router.add_delete("/buckets/buckets/{key}", handler)
 
     srv = await aiohttp_server(app)
 
