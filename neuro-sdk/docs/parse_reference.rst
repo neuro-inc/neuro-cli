@@ -87,7 +87,8 @@ Parser
       Convert :class:`~yarl.URL` object into :class:`str`.
 
    .. method:: str_to_uri(uri: str, *, allowed_schemes: Iterable[str] = (), \
-                          cluster_name: Optional[str] = None) -> URL
+                          cluster_name: Optional[str] = None, \
+                          short: bool = False) -> URL
 
       Parse a string into *normalized* :class:`URL` for future usage by SDK methods.
 
@@ -101,6 +102,10 @@ Parser
 
       :param ~typing.Optional[str] cluster_name: optional cluster name, the default
                                                  cluster is used if not specified.
+
+      :param bool short: if ``True``, return short URL
+                         (without cluster and user names if possible).
+                         ``False`` by default.
 
       :return: :class:`~yarl.URL` with parsed URI.
 
@@ -120,19 +125,22 @@ Parser
 
       :param ~pathlib.Path path: a path to convert.
 
-      :param ~typing.Optional[str] cluster_name: optional cluster name, the default
-                                                 cluster is used if not specified.
-
       :return: :class:`~yarl.URL` that represent a ``path``.
 
    .. method:: normalize_uri(uri: URL, *, allowed_schemes: Iterable[str] = (), \
-                          cluster_name: Optional[str] = None) -> URL
+                          cluster_name: Optional[str] = None, \
+                          short: bool = False) -> URL
 
       Normalize ``uri`` according to current user name, cluster and allowed schemes.
 
-      *Normalized* form is the minimal possible representation of URI. For example, the
-      user is omitted if it is equal to default SDK user given by logging in. The same
-      is for cluster name: it is omitted if equal to default cluster.
+      *Normalized* form has two variants:
+
+      1. Long form: cluster and user names are always present,
+         e.g. `storage://cluster/user/dir/file.txt`.
+
+      2. Short form: cluster and user are omitted if they are equal to default values
+         given from `client.config.cluster_name` and `client.config.username`, e.g.
+         `storage:dir/file.txt`.
 
       :param ~yarl.URL uri: an URI to normalize.
 
@@ -143,6 +151,10 @@ Parser
 
       :param ~typing.Optional[str] cluster_name: optional cluster name, the default
                                                  cluster is used if not specified.
+
+      :param bool short: if ``True``, return short URL
+                         (without cluster and user names if possible).
+                         ``False`` by default.
 
       :return: :class:`~yarl.URL` with normalized URI.
 
