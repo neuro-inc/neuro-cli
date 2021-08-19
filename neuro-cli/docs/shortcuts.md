@@ -32,7 +32,7 @@ Run a job with predefined resources...
 #### Usage
 
 ```bash
-neuro run [OPTIONS] IMAGE [CMD]...
+neuro run [OPTIONS] IMAGE [-- CMD...]
 ```
 
 Run a job with predefined resources configuration.
@@ -56,7 +56,7 @@ $ --volume=storage:/neuromation/public:/var/storage/home:ro pytorch:latest
 
 # Starts a container using the custom image my-ubuntu:latest stored in neuro
 # registry, run /script.sh and pass arg1 and arg2 as its arguments:
-$ neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
+$ neuro run -s cpu-small --entrypoint=/script.sh image:my-ubuntu:latest -- arg1 arg2
 ```
 
 #### Options
@@ -171,7 +171,7 @@ Execute command in a running job
 #### Usage
 
 ```bash
-neuro exec [OPTIONS] JOB CMD...
+neuro exec [OPTIONS] JOB -- CMD...
 ```
 
 Execute command in a running job.
@@ -181,10 +181,10 @@ Execute command in a running job.
 ```bash
 
 # Provides a shell to the container:
-$ neuro exec my-job /bin/bash
+$ neuro exec my-job -- /bin/bash
 
 # Executes a single command in the container and returns the control:
-$ neuro exec --no-tty my-job ls -l
+$ neuro exec --no-tty my-job -- ls -l
 ```
 
 #### Options

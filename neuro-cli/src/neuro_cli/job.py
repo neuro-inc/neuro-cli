@@ -114,7 +114,7 @@ def job() -> None:
 
 @command(context_settings=dict(allow_interspersed_args=False))
 @argument("job", type=JOB)
-@argument("cmd", nargs=-1, type=click.UNPROCESSED, required=True)
+@argument("cmd", nargs=-1, type=click.UNPROCESSED, metavar="-- CMD...", required=True)
 @TTY_OPT
 @option(
     "--no-key-check",
@@ -144,11 +144,12 @@ async def exec(
     Examples:
 
     # Provides a shell to the container:
-    neuro exec my-job /bin/bash
+    neuro exec my-job -- /bin/bash
 
     # Executes a single command in the container and returns the control:
-    neuro exec --no-tty my-job ls -l
+    neuro exec --no-tty my-job -- ls -l
     """
+    cmd = _fix_cmd("neuro exec", "JOB -- CMD...", cmd)
     real_cmd = _parse_cmd(cmd)
     job, cluster_name = await resolve_job_ex(
         job,
@@ -844,7 +845,7 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
 
 @command(context_settings=dict(allow_interspersed_args=False))
 @argument("image", type=RemoteImageType())
-@argument("cmd", nargs=-1, type=click.UNPROCESSED)
+@argument("cmd", nargs=-1, type=click.UNPROCESSED, metavar="[-- CMD...]")
 @option(
     "--cluster",
     type=CLUSTER,
@@ -1087,8 +1088,9 @@ async def run(
 
     # Starts a container using the custom image my-ubuntu:latest stored in neuro
     # registry, run /script.sh and pass arg1 and arg2 as its arguments:
-    neuro run -s cpu-small image:my-ubuntu:latest --entrypoint=/script.sh arg1 arg2
+    neuro run -s cpu-small --entrypoint=/script.sh image:my-ubuntu:latest -- arg1 arg2
     """
+    cmd = _fix_cmd("neuro run", "IMAGE -- CMD...", cmd)
     cluster_name = cluster or root.client.cluster_name
     cluster_config = root.client.config.clusters[cluster_name]
     if not preset:
@@ -1475,3 +1477,17 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
     if job.container.command:
         res += [job.container.command]
     return res
+
+
+def _fix_cmd(cmd_name, tmpl: str, cmd: Sequence[str]) -> Sequence[str]:
+    if cmd:
+        if cmd[0] != "--":
+            old_pre, sep, old_suff = tmpl.partition("--")
+            old = old_pre.strip() + " " + old_suff.strip()
+            log.warning(
+                f"'{cmd_name} {old}' is DEPRECATED and will be removed "
+                f"in a future version.\nUse '{cmd_name} {tmpl}' instead."
+            )
+        else:
+            return cmd[1:]
+    return cmd
