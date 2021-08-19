@@ -861,7 +861,7 @@ def _tmp_bucket_create(
 ) -> Iterator[Tuple[str, Helper]]:
     tmp_path = tmp_path_factory.mktemp("tmp_bucket" + str(uuid()))
     tmpbucketname = f"neuro-e2e-{secrets.token_hex(10)}"
-    nmrc_path = _get_nmrc_path(tmp_path_factory.mktemp("config"), require_admin=True)
+    nmrc_path = _get_nmrc_path(tmp_path_factory.mktemp("config"), require_admin=False)
 
     helper = Helper(nmrc_path, tmp_path)
 
