@@ -42,18 +42,6 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     ] in result or [f"storage://{helper.cluster_name}", "manage"] in result
     assert [f"user://{helper.username}", "read"] in result
 
-    captured = helper.run_cli(
-        ["-v", "acl", "list", "--full-uri", "--scheme", "storage"]
-    )
-    assert captured.err == ""
-    result = [line.split() for line in captured.out.splitlines()]
-    assert [
-        f"storage://{helper.cluster_name}/{helper.username}",
-        "manage",
-    ] in result or [f"storage://{helper.cluster_name}", "manage"] in result
-    for line in result:
-        assert line[0].startswith("storage://"), line
-
     captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "storage:"])
     assert captured.err == ""
     result = [line.split() for line in captured.out.splitlines()]
@@ -159,17 +147,7 @@ def test_grant_image_with_tag_fails(request: Any, helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_list_role(request: Any, helper: Helper) -> None:
-    captured = helper.run_cli(["acl", "list", "-s", "role"])
-    assert captured.err == ""
-    result = [line.split() for line in captured.out.splitlines()]
-    self_role_uri = f"role://{helper.username}"
     role = helper.username
-    for line in result:
-        uri = line[0]
-        assert uri.startswith("role://"), line
-        if not uri.startswith(self_role_uri):
-            role = uri[len("role://") :]
-    print(f"Test using role {role!r}")
 
     captured = helper.run_cli(["acl", "list", "-u", role])
     assert captured.err == ""
