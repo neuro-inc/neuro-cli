@@ -17,10 +17,10 @@ Blob storage operations.
 | [_mkbucket_](blob.md#mkbucket) | Create a new bucket |
 | [_statbucket_](blob.md#statbucket) | Get bucket BUCKET\_ID |
 | [_rmbucket_](blob.md#rmbucket) | Remove bucket DISK\_ID |
-| [_credentials-ls_](blob.md#credentials-ls) | List credentials |
-| [_credentials-create_](blob.md#credentials-create) | Create a new bucket crednetial |
-| [_credentials-get_](blob.md#credentials-get) | Get bucket BUCKET\_ID |
-| [_credentials-rm_](blob.md#credentials-rm) | Remove bucket DISK\_ID |
+| [_lscredentials_](blob.md#lscredentials) | List credentials |
+| [_mkcredentials_](blob.md#mkcredentials) | Create a new bucket crednetial |
+| [_statcredentials_](blob.md#statcredentials) | Get bucket BUCKET\_ID |
+| [_rmcredentials_](blob.md#rmcredentials) | Remove bucket DISK\_ID |
 | [_cp_](blob.md#cp) | Simple utility to copy files and... |
 | [_ls_](blob.md#ls) | List buckets or bucket contents |
 | [_glob_](blob.md#glob) | List resources that match PATTERNS |
@@ -119,7 +119,7 @@ Remove bucket `DISK`_ID.
 
 
 
-### credentials-ls
+### lscredentials
 
 List credentials
 
@@ -127,7 +127,7 @@ List credentials
 #### Usage
 
 ```bash
-neuro blob credentials-ls [OPTIONS]
+neuro blob lscredentials [OPTIONS]
 ```
 
 List credentials.
@@ -141,7 +141,7 @@ List credentials.
 
 
 
-### credentials-create
+### mkcredentials
 
 Create a new bucket crednetial
 
@@ -149,7 +149,7 @@ Create a new bucket crednetial
 #### Usage
 
 ```bash
-neuro blob credentials-create [OPTIONS] BUCKETS...
+neuro blob mkcredentials [OPTIONS] BUCKETS...
 ```
 
 Create a new bucket crednetial.
@@ -164,7 +164,7 @@ Create a new bucket crednetial.
 
 
 
-### credentials-get
+### statcredentials
 
 Get bucket BUCKET_ID
 
@@ -172,7 +172,7 @@ Get bucket BUCKET_ID
 #### Usage
 
 ```bash
-neuro blob credentials-get [OPTIONS] BUCKET_CREDENTIAL
+neuro blob statcredentials [OPTIONS] BUCKET_CREDENTIAL
 ```
 
 Get bucket `BUCKET`_ID.
@@ -186,7 +186,7 @@ Get bucket `BUCKET`_ID.
 
 
 
-### credentials-rm
+### rmcredentials
 
 Remove bucket DISK_ID
 
@@ -194,7 +194,7 @@ Remove bucket DISK_ID
 #### Usage
 
 ```bash
-neuro blob credentials-rm [OPTIONS] CREDENTIALS...
+neuro blob rmcredentials [OPTIONS] CREDENTIALS...
 ```
 
 Remove bucket `DISK`_ID.

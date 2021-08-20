@@ -323,6 +323,49 @@ Buckets
       :raises: :exc:`IsADirectoryError` if *uri* points on a directory and *recursive*
                flag is not set.
 
+   .. comethod:: persistent_credentials_list(cluster_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[PersistentBucketCredentials]]
+      :async-for:
+
+      List user's bucket persistent credentials, async iterator. Yields :class:`PersistentBucketCredentials` instances.
+
+      :param str cluster_name: cluster to list persistent credentials. Default is current cluster.
+
+   .. comethod:: persistent_credentials_create(  \
+                        bucket_ids: typing.Iterable[str], \
+                        name: typing.Optional[str], \
+                        cluster_name: Optional[str] = None, \
+                 ) -> PersistentBucketCredentials
+
+      Create a new persistent credentials for given set of buckets.
+
+      :param ~typing.Iterable[str] bucket_ids: Iterable of bucket ids to create credentials for.
+
+      :param ~typing.Optional[str] name: Name of the persistent credentials. Should be unique among all user's
+                                         bucket persistent credentials.
+
+      :param str cluster_name: cluster to create a persistent credentials. Default is current cluster.
+
+
+      :return: Newly created credentials info (:class:`PersistentBucketCredentials`)
+
+   .. comethod:: persistent_credentials_get(credential_id_or_name: str, cluster_name: Optional[str] = None) -> PersistentBucketCredentials
+
+      Get a persistent credentials with id or name *credential_id_or_name*.
+
+      :param str credential_id_or_name: persistent credentials's id or name.
+
+      :param str cluster_name: cluster to look for a persistent credentials. Default is current cluster.
+
+      :return: Credentials info (:class:`PersistentBucketCredentials`)
+
+   .. comethod:: persistent_credentials_rm(credential_id_or_name: str, cluster_name: Optional[str] = None) -> None
+
+      Delete a persistent credentials with id or name *credential_id_or_name*.
+
+      :param str credential_id_or_name: persistent credentials's id or name.
+
+      :param str cluster_name: cluster to look for a persistent credentials. Default is current cluster.
+
 Bucket
 ======
 
@@ -392,6 +435,36 @@ Bucket.Provider
    .. attribute:: AWS
 
       Amazon Web Services S3 bucket
+
+
+PersistentBucketCredentials
+===========================
+
+.. class:: PersistentBucketCredentials
+
+   *Read-only* :class:`~dataclasses.dataclass` for describing persistent credentials to some set of buckets
+   created after user request.
+
+   .. attribute:: id
+
+      The credentials id, :class:`str`.
+
+   .. attribute:: owner
+
+      The credentials owner username, :class:`str`.
+
+   .. attribute:: name
+
+      The credentials name set by user, unique among all user's bucket credentials,
+      :class:`str` or ``None`` if no name was set.
+
+   .. attribute:: cluster_name
+
+      Cluster this credentials belongs to, :class:`str`.
+
+   .. attribute:: credentials
+
+      List of per bucket credentials, :class:`List[BucketCredentials]`
 
 
 BucketEntry
