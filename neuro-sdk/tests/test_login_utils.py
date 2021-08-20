@@ -115,11 +115,11 @@ async def test_get_server_config_with_token_legacy(
     admin_url = "https://admin-dev.neu.ro"
     registry_url = "https://registry.dev.neu.ro"
     storage_url = "https://storage.dev.neu.ro"
-    blob_storage_url = "https://blob-storage.dev.neu.ro"
     users_url = "https://dev.neu.ro/users"
     monitoring_url = "https://dev.neu.ro/monitoring"
     secrets_url = "https://dev.neu.ro/secrets"
     disks_url = "https://dev.neu.ro/disks"
+    buckets_url = "https://dev.neu.ro/buckets"
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
@@ -141,11 +141,11 @@ async def test_get_server_config_with_token_legacy(
                 "name": "default",
                 "monitoring_url": monitoring_url,
                 "storage_url": storage_url,
-                "blob_storage_url": blob_storage_url,
                 "registry_url": registry_url,
                 "users_url": users_url,
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
+                "buckets_url": buckets_url,
                 "resource_presets": [
                     {
                         "name": "gpu-small",
@@ -214,11 +214,11 @@ async def test_get_server_config_with_token_legacy(
             "default": Cluster(
                 registry_url=URL(registry_url),
                 storage_url=URL(storage_url),
-                blob_storage_url=URL(blob_storage_url),
                 users_url=URL(users_url),
                 monitoring_url=URL(monitoring_url),
                 secrets_url=URL(secrets_url),
                 disks_url=URL(disks_url),
+                buckets_url=URL(buckets_url),
                 presets={
                     "gpu-small": Preset(
                         credits_per_hour=Decimal("10"),
@@ -259,11 +259,11 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
     admin_url = "https://admin-dev.neu.ro"
     registry_url = "https://registry.dev.neu.ro"
     storage_url = "https://storage.dev.neu.ro"
-    blob_storage_url = "https://blob-storage.dev.neu.ro"
     users_url = "https://dev.neu.ro/users"
     monitoring_url = "https://dev.neu.ro/monitoring"
     secrets_url = "https://dev.neu.ro/secrets"
     disks_url = "https://dev.neu.ro/disks"
+    buckets_url = "https://dev.neu.ro/buckets"
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
@@ -313,11 +313,11 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
                 "name": "default",
                 "registry_url": registry_url,
                 "storage_url": storage_url,
-                "blob_storage_url": blob_storage_url,
                 "users_url": users_url,
                 "monitoring_url": monitoring_url,
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
+                "buckets_url": buckets_url,
                 "resource_presets": [
                     {
                         "name": "gpu-small",
@@ -386,11 +386,11 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
     cluster_config = Cluster(
         registry_url=URL(registry_url),
         storage_url=URL(storage_url),
-        blob_storage_url=URL(blob_storage_url),
         users_url=URL(users_url),
         monitoring_url=URL(monitoring_url),
         secrets_url=URL(secrets_url),
         disks_url=URL(disks_url),
+        buckets_url=URL(buckets_url),
         presets={
             "gpu-small": Preset(
                 credits_per_hour=Decimal("10"),

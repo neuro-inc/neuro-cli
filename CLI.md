@@ -70,9 +70,14 @@
 		* [neuro acl add-role](#neuro-acl-add-role)
 		* [neuro acl remove-role](#neuro-acl-remove-role)
 	* [neuro blob](#neuro-blob)
+		* [neuro blob lsbucket](#neuro-blob-lsbucket)
+		* [neuro blob mkbucket](#neuro-blob-mkbucket)
+		* [neuro blob statbucket](#neuro-blob-statbucket)
+		* [neuro blob rmbucket](#neuro-blob-rmbucket)
 		* [neuro blob cp](#neuro-blob-cp)
 		* [neuro blob ls](#neuro-blob-ls)
 		* [neuro blob glob](#neuro-blob-glob)
+		* [neuro blob rm](#neuro-blob-rm)
 	* [neuro secret](#neuro-secret)
 		* [neuro secret ls](#neuro-secret-ls)
 		* [neuro secret add](#neuro-secret-add)
@@ -1963,9 +1968,98 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
+| _[neuro blob lsbucket](#neuro-blob-lsbucket)_| List buckets |
+| _[neuro blob mkbucket](#neuro-blob-mkbucket)_| Create a new bucket |
+| _[neuro blob statbucket](#neuro-blob-statbucket)_| Get bucket BUCKET_ID |
+| _[neuro blob rmbucket](#neuro-blob-rmbucket)_| Remove bucket DISK_ID |
 | _[neuro blob cp](#neuro-blob-cp)_| Simple utility to copy files and directories into and from Blob Storage |
 | _[neuro blob ls](#neuro-blob-ls)_| List buckets or bucket contents |
 | _[neuro blob glob](#neuro-blob-glob)_| List resources that match PATTERNS |
+| _[neuro blob rm](#neuro-blob-rm)_| Remove blobs from bucket |
+
+
+
+
+### neuro blob lsbucket
+
+List buckets.
+
+**Usage:**
+
+```bash
+neuro blob lsbucket [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
+|_\--full-uri_|Output full bucket URI.|
+|_\--long-format_|Output all info about bucket.|
+
+
+
+
+### neuro blob mkbucket
+
+Create a new bucket.
+
+**Usage:**
+
+```bash
+neuro blob mkbucket [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Perform in a specified cluster \(the current cluster by default).|
+|_--name NAME_|Optional bucket name|
+
+
+
+
+### neuro blob statbucket
+
+Get bucket BUCKET_ID.
+
+**Usage:**
+
+```bash
+neuro blob statbucket [OPTIONS] BUCKET
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
+|_\--full-uri_|Output full bucket URI.|
+
+
+
+
+### neuro blob rmbucket
+
+Remove bucket DISK_ID.
+
+**Usage:**
+
+```bash
+neuro blob rmbucket [OPTIONS] BUCKETS...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Perform on a specified cluster \(the current cluster by default).|
 
 
 
@@ -2015,9 +2109,9 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_-l_|use a long listing format.|
+|_\--full-uri_|Output full bucket URI.|
 |_\-h, --human-readable_|with -l print human readable sizes \(e.g., 2K, 540M).|
 |_\-r, --recursive_|List all keys under the URL path provided, not just 1 level depths.|
-|_--sort \[name &#124; size &#124; time]_|sort by given field, default is name.|
 
 
 
@@ -2037,6 +2131,29 @@ neuro blob glob [OPTIONS] [PATTERNS]...
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--full-uri_|Output full bucket URI.|
+
+
+
+
+### neuro blob rm
+
+Remove blobs from bucket.
+
+**Usage:**
+
+```bash
+neuro blob rm [OPTIONS] PATHS...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: glob]|
+|_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
+|_\-r, --recursive_|remove directories and their contents recursively|
 
 
 

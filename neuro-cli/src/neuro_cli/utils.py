@@ -488,6 +488,22 @@ async def resolve_disk(
     return disk.id
 
 
+BUCKET_ID_PATTERN = (
+    r"bucket-[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12}"
+)
+
+
+async def resolve_bucket(
+    id_or_name: str, *, client: Client, cluster_name: Optional[str] = None
+) -> str:
+    # Temporary fast path.
+    if re.fullmatch(BUCKET_ID_PATTERN, id_or_name):
+        return id_or_name
+
+    bucket = await client.buckets.get(id_or_name, cluster_name)
+    return bucket.id
+
+
 SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret", "disk")
 
 
@@ -523,14 +539,12 @@ def parse_file_resource(uri: str, root: Root) -> URL:
 
 
 def parse_blob_resource(uri: str, root: Root) -> URL:
-    # Username will not be used, just part of the signature
     return uri_from_cli(
         uri, root.client.username, root.client.cluster_name, allowed_schemes=("blob",)
     )
 
 
 def parse_blob_or_file_resource(uri: str, root: Root) -> URL:
-    # Username will not be used, just part of the signature
     return uri_from_cli(
         uri,
         root.client.username,

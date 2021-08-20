@@ -52,11 +52,11 @@ def cluster_config() -> Cluster:
     return Cluster(
         registry_url=URL("https://registry-dev.neu.ro"),
         storage_url=URL("https://storage-dev.neu.ro"),
-        blob_storage_url=URL("https://storage-dev.neu.ro"),
         users_url=URL("https://users-dev.neu.ro"),
         monitoring_url=URL("https://monitoring-dev.neu.ro"),
         secrets_url=URL("https://secrets-dev.neu.ro"),
-        disks_url=URL("https://secrets-dev.neu.ro"),
+        disks_url=URL("https://disks-dev.neu.ro"),
+        buckets_url=URL("https://buckets-dev.neu.ro"),
         presets={
             "gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
@@ -108,10 +108,10 @@ def make_client(
                 registry_url=URL(registry_url),
                 monitoring_url=(url / "jobs"),
                 storage_url=(url / "storage"),
-                blob_storage_url=(url / "blob"),
                 users_url=url,
                 secrets_url=(url / "secrets"),
                 disks_url=(url / "disk"),
+                buckets_url=(url / "buckets"),
                 presets={
                     "gpu-small": Preset(
                         credits_per_hour=Decimal("10"),
@@ -140,10 +140,10 @@ def make_client(
                 registry_url=(url / "registry2"),
                 monitoring_url=(url / "jobs2"),
                 storage_url=(url / "storage2"),
-                blob_storage_url=(url / "blob2"),
                 users_url=url,
                 secrets_url=(url / "secrets2"),
                 disks_url=(url / "disk2"),
+                buckets_url=(url / "buckets2"),
                 presets={
                     "cpu-small": Preset(
                         credits_per_hour=Decimal("10"), cpu=7, memory_mb=2 * 1024

@@ -50,11 +50,20 @@ JOB_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
 JOB_LIMIT_ENV = "NEURO_CLI_JOB_AUTOCOMPLETE_LIMIT"
 
 
-# NOTE: these disk name valdation are taken from `platform_disk_api` file `schema.py`
+# NOTE: these disk name validation are taken from `platform_disk_api` file `schema.py`
 DISK_NAME_MIN_LENGTH = 3
 DISK_NAME_MAX_LENGTH = 40
 DISK_NAME_PATTERN = "^[a-z](?:-?[a-z0-9])*$"
 DISK_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
+
+
+# NOTE: these bucket name validation are taken from
+# `platform_buckets_api` file `schema.py`
+BUCKET_NAME_MIN_LENGTH = 3
+BUCKET_NAME_MAX_LENGTH = 40
+BUCKET_NAME_PATTERN = "^[a-z](?:-?[a-z0-9_-])*$"
+BUCKET_NAME_REGEX = re.compile(JOB_NAME_PATTERN)
+
 
 _T = TypeVar("_T")
 
@@ -215,6 +224,33 @@ class DiskNameType(click.ParamType):
 
 
 DISK_NAME = DiskNameType()
+
+
+class BucketNameType(click.ParamType):
+    name = "bucket_name"
+
+    def convert(
+        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    ) -> str:
+        if (
+            len(value) < BUCKET_NAME_MIN_LENGTH
+            or len(value) > BUCKET_NAME_MAX_LENGTH
+            or BUCKET_NAME_REGEX.match(value) is None
+        ):
+            raise ValueError(
+                f"Invalid bucket name '{value}'.\n"
+                "The name can only contain lowercase letters, numbers and "
+                "hyphens and underscores with the following rules: \n"
+                "  - the first character must be a letter; \n"
+                "  - each hyphen/underscore must be surrounded by non-hyphen "
+                "characters; \n"
+                f"  - total length must be between {BUCKET_NAME_MIN_LENGTH} and "
+                f"{BUCKET_NAME_MAX_LENGTH} characters long."
+            )
+        return value
+
+
+BUCKET_NAME = BucketNameType()
 
 
 class JobColumnsType(click.ParamType):
@@ -699,3 +735,38 @@ class NewBashComplete(BashComplete):
 
 
 add_completion_class(NewBashComplete)
+
+
+class BucketType(AsyncType[str]):
+    name = "bucket"
+
+    async def async_convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> str:
+        return value
+
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
+        async with await root.init_client() as client:
+            ret: List[CompletionItem] = []
+            async with client.buckets.list(
+                cluster_name=ctx.params.get("cluster")
+            ) as it:
+                async for bucket in it:
+                    bucket_name = bucket.name or ""
+                    for test in (
+                        bucket.id,
+                        bucket_name,
+                    ):
+                        if test.startswith(incomplete):
+                            ret.append(CompletionItem(test, help=bucket_name))
+
+            return ret
+
+
+BUCKET = BucketType()

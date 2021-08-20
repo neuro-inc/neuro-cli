@@ -5,13 +5,14 @@ import hashlib
 import logging
 import os
 import re
+import secrets
 import shlex
 import subprocess
 import sys
 import tempfile
 from collections import namedtuple
 from contextlib import contextmanager, suppress
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
@@ -41,7 +42,6 @@ from typing_extensions import Final
 from yarl import URL
 
 from neuro_sdk import (
-    Action,
     AuthorizationError,
     Client,
     Config,
@@ -646,43 +646,50 @@ class Helper:
     async def acreate_bucket(self, name: str, *, wait: bool = False) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.blob_storage.create_bucket(name)
+            await client.buckets.create(name)
             if wait:
                 t0 = time()
                 delay = 1
-                while time() - t0 < 30:
+                url = URL(f"blob:{name}")
+                while time() - t0 < 60:
                     try:
-                        await client.blob_storage.list_blobs(name, max_keys=10)
+                        async with client.buckets.list_blobs(url, limit=1) as it:
+                            async for _ in it:
+                                pass
                         return
-                    except ResourceNotFound:
-                        delay = min(delay * 2, 15)
+                    except Exception as e:
+                        print(e)
+                        delay = min(delay * 2, 10)
                         await asyncio.sleep(delay)
-                raise RuntimeError(f"Bucket {name} doesn't exist after the creation")
+                raise RuntimeError(
+                    f"Bucket {name} doesn't available after the creation"
+                )
 
     create_bucket = run_async(acreate_bucket)
 
-    async def adelete_bucket(self, name: str) -> None:
+    async def adelete_bucket(self, bucket_name_or_id: str) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.blob_storage.delete_bucket(name)
+            await client.buckets.rm(bucket_name_or_id)
 
     delete_bucket = run_async(adelete_bucket)
 
-    async def acleanup_bucket(self, bucket_name: str) -> None:
+    async def acleanup_bucket(self, bucket_name_or_id: str) -> None:
         __tracebackhide__ = True
         # Each test needs a clean bucket state and we can't delete bucket until it's
         # cleaned
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            blobs, _ = await client.blob_storage.list_blobs(bucket_name, recursive=True)
-            if not blobs:
-                return
-
-            # XXX: We do assume we will not have tests that run 10000 of objects. If we
-            # do, please add a semaphore here.
-            tasks = []
-            for blob in blobs:
-                log.info("Removing %s %s", bucket_name, blob.key)
-                tasks.append(client.blob_storage.delete_blob(bucket_name, key=blob.key))
+            async with client.buckets.list_blobs(
+                URL(f"blob:{bucket_name_or_id}"), recursive=True
+            ) as blobs_it:
+                # XXX: We do assume we will not have tests that run 10000 of objects.
+                # If we do, please add a semaphore here.
+                tasks = []
+                async for blob in blobs_it:
+                    log.info("Removing %s %s", bucket_name_or_id, blob.key)
+                    tasks.append(
+                        client.buckets.delete_blob(bucket_name_or_id, key=blob.key)
+                    )
             await asyncio.gather(*tasks)
 
     cleanup_bucket = run_async(acleanup_bucket)
@@ -691,32 +698,35 @@ class Helper:
     async def drop_stale_buckets(self, bucket_prefix: str) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            buckets = await client.blob_storage.list_buckets()
-            for bucket in buckets:
-                if (
-                    bucket.name.startswith(bucket_prefix)
-                    and bucket.creation_time < time() - 3600 * 4
-                    and bucket.permission in (Action.WRITE, Action.MANAGE)
-                ):
-                    with suppress(ResourceNotFound):
-                        # bucket can be deleted by another parallel test run,
-                        # ignore ResourceNotFound errors
-                        await self.acleanup_bucket(bucket.name)
-                        await self.adelete_bucket(bucket.name)
+            async with client.buckets.list() as buckets_it:
+                async for bucket in buckets_it:
+                    if (
+                        bucket.name
+                        and bucket.name.startswith(bucket_prefix)
+                        and datetime.now(timezone.utc) - bucket.created_at
+                        > timedelta(hours=4)
+                    ):
+                        with suppress(ResourceNotFound):
+                            # bucket can be deleted by another parallel test run,
+                            # ignore ResourceNotFound errors
+                            await self.acleanup_bucket(bucket.id)
+                            await self.adelete_bucket(bucket.id)
 
     @run_async
-    async def upload_blob(self, bucket_name: str, key: str, file: Path) -> None:
+    async def upload_blob(
+        self, bucket_name: str, key: str, file: Union[Path, str]
+    ) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.blob_storage.upload_file(
-                URL("file:" + str(file)), client.blob_storage.make_url(bucket_name, key)
+            await client.buckets.upload_file(
+                URL("file:" + str(file)), URL(f"blob:{bucket_name}/{key}")
             )
 
     @run_async
     async def check_blob_size(self, bucket_name: str, key: str, size: int) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            blob = await client.blob_storage.head_blob(bucket_name, key)
+            blob = await client.buckets.head_blob(bucket_name, key)
             assert blob.size == size
 
     @run_async
@@ -725,8 +735,8 @@ class Helper:
     ) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.blob_storage.download_file(
-                client.blob_storage.make_url(bucket_name, key),
+            await client.buckets.download_file(
+                URL(f"blob:{bucket_name}/{key}"),
                 URL("file:" + str(tmp_path)),
             )
             assert self.hash_hex(tmp_path) == checksum, "checksum test failed for {url}"
@@ -850,8 +860,8 @@ def _tmp_bucket_create(
     tmp_path_factory: Any, request: Any
 ) -> Iterator[Tuple[str, Helper]]:
     tmp_path = tmp_path_factory.mktemp("tmp_bucket" + str(uuid()))
-    tmpbucketname = f"neuro-e2e-{uuid()}"
-    nmrc_path = _get_nmrc_path(tmp_path_factory.mktemp("config"), require_admin=True)
+    tmpbucketname = f"neuro-e2e-{secrets.token_hex(10)}"
+    nmrc_path = _get_nmrc_path(tmp_path_factory.mktemp("config"), require_admin=False)
 
     helper = Helper(nmrc_path, tmp_path)
 

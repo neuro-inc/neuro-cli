@@ -1,0 +1,5 @@
+Id          bucket                          
+ Uri         blob://cluster/user/test-bucket 
+ Name        test-bucket                     
+ Created at  Mar 04 2017                     
+ Provider    aws

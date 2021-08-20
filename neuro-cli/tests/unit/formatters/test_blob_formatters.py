@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import Any, List, Union, cast
+from typing import Any, List, Union
 
 import pytest
 
-from neuro_sdk import Action, BlobListing, BucketListing, PrefixListing
+from neuro_sdk import BlobCommonPrefix, BlobObject, Bucket, BucketEntry
 
 from neuro_cli.formatters.blob_storage import (
     BaseBlobFormatter,
@@ -11,75 +11,76 @@ from neuro_cli.formatters.blob_storage import (
     SimpleBlobFormatter,
 )
 
-ListResult = Union[BlobListing, PrefixListing]
-LsResult = Union[BucketListing, BlobListing, PrefixListing]
-
 
 class TestBlobFormatter:
 
-    buckets = [
-        BucketListing(
+    buckets: List[Bucket] = [
+        Bucket(
+            id="bucket-1",
             name="neuro-my-bucket",
-            creation_time=int(datetime(2018, 1, 1, 3).timestamp()),
-            permission=Action.MANAGE,
+            created_at=datetime(2018, 1, 1, 3),
+            cluster_name="test-cluster",
+            owner="test-user",
+            provider=Bucket.Provider.AWS,
         ),
-        BucketListing(
+        Bucket(
+            id="bucket-2",
             name="neuro-public-bucket",
-            creation_time=int(datetime(2018, 1, 1, 13, 1, 5).timestamp()),
-            permission=Action.READ,
+            created_at=datetime(2018, 1, 1, 17, 2, 4),
+            cluster_name="test-cluster",
+            owner="public",
+            provider=Bucket.Provider.AWS,
         ),
-        BucketListing(
+        Bucket(
+            id="bucket-3",
             name="neuro-shared-bucket",
-            creation_time=int(datetime(2018, 1, 1, 17, 2, 4).timestamp()),
-            permission=Action.WRITE,
+            created_at=datetime(2018, 1, 1, 13, 1, 5),
+            cluster_name="test-cluster",
+            owner="another-user",
+            provider=Bucket.Provider.AWS,
         ),
     ]
 
-    blobs = [
-        BlobListing(
-            bucket_name="neuro-public-bucket",
+    blobs: List[BucketEntry] = [
+        BlobObject(
             key="file1024.txt",
-            modification_time=int(datetime(2018, 1, 1, 14, 0, 0).timestamp()),
+            modified_at=datetime(2018, 1, 1, 14, 0, 0),
+            bucket=buckets[0],
             size=1024,
         ),
-        BlobListing(
-            bucket_name="neuro-public-bucket",
+        BlobObject(
             key="file_bigger.txt",
-            modification_time=int(datetime(2018, 1, 1).timestamp()),
+            modified_at=datetime(2018, 1, 1, 14, 0, 0),
+            bucket=buckets[1],
             size=1_024_001,
         ),
-        BlobListing(
-            bucket_name="neuro-shared-bucket",
+        BlobObject(
             key="folder2/info.txt",
-            modification_time=int(datetime(2018, 1, 2).timestamp()),
+            modified_at=datetime(2018, 1, 1, 14, 0, 0),
+            bucket=buckets[2],
             size=240,
         ),
-        BlobListing(
-            bucket_name="neuro-shared-bucket",
+        BlobObject(
             key="folder2/",
-            modification_time=int(datetime(2018, 1, 2).timestamp()),
+            modified_at=datetime(2018, 1, 1, 14, 0, 0),
+            bucket=buckets[2],
             size=0,
         ),
     ]
-    folders = [
-        PrefixListing(bucket_name="neuro-public-bucket", prefix="folder1/"),
-        PrefixListing(bucket_name="neuro-shared-bucket", prefix="folder2/"),
+    folders: List[BucketEntry] = [
+        BlobCommonPrefix(bucket=buckets[0], key="folder1/", size=0),
+        BlobCommonPrefix(bucket=buckets[1], key="folder2/", size=0),
     ]
 
-    list_results: List[ListResult] = cast(List[ListResult], blobs) + cast(
-        List[ListResult], folders
-    )
-    files: List[ListResult] = []
+    all: List[Union[Bucket, BucketEntry]] = [*buckets, *blobs, *folders]
 
     @pytest.mark.parametrize(
         "formatter",
         [
-            (SimpleBlobFormatter(color=False)),
-            (LongBlobFormatter(human_readable=False, color=False)),
+            (SimpleBlobFormatter(color=False, uri_formatter=str)),
+            (LongBlobFormatter(human_readable=False, color=False, uri_formatter=str)),
         ],
     )
     def test_long_formatter(self, rich_cmp: Any, formatter: BaseBlobFormatter) -> None:
-        formatter = LongBlobFormatter(human_readable=False, color=False)
-        rich_cmp(formatter(self.list_results), index=0)
-        rich_cmp(formatter(self.buckets), index=1)
-        rich_cmp(formatter(self.files), index=2)
+        for index, item in enumerate(self.all):
+            rich_cmp(formatter(item), index=index)

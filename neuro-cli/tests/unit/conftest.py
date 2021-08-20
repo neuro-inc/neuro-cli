@@ -30,11 +30,11 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
     cluster_config = Cluster(
         registry_url=URL("https://registry-dev.neu.ro"),
         storage_url=URL("https://storage-dev.neu.ro"),
-        blob_storage_url=URL("https://blob-storage-dev.neu.ro"),
         users_url=URL("https://users-dev.neu.ro"),
         monitoring_url=URL("https://monitoring-dev.neu.ro"),
         secrets_url=URL("https://secrets-dev.neu.ro"),
         disks_url=URL("https://disks-dev.neu.ro"),
+        buckets_url=URL("https://buckets-dev.neu.ro"),
         presets={
             "gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
@@ -62,11 +62,11 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
     cluster2_config = Cluster(
         registry_url=URL("https://registry2-dev.neu.ro"),
         storage_url=URL("https://storage2-dev.neu.ro"),
-        blob_storage_url=URL("https://blob-storage2-dev.neu.ro"),
         users_url=URL("https://users2-dev.neu.ro"),
         monitoring_url=URL("https://monitoring2-dev.neu.ro"),
         secrets_url=URL("https://secrets2-dev.neu.ro"),
         disks_url=URL("https://disks2-dev.neu.ro"),
+        buckets_url=URL("https://buckets2-dev.neu.ro"),
         presets={
             "cpu-small": Preset(
                 credits_per_hour=Decimal("10"), cpu=7, memory_mb=2 * 1024

@@ -1,23 +1,28 @@
 import glob as globmodule  # avoid conflict with subcommand "glob"
 import logging
 import sys
-from itertools import chain
-from typing import List, Optional, Sequence, Tuple, Union, cast
+from typing import List, Optional, Sequence, Tuple
 
 import click
 from rich.text import Text
 from yarl import URL
 
-from neuro_sdk import (
-    BlobListing,
-    BucketListing,
-    FileStatusType,
-    IllegalArgumentError,
-    PrefixListing,
-    ResourceNotFound,
-)
+from neuro_sdk import FileStatusType, IllegalArgumentError, ResourceNotFound
 from neuro_sdk.file_filter import FileFilter
 from neuro_sdk.url_utils import _extract_path
+
+from neuro_cli.click_types import BUCKET, BUCKET_NAME, CLUSTER
+from neuro_cli.formatters.buckets import (
+    BaseBucketsFormatter,
+    BucketFormatter,
+    BucketsFormatter,
+    SimpleBucketsFormatter,
+)
+from neuro_cli.formatters.utils import (
+    URIFormatter,
+    get_datetime_formatter,
+    uri_formatter,
+)
 
 from .const import EX_OSFILE
 from .formatters.blob_storage import (
@@ -25,15 +30,17 @@ from .formatters.blob_storage import (
     LongBlobFormatter,
     SimpleBlobFormatter,
 )
-from .formatters.storage import FilesSorter, create_storage_progress, get_painter
+from .formatters.storage import DeleteProgress, create_storage_progress, get_painter
 from .root import Root
 from .storage import calc_filters, calc_ignore_file_names, filter_option
 from .utils import (
+    argument,
     command,
     group,
     option,
     parse_blob_or_file_resource,
     parse_blob_resource,
+    resolve_bucket,
 )
 
 log = logging.getLogger(__name__)
@@ -46,7 +53,133 @@ def blob_storage() -> None:
     """
 
 
-BlobListings = Union[BucketListing, BlobListing, PrefixListing]
+# Bucket level commands
+
+
+@command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Look on a specified cluster (the current cluster by default).",
+)
+@option("--full-uri", is_flag=True, help="Output full bucket URI.")
+@option("--long-format", is_flag=True, help="Output all info about bucket.")
+async def lsbucket(
+    root: Root, full_uri: bool, long_format: bool, cluster: Optional[str]
+) -> None:
+    """
+    List buckets.
+    """
+    if root.quiet:
+        buckets_fmtr: BaseBucketsFormatter = SimpleBucketsFormatter()
+    else:
+        if full_uri:
+            uri_fmtr: URIFormatter = str
+        else:
+            uri_fmtr = uri_formatter(
+                username=root.client.username,
+                cluster_name=cluster or root.client.cluster_name,
+            )
+        buckets_fmtr = BucketsFormatter(
+            uri_fmtr,
+            datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
+            long_format=long_format,
+        )
+
+    buckets = []
+    with root.status("Fetching buckets") as status:
+        async with root.client.buckets.list(cluster_name=cluster) as it:
+            async for bucket in it:
+                buckets.append(bucket)
+                status.update(f"Fetching buckets ({len(buckets)} loaded)")
+
+    with root.pager():
+        root.print(buckets_fmtr(buckets))
+
+
+@command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Perform in a specified cluster (the current cluster by default).",
+)
+@option(
+    "--name",
+    type=BUCKET_NAME,
+    metavar="NAME",
+    help="Optional bucket name",
+    default=None,
+)
+async def mkbucket(
+    root: Root,
+    name: Optional[str] = None,
+    cluster: Optional[str] = None,
+) -> None:
+    """
+    Create a new bucket.
+    """
+    bucket = await root.client.buckets.create(
+        name=name,
+        cluster_name=cluster,
+    )
+    bucket_fmtr = BucketFormatter(
+        str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
+    )
+    with root.pager():
+        root.print(bucket_fmtr(bucket))
+
+
+@command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Look on a specified cluster (the current cluster by default).",
+)
+@argument("bucket", type=BUCKET)
+@option("--full-uri", is_flag=True, help="Output full bucket URI.")
+async def statbucket(
+    root: Root, cluster: Optional[str], bucket: str, full_uri: bool
+) -> None:
+    """
+    Get bucket BUCKET_ID.
+    """
+    bucket_id = await resolve_bucket(bucket, client=root.client, cluster_name=cluster)
+    bucket_obj = await root.client.buckets.get(bucket_id, cluster_name=cluster)
+    if full_uri:
+        uri_fmtr: URIFormatter = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username,
+            cluster_name=cluster or root.client.cluster_name,
+        )
+    bucket_fmtr = BucketFormatter(
+        uri_fmtr, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
+    )
+    with root.pager():
+        root.print(bucket_fmtr(bucket_obj))
+
+
+@command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Perform on a specified cluster (the current cluster by default).",
+)
+@argument("buckets", type=BUCKET, nargs=-1, required=True)
+async def rmbucket(root: Root, cluster: Optional[str], buckets: Sequence[str]) -> None:
+    """
+    Remove bucket DISK_ID.
+    """
+    for bucket in buckets:
+        bucket_id = await resolve_bucket(
+            bucket, client=root.client, cluster_name=cluster
+        )
+        await root.client.buckets.rm(bucket_id, cluster_name=cluster)
+        if root.verbosity >= 0:
+            root.print(f"Bucket with id '{bucket_id}' was successfully removed.")
+
+
+# Object level commands
 
 
 @command()
@@ -59,100 +192,92 @@ BlobListings = Union[BucketListing, BlobListing, PrefixListing]
 )
 @option("-l", "format_long", is_flag=True, help="use a long listing format.")
 @option(
-    "--sort",
-    type=click.Choice(["name", "size", "time"]),
-    default="name",
-    help="sort by given field, default is name.",
-)
-@option(
     "-r",
     "--recursive",
     is_flag=True,
     help="List all keys under the URL path provided, not just 1 level depths.",
 )
+@option("--full-uri", is_flag=True, help="Output full bucket URI.")
 async def ls(
     root: Root,
     paths: Sequence[str],
     human_readable: bool,
     format_long: bool,
-    sort: str,
     recursive: bool,
+    full_uri: bool,
 ) -> None:
     """
     List buckets or bucket contents.
     """
     uris = [parse_blob_resource(path, root) for path in paths]
 
-    blob_storage = root.client.blob_storage
-
     formatter: BaseBlobFormatter
+    if full_uri:
+        uri_fmtr: URIFormatter = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username,
+            cluster_name=root.client.cluster_name,
+        )
     if format_long:
         # Similar to `ls -l`
-        formatter = LongBlobFormatter(human_readable=human_readable, color=root.color)
+        formatter = LongBlobFormatter(
+            human_readable=human_readable, color=root.color, uri_formatter=uri_fmtr
+        )
     else:
         # Similar to `ls -1`, default for non-terminal on UNIX. We show full uris of
         # blobs, thus column formatting does not work too well.
-        formatter = SimpleBlobFormatter(root.color)
-    sorter = FilesSorter(sort)
+        formatter = SimpleBlobFormatter(root.color, uri_fmtr)
 
-    errors = False
     if not uris:
         # List Buckets instead of blobs in bucket
-        buckets = await blob_storage.list_buckets()
+
         with root.pager():
-            root.print(formatter(buckets))
+            async with root.client.buckets.list() as bucket_it:
+                async for bucket in bucket_it:
+                    root.print(formatter(bucket))
     else:
-        for uri in uris:
-            bucket_name, key = blob_storage._extract_bucket_and_key(uri)
-            short_uri = blob_storage.make_url(bucket_name, key)
+        for uri, path in zip(uris, paths):
             if root.verbosity > 0:
                 painter = get_painter(root.color)
-                uri_text = painter.paint(str(short_uri), FileStatusType.DIRECTORY)
+                uri_text = painter.paint(str(path), FileStatusType.DIRECTORY)
                 root.print(Text.assemble("List of ", uri_text, ":"))
-            try:
-                blobs, prefixes = await blob_storage.list_blobs(
-                    bucket_name=bucket_name,
-                    prefix=key,
-                    recursive=recursive,
-                )
-                items = cast(Sequence[BlobListings], chain(blobs, prefixes))
-            except ResourceNotFound as error:
-                log.error(f"cannot access {short_uri}: {error}")
-                errors = True
-            else:
-                items = sorted(items, key=sorter.key())
-                with root.pager():
-                    root.print(formatter(items))
 
-    if errors:
-        sys.exit(EX_OSFILE)
+            with root.pager():
+                async with root.client.buckets.list_blobs(
+                    uri=uri,
+                    recursive=recursive,
+                ) as blobs_it:
+                    async for entry in blobs_it:
+                        root.print(formatter(entry))
 
 
 @command()
+@option("--full-uri", is_flag=True, help="Output full bucket URI.")
 @click.argument("patterns", nargs=-1, required=False)
-async def glob(root: Root, patterns: Sequence[str]) -> None:
+async def glob(root: Root, full_uri: bool, patterns: Sequence[str]) -> None:
     """
     List resources that match PATTERNS.
     """
-    blob_storage = root.client.blob_storage
+    if full_uri:
+        uri_fmtr: URIFormatter = str
+    else:
+        uri_fmtr = uri_formatter(
+            username=root.client.username,
+            cluster_name=root.client.cluster_name,
+        )
     for pattern in patterns:
-        uri = parse_blob_resource(pattern, root)
-        bucket_name, pattern = blob_storage._extract_bucket_and_key(uri)
-        short_uri = blob_storage.make_url(bucket_name, pattern)
 
-        if globmodule.has_magic(bucket_name):
-            raise ValueError(
-                "You can not glob on bucket names. Please provide name " "explicitly."
-            )
+        uri = parse_blob_resource(pattern, root)
 
         if root.verbosity > 0:
             painter = get_painter(root.color)
-            uri_text = painter.paint(str(short_uri), FileStatusType.FILE)
+            uri_text = painter.paint(pattern, FileStatusType.FILE)
             root.print(Text.assemble("Using pattern ", uri_text, ":"))
 
-        async with blob_storage.glob_blobs(bucket_name, pattern) as blob_iter:
-            async for blob in blob_iter:
-                root.print(blob.uri)
+        async with root.client.buckets.glob_blobs(uri=uri) as blobs_it:
+            async for entry in blobs_it:
+                root.print(uri_fmtr(entry.uri))
 
 
 @command()
@@ -333,8 +458,9 @@ async def cp(
                             "Option --continue is not supported for copying to "
                             "Blob Storage"
                         )
+
                     if recursive and await _is_dir(root, src):
-                        await root.client.blob_storage.upload_dir(
+                        await root.client.buckets.upload_dir(
                             src,
                             dst,
                             update=update,
@@ -343,25 +469,25 @@ async def cp(
                             progress=progress_blob,
                         )
                     else:
-                        await root.client.blob_storage.upload_file(
+                        await root.client.buckets.upload_file(
                             src, dst, update=update, progress=progress_blob
                         )
                 elif src.scheme == "blob" and dst.scheme == "file":
                     if recursive and await _is_dir(root, src):
-                        await root.client.blob_storage.download_dir(
+                        await root.client.buckets.download_dir(
                             src,
                             dst,
-                            update=update,
                             continue_=continue_,
+                            update=update,
                             filter=file_filter.match,
                             progress=progress_blob,
                         )
                     else:
-                        await root.client.blob_storage.download_file(
+                        await root.client.buckets.download_file(
                             src,
                             dst,
-                            update=update,
                             continue_=continue_,
+                            update=update,
                             progress=progress_blob,
                         )
                 else:
@@ -380,7 +506,7 @@ async def cp(
 
 async def _is_dir(root: Root, uri: URL) -> bool:
     if uri.scheme == "blob":
-        return await root.client.blob_storage._is_dir(uri)
+        return await root.client.buckets.blob_is_dir(uri)
 
     elif uri.scheme == "file":
         path = _extract_path(uri)
@@ -398,21 +524,14 @@ async def _expand(
             painter = get_painter(root.color)
             uri_text = painter.paint(str(uri), FileStatusType.FILE)
             root.print(Text.assemble("Expand", uri_text))
-        uri_path = str(_extract_path(uri))
-        if glob and globmodule.has_magic(uri_path):
+
+        if glob and globmodule.has_magic(uri.path):
             if uri.scheme == "blob":
-                bucket_name, key = root.client.blob_storage._extract_bucket_and_key(uri)
-                if globmodule.has_magic(bucket_name):
-                    raise ValueError(
-                        "You can not glob on bucket names. Please provide name "
-                        "explicitly."
-                    )
-                async with root.client.blob_storage.glob_blobs(
-                    bucket_name=bucket_name, pattern=key
-                ) as blob_iter:
+                async with root.client.buckets.glob_blobs(uri) as blob_iter:
                     async for blob in blob_iter:
                         uris.append(blob.uri)
             elif allow_file and uri.scheme == "file":
+                uri_path = str(_extract_path(uri))
                 for p in globmodule.iglob(uri_path, recursive=True):
                     uris.append(uri.with_path(p))
             else:
@@ -422,6 +541,65 @@ async def _expand(
     return uris
 
 
+@command()
+@argument("paths", nargs=-1, required=True)
+@option(
+    "--recursive",
+    "-r",
+    is_flag=True,
+    help="remove directories and their contents recursively",
+)
+@option(
+    "--glob/--no-glob",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Expand glob patterns in PATHS",
+)
+@option(
+    "-p/-P",
+    "--progress/--no-progress",
+    is_flag=True,
+    default=None,
+    help="Show progress, on by default in TTY mode, off otherwise.",
+)
+async def rm(
+    root: Root,
+    paths: Sequence[str],
+    recursive: bool,
+    glob: bool,
+    progress: Optional[bool],
+) -> None:
+    """
+    Remove blobs from bucket.
+    """
+    errors = False
+    show_progress = root.tty if progress is None else progress
+
+    for uri in await _expand(paths, root, glob):
+        try:
+            progress_obj = DeleteProgress(root) if show_progress else None
+            await root.client.buckets.blob_rm(
+                uri, recursive=recursive, progress=progress_obj
+            )
+        except (OSError, ResourceNotFound, IllegalArgumentError) as error:
+            log.error(f"cannot remove {uri}: {error}")
+            errors = True
+        else:
+            if root.verbosity > 0:
+                painter = get_painter(root.color)
+                uri_text = painter.paint(str(uri), FileStatusType.FILE)
+                root.print(Text.assemble(f"removed ", uri_text))
+    if errors:
+        sys.exit(EX_OSFILE)
+
+
+blob_storage.add_command(lsbucket)
+blob_storage.add_command(mkbucket)
+blob_storage.add_command(statbucket)
+blob_storage.add_command(rmbucket)
+
 blob_storage.add_command(cp)
 blob_storage.add_command(ls)
 blob_storage.add_command(glob)
+blob_storage.add_command(rm)

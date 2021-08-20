@@ -13,9 +13,106 @@ Blob storage operations.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
+| [_lsbucket_](blob.md#lsbucket) | List buckets |
+| [_mkbucket_](blob.md#mkbucket) | Create a new bucket |
+| [_statbucket_](blob.md#statbucket) | Get bucket BUCKET\_ID |
+| [_rmbucket_](blob.md#rmbucket) | Remove bucket DISK\_ID |
 | [_cp_](blob.md#cp) | Simple utility to copy files and... |
 | [_ls_](blob.md#ls) | List buckets or bucket contents |
 | [_glob_](blob.md#glob) | List resources that match PATTERNS |
+| [_rm_](blob.md#rm) | Remove blobs from bucket |
+
+
+### lsbucket
+
+List buckets
+
+
+#### Usage
+
+```bash
+neuro blob lsbucket [OPTIONS]
+```
+
+List buckets.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
+| _--full-uri_ | Output full bucket URI. |
+| _--long-format_ | Output all info about bucket. |
+
+
+
+### mkbucket
+
+Create a new bucket
+
+
+#### Usage
+
+```bash
+neuro blob mkbucket [OPTIONS]
+```
+
+Create a new bucket.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
+| _--name NAME_ | Optional bucket name |
+
+
+
+### statbucket
+
+Get bucket BUCKET_ID
+
+
+#### Usage
+
+```bash
+neuro blob statbucket [OPTIONS] BUCKET
+```
+
+Get bucket `BUCKET`_ID.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
+| _--full-uri_ | Output full bucket URI. |
+
+
+
+### rmbucket
+
+Remove bucket DISK_ID
+
+
+#### Usage
+
+```bash
+neuro blob rmbucket [OPTIONS] BUCKETS...
+```
+
+Remove bucket `DISK`_ID.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
+
 
 
 ### cp
@@ -95,9 +192,9 @@ List buckets or bucket contents.
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _-l_ | use a long listing format. |
+| _--full-uri_ | Output full bucket URI. |
 | _-h, --human-readable_ | with -l print human readable sizes \(e.g., 2K, 540M\). |
 | _-r, --recursive_ | List all keys under the URL path provided, not just 1 level depths. |
-| _--sort \[name &#124; size &#124; time\]_ | sort by given field, default is name. |
 
 
 
@@ -119,5 +216,30 @@ List resources that match `PATTERNS`.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--full-uri_ | Output full bucket URI. |
+
+
+
+### rm
+
+Remove blobs from bucket
+
+
+#### Usage
+
+```bash
+neuro blob rm [OPTIONS] PATHS...
+```
+
+Remove blobs from bucket.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--glob / --no-glob_ | Expand glob patterns in PATHS  _\[default: glob\]_ |
+| _-p, --progress / -P, --no-progress_ | Show progress, on by default in TTY mode, off otherwise. |
+| _-r, --recursive_ | remove directories and their contents recursively |
 
 
