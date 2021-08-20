@@ -22,7 +22,6 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -558,41 +557,6 @@ def parse_permission_action(action: str) -> Action:
             f"invalid permission action '{action}', allowed values: {valid_actions}"
         )
 
-
-def do_deprecated_quiet(
-    ctx: click.Context, param: Union[click.Option, click.Parameter], value: Any
-) -> Any:
-    if ctx.obj is None:
-        return
-    if value and not ctx.obj.quiet:
-        ctx.obj.verbosity = -2
-        click.echo(
-            click.style(
-                "DeprecationWarning: "
-                "The local option --quiet is deprecated. "
-                "Use global option --quiet instead.",
-                fg="red",
-            ),
-            err=True,
-        )
-        # Patch the logger as it was set up with verbosity=-2.
-        root_logger = logging.getLogger()
-        handler = root_logger.handlers[-1]
-        assert handler.formatter
-        format_class = type(handler.formatter)
-        handler.setFormatter(format_class())
-        handler.setLevel(logging.ERROR)
-
-
-deprecated_quiet_option: Any = option(
-    "-q",
-    "--quiet",
-    is_flag=True,
-    callback=do_deprecated_quiet,
-    help="Run command in quiet mode (DEPRECATED)",
-    expose_value=False,
-    is_eager=True,
-)
 
 if sys.version_info >= (3, 7):  # pragma: no cover
     from contextlib import AsyncExitStack

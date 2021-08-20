@@ -81,7 +81,6 @@ $ neuro push alpine image://myfriend/alpine:shared
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-q, --quiet_ | Run command in quiet mode \(DEPRECATED\) |
 
 
 
@@ -116,7 +115,6 @@ $ neuro pull image://username/my-alpine:production alpine:from-registry
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-q, --quiet_ | Run command in quiet mode \(DEPRECATED\) |
 
 
 

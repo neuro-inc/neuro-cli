@@ -576,7 +576,6 @@ Name | Description|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_--privileged_|Run job in privileged mode, if it is supported by cluster.  \[default: False]|
-|_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_\--schedule-timeout TIMEDELTA_|Optional job schedule timeout in the format '3m4s' \(some parts may be missing).|
 |_--share USER_|Share job write permissions to user or role.|
@@ -654,7 +653,6 @@ Name | Description|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
-|_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\--recent-first / --recent-last_|Show newer jobs first or last|
 |_--since DATE\_OR_TIMEDELTA_|Show jobs created after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_\-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled]_|Filter out jobs by status \(multiple option).|
@@ -1311,7 +1309,6 @@ neuro push alpine image://myfriend/alpine:shared
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 
 
 
@@ -1341,7 +1338,6 @@ neuro pull image://username/my-alpine:production alpine:from-registry
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 
 
 
@@ -1886,7 +1882,6 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\--full-uri_|Output full URI.|
-|_\-s, --scheme TEXT_|Filter resources by scheme, e.g. job, storage, image or user. Deprecated, use the uri argument instead.|
 |_--shared_|Output the resources shared by the user.|
 |_-u TEXT_|Use specified user or role.|
 
@@ -2441,7 +2436,6 @@ Name | Description|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
 |_--privileged_|Run job in privileged mode, if it is supported by cluster.  \[default: False]|
-|_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_\--schedule-timeout TIMEDELTA_|Optional job schedule timeout in the format '3m4s' \(some parts may be missing).|
 |_--share USER_|Share job write permissions to user or role.|
@@ -2491,7 +2485,6 @@ Name | Description|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
-|_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 |_\--recent-first / --recent-last_|Show newer jobs first or last|
 |_--since DATE\_OR_TIMEDELTA_|Show jobs created after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_\-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled]_|Filter out jobs by status \(multiple option).|
@@ -2963,7 +2956,6 @@ neuro push alpine image://myfriend/alpine:shared
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 
 
 
@@ -2993,7 +2985,6 @@ neuro pull image://username/my-alpine:production alpine:from-registry
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-q, --quiet_|Run command in quiet mode \(DEPRECATED)|
 
 
 
