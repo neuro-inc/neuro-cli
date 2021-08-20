@@ -13,10 +13,106 @@ Blob storage operations.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
+| [_lsbucket_](blob.md#lsbucket) | List buckets |
+| [_mkbucket_](blob.md#mkbucket) | Create a new bucket |
+| [_statbucket_](blob.md#statbucket) | Get bucket BUCKET\_ID |
+| [_rmbucket_](blob.md#rmbucket) | Remove bucket DISK\_ID |
 | [_cp_](blob.md#cp) | Simple utility to copy files and... |
 | [_ls_](blob.md#ls) | List buckets or bucket contents |
 | [_glob_](blob.md#glob) | List resources that match PATTERNS |
 | [_rm_](blob.md#rm) | Remove blobs from bucket |
+
+
+### lsbucket
+
+List buckets
+
+
+#### Usage
+
+```bash
+neuro blob lsbucket [OPTIONS]
+```
+
+List buckets.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
+| _--full-uri_ | Output full bucket URI. |
+| _--long-format_ | Output all info about bucket. |
+
+
+
+### mkbucket
+
+Create a new bucket
+
+
+#### Usage
+
+```bash
+neuro blob mkbucket [OPTIONS]
+```
+
+Create a new bucket.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
+| _--name NAME_ | Optional bucket name |
+
+
+
+### statbucket
+
+Get bucket BUCKET_ID
+
+
+#### Usage
+
+```bash
+neuro blob statbucket [OPTIONS] BUCKET
+```
+
+Get bucket `BUCKET`_ID.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
+| _--full-uri_ | Output full bucket URI. |
+
+
+
+### rmbucket
+
+Remove bucket DISK_ID
+
+
+#### Usage
+
+```bash
+neuro blob rmbucket [OPTIONS] BUCKETS...
+```
+
+Remove bucket `DISK`_ID.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
+
 
 
 ### cp
