@@ -770,3 +770,38 @@ class BucketType(AsyncType[str]):
 
 
 BUCKET = BucketType()
+
+
+class BucketCredentialType(AsyncType[str]):
+    name = "bucket_credential"
+
+    async def async_convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> str:
+        return value
+
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
+        async with await root.init_client() as client:
+            ret: List[CompletionItem] = []
+            async with client.buckets.persistent_credentials_list(
+                cluster_name=ctx.params.get("cluster")
+            ) as it:
+                async for credential in it:
+                    credential_name = credential.name or ""
+                    for test in (
+                        credential.id,
+                        credential_name,
+                    ):
+                        if test.startswith(incomplete):
+                            ret.append(CompletionItem(test, help=credential_name))
+
+            return ret
+
+
+BUCKET_CREDENTIAL = BucketCredentialType()

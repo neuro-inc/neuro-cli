@@ -23,7 +23,14 @@ from .abc import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from .buckets import BlobCommonPrefix, BlobObject, Bucket, BucketEntry, Buckets
+from .buckets import (
+    BlobCommonPrefix,
+    BlobObject,
+    Bucket,
+    BucketEntry,
+    Buckets,
+    PersistentBucketCredentials,
+)
 from .client import Client, Preset
 from .config import Config
 from .config_factory import (
@@ -132,6 +139,7 @@ __all__ = (
     "PASS_CONFIG_ENV_NAME",
     "Parser",
     "Permission",
+    "PersistentBucketCredentials",
     "PluginManager",
     "Preset",
     "RemoteImage",

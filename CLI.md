@@ -74,6 +74,10 @@
 		* [neuro blob mkbucket](#neuro-blob-mkbucket)
 		* [neuro blob statbucket](#neuro-blob-statbucket)
 		* [neuro blob rmbucket](#neuro-blob-rmbucket)
+		* [neuro blob credentials-ls](#neuro-blob-credentials-ls)
+		* [neuro blob credentials-create](#neuro-blob-credentials-create)
+		* [neuro blob credentials-get](#neuro-blob-credentials-get)
+		* [neuro blob credentials-rm](#neuro-blob-credentials-rm)
 		* [neuro blob cp](#neuro-blob-cp)
 		* [neuro blob ls](#neuro-blob-ls)
 		* [neuro blob glob](#neuro-blob-glob)
@@ -1972,6 +1976,10 @@ Name | Description|
 | _[neuro blob mkbucket](#neuro-blob-mkbucket)_| Create a new bucket |
 | _[neuro blob statbucket](#neuro-blob-statbucket)_| Get bucket BUCKET_ID |
 | _[neuro blob rmbucket](#neuro-blob-rmbucket)_| Remove bucket DISK_ID |
+| _[neuro blob credentials-ls](#neuro-blob-credentials-ls)_| List credentials |
+| _[neuro blob credentials-create](#neuro-blob-credentials-create)_| Create a new bucket crednetial |
+| _[neuro blob credentials-get](#neuro-blob-credentials-get)_| Get bucket BUCKET_ID |
+| _[neuro blob credentials-rm](#neuro-blob-credentials-rm)_| Remove bucket DISK_ID |
 | _[neuro blob cp](#neuro-blob-cp)_| Simple utility to copy files and directories into and from Blob Storage |
 | _[neuro blob ls](#neuro-blob-ls)_| List buckets or bucket contents |
 | _[neuro blob glob](#neuro-blob-glob)_| List resources that match PATTERNS |
@@ -2052,6 +2060,87 @@ Remove bucket DISK_ID.
 
 ```bash
 neuro blob rmbucket [OPTIONS] BUCKETS...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Perform on a specified cluster \(the current cluster by default).|
+
+
+
+
+### neuro blob credentials-ls
+
+List credentials.
+
+**Usage:**
+
+```bash
+neuro blob credentials-ls [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
+
+
+
+
+### neuro blob credentials-create
+
+Create a new bucket crednetial.
+
+**Usage:**
+
+```bash
+neuro blob credentials-create [OPTIONS] BUCKETS...
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Perform in a specified cluster \(the current cluster by default).|
+|_--name NAME_|Optional bucket credential name|
+
+
+
+
+### neuro blob credentials-get
+
+Get bucket BUCKET_ID.
+
+**Usage:**
+
+```bash
+neuro blob credentials-get [OPTIONS] BUCKET_CREDENTIAL
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
+
+
+
+
+### neuro blob credentials-rm
+
+Remove bucket DISK_ID.
+
+**Usage:**
+
+```bash
+neuro blob credentials-rm [OPTIONS] CREDENTIALS...
 ```
 
 **Options:**

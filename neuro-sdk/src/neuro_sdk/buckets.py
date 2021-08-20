@@ -15,6 +15,8 @@ from typing import (
     AsyncIterator,
     Awaitable,
     Callable,
+    Iterable,
+    List,
     Mapping,
     Optional,
     Tuple,
@@ -472,6 +474,15 @@ class BucketCredentials:
     credentials: Mapping[str, str]
 
 
+@dataclass(frozen=True)
+class PersistentBucketCredentials:
+    id: str
+    owner: str
+    cluster_name: str
+    name: Optional[str]
+    credentials: List[BucketCredentials]
+
+
 class Buckets(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core
@@ -823,3 +834,79 @@ class Buckets(metaclass=NoPublicConstructor):
         cluster_name, bucket_name, key = self._split_blob_uri(uri)
         async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
             await file_utils.rm(bucket_fs, PurePosixPath(key), recursive, progress)
+
+    # Persistent bucket credentials commands
+
+    def _parse_persistent_credentials_payload(
+        self, payload: Mapping[str, Any]
+    ) -> PersistentBucketCredentials:
+        return PersistentBucketCredentials(
+            id=payload["id"],
+            owner=payload["owner"],
+            name=payload.get("name"),
+            cluster_name=self._config.cluster_name,
+            credentials=[
+                self._parse_bucket_credentials_payload(item)
+                for item in payload["credentials"]
+            ],
+        )
+
+    def _get_persistent_credentials_url(self, cluster_name: Optional[str]) -> URL:
+        if cluster_name is None:
+            cluster_name = self._config.cluster_name
+        return (
+            self._config.get_cluster(cluster_name).buckets_url
+            / "persistent_credentials"
+        )
+
+    @asyncgeneratorcontextmanager
+    async def persistent_credentials_list(
+        self, cluster_name: Optional[str] = None
+    ) -> AsyncIterator[PersistentBucketCredentials]:
+        url = self._get_persistent_credentials_url(cluster_name)
+        auth = await self._config._api_auth()
+        headers = {"Accept": "application/x-ndjson"}
+        async with self._core.request("GET", url, headers=headers, auth=auth) as resp:
+            if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
+                async for line in resp.content:
+                    server_message = json.loads(line)
+                    if "error" in server_message:
+                        raise NDJSONError(server_message["error"])
+                    yield self._parse_persistent_credentials_payload(server_message)
+            else:
+                ret = await resp.json()
+                for cred_data in ret:
+                    yield self._parse_persistent_credentials_payload(cred_data)
+
+    async def persistent_credentials_create(
+        self,
+        bucket_ids: Iterable[str],
+        name: Optional[str] = None,
+        cluster_name: Optional[str] = None,
+    ) -> PersistentBucketCredentials:
+        url = self._get_persistent_credentials_url(cluster_name)
+        auth = await self._config._api_auth()
+        data = {
+            "name": name,
+            "bucket_ids": list(bucket_ids),
+        }
+        async with self._core.request("POST", url, auth=auth, json=data) as resp:
+            payload = await resp.json()
+            return self._parse_persistent_credentials_payload(payload)
+
+    async def persistent_credentials_get(
+        self, credential_id_or_name: str, cluster_name: Optional[str] = None
+    ) -> PersistentBucketCredentials:
+        url = self._get_persistent_credentials_url(cluster_name) / credential_id_or_name
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            payload = await resp.json()
+            return self._parse_persistent_credentials_payload(payload)
+
+    async def persistent_credentials_rm(
+        self, credential_id_or_name: str, cluster_name: Optional[str] = None
+    ) -> None:
+        url = self._get_persistent_credentials_url(cluster_name) / credential_id_or_name
+        auth = await self._config._api_auth()
+        async with self._core.request("DELETE", url, auth=auth):
+            pass
