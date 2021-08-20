@@ -64,7 +64,7 @@ def blob_storage() -> None:
 )
 @option("--full-uri", is_flag=True, help="Output full bucket URI.")
 @option("--long-format", is_flag=True, help="Output all info about bucket.")
-async def bucket_ls(
+async def lsbucket(
     root: Root, full_uri: bool, long_format: bool, cluster: Optional[str]
 ) -> None:
     """
@@ -110,7 +110,7 @@ async def bucket_ls(
     help="Optional bucket name",
     default=None,
 )
-async def bucket_create(
+async def mkbucket(
     root: Root,
     name: Optional[str] = None,
     cluster: Optional[str] = None,
@@ -137,7 +137,7 @@ async def bucket_create(
 )
 @argument("bucket", type=BUCKET)
 @option("--full-uri", is_flag=True, help="Output full bucket URI.")
-async def bucket_get(
+async def statbucket(
     root: Root, cluster: Optional[str], bucket: str, full_uri: bool
 ) -> None:
     """
@@ -166,7 +166,7 @@ async def bucket_get(
     help="Perform on a specified cluster (the current cluster by default).",
 )
 @argument("buckets", type=BUCKET, nargs=-1, required=True)
-async def bucket_rm(root: Root, cluster: Optional[str], buckets: Sequence[str]) -> None:
+async def rmbucket(root: Root, cluster: Optional[str], buckets: Sequence[str]) -> None:
     """
     Remove bucket DISK_ID.
     """
@@ -594,10 +594,10 @@ async def rm(
         sys.exit(EX_OSFILE)
 
 
-blob_storage.add_command(bucket_ls)
-blob_storage.add_command(bucket_create)
-blob_storage.add_command(bucket_get)
-blob_storage.add_command(bucket_rm)
+blob_storage.add_command(lsbucket)
+blob_storage.add_command(mkbucket)
+blob_storage.add_command(statbucket)
+blob_storage.add_command(rmbucket)
 
 blob_storage.add_command(cp)
 blob_storage.add_command(ls)

@@ -13,17 +13,17 @@ Blob storage operations.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_bucket-ls_](blob.md#bucket-ls) | List buckets |
-| [_bucket-create_](blob.md#bucket-create) | Create a new bucket |
-| [_bucket-get_](blob.md#bucket-get) | Get bucket BUCKET\_ID |
-| [_bucket-rm_](blob.md#bucket-rm) | Remove bucket DISK\_ID |
+| [_lsbucket_](blob.md#lsbucket) | List buckets |
+| [_mkbucket_](blob.md#mkbucket) | Create a new bucket |
+| [_statbucket_](blob.md#statbucket) | Get bucket BUCKET\_ID |
+| [_rmbucket_](blob.md#rmbucket) | Remove bucket DISK\_ID |
 | [_cp_](blob.md#cp) | Simple utility to copy files and... |
 | [_ls_](blob.md#ls) | List buckets or bucket contents |
 | [_glob_](blob.md#glob) | List resources that match PATTERNS |
 | [_rm_](blob.md#rm) | Remove blobs from bucket |
 
 
-### bucket-ls
+### lsbucket
 
 List buckets
 
@@ -31,7 +31,7 @@ List buckets
 #### Usage
 
 ```bash
-neuro blob bucket-ls [OPTIONS]
+neuro blob lsbucket [OPTIONS]
 ```
 
 List buckets.
@@ -47,7 +47,7 @@ List buckets.
 
 
 
-### bucket-create
+### mkbucket
 
 Create a new bucket
 
@@ -55,7 +55,7 @@ Create a new bucket
 #### Usage
 
 ```bash
-neuro blob bucket-create [OPTIONS]
+neuro blob mkbucket [OPTIONS]
 ```
 
 Create a new bucket.
@@ -70,7 +70,7 @@ Create a new bucket.
 
 
 
-### bucket-get
+### statbucket
 
 Get bucket BUCKET_ID
 
@@ -78,7 +78,7 @@ Get bucket BUCKET_ID
 #### Usage
 
 ```bash
-neuro blob bucket-get [OPTIONS] BUCKET
+neuro blob statbucket [OPTIONS] BUCKET
 ```
 
 Get bucket `BUCKET`_ID.
@@ -93,7 +93,7 @@ Get bucket `BUCKET`_ID.
 
 
 
-### bucket-rm
+### rmbucket
 
 Remove bucket DISK_ID
 
@@ -101,7 +101,7 @@ Remove bucket DISK_ID
 #### Usage
 
 ```bash
-neuro blob bucket-rm [OPTIONS] BUCKETS...
+neuro blob rmbucket [OPTIONS] BUCKETS...
 ```
 
 Remove bucket `DISK`_ID.

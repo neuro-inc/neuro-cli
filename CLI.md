@@ -70,10 +70,10 @@
 		* [neuro acl add-role](#neuro-acl-add-role)
 		* [neuro acl remove-role](#neuro-acl-remove-role)
 	* [neuro blob](#neuro-blob)
-		* [neuro blob bucket-ls](#neuro-blob-bucket-ls)
-		* [neuro blob bucket-create](#neuro-blob-bucket-create)
-		* [neuro blob bucket-get](#neuro-blob-bucket-get)
-		* [neuro blob bucket-rm](#neuro-blob-bucket-rm)
+		* [neuro blob lsbucket](#neuro-blob-lsbucket)
+		* [neuro blob mkbucket](#neuro-blob-mkbucket)
+		* [neuro blob statbucket](#neuro-blob-statbucket)
+		* [neuro blob rmbucket](#neuro-blob-rmbucket)
 		* [neuro blob cp](#neuro-blob-cp)
 		* [neuro blob ls](#neuro-blob-ls)
 		* [neuro blob glob](#neuro-blob-glob)
@@ -1973,10 +1973,10 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro blob bucket-ls](#neuro-blob-bucket-ls)_| List buckets |
-| _[neuro blob bucket-create](#neuro-blob-bucket-create)_| Create a new bucket |
-| _[neuro blob bucket-get](#neuro-blob-bucket-get)_| Get bucket BUCKET_ID |
-| _[neuro blob bucket-rm](#neuro-blob-bucket-rm)_| Remove bucket DISK_ID |
+| _[neuro blob lsbucket](#neuro-blob-lsbucket)_| List buckets |
+| _[neuro blob mkbucket](#neuro-blob-mkbucket)_| Create a new bucket |
+| _[neuro blob statbucket](#neuro-blob-statbucket)_| Get bucket BUCKET_ID |
+| _[neuro blob rmbucket](#neuro-blob-rmbucket)_| Remove bucket DISK_ID |
 | _[neuro blob cp](#neuro-blob-cp)_| Simple utility to copy files and directories into and from Blob Storage |
 | _[neuro blob ls](#neuro-blob-ls)_| List buckets or bucket contents |
 | _[neuro blob glob](#neuro-blob-glob)_| List resources that match PATTERNS |
@@ -1985,14 +1985,14 @@ Name | Description|
 
 
 
-### neuro blob bucket-ls
+### neuro blob lsbucket
 
 List buckets.
 
 **Usage:**
 
 ```bash
-neuro blob bucket-ls [OPTIONS]
+neuro blob lsbucket [OPTIONS]
 ```
 
 **Options:**
@@ -2007,14 +2007,14 @@ Name | Description|
 
 
 
-### neuro blob bucket-create
+### neuro blob mkbucket
 
 Create a new bucket.
 
 **Usage:**
 
 ```bash
-neuro blob bucket-create [OPTIONS]
+neuro blob mkbucket [OPTIONS]
 ```
 
 **Options:**
@@ -2028,14 +2028,14 @@ Name | Description|
 
 
 
-### neuro blob bucket-get
+### neuro blob statbucket
 
 Get bucket BUCKET_ID.
 
 **Usage:**
 
 ```bash
-neuro blob bucket-get [OPTIONS] BUCKET
+neuro blob statbucket [OPTIONS] BUCKET
 ```
 
 **Options:**
@@ -2049,14 +2049,14 @@ Name | Description|
 
 
 
-### neuro blob bucket-rm
+### neuro blob rmbucket
 
 Remove bucket DISK_ID.
 
 **Usage:**
 
 ```bash
-neuro blob bucket-rm [OPTIONS] BUCKETS...
+neuro blob rmbucket [OPTIONS] BUCKETS...
 ```
 
 **Options:**
