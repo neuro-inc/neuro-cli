@@ -64,17 +64,6 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     for line in result:
         assert line[2] != helper.username, line
 
-    captured = helper.run_cli(
-        ["-v", "acl", "list", "--full-uri", "--shared", "--scheme", "storage"]
-    )
-    assert captured.err == ""
-    result = [line.split() for line in captured.out.splitlines()]
-    assert [uri, "read", another_test_user] in result
-    assert [uri2, "write", another_test_user] in result
-    for line in result:
-        assert line[0].startswith(f"storage://{helper.cluster_name}"), line
-        assert line[2] != helper.username, line
-
     captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared", uri])
     assert captured.err == ""
     result = [line.split() for line in captured.out.splitlines()]
