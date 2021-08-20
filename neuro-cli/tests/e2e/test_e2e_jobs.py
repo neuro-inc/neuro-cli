@@ -39,7 +39,6 @@ UBUNTU_IMAGE_NAME = "ubuntu:latest"
 NGINX_IMAGE_NAME = "nginx:latest"
 MIN_PORT = 49152
 MAX_PORT = 65535
-EXEC_TIMEOUT = 180
 
 ANSI_RE = re.compile(r"\033\[[;?0-9]*[a-zA-Z]")
 OSC_RE = re.compile(r"\x1b]0;.+\x07")
@@ -449,9 +448,6 @@ def test_e2e_ssh_exec_true(helper: Helper) -> None:
             "job",
             "exec",
             "--no-tty",
-            "--no-key-check",
-            "--timeout",
-            str(EXEC_TIMEOUT),
             job_id,
             "--",
             # use unrolled notation to check shlex.join()
@@ -476,9 +472,6 @@ def test_e2e_ssh_exec_false(helper: Helper) -> None:
                 "job",
                 "exec",
                 "--no-tty",
-                "--no-key-check",
-                "--timeout",
-                str(EXEC_TIMEOUT),
                 job_id,
                 "--",
                 "bash -c 'echo test_e2e_ssh_exec_false; false'",
@@ -499,9 +492,6 @@ def test_e2e_ssh_exec_no_cmd(helper: Helper) -> None:
                 "job",
                 "exec",
                 "--no-tty",
-                "--no-key-check",
-                "--timeout",
-                str(EXEC_TIMEOUT),
                 job_id,
             ]
         )
@@ -521,9 +511,6 @@ def test_e2e_ssh_exec_echo(helper: Helper) -> None:
                 "job",
                 "exec",
                 "--no-tty",
-                "--no-key-check",
-                "--timeout",
-                str(EXEC_TIMEOUT),
                 job_id,
                 "--",
                 'bash -c "sleep 30; echo ok"',
@@ -552,9 +539,6 @@ def test_e2e_ssh_exec_tty(helper: Helper) -> None:
             "--quiet",
             "job",
             "exec",
-            "--no-key-check",
-            "--timeout",
-            str(EXEC_TIMEOUT),
             job_id,
             "--",
             "[ -t 1 ]",
@@ -572,9 +556,6 @@ def test_e2e_ssh_exec_no_job(helper: Helper) -> None:
                 "job",
                 "exec",
                 "--no-tty",
-                "--no-key-check",
-                "--timeout",
-                str(EXEC_TIMEOUT),
                 "job_id",
                 "--",
                 "true",
@@ -596,9 +577,6 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
                 "job",
                 "exec",
                 "--no-tty",
-                "--no-key-check",
-                "--timeout",
-                str(EXEC_TIMEOUT),
                 job_id,
                 "--",
                 "true",
