@@ -103,13 +103,6 @@ async def revoke(root: Root, uri: str, user: str) -> None:
     help="Use specified user or role.",
 )
 @option(
-    "-s",
-    "--scheme",
-    default=None,
-    help="Filter resources by scheme, e.g. job, storage, image or user. "
-    "Deprecated, use the uri argument instead.",
-)
-@option(
     "--shared",
     is_flag=True,
     default=False,
@@ -120,7 +113,6 @@ async def list(
     root: Root,
     uri: Optional[str],
     username: Optional[str],
-    scheme: Optional[str],
     shared: bool,
     full_uri: bool,
 ) -> None:
@@ -157,7 +149,7 @@ async def list(
 
         with root.status("Fetching permissions"):
             permissions = await root.client.users.get_acl(
-                username, scheme=scheme, uri=uri_obj
+                username, scheme=None, uri=uri_obj
             )
         for p in sorted(permissions, key=_permission_key):
             table.add_row(uri_fmtr(p.uri), _fmt_action(p.action))
@@ -171,7 +163,7 @@ async def list(
 
         with root.status("Fetching shares"):
             shares = await root.client.users.get_shares(
-                username, scheme=scheme, uri=uri_obj
+                username, scheme=None, uri=uri_obj
             )
         for share in sorted(shares, key=_shared_permission_key):
             table.add_row(

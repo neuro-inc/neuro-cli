@@ -125,7 +125,6 @@ $ neuro acl list --shared image://
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _--full-uri_ | Output full URI. |
-| _-s, --scheme TEXT_ | Filter resources by scheme, e.g. job, storage, image or user. Deprecated, use the uri argument instead. |
 | _--shared_ | Output the resources shared by the user. |
 | _-u TEXT_ | Use specified user or role. |
 

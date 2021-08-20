@@ -23,14 +23,7 @@ from neuro_cli.formatters.utils import ImageFormatter, image_formatter, uri_form
 
 from .click_types import CLUSTER, RemoteImageType
 from .root import Root
-from .utils import (
-    argument,
-    command,
-    deprecated_quiet_option,
-    format_size,
-    group,
-    option,
-)
+from .utils import argument, command, format_size, group, option
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +38,6 @@ def image() -> None:
 @command()
 @argument("local_image")
 @argument("remote_image", required=False)
-@deprecated_quiet_option
 async def push(root: Root, local_image: str, remote_image: Optional[str]) -> None:
     """
     Push an image to platform registry.
@@ -78,7 +70,6 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
 @command()
 @argument("remote_image")
 @argument("local_image", required=False)
-@deprecated_quiet_option
 async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> None:
     """
     Pull an image from platform registry.

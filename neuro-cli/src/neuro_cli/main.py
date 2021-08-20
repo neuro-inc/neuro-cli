@@ -51,7 +51,6 @@ from .root import Root
 from .topics import topics
 from .utils import (
     Context,
-    DeprecatedGroup,
     Group,
     alias,
     argument,
@@ -510,8 +509,6 @@ cli.add_command(blob_storage.blob_storage)
 cli.add_command(secrets.secret)
 cli.add_command(disks.disk)
 cli.add_command(service_accounts.service_account)
-
-cli.add_command(DeprecatedGroup(storage.storage, name="store", hidden=True))
 
 # shortcuts
 cli.add_command(job.run)

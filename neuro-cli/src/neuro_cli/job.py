@@ -70,11 +70,9 @@ from .parse_utils import (
 from .root import Root
 from .utils import (
     AsyncExitStack,
-    alias,
     argument,
     calc_life_span,
     command,
-    deprecated_quiet_option,
     group,
     option,
     resolve_job,
@@ -116,27 +114,11 @@ def job() -> None:
 @argument("job", type=JOB)
 @argument("cmd", nargs=-1, type=click.UNPROCESSED, metavar="-- CMD...", required=True)
 @TTY_OPT
-@option(
-    "--no-key-check",
-    is_flag=True,
-    help="Disable host key checks. Should be used with caution.",
-    hidden=True,
-)
-@option(
-    "--timeout",
-    default=0,
-    type=float,
-    show_default=True,
-    hidden=True,
-    help="Maximum allowed time for executing the command, 0 for no timeout",
-)
 async def exec(
     root: Root,
     job: str,
     tty: Optional[bool],
-    no_key_check: bool,
     cmd: Sequence[str],
-    timeout: float,
 ) -> None:
     """
     Execute command in a running job.
@@ -171,14 +153,8 @@ async def exec(
     required=True,
     metavar="LOCAL_PORT:REMOTE_RORT...",
 )
-@option(
-    "--no-key-check",
-    is_flag=True,
-    help="Disable host key checks. Should be used with caution.",
-    hidden=True,
-)
 async def port_forward(
-    root: Root, job: str, no_key_check: bool, local_remote_port: List[Tuple[int, int]]
+    root: Root, job: str, local_remote_port: List[Tuple[int, int]]
 ) -> None:
     """
     Forward port(s) of a running job to local port(s).
@@ -199,13 +175,6 @@ async def port_forward(
     neuro job port-forward my-job 2080:80 2222:22 2000:100
 
     """
-    if no_key_check:
-        click.secho(
-            "--no-key-check option is deprecated and "
-            "will be removed from the future Neuro CLI release",
-            fg="red",
-            err=True,
-        )
     job_id, cluster_name = await resolve_job_ex(
         job,
         client=root.client,
@@ -372,7 +341,6 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     default=False,
     help="Show all jobs regardless the status.",
 )
-@deprecated_quiet_option
 @option("-w", "--wide", is_flag=True, help="Do not cut long lines for terminal width.")
 @option(
     "--format",
@@ -885,13 +853,6 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     default=None,
 )
 @option(
-    "--preemptible/--non-preemptible",
-    "-p/-P",
-    help="Run job on a lower-cost preemptible instance (DEPRECATED AND IGNORED)",
-    default=None,
-    hidden=True,
-)
-@option(
     "-n",
     "--name",
     metavar="NAME",
@@ -914,7 +875,6 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     help="Optional job description in free format",
     secure=True,
 )
-@deprecated_quiet_option
 @option(
     "-v",
     "--volume",
@@ -1055,7 +1015,6 @@ async def run(
     env_file: Sequence[str],
     restart: str,
     life_span: Optional[str],
-    preemptible: Optional[bool],
     name: Optional[str],
     tag: Sequence[str],
     description: Optional[str],
@@ -1096,10 +1055,6 @@ async def run(
     if not preset:
         preset = next(iter(cluster_config.presets.keys()))
     job_preset = cluster_config.presets[preset]
-    if preemptible is not None:
-        root.print(
-            "-p/-P option is deprecated and ignored. Use corresponding presets instead."
-        )
     log.info(f"Using preset '{preset}': {job_preset}")
     if tty is None:
         tty = root.tty
@@ -1170,10 +1125,6 @@ job.add_command(save)
 job.add_command(browse)
 job.add_command(attach)
 job.add_command(bump_life_span)
-
-
-job.add_command(alias(ls, "list", hidden=True))
-job.add_command(alias(logs, "monitor", hidden=True))
 
 
 async def run_job(
