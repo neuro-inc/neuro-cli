@@ -1,10 +1,10 @@
 Reworked blob storage support:
 
 Bucket management commands:
-- use `neuro blob bucket-create` to create new bucket
-- use `neuro blob bucket-ls` to list your buckets
-- use `neuro blob bucket-get <bucket_id>` to retrieve info about single bucket
-- use `neuro blob bucket-rm <bucket_id>` to delete bucket. Note that you can only delete empty buckets.
+- use `neuro blob mkbucket` to create new bucket
+- use `neuro blob lsbucket` to list your buckets
+- use `neuro blob statbucket <bucket_id>` to retrieve info about single bucket
+- use `neuro blob rmbucket <bucket_id>` to delete bucket. Note that you can only delete empty buckets.
 
 Users can name buckets objects. The name should be unique between users buckets and can be used
 instead of bucket id.
