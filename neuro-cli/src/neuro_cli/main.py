@@ -19,7 +19,7 @@ from packaging import version
 import neuro_sdk
 
 import neuro_cli
-from neuro_cli import buckets, file_logging, service_accounts
+from neuro_cli import file_logging, service_accounts
 
 from . import (
     admin,
@@ -510,7 +510,6 @@ cli.add_command(blob_storage.blob_storage)
 cli.add_command(secrets.secret)
 cli.add_command(disks.disk)
 cli.add_command(service_accounts.service_account)
-cli.add_command(buckets.bucket)
 
 cli.add_command(DeprecatedGroup(storage.storage, name="store", hidden=True))
 
