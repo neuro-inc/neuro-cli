@@ -24,6 +24,7 @@ from typing import (
 import aiobotocore as aiobotocore
 import botocore.exceptions
 from aiobotocore.client import AioBaseClient
+from aiobotocore.credentials import AioRefreshableCredentials
 from dateutil.parser import isoparse
 from yarl import URL
 
@@ -311,16 +312,31 @@ class AWSS3Provider(BucketProvider):
     @classmethod
     @asynccontextmanager
     async def create(
-        cls, bucket: "Bucket", credentials: "BucketCredentials"
+        cls,
+        bucket: "Bucket",
+        _get_credentials: Callable[[], Awaitable["BucketCredentials"]],
     ) -> AsyncIterator["AWSS3Provider"]:
+        initial_credentials = await _get_credentials()
+
+        def _credentials_to_meta(credentials: "BucketCredentials") -> Mapping[str, str]:
+            return {
+                "access_key": credentials.credentials["access_key_id"],
+                "secret_key": credentials.credentials["secret_access_key"],
+                "token": credentials.credentials["session_token"],
+                "expiry_time": credentials.credentials["expiration"],
+            }
+
+        async def _refresher() -> Mapping[str, str]:
+            return _credentials_to_meta(await _get_credentials())
+
         session = aiobotocore.get_session()
-        async with session.create_client(
-            "s3",
-            aws_access_key_id=credentials.credentials["access_key_id"],
-            aws_secret_access_key=credentials.credentials["secret_access_key"],
-            aws_session_token=credentials.credentials.get("session_token"),
-        ) as client:
-            yield cls(client, bucket, credentials.credentials["bucket_name"])
+        session._credentials = AioRefreshableCredentials.create_from_metadata(
+            metadata=_credentials_to_meta(initial_credentials),
+            refresh_using=_refresher,
+            method="neuro-bucket-api-refresh",  # This is just a label
+        )
+        async with session.create_client("s3") as client:
+            yield cls(client, bucket, initial_credentials.credentials["bucket_name"])
 
     @asyncgeneratorcontextmanager
     async def list_blobs(
@@ -569,11 +585,12 @@ class Buckets(metaclass=NoPublicConstructor):
         self, bucket_id_or_name: str, cluster_name: Optional[str] = None
     ) -> AsyncIterator[BucketProvider]:
         bucket = await self.get(bucket_id_or_name, cluster_name)
-        credentials = await self.request_tmp_credentials(
-            bucket_id_or_name, cluster_name
-        )
+
+        async def _get_new_credentials() -> BucketCredentials:
+            return await self.request_tmp_credentials(bucket_id_or_name, cluster_name)
+
         if bucket.provider == Bucket.Provider.AWS:
-            async with AWSS3Provider.create(bucket, credentials) as provider:
+            async with AWSS3Provider.create(bucket, _get_new_credentials) as provider:
                 yield provider
         else:
             assert False, f"Unknown provider {bucket.provider}"
