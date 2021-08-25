@@ -14,6 +14,7 @@ from stat import S_ISREG
 from typing import (
     AbstractSet,
     Any,
+    AsyncContextManager,
     AsyncIterator,
     Awaitable,
     Callable,
@@ -178,7 +179,7 @@ class Storage(metaclass=NoPublicConstructor):
         return 0
 
     @asyncgeneratorcontextmanager
-    async def ls(self, uri: URL) -> AsyncIterator[FileStatus]:
+    async def list(self, uri: URL) -> AsyncIterator[FileStatus]:
         uri = self._normalize_uri(uri)
         url = self._get_storage_url(uri, normalized=True)
         url = url.with_query(op="LISTSTATUS")
@@ -200,6 +201,9 @@ class Storage(metaclass=NoPublicConstructor):
                 res = await resp.json()
                 for status in res["FileStatuses"]["FileStatus"]:
                     yield _file_status_from_api_ls(uri, status)
+
+    def xlist(self, uri: URL) -> AsyncContextManager[AsyncIterator[FileStatus]]:
+        pass
 
     @asyncgeneratorcontextmanager
     async def glob(self, uri: URL, *, dironly: bool = False) -> AsyncIterator[URL]:
@@ -251,7 +255,7 @@ class Storage(metaclass=NoPublicConstructor):
         yield uri
 
     async def _iterdir(self, uri: URL, dironly: bool) -> AsyncIterator[FileStatus]:
-        async with self.ls(uri) as it:
+        async with self.list(uri) as it:
             async for stat in it:
                 if not dironly or stat.is_dir():
                     yield stat
@@ -634,7 +638,7 @@ class Storage(metaclass=NoPublicConstructor):
                 try:
                     for retry in retries(f"Fail to list {dst}"):
                         async with retry:
-                            async with self.ls(dst) as it:
+                            async with self.list(dst) as it:
                                 dst_files = {
                                     item.name: item
                                     async for item in it
@@ -844,7 +848,7 @@ class Storage(metaclass=NoPublicConstructor):
 
         for retry in retries(f"Fail to list {src}"):
             async with retry:
-                async with self.ls(src) as it:
+                async with self.list(src) as it:
                     folder = [item async for item in it]
 
         for child in folder:

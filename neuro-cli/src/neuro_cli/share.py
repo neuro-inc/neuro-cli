@@ -11,6 +11,7 @@ from neuro_sdk import Action, Permission, Share
 from .formatters.utils import URIFormatter, uri_formatter
 from .root import Root
 from .utils import (
+    alias,
     argument,
     command,
     group,
@@ -109,7 +110,7 @@ async def revoke(root: Root, uri: str, user: str) -> None:
     help="Output the resources shared by the user.",
 )
 @option("--full-uri", is_flag=True, help="Output full URI.")
-async def list(
+async def ls(
     root: Root,
     uri: Optional[str],
     username: Optional[str],
@@ -221,6 +222,7 @@ async def remove_role(root: Root, role_name: str) -> None:
 
 acl.add_command(grant)
 acl.add_command(revoke)
-acl.add_command(list)
+acl.add_command(ls)
 acl.add_command(add_role)
 acl.add_command(remove_role)
+acl.add_command(alias(ls, "list", help=ls.help, hidden=True))

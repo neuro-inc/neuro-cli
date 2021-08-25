@@ -15,7 +15,7 @@ Access Control List management.
 | :--- | :--- |
 | [_grant_](acl.md#grant) | Shares resource with another user |
 | [_revoke_](acl.md#revoke) | Revoke user access from another user |
-| [_list_](acl.md#list) | List shared resources |
+| [_ls_](acl.md#ls) | List shared resources |
 | [_add-role_](acl.md#add-role) | Add new role |
 | [_remove-role_](acl.md#remove-role) | Remove existing role |
 
@@ -91,7 +91,7 @@ $ neuro acl revoke job:///my_job_id alice
 
 
 
-### list
+### ls
 
 List shared resources
 
@@ -99,7 +99,7 @@ List shared resources
 #### Usage
 
 ```bash
-neuro acl list [OPTIONS] [URI]
+neuro acl ls [OPTIONS] [URI]
 ```
 
 List shared resources.

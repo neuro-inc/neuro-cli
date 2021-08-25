@@ -198,7 +198,7 @@ async def test_storage_ls_legacy(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        async with client.storage.ls(URL("storage:folder")) as it:
+        async with client.storage.list(URL("storage:folder")) as it:
             ret = [file async for file in it]
 
     assert ret == [
@@ -266,7 +266,7 @@ async def test_storage_ls(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        async with client.storage.ls(URL("storage:folder")) as it:
+        async with client.storage.list(URL("storage:folder")) as it:
             ret = [file async for file in it]
 
     assert ret == [
@@ -361,7 +361,7 @@ async def test_storage_ls_another_cluster(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        async with client.storage.ls(URL("storage://another/user/folder")) as it:
+        async with client.storage.list(URL("storage://another/user/folder")) as it:
             ret = [file async for file in it]
 
     assert ret == [
@@ -406,7 +406,7 @@ async def test_storage_ls_error_in_server_response(
 
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(OSError) as err:
-            async with client.storage.ls(URL("storage:folder")) as it:
+            async with client.storage.list(URL("storage:folder")) as it:
                 async for _ in it:
                     pass
         assert err.value.strerror == "Server is to busy"
