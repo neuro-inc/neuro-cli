@@ -49,14 +49,14 @@ Storage
       :return: asynchronous iterator that can be used for enumerating found files and
                directories.
 
-   .. comethod:: ls(uri: URL) -> AsyncContextManager[AsyncIterator[FileStatus]]
+   .. comethod:: list(uri: URL) -> AsyncContextManager[AsyncIterator[FileStatus]]
       :async-with:
       :async-for:
 
       List a directory *uri* on the storage, e.g.::
 
          folder = yarl.URL("storage:folder")
-         async with client.storage.ls(folder) as statuses:
+         async with client.storage.list(folder) as statuses:
              async for status in statuses:
                  print(status.name, status.size)
 

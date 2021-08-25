@@ -543,7 +543,7 @@ class StoragePathType(AsyncType[URL]):
                         is_dir,
                     )
         else:
-            async with root.client.storage.ls(uri) as it:
+            async with root.client.storage.list(uri) as it:
                 async for fstat in it:
                     if str(uri / fstat.name).startswith(incomplete):
                         is_dir = fstat.is_dir()

@@ -228,7 +228,7 @@ async def test_images_push_with_specified_name(
     async with helper.client() as client:
         image_pushed_full = client.parse.remote_image(image_pushed_full_str)
         image_url_without_tag = replace(image_pushed_full, tag=None)
-        imgs = await client.images.ls()
+        imgs = await client.images.list()
         assert image_url_without_tag in imgs
 
     # check locally

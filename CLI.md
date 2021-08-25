@@ -66,7 +66,7 @@
 	* [neuro acl](#neuro-acl)
 		* [neuro acl grant](#neuro-acl-grant)
 		* [neuro acl revoke](#neuro-acl-revoke)
-		* [neuro acl list](#neuro-acl-list)
+		* [neuro acl ls](#neuro-acl-ls)
 		* [neuro acl add-role](#neuro-acl-add-role)
 		* [neuro acl remove-role](#neuro-acl-remove-role)
 	* [neuro blob](#neuro-blob)
@@ -1799,7 +1799,7 @@ Name | Description|
 |---|---|
 | _[neuro acl grant](#neuro-acl-grant)_| Shares resource with another user |
 | _[neuro acl revoke](#neuro-acl-revoke)_| Revoke user access from another user |
-| _[neuro acl list](#neuro-acl-list)_| List shared resources |
+| _[neuro acl ls](#neuro-acl-ls)_| List shared resources |
 | _[neuro acl add-role](#neuro-acl-add-role)_| Add new role |
 | _[neuro acl remove-role](#neuro-acl-remove-role)_| Remove existing role |
 
@@ -1864,14 +1864,14 @@ Name | Description|
 
 
 
-### neuro acl list
+### neuro acl ls
 
 List shared resources.<br/><br/>The command displays a list of resources shared BY current user \(default).<br/><br/>To display a list of resources shared WITH current user apply --shared option.<br/>
 
 **Usage:**
 
 ```bash
-neuro acl list [OPTIONS] [URI]
+neuro acl ls [OPTIONS] [URI]
 ```
 
 **Examples:**

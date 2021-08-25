@@ -1,8 +1,9 @@
 import contextlib
 import logging
 import re
+import warnings
 from dataclasses import replace
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Awaitable, Dict, List, Optional, Set
 
 import aiodocker
 import aiohttp
@@ -190,7 +191,7 @@ class Images(metaclass=NoPublicConstructor):
 
         return local
 
-    async def ls(self, cluster_name: Optional[str] = None) -> List[RemoteImage]:
+    async def list(self, cluster_name: Optional[str] = None) -> List[RemoteImage]:
         auth = await self._config._registry_auth()
         if cluster_name is None:
             cluster_name = self._config.cluster_name
@@ -216,6 +217,15 @@ class Images(metaclass=NoPublicConstructor):
                     break
                 url = URL(resp.links["next"]["url"])
         return result
+
+    def ls(self, cluster_name: Optional[str] = None) -> Awaitable[List[RemoteImage]]:
+        warnings.warn(
+            "client.images.ls() ls is deprecated and scheduled for removal "
+            "in future Neuro SDK release, please use client.images.list() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.list(cluster_name=cluster_name)
 
     def _validate_image_for_tags(self, image: RemoteImage) -> None:
         err = f"Invalid image `{image}`: "

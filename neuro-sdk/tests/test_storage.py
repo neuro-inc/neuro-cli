@@ -197,11 +197,7 @@ async def test_storage_ls_legacy(
 
     srv = await aiohttp_server(app)
 
-    async with make_client(srv.make_url("/")) as client:
-        async with client.storage.ls(URL("storage:folder")) as it:
-            ret = [file async for file in it]
-
-    assert ret == [
+    expected = [
         FileStatus(
             path="foo",
             size=1024,
@@ -219,6 +215,16 @@ async def test_storage_ls_legacy(
             uri=URL("storage://default/user/folder/bar"),
         ),
     ]
+
+    async with make_client(srv.make_url("/")) as client:
+        async with client.storage.list(URL("storage:folder")) as it:
+            ret = [file async for file in it]
+            assert ret == expected
+
+        with pytest.warns(DeprecationWarning):
+            async with client.storage.ls(URL("storage:folder")) as it:
+                ret = [file async for file in it]
+                assert ret == expected
 
 
 async def make_listiter_response(
@@ -266,7 +272,7 @@ async def test_storage_ls(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        async with client.storage.ls(URL("storage:folder")) as it:
+        async with client.storage.list(URL("storage:folder")) as it:
             ret = [file async for file in it]
 
     assert ret == [
@@ -361,7 +367,7 @@ async def test_storage_ls_another_cluster(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        async with client.storage.ls(URL("storage://another/user/folder")) as it:
+        async with client.storage.list(URL("storage://another/user/folder")) as it:
             ret = [file async for file in it]
 
     assert ret == [
@@ -406,7 +412,7 @@ async def test_storage_ls_error_in_server_response(
 
     async with make_client(srv.make_url("/")) as client:
         with pytest.raises(OSError) as err:
-            async with client.storage.ls(URL("storage:folder")) as it:
+            async with client.storage.list(URL("storage:folder")) as it:
                 async for _ in it:
                     pass
         assert err.value.strerror == "Server is to busy"

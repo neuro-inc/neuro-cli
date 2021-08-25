@@ -86,7 +86,7 @@ Images
 
 
 
-   .. comethod:: ls(cluster_name: Optional[str] = None) -> List[RemoteImage]
+   .. comethod:: list(cluster_name: Optional[str] = None) -> List[RemoteImage]
 
       List images on Neuro registry available to the user.
 
