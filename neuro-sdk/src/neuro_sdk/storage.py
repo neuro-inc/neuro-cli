@@ -205,9 +205,9 @@ class Storage(metaclass=NoPublicConstructor):
 
     def ls(self, uri: URL) -> AsyncContextManager[AsyncIterator[FileStatus]]:
         warnings.warn(
-            DeprecationWarning,
             "client.storage.ls() ls is deprecated and scheduled for removal "
             "in future Neuro SDK release, please use client.storage.list() instead.",
+            DeprecationWarning,
             stacklevel=2,
         )
         return self.list(uri)

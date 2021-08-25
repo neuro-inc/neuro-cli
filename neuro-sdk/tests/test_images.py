@@ -1238,13 +1238,9 @@ class TestRegistry:
         registry_url = srv.make_url("/v2/")
         catalog_url = registry_url / "_catalog"
 
-        async with make_client(url, registry_url=registry_url) as client:
-            ret = await client.images.list()
-        assert step == 3  # All steps are passed
-
         registry = _get_url_authority(registry_url)
         assert registry is not None
-        assert set(ret) == {
+        expected = {
             RemoteImage.new_neuro_image(
                 "alpine",
                 tag=None,
@@ -1267,6 +1263,16 @@ class TestRegistry:
                 registry=registry,
             ),
         }
+
+        async with make_client(url, registry_url=registry_url) as client:
+            ret = await client.images.list()
+        assert step == 3  # All steps are passed
+        assert set(ret) == expected
+
+        with pytest.warns(DeprecationWarning):
+            async with make_client(url, registry_url=registry_url) as client:
+                ret = await client.images.list()
+            assert set(ret) == expected
 
     @pytest.mark.skipif(
         sys.platform == "win32", reason="aiodocker doesn't support Windows pipes yet"
