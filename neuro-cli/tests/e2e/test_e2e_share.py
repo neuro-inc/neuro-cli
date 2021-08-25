@@ -33,7 +33,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     expected_err2 = f"Using resource '{uri2}'"
     assert expected_err2 in captured.err
 
-    captured = helper.run_cli(["-v", "acl", "list", "--full-uri"])
+    captured = helper.run_cli(["-v", "acl", "ls", "--full-uri"])
     assert captured.err == ""
     result = [line.split() for line in captured.out.splitlines()]
     assert [
@@ -42,7 +42,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     ] in result or [f"storage://{helper.cluster_name}", "manage"] in result
     assert [f"user://{helper.username}", "read"] in result
 
-    captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "storage:"])
+    captured = helper.run_cli(["-v", "acl", "ls", "--full-uri", "storage:"])
     assert captured.err == ""
     result = [line.split() for line in captured.out.splitlines()]
     assert [
@@ -52,11 +52,11 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     for line in result:
         assert line[0].startswith("storage://"), line
 
-    captured = helper.run_cli(["-v", "acl", "list", "--full-uri", uri])
+    captured = helper.run_cli(["-v", "acl", "ls", "--full-uri", uri])
     assert captured.err == ""
     assert captured.out.split() == [uri, "manage"]
 
-    captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared"])
+    captured = helper.run_cli(["-v", "acl", "ls", "--full-uri", "--shared"])
     assert captured.err == ""
     result = [line.split() for line in captured.out.splitlines()]
     assert [uri, "read", another_test_user] in result
@@ -64,7 +64,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     for line in result:
         assert line[2] != helper.username, line
 
-    captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared", uri])
+    captured = helper.run_cli(["-v", "acl", "ls", "--full-uri", "--shared", uri])
     assert captured.err == ""
     result = [line.split() for line in captured.out.splitlines()]
     assert sorted(result) == sorted(
@@ -79,7 +79,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
     assert captured.out == ""
     assert expected_err2 in captured.err
 
-    captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared"])
+    captured = helper.run_cli(["-v", "acl", "ls", "--full-uri", "--shared"])
     assert captured.err == ""
     result = [line.split() for line in captured.out.splitlines()]
     assert [uri, "read", another_test_user] not in result
@@ -88,7 +88,7 @@ def test_grant_complete_lifecycle(request: Any, helper: Helper) -> None:
         assert line[0] != uri, line
         assert line[0] != uri2, line
 
-    captured = helper.run_cli(["-v", "acl", "list", "--full-uri", "--shared", uri])
+    captured = helper.run_cli(["-v", "acl", "ls", "--full-uri", "--shared", uri])
     assert captured.err == ""
     assert captured.out == ""
 
@@ -138,19 +138,19 @@ def test_grant_image_with_tag_fails(request: Any, helper: Helper) -> None:
 def test_list_role(request: Any, helper: Helper) -> None:
     role = helper.username
 
-    captured = helper.run_cli(["acl", "list", "-u", role])
+    captured = helper.run_cli(["acl", "ls", "-u", role])
     assert captured.err == ""
 
-    captured = helper.run_cli(["acl", "list", "-u", role, "--shared"])
+    captured = helper.run_cli(["acl", "ls", "-u", role, "--shared"])
     assert captured.err == ""
 
 
 @pytest.mark.e2e
 def test_list_role_forbidden(request: Any, helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError):
-        helper.run_cli(["acl", "list", "-u", "admin"])
+        helper.run_cli(["acl", "ls", "-u", "admin"])
     with pytest.raises(subprocess.CalledProcessError):
-        helper.run_cli(["acl", "list", "-u", "admin", "--shared"])
+        helper.run_cli(["acl", "ls", "-u", "admin", "--shared"])
 
 
 @pytest.mark.e2e
@@ -173,12 +173,12 @@ def test_add_grant_remove_role(request: Any, helper: Helper) -> None:
         assert captured.err == ""
         assert captured.out == ""
 
-        captured = helper.run_cli(["acl", "list", "--full-uri", "-u", role_name])
+        captured = helper.run_cli(["acl", "ls", "--full-uri", "-u", role_name])
         assert captured.err == ""
         result = [line.split() for line in captured.out.splitlines()]
         assert [uri, "read"] in result
 
-        captured = helper.run_cli(["acl", "list", "--full-uri", "-u", "public"])
+        captured = helper.run_cli(["acl", "ls", "--full-uri", "-u", "public"])
         assert captured.err == ""
         result = [line.split() for line in captured.out.splitlines()]
         assert [f"role://{role_name}", "read"] in result
@@ -191,11 +191,11 @@ def test_add_grant_remove_role(request: Any, helper: Helper) -> None:
     assert captured.out == ""
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(["acl", "list", "--full-uri", "-u", role_name])
+        helper.run_cli(["acl", "ls", "--full-uri", "-u", role_name])
     assert cm.value.returncode == 72
     assert f'user "{role_name}" was not found' in cm.value.stderr
 
-    captured = helper.run_cli(["acl", "list", "--full-uri", "-u", "public"])
+    captured = helper.run_cli(["acl", "ls", "--full-uri", "-u", "public"])
     assert captured.err == ""
     result = [line.split() for line in captured.out.splitlines()]
     assert [f"role://{role_name}", "read"] not in result
