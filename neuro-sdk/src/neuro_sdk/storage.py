@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import time
+import warnings
 from dataclasses import dataclass
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -202,8 +203,14 @@ class Storage(metaclass=NoPublicConstructor):
                 for status in res["FileStatuses"]["FileStatus"]:
                     yield _file_status_from_api_ls(uri, status)
 
-    def xlist(self, uri: URL) -> AsyncContextManager[AsyncIterator[FileStatus]]:
-        pass
+    def ls(self, uri: URL) -> AsyncContextManager[AsyncIterator[FileStatus]]:
+        warnings.warn(
+            DeprecationWarning,
+            "client.storage.ls() ls is deprecated and scheduled for removal "
+            "in future Neuro SDK release, please use client.storage.list() instead.",
+            stacklevel=2,
+        )
+        return self.list(uri)
 
     @asyncgeneratorcontextmanager
     async def glob(self, uri: URL, *, dironly: bool = False) -> AsyncIterator[URL]:
