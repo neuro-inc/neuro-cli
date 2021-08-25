@@ -17,8 +17,8 @@ def project() -> None:
 
 
 @command()
-@argument("slug", type=str, required=False)
-async def init(root: Root, slug: Optional[str]) -> None:
+@argument("name", type=str, required=False)
+async def init(root: Root, name: Optional[str]) -> None:
     """
     Initialize an empty project.
 
@@ -29,16 +29,16 @@ async def init(root: Root, slug: Optional[str]) -> None:
     neuro project init
 
     # Initializes a scaffolding for the new project with the recommended project
-    # structure and sets default project folder name to "example"
-    neuro project init my-project-id
+    # structure and sets the project name to 'my-project'
+    neuro project init my-project
     """
-    _project_init(slug)
+    _project_init(name)
 
 
-def _project_init(slug: Optional[str], *, no_input: bool = False) -> None:
+def _project_init(name: Optional[str], *, no_input: bool = False) -> None:
     extra_context = None
-    if slug:
-        extra_context = {"project_slug": slug}
+    if name:
+        extra_context = {"project_name": name}
     cookiecutter(
         "gh:neuro-inc/cookiecutter-neuro-project",
         checkout="release",

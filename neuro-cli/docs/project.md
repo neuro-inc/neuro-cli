@@ -24,7 +24,7 @@ Initialize an empty project
 #### Usage
 
 ```bash
-neuro project init [OPTIONS] [SLUG]
+neuro project init [OPTIONS] [NAME]
 ```
 
 Initialize an empty project.
@@ -38,8 +38,8 @@ Initialize an empty project.
 $ neuro project init
 
 # Initializes a scaffolding for the new project with the recommended project
-# structure and sets default project folder name to "example"
-$ neuro project init my-project-id
+# structure and sets the project name to 'my-project'
+$ neuro project init my-project
 ```
 
 #### Options
