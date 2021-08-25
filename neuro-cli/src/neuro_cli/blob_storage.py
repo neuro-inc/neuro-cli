@@ -1,17 +1,29 @@
 import glob as globmodule  # avoid conflict with subcommand "glob"
 import logging
 import sys
-from typing import List, Optional, Sequence, Tuple
+from typing import Awaitable, Callable, List, Optional, Sequence, Tuple
 
 import click
 from rich.text import Text
 from yarl import URL
 
-from neuro_sdk import FileStatusType, IllegalArgumentError, ResourceNotFound
+from neuro_sdk import (
+    Bucket,
+    Client,
+    FileStatusType,
+    IllegalArgumentError,
+    ResourceNotFound,
+)
 from neuro_sdk.file_filter import FileFilter
 from neuro_sdk.url_utils import _extract_path
 
-from neuro_cli.click_types import BUCKET, BUCKET_NAME, CLUSTER
+from neuro_cli.click_types import BUCKET, BUCKET_CREDENTIAL, BUCKET_NAME, CLUSTER
+from neuro_cli.formatters.bucket_credentials import (
+    BaseBucketCredentialsFormatter,
+    BucketCredentialFormatter,
+    BucketCredentialsFormatter,
+    SimpleBucketCredentialsFormatter,
+)
 from neuro_cli.formatters.buckets import (
     BaseBucketsFormatter,
     BucketFormatter,
@@ -41,6 +53,7 @@ from .utils import (
     parse_blob_or_file_resource,
     parse_blob_resource,
     resolve_bucket,
+    resolve_bucket_credential,
 )
 
 log = logging.getLogger(__name__)
@@ -594,10 +607,143 @@ async def rm(
         sys.exit(EX_OSFILE)
 
 
+# Bucket credentials commands
+
+
+def make_bucket_getter(
+    client: Client, cluster_name: Optional[str] = None
+) -> Callable[[str], Awaitable[Bucket]]:
+    async def _get_bucket(id: str) -> Bucket:
+        return await client.buckets.get(id, cluster_name=cluster_name)
+
+    return _get_bucket
+
+
+@command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Look on a specified cluster (the current cluster by default).",
+)
+async def lscredentials(root: Root, cluster: Optional[str]) -> None:
+    """
+    List credentials.
+    """
+    if root.quiet:
+        fmtr: BaseBucketCredentialsFormatter = SimpleBucketCredentialsFormatter()
+    else:
+        fmtr = BucketCredentialsFormatter(make_bucket_getter(root.client, cluster))
+
+    credentials = []
+    with root.status("Fetching credentials") as status:
+        async with root.client.buckets.persistent_credentials_list(
+            cluster_name=cluster
+        ) as it:
+            async for credential in it:
+                credentials.append(credential)
+                status.update(f"Fetching credentials ({len(credentials)} loaded)")
+
+    with root.pager():
+        root.print(await fmtr(credentials))
+
+
+@command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Perform in a specified cluster (the current cluster by default).",
+)
+@option(
+    "--name",
+    type=str,
+    metavar="NAME",
+    help="Optional bucket credential name",
+    default=None,
+)
+@argument("buckets", type=BUCKET, nargs=-1, required=True)
+async def mkcredentials(
+    root: Root,
+    buckets: Sequence[str],
+    name: Optional[str] = None,
+    cluster: Optional[str] = None,
+) -> None:
+    """
+    Create a new bucket crednetial.
+    """
+    bucket_ids = [
+        await resolve_bucket(bucket, client=root.client, cluster_name=cluster)
+        for bucket in buckets
+    ]
+    credential = await root.client.buckets.persistent_credentials_create(
+        name=name, cluster_name=cluster, bucket_ids=bucket_ids
+    )
+
+    fmtr = BucketCredentialFormatter(make_bucket_getter(root.client, cluster))
+    with root.pager():
+        root.print(await fmtr(credential))
+
+
+@command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Look on a specified cluster (the current cluster by default).",
+)
+@argument("bucket_credential", type=BUCKET_CREDENTIAL)
+async def statcredentials(
+    root: Root, cluster: Optional[str], bucket_credential: str
+) -> None:
+    """
+    Get bucket BUCKET_ID.
+    """
+    credential_id = await resolve_bucket_credential(
+        bucket_credential, client=root.client, cluster_name=cluster
+    )
+    credential_obj = await root.client.buckets.persistent_credentials_get(
+        credential_id, cluster_name=cluster
+    )
+
+    fmtr = BucketCredentialFormatter(make_bucket_getter(root.client, cluster))
+    with root.pager():
+        root.print(await fmtr(credential_obj))
+
+
+@command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Perform on a specified cluster (the current cluster by default).",
+)
+@argument("credentials", type=BUCKET_CREDENTIAL, nargs=-1, required=True)
+async def rmcredentials(
+    root: Root, cluster: Optional[str], credentials: Sequence[str]
+) -> None:
+    """
+    Remove bucket DISK_ID.
+    """
+    for credential in credentials:
+        credential_id = await resolve_bucket_credential(
+            credential, client=root.client, cluster_name=cluster
+        )
+        await root.client.buckets.persistent_credentials_rm(
+            credential_id, cluster_name=cluster
+        )
+        if root.verbosity >= 0:
+            root.print(
+                f"Bucket credential with id '{credential_id}' was successfully removed."
+            )
+
+
 blob_storage.add_command(lsbucket)
 blob_storage.add_command(mkbucket)
 blob_storage.add_command(statbucket)
 blob_storage.add_command(rmbucket)
+
+
+blob_storage.add_command(lscredentials)
+blob_storage.add_command(mkcredentials)
+blob_storage.add_command(statcredentials)
+blob_storage.add_command(rmcredentials)
 
 blob_storage.add_command(cp)
 blob_storage.add_command(ls)

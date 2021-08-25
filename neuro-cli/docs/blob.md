@@ -17,6 +17,10 @@ Blob storage operations.
 | [_mkbucket_](blob.md#mkbucket) | Create a new bucket |
 | [_statbucket_](blob.md#statbucket) | Get bucket BUCKET\_ID |
 | [_rmbucket_](blob.md#rmbucket) | Remove bucket DISK\_ID |
+| [_lscredentials_](blob.md#lscredentials) | List credentials |
+| [_mkcredentials_](blob.md#mkcredentials) | Create a new bucket crednetial |
+| [_statcredentials_](blob.md#statcredentials) | Get bucket BUCKET\_ID |
+| [_rmcredentials_](blob.md#rmcredentials) | Remove bucket DISK\_ID |
 | [_cp_](blob.md#cp) | Simple utility to copy files and... |
 | [_ls_](blob.md#ls) | List buckets or bucket contents |
 | [_glob_](blob.md#glob) | List resources that match PATTERNS |
@@ -102,6 +106,95 @@ Remove bucket DISK_ID
 
 ```bash
 neuro blob rmbucket [OPTIONS] BUCKETS...
+```
+
+Remove bucket `DISK`_ID.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
+
+
+
+### lscredentials
+
+List credentials
+
+
+#### Usage
+
+```bash
+neuro blob lscredentials [OPTIONS]
+```
+
+List credentials.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
+
+
+
+### mkcredentials
+
+Create a new bucket crednetial
+
+
+#### Usage
+
+```bash
+neuro blob mkcredentials [OPTIONS] BUCKETS...
+```
+
+Create a new bucket crednetial.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
+| _--name NAME_ | Optional bucket credential name |
+
+
+
+### statcredentials
+
+Get bucket BUCKET_ID
+
+
+#### Usage
+
+```bash
+neuro blob statcredentials [OPTIONS] BUCKET_CREDENTIAL
+```
+
+Get bucket `BUCKET`_ID.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
+
+
+
+### rmcredentials
+
+Remove bucket DISK_ID
+
+
+#### Usage
+
+```bash
+neuro blob rmcredentials [OPTIONS] CREDENTIALS...
 ```
 
 Remove bucket `DISK`_ID.

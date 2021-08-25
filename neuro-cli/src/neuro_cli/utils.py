@@ -504,6 +504,24 @@ async def resolve_bucket(
     return bucket.id
 
 
+BUCKET_CREDENTIAL_ID_PATTERN = (
+    r"bucket-credentials-[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{12}"
+)
+
+
+async def resolve_bucket_credential(
+    id_or_name: str, *, client: Client, cluster_name: Optional[str] = None
+) -> str:
+    # Temporary fast path.
+    if re.fullmatch(BUCKET_CREDENTIAL_ID_PATTERN, id_or_name):
+        return id_or_name
+
+    credential = await client.buckets.persistent_credentials_get(
+        id_or_name, cluster_name
+    )
+    return credential.id
+
+
 SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret", "disk")
 
 
