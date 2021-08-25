@@ -190,7 +190,7 @@ class Images(metaclass=NoPublicConstructor):
 
         return local
 
-    async def ls(self, cluster_name: Optional[str] = None) -> List[RemoteImage]:
+    async def list(self, cluster_name: Optional[str] = None) -> List[RemoteImage]:
         auth = await self._config._registry_auth()
         if cluster_name is None:
             cluster_name = self._config.cluster_name

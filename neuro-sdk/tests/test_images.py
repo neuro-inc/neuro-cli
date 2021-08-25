@@ -1181,7 +1181,7 @@ class TestRegistry:
         registry_url = srv.make_url("/v2/")
 
         async with make_client(url, registry_url=registry_url) as client:
-            ret = await client.images.ls()
+            ret = await client.images.list()
 
         registry = _get_url_authority(registry_url)
         assert registry is not None
@@ -1239,7 +1239,7 @@ class TestRegistry:
         catalog_url = registry_url / "_catalog"
 
         async with make_client(url, registry_url=registry_url) as client:
-            ret = await client.images.ls()
+            ret = await client.images.list()
         assert step == 3  # All steps are passed
 
         registry = _get_url_authority(registry_url)

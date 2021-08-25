@@ -136,7 +136,7 @@ async def ls(
     if not cluster:
         cluster = root.client.config.cluster_name
     with root.status("Fetching images"):
-        images = await root.client.images.ls(cluster_name=cluster)
+        images = await root.client.images.list(cluster_name=cluster)
 
     if owner:
         owners = set(owner)
