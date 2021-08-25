@@ -167,7 +167,7 @@ async def ls(
                     uri_text = painter.paint(str(uri), FileStatusType.DIRECTORY)
                     root.print(Text.assemble("List of ", uri_text, ":"))
 
-                async with root.client.storage.ls(uri) as it:
+                async with root.client.storage.list(uri) as it:
                     files = [file async for file in it]
                 files.sort(key=FilesSorter(sort).key())
         except (OSError, ResourceNotFound, IllegalArgumentError) as error:
@@ -810,7 +810,7 @@ async def fetch_tree(client: Client, uri: URL, show_all: bool) -> Tree:
     files = []
     tasks = []
     size = 0
-    async with client.storage.ls(uri) as it:
+    async with client.storage.list(uri) as it:
         async for item in it:
             if not show_all and item.name.startswith("."):
                 continue
