@@ -212,7 +212,7 @@ class Helper:
         __tracebackhide__ = True
         url = self.make_uri(path, fromhome=fromhome)
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            async with client.storage.ls(url) as it:
+            async with client.storage.list(url) as it:
                 async for file in it:
                     if (
                         file.type == FileStatusType.FILE
@@ -227,7 +227,7 @@ class Helper:
         __tracebackhide__ = True
         url = self.tmpstorage / path
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            async with client.storage.ls(url) as it:
+            async with client.storage.list(url) as it:
                 async for file in it:
                     if file.type == FileStatusType.DIRECTORY and file.path == name:
                         return
@@ -238,7 +238,7 @@ class Helper:
         __tracebackhide__ = True
         url = self.tmpstorage / path
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            async with client.storage.ls(url) as it:
+            async with client.storage.list(url) as it:
                 async for file in it:
                     if file.type == FileStatusType.DIRECTORY and file.path == name:
                         raise AssertionError(f"Dir {name} found in {url}")
@@ -248,7 +248,7 @@ class Helper:
         __tracebackhide__ = True
         url = self.tmpstorage / path
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            async with client.storage.ls(url) as it:
+            async with client.storage.list(url) as it:
                 async for file in it:
                     if file.type == FileStatusType.FILE and file.path == name:
                         raise AssertionError(f"File {name} found in {url}")
@@ -304,11 +304,11 @@ class Helper:
                 self.tmpstorage / path_from / name_from,
                 self.tmpstorage / path_to / name_to,
             )
-            async with client.storage.ls(self.tmpstorage / path_from) as it:
+            async with client.storage.list(self.tmpstorage / path_from) as it:
                 names1 = {f.name async for f in it}
             assert name_from not in names1
 
-            async with client.storage.ls(self.tmpstorage / path_to) as it:
+            async with client.storage.list(self.tmpstorage / path_to) as it:
                 names2 = {f.name async for f in it}
             assert name_to in names2
 
