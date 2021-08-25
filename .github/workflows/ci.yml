@@ -109,7 +109,7 @@ jobs:
       run: |
         make .test-${{ matrix.cmd }} PYTEST_ARGS=-vvv
     - name: Upload coverage
-      uses: codecov/codecov-action@v2.0.2
+      uses: codecov/codecov-action@v2.0.3
       with:
         file: ./coverage.xml
         flags: ${{ matrix.cmd }}
@@ -169,7 +169,7 @@ jobs:
       run: |
         make .e2e
     - name: Upload coverage
-      uses: codecov/codecov-action@v2.0.2
+      uses: codecov/codecov-action@v2.0.3
       with:
         file: ./coverage.xml
         flags: e2e
