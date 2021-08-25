@@ -35,10 +35,10 @@ async def init(root: Root, slug: Optional[str]) -> None:
     _project_init(slug)
 
 
-def _project_init(slug: Optional[str], *, no_input: bool = False) -> None:
+def _project_init(dir_name: Optional[str], *, no_input: bool = False) -> None:
     extra_context = None
-    if slug:
-        extra_context = {"project_slug": slug}
+    if dir_name:
+        extra_context = {"project_dir": dir_name}
     cookiecutter(
         "gh:neuro-inc/cookiecutter-neuro-project",
         checkout="release",
