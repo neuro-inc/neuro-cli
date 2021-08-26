@@ -267,7 +267,7 @@ class BucketFS(FileSystem[PurePosixPath]):
         return path / child
 
 
-class AWSS3Provider(BucketProvider):
+class S3Provider(BucketProvider):
     def __init__(
         self, client: AioBaseClient, bucket: "Bucket", bucket_name: str
     ) -> None:
@@ -317,7 +317,7 @@ class AWSS3Provider(BucketProvider):
         cls,
         bucket: "Bucket",
         _get_credentials: Callable[[], Awaitable["BucketCredentials"]],
-    ) -> AsyncIterator["AWSS3Provider"]:
+    ) -> AsyncIterator["S3Provider"]:
         initial_credentials = await _get_credentials()
 
         def _credentials_to_meta(credentials: "BucketCredentials") -> Mapping[str, str]:
@@ -337,7 +337,11 @@ class AWSS3Provider(BucketProvider):
             refresh_using=_refresher,
             method="neuro-bucket-api-refresh",  # This is just a label
         )
-        async with session.create_client("s3") as client:
+        async with session.create_client(
+            "s3",
+            endpoint_url=initial_credentials.credentials["endpoint_url"],
+            region_name=initial_credentials.credentials["region_name"],
+        ) as client:
             yield cls(client, bucket, initial_credentials.credentials["bucket_name"])
 
     @asyncgeneratorcontextmanager
@@ -481,6 +485,7 @@ class Bucket:
 
     class Provider(str, enum.Enum):
         AWS = "aws"
+        MINIO = "minio"
 
 
 @dataclass(frozen=True)
@@ -600,8 +605,8 @@ class Buckets(metaclass=NoPublicConstructor):
         async def _get_new_credentials() -> BucketCredentials:
             return await self.request_tmp_credentials(bucket_id_or_name, cluster_name)
 
-        if bucket.provider == Bucket.Provider.AWS:
-            async with AWSS3Provider.create(bucket, _get_new_credentials) as provider:
+        if bucket.provider in (Bucket.Provider.AWS, Bucket.Provider.MINIO):
+            async with S3Provider.create(bucket, _get_new_credentials) as provider:
                 yield provider
         else:
             assert False, f"Unknown provider {bucket.provider}"
