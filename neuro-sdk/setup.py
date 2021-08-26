@@ -24,6 +24,7 @@ setup(
         # CLI raises a warning for outdated package instead
         "certifi",
         "toml>=0.10.0",
+        "aiobotocore>=1.3.3",
     ],
     include_package_data=True,
     description="Neu.ro SDK",
