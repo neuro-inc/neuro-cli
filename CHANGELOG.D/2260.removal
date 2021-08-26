@@ -1,1 +1,0 @@
-Deprecate `neuro run IMAGE CMD`, use `neuro run IMAGE -- CMD` instead. The same for `neuro exec` command.

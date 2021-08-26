@@ -5,6 +5,53 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.8.26 (2021-08-26)
+==================================
+
+Features
+--------
+
+- Add option `--since` in command `neuro logs`. Add parameter *since* in jobs.monitor(). ([#1964](https://github.com/neuro-inc/platform-client-python/issues/1964))
+- Add option `--timestamps` in command `neuro logs`. Add parameter *timestamps* in jobs.monitor(). ([#2252](https://github.com/neuro-inc/platform-client-python/issues/2252))
+- Implement public URI helpers. ([#2253](https://github.com/neuro-inc/platform-client-python/issues/2253))
+- Reworked blob storage support:
+
+  Bucket management commands:
+  - use `neuro blob mkbucket` to create new bucket
+  - use `neuro blob lsbucket` to list your buckets
+  - use `neuro blob statbucket <bucket_id>` to retrieve info about single bucket
+  - use `neuro blob rmbucket <bucket_id>` to delete bucket. Note that you can only delete empty buckets.
+
+  Users can name buckets objects. The name should be unique between users buckets and can be used
+  instead of bucket id.
+
+  Bucket contents management commands:
+  - use `neuro blob ls blob:<bucket_id>/<path_in_bucket>` to list bucket contents. Option `-r`
+  disables file system emulation and displays all keys that start with <path_in_bucket>.
+  - use `neuro blob glob blob:<bucket_id>/<glob_pattern>` to glob search objects in buckets.
+  For example, `blob:my_bucket/**/*.txt` pattern will match all `.txt` files in `my_bucket`
+  bucket.
+  - use `neuro blob cp <src_uri> <dst_uri>` to copy data from/to bucket.
+  - use `neuro blob rm blob:<bucket_id>/<path_in_bucket>` to delete elements from bucket. ([#2258](https://github.com/neuro-inc/platform-client-python/issues/2258))
+- Implement URI autocompletion for bash shell. ([#2259](https://github.com/neuro-inc/platform-client-python/issues/2259))
+- Added way to create persistent credentials to buckets to use in outside of the platform:
+
+  - use `neuro blob mkcredentials <bucket1_id> <bucket2_id> ...` to create new credentials for specified buckets
+  - use `neuro blob lscredentials` to list your buckets credentials
+  - use `neuro blob statcredentials <credentials_id>` to retrieve info about single bucket credentials
+  - use `neuro blob rmbucket <credentials_id>` to delete bucket credentials.
+
+  Users can name buckets credentials. The name should be unique between users buckets credentials and can be used
+  instead of bucket credentials id. ([#2264](https://github.com/neuro-inc/platform-client-python/issues/2264))
+
+
+Deprecations and Removals
+-------------------------
+
+- Deprecate `neuro run IMAGE CMD`, use `neuro run IMAGE -- CMD` instead. The same for `neuro exec` command. ([#2260](https://github.com/neuro-inc/platform-client-python/issues/2260))
+- Remove deprecated options older than 6 months. ([#2262](https://github.com/neuro-inc/platform-client-python/issues/2262))
+
+
 Neuro SDK/CLI 21.8.12 (2021-08-12)
 ==================================
 
