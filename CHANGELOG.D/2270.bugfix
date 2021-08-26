@@ -1,0 +1,1 @@
+Relax aiobotocore requirement; it allows working with the latest aiobotocore without publishing new Neuro SDK.
