@@ -41,7 +41,7 @@ setup(
     author="Neu.ro Team",
     author_email="team@neu.ro",
     license="Apache License, version 2.0",
-    url="https://neuro.ro/",
+    url="https://neu.ro/",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
     entry_points={
