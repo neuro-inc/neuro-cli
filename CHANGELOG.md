@@ -5,6 +5,21 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.8.27 (2021-08-27)
+==================================
+
+Features
+--------
+
+- Add support of minio provider as a bucket blob for onprem clusters ([#2271](https://github.com/neuro-inc/platform-client-python/issues/2271))
+
+
+Bugfixes
+--------
+
+- Relax aiobotocore requirement; it allows working with the latest aiobotocore without publishing new Neuro SDK. ([#2270](https://github.com/neuro-inc/platform-client-python/issues/2270))
+
+
 Neuro SDK/CLI 21.8.26 (2021-08-26)
 ==================================
 
