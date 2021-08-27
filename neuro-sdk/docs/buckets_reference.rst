@@ -366,6 +366,10 @@ Buckets
 
       :param str cluster_name: cluster to look for a persistent credentials. Default is current cluster.
 
+   .. method:: def split_blob_uri(self, uri: URL) -> Tuple[str, str, str]
+
+      Utility method to parse blob *uri* into *cluster_name*, *bucket_id*, *key* triple
+
 Bucket
 ======
 

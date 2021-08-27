@@ -618,13 +618,15 @@ class Buckets(metaclass=NoPublicConstructor):
         async with self._get_provider(bucket_name, cluster_name) as provider:
             yield BucketFS(provider)
 
-    def _split_blob_uri(self, uri: URL) -> Tuple[str, str, str]:
+    def split_blob_uri(self, uri: URL) -> Tuple[str, str, str]:
         uri = normalize_blob_path_uri(
             uri, self._config.username, self._config.cluster_name
         )
         cluster_name = uri.host
         assert cluster_name
         parts = uri.path.lstrip("/").split("/", 2)
+        if len(parts) == 1:
+            raise ValueError(f"Blob uri doesn't contain bucket name: {uri}")
         if len(parts) == 3:
             _, bucket_id, key = parts
         else:
@@ -678,7 +680,7 @@ class Buckets(metaclass=NoPublicConstructor):
         recursive: bool = False,
         limit: Optional[int] = None,
     ) -> AsyncIterator[BucketEntry]:
-        cluster_name, bucket_name, key = self._split_blob_uri(uri)
+        cluster_name, bucket_name, key = self.split_blob_uri(uri)
         async with self._get_provider(bucket_name, cluster_name) as provider:
             async with provider.list_blobs(key, recursive=recursive, limit=limit) as it:
                 async for entry in it:
@@ -686,7 +688,7 @@ class Buckets(metaclass=NoPublicConstructor):
 
     @asyncgeneratorcontextmanager
     async def glob_blobs(self, uri: URL) -> AsyncIterator[BucketEntry]:
-        cluster_name, bucket_name, key = self._split_blob_uri(uri)
+        cluster_name, bucket_name, key = self.split_blob_uri(uri)
         if _has_magic(bucket_name):
             raise ValueError(
                 "You can not glob on bucket names. Please provide name explicitly."
@@ -762,7 +764,7 @@ class Buckets(metaclass=NoPublicConstructor):
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
-        cluster_name, bucket_name, key = self._split_blob_uri(dst)
+        cluster_name, bucket_name, key = self.split_blob_uri(dst)
         async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
             transferer = FileTransferer(LocalFS(), bucket_fs)
             await transferer.transfer_file(
@@ -781,7 +783,7 @@ class Buckets(metaclass=NoPublicConstructor):
         continue_: bool = False,
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
-        cluster_name, bucket_name, key = self._split_blob_uri(src)
+        cluster_name, bucket_name, key = self.split_blob_uri(src)
         dst = normalize_local_path_uri(dst)
         async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
             transferer = FileTransferer(bucket_fs, LocalFS())
@@ -804,7 +806,7 @@ class Buckets(metaclass=NoPublicConstructor):
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
-        cluster_name, bucket_name, key = self._split_blob_uri(dst)
+        cluster_name, bucket_name, key = self.split_blob_uri(dst)
         async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
             transferer = FileTransferer(LocalFS(), bucket_fs)
             await transferer.transfer_dir(
@@ -826,7 +828,7 @@ class Buckets(metaclass=NoPublicConstructor):
         filter: Optional[AsyncFilterFunc] = None,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
-        cluster_name, bucket_name, key = self._split_blob_uri(src)
+        cluster_name, bucket_name, key = self.split_blob_uri(src)
         dst = normalize_local_path_uri(dst)
         async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
             transferer = FileTransferer(bucket_fs, LocalFS())
@@ -840,7 +842,7 @@ class Buckets(metaclass=NoPublicConstructor):
             )
 
     async def blob_is_dir(self, uri: URL) -> bool:
-        cluster_name, bucket_name, key = self._split_blob_uri(uri)
+        cluster_name, bucket_name, key = self.split_blob_uri(uri)
         if key.endswith("/"):
             return True
         async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
@@ -853,7 +855,7 @@ class Buckets(metaclass=NoPublicConstructor):
         recursive: bool = False,
         progress: Optional[AbstractDeleteProgress] = None,
     ) -> None:
-        cluster_name, bucket_name, key = self._split_blob_uri(uri)
+        cluster_name, bucket_name, key = self.split_blob_uri(uri)
         async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
             await file_utils.rm(bucket_fs, PurePosixPath(key), recursive, progress)
 

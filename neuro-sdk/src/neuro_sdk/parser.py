@@ -352,9 +352,9 @@ class Parser(metaclass=NoPublicConstructor):
         else:
             # file scheme doesn't support relative URLs.
             pass
-        while ret.path.endswith("/"):
+        while ret.path.endswith("/") and ret.path != "/":
             # drop trailing slashes if any
-            ret = URL.build(scheme=ret.scheme, host="", path=ret.path[:-1])
+            ret = URL.build(scheme=ret.scheme, host=ret.host or "", path=ret.path[:-1])
         return ret
 
 

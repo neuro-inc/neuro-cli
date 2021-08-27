@@ -17,7 +17,13 @@ from neuro_sdk import (
 from neuro_sdk.file_filter import FileFilter
 from neuro_sdk.url_utils import _extract_path
 
-from neuro_cli.click_types import BUCKET, BUCKET_CREDENTIAL, BUCKET_NAME, CLUSTER
+from neuro_cli.click_types import (
+    BUCKET,
+    BUCKET_CREDENTIAL,
+    BUCKET_NAME,
+    CLUSTER,
+    StoragePathType,
+)
 from neuro_cli.formatters.bucket_credentials import (
     BaseBucketCredentialsFormatter,
     BucketCredentialFormatter,
@@ -196,7 +202,11 @@ async def rmbucket(root: Root, cluster: Optional[str], buckets: Sequence[str]) -
 
 
 @command()
-@click.argument("paths", nargs=-1)
+@click.argument(
+    "paths",
+    nargs=-1,
+    type=StoragePathType(allowed_schemes=["blob"]),
+)
 @option(
     "--human-readable",
     "-h",
@@ -213,7 +223,7 @@ async def rmbucket(root: Root, cluster: Optional[str], buckets: Sequence[str]) -
 @option("--full-uri", is_flag=True, help="Output full bucket URI.")
 async def ls(
     root: Root,
-    paths: Sequence[str],
+    paths: Sequence[URL],
     human_readable: bool,
     format_long: bool,
     recursive: bool,
@@ -222,8 +232,6 @@ async def ls(
     """
     List buckets or bucket contents.
     """
-    uris = [parse_blob_resource(path, root) for path in paths]
-
     formatter: BaseBlobFormatter
     if full_uri:
         uri_fmtr: URIFormatter = str
@@ -242,7 +250,7 @@ async def ls(
         # blobs, thus column formatting does not work too well.
         formatter = SimpleBlobFormatter(root.color, uri_fmtr)
 
-    if not uris:
+    if not paths:
         # List Buckets instead of blobs in bucket
 
         with root.pager():
@@ -250,10 +258,10 @@ async def ls(
                 async for bucket in bucket_it:
                     root.print(formatter(bucket))
     else:
-        for uri, path in zip(uris, paths):
+        for uri in paths:
             if root.verbosity > 0:
                 painter = get_painter(root.color)
-                uri_text = painter.paint(str(path), FileStatusType.DIRECTORY)
+                uri_text = painter.paint(str(uri), FileStatusType.DIRECTORY)
                 root.print(Text.assemble("List of ", uri_text, ":"))
 
             with root.pager():
@@ -267,7 +275,12 @@ async def ls(
 
 @command()
 @option("--full-uri", is_flag=True, help="Output full bucket URI.")
-@click.argument("patterns", nargs=-1, required=False)
+@click.argument(
+    "patterns",
+    nargs=-1,
+    required=False,
+    type=StoragePathType(allowed_schemes=["blob"]),
+)
 async def glob(root: Root, full_uri: bool, patterns: Sequence[str]) -> None:
     """
     List resources that match PATTERNS.
@@ -294,8 +307,17 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[str]) -> None:
 
 
 @command()
-@click.argument("sources", nargs=-1, required=False)
-@click.argument("destination", required=False)
+@click.argument(
+    "sources",
+    nargs=-1,
+    required=False,
+    type=StoragePathType(allowed_schemes=["file", "blob"]),
+)
+@click.argument(
+    "destination",
+    required=False,
+    type=StoragePathType(allowed_schemes=["file", "blob"]),
+)
 @option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
 @option(
     "--glob/--no-glob",
@@ -309,6 +331,7 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[str]) -> None:
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
+    type=StoragePathType(allowed_schemes=["storage", "file"], complete_file=False),
     help="Copy all SOURCES into DIRECTORY.",
 )
 @option(
@@ -555,7 +578,12 @@ async def _expand(
 
 
 @command()
-@argument("paths", nargs=-1, required=True)
+@argument(
+    "paths",
+    nargs=-1,
+    required=True,
+    type=StoragePathType(allowed_schemes=["file", "blob"]),
+)
 @option(
     "--recursive",
     "-r",
