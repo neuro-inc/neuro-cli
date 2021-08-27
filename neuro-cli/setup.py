@@ -50,6 +50,7 @@ setup(
             "docker-credential-neuro=neuro_cli.docker_credential_helper:main",
         ]
     },
+    extras_require={"awscli": ["aiobotocore[awscli]"], "boto3": ["aiobotocore[boto3]"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
