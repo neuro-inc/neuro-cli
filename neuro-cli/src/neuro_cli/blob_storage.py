@@ -22,7 +22,7 @@ from neuro_cli.click_types import (
     BUCKET_CREDENTIAL,
     BUCKET_NAME,
     CLUSTER,
-    StoragePathType,
+    PlatformURLType,
 )
 from neuro_cli.formatters.bucket_credentials import (
     BaseBucketCredentialsFormatter,
@@ -203,7 +203,7 @@ async def rmbucket(root: Root, cluster: Optional[str], buckets: Sequence[str]) -
 @click.argument(
     "paths",
     nargs=-1,
-    type=StoragePathType(allowed_schemes=["blob"]),
+    type=PlatformURLType(allowed_schemes=["blob"]),
 )
 @option(
     "--human-readable",
@@ -277,7 +277,7 @@ async def ls(
     "patterns",
     nargs=-1,
     required=False,
-    type=StoragePathType(allowed_schemes=["blob"]),
+    type=PlatformURLType(allowed_schemes=["blob"]),
 )
 async def glob(root: Root, full_uri: bool, patterns: Sequence[URL]) -> None:
     """
@@ -307,12 +307,12 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[URL]) -> None:
     "sources",
     nargs=-1,
     required=False,
-    type=StoragePathType(allowed_schemes=["file", "blob"]),
+    type=PlatformURLType(allowed_schemes=["file", "blob"]),
 )
 @click.argument(
     "destination",
     required=False,
-    type=StoragePathType(allowed_schemes=["file", "blob"]),
+    type=PlatformURLType(allowed_schemes=["file", "blob"]),
 )
 @option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
 @option(
@@ -327,7 +327,7 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[URL]) -> None:
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
-    type=StoragePathType(allowed_schemes=["storage", "file"], complete_file=False),
+    type=PlatformURLType(allowed_schemes=["storage", "file"], complete_file=False),
     help="Copy all SOURCES into DIRECTORY.",
 )
 @option(
@@ -577,7 +577,7 @@ async def _expand(
     "paths",
     nargs=-1,
     required=True,
-    type=StoragePathType(allowed_schemes=["file", "blob"]),
+    type=PlatformURLType(allowed_schemes=["file", "blob"]),
 )
 @option(
     "--recursive",

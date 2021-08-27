@@ -639,8 +639,8 @@ class BlobPathURLCompleter(PathURLCompleter):
                 yield item
 
 
-class StoragePathType(AsyncType[URL]):
-    name = "storage"
+class PlatformURLType(AsyncType[URL]):
+    name = "url"
 
     def __init__(
         self,
@@ -648,9 +648,7 @@ class StoragePathType(AsyncType[URL]):
         allowed_schemes: Iterable[str] = ("file", "storage", "blob"),
         complete_dir: bool = True,
         complete_file: bool = True,
-        name: str = "storage",
     ) -> None:
-        self.name = name
         self._allowed_schemes = list(allowed_schemes)
         self._complete_dir = complete_dir
         self._complete_file = complete_file
