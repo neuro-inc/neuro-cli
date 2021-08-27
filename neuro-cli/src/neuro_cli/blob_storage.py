@@ -56,8 +56,6 @@ from .utils import (
     command,
     group,
     option,
-    parse_blob_or_file_resource,
-    parse_blob_resource,
     resolve_bucket,
     resolve_bucket_credential,
 )
@@ -281,7 +279,7 @@ async def ls(
     required=False,
     type=StoragePathType(allowed_schemes=["blob"]),
 )
-async def glob(root: Root, full_uri: bool, patterns: Sequence[str]) -> None:
+async def glob(root: Root, full_uri: bool, patterns: Sequence[URL]) -> None:
     """
     List resources that match PATTERNS.
     """
@@ -294,14 +292,12 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[str]) -> None:
         )
     for pattern in patterns:
 
-        uri = parse_blob_resource(pattern, root)
-
         if root.verbosity > 0:
             painter = get_painter(root.color)
-            uri_text = painter.paint(pattern, FileStatusType.FILE)
+            uri_text = painter.paint(str(pattern), FileStatusType.FILE)
             root.print(Text.assemble("Using pattern ", uri_text, ":"))
 
-        async with root.client.buckets.glob_blobs(uri=uri) as blobs_it:
+        async with root.client.buckets.glob_blobs(uri=pattern) as blobs_it:
             async for entry in blobs_it:
                 root.print(uri_fmtr(entry.uri))
 
@@ -386,11 +382,11 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[str]) -> None:
 )
 async def cp(
     root: Root,
-    sources: Sequence[str],
-    destination: Optional[str],
+    sources: Sequence[URL],
+    destination: Optional[URL],
     recursive: bool,
     glob: bool,
-    target_directory: Optional[str],
+    target_directory: Optional[URL],
     no_target_directory: bool,
     update: bool,
     continue_: bool,
@@ -431,7 +427,7 @@ async def cp(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         sources = *sources, destination
-        target_dir = parse_blob_or_file_resource(target_directory, root)
+        target_dir = target_directory
         dst = None
     else:
         if destination is None:
@@ -442,7 +438,7 @@ async def cp(
             raise click.MissingParameter(
                 param_type="argument", param_hint='"SOURCES..."'
             )
-        dst = parse_blob_or_file_resource(destination, root)
+        dst = destination
 
         # From gsutil:
         #
@@ -551,29 +547,28 @@ async def _is_dir(root: Root, uri: URL) -> bool:
 
 
 async def _expand(
-    paths: Sequence[str], root: Root, glob: bool, allow_file: bool = False
+    paths: Sequence[URL], root: Root, glob: bool, allow_file: bool = False
 ) -> List[URL]:
     uris = []
     for path in paths:
-        uri = parse_blob_or_file_resource(path, root)
         if root.verbosity > 0:
             painter = get_painter(root.color)
-            uri_text = painter.paint(str(uri), FileStatusType.FILE)
+            uri_text = painter.paint(str(path), FileStatusType.FILE)
             root.print(Text.assemble("Expand", uri_text))
 
-        if glob and globmodule.has_magic(uri.path):
-            if uri.scheme == "blob":
-                async with root.client.buckets.glob_blobs(uri) as blob_iter:
+        if glob and globmodule.has_magic(path.path):
+            if path.scheme == "blob":
+                async with root.client.buckets.glob_blobs(path) as blob_iter:
                     async for blob in blob_iter:
                         uris.append(blob.uri)
-            elif allow_file and uri.scheme == "file":
-                uri_path = str(_extract_path(uri))
+            elif allow_file and path.scheme == "file":
+                uri_path = str(_extract_path(path))
                 for p in globmodule.iglob(uri_path, recursive=True):
-                    uris.append(uri.with_path(p))
+                    uris.append(path.with_path(p))
             else:
-                uris.append(uri)
+                uris.append(path)
         else:
-            uris.append(uri)
+            uris.append(path)
     return uris
 
 
@@ -606,7 +601,7 @@ async def _expand(
 )
 async def rm(
     root: Root,
-    paths: Sequence[str],
+    paths: Sequence[URL],
     recursive: bool,
     glob: bool,
     progress: Optional[bool],
