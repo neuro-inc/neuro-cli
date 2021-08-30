@@ -689,3 +689,81 @@ def test_tree(helper: Helper, data: _Data, tmp_path: Path) -> None:
         )
         expected = expected.translate(trans)
     assert capture.out == expected
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Autocompletion is not supported on Windows"
+)
+@pytest.mark.e2e
+def test_storage_autocomplete_remote(helper: Helper, tmp_path: Path) -> None:
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / "bar").write_bytes(b"bar")
+    subfolder = folder / "folder"
+    subfolder.mkdir()
+    (subfolder / "baz").write_bytes(b"baz")
+
+    helper.run_cli(["storage", "cp", "-r", folder.as_uri(), helper.tmpstorage])
+
+    out = helper.autocomplete(["storage", "ls", "st"])
+    completions = helper.parse_completions(out)
+    completion_keys = [key for _, key, _, _ in completions]
+    assert "storage:" in completion_keys
+
+    out = helper.autocomplete(["storage", "cp", f"{helper.tmpstorage}/"])
+    completions = helper.parse_completions(out)
+    completion_keys = [key for _, key, _, _ in completions]
+    assert "folder/" in completion_keys
+    assert "foo" in completion_keys
+    assert "bar" in completion_keys
+
+    out = helper.autocomplete(["storage", "cp", f"{helper.tmpstorage}/fo"])
+    completions = helper.parse_completions(out)
+    completion_keys = [key for _, key, _, _ in completions]
+    assert "folder/" in completion_keys
+    assert "foo" in completion_keys
+    assert "bar" not in completion_keys
+
+    out = helper.autocomplete(["storage", "cp", f"{helper.tmpstorage}/folder/"])
+    completions = helper.parse_completions(out)
+    completion_keys = [key for _, key, _, _ in completions]
+    assert "baz" in completion_keys
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Autocompletion is not supported on Windows"
+)
+@pytest.mark.e2e
+def test_storage_autocomplete_local(helper: Helper, tmp_path: Path) -> None:
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / "bar").write_bytes(b"bar")
+    subfolder = folder / "folder"
+    subfolder.mkdir()
+    (subfolder / "baz").write_bytes(b"baz")
+
+    out = helper.autocomplete(["storage", "cp", "fi"])
+    completions = helper.parse_completions(out)
+    completion_keys = [key for _, key, _, _ in completions]
+    assert "file:" in completion_keys
+
+    out = helper.autocomplete(["storage", "cp", f"{folder.as_uri()}/"])
+    completions = helper.parse_completions(out)
+    completion_keys = [key for _, key, _, _ in completions]
+    assert "folder/" in completion_keys
+    assert "foo" in completion_keys
+    assert "bar" in completion_keys
+
+    out = helper.autocomplete(["storage", "cp", f"{folder.as_uri()}/fo"])
+    completions = helper.parse_completions(out)
+    completion_keys = [key for _, key, _, _ in completions]
+    assert "folder/" in completion_keys
+    assert "foo" in completion_keys
+    assert "bar" not in completion_keys
+
+    out = helper.autocomplete(["storage", "cp", f"{folder.as_uri()}/folder/"])
+    completions = helper.parse_completions(out)
+    completion_keys = [key for _, key, _, _ in completions]
+    assert "baz" in completion_keys

@@ -1,5 +1,6 @@
 import os
 import subprocess
+import sys
 from pathlib import Path, PurePath
 from typing import Tuple
 
@@ -314,3 +315,45 @@ def test_e2e_blob_storage_rm_dir(
 
     captured = helper.run_cli(["blob", "ls", f"blob:{tmp_bucket}/some_dir/"])
     assert not captured.out
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="Autocompletion is not supported on Windows"
+)
+@pytest.mark.e2e
+def test_blob_autocomplete(helper: Helper, tmp_path: Path, tmp_bucket: str) -> None:
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / "foo").write_bytes(b"foo")
+    (folder / "bar").write_bytes(b"bar")
+    subfolder = folder / "folder"
+    subfolder.mkdir()
+    (subfolder / "baz").write_bytes(b"baz")
+
+    base_blob_uri = f"blob:{tmp_bucket}/some_dir"
+
+    helper.run_cli(["blob", "cp", "-r", folder.as_uri(), base_blob_uri])
+
+    out = helper.autocomplete(["blob", "ls", "bl"])
+    completions = helper.parse_completions(out)
+    completion_keys = [key for _, key, _, _ in completions]
+    assert "blob:" in completion_keys
+
+    out = helper.autocomplete(["blob", "cp", f"{base_blob_uri}/"])
+    completions = helper.parse_completions(out)
+    completion_keys = [key for _, key, _, _ in completions]
+    assert "folder/" in completion_keys
+    assert "foo" in completion_keys
+    assert "bar" in completion_keys
+
+    out = helper.autocomplete(["blob", "cp", f"{base_blob_uri}/fo"])
+    completions = helper.parse_completions(out)
+    completion_keys = [key for _, key, _, _ in completions]
+    assert "folder/" in completion_keys
+    assert "foo" in completion_keys
+    assert "bar" not in completion_keys
+
+    out = helper.autocomplete(["blob", "cp", f"{base_blob_uri}/folder/"])
+    completions = helper.parse_completions(out)
+    completion_keys = [key for _, key, _, _ in completions]
+    assert "baz" in completion_keys
