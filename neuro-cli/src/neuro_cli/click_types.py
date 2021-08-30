@@ -586,7 +586,7 @@ class StoragePathURLCompleter(PathURLCompleter):
     async def _iter_dir(
         self, root: Root, uri: URL
     ) -> AsyncIterator[PathURLCompleter.DirEntry]:
-        async with root.client.storage.ls(uri) as it:
+        async with root.client.storage.list(uri) as it:
             async for fstat in it:
                 yield fstat
 
