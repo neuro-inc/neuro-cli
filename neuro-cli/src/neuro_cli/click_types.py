@@ -23,6 +23,7 @@ from click.shell_completion import (
     ZshComplete,
     add_completion_class,
 )
+from typing_extensions import Protocol
 from yarl import URL
 
 from neuro_sdk import (
@@ -33,6 +34,7 @@ from neuro_sdk import (
     ResourceNotFound,
     TagOption,
 )
+from neuro_sdk.utils import AsyncContextManager, asyncgeneratorcontextmanager
 
 from .parse_utils import (
     JobTableFormat,
@@ -478,33 +480,38 @@ class ServiceAccountType(AsyncType[str]):
 SERVICE_ACCOUNT = ServiceAccountType()
 
 
-class StoragePathType(AsyncType[URL]):
-    name = "storage"
+class URLCompleter(abc.ABC):
+    @abc.abstractmethod
+    def get_completions(
+        self,
+        uri: URL,
+        root: Root,
+        incomplete: str,
+    ) -> AsyncIterator[CompletionItem]:
+        pass
+
+
+class PathURLCompleter(URLCompleter, abc.ABC):
+    class DirEntry(Protocol):
+        @property
+        def name(self) -> str:
+            ...
+
+        def is_dir(self) -> bool:
+            ...
 
     def __init__(
         self,
-        *,
-        allowed_schemes: Iterable[str] = ("file", "storage"),
         complete_dir: bool = True,
         complete_file: bool = True,
     ) -> None:
-        self._allowed_schemes = list(allowed_schemes)
         self._complete_dir = complete_dir
         self._complete_file = complete_file
 
-    async def async_convert(
-        self,
-        root: Root,
-        value: str,
-        param: Optional[click.Parameter],
-        ctx: Optional[click.Context],
-    ) -> URL:
-        await root.init_client()
-        return root.client.parse.str_to_uri(
-            value,
-            allowed_schemes=self._allowed_schemes,
-            short=False,
-        )
+    def _get_dir_uri(self, uri: URL, incomplete: str) -> URL:
+        if incomplete.endswith("/"):
+            return uri / ""
+        return uri.parent / ""
 
     def _make_item(
         self,
@@ -520,42 +527,150 @@ class StoragePathType(AsyncType[URL]):
             prefix=str(parent) + "/" if parent.path else str(parent),
         )
 
-    async def _collect_names(
+    @abc.abstractmethod
+    async def _is_valid_dir(self, root: Root, uri: URL) -> bool:
+        pass
+
+    @abc.abstractmethod
+    def _iter_dir(
+        self, root: Root, uri: URL
+    ) -> AsyncContextManager[AsyncIterator["PathURLCompleter.DirEntry"]]:
+        pass
+
+    async def get_completions(
         self,
         uri: URL,
         root: Root,
         incomplete: str,
     ) -> AsyncIterator[CompletionItem]:
-        if uri.scheme == "file":
-            path = root.client.parse.uri_to_path(uri)
-            if not path.is_dir():
-                raise NotADirectoryError
-            for item in path.iterdir():
-                if str(uri / item.name).startswith(incomplete):
-                    is_dir = item.is_dir()
-                    if is_dir and not self._complete_dir:
+        dir_uri = self._get_dir_uri(uri, incomplete)
+        if not await self._is_valid_dir(root, dir_uri):
+            return
+        async with self._iter_dir(root, dir_uri) as it:
+            async for item in it:
+                if str(dir_uri / item.name).startswith(incomplete):
+                    if item.is_dir() and not self._complete_dir:
                         continue
-                    if not is_dir and not self._complete_file:
+                    if not item.is_dir() and not self._complete_file:
                         continue
                     yield self._make_item(
-                        uri,
+                        dir_uri.parent,
                         item.name,
-                        is_dir,
+                        item.is_dir(),
                     )
+
+
+class FilePathURLCompleter(PathURLCompleter):
+    async def _is_valid_dir(self, root: Root, uri: URL) -> bool:
+        path = root.client.parse.uri_to_path(uri)
+        return path.exists() and path.is_dir()
+
+    @asyncgeneratorcontextmanager
+    async def _iter_dir(
+        self, root: Root, uri: URL
+    ) -> AsyncIterator[PathURLCompleter.DirEntry]:
+        path = root.client.parse.uri_to_path(uri)
+        for item in path.iterdir():
+            yield item
+
+
+class StoragePathURLCompleter(PathURLCompleter):
+    async def _is_valid_dir(self, root: Root, uri: URL) -> bool:
+        try:
+            stat = await root.client.storage.stat(uri)
+        except ResourceNotFound:
+            return False
+        return stat.is_dir()
+
+    @asyncgeneratorcontextmanager
+    async def _iter_dir(
+        self, root: Root, uri: URL
+    ) -> AsyncIterator[PathURLCompleter.DirEntry]:
+        async with root.client.storage.list(uri) as it:
+            async for fstat in it:
+                yield fstat
+
+
+class BlobPathURLCompleter(PathURLCompleter):
+    async def _is_valid_dir(self, root: Root, uri: URL) -> bool:
+        try:
+            return await root.client.buckets.blob_is_dir(uri)
+        except ResourceNotFound:
+            return False
+
+    @asyncgeneratorcontextmanager
+    async def _iter_dir(
+        self, root: Root, uri: URL
+    ) -> AsyncIterator[PathURLCompleter.DirEntry]:
+        _, _, dir_key = root.client.parse.split_blob_uri(uri)
+        async with root.client.buckets.list_blobs(uri) as it:
+            async for blob_entry in it:
+                if blob_entry.key == dir_key:
+                    continue  # Directory itself is also listed as it is prefix search
+                yield blob_entry
+
+    async def get_completions(
+        self,
+        uri: URL,
+        root: Root,
+        incomplete: str,
+    ) -> AsyncIterator[CompletionItem]:
+        full_uri = root.client.parse.normalize_uri(uri)
+        bucket_id_complete = len(full_uri.parts) > 3 or (
+            len(full_uri.parts) == 3 and incomplete.endswith("/")
+        )
+        if not bucket_id_complete:
+            async with root.client.buckets.list(cluster_name=full_uri.host) as it:
+                async for bucket in it:
+                    if uri.host:
+                        prefix = URL(f"blob://{full_uri.host}/{bucket.owner}")
+                    else:
+                        prefix = URL(f"blob:")
+                    names = [bucket.id] + ([bucket.name] if bucket.name else [])
+                    for name in names:
+                        if str(prefix / name).startswith(incomplete):
+                            yield self._make_item(
+                                prefix,
+                                name,
+                                True,
+                            )
         else:
-            async with root.client.storage.list(uri) as it:
-                async for fstat in it:
-                    if str(uri / fstat.name).startswith(incomplete):
-                        is_dir = fstat.is_dir()
-                        if is_dir and not self._complete_dir:
-                            continue
-                        if not is_dir and not self._complete_file:
-                            continue
-                        yield self._make_item(
-                            uri,
-                            fstat.name,
-                            is_dir,
-                        )
+            async for item in super().get_completions(uri, root, incomplete):
+                yield item
+
+
+class PlatformURIType(AsyncType[URL]):
+    name = "uri"
+
+    def __init__(
+        self,
+        *,
+        allowed_schemes: Iterable[str] = ("file", "storage", "blob"),
+        complete_dir: bool = True,
+        complete_file: bool = True,
+    ) -> None:
+        self._allowed_schemes = list(allowed_schemes)
+        self._complete_dir = complete_dir
+        self._complete_file = complete_file
+        self._completers: Mapping[str, URLCompleter] = {
+            "file": FilePathURLCompleter(complete_dir, complete_file),
+            "storage": StoragePathURLCompleter(complete_dir, complete_file),
+            "blob": BlobPathURLCompleter(complete_dir, complete_file),
+        }
+
+    async def async_convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> URL:
+        await root.init_client()
+        return root.client.parse.str_to_uri(
+            value,
+            allowed_schemes=self._allowed_schemes,
+            short=False,
+        )
 
     async def _find_matches(self, incomplete: str, root: Root) -> List[CompletionItem]:
         ret: List[CompletionItem] = []
@@ -569,24 +684,30 @@ class StoragePathType(AsyncType[URL]):
         else:
             return ret
 
-        # while incomplete.endswith("/"):
-        #     incomplete = incomplete[:-1]
-
         uri = root.client.parse.str_to_uri(
             incomplete,
             allowed_schemes=self._allowed_schemes,
-            short=True,
+            short=not ("://" in incomplete),
         )
-        try:
-            return [item async for item in self._collect_names(uri, root, incomplete)]
-        except (ResourceNotFound, NotADirectoryError):
-            try:
-                return [
-                    item
-                    async for item in self._collect_names(uri.parent, root, incomplete)
-                ]
-            except (ResourceNotFound, NotADirectoryError):
-                return []
+        if uri.host and uri.path == "/" and not incomplete.endswith("/"):
+            # Cluster name is incomplete
+            for cluster_name in root.client.config.clusters:
+                if cluster_name.startswith(uri.host):
+                    ret.append(
+                        CompletionItem(
+                            f"{cluster_name}/", type="uri", prefix=f"{uri.scheme}://"
+                        )
+                    )
+            return ret
+        if uri.host and uri.path.count("/") == 1:
+            # Username completion not supported
+            return []
+        completer = self._completers.get(uri.scheme)
+        if completer:
+            return [
+                item async for item in completer.get_completions(uri, root, incomplete)
+            ]
+        return []
 
     async def async_shell_complete(
         self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str

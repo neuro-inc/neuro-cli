@@ -161,6 +161,10 @@ Parser
       :raise ValueError: if ``uri`` is invalid or provides a scheme not enumerated by
                          ``allowed_schemes`` argument.
 
+   .. method:: split_blob_uri(self, uri: URL) -> Tuple[str, str, str]
+
+      Utility method to parse blob *uri* into *cluster_name*, *bucket_id*, *key* triple
+
 
 EnvParseResult
 ==============

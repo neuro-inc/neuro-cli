@@ -558,6 +558,10 @@ class Helper:
         assert not proc.stderr
         return proc.stdout
 
+    def parse_completions(self, raw: str) -> List[Tuple[str, str, str, str]]:
+        parts = raw.split("\n")
+        return list(zip(*[iter(parts)] * 4))  # type: ignore
+
     async def arun_job_and_wait_state(
         self,
         image: str,

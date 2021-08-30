@@ -100,15 +100,6 @@ def normalize_disk_uri(uri: URL, username: str, cluster_name: str) -> URL:
     return _normalize_uri(uri, username, cluster_name)
 
 
-def normalize_blob_path_uri(uri: URL, username: str, cluster_name: str) -> URL:
-    """Normalize disk url."""
-    if uri.scheme != "blob":
-        raise ValueError(
-            f"Invalid storage scheme '{uri.scheme}:' (only 'blob:' is allowed)"
-        )
-    return _normalize_uri(uri, username, cluster_name)
-
-
 def _normalize_uri(uri: URL, username: str, cluster_name: str) -> URL:
     """Normalize all other user-bound URI's like jobs, storage, images, etc."""
     _check_uri(uri)

@@ -7,7 +7,7 @@ import pytest
 from neuro_cli.click_types import (
     JOB_NAME,
     LocalRemotePortParamType,
-    StoragePathType,
+    PlatformURIType,
     _merge_autocompletion_args,
 )
 from neuro_cli.root import Root
@@ -70,31 +70,31 @@ class TestJobNameType:
             JOB_NAME.convert(name, param=None, ctx=None)
 
 
-class TestStoragePathType:
+class TestPlatformURIType:
     async def test_find_matches_scheme(self, root: Root) -> None:
-        spt = StoragePathType()
-        ret = await spt._find_matches("st", root)
+        url_type = PlatformURIType()
+        ret = await url_type._find_matches("st", root)
         assert len(ret) == 1
         assert "storage:" == ret[0].value
 
     async def test_find_matches_invalid_scheme(self, root: Root) -> None:
-        spt = StoragePathType()
-        ret = await spt._find_matches("unknown", root)
+        url_type = PlatformURIType()
+        ret = await url_type._find_matches("unknown", root)
         assert ret == []
 
     async def test_find_matches_file(self, root: Root) -> None:
-        spt = StoragePathType()
+        url_type = PlatformURIType()
         fobj = Path(__file__)
-        ret = await spt._find_matches(fobj.as_uri(), root)
+        ret = await url_type._find_matches(fobj.as_uri(), root)
         assert [i.value for i in ret] == [fobj.name]
         assert {i.type for i in ret} == {"uri"}
         assert {i.prefix for i in ret} == {fobj.parent.as_uri() + "/"}
 
     async def test_find_matches_files_only(self, root: Root) -> None:
-        spt = StoragePathType(complete_dir=False)
+        url_type = PlatformURIType(complete_dir=False)
         fobj = Path(__file__).parent
-        incomplete = fobj.as_uri()
-        ret = await spt._find_matches(incomplete, root)
+        incomplete = fobj.as_uri() + "/"
+        ret = await url_type._find_matches(incomplete, root)
         assert [i.value for i in ret] == [
             f.name for f in fobj.iterdir() if not f.is_dir()
         ]
@@ -102,9 +102,9 @@ class TestStoragePathType:
         assert {i.prefix for i in ret} == {fobj.as_uri() + "/"}
 
     async def test_find_matches_dir(self, root: Root) -> None:
-        spt = StoragePathType()
+        url_type = PlatformURIType()
         fobj = Path(__file__).parent
-        ret = await spt._find_matches(fobj.as_uri(), root)
+        ret = await url_type._find_matches(fobj.as_uri() + "/", root)
         assert [i.value for i in ret] == [
             f.name + "/" if f.is_dir() else f.name for f in fobj.iterdir()
         ]
@@ -112,9 +112,9 @@ class TestStoragePathType:
         assert {i.prefix for i in ret} == {fobj.as_uri() + "/"}
 
     async def test_find_matches_dir_only(self, root: Root) -> None:
-        spt = StoragePathType(complete_file=False)
+        url_type = PlatformURIType(complete_file=False)
         fobj = Path(__file__).parent
-        ret = await spt._find_matches(fobj.as_uri(), root)
+        ret = await url_type._find_matches(fobj.as_uri() + "/", root)
         assert [i.value for i in ret] == [
             f.name + "/" for f in fobj.iterdir() if f.is_dir()
         ]
@@ -122,10 +122,10 @@ class TestStoragePathType:
         assert {i.prefix for i in ret} == {fobj.as_uri() + "/"}
 
     async def test_find_matches_partial(self, root: Root) -> None:
-        spt = StoragePathType()
+        url_type = PlatformURIType()
         fobj = Path(__file__).parent
         incomplete = fobj.as_uri() + "/test_"
-        ret = await spt._find_matches(incomplete, root)
+        ret = await url_type._find_matches(incomplete, root)
         assert [i.value for i in ret] == [
             f.name + "/" if f.is_dir() else f.name for f in fobj.glob("test_*")
         ]
@@ -133,10 +133,10 @@ class TestStoragePathType:
         assert {i.prefix for i in ret} == {fobj.as_uri() + "/"}
 
     async def test_find_matches_not_exists(self, root: Root) -> None:
-        spt = StoragePathType()
+        url_type = PlatformURIType()
         fobj = Path(__file__).parent
         incomplete = fobj.as_uri() + "/file-not-found.txt"
-        ret = await spt._find_matches(incomplete, root)
+        ret = await url_type._find_matches(incomplete, root)
         assert [] == ret
 
 

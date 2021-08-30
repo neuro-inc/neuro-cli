@@ -17,7 +17,13 @@ from neuro_sdk import (
 from neuro_sdk.file_filter import FileFilter
 from neuro_sdk.url_utils import _extract_path
 
-from neuro_cli.click_types import BUCKET, BUCKET_CREDENTIAL, BUCKET_NAME, CLUSTER
+from neuro_cli.click_types import (
+    BUCKET,
+    BUCKET_CREDENTIAL,
+    BUCKET_NAME,
+    CLUSTER,
+    PlatformURIType,
+)
 from neuro_cli.formatters.bucket_credentials import (
     BaseBucketCredentialsFormatter,
     BucketCredentialFormatter,
@@ -50,8 +56,6 @@ from .utils import (
     command,
     group,
     option,
-    parse_blob_or_file_resource,
-    parse_blob_resource,
     resolve_bucket,
     resolve_bucket_credential,
 )
@@ -196,7 +200,11 @@ async def rmbucket(root: Root, cluster: Optional[str], buckets: Sequence[str]) -
 
 
 @command()
-@click.argument("paths", nargs=-1)
+@click.argument(
+    "paths",
+    nargs=-1,
+    type=PlatformURIType(allowed_schemes=["blob"]),
+)
 @option(
     "--human-readable",
     "-h",
@@ -213,7 +221,7 @@ async def rmbucket(root: Root, cluster: Optional[str], buckets: Sequence[str]) -
 @option("--full-uri", is_flag=True, help="Output full bucket URI.")
 async def ls(
     root: Root,
-    paths: Sequence[str],
+    paths: Sequence[URL],
     human_readable: bool,
     format_long: bool,
     recursive: bool,
@@ -222,8 +230,6 @@ async def ls(
     """
     List buckets or bucket contents.
     """
-    uris = [parse_blob_resource(path, root) for path in paths]
-
     formatter: BaseBlobFormatter
     if full_uri:
         uri_fmtr: URIFormatter = str
@@ -242,7 +248,7 @@ async def ls(
         # blobs, thus column formatting does not work too well.
         formatter = SimpleBlobFormatter(root.color, uri_fmtr)
 
-    if not uris:
+    if not paths:
         # List Buckets instead of blobs in bucket
 
         with root.pager():
@@ -250,10 +256,10 @@ async def ls(
                 async for bucket in bucket_it:
                     root.print(formatter(bucket))
     else:
-        for uri, path in zip(uris, paths):
+        for uri in paths:
             if root.verbosity > 0:
                 painter = get_painter(root.color)
-                uri_text = painter.paint(str(path), FileStatusType.DIRECTORY)
+                uri_text = painter.paint(str(uri), FileStatusType.DIRECTORY)
                 root.print(Text.assemble("List of ", uri_text, ":"))
 
             with root.pager():
@@ -267,8 +273,13 @@ async def ls(
 
 @command()
 @option("--full-uri", is_flag=True, help="Output full bucket URI.")
-@click.argument("patterns", nargs=-1, required=False)
-async def glob(root: Root, full_uri: bool, patterns: Sequence[str]) -> None:
+@click.argument(
+    "patterns",
+    nargs=-1,
+    required=False,
+    type=PlatformURIType(allowed_schemes=["blob"]),
+)
+async def glob(root: Root, full_uri: bool, patterns: Sequence[URL]) -> None:
     """
     List resources that match PATTERNS.
     """
@@ -281,21 +292,28 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[str]) -> None:
         )
     for pattern in patterns:
 
-        uri = parse_blob_resource(pattern, root)
-
         if root.verbosity > 0:
             painter = get_painter(root.color)
-            uri_text = painter.paint(pattern, FileStatusType.FILE)
+            uri_text = painter.paint(str(pattern), FileStatusType.FILE)
             root.print(Text.assemble("Using pattern ", uri_text, ":"))
 
-        async with root.client.buckets.glob_blobs(uri=uri) as blobs_it:
+        async with root.client.buckets.glob_blobs(uri=pattern) as blobs_it:
             async for entry in blobs_it:
                 root.print(uri_fmtr(entry.uri))
 
 
 @command()
-@click.argument("sources", nargs=-1, required=False)
-@click.argument("destination", required=False)
+@click.argument(
+    "sources",
+    nargs=-1,
+    required=False,
+    type=PlatformURIType(allowed_schemes=["file", "blob"]),
+)
+@click.argument(
+    "destination",
+    required=False,
+    type=PlatformURIType(allowed_schemes=["file", "blob"]),
+)
 @option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
 @option(
     "--glob/--no-glob",
@@ -309,6 +327,7 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[str]) -> None:
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
+    type=PlatformURIType(allowed_schemes=["file", "blob"], complete_file=False),
     help="Copy all SOURCES into DIRECTORY.",
 )
 @option(
@@ -363,11 +382,11 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[str]) -> None:
 )
 async def cp(
     root: Root,
-    sources: Sequence[str],
-    destination: Optional[str],
+    sources: Sequence[URL],
+    destination: Optional[URL],
     recursive: bool,
     glob: bool,
-    target_directory: Optional[str],
+    target_directory: Optional[URL],
     no_target_directory: bool,
     update: bool,
     continue_: bool,
@@ -396,8 +415,6 @@ async def cp(
     File permissions, modification times and other attributes will not be passed to
     Blob Storage metadata during upload.
     """
-    target_dir: Optional[URL]
-    dst: Optional[URL]
     if target_directory:
         if no_target_directory:
             raise click.UsageError(
@@ -408,8 +425,7 @@ async def cp(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         sources = *sources, destination
-        target_dir = parse_blob_or_file_resource(target_directory, root)
-        dst = None
+        destination = None
     else:
         if destination is None:
             raise click.MissingParameter(
@@ -419,7 +435,6 @@ async def cp(
             raise click.MissingParameter(
                 param_type="argument", param_hint='"SOURCES..."'
             )
-        dst = parse_blob_or_file_resource(destination, root)
 
         # From gsutil:
         #
@@ -432,17 +447,17 @@ async def cp(
         # will create the blob gs://my-bucket/subdir/dir2/a/b/c. In contrast, if
         # gs://my-bucket/subdir does not exist, this same gsutil cp command will create
         # the blob gs://my-bucket/subdir/a/b/c.
-        if no_target_directory or not await _is_dir(root, dst):
-            target_dir = None
+        if no_target_directory or not await _is_dir(root, destination):
+            target_directory = None
         else:
-            target_dir = dst
-            dst = None
+            target_directory = destination
+            destination = None
 
     ignore_file_names = await calc_ignore_file_names(root.client, exclude_from_files)
     filters = await calc_filters(root.client, filters)
-    srcs = await _expand(sources, root, glob, allow_file=True)
-    if no_target_directory and len(srcs) > 1:
-        raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
+    sources = await _expand(sources, root, glob, allow_file=True)
+    if no_target_directory and len(sources) > 1:
+        raise click.UsageError(f"Extra operand after {str(sources[1])!r}")
 
     file_filter = FileFilter()
     for exclude, pattern in filters:
@@ -452,30 +467,30 @@ async def cp(
     show_progress = root.tty and progress
 
     errors = False
-    for src in srcs:
+    for source in sources:
         # `src.name` will return empty string if URL has trailing slash, ie.:
         # `neuro blob cp data/ blob:my_bucket` -> dst == blob:my_bucket/file.txt
         # `neuro blob cp data blob:my_bucket` -> dst == blob:my_bucket/data/file.txt
         # `neuro blob cp blob:my_bucket data` -> dst == data/my_bucket/file.txt
         # `neuro blob cp blob:my_bucket/ data` -> dst == data/file.txt
-        if target_dir:
-            dst = target_dir / src.name
-        assert dst
+        if target_directory:
+            destination = target_directory / source.name
+        assert destination
 
         progress_blob = create_storage_progress(root, show_progress)
         try:
-            with progress_blob.begin(src, dst):
-                if src.scheme == "file" and dst.scheme == "blob":
+            with progress_blob.begin(source, destination):
+                if source.scheme == "file" and destination.scheme == "blob":
                     if continue_:
                         raise click.UsageError(
                             "Option --continue is not supported for copying to "
                             "Blob Storage"
                         )
 
-                    if recursive and await _is_dir(root, src):
+                    if recursive and await _is_dir(root, source):
                         await root.client.buckets.upload_dir(
-                            src,
-                            dst,
+                            source,
+                            destination,
                             update=update,
                             filter=file_filter.match,
                             ignore_file_names=frozenset(ignore_file_names),
@@ -483,13 +498,13 @@ async def cp(
                         )
                     else:
                         await root.client.buckets.upload_file(
-                            src, dst, update=update, progress=progress_blob
+                            source, destination, update=update, progress=progress_blob
                         )
-                elif src.scheme == "blob" and dst.scheme == "file":
-                    if recursive and await _is_dir(root, src):
+                elif source.scheme == "blob" and destination.scheme == "file":
+                    if recursive and await _is_dir(root, source):
                         await root.client.buckets.download_dir(
-                            src,
-                            dst,
+                            source,
+                            destination,
                             continue_=continue_,
                             update=update,
                             filter=file_filter.match,
@@ -497,20 +512,20 @@ async def cp(
                         )
                     else:
                         await root.client.buckets.download_file(
-                            src,
-                            dst,
+                            source,
+                            destination,
                             continue_=continue_,
                             update=update,
                             progress=progress_blob,
                         )
                 else:
                     raise RuntimeError(
-                        f"Copy operation of the file with scheme '{src.scheme}'"
-                        f" to the file with scheme '{dst.scheme}'"
+                        f"Copy operation of the file with scheme '{source.scheme}'"
+                        f" to the file with scheme '{destination.scheme}'"
                         f" is not supported"
                     )
         except (OSError, ResourceNotFound, IllegalArgumentError) as error:
-            log.error(f"cannot copy {src} to {dst}: {error}")
+            log.error(f"cannot copy {source} to {destination}: {error}")
             errors = True
 
     if errors:
@@ -528,34 +543,38 @@ async def _is_dir(root: Root, uri: URL) -> bool:
 
 
 async def _expand(
-    paths: Sequence[str], root: Root, glob: bool, allow_file: bool = False
+    paths: Sequence[URL], root: Root, glob: bool, allow_file: bool = False
 ) -> List[URL]:
     uris = []
     for path in paths:
-        uri = parse_blob_or_file_resource(path, root)
         if root.verbosity > 0:
             painter = get_painter(root.color)
-            uri_text = painter.paint(str(uri), FileStatusType.FILE)
+            uri_text = painter.paint(str(path), FileStatusType.FILE)
             root.print(Text.assemble("Expand", uri_text))
 
-        if glob and globmodule.has_magic(uri.path):
-            if uri.scheme == "blob":
-                async with root.client.buckets.glob_blobs(uri) as blob_iter:
+        if glob and globmodule.has_magic(path.path):
+            if path.scheme == "blob":
+                async with root.client.buckets.glob_blobs(path) as blob_iter:
                     async for blob in blob_iter:
                         uris.append(blob.uri)
-            elif allow_file and uri.scheme == "file":
-                uri_path = str(_extract_path(uri))
+            elif allow_file and path.scheme == "file":
+                uri_path = str(_extract_path(path))
                 for p in globmodule.iglob(uri_path, recursive=True):
-                    uris.append(uri.with_path(p))
+                    uris.append(path.with_path(p))
             else:
-                uris.append(uri)
+                uris.append(path)
         else:
-            uris.append(uri)
+            uris.append(path)
     return uris
 
 
 @command()
-@argument("paths", nargs=-1, required=True)
+@argument(
+    "paths",
+    nargs=-1,
+    required=True,
+    type=PlatformURIType(allowed_schemes=["file", "blob"]),
+)
 @option(
     "--recursive",
     "-r",
@@ -578,7 +597,7 @@ async def _expand(
 )
 async def rm(
     root: Root,
-    paths: Sequence[str],
+    paths: Sequence[URL],
     recursive: bool,
     glob: bool,
     progress: Optional[bool],
