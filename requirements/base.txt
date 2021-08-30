@@ -14,6 +14,6 @@ pyyaml==5.4.1
 requests==2.26.0
 rich==10.9.0
 toml==0.10.2
-typing_extensions==3.10.0.0
+typing_extensions==3.10.0.1
 wcwidth==0.2.5
 yarl==1.6.3
