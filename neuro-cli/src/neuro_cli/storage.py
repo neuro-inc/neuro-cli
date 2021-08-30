@@ -13,7 +13,7 @@ from neuro_sdk import Client, FileStatusType, IllegalArgumentError, ResourceNotF
 from neuro_sdk.file_filter import FileFilter
 from neuro_sdk.url_utils import _extract_path
 
-from .click_types import PlatformURLType
+from .click_types import PlatformURIType
 from .const import EX_OSFILE
 from .formatters.storage import (
     BaseFilesFormatter,
@@ -48,7 +48,7 @@ def storage() -> None:
     "paths",
     nargs=-1,
     required=True,
-    type=PlatformURLType(allowed_schemes=["storage"]),
+    type=PlatformURIType(allowed_schemes=["storage"]),
 )
 @option(
     "--recursive",
@@ -112,7 +112,7 @@ async def rm(
 @argument(
     "paths",
     nargs=-1,
-    type=PlatformURLType(allowed_schemes=["storage"], complete_file=False),
+    type=PlatformURIType(allowed_schemes=["storage"], complete_file=False),
 )
 @option(
     "-a",
@@ -200,7 +200,7 @@ async def ls(
     "patterns",
     nargs=-1,
     required=False,
-    type=PlatformURLType(allowed_schemes=["storage"]),
+    type=PlatformURIType(allowed_schemes=["storage"]),
 )
 async def glob(root: Root, patterns: Sequence[URL]) -> None:
     """
@@ -266,12 +266,12 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     "sources",
     nargs=-1,
     required=False,
-    type=PlatformURLType(allowed_schemes=["storage", "file"]),
+    type=PlatformURIType(allowed_schemes=["storage", "file"]),
 )
 @argument(
     "destination",
     required=False,
-    type=PlatformURLType(allowed_schemes=["storage", "file"]),
+    type=PlatformURIType(allowed_schemes=["storage", "file"]),
 )
 @option("-r", "--recursive", is_flag=True, help="Recursive copy, off by default")
 @option(
@@ -286,7 +286,7 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
-    type=PlatformURLType(allowed_schemes=["storage", "file"], complete_file=False),
+    type=PlatformURIType(allowed_schemes=["storage", "file"], complete_file=False),
     help="Copy all SOURCES into DIRECTORY.",
 )
 @option(
@@ -497,7 +497,7 @@ async def cp(
     "paths",
     nargs=-1,
     required=True,
-    type=PlatformURLType(allowed_schemes=["storage"], complete_file=False),
+    type=PlatformURIType(allowed_schemes=["storage"], complete_file=False),
 )
 @option(
     "-p",
@@ -532,11 +532,11 @@ async def mkdir(root: Root, paths: Sequence[URL], parents: bool) -> None:
     "sources",
     nargs=-1,
     required=False,
-    type=PlatformURLType(allowed_schemes=["storage"]),
+    type=PlatformURIType(allowed_schemes=["storage"]),
 )
 @argument(
     "destination",
-    type=PlatformURLType(allowed_schemes=["storage"]),
+    type=PlatformURIType(allowed_schemes=["storage"]),
     required=False,
 )
 @option(
@@ -551,7 +551,7 @@ async def mkdir(root: Root, paths: Sequence[URL], parents: bool) -> None:
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
-    type=PlatformURLType(allowed_schemes=["storage"], complete_file=False),
+    type=PlatformURIType(allowed_schemes=["storage"], complete_file=False),
     help="Copy all SOURCES into DIRECTORY",
 )
 @option(
@@ -652,7 +652,7 @@ async def mv(
 @click.argument(
     "path",
     required=False,
-    type=PlatformURLType(allowed_schemes=["storage"], complete_file=False),
+    type=PlatformURIType(allowed_schemes=["storage"], complete_file=False),
 )
 @option(
     "-a",

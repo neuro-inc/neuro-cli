@@ -7,7 +7,7 @@ import pytest
 from neuro_cli.click_types import (
     JOB_NAME,
     LocalRemotePortParamType,
-    PlatformURLType,
+    PlatformURIType,
     _merge_autocompletion_args,
 )
 from neuro_cli.root import Root
@@ -70,20 +70,20 @@ class TestJobNameType:
             JOB_NAME.convert(name, param=None, ctx=None)
 
 
-class TestPlatformURLType:
+class TestPlatformURIType:
     async def test_find_matches_scheme(self, root: Root) -> None:
-        url_type = PlatformURLType()
+        url_type = PlatformURIType()
         ret = await url_type._find_matches("st", root)
         assert len(ret) == 1
         assert "storage:" == ret[0].value
 
     async def test_find_matches_invalid_scheme(self, root: Root) -> None:
-        url_type = PlatformURLType()
+        url_type = PlatformURIType()
         ret = await url_type._find_matches("unknown", root)
         assert ret == []
 
     async def test_find_matches_file(self, root: Root) -> None:
-        url_type = PlatformURLType()
+        url_type = PlatformURIType()
         fobj = Path(__file__)
         ret = await url_type._find_matches(fobj.as_uri(), root)
         assert [i.value for i in ret] == [fobj.name]
@@ -91,7 +91,7 @@ class TestPlatformURLType:
         assert {i.prefix for i in ret} == {fobj.parent.as_uri() + "/"}
 
     async def test_find_matches_files_only(self, root: Root) -> None:
-        url_type = PlatformURLType(complete_dir=False)
+        url_type = PlatformURIType(complete_dir=False)
         fobj = Path(__file__).parent
         incomplete = fobj.as_uri() + "/"
         ret = await url_type._find_matches(incomplete, root)
@@ -102,7 +102,7 @@ class TestPlatformURLType:
         assert {i.prefix for i in ret} == {fobj.as_uri() + "/"}
 
     async def test_find_matches_dir(self, root: Root) -> None:
-        url_type = PlatformURLType()
+        url_type = PlatformURIType()
         fobj = Path(__file__).parent
         ret = await url_type._find_matches(fobj.as_uri() + "/", root)
         assert [i.value for i in ret] == [
@@ -112,7 +112,7 @@ class TestPlatformURLType:
         assert {i.prefix for i in ret} == {fobj.as_uri() + "/"}
 
     async def test_find_matches_dir_only(self, root: Root) -> None:
-        url_type = PlatformURLType(complete_file=False)
+        url_type = PlatformURIType(complete_file=False)
         fobj = Path(__file__).parent
         ret = await url_type._find_matches(fobj.as_uri() + "/", root)
         assert [i.value for i in ret] == [
@@ -122,7 +122,7 @@ class TestPlatformURLType:
         assert {i.prefix for i in ret} == {fobj.as_uri() + "/"}
 
     async def test_find_matches_partial(self, root: Root) -> None:
-        url_type = PlatformURLType()
+        url_type = PlatformURIType()
         fobj = Path(__file__).parent
         incomplete = fobj.as_uri() + "/test_"
         ret = await url_type._find_matches(incomplete, root)
@@ -133,7 +133,7 @@ class TestPlatformURLType:
         assert {i.prefix for i in ret} == {fobj.as_uri() + "/"}
 
     async def test_find_matches_not_exists(self, root: Root) -> None:
-        url_type = PlatformURLType()
+        url_type = PlatformURIType()
         fobj = Path(__file__).parent
         incomplete = fobj.as_uri() + "/file-not-found.txt"
         ret = await url_type._find_matches(incomplete, root)

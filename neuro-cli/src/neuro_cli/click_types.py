@@ -639,8 +639,8 @@ class BlobPathURLCompleter(PathURLCompleter):
                 yield item
 
 
-class PlatformURLType(AsyncType[URL]):
-    name = "url"
+class PlatformURIType(AsyncType[URL]):
+    name = "uri"
 
     def __init__(
         self,
