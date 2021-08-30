@@ -602,7 +602,7 @@ class BlobPathURLCompleter(PathURLCompleter):
     async def _iter_dir(
         self, root: Root, uri: URL
     ) -> AsyncIterator[PathURLCompleter.DirEntry]:
-        _, _, dir_key = root.client.buckets.split_blob_uri(uri)
+        _, _, dir_key = root.client.parse.split_blob_uri(uri)
         async with root.client.buckets.list_blobs(uri) as it:
             async for blob_entry in it:
                 if blob_entry.key == dir_key:

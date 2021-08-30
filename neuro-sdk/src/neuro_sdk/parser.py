@@ -357,6 +357,20 @@ class Parser(metaclass=NoPublicConstructor):
             ret = URL.build(scheme=ret.scheme, host=ret.host or "", path=ret.path[:-1])
         return ret
 
+    def split_blob_uri(self, uri: URL) -> Tuple[str, str, str]:
+        uri = self.normalize_uri(uri)
+        cluster_name = uri.host
+        assert cluster_name
+        parts = uri.path.lstrip("/").split("/", 2)
+        if len(parts) == 1:
+            raise ValueError(f"Blob uri doesn't contain bucket name: {uri}")
+        if len(parts) == 3:
+            _, bucket_id, key = parts
+        else:
+            _, bucket_id = parts
+            key = ""
+        return cluster_name, bucket_id, key
+
 
 def _read_lines(env_file: str) -> Iterator[str]:
     with open(env_file, encoding="utf-8-sig") as ef:

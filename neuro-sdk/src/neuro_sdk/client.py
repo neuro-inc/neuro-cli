@@ -49,7 +49,7 @@ class Client(metaclass=NoPublicConstructor):
         self._secrets = Secrets._create(self._core, self._config)
         self._disks = Disks._create(self._core, self._config)
         self._service_accounts = ServiceAccounts._create(self._core, self._config)
-        self._buckets = Buckets._create(self._core, self._config)
+        self._buckets = Buckets._create(self._core, self._config, self._parser)
         self._images: Optional[Images] = None
 
     async def close(self) -> None:
