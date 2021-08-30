@@ -415,8 +415,6 @@ async def cp(
     File permissions, modification times and other attributes will not be passed to
     Blob Storage metadata during upload.
     """
-    target_dir: Optional[URL]
-    dst: Optional[URL]
     if target_directory:
         if no_target_directory:
             raise click.UsageError(
@@ -427,8 +425,7 @@ async def cp(
                 param_type="argument", param_hint='"SOURCES..."'
             )
         sources = *sources, destination
-        target_dir = target_directory
-        dst = None
+        destination = None
     else:
         if destination is None:
             raise click.MissingParameter(
@@ -438,7 +435,6 @@ async def cp(
             raise click.MissingParameter(
                 param_type="argument", param_hint='"SOURCES..."'
             )
-        dst = destination
 
         # From gsutil:
         #
@@ -451,17 +447,17 @@ async def cp(
         # will create the blob gs://my-bucket/subdir/dir2/a/b/c. In contrast, if
         # gs://my-bucket/subdir does not exist, this same gsutil cp command will create
         # the blob gs://my-bucket/subdir/a/b/c.
-        if no_target_directory or not await _is_dir(root, dst):
-            target_dir = None
+        if no_target_directory or not await _is_dir(root, destination):
+            target_directory = None
         else:
-            target_dir = dst
-            dst = None
+            target_directory = destination
+            destination = None
 
     ignore_file_names = await calc_ignore_file_names(root.client, exclude_from_files)
     filters = await calc_filters(root.client, filters)
-    srcs = await _expand(sources, root, glob, allow_file=True)
-    if no_target_directory and len(srcs) > 1:
-        raise click.UsageError(f"Extra operand after {str(srcs[1])!r}")
+    sources = await _expand(sources, root, glob, allow_file=True)
+    if no_target_directory and len(sources) > 1:
+        raise click.UsageError(f"Extra operand after {str(sources[1])!r}")
 
     file_filter = FileFilter()
     for exclude, pattern in filters:
@@ -471,30 +467,30 @@ async def cp(
     show_progress = root.tty and progress
 
     errors = False
-    for src in srcs:
+    for source in sources:
         # `src.name` will return empty string if URL has trailing slash, ie.:
         # `neuro blob cp data/ blob:my_bucket` -> dst == blob:my_bucket/file.txt
         # `neuro blob cp data blob:my_bucket` -> dst == blob:my_bucket/data/file.txt
         # `neuro blob cp blob:my_bucket data` -> dst == data/my_bucket/file.txt
         # `neuro blob cp blob:my_bucket/ data` -> dst == data/file.txt
-        if target_dir:
-            dst = target_dir / src.name
-        assert dst
+        if target_directory:
+            destination = target_directory / source.name
+        assert destination
 
         progress_blob = create_storage_progress(root, show_progress)
         try:
-            with progress_blob.begin(src, dst):
-                if src.scheme == "file" and dst.scheme == "blob":
+            with progress_blob.begin(source, destination):
+                if source.scheme == "file" and destination.scheme == "blob":
                     if continue_:
                         raise click.UsageError(
                             "Option --continue is not supported for copying to "
                             "Blob Storage"
                         )
 
-                    if recursive and await _is_dir(root, src):
+                    if recursive and await _is_dir(root, source):
                         await root.client.buckets.upload_dir(
-                            src,
-                            dst,
+                            source,
+                            destination,
                             update=update,
                             filter=file_filter.match,
                             ignore_file_names=frozenset(ignore_file_names),
@@ -502,13 +498,13 @@ async def cp(
                         )
                     else:
                         await root.client.buckets.upload_file(
-                            src, dst, update=update, progress=progress_blob
+                            source, destination, update=update, progress=progress_blob
                         )
-                elif src.scheme == "blob" and dst.scheme == "file":
-                    if recursive and await _is_dir(root, src):
+                elif source.scheme == "blob" and destination.scheme == "file":
+                    if recursive and await _is_dir(root, source):
                         await root.client.buckets.download_dir(
-                            src,
-                            dst,
+                            source,
+                            destination,
                             continue_=continue_,
                             update=update,
                             filter=file_filter.match,
@@ -516,20 +512,20 @@ async def cp(
                         )
                     else:
                         await root.client.buckets.download_file(
-                            src,
-                            dst,
+                            source,
+                            destination,
                             continue_=continue_,
                             update=update,
                             progress=progress_blob,
                         )
                 else:
                     raise RuntimeError(
-                        f"Copy operation of the file with scheme '{src.scheme}'"
-                        f" to the file with scheme '{dst.scheme}'"
+                        f"Copy operation of the file with scheme '{source.scheme}'"
+                        f" to the file with scheme '{destination.scheme}'"
                         f" is not supported"
                     )
         except (OSError, ResourceNotFound, IllegalArgumentError) as error:
-            log.error(f"cannot copy {src} to {dst}: {error}")
+            log.error(f"cannot copy {source} to {destination}: {error}")
             errors = True
 
     if errors:
