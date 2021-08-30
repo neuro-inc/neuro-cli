@@ -327,7 +327,7 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[URL]) -> None:
     "--target-directory",
     metavar="DIRECTORY",
     default=None,
-    type=PlatformURLType(allowed_schemes=["storage", "file"], complete_file=False),
+    type=PlatformURLType(allowed_schemes=["file", "blob"], complete_file=False),
     help="Copy all SOURCES into DIRECTORY.",
 )
 @option(
