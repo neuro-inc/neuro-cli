@@ -5,6 +5,22 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.8.30 (2021-08-30)
+==================================
+
+Features
+--------
+
+- Implement URI autocompletion for "blob:" scheme. ([#2273](https://github.com/neuro-inc/platform-client-python/issues/2273))
+- Provide `pip install neuro-cli[awscli,boto3]` extra dependencies for installing the compatible AWS CLI version.
+
+  * `neuro-cli[awscli]` installs `awscli` package.
+
+  * `neuro-cli[boto3]` installs `boto3` package.
+
+  * `neuro-cli[awscli,boto3]` installs both. ([#2274](https://github.com/neuro-inc/platform-client-python/issues/2274))
+
+
 Neuro SDK/CLI 21.8.27 (2021-08-27)
 ==================================
 
