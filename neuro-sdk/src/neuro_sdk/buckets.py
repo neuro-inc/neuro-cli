@@ -1,12 +1,14 @@
 import abc
+import asyncio
 import enum
 import json
 import logging
 import re
+import secrets
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import PurePosixPath
 from typing import (
@@ -27,6 +29,11 @@ import aiobotocore as aiobotocore
 import botocore.exceptions
 from aiobotocore.client import AioBaseClient
 from aiobotocore.credentials import AioRefreshableCredentials
+from azure.core.credentials import AzureSasCredential
+from azure.core.exceptions import ResourceNotFoundError
+from azure.storage.blob import BlobBlock
+from azure.storage.blob.aio import ContainerClient
+from azure.storage.blob.aio._list_blobs_helper import BlobPrefix
 from dateutil.parser import isoparse
 from yarl import URL
 
@@ -264,19 +271,15 @@ class BucketFS(FileSystem[PurePosixPath]):
         return path / child
 
 
-class S3Provider(BucketProvider):
-    def __init__(
-        self, client: AioBaseClient, bucket: "Bucket", bucket_name: str
-    ) -> None:
-        self.bucket = bucket
-        client._make_api_call = self._wrap_api_call(client._make_api_call)
-        self._client = client
+class MeasureTimeDiffMixin:
+    def __init__(self) -> None:
         self._min_time_diff: Optional[float] = 0
         self._max_time_diff: Optional[float] = 0
-        self._bucket_name = bucket_name
 
     def _wrap_api_call(
-        self, _make_call: Callable[..., Awaitable[Any]]
+        self,
+        _make_call: Callable[..., Awaitable[Any]],
+        get_date: Callable[[Any], datetime],
     ) -> Callable[..., Awaitable[Any]]:
         def _average(cur_approx: Optional[float], new_val: float) -> float:
             if cur_approx is None:
@@ -288,9 +291,8 @@ class S3Provider(BucketProvider):
             res = await _make_call(*args, **kwargs)
             after = time.time()
             try:
-                date_str = res["ResponseMetadata"]["HTTPHeaders"]["date"]
-                server_dt = parsedate_to_datetime(date_str)
-            except (KeyError, TypeError, ValueError):
+                server_dt = get_date(res)
+            except Exception:
                 pass
             else:
                 server_time = server_dt.timestamp()
@@ -307,6 +309,29 @@ class S3Provider(BucketProvider):
             return res
 
         return _wrapper
+
+    async def get_time_diff_to_local(self) -> Tuple[float, float]:
+        if self._min_time_diff is None or self._max_time_diff is None:
+            return 0, 0
+        return self._min_time_diff, self._max_time_diff
+
+
+class S3Provider(MeasureTimeDiffMixin, BucketProvider):
+    def __init__(
+        self, client: AioBaseClient, bucket: "Bucket", bucket_name: str
+    ) -> None:
+        super().__init__()
+        self.bucket = bucket
+        self._client = client
+        self._bucket_name = bucket_name
+
+        def _extract_date(resp: Any) -> datetime:
+            date_str = resp["ResponseMetadata"]["HTTPHeaders"]["date"]
+            return parsedate_to_datetime(date_str)
+
+        client._make_api_call = self._wrap_api_call(
+            client._make_api_call, _extract_date
+        )
 
     @classmethod
     @asynccontextmanager
@@ -461,6 +486,131 @@ class S3Provider(BucketProvider):
     async def delete_blob(self, key: str) -> None:
         await self._client.delete_object(Bucket=self._bucket_name, Key=key)
 
+
+class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
+    def __init__(self, container_client: ContainerClient, bucket: "Bucket") -> None:
+        super().__init__()
+        self.bucket = bucket
+
+        self._client = container_client
+
+        def _extract_date(resp: Any) -> datetime:
+            date_str = resp.http_response.headers["Date"]
+            return parsedate_to_datetime(date_str)
+
+        # Hack to get client-server clock difference
+        container_client._client._client._pipeline.run = self._wrap_api_call(
+            container_client._client._client._pipeline.run, _extract_date
+        )
+
+    @classmethod
+    @asynccontextmanager
+    async def create(
+        cls,
+        bucket: "Bucket",
+        _get_credentials: Callable[[], Awaitable["BucketCredentials"]],
+    ) -> AsyncIterator["AzureProvider"]:
+        initial_credentials = await _get_credentials()
+
+        sas_credential = AzureSasCredential(
+            initial_credentials.credentials["sas_token"]
+        )
+
+        @asynccontextmanager
+        async def _token_renewer() -> AsyncIterator[None]:
+            async def renew_token_loop() -> None:
+                expiry = isoparse(initial_credentials.credentials["expiry"])
+                while True:
+                    delay = (
+                        expiry - timedelta(minutes=10) - datetime.now(timezone.utc)
+                    ).total_seconds()
+                    await asyncio.sleep(max(delay, 0))
+                    credentials = await _get_credentials()
+                    sas_credential.update(credentials.credentials["sas_token"])
+                    expiry = isoparse(credentials.credentials["expiry"])
+
+            task = asyncio.create_task(renew_token_loop())
+            try:
+                yield
+            finally:
+                task.cancel()
+
+        async with ContainerClient(
+            account_url=initial_credentials.credentials["storage_endpoint"],
+            container_name=initial_credentials.credentials["bucket_name"],
+            credential=sas_credential,
+        ) as container_client, _token_renewer():
+            yield cls(container_client, bucket)
+
+    @asyncgeneratorcontextmanager
+    async def list_blobs(
+        self, prefix: str, recursive: bool = False, limit: Optional[int] = None
+    ) -> AsyncIterator[BucketEntry]:
+        if recursive:
+            it = self._client.list_blobs(prefix)
+        else:
+            it = self._client.walk_blobs(prefix)
+        count = 0
+        async for item in it:
+            if isinstance(item, BlobPrefix):
+                entry: BucketEntry = BlobCommonPrefix(
+                    bucket=self.bucket,
+                    key=item.name,
+                    size=0,
+                )
+            else:
+                entry = BlobObject(
+                    bucket=self.bucket,
+                    key=item.name,
+                    size=item.size,
+                    created_at=item.creation_time,
+                    modified_at=item.last_modified,
+                )
+            yield entry
+            count += 1
+            if count == limit:
+                return
+
+    async def head_blob(self, key: str) -> BucketEntry:
+        try:
+            blob_info = await self._client.get_blob_client(key).get_blob_properties()
+            return BlobObject(
+                bucket=self.bucket,
+                key=blob_info.name,
+                size=blob_info.size,
+                created_at=blob_info.creation_time,
+                modified_at=blob_info.last_modified,
+            )
+        except ResourceNotFoundError:
+            raise ResourceNotFound(
+                f"There is no object with key {key} in bucket {self.bucket.name}"
+            )
+
+    async def put_blob(
+        self, key: str, body: Union[AsyncIterator[bytes], bytes]
+    ) -> None:
+        blob_client = self._client.get_blob_client(key)
+        if isinstance(body, bytes):
+            await blob_client.upload_blob(body)
+        else:
+            blocks = []
+            async for data in body:
+                block_id = secrets.token_hex(16)
+                await blob_client.stage_block(block_id, data)
+                blocks.append(BlobBlock(block_id=block_id))
+            await blob_client.commit_block_list(blocks)
+
+    @asyncgeneratorcontextmanager
+    async def fetch_blob(self, key: str, offset: int = 0) -> AsyncIterator[bytes]:
+        downloader = await self._client.get_blob_client(key).download_blob(
+            offset=offset
+        )
+        async for chunk in downloader.chunks():
+            yield chunk
+
+    async def delete_blob(self, key: str) -> None:
+        await self._client.get_blob_client(key).delete_blob()
+
     async def get_time_diff_to_local(self) -> Tuple[float, float]:
         if self._min_time_diff is None or self._max_time_diff is None:
             return 0, 0
@@ -483,6 +633,7 @@ class Bucket:
     class Provider(str, enum.Enum):
         AWS = "aws"
         MINIO = "minio"
+        AZURE = "azure"
 
 
 @dataclass(frozen=True)
@@ -603,8 +754,12 @@ class Buckets(metaclass=NoPublicConstructor):
         async def _get_new_credentials() -> BucketCredentials:
             return await self.request_tmp_credentials(bucket_id_or_name, cluster_name)
 
+        provider: BucketProvider
         if bucket.provider in (Bucket.Provider.AWS, Bucket.Provider.MINIO):
             async with S3Provider.create(bucket, _get_new_credentials) as provider:
+                yield provider
+        elif bucket.provider == Bucket.Provider.AZURE:
+            async with AzureProvider.create(bucket, _get_new_credentials) as provider:
                 yield provider
         else:
             assert False, f"Unknown provider {bucket.provider}"
