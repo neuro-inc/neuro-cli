@@ -8,6 +8,7 @@ globbing
 grpc
 iterable
 login
+minio
 namespace
 neu
 neuro
