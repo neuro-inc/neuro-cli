@@ -436,6 +436,14 @@ Bucket.Provider
 
       Amazon Web Services S3 bucket
 
+   .. attribute:: MINIO
+
+      Minio S3 bucket
+
+   .. attribute:: AZURE
+
+      Azure blob storage container
+
 
 PersistentBucketCredentials
 ===========================
