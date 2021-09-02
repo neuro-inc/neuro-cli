@@ -529,7 +529,7 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
                     sas_credential.update(credentials.credentials["sas_token"])
                     expiry = isoparse(credentials.credentials["expiry"])
 
-            task = asyncio.create_task(renew_token_loop())
+            task = asyncio.ensure_future(renew_token_loop())
             try:
                 yield
             finally:
@@ -602,14 +602,24 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
 
     @asyncgeneratorcontextmanager
     async def fetch_blob(self, key: str, offset: int = 0) -> AsyncIterator[bytes]:
-        downloader = await self._client.get_blob_client(key).download_blob(
-            offset=offset
-        )
+        try:
+            downloader = await self._client.get_blob_client(key).download_blob(
+                offset=offset
+            )
+        except ResourceNotFoundError:
+            raise ResourceNotFound(
+                f"There is no object with key {key} in bucket {self.bucket.name}"
+            )
         async for chunk in downloader.chunks():
             yield chunk
 
     async def delete_blob(self, key: str) -> None:
-        await self._client.get_blob_client(key).delete_blob()
+        try:
+            await self._client.get_blob_client(key).delete_blob()
+        except ResourceNotFoundError:
+            raise ResourceNotFound(
+                f"There is no object with key {key} in bucket {self.bucket.name}"
+            )
 
     async def get_time_diff_to_local(self) -> Tuple[float, float]:
         if self._min_time_diff is None or self._max_time_diff is None:
