@@ -5,6 +5,12 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.9.2 (2021-09-02)
+=================================
+
+- Revert back ([#2274](https://github.com/neuro-inc/platform-client-python/issues/2274)); `pip install neuro-cli[awscli,boto3]` did not work well.
+
+
 Neuro SDK/CLI 21.8.30 (2021-08-30)
 ==================================
 

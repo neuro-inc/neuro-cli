@@ -6,7 +6,7 @@ with open("README.md") as f:
 
 setup(
     name="neuro-cli",
-    version="21.8.30",
+    version="21.9.2",
     python_requires=">=3.6.0",
     # Make sure to pin versions of install_requires
     install_requires=[
@@ -19,7 +19,7 @@ setup(
         "python-jose>=3.0.0",
         "python-dateutil>=2.7.0",
         "aiodocker>=0.18.7",
-        "neuro-sdk>=21.8.30",
+        "neuro-sdk>=21.9.2",
         "click>=8.0",
         "humanize>=3.3",
         "typing_extensions>=3.7.4",
@@ -50,7 +50,6 @@ setup(
             "docker-credential-neuro=neuro_cli.docker_credential_helper:main",
         ]
     },
-    extras_require={"awscli": ["aiobotocore[awscli]"], "boto3": ["aiobotocore[boto3]"]},
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
