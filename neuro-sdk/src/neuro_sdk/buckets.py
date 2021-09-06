@@ -17,6 +17,7 @@ from typing import (
     AsyncIterator,
     Awaitable,
     Callable,
+    Dict,
     Iterable,
     List,
     Mapping,
@@ -29,6 +30,13 @@ import aiobotocore as aiobotocore
 import botocore.exceptions
 from aiobotocore.client import AioBaseClient
 from aiobotocore.credentials import AioRefreshableCredentials
+from aiohttp import (
+    ClientResponse,
+    ClientResponseError,
+    ClientSession,
+    TraceConfig,
+    TraceRequestEndParams,
+)
 from azure.core.credentials import AzureSasCredential
 from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import BlobBlock
@@ -271,41 +279,85 @@ class BucketFS(FileSystem[PurePosixPath]):
         return path / child
 
 
+class TimeDiffMeasurer:
+    def __init__(self):
+        self._before: Optional[float] = None
+        self._diff: Optional[Tuple[float, float]] = None
+
+    def request_start(self) -> None:
+        self._before = time.time()
+
+    def request_end(self, server_datetime: datetime) -> None:
+        after = time.time()
+        server_time = server_datetime.timestamp()
+        self._diff = (
+            self._before - server_time - 1.0,
+            after - server_time,
+        )
+
+    def get_diff(self) -> Tuple[float, float]:
+        return self._diff
+
+
 class MeasureTimeDiffMixin:
     def __init__(self) -> None:
         self._min_time_diff: Optional[float] = 0
         self._max_time_diff: Optional[float] = 0
+
+    def _update_time_diffs(self, measurer: TimeDiffMeasurer):
+        def _average(cur_approx: Optional[float], new_val: float) -> float:
+            if cur_approx is None:
+                return new_val
+            return cur_approx * 0.9 + new_val * 0.1
+
+        min_time_diff, max_time_diff = measurer.get_diff()
+        self._min_time_diff = _average(self._min_time_diff, min_time_diff)
+        self._max_time_diff = _average(self._min_time_diff, max_time_diff)
+
+    def get_trace_config(
+        self,
+        get_date: Callable[[ClientResponse], datetime],
+    ) -> TraceConfig:
+        config = TraceConfig()
+
+        async def _on_start(
+            _: ClientSession, trace_config_ctx: Dict[str, Any], __: Any
+        ) -> None:
+            trace_config_ctx["measurer"] = TimeDiffMeasurer()
+            trace_config_ctx["measurer"].request_start()
+
+        async def _on_end(
+            _: ClientSession,
+            trace_config_ctx: Dict[str, Any],
+            params: TraceRequestEndParams,
+        ) -> None:
+            server_datetime = get_date(params.response)
+            trace_config_ctx["measurer"].request_end(server_datetime)
+            self._update_time_diffs(trace_config_ctx["measurer"])
+
+        config.on_request_start.append(_on_start)
+        config.on_request_start.append(_on_end)
+
+        return config
 
     def _wrap_api_call(
         self,
         _make_call: Callable[..., Awaitable[Any]],
         get_date: Callable[[Any], datetime],
     ) -> Callable[..., Awaitable[Any]]:
-        def _average(cur_approx: Optional[float], new_val: float) -> float:
-            if cur_approx is None:
-                return new_val
-            return cur_approx * 0.9 + new_val * 0.1
+        measurer = TimeDiffMeasurer()
 
         async def _wrapper(*args: Any, **kwargs: Any) -> Any:
-            before = time.time()
+            measurer.request_start()
             res = await _make_call(*args, **kwargs)
-            after = time.time()
+
             try:
                 server_dt = get_date(res)
             except Exception:
                 pass
             else:
-                server_time = server_dt.timestamp()
-                # Remove 1 because server time has been truncated
-                # and can be up to 1 second less than the actual value.
-                self._min_time_diff = _average(
-                    cur_approx=self._min_time_diff,
-                    new_val=before - server_time - 1.0,
-                )
-                self._max_time_diff = _average(
-                    cur_approx=self._min_time_diff,
-                    new_val=after - server_time,
-                )
+                measurer.request_end(server_dt)
+                self._update_time_diffs(measurer)
             return res
 
         return _wrapper
@@ -627,6 +679,200 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
         return self._min_time_diff, self._max_time_diff
 
 
+class AutoRefreshingGCSToken:
+    REFRESH_DELAY = timedelta(minutes=10)
+
+    def __init__(
+        self,
+        initial_credentials: "BucketCredentials",
+        get_credentials: Callable[[], Awaitable["BucketCredentials"]],
+    ):
+        self._token: str = None
+        self._expiry: datetime = None
+        self._lock = asyncio.Lock()
+        self._get_credentials = get_credentials
+
+    def _parse_credentials(self, credentials: "BucketCredentials") -> None:
+        self._token = credentials.credentials["access_token"]
+        self._expiry = isoparse(credentials.credentials["expire_time"])
+
+    async def _refresh_if_needed(self) -> None:
+        def _refresh_required() -> bool:
+            return (
+                self._token is None
+                or (self._expiry - datetime.now(timezone.utc)) < self.REFRESH_DELAY
+            )
+
+        if not _refresh_required():
+            return
+        async with self._lock:
+            if not _refresh_required():
+                return
+            self._parse_credentials(await self._get_credentials())
+
+    async def get_token(self) -> str:
+        await self._refresh_if_needed()
+        return self._token
+
+
+class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
+    BASE_URL = "https://storage.googleapis.com/storage/v1"
+    UPLOAD_BASE_URL = "https://storage.googleapis.com/upload/storage/v1"
+
+    def __init__(
+        self,
+        session: ClientSession,
+        token: AutoRefreshingGCSToken,
+        bucket: "Bucket",
+        gcs_bucket_name: str,
+    ) -> None:
+        self.bucket = bucket
+        self._session = session
+        self._token = token
+        self._gcs_bucket_name = gcs_bucket_name
+
+        def _extract_date(resp: ClientResponse) -> datetime:
+            date_str = resp.headers["Date"]
+            return parsedate_to_datetime(date_str)
+
+        # self._session.trace_configs.append(self.get_trace_config(_extract_date))
+
+    @classmethod
+    @asynccontextmanager
+    async def create(
+        cls,
+        bucket: "Bucket",
+        _get_credentials: Callable[[], Awaitable["BucketCredentials"]],
+    ) -> AsyncIterator["GCSProvider"]:
+        initial_credentials = await _get_credentials()
+
+        token = AutoRefreshingGCSToken(initial_credentials, _get_credentials)
+        async with ClientSession() as session:
+            yield cls(
+                session, token, bucket, initial_credentials.credentials["bucket_name"]
+            )
+
+    async def _get_auth_headers(self) -> Mapping[str, str]:
+        return {"Authorization": f"Bearer {await self._token.get_token()}"}
+
+    def _parse_obj(self, data: Mapping[str, Any]) -> BlobObject:
+        created_at = isoparse(data["timeCreated"])
+        return BlobObject(
+            bucket=self.bucket,
+            key=data["name"],
+            size=data["size"],
+            created_at=created_at,
+            modified_at=created_at,  # blobs are immutable
+        )
+
+    @asyncgeneratorcontextmanager
+    async def list_blobs(
+        self, prefix: str, recursive: bool = False, limit: Optional[int] = None
+    ) -> AsyncIterator[BucketEntry]:
+        url = f"{self.BASE_URL}/b/{self._gcs_bucket_name}/o"
+
+        params = {
+            "prefix": prefix,
+            "pageToken": "",
+        }
+        if not recursive:
+            params["delimiter"] = "/"
+        while True:
+            async with self._session.get(
+                url=url, params=params, headers=await self._get_auth_headers()
+            ) as resp:
+                resp.raise_for_status()
+                data = await resp.json()
+            for item in data.get("items", []):
+                yield self._parse_obj(item)
+            for prefix in data.get("prefixes", []):
+                yield BlobCommonPrefix(
+                    bucket=self.bucket,
+                    key=prefix,
+                    size=0,
+                )
+            params["pageToken"] = data.get("nextPageToken", "")
+            if not params["pageToken"]:
+                break
+
+    async def head_blob(self, key: str) -> BucketEntry:
+        url = f"{self.BASE_URL}/b/{self._gcs_bucket_name}/o/{key}"
+
+        try:
+            async with self._session.get(
+                url=url, headers=await self._get_auth_headers()
+            ) as resp:
+                resp.raise_for_status()
+                return self._parse_obj(await resp.json())
+        except ClientResponseError as e:
+            if e.status == 404:
+                raise ResourceNotFound(
+                    f"There is no object with key {key} in bucket {self.bucket.name}"
+                )
+            raise
+
+    async def put_blob(
+        self, key: str, body: Union[AsyncIterator[bytes], bytes]
+    ) -> None:
+        if isinstance(body, bytes):
+            body = [body]
+        # Step 1: initiate multipart upload
+        url = f"{self.UPLOAD_BASE_URL}/b/{self._gcs_bucket_name}/o"
+        params = {"uploadType": "resumable", "name": key}
+        async with self._session.post(
+            url=url, params=params, headers=await self._get_auth_headers(), json={}
+        ) as resp:
+            resp.raise_for_status()
+            session_url = URL(resp.headers["Location"])
+
+        uploaded_bytes = 0
+
+        async def _upload_chunk(data: bytes, *, final: bool = False) -> None:
+            nonlocal uploaded_bytes
+            size = len(data)
+            if final:
+                total = str(uploaded_bytes + size - 1)
+            else:
+                total = "*"
+            async with self._session.put(
+                url=session_url,
+                data=chunk,
+                headers={
+                    "Content-Range": (
+                        f"bytes {uploaded_bytes}-{uploaded_bytes+size-1}/{total}"
+                    )
+                },
+            ) as resp:
+                print(await resp.content.read())
+                resp.raise_for_status()
+            uploaded_bytes += size
+
+        async for chunk in body:
+            await _upload_chunk(chunk)
+        await _upload_chunk(b"", final=True)
+
+    @asyncgeneratorcontextmanager
+    async def fetch_blob(self, key: str, offset: int = 0) -> AsyncIterator[bytes]:
+        url = f"{self.BASE_URL}/b/{self._gcs_bucket_name}/o/{key}"
+        params = {"alt": "media"}
+        headers = dict(await self._get_auth_headers())
+        if offset:
+            headers["Range"] = f"bytes={offset}-"
+            async with self._session.put(
+                url=url, params=params, headers=headers
+            ) as resp:
+                resp.raise_for_status()
+                async for data in resp.content.iter_any():
+                    yield data
+
+    async def delete_blob(self, key: str) -> None:
+        url = f"{self.BASE_URL}/b/{self._gcs_bucket_name}/o/{key}"
+        async with self._session.put(
+            url=url, headers=await self._get_auth_headers()
+        ) as resp:
+            resp.raise_for_status()
+
+
 @dataclass(frozen=True)
 class Bucket:
     id: str
@@ -644,6 +890,7 @@ class Bucket:
         AWS = "aws"
         MINIO = "minio"
         AZURE = "azure"
+        GCP = "gcp"
 
 
 @dataclass(frozen=True)
@@ -770,6 +1017,9 @@ class Buckets(metaclass=NoPublicConstructor):
                 yield provider
         elif bucket.provider == Bucket.Provider.AZURE:
             async with AzureProvider.create(bucket, _get_new_credentials) as provider:
+                yield provider
+        elif bucket.provider == Bucket.Provider.GCP:
+            async with GCSProvider.create(bucket, _get_new_credentials) as provider:
                 yield provider
         else:
             assert False, f"Unknown provider {bucket.provider}"
