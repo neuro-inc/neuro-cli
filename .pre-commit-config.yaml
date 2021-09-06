@@ -3,13 +3,15 @@ repos:
   hooks:
   - id: version-check
     name: Check the package version
-    language: system
+    language: python
     entry: ./build-tools/version.py update
+    additional_dependencies: ['click']
     pass_filenames: false
   - id: gen-cli-docs
     name: Generate CLI docs
-    language: system
+    language: python
     entry: make docs
+    additional_dependencies: ['neuro-cli', 'markdown-toc']
     pass_filenames: false
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: 'v4.0.1'
