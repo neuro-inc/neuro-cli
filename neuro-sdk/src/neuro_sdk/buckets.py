@@ -749,7 +749,8 @@ class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
             )
 
     async def _get_auth_headers(self) -> Mapping[str, str]:
-        return {"Authorization": f"Bearer {await self._token.get_token()}"}
+        token = await self._token.get_token()
+        return {"Authorization": f"Bearer {token}"}
 
     def _parse_obj(self, data: Mapping[str, Any]) -> BlobObject:
         created_at = isoparse(data["timeCreated"])
