@@ -31,7 +31,7 @@ import aiobotocore as aiobotocore
 import botocore.exceptions
 from aiobotocore.client import AioBaseClient
 from aiobotocore.credentials import AioRefreshableCredentials
-from aiohttp import ClientResponse, ClientResponseError, ClientSession
+from aiohttp import ClientResponse, ClientSession
 from azure.core.credentials import AzureSasCredential
 from azure.core.exceptions import ResourceNotFoundError
 from azure.storage.blob import BlobBlock
@@ -727,6 +727,8 @@ class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
             json=json,
             data=data,
         ) as resp:
+            if resp.status == 404:
+                raise ResourceNotFound
             if resp.status > 400:
                 # Some error response are OK (404 for example), so just log here
                 response_text = await resp.text()
@@ -808,12 +810,10 @@ class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
                 "GET", url=url, headers=await self._get_auth_headers()
             ) as resp:
                 return self._parse_obj(await resp.json())
-        except ClientResponseError as e:
-            if e.status == 404:
-                raise ResourceNotFound(
-                    f"There is no object with key {key} in bucket {self.bucket.name}"
-                )
-            raise
+        except ResourceNotFound:
+            raise ResourceNotFound(
+                f"There is no object with key {key} in bucket {self.bucket.name}"
+            )
 
     async def put_blob(
         self, key: str, body: Union[AsyncIterator[bytes], bytes]
@@ -868,24 +868,35 @@ class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
 
     @asyncgeneratorcontextmanager
     async def fetch_blob(self, key: str, offset: int = 0) -> AsyncIterator[bytes]:
+        key = urllib.parse.quote(key, safe="")
         url = f"{self.BASE_URL}/b/{self._gcs_bucket_name}/o/{key}"
         params = {"alt": "media"}
         headers = dict(await self._get_auth_headers())
         if offset:
             headers["Range"] = f"bytes={offset}-"
-        async with self._request(
-            "GET", url=url, params=params, headers=headers
-        ) as resp:
-            async for data in resp.content.iter_any():
-                yield data
+        try:
+            async with self._request(
+                "GET", url=url, params=params, headers=headers
+            ) as resp:
+                async for data in resp.content.iter_any():
+                    yield data
+        except ResourceNotFound:
+            raise ResourceNotFound(
+                f"There is no object with key {key} in bucket {self.bucket.name}"
+            )
 
     async def delete_blob(self, key: str) -> None:
         key = urllib.parse.quote(key, safe="")
         url = f"{self.BASE_URL}/b/{self._gcs_bucket_name}/o/{key}"
-        async with self._request(
-            "DELETE", url=url, headers=await self._get_auth_headers()
-        ):
-            pass
+        try:
+            async with self._request(
+                "DELETE", url=url, headers=await self._get_auth_headers()
+            ):
+                pass
+        except ResourceNotFound:
+            raise ResourceNotFound(
+                f"There is no object with key {key} in bucket {self.bucket.name}"
+            )
 
 
 @dataclass(frozen=True)
