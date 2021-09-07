@@ -728,7 +728,8 @@ class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
         ) as resp:
             if resp.status > 400:
                 # Some error response are OK (404 for example), so just log here
-                logger.info(f"Request to GCS failed: {await resp.text()}")
+                response_text = await resp.text()
+                logger.info(f"Request to GCS failed {method} {url}: {response_text}")
             resp.raise_for_status()
             yield resp
 
