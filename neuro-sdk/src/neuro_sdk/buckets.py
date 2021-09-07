@@ -11,6 +11,7 @@ import urllib.parse
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
+from io import BytesIO
 from pathlib import PurePosixPath
 from typing import (
     AbstractSet,
@@ -685,7 +686,7 @@ class AutoRefreshingGCSToken:
 class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
     BASE_URL = "https://storage.googleapis.com/storage/v1"
     UPLOAD_BASE_URL = "https://storage.googleapis.com/upload/storage/v1"
-    MIN_CHUNK_SIZE = 30 * 262144
+    MIN_CHUNK_SIZE = 10 * 262144
 
     def __init__(
         self,
@@ -847,7 +848,7 @@ class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
             async with self._request(
                 "PUT",
                 url=session_url,
-                data=buffer,
+                data=BytesIO(buffer),
                 headers={"Content-Range": (f"bytes {data_range}/{total}")},
             ):
                 pass
