@@ -659,6 +659,7 @@ class PersistentBucketCredentials:
     owner: str
     cluster_name: str
     name: Optional[str]
+    read_only: bool
     credentials: List[BucketCredentials]
 
 
@@ -1020,6 +1021,7 @@ class Buckets(metaclass=NoPublicConstructor):
                 self._parse_bucket_credentials_payload(item)
                 for item in payload["credentials"]
             ],
+            read_only=payload.get("read_only", False),
         )
 
     def _get_persistent_credentials_url(self, cluster_name: Optional[str]) -> URL:
@@ -1054,12 +1056,14 @@ class Buckets(metaclass=NoPublicConstructor):
         bucket_ids: Iterable[str],
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
+        read_only: Optional[bool] = False,
     ) -> PersistentBucketCredentials:
         url = self._get_persistent_credentials_url(cluster_name)
         auth = await self._config._api_auth()
         data = {
             "name": name,
             "bucket_ids": list(bucket_ids),
+            "read_only": read_only,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()

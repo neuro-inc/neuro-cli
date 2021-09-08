@@ -333,6 +333,7 @@ Buckets
    .. comethod:: persistent_credentials_create(  \
                         bucket_ids: typing.Iterable[str], \
                         name: typing.Optional[str], \
+                        read_only: Optional[bool] = False, \
                         cluster_name: Optional[str] = None, \
                  ) -> PersistentBucketCredentials
 
@@ -342,6 +343,8 @@ Buckets
 
       :param ~typing.Optional[str] name: Name of the persistent credentials. Should be unique among all user's
                                          bucket persistent credentials.
+
+      :param str read_only: Allow only read-only access using created credentials. ``False`` by default.
 
       :param str cluster_name: cluster to create a persistent credentials. Default is current cluster.
 
@@ -465,6 +468,10 @@ PersistentBucketCredentials
 
       The credentials name set by user, unique among all user's bucket credentials,
       :class:`str` or ``None`` if no name was set.
+
+   .. attribute:: read_only
+
+      The credentials provide read-only access to buckets, :class:`bool`.
 
    .. attribute:: cluster_name
 
