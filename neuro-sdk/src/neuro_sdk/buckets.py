@@ -286,7 +286,7 @@ class MeasureTimeDiffMixin:
     ) -> Callable[..., Awaitable[Any]]:
         @asynccontextmanager
         async def _ctx_manager(*args: Any, **kwargs: Any) -> AsyncIterator[Any]:
-            yield _make_call(*args, **kwargs)
+            yield await _make_call(*args, **kwargs)
 
         manager_wrapped = self._wrap_api_call_ctx_manager(_ctx_manager, get_date)
 
