@@ -738,7 +738,6 @@ class ServiceAccountRefreshingGCSToken(AutoRefreshingGCSToken):
         self._credential = self._credential.with_scopes(
             ["https://www.googleapis.com/auth/devstorage.read_write"]
         )
-        self._lock = asyncio.Lock()
         self._request = request
 
     async def _do_refresh(self) -> None:
