@@ -30,7 +30,7 @@ from typing import (
 import aiobotocore as aiobotocore
 import botocore.exceptions
 from aiobotocore.client import AioBaseClient
-from aiobotocore.credentials import AioRefreshableCredentials
+from aiobotocore.credentials import AioCredentials, AioRefreshableCredentials
 from aiohttp import ClientResponse, ClientSession
 from azure.core.credentials import AzureSasCredential
 from azure.core.exceptions import ResourceNotFoundError
@@ -60,7 +60,7 @@ from .parser import Parser
 from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 if sys.version_info >= (3, 7):
-    from contextlib import asynccontextmanager
+    from contextlib import AsyncExitStack, asynccontextmanager
 else:
     from async_generator import asynccontextmanager
 
@@ -363,27 +363,39 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
     ) -> AsyncIterator["S3Provider"]:
         initial_credentials = await _get_credentials()
 
-        def _credentials_to_meta(credentials: "BucketCredentials") -> Mapping[str, str]:
-            return {
-                "access_key": credentials.credentials["access_key_id"],
-                "secret_key": credentials.credentials["secret_access_key"],
-                "token": credentials.credentials["session_token"],
-                "expiry_time": credentials.credentials["expiration"],
-            }
-
-        async def _refresher() -> Mapping[str, str]:
-            return _credentials_to_meta(await _get_credentials())
-
         session = aiobotocore.get_session()
-        session._credentials = AioRefreshableCredentials.create_from_metadata(
-            metadata=_credentials_to_meta(initial_credentials),
-            refresh_using=_refresher,
-            method="neuro-bucket-api-refresh",  # This is just a label
-        )
+
+        if "expiration" in initial_credentials.credentials:
+
+            def _credentials_to_meta(
+                credentials: "BucketCredentials",
+            ) -> Mapping[str, str]:
+                return {
+                    "access_key": credentials.credentials["access_key_id"],
+                    "secret_key": credentials.credentials["secret_access_key"],
+                    "token": credentials.credentials["session_token"],
+                    "expiry_time": credentials.credentials["expiration"],
+                }
+
+            async def _refresher() -> Mapping[str, str]:
+                return _credentials_to_meta(await _get_credentials())
+
+            session._credentials = AioRefreshableCredentials.create_from_metadata(
+                metadata=_credentials_to_meta(initial_credentials),
+                refresh_using=_refresher,
+                method="neuro-bucket-api-refresh",  # This is just a label
+            )
+        else:
+            # Permanent credentials
+            session._credentials = AioCredentials(
+                access_key=initial_credentials.credentials["access_key_id"],
+                secret_key=initial_credentials.credentials["secret_access_key"],
+            )
+
         async with session.create_client(
             "s3",
-            endpoint_url=initial_credentials.credentials["endpoint_url"],
-            region_name=initial_credentials.credentials["region_name"],
+            endpoint_url=initial_credentials.credentials.get("endpoint_url"),
+            region_name=initial_credentials.credentials.get("region_name"),
         ) as client:
             yield cls(client, bucket, initial_credentials.credentials["bucket_name"])
 
@@ -533,34 +545,46 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
     ) -> AsyncIterator["AzureProvider"]:
         initial_credentials = await _get_credentials()
 
-        sas_credential = AzureSasCredential(
-            initial_credentials.credentials["sas_token"]
-        )
+        async with AsyncExitStack() as exit_stack:
+            credential: Union[AzureSasCredential, str]
+            if "sas_token" in initial_credentials.credentials:
+                sas_credential = AzureSasCredential(
+                    initial_credentials.credentials["sas_token"]
+                )
+                credential = sas_credential
 
-        @asynccontextmanager
-        async def _token_renewer() -> AsyncIterator[None]:
-            async def renew_token_loop() -> None:
-                expiry = isoparse(initial_credentials.credentials["expiry"])
-                while True:
-                    delay = (
-                        expiry - timedelta(minutes=10) - datetime.now(timezone.utc)
-                    ).total_seconds()
-                    await asyncio.sleep(max(delay, 0))
-                    credentials = await _get_credentials()
-                    sas_credential.update(credentials.credentials["sas_token"])
-                    expiry = isoparse(credentials.credentials["expiry"])
+                @asynccontextmanager
+                async def _token_renewer() -> AsyncIterator[None]:
+                    async def renew_token_loop() -> None:
+                        expiry = isoparse(initial_credentials.credentials["expiry"])
+                        while True:
+                            delay = (
+                                expiry
+                                - timedelta(minutes=10)
+                                - datetime.now(timezone.utc)
+                            ).total_seconds()
+                            await asyncio.sleep(max(delay, 0))
+                            credentials = await _get_credentials()
+                            sas_credential.update(credentials.credentials["sas_token"])
+                            expiry = isoparse(credentials.credentials["expiry"])
 
-            task = asyncio.ensure_future(renew_token_loop())
-            try:
-                yield
-            finally:
-                task.cancel()
+                    task = asyncio.ensure_future(renew_token_loop())
+                    try:
+                        yield
+                    finally:
+                        task.cancel()
 
-        async with ContainerClient(
-            account_url=initial_credentials.credentials["storage_endpoint"],
-            container_name=initial_credentials.credentials["bucket_name"],
-            credential=sas_credential,
-        ) as container_client, _token_renewer():
+                await exit_stack.enter_async_context(_token_renewer())
+            else:
+                credential = initial_credentials.credentials["credential"]
+
+            container_client = await exit_stack.enter_async_context(
+                ContainerClient(
+                    account_url=initial_credentials.credentials["storage_endpoint"],
+                    container_name=initial_credentials.credentials["bucket_name"],
+                    credential=credential,
+                )
+            )
             yield cls(container_client, bucket)
 
     @asyncgeneratorcontextmanager
@@ -906,6 +930,7 @@ class Bucket:
     cluster_name: str
     provider: "Bucket.Provider"
     created_at: datetime
+    imported: bool
     name: Optional[str] = None
 
     @property
@@ -949,6 +974,7 @@ class Buckets(metaclass=NoPublicConstructor):
             name=payload.get("name"),
             created_at=isoparse(payload["created_at"]),
             provider=Bucket.Provider(payload["provider"]),
+            imported=payload.get("imported", False),
             cluster_name=self._config.cluster_name,
         )
 
@@ -992,6 +1018,26 @@ class Buckets(metaclass=NoPublicConstructor):
         auth = await self._config._api_auth()
         data = {
             "name": name,
+        }
+        async with self._core.request("POST", url, auth=auth, json=data) as resp:
+            payload = await resp.json()
+            return self._parse_bucket_payload(payload)
+
+    async def import_external(
+        self,
+        provider: Bucket.Provider,
+        provider_bucket_name: str,
+        credentials: Mapping[str, str],
+        name: Optional[str] = None,
+        cluster_name: Optional[str] = None,
+    ) -> Bucket:
+        url = self._get_buckets_url(cluster_name) / "import" / "external"
+        auth = await self._config._api_auth()
+        data = {
+            "name": name,
+            "provider": provider.value,
+            "provider_bucket_name": provider_bucket_name,
+            "credentials": credentials,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()

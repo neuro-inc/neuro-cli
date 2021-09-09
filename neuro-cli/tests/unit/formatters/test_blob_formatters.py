@@ -22,6 +22,7 @@ class TestBlobFormatter:
             cluster_name="test-cluster",
             owner="test-user",
             provider=Bucket.Provider.AWS,
+            imported=False,
         ),
         Bucket(
             id="bucket-2",
@@ -30,6 +31,7 @@ class TestBlobFormatter:
             cluster_name="test-cluster",
             owner="public",
             provider=Bucket.Provider.AWS,
+            imported=False,
         ),
         Bucket(
             id="bucket-3",
@@ -38,6 +40,7 @@ class TestBlobFormatter:
             cluster_name="test-cluster",
             owner="another-user",
             provider=Bucket.Provider.AWS,
+            imported=False,
         ),
     ]
 

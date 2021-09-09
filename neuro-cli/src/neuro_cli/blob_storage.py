@@ -150,6 +150,166 @@ async def mkbucket(
 @option(
     "--cluster",
     type=CLUSTER,
+    help="Perform in a specified cluster (the current cluster by default).",
+)
+@option(
+    "--name",
+    type=BUCKET_NAME,
+    metavar="NAME",
+    help="Optional bucket name",
+    default=None,
+)
+@option(
+    "--provider",
+    type=click.Choice(["aws", "gcp", "azure"], case_sensitive=False),
+    metavar="PROVIDER",
+    help="Bucket provider that hosts bucket",
+    required=True,
+)
+@option(
+    "--provider-bucket-name",
+    type=str,
+    metavar="EXTERNAL_NAME",
+    help="Name of bucket (or container in case of Azure) inside the provider",
+    required=True,
+)
+@option(
+    "--aws-access-key-id",
+    type=str,
+    metavar="AWS_ACCESS_KEY_ID",
+    help="AWS access_key_id to use to access the bucket. "
+    " Required when PROVIDER is 'aws'",
+    default=False,
+)
+@option(
+    "--aws-secret-access-key",
+    type=str,
+    metavar="AWS_SECRET_ACCESS_KEY",
+    help="AWS secret_access_key to use to access the bucket. "
+    "Required when PROVIDER is 'aws'",
+    default=False,
+)
+@option(
+    "--aws-region-name",
+    type=str,
+    metavar="AWS_REGION",
+    help="AWS region to use to access the bucket.",
+    default="us-east-1",
+)
+@option(
+    "--aws-endpoint-url",
+    type=str,
+    metavar="AWS_ENDPOINT",
+    help="AWS endpoint to use to access the bucket. "
+    "Usually you need to set this if "
+    "you use non-AWS S3 compatible provider",
+    default=None,
+)
+@option(
+    "--azure-storage-account-url",
+    type=str,
+    metavar="AZURE_STORAGE_ACCOUNT_URL",
+    help="Azure account url. Usually it has following format: "
+    "https://<account_id>.blob.core.windows.net "
+    "Required when PROVIDER is 'azure'",
+    default=False,
+)
+@option(
+    "--azure-storage-sas-token",
+    type=str,
+    metavar="AZURE_SAS",
+    help="Azure shared access signature token that grants access to imported bucket. "
+    "Either this or AZURE_STORAGE_CREDENTIAL is required when PROVIDER is 'azure'",
+    default=False,
+)
+@option(
+    "--azure-storage-credential",
+    type=str,
+    metavar="AZURE_STORAGE_CREDENTIAL",
+    help="Azure storage credential that grants access to imported bucket. "
+    "Either this or AZURE_SAS is required when PROVIDER is 'azure'",
+    default=False,
+)
+@option(
+    "--gcp-sa-credential",
+    type=str,
+    metavar="GCP_SA_CREDNETIAL",
+    help="GCP service account credential in form of base64 encoded json "
+    "string that grants access to imported bucket. "
+    "Required when PROVIDER is 'gcp'",
+    default=False,
+)
+async def importbucket(
+    root: Root,
+    provider: str,
+    provider_bucket_name: str,
+    aws_access_key_id: Optional[str] = None,
+    aws_secret_access_key: Optional[str] = None,
+    aws_region_name: str = "us-east-1",
+    aws_endpoint_url: Optional[str] = None,
+    azure_storage_account_url: Optional[str] = None,
+    azure_storage_sas_token: Optional[str] = None,
+    azure_storage_credential: Optional[str] = None,
+    gcp_sa_credential: Optional[str] = None,
+    name: Optional[str] = None,
+    cluster: Optional[str] = None,
+) -> None:
+    """
+    Import an existing bucket.
+    """
+    provider_type = Bucket.Provider(provider)
+    credentials = {}
+    if provider_type == Bucket.Provider.AWS:
+        if aws_access_key_id is None:
+            raise ValueError("--aws-access-key-id is required when PROVIDER is 'aws'")
+        if aws_secret_access_key is None:
+            raise ValueError(
+                "--aws-secret-access-key is required when PROVIDER is 'aws'"
+            )
+        credentials["access_key_id"] = aws_access_key_id
+        credentials["secret_access_key"] = aws_secret_access_key
+        credentials["region_name"] = aws_region_name
+        if aws_endpoint_url:
+            credentials["endpoint_url"] = aws_endpoint_url
+    elif provider_type == Bucket.Provider.AZURE:
+        if azure_storage_account_url is None:
+            raise ValueError(
+                "--azure-storage-account-url is required when PROVIDER is 'azure'"
+            )
+        credentials["storage_endpoint"] = azure_storage_account_url
+        if azure_storage_credential is not None:
+            credentials["credential"] = azure_storage_credential
+        elif azure_storage_sas_token is not None:
+            credentials["sas_token"] = azure_storage_sas_token
+        else:
+            raise ValueError(
+                "Either --azure-storage-credential or --azure-storage-sas-token "
+                "should be specified when PROVIDER is 'azure'"
+            )
+    else:
+        raise ValueError(
+            f"Importing of buckets with provider {provider} is not supported"
+        )
+    # TODO: add code for GCP when GCP PR is merged
+
+    bucket = await root.client.buckets.import_external(
+        provider=provider_type,
+        provider_bucket_name=provider_bucket_name,
+        credentials=credentials,
+        name=name,
+        cluster_name=cluster,
+    )
+    bucket_fmtr = BucketFormatter(
+        str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
+    )
+    with root.pager():
+        root.print(bucket_fmtr(bucket))
+
+
+@command()
+@option(
+    "--cluster",
+    type=CLUSTER,
     help="Look on a specified cluster (the current cluster by default).",
 )
 @argument("bucket", type=BUCKET)
@@ -761,6 +921,7 @@ async def rmcredentials(
 
 blob_storage.add_command(lsbucket)
 blob_storage.add_command(mkbucket)
+blob_storage.add_command(importbucket)
 blob_storage.add_command(statbucket)
 blob_storage.add_command(rmbucket)
 
