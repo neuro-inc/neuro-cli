@@ -679,12 +679,18 @@ async def lscredentials(root: Root, cluster: Optional[str]) -> None:
     help="Optional bucket credential name",
     default=None,
 )
+@option(
+    "--read-only",
+    is_flag=True,
+    help="Make read-only credential",
+)
 @argument("buckets", type=BUCKET, nargs=-1, required=True)
 async def mkcredentials(
     root: Root,
     buckets: Sequence[str],
     name: Optional[str] = None,
     cluster: Optional[str] = None,
+    read_only: bool = False,
 ) -> None:
     """
     Create a new bucket crednetial.
@@ -694,7 +700,7 @@ async def mkcredentials(
         for bucket in buckets
     ]
     credential = await root.client.buckets.persistent_credentials_create(
-        name=name, cluster_name=cluster, bucket_ids=bucket_ids
+        name=name, cluster_name=cluster, read_only=read_only, bucket_ids=bucket_ids
     )
 
     fmtr = BucketCredentialFormatter(make_bucket_getter(root.client, cluster))

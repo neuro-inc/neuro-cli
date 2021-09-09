@@ -41,6 +41,7 @@ class BucketCredentialsFormatter(BaseBucketCredentialsFormatter):
             credential.id,
             credential.name or "",
             ", ".join(bucket.name or bucket.id for bucket in buckets),
+            "√" if credential.read_only else "×",
         ]
         return line
 
@@ -54,6 +55,7 @@ class BucketCredentialsFormatter(BaseBucketCredentialsFormatter):
         table.add_column("Id", style="bold", width=width)
         table.add_column("Name")
         table.add_column("Buckets")
+        table.add_column("Read-only")
         for credential in credentials:
             table.add_row(*(await self._credential_to_table_row(credential)))
         return table
@@ -74,6 +76,8 @@ class BucketCredentialFormatter:
         table.add_row("Id", credential.id)
         if credential.name:
             table.add_row("Name", credential.name)
+
+        table.add_row("Read-only:", str(credential.read_only))
 
         for bucket_credential in credential.credentials:
             credentials = Table(box=None, show_header=True, show_edge=False)
