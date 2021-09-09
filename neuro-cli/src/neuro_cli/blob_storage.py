@@ -286,11 +286,14 @@ async def importbucket(
                 "Either --azure-storage-credential or --azure-storage-sas-token "
                 "should be specified when PROVIDER is 'azure'"
             )
+    elif provider_type == Bucket.Provider.GCP:
+        if gcp_sa_credential is None:
+            raise ValueError("--gcp-sa-credential is required when PROVIDER is 'gcp'")
+        credentials["key_data"] = gcp_sa_credential
     else:
         raise ValueError(
             f"Importing of buckets with provider {provider} is not supported"
         )
-    # TODO: add code for GCP when GCP PR is merged
 
     bucket = await root.client.buckets.import_external(
         provider=provider_type,

@@ -1,5 +1,6 @@
 import abc
 import asyncio
+import base64
 import enum
 import json
 import logging
@@ -38,6 +39,8 @@ from azure.storage.blob import BlobBlock
 from azure.storage.blob.aio import ContainerClient
 from azure.storage.blob.aio._list_blobs_helper import BlobPrefix
 from dateutil.parser import isoparse
+from google.auth.transport._aiohttp_requests import Request
+from google.oauth2._service_account_async import Credentials as SACredentials
 from yarl import URL
 
 from neuro_sdk import AbstractRecursiveFileProgress, file_utils
@@ -672,7 +675,35 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
         return self._min_time_diff, self._max_time_diff
 
 
-class AutoRefreshingGCSToken:
+class AutoRefreshingGCSToken(abc.ABC):
+    def __init__(
+        self,
+    ) -> None:
+        self._lock = asyncio.Lock()
+        self._token = ""
+
+    @abc.abstractmethod
+    def _refresh_required(self) -> bool:
+        pass
+
+    @abc.abstractmethod
+    async def _do_refresh(self) -> None:
+        pass
+
+    async def _refresh_if_needed(self) -> None:
+        if not self._refresh_required():
+            return
+        async with self._lock:
+            if not self._refresh_required():
+                return
+            await self._do_refresh()
+
+    async def get_token(self) -> str:
+        await self._refresh_if_needed()
+        return self._token
+
+
+class NeuroAutoRefreshingGCSToken(AutoRefreshingGCSToken):
     REFRESH_DELAY = timedelta(minutes=10)
 
     def __init__(
@@ -680,31 +711,42 @@ class AutoRefreshingGCSToken:
         initial_credentials: "BucketCredentials",
         get_credentials: Callable[[], Awaitable["BucketCredentials"]],
     ):
+        super().__init__()
         self._parse_credentials(initial_credentials)
-        self._lock = asyncio.Lock()
         self._get_credentials = get_credentials
 
     def _parse_credentials(self, credentials: "BucketCredentials") -> None:
         self._token = credentials.credentials["access_token"]
         self._expiry = isoparse(credentials.credentials["expire_time"])
 
-    async def _refresh_if_needed(self) -> None:
-        def _refresh_required() -> bool:
-            return (
-                self._token is None
-                or (self._expiry - datetime.now(timezone.utc)) < self.REFRESH_DELAY
-            )
+    def _refresh_required(self) -> bool:
+        return (
+            self._token is None
+            or (self._expiry - datetime.now(timezone.utc)) < self.REFRESH_DELAY
+        )
 
-        if not _refresh_required():
-            return
-        async with self._lock:
-            if not _refresh_required():
-                return
-            self._parse_credentials(await self._get_credentials())
+    async def _do_refresh(self) -> None:
+        self._parse_credentials(await self._get_credentials())
 
-    async def get_token(self) -> str:
-        await self._refresh_if_needed()
-        return self._token
+
+class ServiceAccountRefreshingGCSToken(AutoRefreshingGCSToken):
+    def __init__(self, key_data_json_b64: str, request: Request) -> None:
+        super().__init__()
+        self._credential: SACredentials = SACredentials.from_service_account_info(
+            json.loads(base64.b64decode(key_data_json_b64).decode())
+        )
+        self._credential = self._credential.with_scopes(
+            ["https://www.googleapis.com/auth/devstorage.read_write"]
+        )
+        self._lock = asyncio.Lock()
+        self._request = request
+
+    async def _do_refresh(self) -> None:
+        await self._credential.refresh(self._request)
+        self._token = self._credential.token
+
+    def _refresh_required(self) -> bool:
+        return not self._token or not self._credential.valid
 
 
 class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
@@ -769,8 +811,16 @@ class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
     ) -> AsyncIterator["GCSProvider"]:
         initial_credentials = await _get_credentials()
 
-        token = AutoRefreshingGCSToken(initial_credentials, _get_credentials)
-        async with ClientSession() as session:
+        async with ClientSession(auto_decompress=False) as session:
+            token: AutoRefreshingGCSToken
+            if "key_data" in initial_credentials.credentials:
+                raw = initial_credentials.credentials["key_data"]
+                token = ServiceAccountRefreshingGCSToken(raw, request=Request(session))
+            else:
+                token = NeuroAutoRefreshingGCSToken(
+                    initial_credentials, _get_credentials
+                )
+
             yield cls(
                 session, token, bucket, initial_credentials.credentials["bucket_name"]
             )
