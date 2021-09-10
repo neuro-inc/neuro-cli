@@ -26,6 +26,7 @@ async def test_list(
                     "name": None,
                     "provider": "aws",
                     "created_at": created_at.isoformat(),
+                    "imported": False,
                 },
                 {
                     "id": "bucket-2",
@@ -33,6 +34,7 @@ async def test_list(
                     "name": "test-bucket",
                     "provider": "aws",
                     "created_at": created_at.isoformat(),
+                    "imported": True,
                 },
             ]
         )
@@ -57,6 +59,7 @@ async def test_list(
             name=None,
             created_at=created_at,
             provider=Bucket.Provider.AWS,
+            imported=False,
         ),
         Bucket(
             id="bucket-2",
@@ -65,6 +68,7 @@ async def test_list(
             name="test-bucket",
             created_at=created_at,
             provider=Bucket.Provider.AWS,
+            imported=True,
         ),
     ]
 
@@ -105,6 +109,56 @@ async def test_add(
             name="test-bucket",
             created_at=created_at,
             provider=Bucket.Provider.AWS,
+            imported=False,
+        )
+
+
+async def test_import(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_config: Cluster,
+) -> None:
+    created_at = datetime.now()
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "name": "test-bucket",
+            "provider": "aws",
+            "provider_bucket_name": "test-external",
+            "credentials": {"key": "value"},
+        }
+        return web.json_response(
+            {
+                "id": "bucket-1",
+                "owner": "user",
+                "name": "test-bucket",
+                "created_at": created_at.isoformat(),
+                "provider": "aws",
+                "imported": True,
+            }
+        )
+
+    app = web.Application()
+    app.router.add_post("/buckets/buckets/import/external", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        bucket = await client.buckets.import_external(
+            provider=Bucket.Provider.AWS,
+            provider_bucket_name="test-external",
+            credentials={"key": "value"},
+            name="test-bucket",
+        )
+        assert bucket == Bucket(
+            id="bucket-1",
+            owner="user",
+            cluster_name=cluster_config.name,
+            name="test-bucket",
+            created_at=created_at,
+            provider=Bucket.Provider.AWS,
+            imported=True,
         )
 
 
@@ -141,6 +195,7 @@ async def test_get(
             name="name",
             created_at=created_at,
             provider=Bucket.Provider.AWS,
+            imported=False,
         )
 
 

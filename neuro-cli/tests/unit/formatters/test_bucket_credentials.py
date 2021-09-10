@@ -20,6 +20,7 @@ async def test_bucket_credentials_formatter(rich_cmp: Any) -> None:
         cluster_name="cluster",
         provider=Bucket.Provider.AWS,
         created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
+        imported=False,
     )
     credentials = PersistentBucketCredentials(
         id="bucket-credentials",
@@ -62,6 +63,7 @@ def credentials_list_fixture() -> CredListFixture:
             cluster_name="cluster",
             created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
             provider=Bucket.Provider.AWS,
+            imported=False,
         ),
         Bucket(
             id="bucket-2",
@@ -70,6 +72,7 @@ def credentials_list_fixture() -> CredListFixture:
             cluster_name="cluster",
             created_at=isoparse("2016-03-04T12:28:59.759433+00:00"),
             provider=Bucket.Provider.AWS,
+            imported=False,
         ),
         Bucket(
             id="bucket-3",
@@ -78,6 +81,7 @@ def credentials_list_fixture() -> CredListFixture:
             cluster_name="cluster",
             created_at=isoparse("2018-03-04T12:28:59.759433+00:00"),
             provider=Bucket.Provider.AWS,
+            imported=False,
         ),
         Bucket(
             id="bucket-4",
@@ -86,6 +90,7 @@ def credentials_list_fixture() -> CredListFixture:
             cluster_name="cluster",
             created_at=isoparse("2019-03-04T12:28:59.759433+00:00"),
             provider=Bucket.Provider.AWS,
+            imported=False,
         ),
     ]
 

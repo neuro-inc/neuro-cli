@@ -26,6 +26,7 @@ setup(
         "toml>=0.10.0",
         "aiobotocore>=1.3.3",
         "azure-storage-blob>=12.8.1",
+        "google-auth>=2.0.2",
     ],
     include_package_data=True,
     description="Neu.ro SDK",

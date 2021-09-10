@@ -21,6 +21,7 @@ def test_bucket_formatter(rich_cmp: Any) -> None:
         cluster_name="cluster",
         provider=Bucket.Provider.AWS,
         created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
+        imported=False,
     )
     fmtr = BucketFormatter(str, datetime_formatter=format_datetime_human)
     rich_cmp(fmtr(bucket))
@@ -36,6 +37,7 @@ def buckets_list() -> List[Bucket]:
             cluster_name="cluster",
             created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
             provider=Bucket.Provider.AWS,
+            imported=False,
         ),
         Bucket(
             id="bucket-2",
@@ -44,6 +46,7 @@ def buckets_list() -> List[Bucket]:
             cluster_name="cluster",
             created_at=isoparse("2016-03-04T12:28:59.759433+00:00"),
             provider=Bucket.Provider.AWS,
+            imported=False,
         ),
         Bucket(
             id="bucket-3",
@@ -52,6 +55,7 @@ def buckets_list() -> List[Bucket]:
             cluster_name="cluster",
             created_at=isoparse("2018-03-04T12:28:59.759433+00:00"),
             provider=Bucket.Provider.AWS,
+            imported=False,
         ),
         Bucket(
             id="bucket-4",
@@ -60,6 +64,7 @@ def buckets_list() -> List[Bucket]:
             cluster_name="cluster",
             created_at=isoparse("2019-03-04T12:28:59.759433+00:00"),
             provider=Bucket.Provider.AWS,
+            imported=False,
         ),
     ]
 

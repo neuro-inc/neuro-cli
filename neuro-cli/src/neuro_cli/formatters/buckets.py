@@ -39,7 +39,7 @@ class BucketsFormatter(BaseBucketsFormatter):
         line = [
             bucket.id,
             bucket.name or "",
-            bucket.provider,
+            bucket.provider + (" (imported)" if bucket.imported else ""),
             self._uri_formatter(bucket.uri),
         ]
         if self._long_format:
@@ -83,4 +83,5 @@ class BucketFormatter:
             table.add_row("Name", bucket.name)
         table.add_row("Created at", self._datetime_formatter(bucket.created_at))
         table.add_row("Provider", bucket.provider)
+        table.add_row("Imported", str(bucket.imported))
         return table
