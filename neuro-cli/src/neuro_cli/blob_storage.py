@@ -41,6 +41,7 @@ from neuro_cli.formatters.utils import (
     get_datetime_formatter,
     uri_formatter,
 )
+from neuro_cli.parse_utils import parse_timedelta
 
 from .const import EX_OSFILE
 from .formatters.blob_storage import (
@@ -789,6 +790,36 @@ async def rm(
         sys.exit(EX_OSFILE)
 
 
+@command()
+@argument(
+    "path",
+    required=True,
+    type=PlatformURIType(allowed_schemes=["file", "blob"]),
+)
+@option(
+    "--expires",
+    type=str,
+    metavar="TIMEDELTA",
+    help="Duration this signature will be valid in the format '1h2m3s'",
+    show_default=True,
+    default="1h",
+)
+async def sign_url(
+    root: Root,
+    path: URL,
+    expires: str,
+) -> None:
+    """
+    Make signed url for blob in bucket.
+    """
+    expires_delta = parse_timedelta(expires)
+    signed_url = await root.client.buckets.make_signed_url(
+        path, int(expires_delta.total_seconds())
+    )
+
+    root.print(signed_url)
+
+
 # Bucket credentials commands
 
 
@@ -938,3 +969,4 @@ blob_storage.add_command(cp)
 blob_storage.add_command(ls)
 blob_storage.add_command(glob)
 blob_storage.add_command(rm)
+blob_storage.add_command(sign_url)
