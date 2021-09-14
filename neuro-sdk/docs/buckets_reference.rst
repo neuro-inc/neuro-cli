@@ -323,6 +323,17 @@ Buckets
       :raises: :exc:`IsADirectoryError` if *uri* points on a directory and *recursive*
                flag is not set.
 
+   .. comethod:: make_signed_url(uri: URL, expires_in_seconds: int = 3600) -> URL
+
+      Generate a singed url that allows temporary access to blob.
+
+      :param ~yarl.URL uri: URL that specifies bucket and blob key
+                            e.g. ``yarl.URL("blob:bucket_name/folder/file.bin")``.
+
+      :param int expires_in_seconds: Duration in seconds generated url will be valid.
+
+      :return: Signed url (:class:`yarl.URL`)
+
    .. comethod:: persistent_credentials_list(cluster_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[PersistentBucketCredentials]]
       :async-for:
 

@@ -1378,6 +1378,22 @@ class Buckets(metaclass=NoPublicConstructor):
         async with self._get_bucket_fs(bucket_name, cluster_name) as bucket_fs:
             await file_utils.rm(bucket_fs, PurePosixPath(key), recursive, progress)
 
+    async def make_signed_url(
+        self,
+        uri: URL,
+        expires_in_seconds: int = 3600,
+    ) -> URL:
+        cluster_name, bucket_name, key = self._parser.split_blob_uri(uri)
+        url = self._get_buckets_url(cluster_name) / bucket_name / "sign_blob_url"
+        auth = await self._config._api_auth()
+        data = {
+            "key": key,
+            "expires_in_sec": expires_in_seconds,
+        }
+        async with self._core.request("POST", url, auth=auth, json=data) as resp:
+            resp_data = await resp.json()
+            return URL(resp_data["url"])
+
     # Persistent bucket credentials commands
 
     def _parse_persistent_credentials_payload(
