@@ -349,7 +349,7 @@ async def statbucket(
 @argument("buckets", type=BUCKET, nargs=-1, required=True)
 async def rmbucket(root: Root, cluster: Optional[str], buckets: Sequence[str]) -> None:
     """
-    Remove bucket DISK_ID.
+    Remove bucket BUCKET_ID.
     """
     for bucket in buckets:
         bucket_id = await resolve_bucket(
@@ -358,6 +358,32 @@ async def rmbucket(root: Root, cluster: Optional[str], buckets: Sequence[str]) -
         await root.client.buckets.rm(bucket_id, cluster_name=cluster)
         if root.verbosity >= 0:
             root.print(f"Bucket with id '{bucket_id}' was successfully removed.")
+
+
+@command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Perform on a specified cluster (the current cluster by default).",
+)
+@argument("bucket", type=BUCKET, required=True)
+@argument(
+    "public_level",
+    type=click.Choice(["public", "private"], case_sensitive=False),
+    required=True,
+)
+async def set_bucket_publicity(
+    root: Root, cluster: Optional[str], bucket: str, public_level: str
+) -> None:
+    """
+    Change public access settings for bucket BUCKET.
+    """
+    public = public_level == "public"
+    await root.client.buckets.set_public_access(bucket, public, cluster_name=cluster)
+    if root.verbosity >= 0:
+        root.print(
+            f"Bucket '{bucket}' was made {'public' if public else 'non-public'}."
+        )
 
 
 # Object level commands
@@ -958,7 +984,7 @@ blob_storage.add_command(mkbucket)
 blob_storage.add_command(importbucket)
 blob_storage.add_command(statbucket)
 blob_storage.add_command(rmbucket)
-
+blob_storage.add_command(set_bucket_publicity)
 
 blob_storage.add_command(lscredentials)
 blob_storage.add_command(mkcredentials)
