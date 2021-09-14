@@ -67,6 +67,18 @@ Buckets
 
       :return: Bucket credentials info (:class:`BucketCredentials`)
 
+   .. comethod:: set_public_access(bucket_id_or_name: str, public_access: bool, cluster_name: Optional[str] = None) -> Bucket
+
+      Enable or disable public (anonymous) read access to bucket.
+
+      :param str bucket_id_or_name: bucket's id or name.
+
+      :param str public_access: New public access setting.
+
+      :param str cluster_name: cluster to look for a bucket. Default is current cluster.
+
+      :return: Bucket info (:class:`Bucket`)
+
    .. comethod:: head_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None) -> BucketEntry
 
       Look up the blob and return it's metadata.

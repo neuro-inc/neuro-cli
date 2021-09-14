@@ -377,6 +377,11 @@ async def set_bucket_publicity(
 ) -> None:
     """
     Change public access settings for bucket BUCKET.
+
+    Examples:
+
+      neuro blob set-bucket-publicity my-bucket public
+      neuro blob set-bucket-publicity my-bucket private
     """
     public = public_level == "public"
     await root.client.buckets.set_public_access(bucket, public, cluster_name=cluster)

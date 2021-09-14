@@ -43,7 +43,10 @@ class BucketsFormatter(BaseBucketsFormatter):
             self._uri_formatter(bucket.uri),
         ]
         if self._long_format:
-            line += [self._datetime_formatter(bucket.created_at)]
+            line += [
+                self._datetime_formatter(bucket.created_at),
+                "√" if bucket.public else "×",
+            ]
         return line
 
     def __call__(self, buckets: Sequence[Bucket]) -> RenderableType:
@@ -57,6 +60,7 @@ class BucketsFormatter(BaseBucketsFormatter):
         table.add_column("Uri")
         if self._long_format:
             table.add_column("Created at")
+            table.add_column("Public")
         for bucket in buckets:
             table.add_row(*self._bucket_to_table_row(bucket))
         return table
@@ -84,4 +88,5 @@ class BucketFormatter:
         table.add_row("Created at", self._datetime_formatter(bucket.created_at))
         table.add_row("Provider", bucket.provider)
         table.add_row("Imported", str(bucket.imported))
+        table.add_row("Public", str(bucket.public))
         return table
