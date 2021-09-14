@@ -3,4 +3,5 @@ Id          bucket
  Name        test-bucket                     
  Created at  Mar 04 2017                     
  Provider    aws                             
- Imported    False
+ Imported    False                           
+ Public      False
