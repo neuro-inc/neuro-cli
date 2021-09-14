@@ -199,6 +199,38 @@ async def test_get(
         )
 
 
+async def test_set_public(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_config: Cluster,
+) -> None:
+    created_at = datetime.now()
+
+    async def handler(request: web.Request) -> web.Response:
+        assert request.match_info["key"] == "name"
+        data = await request.json()
+        assert data == {"public": True}
+        return web.json_response(
+            {
+                "id": "bucket-1",
+                "owner": "user",
+                "name": "name",
+                "provider": "aws",
+                "created_at": created_at.isoformat(),
+                "public": True,
+            }
+        )
+
+    app = web.Application()
+    app.router.add_patch("/buckets/buckets/{key}", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        bucket = await client.buckets.set_public_access("name", True)
+        assert bucket.public
+
+
 async def test_rm(aiohttp_server: _TestServerFactory, make_client: _MakeClient) -> None:
     async def handler(request: web.Request) -> web.Response:
         assert request.match_info["key"] == "name"

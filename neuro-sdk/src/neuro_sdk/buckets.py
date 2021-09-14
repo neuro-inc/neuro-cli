@@ -980,6 +980,7 @@ class Bucket:
     provider: "Bucket.Provider"
     created_at: datetime
     imported: bool
+    public: bool = False
     name: Optional[str] = None
 
     @property
@@ -1024,6 +1025,7 @@ class Buckets(metaclass=NoPublicConstructor):
             created_at=isoparse(payload["created_at"]),
             provider=Bucket.Provider(payload["provider"]),
             imported=payload.get("imported", False),
+            public=payload.get("public", False),
             cluster_name=self._config.cluster_name,
         )
 
@@ -1108,6 +1110,21 @@ class Buckets(metaclass=NoPublicConstructor):
         auth = await self._config._api_auth()
         async with self._core.request("DELETE", url, auth=auth):
             pass
+
+    async def set_public_access(
+        self,
+        bucket_id_or_name: str,
+        public_access: bool,
+        cluster_name: Optional[str] = None,
+    ) -> Bucket:
+        url = self._get_buckets_url(cluster_name) / bucket_id_or_name
+        auth = await self._config._api_auth()
+        data = {
+            "public": public_access,
+        }
+        async with self._core.request("PATCH", url, auth=auth, json=data) as resp:
+            payload = await resp.json()
+            return self._parse_bucket_payload(payload)
 
     async def request_tmp_credentials(
         self, bucket_id_or_name: str, cluster_name: Optional[str] = None

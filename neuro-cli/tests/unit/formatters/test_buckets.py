@@ -65,6 +65,7 @@ def buckets_list() -> List[Bucket]:
             created_at=isoparse("2019-03-04T12:28:59.759433+00:00"),
             provider=Bucket.Provider.AWS,
             imported=False,
+            public=True,
         ),
     ]
 
