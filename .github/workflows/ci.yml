@@ -50,7 +50,7 @@ jobs:
       uses: lewagon/wait-on-check-action@v1.0.0
       with:
         ref: ${{ github.ref }}
-        check-regexp: 'pre-commit.ci.*'
+        check-regexp: 'pre-commit.ci - (pr|push)'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         wait-interval: 2
     - name: Run linters
