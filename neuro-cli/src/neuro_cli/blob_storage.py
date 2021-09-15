@@ -322,7 +322,7 @@ async def statbucket(
     root: Root, cluster: Optional[str], bucket: str, full_uri: bool
 ) -> None:
     """
-    Get bucket BUCKET_ID.
+    Get bucket BUCKET.
     """
     bucket_id = await resolve_bucket(bucket, client=root.client, cluster_name=cluster)
     bucket_obj = await root.client.buckets.get(bucket_id, cluster_name=cluster)
@@ -349,7 +349,7 @@ async def statbucket(
 @argument("buckets", type=BUCKET, nargs=-1, required=True)
 async def rmbucket(root: Root, cluster: Optional[str], buckets: Sequence[str]) -> None:
     """
-    Remove bucket BUCKET_ID.
+    Remove bucket BUCKET.
     """
     for bucket in buckets:
         bucket_id = await resolve_bucket(
@@ -871,7 +871,7 @@ def make_bucket_getter(
 )
 async def lscredentials(root: Root, cluster: Optional[str]) -> None:
     """
-    List credentials.
+    List bucket credentials.
     """
     if root.quiet:
         fmtr: BaseBucketCredentialsFormatter = SimpleBucketCredentialsFormatter()
@@ -918,7 +918,7 @@ async def mkcredentials(
     read_only: bool = False,
 ) -> None:
     """
-    Create a new bucket crednetial.
+    Create a new bucket credential.
     """
     bucket_ids = [
         await resolve_bucket(bucket, client=root.client, cluster_name=cluster)
@@ -944,7 +944,7 @@ async def statcredentials(
     root: Root, cluster: Optional[str], bucket_credential: str
 ) -> None:
     """
-    Get bucket BUCKET_ID.
+    Get bucket credential BUCKET_CREDENTIAL.
     """
     credential_id = await resolve_bucket_credential(
         bucket_credential, client=root.client, cluster_name=cluster
@@ -969,7 +969,7 @@ async def rmcredentials(
     root: Root, cluster: Optional[str], credentials: Sequence[str]
 ) -> None:
     """
-    Remove bucket DISK_ID.
+    Remove bucket credential BUCKET_CREDENTIAL.
     """
     for credential in credentials:
         credential_id = await resolve_bucket_credential(
