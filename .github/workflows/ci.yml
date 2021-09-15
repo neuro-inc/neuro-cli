@@ -47,7 +47,7 @@ jobs:
       with:
         path: requirements/ci.txt
     - name: Wait for Pre-Commit-CI
-      uses: Sibz/github-status-action
+      uses: Sibz/github-status-action@v1.0.1
       if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
       with:
         contexts: 'pre-commit.ci - pr'
