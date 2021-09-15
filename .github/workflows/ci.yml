@@ -50,7 +50,7 @@ jobs:
       uses: Sibz/github-status-action@v1.0.1
       if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
       with:
-        contexts: 'pre-commit.ci - pr'
+        context: 'pre-commit.ci - pr'
         authToken: ${{ secrets.GITHUB_TOKEN }}
     - name: Wait for Pre-Commit-CI
       uses: fountainhead/action-wait-for-check@v1.0.0
