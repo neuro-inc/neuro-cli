@@ -47,12 +47,19 @@ jobs:
       with:
         path: requirements/ci.txt
     - name: Wait for Pre-Commit-CI
-      uses: lewagon/wait-on-check-action@v1.0.0
+      uses: fountainhead/action-wait-for-check@v1.0.0
+      if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
       with:
         ref: ${{ github.ref }}
-        check-regexp: 'pre-commit.ci - (pr|push)'
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        wait-interval: 10
+        checkName: 'pre-commit.ci - pr'
+        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Wait for Pre-Commit-CI
+      uses: fountainhead/action-wait-for-check@v1.0.0
+      if: github.event_name == 'push_request'
+      with:
+        ref: ${{ github.ref }}
+        checkName: 'pre-commit.ci - push'
+        token: ${{ secrets.GITHUB_TOKEN }}
     - name: Run linters
       run: |
         make lint
