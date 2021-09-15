@@ -47,12 +47,12 @@ jobs:
       with:
         path: requirements/ci.txt
     - name: Wait for Pre-Commit-CI
-      uses: fountainhead/action-wait-for-check@v1.0.0
+      uses: lewagon/wait-on-check-action@v1.0.0
       if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
       with:
         ref: ${{ github.event.pull_request.head.sha || github.sha}}
-        checkName: 'pre-commit.ci - pr'
-        token: ${{ secrets.GITHUB_TOKEN }}
+        check-name: 'pre-commit.ci - pr'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
     - name: Wait for Pre-Commit-CI
       uses: fountainhead/action-wait-for-check@v1.0.0
       if: github.event_name == 'push_request'
