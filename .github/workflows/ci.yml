@@ -47,11 +47,12 @@ jobs:
       with:
         path: requirements/ci.txt
     - name: Wait for Pre-Commit-CI
-      uses: Sibz/github-status-action@v1.0.1
+      uses: fountainhead/action-wait-for-check@v1.0.0
       if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
       with:
-        context: 'pre-commit.ci - pr'
-        authToken: ${{ secrets.GITHUB_TOKEN }}
+        ref: ${{ github.sha }}
+        checkName: 'pre-commit.ci - pr'
+        token: ${{ secrets.GITHUB_TOKEN }}
     - name: Wait for Pre-Commit-CI
       uses: fountainhead/action-wait-for-check@v1.0.0
       if: github.event_name == 'push_request'
