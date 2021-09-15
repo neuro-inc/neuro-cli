@@ -52,7 +52,7 @@ jobs:
         ref: ${{ github.ref }}
         check-regexp: 'pre-commit.ci - (pr|push)'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
-        wait-interval: 2
+        wait-interval: 10
     - name: Run linters
       run: |
         make lint
