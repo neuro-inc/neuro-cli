@@ -17,7 +17,7 @@ jobs:
     if: ${{ github.actor == 'dependabot[bot]' && startsWith("pull_request", github.event.workflow_run.event) }}
     steps:
       - name: Check statuses
-        if ${{ github.event.workflow.conclusion != 'success' }}
+        if: ${{ github.event.workflow.conclusion != 'success' }}
         run: |
           gh pr merge --disable-auto "$PR_NUMBER"
         env:
