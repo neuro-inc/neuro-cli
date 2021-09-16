@@ -14,10 +14,11 @@ jobs:
   dependabot:
     runs-on: ubuntu-latest
     # pull_request or pull_request_target initiated by dependabot
-    if: ${{ github.actor == 'dependabot[bot]' && startsWith("pull_request", github.event.workflow_run.event) }}
+    if: ${{ github.actor == 'dependabot[bot]' &&
+            startsWith(github.event.workflow_run.event, 'pull_request') }}
     steps:
       - name: Check statuses
-        if ${{ github.event.workflow.conclusion != 'success' }}
+        if: ${{ github.event.workflow.conclusion != 'success' }}
         run: |
           gh pr merge --disable-auto "$PR_NUMBER"
         env:
