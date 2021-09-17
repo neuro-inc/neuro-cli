@@ -67,3 +67,17 @@ repos:
   hooks:
   - id: flake8
     exclude: "^neuro-sdk/docs/"
+- repo: https://github.com/rhysd/actionlint
+  rev: v1.6.3
+  hooks:
+  - id: actionlint-docker
+    args:
+    - -ignore
+    - 'SC2155:'
+    - -ignore
+    - 'SC2086:'
+    - -ignore
+    - 'SC1004:'
+ci:
+  skip:
+  - actionlint-docker
