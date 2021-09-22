@@ -24,7 +24,7 @@ jobs:
       - name: Check statuses
         if: ${{ github.event.workflow.conclusion != 'success' }}
         run: |
-          gh pr merge --disable-auto "$PR_NUMBER"
+          gh pr merge --squash --disable-auto "$PR_NUMBER"
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
           PR_NUMBER: ${{ github.event.workflow.pull_requests[0].number }}
