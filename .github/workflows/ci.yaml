@@ -176,21 +176,12 @@ jobs:
     needs: [unit, e2e]
     runs-on: ubuntu-latest
     steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v2
+    - name: Checkout
+      uses: actions/checkout@v2
       with:
-        name: coverage
-        path: coverage
-    - name: Collect names
-      id: meta
-      run: |
-        FILES=$(find commands -type f -print0 | tr '\0' ' ')
-        echo "::set-output name=files::${FILES# // /,}"
+        ref: ${{ github.sha }}
     - name: Upload coverage
-      uses: codecov/codecov-action@v2.1.0
-      with:
-        files: ${{ steps.meta.outputs.files }}
-        fail_ci_if_error: false
+      uses: neuro-inc/upload-coverage@v21.9
 
   deploy:
     name: Deploy
