@@ -108,12 +108,21 @@ jobs:
         COLOR: yes
       run: |
         make .test-${{ matrix.cmd }} PYTEST_ARGS=-vvv
-    - name: Upload coverage
-      uses: codecov/codecov-action@v2.1.0
+    - name: Augment coverage
+      id: cov
+      run: |
+        TARGET="./coverage-unit-${SUFFIX}.xml"
+        mv ./coverage.xml "${TARGET}"
+        echo "::set-output name=file::${TARGET}"
+      env:
+        SUFFIX: ${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.cmd }}
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@2.2.4
       with:
-        file: ./coverage.xml
-        flags: ${{ matrix.cmd }}
-        fail_ci_if_error: false
+        name: coverage
+        path: ${{ steps.cov.outputs.file }}
+        if-no-files-found: error
+        retention-days: 1
 
   e2e:
     name: E2E
@@ -168,11 +177,41 @@ jobs:
         COLOR: yes
       run: |
         make .e2e
+    - name: Augment coverage
+      id: cov
+      run: |
+        TARGET="./coverage-e2e-${SUFFIX}.xml"
+        mv ./coverage.xml "${TARGET}"
+        echo "::set-output name=file::${TARGET}"
+      env:
+        SUFFIX: ${{ matrix.python-version }}-${{ matrix.os }}
+    - name: Upload coverage artifact
+      uses: actions/upload-artifact@2.2.4
+      with:
+        name: coverage
+        path: ${{ steps.cov.outputs.file }}
+        if-no-files-found: error
+        retention-days: 1
+
+  upload-cov:
+    name: Upload coverage
+    needs: [unit, e2e]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: coverage
+        path: coverage
+    - name: Collect names
+      id: meta
+      run: |
+        FILES=$(find commands -type f -print0 | tr '\0' ' ')
+        echo "::set-output name=files::${FILES# // /,}"
     - name: Upload coverage
       uses: codecov/codecov-action@v2.1.0
       with:
-        file: ./coverage.xml
-        flags: e2e
+        files: ${{ steps.meta.outputs.files }}
         fail_ci_if_error: false
 
   deploy:
