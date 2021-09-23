@@ -455,14 +455,16 @@ async def _process_stdin_tty(stream: StdStream, helper: AttachHelper) -> None:
                 if inp.closed:
                     return
                 keys = inp.read_keys()  # + inp.flush_keys()
-                if _has_detach(prev + keys, term):
+                prev.extend(keys)
+                if _has_detach(prev, term):
                     helper.action = InterruptAction.DETACH
-                if len(keys) > len(term):
-                    prev = keys
-                else:
-                    prev.extend(keys)
+                if len(prev) >= len(term):
+                    oldest_key = len(prev) - len(term) + 1
+                    prev = prev[oldest_key:]
                 buf = b"".join(key.data.encode("utf8") for key in keys)
                 await stream.write_in(buf)
+                if helper.action == InterruptAction.DETACH:
+                    return
 
 
 async def _process_stdout_tty(
