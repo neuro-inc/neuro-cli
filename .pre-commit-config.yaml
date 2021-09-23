@@ -81,7 +81,6 @@ repos:
 - repo: https://github.com/sirosen/check-jsonschema
   rev: 0.4.1
   hooks:
-  - id: check-github-workflows
   - id: check-github-actions
 ci:
   skip:
