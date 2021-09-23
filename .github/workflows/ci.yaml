@@ -108,12 +108,10 @@ jobs:
         COLOR: yes
       run: |
         make .test-${{ matrix.cmd }} PYTEST_ARGS=-vvv
-    - name: Upload coverage
-      uses: codecov/codecov-action@v2.1.0
+    - name: Upload coverage artifact
+      uses: neuro-inc/prepare-coverage@v21.9.1
       with:
-        file: ./coverage.xml
-        flags: ${{ matrix.cmd }}
-        fail_ci_if_error: false
+        key: unit-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.cmd }}
 
   e2e:
     name: E2E
@@ -168,12 +166,22 @@ jobs:
         COLOR: yes
       run: |
         make .e2e
-    - name: Upload coverage
-      uses: codecov/codecov-action@v2.1.0
+    - name: Upload coverage artifact
+      uses: neuro-inc/prepare-coverage@v21.9.1
       with:
-        file: ./coverage.xml
-        flags: e2e
-        fail_ci_if_error: false
+        key: e2e-${{ matrix.python-version }}-${{ matrix.os }}
+
+  upload-cov:
+    name: Upload coverage
+    needs: [unit, e2e]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+      with:
+        ref: ${{ github.sha }}
+    - name: Upload coverage
+      uses: neuro-inc/upload-coverage@v21.9.4
 
   deploy:
     name: Deploy
