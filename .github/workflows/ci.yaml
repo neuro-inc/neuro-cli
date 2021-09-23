@@ -181,7 +181,7 @@ jobs:
       with:
         ref: ${{ github.sha }}
     - name: Upload coverage
-      uses: neuro-inc/upload-coverage@v21.9.3
+      uses: neuro-inc/upload-coverage@v21.9.4
 
   deploy:
     name: Deploy
