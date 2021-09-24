@@ -5,6 +5,24 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.9.3a1 (2021-09-24)
+===================================
+
+Features
+--------
+
+- Added support of blob storage for azure clusters. ([#2284](https://github.com/neuro-inc/platform-client-python/issues/2284))
+- Added support of blob storage for gcp clusters. ([#2293](https://github.com/neuro-inc/platform-client-python/issues/2293))
+- Added `--read-only` flag to `neuro blob mkcredentials` to allow creation of read-only credentials. ([#2295](https://github.com/neuro-inc/platform-client-python/issues/2295))
+- Added `neuro blob importbucket` command to import external bucket. External buckets support
+  the same operations (`neuro blob ls/cp/rm/glob`), but it is impossible to generate persistent credentials
+  for them using "neuro blob mkcredentials". ([#2297](https://github.com/neuro-inc/platform-client-python/issues/2297))
+- Added `neuro blob sign-url <blob-uri>` command for generation of urls that grant temporal access to blob. ([#2299](https://github.com/neuro-inc/platform-client-python/issues/2299))
+- Added command `neuro blob set-bucket-publicity <bucket> <"public"|"private">` to make bucket accessible for unauthorized
+  users. ([#2306](https://github.com/neuro-inc/platform-client-python/issues/2306))
+- Undeprecate `neuro job save` command, we decided to support this functionality in future. ([#2336](https://github.com/neuro-inc/platform-client-python/issues/2336))
+
+
 Neuro SDK/CLI 21.9.2 (2021-09-02)
 =================================
 
