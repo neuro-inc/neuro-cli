@@ -85,3 +85,4 @@ repos:
 ci:
   skip:
   - actionlint-docker
+  - check-github-actions
