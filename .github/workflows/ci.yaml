@@ -11,6 +11,9 @@ on:
   schedule:
   - cron: 0 6 * * *       # Daily 6AM UTC build
 
+concurrency:
+  group: ci-${{ github.head_ref }}
+  cancel-in-progress: true
 
 jobs:
 
@@ -235,7 +238,7 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         pypi_token: ""
         artifact: ""
-        version_file: neuro-sdk/neuro_sdk/__init__.py   # CLI has the same version
+        version_file: neuro-sdk/src/neuro_sdk/__init__.py   # CLI has the same version
         start_line: "[comment]: # (towncrier release notes start)"
         head_line: "Neuro SDK/CLI {version}\\s+\\({date}\\)\n====+\n?"
         fix_issue_regex: "([#(\\d+)](https://github.com/neuro-inc/platform-client-python/issues/\\1))"
