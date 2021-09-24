@@ -760,6 +760,7 @@ async def top(
         await asyncio.gather(create_pollers(), renderer())
 
 
+@command()
 @argument("job", type=JOB)
 @argument("image", type=RemoteImageType())
 async def save(root: Root, job: str, image: RemoteImage) -> None:
