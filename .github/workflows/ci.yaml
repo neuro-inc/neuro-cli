@@ -211,20 +211,20 @@ jobs:
       run: |
         cd neuro-cli
         python setup.py sdist bdist_wheel
-    - name: PyPI upload SDK
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_SDK }}
-        TWINE_NON_INTERACTIVE: 1
-      run: |
-        twine upload neuro-sdk/dist/*
-    - name: PyPI upload CLI
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_CLI }}
-        TWINE_NON_INTERACTIVE: 1
-      run: |
-        twine upload neuro-cli/dist/*
+    # - name: PyPI upload SDK
+    #   env:
+    #     TWINE_USERNAME: __token__
+    #     TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_SDK }}
+    #     TWINE_NON_INTERACTIVE: 1
+    #   run: |
+    #     twine upload neuro-sdk/dist/*
+    # - name: PyPI upload CLI
+    #   env:
+    #     TWINE_USERNAME: __token__
+    #     TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_CLI }}
+    #     TWINE_NON_INTERACTIVE: 1
+    #   run: |
+    #     twine upload neuro-cli/dist/*
     - name: Merge dists for GitHub Release
       run: |
         mkdir dist
