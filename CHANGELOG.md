@@ -5,7 +5,7 @@
 
 [comment]: # (towncrier release notes start)
 
-Neuro SDK/CLI 21.9.3a2 (2021-09-24)
+Neuro SDK/CLI 21.9.3 (2021-09-24)
 ===================================
 
 Features
