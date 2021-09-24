@@ -17,178 +17,178 @@ concurrency:
 
 jobs:
 
-  lint:
-    name: Linter
-    runs-on: ubuntu-latest
-    if: |
-      (github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]') ||
-      (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]')
-    timeout-minutes: 5
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        ref: ${{ github.event.pull_request.head.sha }}
-    - name: Setup Python 3.9
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.9
-    - name: Cache pre-commit hooks
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pre-commit
-        key: pre-commit|py3.9|${{ hashFiles('.pre-commit-config.yaml') }}
-    - name: Cache PyPI
-      uses: actions/cache@v2
-      with:
-        key: pip-lint-${{ hashFiles('requirements/*.txt') }}
-        path: ~/.cache/pip
-        restore-keys: |
-          pip-lint-
-    - name: Install dependencies
-      uses: py-actions/py-dependency-install@v2
-      with:
-        path: requirements/ci.txt
-    - name: Run linters
-      run: |
-        make lint
-      env:
-        CI_LINT_RUN: 1
-    - name: Install spell checker
-      run: |
-        sudo apt install libenchant-dev
-        pip install -r requirements/doc.txt
-    - name: Run docs spelling
-      run: |
-        make api-doc-spelling
+  # lint:
+  #   name: Linter
+  #   runs-on: ubuntu-latest
+  #   if: |
+  #     (github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]') ||
+  #     (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]')
+  #   timeout-minutes: 5
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@v2
+  #     with:
+  #       ref: ${{ github.event.pull_request.head.sha }}
+  #   - name: Setup Python 3.9
+  #     uses: actions/setup-python@v2
+  #     with:
+  #       python-version: 3.9
+  #   - name: Cache pre-commit hooks
+  #     uses: actions/cache@v2
+  #     with:
+  #       path: ~/.cache/pre-commit
+  #       key: pre-commit|py3.9|${{ hashFiles('.pre-commit-config.yaml') }}
+  #   - name: Cache PyPI
+  #     uses: actions/cache@v2
+  #     with:
+  #       key: pip-lint-${{ hashFiles('requirements/*.txt') }}
+  #       path: ~/.cache/pip
+  #       restore-keys: |
+  #         pip-lint-
+  #   - name: Install dependencies
+  #     uses: py-actions/py-dependency-install@v2
+  #     with:
+  #       path: requirements/ci.txt
+  #   - name: Run linters
+  #     run: |
+  #       make lint
+  #     env:
+  #       CI_LINT_RUN: 1
+  #   - name: Install spell checker
+  #     run: |
+  #       sudo apt install libenchant-dev
+  #       pip install -r requirements/doc.txt
+  #   - name: Run docs spelling
+  #     run: |
+  #       make api-doc-spelling
 
-  unit:
-    name: Unit
-    needs: lint
-    strategy:
-      matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
-        os: [ubuntu, macos, windows]
-        cmd: [sdk, cli]
-        exclude:
-        - os: macos  # temporarily exclude
-        - python-version: 3.7
-          os: macos
-        - python-version: 3.7
-          os: windows
-        - python-version: 3.8
-          os: macos
-        - python-version: 3.8
-          os: windows
-      fail-fast: false
-    runs-on: ${{ matrix.os }}-latest
-    timeout-minutes: 15
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Setup Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"    # - name: Cache
-    - name: Cache PyPI
-      uses: actions/cache@v2
-      with:
-        key: pip-ci-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt')
-          }}
-        path: ${{ steps.pip-cache.outputs.dir }}
-        restore-keys: |
-          pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
-    - name: Install dependencies
-      uses: py-actions/py-dependency-install@v2
-      with:
-        path: requirements/ci.txt
-    - name: Run unittests
-      env:
-        COLOR: yes
-      run: |
-        make .test-${{ matrix.cmd }} PYTEST_ARGS=-vvv
-    - name: Upload coverage artifact
-      uses: neuro-inc/prepare-coverage@v21.9.1
-      with:
-        key: unit-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.cmd }}
+  # unit:
+  #   name: Unit
+  #   needs: lint
+  #   strategy:
+  #     matrix:
+  #       python-version: [3.6, 3.7, 3.8, 3.9]
+  #       os: [ubuntu, macos, windows]
+  #       cmd: [sdk, cli]
+  #       exclude:
+  #       - os: macos  # temporarily exclude
+  #       - python-version: 3.7
+  #         os: macos
+  #       - python-version: 3.7
+  #         os: windows
+  #       - python-version: 3.8
+  #         os: macos
+  #       - python-version: 3.8
+  #         os: windows
+  #     fail-fast: false
+  #   runs-on: ${{ matrix.os }}-latest
+  #   timeout-minutes: 15
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@v2
+  #   - name: Setup Python ${{ matrix.python-version }}
+  #     uses: actions/setup-python@v2
+  #     with:
+  #       python-version: ${{ matrix.python-version }}
+  #   - name: Get pip cache dir
+  #     id: pip-cache
+  #     run: |
+  #       echo "::set-output name=dir::$(pip cache dir)"    # - name: Cache
+  #   - name: Cache PyPI
+  #     uses: actions/cache@v2
+  #     with:
+  #       key: pip-ci-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt')
+  #         }}
+  #       path: ${{ steps.pip-cache.outputs.dir }}
+  #       restore-keys: |
+  #         pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
+  #   - name: Install dependencies
+  #     uses: py-actions/py-dependency-install@v2
+  #     with:
+  #       path: requirements/ci.txt
+  #   - name: Run unittests
+  #     env:
+  #       COLOR: yes
+  #     run: |
+  #       make .test-${{ matrix.cmd }} PYTEST_ARGS=-vvv
+  #   - name: Upload coverage artifact
+  #     uses: neuro-inc/prepare-coverage@v21.9.1
+  #     with:
+  #       key: unit-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.cmd }}
 
-  e2e:
-    name: E2E
-    needs: unit
-    strategy:
-      matrix:
-        python-version: [3.6, 3.7, 3.8, 3.9]
-        os: [ubuntu, macos, windows]
-        exclude:
-        - os: macos  # temporarily exclude
-        - python-version: 3.7
-          os: macos
-        - python-version: 3.7
-          os: windows
-        - python-version: 3.8
-          os: macos
-        - python-version: 3.8
-          os: windows
-      fail-fast: false
-    runs-on: ${{ matrix.os }}-latest
-    timeout-minutes: 90
-    continue-on-error: true
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-    - name: Setup Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Get pip cache dir
-      id: pip-cache
-      run: |
-        echo "::set-output name=dir::$(pip cache dir)"    # - name: Cache
-    - name: Cache PyPI
-      uses: actions/cache@v2
-      with:
-        key: pip-ci-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt')
-          }}
-        path: ${{ steps.pip-cache.outputs.dir }}
-        restore-keys: |
-          pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
-    - name: Install dependencies
-      uses: py-actions/py-dependency-install@v2
-      with:
-        path: requirements/ci.txt
-    - name: Run E2E tests
-      timeout-minutes: 75
-      env:
-        E2E_TOKEN: ${{ secrets.E2E_TOKEN }}
-        E2E_USER_TOKEN: ${{ secrets.E2E_USER_TOKEN }}
-        PYTEST_XDIST_NUM_THREADS: 16
-        COLOR: yes
-      run: |
-        make .e2e
-    - name: Upload coverage artifact
-      uses: neuro-inc/prepare-coverage@v21.9.1
-      with:
-        key: e2e-${{ matrix.python-version }}-${{ matrix.os }}
+  # e2e:
+  #   name: E2E
+  #   needs: unit
+  #   strategy:
+  #     matrix:
+  #       python-version: [3.6, 3.7, 3.8, 3.9]
+  #       os: [ubuntu, macos, windows]
+  #       exclude:
+  #       - os: macos  # temporarily exclude
+  #       - python-version: 3.7
+  #         os: macos
+  #       - python-version: 3.7
+  #         os: windows
+  #       - python-version: 3.8
+  #         os: macos
+  #       - python-version: 3.8
+  #         os: windows
+  #     fail-fast: false
+  #   runs-on: ${{ matrix.os }}-latest
+  #   timeout-minutes: 90
+  #   continue-on-error: true
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@v2
+  #   - name: Setup Python ${{ matrix.python-version }}
+  #     uses: actions/setup-python@v2
+  #     with:
+  #       python-version: ${{ matrix.python-version }}
+  #   - name: Get pip cache dir
+  #     id: pip-cache
+  #     run: |
+  #       echo "::set-output name=dir::$(pip cache dir)"    # - name: Cache
+  #   - name: Cache PyPI
+  #     uses: actions/cache@v2
+  #     with:
+  #       key: pip-ci-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('requirements/*.txt')
+  #         }}
+  #       path: ${{ steps.pip-cache.outputs.dir }}
+  #       restore-keys: |
+  #         pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
+  #   - name: Install dependencies
+  #     uses: py-actions/py-dependency-install@v2
+  #     with:
+  #       path: requirements/ci.txt
+  #   - name: Run E2E tests
+  #     timeout-minutes: 75
+  #     env:
+  #       E2E_TOKEN: ${{ secrets.E2E_TOKEN }}
+  #       E2E_USER_TOKEN: ${{ secrets.E2E_USER_TOKEN }}
+  #       PYTEST_XDIST_NUM_THREADS: 16
+  #       COLOR: yes
+  #     run: |
+  #       make .e2e
+  #   - name: Upload coverage artifact
+  #     uses: neuro-inc/prepare-coverage@v21.9.1
+  #     with:
+  #       key: e2e-${{ matrix.python-version }}-${{ matrix.os }}
 
-  upload-cov:
-    name: Upload coverage
-    needs: [unit, e2e]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v2
-      with:
-        ref: ${{ github.sha }}
-    - name: Upload coverage
-      uses: neuro-inc/upload-coverage@v21.9.4
+  # upload-cov:
+  #   name: Upload coverage
+  #   needs: [unit, e2e]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@v2
+  #     with:
+  #       ref: ${{ github.sha }}
+  #   - name: Upload coverage
+  #     uses: neuro-inc/upload-coverage@v21.9.4
 
   deploy:
     name: Deploy
-    needs: e2e
+    # needs: e2e
     runs-on: ubuntu-latest
     # Run only on pushing a tag
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
@@ -241,5 +241,5 @@ jobs:
         version_file: neuro-sdk/src/neuro_sdk/__init__.py   # CLI has the same version
         start_line: "[comment]: # (towncrier release notes start)"
         head_line: "Neuro SDK/CLI {version}\\s+\\({date}\\)\n====+\n?"
-        fix_issue_regex: "([#(\\d+)](https://github.com/neuro-inc/platform-client-python/issues/\\1))"
+        fix_issue_regex: "\\(\\[#(\\d+)\\]\\(https://github.com/neuro-inc/platform-client-python/issues/\\1\\)\\)"
         fix_issue_repl: "(#\\1)"
