@@ -7,7 +7,7 @@ from rich.console import Console
 
 class ConsoleHandler(logging.Handler):
     def __init__(self, color: bool, show_traceback: bool = False) -> None:
-        logging.Handler.__init__(self)
+        super().__init__()
         self.console = Console(
             file=sys.stderr,
             color_system="auto" if color else None,
