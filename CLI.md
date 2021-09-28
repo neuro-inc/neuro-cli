@@ -26,6 +26,7 @@
 		* [neuro job logs](#neuro-job-logs)
 		* [neuro job kill](#neuro-job-kill)
 		* [neuro job top](#neuro-job-top)
+		* [neuro job save](#neuro-job-save)
 		* [neuro job browse](#neuro-job-browse)
 		* [neuro job attach](#neuro-job-attach)
 		* [neuro job bump-life-span](#neuro-job-bump-life-span)
@@ -72,8 +73,10 @@
 	* [neuro blob](#neuro-blob)
 		* [neuro blob lsbucket](#neuro-blob-lsbucket)
 		* [neuro blob mkbucket](#neuro-blob-mkbucket)
+		* [neuro blob importbucket](#neuro-blob-importbucket)
 		* [neuro blob statbucket](#neuro-blob-statbucket)
 		* [neuro blob rmbucket](#neuro-blob-rmbucket)
+		* [neuro blob set-bucket-publicity](#neuro-blob-set-bucket-publicity)
 		* [neuro blob lscredentials](#neuro-blob-lscredentials)
 		* [neuro blob mkcredentials](#neuro-blob-mkcredentials)
 		* [neuro blob statcredentials](#neuro-blob-statcredentials)
@@ -82,6 +85,7 @@
 		* [neuro blob ls](#neuro-blob-ls)
 		* [neuro blob glob](#neuro-blob-glob)
 		* [neuro blob rm](#neuro-blob-rm)
+		* [neuro blob sign-url](#neuro-blob-sign-url)
 	* [neuro secret](#neuro-secret)
 		* [neuro secret ls](#neuro-secret-ls)
 		* [neuro secret add](#neuro-secret-add)
@@ -106,6 +110,7 @@
 	* [neuro logs](#neuro-logs)
 	* [neuro kill](#neuro-kill)
 	* [neuro top](#neuro-top)
+	* [neuro save](#neuro-save)
 	* [neuro login](#neuro-login)
 	* [neuro logout](#neuro-logout)
 	* [neuro cp](#neuro-cp)
@@ -177,6 +182,7 @@ Name | Description|
 | _[neuro logs](#neuro-logs)_| Print the logs for a job |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
+| _[neuro save](#neuro-save)_| Save job's state to an image |
 | _[neuro login](#neuro-login)_| Log into Neuro Platform |
 | _[neuro logout](#neuro-logout)_| Log out |
 | _[neuro cp](#neuro-cp)_| Copy files and directories |
@@ -530,6 +536,7 @@ Name | Description|
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a job |
 | _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
+| _[neuro job save](#neuro-job-save)_| Save job's state to an image |
 | _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
 | _[neuro job attach](#neuro-job-attach)_| Attach local standard input, output, and error streams to a running job |
 | _[neuro job bump\-life-span](#neuro-job-bump-life-span)_| Increase job life span |
@@ -840,6 +847,35 @@ Name | Description|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0.0]|
 |_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
+
+
+
+
+### neuro job save
+
+Save job's state to an image.<br/>
+
+**Usage:**
+
+```bash
+neuro job save [OPTIONS] JOB IMAGE
+```
+
+**Examples:**
+
+```bash
+
+neuro job save job-id image:ubuntu-patched
+neuro job save my-favourite-job image:ubuntu-patched:v1
+neuro job save my-favourite-job image://bob/ubuntu-patched
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
 
 
 
@@ -1974,16 +2010,19 @@ Name | Description|
 |---|---|
 | _[neuro blob lsbucket](#neuro-blob-lsbucket)_| List buckets |
 | _[neuro blob mkbucket](#neuro-blob-mkbucket)_| Create a new bucket |
-| _[neuro blob statbucket](#neuro-blob-statbucket)_| Get bucket BUCKET_ID |
-| _[neuro blob rmbucket](#neuro-blob-rmbucket)_| Remove bucket DISK_ID |
-| _[neuro blob lscredentials](#neuro-blob-lscredentials)_| List credentials |
-| _[neuro blob mkcredentials](#neuro-blob-mkcredentials)_| Create a new bucket crednetial |
-| _[neuro blob statcredentials](#neuro-blob-statcredentials)_| Get bucket BUCKET_ID |
-| _[neuro blob rmcredentials](#neuro-blob-rmcredentials)_| Remove bucket DISK_ID |
+| _[neuro blob importbucket](#neuro-blob-importbucket)_| Import an existing bucket |
+| _[neuro blob statbucket](#neuro-blob-statbucket)_| Get bucket BUCKET |
+| _[neuro blob rmbucket](#neuro-blob-rmbucket)_| Remove bucket BUCKET |
+| _[neuro blob set\-bucket-publicity](#neuro-blob-set-bucket-publicity)_| Change public access settings for bucket BUCKET |
+| _[neuro blob lscredentials](#neuro-blob-lscredentials)_| List bucket credentials |
+| _[neuro blob mkcredentials](#neuro-blob-mkcredentials)_| Create a new bucket credential |
+| _[neuro blob statcredentials](#neuro-blob-statcredentials)_| Get bucket credential BUCKET_CREDENTIAL |
+| _[neuro blob rmcredentials](#neuro-blob-rmcredentials)_| Remove bucket credential BUCKET_CREDENTIAL |
 | _[neuro blob cp](#neuro-blob-cp)_| Simple utility to copy files and directories into and from Blob Storage |
 | _[neuro blob ls](#neuro-blob-ls)_| List buckets or bucket contents |
 | _[neuro blob glob](#neuro-blob-glob)_| List resources that match PATTERNS |
 | _[neuro blob rm](#neuro-blob-rm)_| Remove blobs from bucket |
+| _[neuro blob sign-url](#neuro-blob-sign-url)_| Make signed url for blob in bucket |
 
 
 
@@ -2031,9 +2070,40 @@ Name | Description|
 
 
 
+### neuro blob importbucket
+
+Import an existing bucket.
+
+**Usage:**
+
+```bash
+neuro blob importbucket [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\--aws-access-key-id AWS\_ACCESS_KEY_ID_|AWS access\_key_id to use to access the bucket.  Required when PROVIDER is 'aws'|
+|_\--aws-endpoint-url AWS_ENDPOINT_|AWS endpoint to use to access the bucket. Usually you need to set this if you use non-AWS S3 compatible provider|
+|_\--aws-region-name AWS_REGION_|AWS region to use to access the bucket.|
+|_\--aws-secret-access-key AWS\_SECRET_ACCESS_KEY_|AWS secret\_access_key to use to access the bucket. Required when PROVIDER is 'aws'|
+|_\--azure-storage-account-url AZURE\_STORAGE_ACCOUNT_URL_|Azure account url. Usually it has following format: https://<account_id>.blob.core.windows.net Required when PROVIDER is 'azure'|
+|_\--azure-storage-credential AZURE\_STORAGE_CREDENTIAL_|Azure storage credential that grants access to imported bucket. Either this or AZURE_SAS is required when PROVIDER is 'azure'|
+|_\--azure-storage-sas-token AZURE_SAS_|Azure shared access signature token that grants access to imported bucket. Either this or AZURE\_STORAGE_CREDENTIAL is required when PROVIDER is 'azure'|
+|_--cluster CLUSTER_|Perform in a specified cluster \(the current cluster by default).|
+|_\--gcp-sa-credential GCP\_SA_CREDNETIAL_|GCP service account credential in form of base64 encoded json string that grants access to imported bucket. Required when PROVIDER is 'gcp'|
+|_--name NAME_|Optional bucket name|
+|_--provider PROVIDER_|Bucket provider that hosts bucket  \[required]|
+|_\--provider-bucket-name EXTERNAL_NAME_|Name of bucket \(or container in case of Azure) inside the provider  \[required]|
+
+
+
+
 ### neuro blob statbucket
 
-Get bucket BUCKET_ID.
+Get bucket BUCKET.
 
 **Usage:**
 
@@ -2054,7 +2124,7 @@ Name | Description|
 
 ### neuro blob rmbucket
 
-Remove bucket DISK_ID.
+Remove bucket BUCKET.
 
 **Usage:**
 
@@ -2072,9 +2142,38 @@ Name | Description|
 
 
 
+### neuro blob set-bucket-publicity
+
+Change public access settings for bucket BUCKET.<br/>
+
+**Usage:**
+
+```bash
+neuro blob set-bucket-publicity [OPTIONS] BUCKET {public|private}
+```
+
+**Examples:**
+
+```bash
+
+neuro blob set-bucket-publicity my-bucket public
+neuro blob set-bucket-publicity my-bucket private
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Perform on a specified cluster \(the current cluster by default).|
+
+
+
+
 ### neuro blob lscredentials
 
-List credentials.
+List bucket credentials.
 
 **Usage:**
 
@@ -2094,7 +2193,7 @@ Name | Description|
 
 ### neuro blob mkcredentials
 
-Create a new bucket crednetial.
+Create a new bucket credential.
 
 **Usage:**
 
@@ -2109,13 +2208,14 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_--cluster CLUSTER_|Perform in a specified cluster \(the current cluster by default).|
 |_--name NAME_|Optional bucket credential name|
+|_\--read-only_|Make read-only credential|
 
 
 
 
 ### neuro blob statcredentials
 
-Get bucket BUCKET_ID.
+Get bucket credential BUCKET_CREDENTIAL.
 
 **Usage:**
 
@@ -2135,7 +2235,7 @@ Name | Description|
 
 ### neuro blob rmcredentials
 
-Remove bucket DISK_ID.
+Remove bucket credential BUCKET_CREDENTIAL.
 
 **Usage:**
 
@@ -2243,6 +2343,26 @@ Name | Description|
 |_\--glob / --no-glob_|Expand glob patterns in PATHS  \[default: glob]|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
 |_\-r, --recursive_|remove directories and their contents recursively|
+
+
+
+
+### neuro blob sign-url
+
+Make signed url for blob in bucket.
+
+**Usage:**
+
+```bash
+neuro blob sign-url [OPTIONS] PATH
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--expires TIMEDELTA_|Duration this signature will be valid in the format '1h2m3s'  \[default: 1h]|
 
 
 
@@ -2889,6 +3009,35 @@ Name | Description|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0.0]|
 |_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
+
+
+
+
+## neuro save
+
+Save job's state to an image.<br/>
+
+**Usage:**
+
+```bash
+neuro save [OPTIONS] JOB IMAGE
+```
+
+**Examples:**
+
+```bash
+
+neuro job save job-id image:ubuntu-patched
+neuro job save my-favourite-job image:ubuntu-patched:v1
+neuro job save my-favourite-job image://bob/ubuntu-patched
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
 
 
 
