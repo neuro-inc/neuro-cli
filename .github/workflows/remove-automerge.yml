@@ -1,4 +1,4 @@
-name: Unmerge on error
+name: Disable auto-merge
 on:
   workflow_run:
     workflows:
@@ -14,9 +14,8 @@ jobs:
   dependabot:
     runs-on: ubuntu-latest
     # pull_request or pull_request_target initiated by dependabot
-    if: ${{ (github.actor == 'dependabot[bot]' ||
-             github.actor == 'neu-ro-github-bot') &&
-            startsWith(github.event.workflow_run.event, 'pull_request') }}
+    if: ${{ startsWith(github.event.workflow_run.event, 'pull_request') &&
+            github.event.workflow.pull_requests[0].auto_merge != null }}
     steps:
       - name: PR number
         run: echo "$PR_NUMBER"
@@ -25,7 +24,7 @@ jobs:
       - name: Check statuses
         if: ${{ github.event.workflow.conclusion != 'success' }}
         run: |
-          gh pr merge --squash --disable-auto "$PR_NUMBER"
+          gh pr merge --disable-auto "$PR_NUMBER"
         env:
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
           PR_NUMBER: ${{ github.event.workflow.pull_requests[0].number }}
