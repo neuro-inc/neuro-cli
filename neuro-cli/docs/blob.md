@@ -15,16 +15,19 @@ Blob storage operations.
 | :--- | :--- |
 | [_lsbucket_](blob.md#lsbucket) | List buckets |
 | [_mkbucket_](blob.md#mkbucket) | Create a new bucket |
-| [_statbucket_](blob.md#statbucket) | Get bucket BUCKET\_ID |
-| [_rmbucket_](blob.md#rmbucket) | Remove bucket DISK\_ID |
-| [_lscredentials_](blob.md#lscredentials) | List credentials |
-| [_mkcredentials_](blob.md#mkcredentials) | Create a new bucket crednetial |
-| [_statcredentials_](blob.md#statcredentials) | Get bucket BUCKET\_ID |
-| [_rmcredentials_](blob.md#rmcredentials) | Remove bucket DISK\_ID |
+| [_importbucket_](blob.md#importbucket) | Import an existing bucket |
+| [_statbucket_](blob.md#statbucket) | Get bucket BUCKET |
+| [_rmbucket_](blob.md#rmbucket) | Remove bucket BUCKET |
+| [_set-bucket-publicity_](blob.md#set-bucket-publicity) | Change public access settings for bucket... |
+| [_lscredentials_](blob.md#lscredentials) | List bucket credentials |
+| [_mkcredentials_](blob.md#mkcredentials) | Create a new bucket credential |
+| [_statcredentials_](blob.md#statcredentials) | Get bucket credential BUCKET\_CREDENTIAL |
+| [_rmcredentials_](blob.md#rmcredentials) | Remove bucket credential BUCKET\_CREDENTIAL |
 | [_cp_](blob.md#cp) | Simple utility to copy files and... |
 | [_ls_](blob.md#ls) | List buckets or bucket contents |
 | [_glob_](blob.md#glob) | List resources that match PATTERNS |
 | [_rm_](blob.md#rm) | Remove blobs from bucket |
+| [_sign-url_](blob.md#sign-url) | Make signed url for blob in bucket |
 
 
 ### lsbucket
@@ -74,9 +77,42 @@ Create a new bucket.
 
 
 
+### importbucket
+
+Import an existing bucket
+
+
+#### Usage
+
+```bash
+neuro blob importbucket [OPTIONS]
+```
+
+Import an existing bucket.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--aws-access-key-id AWS\_ACCESS\_KEY\_ID_ | AWS access\_key\_id to use to access the bucket.  Required when PROVIDER is 'aws' |
+| _--aws-endpoint-url AWS\_ENDPOINT_ | AWS endpoint to use to access the bucket. Usually you need to set this if you use non-AWS S3 compatible provider |
+| _--aws-region-name AWS\_REGION_ | AWS region to use to access the bucket. |
+| _--aws-secret-access-key AWS\_SECRET\_ACCESS\_KEY_ | AWS secret\_access\_key to use to access the bucket. Required when PROVIDER is 'aws' |
+| _--azure-storage-account-url AZURE\_STORAGE\_ACCOUNT\_URL_ | Azure account url. Usually it has following format: https://&lt;account\_id&gt;.blob.core.windows.net Required when PROVIDER is 'azure' |
+| _--azure-storage-credential AZURE\_STORAGE\_CREDENTIAL_ | Azure storage credential that grants access to imported bucket. Either this or AZURE\_SAS is required when PROVIDER is 'azure' |
+| _--azure-storage-sas-token AZURE\_SAS_ | Azure shared access signature token that grants access to imported bucket. Either this or AZURE\_STORAGE\_CREDENTIAL is required when PROVIDER is 'azure' |
+| _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
+| _--gcp-sa-credential GCP\_SA\_CREDNETIAL_ | GCP service account credential in form of base64 encoded json string that grants access to imported bucket. Required when PROVIDER is 'gcp' |
+| _--name NAME_ | Optional bucket name |
+| _--provider PROVIDER_ | Bucket provider that hosts bucket  _\[required\]_ |
+| _--provider-bucket-name EXTERNAL\_NAME_ | Name of bucket \(or container in case of Azure\) inside the provider  _\[required\]_ |
+
+
+
 ### statbucket
 
-Get bucket BUCKET_ID
+Get bucket BUCKET
 
 
 #### Usage
@@ -85,7 +121,7 @@ Get bucket BUCKET_ID
 neuro blob statbucket [OPTIONS] BUCKET
 ```
 
-Get bucket `BUCKET`_ID.
+Get bucket `BUCKET`.
 
 #### Options
 
@@ -99,7 +135,7 @@ Get bucket `BUCKET`_ID.
 
 ### rmbucket
 
-Remove bucket DISK_ID
+Remove bucket BUCKET
 
 
 #### Usage
@@ -108,7 +144,37 @@ Remove bucket DISK_ID
 neuro blob rmbucket [OPTIONS] BUCKETS...
 ```
 
-Remove bucket `DISK`_ID.
+Remove bucket `BUCKET`.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
+
+
+
+### set-bucket-publicity
+
+Change public access settings for bucket...
+
+
+#### Usage
+
+```bash
+neuro blob set-bucket-publicity [OPTIONS] BUCKET {public|private}
+```
+
+Change public access settings for bucket `BUCKET`.
+
+#### Examples
+
+```bash
+
+$ neuro blob set-bucket-publicity my-bucket public
+$ neuro blob set-bucket-publicity my-bucket private
+```
 
 #### Options
 
@@ -121,7 +187,7 @@ Remove bucket `DISK`_ID.
 
 ### lscredentials
 
-List credentials
+List bucket credentials
 
 
 #### Usage
@@ -130,7 +196,7 @@ List credentials
 neuro blob lscredentials [OPTIONS]
 ```
 
-List credentials.
+List bucket credentials.
 
 #### Options
 
@@ -143,7 +209,7 @@ List credentials.
 
 ### mkcredentials
 
-Create a new bucket crednetial
+Create a new bucket credential
 
 
 #### Usage
@@ -152,7 +218,7 @@ Create a new bucket crednetial
 neuro blob mkcredentials [OPTIONS] BUCKETS...
 ```
 
-Create a new bucket crednetial.
+Create a new bucket credential.
 
 #### Options
 
@@ -161,12 +227,13 @@ Create a new bucket crednetial.
 | _--help_ | Show this message and exit. |
 | _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
 | _--name NAME_ | Optional bucket credential name |
+| _--read-only_ | Make read-only credential |
 
 
 
 ### statcredentials
 
-Get bucket BUCKET_ID
+Get bucket credential BUCKET_CREDENTIAL
 
 
 #### Usage
@@ -175,7 +242,7 @@ Get bucket BUCKET_ID
 neuro blob statcredentials [OPTIONS] BUCKET_CREDENTIAL
 ```
 
-Get bucket `BUCKET`_ID.
+Get bucket credential `BUCKET`_`CREDENTIAL`.
 
 #### Options
 
@@ -188,7 +255,7 @@ Get bucket `BUCKET`_ID.
 
 ### rmcredentials
 
-Remove bucket DISK_ID
+Remove bucket credential BUCKET_CREDENTIAL
 
 
 #### Usage
@@ -197,7 +264,7 @@ Remove bucket DISK_ID
 neuro blob rmcredentials [OPTIONS] CREDENTIALS...
 ```
 
-Remove bucket `DISK`_ID.
+Remove bucket credential `BUCKET`_`CREDENTIAL`.
 
 #### Options
 
@@ -334,5 +401,27 @@ Remove blobs from bucket.
 | _--glob / --no-glob_ | Expand glob patterns in PATHS  _\[default: glob\]_ |
 | _-p, --progress / -P, --no-progress_ | Show progress, on by default in TTY mode, off otherwise. |
 | _-r, --recursive_ | remove directories and their contents recursively |
+
+
+
+### sign-url
+
+Make signed url for blob in bucket
+
+
+#### Usage
+
+```bash
+neuro blob sign-url [OPTIONS] PATH
+```
+
+Make signed url for blob in bucket.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--expires TIMEDELTA_ | Duration this signature will be valid in the format '1h2m3s'  _\[default: 1h\]_ |
 
 
