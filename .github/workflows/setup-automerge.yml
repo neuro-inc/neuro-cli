@@ -12,36 +12,42 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor == 'dependabot[bot]'}}
     steps:
-      - name: metadata
-        id: metadata
-        uses: dependabot/fetch-metadata@v1.1.1
-        with:
-          github-token: "${{ secrets.GITHUB_TOKEN }}"
-      - name: Enable auto-merge for bot PRs
-        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-
-  pre-commit-bot:
-    runs-on: ubuntu-latest
-    if: ${{ github.actor == 'pre-commit-ci[bot]' }}
-    steps:
-      - name: Enable auto-merge for bot PRs
-        run: |
-          gh pr merge --auto --squash --delete-branch "$PR_URL"
-          gh pr edit --add-label 'dependencies' "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    - name: metadata
+      id: metadata
+      uses: dependabot/fetch-metadata@v1.1.1
+      with:
+        github-token: "${{ secrets.GITHUB_TOKEN }}"
+    - name: Enable auto-merge for bot PRs
+      run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+      env:
+        PR_URL: ${{github.event.pull_request.html_url}}
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
 
   other:
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' &&
-            contains(github.event.pull_request.labels.*.name, 'dependencies') }}
     steps:
-      - name: Enable auto-merge for bot PRs
-        run: gh pr merge --auto --squash --delete-branch "$PR_URL"
-        env:
-          PR_URL: ${{github.event.pull_request.html_url}}
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    - name: Set label for pre-commit
+      if: ${{ github.actor == 'pre-commit-ci[bot]' }}
+      run: |
+        gh pr edit --add-label 'dependencies' "$PR_URL"
+      env:
+        PR_URL: ${{github.event.pull_request.html_url}}
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    - name: Set label for all-repos
+      if: ${{ contains(github.event.pull_request.body,
+              'Committed via https://github.com/asottile/all-repos') }}
+      run: |
+        gh api "/repos/{owner}/{repo}/collaborators/${GITHUB_ACTOR}" || ret=$?
+        if [[ "$ret" -eq 0 ]]; then
+          gh pr edit --add-label 'dependencies' "$PR_URL"
+        fi
+      env:
+        PR_URL: ${{github.event.pull_request.html_url}}
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    - name: Enable auto-merge if labeled
+      if: ${{ github.actor != 'dependabot[bot]' &&
+              contains(github.event.pull_request.labels.*.name, 'dependencies') }}
+      run: gh pr merge --auto --squash --delete-branch "$PR_URL"
+      env:
+        PR_URL: ${{github.event.pull_request.html_url}}
+        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
