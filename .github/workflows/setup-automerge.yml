@@ -37,18 +37,23 @@ jobs:
       if: ${{ contains(github.event.pull_request.body,
               'Committed via https://github.com/asottile/all-repos') }}
       run: |
-        URL="/repos/${GITHUB_REPOSITORY}/collaborators/${GITHUB_ACTOR}"
+        URL="/repos/${GITHUB_REPOSITORY}/collaborators/${GITHUB_ACTOR}/permission"
         echo "Test user permissions: $URL"
-        gh api "$URL" || ret=$?
-        if [[ "$ret" -eq 0 ]]; then
+        PERM=$(gh api "$URL" --jq ".permission") || RET=$?
+        echo "$RET: $PERM"
+        if [[ -z "$RET" && ("$PERM" = 'write' || "$PERM" = 'admin') ]]; then
+          echo "Add label 'dependencies'"
           gh pr edit --add-label 'dependencies' "$PR_URL"
+          echo "AUTOMERGE=1" >> $GITHUB_ENV
         fi
       env:
         PR_URL: ${{github.event.pull_request.html_url}}
         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
     - name: Enable auto-merge if labeled
-      if: ${{ github.actor != 'dependabot[bot]' &&
-              contains(github.event.pull_request.labels.*.name, 'dependencies') }}
+      if: ${{ env.AUTOMERGE || (
+                  github.actor != 'dependabot[bot]' &&
+                  contains(github.event.pull_request.labels.*.name, 'dependencies')
+              ) }}
       run: gh pr merge --auto --squash --delete-branch "$PR_URL"
       env:
         PR_URL: ${{github.event.pull_request.html_url}}
