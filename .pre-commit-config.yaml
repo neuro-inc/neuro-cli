@@ -84,4 +84,5 @@ ci:
   skip:
   - actionlint-docker
   - check-github-actions
+  - version-check
   - gen-cli-docs
