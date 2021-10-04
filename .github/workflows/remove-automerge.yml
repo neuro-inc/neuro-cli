@@ -27,5 +27,5 @@ jobs:
         run: |
           gh pr merge --disable-auto "$PR_NUMBER"
         env:
-          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          GH_TOKEN: ${{secrets.GH_TOKEN}}
           PR_NUMBER: ${{ github.event.workflow.pull_requests[0].number }}
