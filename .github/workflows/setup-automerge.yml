@@ -14,29 +14,39 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2.3.4
+    - id: generate_token
+      uses: tibdex/github-app-token@v1
+      with:
+        app_id: ${{ secrets.BOT_APP_ID }}
+        private_key: ${{ secrets.BOT_PRIVATE_KEY }}
     - name: metadata
       id: metadata
       uses: dependabot/fetch-metadata@v1.1.1
       with:
-        github-token: "${{ secrets.GITHUB_TOKEN }}"
+        github-token: ${{ steps.generate_token.outputs.token }}
     - name: Enable auto-merge for bot PRs
       run: gh pr merge --auto --squash --delete-branch "$PR_URL"
       env:
-        PR_URL: ${{github.event.pull_request.html_url}}
-        GH_TOKEN: ${{secrets.GH_TOKEN}}
+        PR_URL: ${{ github.event.pull_request.html_url }}
+        GH_TOKEN: ${{ steps.generate_token.outputs.token }}
 
   other:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
       uses: actions/checkout@v2.3.4
+    - id: generate_token
+      uses: tibdex/github-app-token@v1
+      with:
+        app_id: ${{ secrets.BOT_APP_ID }}
+        private_key: ${{ secrets.BOT_PRIVATE_KEY }}
     - name: Set label for pre-commit
       if: ${{ github.actor == 'pre-commit-ci[bot]' }}
       run: |
         gh pr edit --add-label 'dependencies' "$PR_URL"
       env:
         PR_URL: ${{github.event.pull_request.html_url}}
-        GH_TOKEN: ${{secrets.GH_TOKEN}}
+        GH_TOKEN: ${{ steps.generate_token.outputs.token }}
     - name: Set label for all-repos
       if: ${{ contains(github.event.pull_request.body,
               'Committed via https://github.com/asottile/all-repos') }}
@@ -52,7 +62,7 @@ jobs:
         fi
       env:
         PR_URL: ${{github.event.pull_request.html_url}}
-        GH_TOKEN: ${{secrets.GH_TOKEN}}
+        GH_TOKEN: ${{ steps.generate_token.outputs.token }}
     - name: Enable auto-merge if labeled
       if: ${{ env.AUTOMERGE || (
                   github.actor != 'dependabot[bot]' &&
@@ -61,4 +71,4 @@ jobs:
       run: gh pr merge --auto --squash --delete-branch "$PR_URL"
       env:
         PR_URL: ${{github.event.pull_request.html_url}}
-        GH_TOKEN: ${{secrets.GH_TOKEN}}
+        GH_TOKEN: ${{ steps.generate_token.outputs.token }}
