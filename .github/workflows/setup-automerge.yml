@@ -37,7 +37,7 @@ jobs:
       if: ${{ contains(github.event.pull_request.body,
               'Committed via https://github.com/asottile/all-repos') }}
       run: |
-        gh api "/repos/{owner}/{repo}/collaborators/${GITHUB_ACTOR}" || ret=$?
+        gh api "/repos/${GITHUB_REPOSITORY}/collaborators/${GITHUB_ACTOR}" || ret=$?
         if [[ "$ret" -eq 0 ]]; then
           gh pr edit --add-label 'dependencies' "$PR_URL"
         fi
