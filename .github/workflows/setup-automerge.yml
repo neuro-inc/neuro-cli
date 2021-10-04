@@ -23,7 +23,7 @@ jobs:
       run: gh pr merge --auto --squash --delete-branch "$PR_URL"
       env:
         PR_URL: ${{github.event.pull_request.html_url}}
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        GH_TOKEN: ${{secrets.GH_TOKEN}}
 
   other:
     runs-on: ubuntu-latest
@@ -36,7 +36,7 @@ jobs:
         gh pr edit --add-label 'dependencies' "$PR_URL"
       env:
         PR_URL: ${{github.event.pull_request.html_url}}
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        GH_TOKEN: ${{secrets.GH_TOKEN}}
     - name: Set label for all-repos
       if: ${{ contains(github.event.pull_request.body,
               'Committed via https://github.com/asottile/all-repos') }}
@@ -52,7 +52,7 @@ jobs:
         fi
       env:
         PR_URL: ${{github.event.pull_request.html_url}}
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        GH_TOKEN: ${{secrets.GH_TOKEN}}
     - name: Enable auto-merge if labeled
       if: ${{ env.AUTOMERGE || (
                   github.actor != 'dependabot[bot]' &&
@@ -61,4 +61,4 @@ jobs:
       run: gh pr merge --auto --squash --delete-branch "$PR_URL"
       env:
         PR_URL: ${{github.event.pull_request.html_url}}
-        GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        GH_TOKEN: ${{secrets.GH_TOKEN}}
