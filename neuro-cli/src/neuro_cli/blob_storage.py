@@ -180,7 +180,7 @@ async def mkbucket(
     metavar="AWS_ACCESS_KEY_ID",
     help="AWS access_key_id to use to access the bucket. "
     " Required when PROVIDER is 'aws'",
-    default=False,
+    default=None,
 )
 @option(
     "--aws-secret-access-key",
@@ -188,7 +188,7 @@ async def mkbucket(
     metavar="AWS_SECRET_ACCESS_KEY",
     help="AWS secret_access_key to use to access the bucket. "
     "Required when PROVIDER is 'aws'",
-    default=False,
+    default=None,
 )
 @option(
     "--aws-region-name",
@@ -213,7 +213,7 @@ async def mkbucket(
     help="Azure account url. Usually it has following format: "
     "https://<account_id>.blob.core.windows.net "
     "Required when PROVIDER is 'azure'",
-    default=False,
+    default=None,
 )
 @option(
     "--azure-storage-sas-token",
@@ -221,7 +221,7 @@ async def mkbucket(
     metavar="AZURE_SAS",
     help="Azure shared access signature token that grants access to imported bucket. "
     "Either this or AZURE_STORAGE_CREDENTIAL is required when PROVIDER is 'azure'",
-    default=False,
+    default=None,
 )
 @option(
     "--azure-storage-credential",
@@ -229,7 +229,7 @@ async def mkbucket(
     metavar="AZURE_STORAGE_CREDENTIAL",
     help="Azure storage credential that grants access to imported bucket. "
     "Either this or AZURE_SAS is required when PROVIDER is 'azure'",
-    default=False,
+    default=None,
 )
 @option(
     "--gcp-sa-credential",
@@ -238,7 +238,7 @@ async def mkbucket(
     help="GCP service account credential in form of base64 encoded json "
     "string that grants access to imported bucket. "
     "Required when PROVIDER is 'gcp'",
-    default=False,
+    default=None,
 )
 async def importbucket(
     root: Root,
