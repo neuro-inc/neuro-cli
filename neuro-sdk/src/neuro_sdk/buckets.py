@@ -995,6 +995,12 @@ class Bucket:
 
 
 @dataclass(frozen=True)
+class BucketUsage:
+    total_bytes: int
+    object_count: int
+
+
+@dataclass(frozen=True)
 class BucketCredentials:
     bucket_id: str
     provider: "Bucket.Provider"
@@ -1154,6 +1160,19 @@ class Buckets(metaclass=NoPublicConstructor):
         async with self._core.request("POST", url, auth=auth, params=query) as resp:
             payload = await resp.json()
             return self._parse_bucket_credentials_payload(payload)
+
+    @asyncgeneratorcontextmanager
+    async def get_disk_usage(
+        self, bucket_id_or_name: str, cluster_name: Optional[str] = None
+    ) -> AsyncIterator[BucketUsage]:
+        total_bytes = 0
+        obj_count = 0
+        async with self._get_provider(bucket_id_or_name, cluster_name) as provider:
+            async with provider.list_blobs("", recursive=True) as it:
+                async for obj in it:
+                    total_bytes += obj.size
+                    obj_count += 1
+                    yield BucketUsage(total_bytes, obj_count)
 
     # Helper functions
 
