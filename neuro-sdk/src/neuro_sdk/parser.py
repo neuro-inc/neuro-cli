@@ -93,6 +93,14 @@ class EnvParseResult:
     secret_env: Dict[str, URL]
 
 
+@dataclass(frozen=True)
+class BucketUriParseResult:
+    cluster_name: str
+    owner: str
+    bucket_name: str
+    key: str
+
+
 class Parser(metaclass=NoPublicConstructor):
     def __init__(self, config: Config) -> None:
         self._config = config
@@ -357,7 +365,7 @@ class Parser(metaclass=NoPublicConstructor):
             ret = URL.build(scheme=ret.scheme, host=ret.host or "", path=ret.path[:-1])
         return ret
 
-    def split_blob_uri(self, uri: URL) -> Tuple[str, str, str]:
+    def split_blob_uri(self, uri: URL) -> BucketUriParseResult:
         uri = self.normalize_uri(uri)
         cluster_name = uri.host
         assert cluster_name
@@ -365,11 +373,11 @@ class Parser(metaclass=NoPublicConstructor):
         if len(parts) == 1:
             raise ValueError(f"Blob uri doesn't contain bucket name: {uri}")
         if len(parts) == 3:
-            _, bucket_id, key = parts
+            owner, bucket_id, key = parts
         else:
-            _, bucket_id = parts
+            owner, bucket_id = parts
             key = ""
-        return cluster_name, bucket_id, key
+        return BucketUriParseResult(cluster_name, owner, bucket_id, key)
 
 
 def _read_lines(env_file: str) -> Iterator[str]:
