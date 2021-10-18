@@ -161,9 +161,9 @@ Parser
       :raise ValueError: if ``uri`` is invalid or provides a scheme not enumerated by
                          ``allowed_schemes`` argument.
 
-   .. method:: split_blob_uri(self, uri: URL) -> Tuple[str, str, str]
+   .. method:: split_blob_uri(self, uri: URL) -> BucketUriParseResult
 
-      Utility method to parse blob *uri* into *cluster_name*, *bucket_id*, *key* triple
+      Utility method to parse blob *uri* into *cluster_name*, *owner*, *bucket_id*, *key*.
 
 
 EnvParseResult
@@ -196,3 +196,26 @@ VolumeParseResult
    .. attribute:: disk_volumes
 
    List of parsed disk volumes, :class:`~typing.List[DiskVolume]`.
+
+
+
+BucketUriParseResult
+====================
+
+.. class:: BucketUriParseResult
+
+   .. attribute:: cluster_name
+
+   Name of cluster specified in url, :class:`str`.
+
+   .. attribute:: owner
+
+   Owner of bucket specified in url, :class:`str`.
+
+   .. attribute:: bucket_name
+
+   Name of bucket specified in url, :class:`str`.
+
+   .. attribute:: key
+
+   Key of object inside bucket specified in url, :class:`str`.
