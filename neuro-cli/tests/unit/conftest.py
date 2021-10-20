@@ -287,7 +287,8 @@ class RichComparator:
 
     def diff(self, lft: Guard, rgt: Guard) -> List[str]:
         # The same as _diff_text from
-        # https://github.com/pytest-dev/pytest/blob/master/src/_pytest/assertion/util.py#L200-L245 plus a few extra lines with additional instructions.  # noqa
+        # pytest/assertion/util.py#L200-L245
+        # plus a few extra lines with additional instructions.
         explanation: List[str] = []
 
         left = lft.arg

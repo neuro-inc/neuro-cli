@@ -6,6 +6,7 @@ async_generator==1.10; python_version<"3.7"
 # upgrade setup.py after pinning certtifi to new version
 certifi==2021.10.8
 click==8.0.3
+ConfigUpdater==3.0
 dataclasses==0.7; python_version<"3.7"
 humanize==3.12.0
 python-dateutil==2.8.2

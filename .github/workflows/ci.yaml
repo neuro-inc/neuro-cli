@@ -202,15 +202,15 @@ jobs:
     - name: Install dependencies
       run: |
         make setup
-        python -m pip install twine
+        python -m pip install twine build
     - name: Make SDK dists
       run: |
         cd neuro-sdk
-        python setup.py sdist bdist_wheel
+        python -m build
     - name: Make CLI dists
       run: |
         cd neuro-cli
-        python setup.py sdist bdist_wheel
+        python -m build
     - name: PyPI upload SDK
       env:
         TWINE_USERNAME: __token__

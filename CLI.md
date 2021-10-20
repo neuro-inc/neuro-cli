@@ -450,7 +450,7 @@ Name | Description|
 |_\--credits-per-hour AMOUNT_|Price of running job of this preset for an hour in credits  \[default: 0]|
 |_\-g, --gpu NUMBER_|Number of GPUs|
 |_\--gpu-model MODEL_|GPU model|
-|_\-m, --memory AMOUNT_|Memory amount  \[default: 1024]|
+|_\-m, --memory AMOUNT_|Memory amount  \[default: 1G]|
 |_\--preemptible-node / --non-preemptible-node_|Use a lower\-cost preemptible instance  \[default: non-preemptible-node]|
 |_\-p, --scheduler / -P, --no-scheduler_|Use round robin scheduler for jobs  \[default: no-scheduler]|
 |_\--tpu-sw-version VERSION_|TPU software version|
@@ -845,7 +845,7 @@ Name | Description|
 |_--since DATE\_OR_TIMEDELTA_|Show jobs created after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_--sort COLUMNS_|Sort rows by specified column. Add "-" prefix to revert the sorting order. Multiple columns can be specified \(comma separated).  \[default: cpu]|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
-|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0.0]|
+|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 
 
@@ -3007,7 +3007,7 @@ Name | Description|
 |_--since DATE\_OR_TIMEDELTA_|Show jobs created after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_--sort COLUMNS_|Sort rows by specified column. Add "-" prefix to revert the sorting order. Multiple columns can be specified \(comma separated).  \[default: cpu]|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
-|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0.0]|
+|_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 
 

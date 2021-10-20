@@ -1001,7 +1001,7 @@ async def run_concurrently(coros: Iterable[Awaitable[Any]]) -> None:
         done, tasks = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
         for task in done:
             await task
-    except:  # noqa: E722
+    except:  # noqa
         for task in tasks:
             task.cancel()
         # wait for actual cancellation, ignore all exceptions raised from tasks

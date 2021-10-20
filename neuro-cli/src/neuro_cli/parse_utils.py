@@ -34,10 +34,12 @@ def parse_memory(memory: str) -> int:
     if not memory:
         raise value_error
 
-    pattern = r"^(?P<value>\d+)(?P<units>(kB|kb|K|k)|((?P<prefix>[{prefixes}])(?P<unit>[bB]?)))$".format(  # NOQA
-        prefixes=prefixes
-    )
-    regex = re.compile(pattern)
+    pattern = rf"""^
+                   (?P<value>\d+)
+                   (?P<units>(kB|kb|K|k)|((?P<prefix>[{prefixes}])
+                   (?P<unit>[bB]?)))
+                $"""
+    regex = re.compile(pattern, re.VERBOSE)
     match = regex.fullmatch(memory)
 
     if not match:
@@ -232,7 +234,13 @@ def _parse_columns(
         title = _get(groups, "title", fmt, str, title)  # type: ignore
         assert title is not None
 
-        justify: JustifyMethod = _get(groups, "align", fmt, _justify, defaults[0].justify)  # type: ignore  # noqa
+        justify: JustifyMethod = _get(
+            groups,
+            "align",
+            fmt,
+            _justify,
+            defaults[0].justify,
+        )  # type: ignore
 
         min_width = _max_width(column.min_width for column in defaults)
         max_width = _max_width(column.max_width for column in defaults)

@@ -6,6 +6,7 @@ import re
 from typing import Dict
 
 import click
+from configupdater import ConfigUpdater
 
 
 class VersionProcessor(abc.ABC):
@@ -43,37 +44,37 @@ class SetupVP(VersionProcessor):
         self._replace_sdk = replace_sdk
 
     def read(self, fname: pathlib.Path) -> str:
-        txt = fname.read_text()
-        found = re.findall(r'^    version="([^"]+)",\r?$', txt, re.M)
-        if not found:
+        updater = ConfigUpdater()
+        updater.read(str(fname))
+        found = updater["metadata"].get("version")
+        if not found or not found.value:
             raise click.ClickException(f"Unable to find version in {fname}.")
-        if len(found) > 1:
-            raise click.ClickException(f"Found multiple versions {found} in {fname}.")
-        return found[0]
+        return found.value
 
     def write(self, fname: pathlib.Path, version: str) -> None:
         # Check for possible errors
+        updater = ConfigUpdater()
+        updater.read(str(fname))
         old_version = self.read(fname)
-        txt = fname.read_text()
-        old = f'    version="{old_version}",'
-        new = f'    version="{version}",'
-        new_txt = txt.replace(old, new)
+        updater["metadata"]["version"] = version
         if self._replace_sdk:
-            old_dep = f'        "neuro-sdk>={old_version}",'
-            if old_dep not in new_txt:
+            requires = updater["options"]["install_requires"]
+            old_dep = f"neuro-sdk>={old_version}"
+            if old_dep not in requires.value:
                 raise click.ClickException(
                     f"Unable to find neuro-sdk dependency in {fname}."
                 )
-            new_dep = f'        "neuro-sdk>={version}",'
-            new_txt = new_txt.replace(old_dep, new_dep)
-        fname.write_text(new_txt)
+            new_dep = f"neuro-sdk>={version}"
+            new_txt = requires.value.replace(old_dep, new_dep).strip()
+            requires.set_values([line.strip() for line in new_txt.splitlines()])
+        updater.update_file()
 
 
 FILES = {
     "neuro-sdk/src/neuro_sdk/__init__.py": InitVP(),
-    "neuro-sdk/setup.py": SetupVP(False),
+    "neuro-sdk/setup.cfg": SetupVP(False),
     "neuro-cli/src/neuro_cli/__init__.py": InitVP(),
-    "neuro-cli/setup.py": SetupVP(True),
+    "neuro-cli/setup.cfg": SetupVP(True),
 }
 
 
