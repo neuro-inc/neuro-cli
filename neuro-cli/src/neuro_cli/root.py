@@ -5,7 +5,6 @@ import os
 import re
 import sys
 from dataclasses import dataclass, field
-from http.cookies import Morsel  # noqa
 from pathlib import Path
 from types import SimpleNamespace
 from typing import (

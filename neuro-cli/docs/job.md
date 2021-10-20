@@ -348,7 +348,7 @@ $ neuro top -t tag1 -t tag2
 | _--since DATE\_OR\_TIMEDELTA_ | Show jobs created after a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
 | _--sort COLUMNS_ | Sort rows by specified column. Add "-" prefix to revert the sorting order. Multiple columns can be specified \(comma separated\).  _\[default: cpu\]_ |
 | _-t, --tag TAG_ | Filter out jobs by tag \(multiple option\) |
-| _--timeout FLOAT_ | Maximum allowed time for executing the command, 0 for no timeout  _\[default: 0.0\]_ |
+| _--timeout FLOAT_ | Maximum allowed time for executing the command, 0 for no timeout  _\[default: 0\]_ |
 | _--until DATE\_OR\_TIMEDELTA_ | Show jobs created before a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
 
 
