@@ -1,7 +1,10 @@
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from enum import Enum, unique
 from typing import Any, Dict, List, Mapping, Optional
+
+from dateutil.parser import isoparse
 
 from neuro_sdk.users import Quota
 
@@ -22,10 +25,29 @@ class _ClusterUserRoleType(str, Enum):
 
 
 @dataclass(frozen=True)
+class _UserInfo:
+    email: str
+    first_name: Optional[str]
+    last_name: Optional[str]
+    created_at: Optional[datetime]
+
+    @property
+    def full_name(self) -> str:
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        if self.first_name:
+            return self.first_name
+        if self.last_name:
+            return self.last_name
+        return ""
+
+
+@dataclass(frozen=True)
 class _ClusterUser:
     user_name: str
     role: _ClusterUserRoleType
     quota: Quota
+    user_info: _UserInfo
 
 
 @dataclass(frozen=True)
@@ -117,7 +139,9 @@ class _Admin(metaclass=NoPublicConstructor):
         cluster_name = cluster_name or self._config.cluster_name
         url = self._config.admin_url / "clusters" / cluster_name / "users"
         auth = await self._config._api_auth()
-        async with self._core.request("GET", url, auth=auth) as resp:
+        async with self._core.request(
+            "GET", url, auth=auth, params={"with_user_info": "true"}
+        ) as resp:
             res = await resp.json()
             return [_cluster_user_from_api(payload) for payload in res]
 
@@ -130,7 +154,9 @@ class _Admin(metaclass=NoPublicConstructor):
         user_name = user_name or self._config.username
         url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
         auth = await self._config._api_auth()
-        async with self._core.request("GET", url, auth=auth) as resp:
+        async with self._core.request(
+            "GET", url, auth=auth, params={"with_user_info": "true"}
+        ) as resp:
             res = await resp.json()
             return _cluster_user_from_api(res)
 
@@ -141,7 +167,9 @@ class _Admin(metaclass=NoPublicConstructor):
         payload = {"user_name": user_name, "role": role}
         auth = await self._config._api_auth()
 
-        async with self._core.request("POST", url, json=payload, auth=auth) as resp:
+        async with self._core.request(
+            "POST", url, json=payload, auth=auth, params={"with_user_info": "true"}
+        ) as resp:
             payload = await resp.json()
             return _cluster_user_from_api(payload)
 
@@ -178,7 +206,9 @@ class _Admin(metaclass=NoPublicConstructor):
 
         auth = await self._config._api_auth()
 
-        async with self._core.request("PATCH", url, json=payload, auth=auth) as resp:
+        async with self._core.request(
+            "PATCH", url, json=payload, auth=auth, params={"with_user_info": "true"}
+        ) as resp:
             payload = await resp.json()
             return _cluster_user_from_api(payload)
 
@@ -206,7 +236,9 @@ class _Admin(metaclass=NoPublicConstructor):
         }
         auth = await self._config._api_auth()
 
-        async with self._core.request("PATCH", url, json=payload, auth=auth) as resp:
+        async with self._core.request(
+            "PATCH", url, json=payload, auth=auth, params={"with_user_info": "true"}
+        ) as resp:
             payload = await resp.json()
             return _cluster_user_from_api(payload)
 
@@ -219,6 +251,15 @@ class _Admin(metaclass=NoPublicConstructor):
             return await resp.json()
 
 
+def _user_info_from_api(payload: Dict[str, Any]) -> _UserInfo:
+    return _UserInfo(
+        email=payload["email"],
+        first_name=payload.get("first_name"),
+        last_name=payload.get("last_name"),
+        created_at=isoparse(payload["created_at"]) if "created_at" in payload else None,
+    )
+
+
 def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
     quota_dict = payload.get("quota", {})
     return _ClusterUser(
@@ -228,6 +269,7 @@ def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
             Decimal(quota_dict["credits"]) if "credits" in quota_dict else None,
             quota_dict.get("total_running_jobs"),
         ),
+        user_info=_user_info_from_api(payload["user_info"]),
     )
 
 
