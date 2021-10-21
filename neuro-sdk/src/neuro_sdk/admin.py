@@ -252,11 +252,14 @@ class _Admin(metaclass=NoPublicConstructor):
 
 
 def _user_info_from_api(payload: Dict[str, Any]) -> _UserInfo:
+    created_at = payload.get("created_at")
+    if created_at is not None:
+        created_at = isoparse(created_at)
     return _UserInfo(
         email=payload["email"],
         first_name=payload.get("first_name"),
         last_name=payload.get("last_name"),
-        created_at=isoparse(payload["created_at"]) if "created_at" in payload else None,
+        created_at=created_at,
     )
 
 
