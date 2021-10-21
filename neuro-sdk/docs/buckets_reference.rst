@@ -39,7 +39,7 @@ Buckets
 
       :return: Newly created bucket info (:class:`Bucket`)
 
-   .. comethod:: get(bucket_id_or_name: str, cluster_name: Optional[str] = None) -> Bucket
+   .. comethod:: get(bucket_id_or_name: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> Bucket
 
       Get a bucket with id or name *bucket_id_or_name*.
 
@@ -47,9 +47,12 @@ Buckets
 
       :param str cluster_name: cluster to look for a bucket. Default is current cluster.
 
+      :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
+                               Default is current user.
+
       :return: Bucket info (:class:`Bucket`)
 
-   .. comethod:: rm(bucket_id_or_name: str, cluster_name: Optional[str] = None) -> None
+   .. comethod:: rm(bucket_id_or_name: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> None
 
       Delete a bucket with id or name *bucket_id_or_name*.
 
@@ -57,7 +60,10 @@ Buckets
 
       :param str cluster_name: cluster to look for a bucket. Default is current cluster.
 
-   .. comethod:: request_tmp_credentials(bucket_id_or_name: str, cluster_name: Optional[str] = None) -> BucketCredentials
+      :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
+                               Default is current user.
+
+   .. comethod:: request_tmp_credentials(bucket_id_or_name: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> BucketCredentials
 
       Get a temporary provider credentials to bucket with id or name *bucket_id_or_name*.
 
@@ -65,9 +71,12 @@ Buckets
 
       :param str cluster_name: cluster to look for a bucket. Default is current cluster.
 
+      :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
+                               Default is current user.
+
       :return: Bucket credentials info (:class:`BucketCredentials`)
 
-   .. comethod:: set_public_access(bucket_id_or_name: str, public_access: bool, cluster_name: Optional[str] = None) -> Bucket
+   .. comethod:: set_public_access(bucket_id_or_name: str, public_access: bool, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> Bucket
 
       Enable or disable public (anonymous) read access to bucket.
 
@@ -77,15 +86,20 @@ Buckets
 
       :param str cluster_name: cluster to look for a bucket. Default is current cluster.
 
+      :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
+                               Default is current user.
+
       :return: Bucket info (:class:`Bucket`)
 
-   .. comethod:: head_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None) -> BucketEntry
+   .. comethod:: head_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> BucketEntry
 
       Look up the blob and return it's metadata.
 
       :param str bucket_id_or_name: bucket's id or name.
       :param str key: key of the blob.
       :param str cluster_name: cluster to look for a bucket. Default is current cluster.
+      :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
+                               Default is current user.
 
       :return: :class:`BucketEntry` object.
 
@@ -96,6 +110,7 @@ Buckets
                              key: str,  \
                              body: Union[AsyncIterator[bytes], bytes], \
                              cluster_name: Optional[str] = None,  \
+                             bucket_owner: Optional[str) = None,  \
                           ) -> None
 
       Create or replace blob identified by ``key`` in the bucket, e.g::
@@ -120,12 +135,15 @@ Buckets
       :param bytes body: Body of the blob. Can be passed as either :class:`bytes`
          or as an ``AsyncIterator[bytes]``.
       :param str cluster_name: cluster to look for a bucket. Default is current cluster.
+      :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
+                               Default is current user.
 
    .. comethod:: fetch_blob(  \
                              bucket_id_or_name: str,  \
                              key: str,  \
                              offset: int = 0, \
                              cluster_name: Optional[str] = None,  \
+                             bucket_owner: Optional[str) = None,  \
                           ) -> AsyncIterator[bytes]
 
       Look up the blob and return it's body content only. The content will be streamed
@@ -139,14 +157,18 @@ Buckets
       :param str key: Key of the blob.
       :param int offset: Position in blob from which to read.
       :param str cluster_name: cluster to look for a bucket. Default is current cluster.
+      :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
+                               Default is current user.
 
-   .. comethod:: delete_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None) -> None
+   .. comethod:: delete_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> None
 
       Remove blob from the bucket.
 
       :param str bucket_id_or_name: bucket's id or name.
       :param str key: key of the blob.
       :param str cluster_name: cluster to look for a bucket. Default is current cluster.
+      :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
+                               Default is current user.
 
    .. comethod:: list_blobs(uri: URL, \
                               recursive: bool = False, limit: int = 10000 \
