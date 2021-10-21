@@ -5,7 +5,7 @@ from typing import Any, Callable, List, Mapping
 from unittest import mock
 
 from neuro_sdk import Preset
-from neuro_sdk.admin import _Admin, _ClusterUser, _ClusterUserRoleType
+from neuro_sdk.admin import _Admin, _ClusterUser, _ClusterUserRoleType, _UserInfo
 from neuro_sdk.config import Config
 from neuro_sdk.users import Quota
 
@@ -21,7 +21,17 @@ def test_add_cluster_user_print_result(run_cli: _RunCli) -> None:
             cluster_name: str, user_name: str, role: str
         ) -> _ClusterUser:
             # NOTE: We return a different role to check that we print it to user
-            return _ClusterUser(user_name, _ClusterUserRoleType.MANAGER, quota=Quota())
+            return _ClusterUser(
+                user_name,
+                _ClusterUserRoleType.MANAGER,
+                quota=Quota(),
+                user_info=_UserInfo(
+                    email="some@email.com",
+                    created_at=None,
+                    first_name=None,
+                    last_name=None,
+                ),
+            )
 
         mocked.side_effect = add_cluster_user
         capture = run_cli(["admin", "add-cluster-user", "default", "ivan", "admin"])

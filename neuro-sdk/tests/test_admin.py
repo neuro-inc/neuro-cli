@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Callable
 
@@ -13,6 +14,7 @@ from neuro_sdk.admin import (
     _ClusterUserRoleType,
     _NodePool,
     _Storage,
+    _UserInfo,
 )
 from neuro_sdk.server_cfg import Preset
 from neuro_sdk.users import Quota
@@ -284,13 +286,41 @@ async def test_list_cluster_users_explicit_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     requested_clusters = []
+    date = datetime.now(timezone.utc)
 
     async def handle_list_cluster_user(request: web.Request) -> web.StreamResponse:
         requested_clusters.append(request.match_info["cluster_name"])
         data = [
-            {"user_name": "denis", "role": "admin"},
-            {"user_name": "andrew", "role": "manager"},
-            {"user_name": "ivan", "role": "user"},
+            {
+                "user_name": "denis",
+                "role": "admin",
+                "user_info": {
+                    "first_name": "denis",
+                    "last_name": "admin",
+                    "email": "denis@domain.name",
+                    "created_at": date.isoformat(),
+                },
+            },
+            {
+                "user_name": "andrew",
+                "role": "manager",
+                "user_info": {
+                    "first_name": "andrew",
+                    "last_name": "manager",
+                    "email": "andrew@domain.name",
+                    "created_at": date.isoformat(),
+                },
+            },
+            {
+                "user_name": "ivan",
+                "role": "user",
+                "user_info": {
+                    "first_name": "ivan",
+                    "last_name": "user",
+                    "email": "ivan@domain.name",
+                    "created_at": date.isoformat(),
+                },
+            },
         ]
         return web.json_response(data)
 
@@ -305,13 +335,37 @@ async def test_list_cluster_users_explicit_cluster(
         resp = await client._admin.list_cluster_users("my_cluster")
         assert resp == [
             _ClusterUser(
-                user_name="denis", role=_ClusterUserRoleType("admin"), quota=Quota()
+                user_name="denis",
+                role=_ClusterUserRoleType("admin"),
+                quota=Quota(),
+                user_info=_UserInfo(
+                    first_name="denis",
+                    last_name="admin",
+                    email="denis@domain.name",
+                    created_at=date,
+                ),
             ),
             _ClusterUser(
-                user_name="andrew", role=_ClusterUserRoleType("manager"), quota=Quota()
+                user_name="andrew",
+                role=_ClusterUserRoleType("manager"),
+                quota=Quota(),
+                user_info=_UserInfo(
+                    first_name="andrew",
+                    last_name="manager",
+                    email="andrew@domain.name",
+                    created_at=date,
+                ),
             ),
             _ClusterUser(
-                user_name="ivan", role=_ClusterUserRoleType("user"), quota=Quota()
+                user_name="ivan",
+                role=_ClusterUserRoleType("user"),
+                quota=Quota(),
+                user_info=_UserInfo(
+                    first_name="ivan",
+                    last_name="user",
+                    email="ivan@domain.name",
+                    created_at=date,
+                ),
             ),
         ]
         assert requested_clusters == ["my_cluster"]
@@ -321,13 +375,41 @@ async def test_list_cluster_users_default_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     requested_clusters = []
+    date = datetime.now(timezone.utc)
 
     async def handle_list_cluster_user(request: web.Request) -> web.StreamResponse:
         requested_clusters.append(request.match_info["cluster_name"])
         data = [
-            {"user_name": "denis", "role": "admin"},
-            {"user_name": "andrew", "role": "manager"},
-            {"user_name": "ivan", "role": "user"},
+            {
+                "user_name": "denis",
+                "role": "admin",
+                "user_info": {
+                    "first_name": "denis",
+                    "last_name": "admin",
+                    "email": "denis@domain.name",
+                    "created_at": date.isoformat(),
+                },
+            },
+            {
+                "user_name": "andrew",
+                "role": "manager",
+                "user_info": {
+                    "first_name": "andrew",
+                    "last_name": "manager",
+                    "email": "andrew@domain.name",
+                    "created_at": date.isoformat(),
+                },
+            },
+            {
+                "user_name": "ivan",
+                "role": "user",
+                "user_info": {
+                    "first_name": "ivan",
+                    "last_name": "user",
+                    "email": "ivan@domain.name",
+                    "created_at": date.isoformat(),
+                },
+            },
         ]
         return web.json_response(data)
 
@@ -342,13 +424,37 @@ async def test_list_cluster_users_default_cluster(
         resp = await client._admin.list_cluster_users()
         assert resp == [
             _ClusterUser(
-                user_name="denis", role=_ClusterUserRoleType("admin"), quota=Quota()
+                user_name="denis",
+                role=_ClusterUserRoleType("admin"),
+                quota=Quota(),
+                user_info=_UserInfo(
+                    first_name="denis",
+                    last_name="admin",
+                    email="denis@domain.name",
+                    created_at=date,
+                ),
             ),
             _ClusterUser(
-                user_name="andrew", role=_ClusterUserRoleType("manager"), quota=Quota()
+                user_name="andrew",
+                role=_ClusterUserRoleType("manager"),
+                quota=Quota(),
+                user_info=_UserInfo(
+                    first_name="andrew",
+                    last_name="manager",
+                    email="andrew@domain.name",
+                    created_at=date,
+                ),
             ),
             _ClusterUser(
-                user_name="ivan", role=_ClusterUserRoleType("user"), quota=Quota()
+                user_name="ivan",
+                role=_ClusterUserRoleType("user"),
+                quota=Quota(),
+                user_info=_UserInfo(
+                    first_name="ivan",
+                    last_name="user",
+                    email="ivan@domain.name",
+                    created_at=date,
+                ),
             ),
         ]
         assert requested_clusters == ["default"]
@@ -359,11 +465,21 @@ async def test_get_cluster_user(
 ) -> None:
     requested_clusters = []
     requested_users = []
+    date = datetime.now(timezone.utc)
 
     async def handle_get_cluster_user(request: web.Request) -> web.StreamResponse:
         requested_clusters.append(request.match_info["cluster_name"])
         requested_users.append(request.match_info["username"])
-        data = {"user_name": "denis", "role": "admin"}
+        data = {
+            "user_name": "denis",
+            "role": "admin",
+            "user_info": {
+                "first_name": "denis",
+                "last_name": "admin",
+                "email": "denis@domain.name",
+                "created_at": date.isoformat(),
+            },
+        }
         return web.json_response(data)
 
     app = web.Application()
@@ -377,7 +493,15 @@ async def test_get_cluster_user(
     async with make_client(srv.make_url("/api/v1")) as client:
         resp = await client._admin.get_cluster_user("default", "test")
         assert resp == _ClusterUser(
-            user_name="denis", role=_ClusterUserRoleType("admin"), quota=Quota()
+            user_name="denis",
+            role=_ClusterUserRoleType("admin"),
+            quota=Quota(),
+            user_info=_UserInfo(
+                first_name="denis",
+                last_name="admin",
+                email="denis@domain.name",
+                created_at=date,
+            ),
         )
         assert requested_clusters == ["default"]
         assert requested_users == ["test"]
@@ -388,11 +512,22 @@ async def test_add_cluster_user(
 ) -> None:
     requested_clusters = []
     requested_payloads = []
+    date = datetime.now(timezone.utc)
 
     async def handle_add_cluster_user(request: web.Request) -> web.StreamResponse:
         payload = await request.json()
         requested_clusters.append(request.match_info["cluster_name"])
         requested_payloads.append(payload)
+        payload = {
+            "user_name": "ivan",
+            "role": "user",
+            "user_info": {
+                "first_name": "ivan",
+                "last_name": "user",
+                "email": "ivan@domain.name",
+                "created_at": date.isoformat(),
+            },
+        }
         return web.json_response(payload, status=HTTPCreated.status_code)
 
     app = web.Application()
@@ -405,7 +540,15 @@ async def test_add_cluster_user(
     async with make_client(srv.make_url("/api/v1")) as client:
         resp = await client._admin.add_cluster_user("default", "ivan", "user")
         assert resp == _ClusterUser(
-            user_name="ivan", role=_ClusterUserRoleType("user"), quota=Quota()
+            user_name="ivan",
+            role=_ClusterUserRoleType("user"),
+            quota=Quota(),
+            user_info=_UserInfo(
+                first_name="ivan",
+                last_name="user",
+                email="ivan@domain.name",
+                created_at=date,
+            ),
         )
         assert requested_clusters == ["default"]
         assert requested_payloads == [{"role": "user", "user_name": "ivan"}]
@@ -457,6 +600,7 @@ async def test_set_user_quota(
         requested_payloads.append(dict(payload))
         payload["role"] = "user"
         payload["user_name"] = request.match_info["user_name"]
+        payload["user_info"] = {"email": f"{payload['user_name']}@domain.name"}
         return web.json_response(payload, status=HTTPOk.status_code)
 
     app = web.Application()
@@ -510,6 +654,7 @@ async def test_add_user_quota(
         requested_payloads.append(dict(payload))
         payload["role"] = "user"
         payload["user_name"] = request.match_info["user_name"]
+        payload["user_info"] = {"email": f"{payload['user_name']}@domain.name"}
         return web.json_response(payload, status=HTTPOk.status_code)
 
     app = web.Application()

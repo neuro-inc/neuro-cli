@@ -1,6 +1,7 @@
 from decimal import Decimal
 from typing import Callable
 
+from dateutil.parser import isoparse
 from rich.console import RenderableType
 
 from neuro_sdk.admin import (
@@ -10,6 +11,7 @@ from neuro_sdk.admin import (
     _ClusterUserRoleType,
     _NodePool,
     _Storage,
+    _UserInfo,
 )
 from neuro_sdk.users import Quota
 
@@ -23,22 +25,48 @@ class TestClusterUserFormatter:
         formatter = ClusterUserFormatter()
         users = [
             _ClusterUser(
-                user_name="denis", role=_ClusterUserRoleType("admin"), quota=Quota()
+                user_name="denis",
+                role=_ClusterUserRoleType("admin"),
+                quota=Quota(),
+                user_info=_UserInfo(
+                    first_name="denis",
+                    last_name="admin",
+                    email="denis@domain.name",
+                    created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
+                ),
             ),
             _ClusterUser(
                 user_name="andrew",
                 role=_ClusterUserRoleType("manager"),
                 quota=Quota(credits=Decimal(100)),
+                user_info=_UserInfo(
+                    first_name="andrew",
+                    last_name=None,
+                    email="andrew@domain.name",
+                    created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
+                ),
             ),
             _ClusterUser(
                 user_name="ivan",
                 role=_ClusterUserRoleType("user"),
                 quota=Quota(total_running_jobs=1),
+                user_info=_UserInfo(
+                    first_name=None,
+                    last_name="user",
+                    email="ivan@domain.name",
+                    created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
+                ),
             ),
             _ClusterUser(
                 user_name="alex",
                 role=_ClusterUserRoleType("user"),
                 quota=Quota(credits=Decimal(10), total_running_jobs=2),
+                user_info=_UserInfo(
+                    first_name=None,
+                    last_name=None,
+                    email="alex@domain.name",
+                    created_at=None,
+                ),
             ),
         ]
         rich_cmp(formatter(users))

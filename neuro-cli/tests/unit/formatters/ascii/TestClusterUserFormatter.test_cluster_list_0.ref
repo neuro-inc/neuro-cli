@@ -1,8 +1,8 @@
-╷         ╷          ╷           
-  Name   │ Role    │ Credits  │ Max jobs  
-╺━━━━━━━━┿━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━╸
-  alex   │ user    │ 10       │ 2         
-  andrew │ manager │ 100      │ infinity  
-  denis  │ admin   │ infinity │ infinity  
-  ivan   │ user    │ infinity │ 1         
-         ╵         ╵          ╵
+╷         ╷                    ╷             ╷                                  ╷          ╷           
+  Name   │ Role    │ Email              │ Full name   │ Registered                       │ Credits  │ Max jobs  
+╺━━━━━━━━┿━━━━━━━━━┿━━━━━━━━━━━━━━━━━━━━┿━━━━━━━━━━━━━┿━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┿━━━━━━━━━━┿━━━━━━━━━━╸
+  alex   │ user    │ alex@domain.name   │             │                                  │ 10       │ 2         
+  andrew │ manager │ andrew@domain.name │ andrew      │ 2017-03-04T12:28:59.759433+00:00 │ 100      │ infinity  
+  denis  │ admin   │ denis@domain.name  │ denis admin │ 2017-03-04T12:28:59.759433+00:00 │ infinity │ infinity  
+  ivan   │ user    │ ivan@domain.name   │ user        │ 2017-03-04T12:28:59.759433+00:00 │ infinity │ 1         
+         ╵         ╵                    ╵             ╵                                  ╵          ╵
