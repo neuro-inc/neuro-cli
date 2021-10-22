@@ -9,8 +9,7 @@ on:
   pull_request_target:
     branches: [master]
   schedule:
-  - cron: 0 6 * * *       # Daily 6AM UTC build
-
+  - cron: 0 4 * * *
 concurrency:
   group: ci-${{ github.head_ref }}
   cancel-in-progress: true
@@ -241,5 +240,6 @@ jobs:
         version_file: neuro-sdk/src/neuro_sdk/__init__.py   # CLI has the same version
         start_line: "[comment]: # (towncrier release notes start)"
         head_line: "Neuro SDK/CLI {version}\\s+\\({date}\\)\n====+\n?"
-        fix_issue_regex: "\\(\\[#(\\d+)\\]\\(https://github.com/neuro-inc/platform-client-python/issues/\\1\\)\\)"
+        fix_issue_regex: "\\(\\[#(\\d+)\\]\\(https://github.com/neuro-inc/platform-client-python/issues/\\\
+          1\\)\\)"
         fix_issue_repl: "(#\\1)"
