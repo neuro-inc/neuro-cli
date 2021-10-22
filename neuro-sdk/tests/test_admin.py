@@ -301,6 +301,9 @@ async def test_list_cluster_users_explicit_cluster(
                     "email": "denis@domain.name",
                     "created_at": date.isoformat(),
                 },
+                "balance": {
+                    "spent_credits": "0",
+                },
             },
             {
                 "user_name": "andrew",
@@ -311,6 +314,9 @@ async def test_list_cluster_users_explicit_cluster(
                     "email": "andrew@domain.name",
                     "created_at": date.isoformat(),
                 },
+                "balance": {
+                    "spent_credits": "0",
+                },
             },
             {
                 "user_name": "ivan",
@@ -320,6 +326,9 @@ async def test_list_cluster_users_explicit_cluster(
                     "last_name": "user",
                     "email": "ivan@domain.name",
                     "created_at": date.isoformat(),
+                },
+                "balance": {
+                    "spent_credits": "0",
                 },
             },
         ]
@@ -393,6 +402,9 @@ async def test_list_cluster_users_default_cluster(
                     "email": "denis@domain.name",
                     "created_at": date.isoformat(),
                 },
+                "balance": {
+                    "spent_credits": "0",
+                },
             },
             {
                 "user_name": "andrew",
@@ -403,6 +415,9 @@ async def test_list_cluster_users_default_cluster(
                     "email": "andrew@domain.name",
                     "created_at": date.isoformat(),
                 },
+                "balance": {
+                    "spent_credits": "0",
+                },
             },
             {
                 "user_name": "ivan",
@@ -412,6 +427,9 @@ async def test_list_cluster_users_default_cluster(
                     "last_name": "user",
                     "email": "ivan@domain.name",
                     "created_at": date.isoformat(),
+                },
+                "balance": {
+                    "spent_credits": "0",
                 },
             },
         ]
@@ -486,6 +504,9 @@ async def test_get_cluster_user(
                 "email": "denis@domain.name",
                 "created_at": date.isoformat(),
             },
+            "balance": {
+                "spent_credits": "0",
+            },
         }
         return web.json_response(data)
 
@@ -534,6 +555,9 @@ async def test_add_cluster_user(
                 "last_name": "user",
                 "email": "ivan@domain.name",
                 "created_at": date.isoformat(),
+            },
+            "balance": {
+                "spent_credits": "0",
             },
         }
         return web.json_response(payload, status=HTTPCreated.status_code)
@@ -610,6 +634,9 @@ async def test_set_user_quota(
         payload["role"] = "user"
         payload["user_name"] = request.match_info["user_name"]
         payload["user_info"] = {"email": f"{payload['user_name']}@domain.name"}
+        payload["balance"] = {
+            "spent_credits": "0",
+        }
         return web.json_response(payload, status=HTTPOk.status_code)
 
     app = web.Application()
@@ -621,73 +648,112 @@ async def test_set_user_quota(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/api/v1")) as client:
-        await client._admin.set_user_quota("default", "ivan", Decimal("1000"), 10)
-        await client._admin.set_user_quota("neuro", "user2", None, None)
-        await client._admin.set_user_quota("neuro", "user3", 0, None)
-        assert requested_cluster_users == [
-            ("default", "ivan"),
-            ("neuro", "user2"),
-            ("neuro", "user3"),
-        ]
-        assert len(requested_payloads) == 3
-        assert {
-            "quota": {
-                "credits": "1000",
-                "total_running_jobs": 10,
-            },
-        } in requested_payloads
-        assert {"quota": {}} in requested_payloads
-        assert {
-            "quota": {
-                "credits": "0",
-            },
-        } in requested_payloads
-
-
-async def test_add_user_quota(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
-) -> None:
-    requested_cluster_users = []
-    requested_payloads = []
-
-    async def handle_cluster_user_quota_patch(
-        request: web.Request,
-    ) -> web.StreamResponse:
-        requested_cluster_users.append(
-            (
-                request.match_info["cluster_name"],
-                request.match_info["user_name"],
-            )
-        )
-        payload = await request.json()
-        requested_payloads.append(dict(payload))
-        payload["role"] = "user"
-        payload["user_name"] = request.match_info["user_name"]
-        payload["user_info"] = {"email": f"{payload['user_name']}@domain.name"}
-        return web.json_response(payload, status=HTTPOk.status_code)
-
-    app = web.Application()
-    app.router.add_patch(
-        "/apis/admin/v1/clusters/{cluster_name}/users/{user_name}/quota",
-        handle_cluster_user_quota_patch,
-    )
-
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/api/v1")) as client:
-        await client._admin.add_user_quota("default", "ivan", Decimal("1000"))
-        await client._admin.add_user_quota("neuro", "user2", None)
+        await client._admin.set_user_quota("default", "ivan", 10)
+        await client._admin.set_user_quota("neuro", "user2", None)
         assert requested_cluster_users == [
             ("default", "ivan"),
             ("neuro", "user2"),
         ]
         assert len(requested_payloads) == 2
         assert {
-            "additional_quota": {
-                "credits": "1000",
+            "quota": {
+                "total_running_jobs": 10,
             },
         } in requested_payloads
-        assert {"additional_quota": {}} in requested_payloads
+        assert {"quota": {}} in requested_payloads
+
+
+async def test_set_user_credits(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    requested_cluster_users = []
+    requested_payloads = []
+
+    async def handle_cluster_user_balance_patch(
+        request: web.Request,
+    ) -> web.StreamResponse:
+        user_name = request.match_info["user_name"]
+        requested_cluster_users.append(
+            (
+                request.match_info["cluster_name"],
+                user_name,
+            )
+        )
+        payload = await request.json()
+        requested_payloads.append(dict(payload))
+        payload = {
+            "role": "user",
+            "user_name": user_name,
+            "user_info": {"email": f"{user_name}@domain.name"},
+            "balance": {
+                "spent_credits": "0",
+            },
+        }
+        return web.json_response(payload, status=HTTPOk.status_code)
+
+    app = web.Application()
+    app.router.add_patch(
+        "/apis/admin/v1/clusters/{cluster_name}/users/{user_name}/balance",
+        handle_cluster_user_balance_patch,
+    )
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        await client._admin.set_user_credits("default", "ivan", Decimal(10))
+        await client._admin.set_user_credits("neuro", "user2", None)
+        assert requested_cluster_users == [
+            ("default", "ivan"),
+            ("neuro", "user2"),
+        ]
+        assert len(requested_payloads) == 2
+        assert {"credits": "10"} in requested_payloads
+        assert {"credits": None} in requested_payloads
+
+
+async def test_add_user_credits(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    requested_cluster_users = []
+    requested_payloads = []
+
+    async def handle_cluster_user_balance_patch(
+        request: web.Request,
+    ) -> web.StreamResponse:
+        user_name = request.match_info["user_name"]
+        requested_cluster_users.append(
+            (
+                request.match_info["cluster_name"],
+                user_name,
+            )
+        )
+        payload = await request.json()
+        requested_payloads.append(dict(payload))
+        payload = {
+            "role": "user",
+            "user_name": user_name,
+            "user_info": {"email": f"{user_name}@domain.name"},
+            "balance": {
+                "spent_credits": "0",
+            },
+        }
+        return web.json_response(payload, status=HTTPOk.status_code)
+
+    app = web.Application()
+    app.router.add_patch(
+        "/apis/admin/v1/clusters/{cluster_name}/users/{user_name}/balance",
+        handle_cluster_user_balance_patch,
+    )
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/api/v1")) as client:
+        await client._admin.add_user_credits("default", "ivan", Decimal("1000"))
+        assert requested_cluster_users == [
+            ("default", "ivan"),
+        ]
+        assert len(requested_payloads) == 1
+        assert {"additional_credits": "1000"} in requested_payloads
 
 
 async def test_get_cloud_provider_options(

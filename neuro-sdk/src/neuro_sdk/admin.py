@@ -250,7 +250,7 @@ class _Admin(metaclass=NoPublicConstructor):
         self,
         cluster_name: str,
         user_name: str,
-        additional_credits: Optional[Decimal],
+        additional_credits: Decimal,
     ) -> _ClusterUser:
         url = (
             self._config.admin_url
@@ -260,11 +260,7 @@ class _Admin(metaclass=NoPublicConstructor):
             / user_name
             / "balance"
         )
-        payload = {
-            "additional_credits": str(additional_credits)
-            if additional_credits
-            else None,
-        }
+        payload = {"additional_credits": str(additional_credits)}
         auth = await self._config._api_auth()
 
         async with self._core.request(
