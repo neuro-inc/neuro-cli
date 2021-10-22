@@ -12,7 +12,8 @@
 		* [neuro admin remove-cluster-user](#neuro-admin-remove-cluster-user)
 		* [neuro admin get-user-quota](#neuro-admin-get-user-quota)
 		* [neuro admin set-user-quota](#neuro-admin-set-user-quota)
-		* [neuro admin add-user-quota](#neuro-admin-add-user-quota)
+		* [neuro admin set-user-credits](#neuro-admin-set-user-credits)
+		* [neuro admin add-user-credits](#neuro-admin-add-user-credits)
 		* [neuro admin add-resource-preset](#neuro-admin-add-resource-preset)
 		* [neuro admin update-resource-preset](#neuro-admin-update-resource-preset)
 		* [neuro admin remove-resource-preset](#neuro-admin-remove-resource-preset)
@@ -228,7 +229,8 @@ Name | Description|
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
 | _[neuro admin get\-user-quota](#neuro-admin-get-user-quota)_| Get info about user quota in given cluster |
 | _[neuro admin set\-user-quota](#neuro-admin-set-user-quota)_| Set user quota to given values |
-| _[neuro admin add\-user-quota](#neuro-admin-add-user-quota)_| Add given values to user quota |
+| _[neuro admin set\-user-credits](#neuro-admin-set-user-credits)_| Set user credits to given value |
+| _[neuro admin add\-user-credits](#neuro-admin-add-user-credits)_| Add given values to user quota |
 | _[neuro admin add\-resource-preset](#neuro-admin-add-resource-preset)_| Add new resource preset |
 | _[neuro admin update\-resource-preset](#neuro-admin-update-resource-preset)_| Update existing resource preset |
 | _[neuro admin remove\-resource-preset](#neuro-admin-remove-resource-preset)_| Remove resource preset |
@@ -405,20 +407,19 @@ neuro admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-c, --credits AMOUNT_|Maximum running jobs quota|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota|
 
 
 
 
-### neuro admin add-user-quota
+### neuro admin set-user-credits
 
-Add given values to user quota
+Set user credits to given value
 
 **Usage:**
 
 ```bash
-neuro admin add-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+neuro admin set-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
 **Options:**
@@ -426,7 +427,27 @@ neuro admin add-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-c, --credits AMOUNT_|Maximum running jobs quota|
+|_\-c, --credits AMOUNT_|Credits amount to set|
+
+
+
+
+### neuro admin add-user-credits
+
+Add given values to user quota
+
+**Usage:**
+
+```bash
+neuro admin add-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\-c, --credits AMOUNT_|Credits amount to add|
 
 
 

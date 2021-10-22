@@ -16,10 +16,12 @@ from rich.markup import escape as rich_escape
 from neuro_sdk import Preset
 from neuro_sdk.admin import _ClusterUserRoleType
 
+from neuro_cli.formatters.config import BalanceFormatter
+
 from .click_types import MEGABYTE
 from .defaults import JOB_CPU_NUMBER, JOB_MEMORY_AMOUNT, PRESET_PRICE
 from .formatters.admin import ClustersFormatter, ClusterUserFormatter
-from .formatters.config import QuotaFormatter
+from .formatters.config import AdminQuotaFormatter
 from .root import Root
 from .utils import argument, command, group, option
 
@@ -451,25 +453,20 @@ async def get_user_quota(
         cluster_name=cluster_name,
         user_name=user_name,
     )
-    fmt = QuotaFormatter()
+    quota_fmt = AdminQuotaFormatter()
+    balance_fmt = BalanceFormatter()
     root.print(
-        f"Quotas for [u]{rich_escape(user_with_quota.user_name)}[/u] "
+        f"Quota and balance for [u]{rich_escape(user_with_quota.user_name)}[/u] "
         f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
         markup=True,
     )
-    root.print(fmt(user_with_quota.quota))
+    root.print(quota_fmt(user_with_quota.quota))
+    root.print(balance_fmt(user_with_quota.balance))
 
 
 @command()
 @argument("cluster_name", required=True, type=str)
 @argument("user_name", required=True, type=str)
-@option(
-    "-c",
-    "--credits",
-    metavar="AMOUNT",
-    type=str,
-    help="Maximum running jobs quota",
-)
 @option(
     "-j",
     "--jobs",
@@ -481,20 +478,17 @@ async def set_user_quota(
     root: Root,
     cluster_name: str,
     user_name: str,
-    credits: Optional[str],
     jobs: Optional[int],
 ) -> None:
     """
     Set user quota to given values
     """
-    credits_decimal = _parse_credits_value(credits)
     user_with_quota = await root.client._admin.set_user_quota(
         cluster_name=cluster_name,
         user_name=user_name,
-        credits=credits_decimal,
         total_running_jobs=jobs,
     )
-    fmt = QuotaFormatter()
+    fmt = AdminQuotaFormatter()
     root.print(
         f"New quotas for [u]{rich_escape(user_with_quota.user_name)}[/u] "
         f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
@@ -511,9 +505,43 @@ async def set_user_quota(
     "--credits",
     metavar="AMOUNT",
     type=str,
-    help="Maximum running jobs quota",
+    help="Credits amount to set",
 )
-async def add_user_quota(
+async def set_user_credits(
+    root: Root,
+    cluster_name: str,
+    user_name: str,
+    credits: Optional[str],
+) -> None:
+    """
+    Set user credits to given value
+    """
+    credits_decimal = _parse_credits_value(credits)
+    user_with_quota = await root.client._admin.set_user_credits(
+        cluster_name=cluster_name,
+        user_name=user_name,
+        credits=credits_decimal,
+    )
+    fmt = BalanceFormatter()
+    root.print(
+        f"New credits for [u]{rich_escape(user_with_quota.user_name)}[/u] "
+        f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
+        markup=True,
+    )
+    root.print(fmt(user_with_quota.balance))
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("user_name", required=True, type=str)
+@option(
+    "-c",
+    "--credits",
+    metavar="AMOUNT",
+    type=str,
+    help="Credits amount to add",
+)
+async def add_user_credits(
     root: Root,
     cluster_name: str,
     user_name: str,
@@ -523,18 +551,18 @@ async def add_user_quota(
     Add given values to user quota
     """
     additional_credits = _parse_credits_value(credits)
-    user_with_quota = await root.client._admin.add_user_quota(
+    user_with_quota = await root.client._admin.add_user_credits(
         cluster_name,
         user_name,
         additional_credits=additional_credits,
     )
-    fmt = QuotaFormatter()
+    fmt = BalanceFormatter()
     root.print(
-        f"New quotas for [u]{rich_escape(user_with_quota.user_name)}[/u] "
+        f"New credits for [u]{rich_escape(user_with_quota.user_name)}[/u] "
         f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
         markup=True,
     )
-    root.print(fmt(user_with_quota.quota))
+    root.print(fmt(user_with_quota.balance))
 
 
 async def _update_presets_and_fetch(root: Root, presets: Mapping[str, Preset]) -> None:
@@ -799,7 +827,8 @@ admin.add_command(remove_cluster_user)
 
 admin.add_command(get_user_quota)
 admin.add_command(set_user_quota)
-admin.add_command(add_user_quota)
+admin.add_command(set_user_credits)
+admin.add_command(add_user_credits)
 
 admin.add_command(add_resource_preset)
 admin.add_command(update_resource_preset)

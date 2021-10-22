@@ -5,9 +5,15 @@ from typing import Any, Callable, List, Mapping
 from unittest import mock
 
 from neuro_sdk import Preset
-from neuro_sdk.admin import _Admin, _ClusterUser, _ClusterUserRoleType, _UserInfo
+from neuro_sdk.admin import (
+    _Admin,
+    _Balance,
+    _ClusterUser,
+    _ClusterUserRoleType,
+    _Quota,
+    _UserInfo,
+)
 from neuro_sdk.config import Config
-from neuro_sdk.users import Quota
 
 from .conftest import SysCapWithCode
 
@@ -24,7 +30,8 @@ def test_add_cluster_user_print_result(run_cli: _RunCli) -> None:
             return _ClusterUser(
                 user_name,
                 _ClusterUserRoleType.MANAGER,
-                quota=Quota(),
+                quota=_Quota(),
+                balance=_Balance(),
                 user_info=_UserInfo(
                     email="some@email.com",
                     created_at=None,

@@ -8,16 +8,17 @@ from aiohttp.web_exceptions import HTTPOk
 
 from neuro_sdk import Client
 from neuro_sdk.admin import (
+    _Balance,
     _CloudProvider,
     _Cluster,
     _ClusterUser,
     _ClusterUserRoleType,
     _NodePool,
+    _Quota,
     _Storage,
     _UserInfo,
 )
 from neuro_sdk.server_cfg import Preset
-from neuro_sdk.users import Quota
 
 from tests import _TestServerFactory
 
@@ -337,7 +338,8 @@ async def test_list_cluster_users_explicit_cluster(
             _ClusterUser(
                 user_name="denis",
                 role=_ClusterUserRoleType("admin"),
-                quota=Quota(),
+                quota=_Quota(),
+                balance=_Balance(),
                 user_info=_UserInfo(
                     first_name="denis",
                     last_name="admin",
@@ -348,7 +350,8 @@ async def test_list_cluster_users_explicit_cluster(
             _ClusterUser(
                 user_name="andrew",
                 role=_ClusterUserRoleType("manager"),
-                quota=Quota(),
+                quota=_Quota(),
+                balance=_Balance(),
                 user_info=_UserInfo(
                     first_name="andrew",
                     last_name="manager",
@@ -359,7 +362,8 @@ async def test_list_cluster_users_explicit_cluster(
             _ClusterUser(
                 user_name="ivan",
                 role=_ClusterUserRoleType("user"),
-                quota=Quota(),
+                quota=_Quota(),
+                balance=_Balance(),
                 user_info=_UserInfo(
                     first_name="ivan",
                     last_name="user",
@@ -426,7 +430,8 @@ async def test_list_cluster_users_default_cluster(
             _ClusterUser(
                 user_name="denis",
                 role=_ClusterUserRoleType("admin"),
-                quota=Quota(),
+                quota=_Quota(),
+                balance=_Balance(),
                 user_info=_UserInfo(
                     first_name="denis",
                     last_name="admin",
@@ -437,7 +442,8 @@ async def test_list_cluster_users_default_cluster(
             _ClusterUser(
                 user_name="andrew",
                 role=_ClusterUserRoleType("manager"),
-                quota=Quota(),
+                quota=_Quota(),
+                balance=_Balance(),
                 user_info=_UserInfo(
                     first_name="andrew",
                     last_name="manager",
@@ -448,7 +454,8 @@ async def test_list_cluster_users_default_cluster(
             _ClusterUser(
                 user_name="ivan",
                 role=_ClusterUserRoleType("user"),
-                quota=Quota(),
+                quota=_Quota(),
+                balance=_Balance(),
                 user_info=_UserInfo(
                     first_name="ivan",
                     last_name="user",
@@ -495,7 +502,8 @@ async def test_get_cluster_user(
         assert resp == _ClusterUser(
             user_name="denis",
             role=_ClusterUserRoleType("admin"),
-            quota=Quota(),
+            quota=_Quota(),
+            balance=_Balance(),
             user_info=_UserInfo(
                 first_name="denis",
                 last_name="admin",
@@ -542,7 +550,8 @@ async def test_add_cluster_user(
         assert resp == _ClusterUser(
             user_name="ivan",
             role=_ClusterUserRoleType("user"),
-            quota=Quota(),
+            quota=_Quota(),
+            balance=_Balance(),
             user_info=_UserInfo(
                 first_name="ivan",
                 last_name="user",
