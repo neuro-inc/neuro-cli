@@ -1163,11 +1163,16 @@ class Buckets(metaclass=NoPublicConstructor):
 
     @asyncgeneratorcontextmanager
     async def get_disk_usage(
-        self, bucket_id_or_name: str, cluster_name: Optional[str] = None
+        self,
+        bucket_id_or_name: str,
+        cluster_name: Optional[str] = None,
+        bucket_owner: Optional[str] = None,
     ) -> AsyncIterator[BucketUsage]:
         total_bytes = 0
         obj_count = 0
-        async with self._get_provider(bucket_id_or_name, cluster_name) as provider:
+        async with self._get_provider(
+            bucket_id_or_name, cluster_name, bucket_owner
+        ) as provider:
             async with provider.list_blobs("", recursive=True) as it:
                 async for obj in it:
                     total_bytes += obj.size

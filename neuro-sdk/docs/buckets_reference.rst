@@ -368,6 +368,19 @@ Buckets
 
       :return: Signed url (:class:`yarl.URL`)
 
+   .. comethod:: get_disk_usage(bucket_id_or_name: str, \
+                                cluster_name: Optional[str] = None, \
+                                bucket_owner: Optional[str) = None, \
+                 ) -> AsyncContextManager[AsyncIterator[BucketUsage]]
+
+      Get disk space usage of a given bucket. Iterator yield partial results as calculation
+      for the whole bucket can take time.
+
+      :param str bucket_id_or_name: bucket's id or name.
+      :param str cluster_name: cluster to look for a bucket. Default is current cluster.
+      :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
+                               Default is current user.
+
    .. comethod:: persistent_credentials_list(cluster_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[PersistentBucketCredentials]]
       :async-for:
 
@@ -590,3 +603,19 @@ BlobCommonPrefix
    An ancestor of :class:`BucketEntry` for describing common prefixes for
    blobs in non-recursive listing. You can treat it as a kind of *folder* on Blob
    Storage.
+
+
+BucketUsage
+===========
+
+.. class:: BucketUsage
+
+   An :class:`~dataclasses.dataclass` for describing bucket disk space usage.
+
+   .. attribute:: total_bytes
+
+      Total size of all objects in bytes, :class:`int`.
+
+   .. attribute:: object_count
+
+      Total number of objects, :class:`int`.
