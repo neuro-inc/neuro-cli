@@ -7,11 +7,14 @@ import toml
 from rich.console import RenderableType
 
 from neuro_sdk import Client, Cluster, Preset
+from neuro_sdk.admin import _Balance, _Quota
 from neuro_sdk.users import Quota
 
 from neuro_cli.alias import list_aliases
 from neuro_cli.formatters.config import (
+    AdminQuotaFormatter,
     AliasesFormatter,
+    BalanceFormatter,
     ConfigFormatter,
     QuotaFormatter,
 )
@@ -114,6 +117,48 @@ class TestQuotaFormatter:
             total_running_jobs=0,
         )
         out = QuotaFormatter()(quota)
+        rich_cmp(out)
+
+
+class TestAdminQuotaFormatter:
+    def test_output(self, rich_cmp: RichCmp) -> None:
+        quota = _Quota(
+            total_running_jobs=10,
+        )
+        out = AdminQuotaFormatter()(quota)
+        rich_cmp(out)
+
+    def test_output_no_quota(self, rich_cmp: RichCmp) -> None:
+        quota = _Quota(
+            total_running_jobs=None,
+        )
+        out = AdminQuotaFormatter()(quota)
+        rich_cmp(out)
+
+    def test_output_zeroes(self, rich_cmp: RichCmp) -> None:
+        quota = _Quota(
+            total_running_jobs=0,
+        )
+        out = AdminQuotaFormatter()(quota)
+        rich_cmp(out)
+
+
+class TestBalanceFormatter:
+    def test_output(self, rich_cmp: RichCmp) -> None:
+        balance = _Balance(credits=Decimal("10"), spent_credits=Decimal("0.23"))
+        out = BalanceFormatter()(balance)
+        rich_cmp(out)
+
+    def test_output_no_quota(self, rich_cmp: RichCmp) -> None:
+        balance = _Balance(
+            credits=None,
+        )
+        out = BalanceFormatter()(balance)
+        rich_cmp(out)
+
+    def test_output_rounding(self, rich_cmp: RichCmp) -> None:
+        balance = _Balance(credits=Decimal("10"), spent_credits=Decimal(1 / 3))
+        out = BalanceFormatter()(balance)
         rich_cmp(out)
 
 

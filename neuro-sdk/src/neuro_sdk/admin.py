@@ -6,8 +6,6 @@ from typing import Any, Dict, List, Mapping, Optional
 
 from dateutil.parser import isoparse
 
-from neuro_sdk.users import Quota
-
 from .config import Config
 from .core import _Core
 from .server_cfg import Preset
@@ -43,11 +41,23 @@ class _UserInfo:
 
 
 @dataclass(frozen=True)
+class _Quota:
+    total_running_jobs: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class _Balance:
+    credits: Optional[Decimal] = None
+    spent_credits: Decimal = Decimal("0")
+
+
+@dataclass(frozen=True)
 class _ClusterUser:
     user_name: str
     role: _ClusterUserRoleType
-    quota: Quota
+    quota: _Quota
     user_info: _UserInfo
+    balance: _Balance
 
 
 @dataclass(frozen=True)
@@ -185,7 +195,6 @@ class _Admin(metaclass=NoPublicConstructor):
         self,
         cluster_name: str,
         user_name: str,
-        credits: Optional[Decimal],
         total_running_jobs: Optional[int],
     ) -> _ClusterUser:
         url = (
@@ -198,7 +207,6 @@ class _Admin(metaclass=NoPublicConstructor):
         )
         payload = {
             "quota": {
-                "credits": str(credits) if credits is not None else None,
                 "total_running_jobs": total_running_jobs,
             },
         }
@@ -212,11 +220,11 @@ class _Admin(metaclass=NoPublicConstructor):
             payload = await resp.json()
             return _cluster_user_from_api(payload)
 
-    async def add_user_quota(
+    async def set_user_credits(
         self,
         cluster_name: str,
         user_name: str,
-        additional_credits: Optional[Decimal],
+        credits: Optional[Decimal],
     ) -> _ClusterUser:
         url = (
             self._config.admin_url
@@ -224,16 +232,35 @@ class _Admin(metaclass=NoPublicConstructor):
             / cluster_name
             / "users"
             / user_name
-            / "quota"
+            / "balance"
         )
         payload = {
-            "additional_quota": {
-                "credits": str(additional_credits) if additional_credits else None,
-            },
+            "credits": str(credits) if credits is not None else None,
         }
-        payload["additional_quota"] = {
-            k: v for k, v in payload["additional_quota"].items() if v is not None
-        }
+
+        auth = await self._config._api_auth()
+
+        async with self._core.request(
+            "PATCH", url, json=payload, auth=auth, params={"with_user_info": "true"}
+        ) as resp:
+            payload = await resp.json()
+            return _cluster_user_from_api(payload)
+
+    async def add_user_credits(
+        self,
+        cluster_name: str,
+        user_name: str,
+        additional_credits: Decimal,
+    ) -> _ClusterUser:
+        url = (
+            self._config.admin_url
+            / "clusters"
+            / cluster_name
+            / "users"
+            / user_name
+            / "balance"
+        )
+        payload = {"additional_credits": str(additional_credits)}
         auth = await self._config._api_auth()
 
         async with self._core.request(
@@ -265,12 +292,18 @@ def _user_info_from_api(payload: Dict[str, Any]) -> _UserInfo:
 
 def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
     quota_dict = payload.get("quota", {})
+    balance_dict = payload.get("balance", {})
     return _ClusterUser(
         user_name=payload["user_name"],
         role=_ClusterUserRoleType(payload["role"]),
-        quota=Quota(
-            Decimal(quota_dict["credits"]) if "credits" in quota_dict else None,
-            quota_dict.get("total_running_jobs"),
+        quota=_Quota(
+            total_running_jobs=quota_dict.get("total_running_jobs"),
+        ),
+        balance=_Balance(
+            credits=Decimal(balance_dict["credits"])
+            if "credits" in balance_dict
+            else None,
+            spent_credits=Decimal(balance_dict["spent_credits"]),
         ),
         user_info=_user_info_from_api(payload["user_info"]),
     )

@@ -5,15 +5,16 @@ from dateutil.parser import isoparse
 from rich.console import RenderableType
 
 from neuro_sdk.admin import (
+    _Balance,
     _CloudProvider,
     _Cluster,
     _ClusterUser,
     _ClusterUserRoleType,
     _NodePool,
+    _Quota,
     _Storage,
     _UserInfo,
 )
-from neuro_sdk.users import Quota
 
 from neuro_cli.formatters.admin import ClustersFormatter, ClusterUserFormatter
 
@@ -27,7 +28,8 @@ class TestClusterUserFormatter:
             _ClusterUser(
                 user_name="denis",
                 role=_ClusterUserRoleType("admin"),
-                quota=Quota(),
+                quota=_Quota(),
+                balance=_Balance(),
                 user_info=_UserInfo(
                     first_name="denis",
                     last_name="admin",
@@ -38,7 +40,8 @@ class TestClusterUserFormatter:
             _ClusterUser(
                 user_name="andrew",
                 role=_ClusterUserRoleType("manager"),
-                quota=Quota(credits=Decimal(100)),
+                quota=_Quota(),
+                balance=_Balance(credits=Decimal(100)),
                 user_info=_UserInfo(
                     first_name="andrew",
                     last_name=None,
@@ -49,7 +52,8 @@ class TestClusterUserFormatter:
             _ClusterUser(
                 user_name="ivan",
                 role=_ClusterUserRoleType("user"),
-                quota=Quota(total_running_jobs=1),
+                quota=_Quota(total_running_jobs=1),
+                balance=_Balance(),
                 user_info=_UserInfo(
                     first_name=None,
                     last_name="user",
@@ -60,7 +64,8 @@ class TestClusterUserFormatter:
             _ClusterUser(
                 user_name="alex",
                 role=_ClusterUserRoleType("user"),
-                quota=Quota(credits=Decimal(10), total_running_jobs=2),
+                quota=_Quota(total_running_jobs=2),
+                balance=_Balance(credits=Decimal(100), spent_credits=Decimal(20)),
                 user_info=_UserInfo(
                     first_name=None,
                     last_name=None,

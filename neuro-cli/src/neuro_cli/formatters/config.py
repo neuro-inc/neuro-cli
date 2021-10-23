@@ -10,6 +10,7 @@ from rich.table import Table
 from rich.text import Text
 
 from neuro_sdk import Cluster, Config, Preset
+from neuro_sdk.admin import _Balance, _Quota
 from neuro_sdk.users import Quota
 
 from neuro_cli.utils import format_size
@@ -45,6 +46,26 @@ class QuotaFormatter:
         return RenderGroup(
             Text.assemble(Text("Credits", style="bold"), f": ", credits_details),
             Text.assemble(Text("Jobs", style="bold"), f": ", jobs_details),
+        )
+
+
+class AdminQuotaFormatter:
+    def __call__(self, quota: _Quota) -> RenderableType:
+        jobs_details = format_quota_details(quota.total_running_jobs)
+        return RenderGroup(
+            Text.assemble(Text("Jobs", style="bold"), f": ", jobs_details),
+        )
+
+
+class BalanceFormatter:
+    def __call__(self, balance: _Balance) -> RenderableType:
+        credits_details = format_quota_details(balance.credits)
+        spent_credits_details = format_quota_details(balance.spent_credits)
+        return RenderGroup(
+            Text.assemble(Text("Credits", style="bold"), f": ", credits_details),
+            Text.assemble(
+                Text("Spend credits", style="bold"), f": ", spent_credits_details
+            ),
         )
 
 
@@ -138,5 +159,7 @@ _QUOTA_NOT_SET = "infinity"
 def format_quota_details(quota: Optional[Union[int, Decimal]]) -> str:
     if quota is None:
         return _QUOTA_NOT_SET
+    elif isinstance(quota, Decimal):
+        return f"{quota:.2f}"
     else:
         return str(quota)

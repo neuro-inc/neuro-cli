@@ -23,6 +23,7 @@ class ClusterUserFormatter:
         table.add_column("Full name")
         table.add_column("Registered")
         table.add_column("Credits")
+        table.add_column("Spent credits")
         table.add_column("Max jobs")
         rows = []
 
@@ -34,7 +35,8 @@ class ClusterUserFormatter:
                     user.user_info.email,
                     user.user_info.full_name,
                     format_datetime_iso(user.user_info.created_at),
-                    format_quota_details(user.quota.credits),
+                    format_quota_details(user.balance.credits),
+                    format_quota_details(user.balance.spent_credits),
                     format_quota_details(user.quota.total_running_jobs),
                 )
             )

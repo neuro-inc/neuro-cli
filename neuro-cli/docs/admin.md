@@ -22,7 +22,8 @@ Cluster administration commands.
 | [_remove-cluster-user_](admin.md#remove-cluster-user) | Remove user access from the cluster |
 | [_get-user-quota_](admin.md#get-user-quota) | Get info about user quota in given cluster |
 | [_set-user-quota_](admin.md#set-user-quota) | Set user quota to given values |
-| [_add-user-quota_](admin.md#add-user-quota) | Add given values to user quota |
+| [_set-user-credits_](admin.md#set-user-credits) | Set user credits to given value |
+| [_add-user-credits_](admin.md#add-user-credits) | Add given values to user quota |
 | [_add-resource-preset_](admin.md#add-resource-preset) | Add new resource preset |
 | [_update-resource-preset_](admin.md#update-resource-preset) | Update existing resource preset |
 | [_remove-resource-preset_](admin.md#remove-resource-preset) | Remove resource preset |
@@ -219,12 +220,33 @@ Set user quota to given values
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Maximum running jobs quota |
 | _-j, --jobs AMOUNT_ | Maximum running jobs quota |
 
 
 
-### add-user-quota
+### set-user-credits
+
+Set user credits to given value
+
+
+#### Usage
+
+```bash
+neuro admin set-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+Set user credits to given value
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _-c, --credits AMOUNT_ | Credits amount to set |
+
+
+
+### add-user-credits
 
 Add given values to user quota
 
@@ -232,7 +254,7 @@ Add given values to user quota
 #### Usage
 
 ```bash
-neuro admin add-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+neuro admin add-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
 Add given values to user quota
@@ -242,7 +264,7 @@ Add given values to user quota
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Maximum running jobs quota |
+| _-c, --credits AMOUNT_ | Credits amount to add |
 
 
 
