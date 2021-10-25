@@ -513,11 +513,13 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
     @asyncgeneratorcontextmanager
     async def fetch_blob(self, key: str, offset: int = 0) -> AsyncIterator[bytes]:
         response = await self._client.get_object(
-            Bucket=self._bucket_name, Key=key, Range=f"bytes={offset}-"
+            Bucket=self._bucket_name,
+            Key=key,
+            Range=f"bytes={offset}-" if offset else "",
         )
         async with response["Body"] as stream:
-            async for chunk in stream.iter_chunks():
-                yield chunk[0]
+            async for chunk in stream.iter_any():
+                yield chunk
 
     async def delete_blob(self, key: str) -> None:
         await self._client.delete_object(Bucket=self._bucket_name, Key=key)
