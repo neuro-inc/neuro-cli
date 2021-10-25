@@ -5,6 +5,29 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.10.0 (2021-10-25)
+==================================
+
+Features
+--------
+
+- Added support of open stack as bucket provider. ([#2371](https://github.com/neuro-inc/platform-client-python/issues/2371))
+- Added `blob du <bucket_id_or_name>` command to change bucket's storage usage. ([#2372](https://github.com/neuro-inc/platform-client-python/issues/2372))
+- Added support of bucket name in uris for bucket that do not belong to current user. ([#2385](https://github.com/neuro-inc/platform-client-python/issues/2385))
+- Added first name, lastname, registered columns to `neuro admin get-cluster-users` output. ([#2387](https://github.com/neuro-inc/platform-client-python/issues/2387))
+- Added "Spent credits" to add "neuro admin get-cluster-users". Splitted 'quota' into 'balance' and 'quota':
+
+  - `neuro admin set-user-quota` changes only `max_running_jobs` quota.
+  - `neuro admin set-user-credits` changes only `credits` balance of user.
+  - `neuro admin add-user-credits` updates `credits` balance of user by delta. ([#2391](https://github.com/neuro-inc/platform-client-python/issues/2391))
+
+
+Bugfixes
+--------
+
+- Fix fetching zero-size blob from S3 compatible bucket providers. ([#2394](https://github.com/neuro-inc/platform-client-python/issues/2394))
+
+
 Neuro SDK/CLI 21.9.3 (2021-09-24)
 ===================================
 

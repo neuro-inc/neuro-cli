@@ -1,1 +1,0 @@
-Fix fetching zero-size blob from S3 compatible bucket providers.
