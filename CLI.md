@@ -87,6 +87,7 @@
 		* [neuro blob glob](#neuro-blob-glob)
 		* [neuro blob rm](#neuro-blob-rm)
 		* [neuro blob sign-url](#neuro-blob-sign-url)
+		* [neuro blob du](#neuro-blob-du)
 	* [neuro secret](#neuro-secret)
 		* [neuro secret ls](#neuro-secret-ls)
 		* [neuro secret add](#neuro-secret-add)
@@ -2044,6 +2045,7 @@ Name | Description|
 | _[neuro blob glob](#neuro-blob-glob)_| List resources that match PATTERNS |
 | _[neuro blob rm](#neuro-blob-rm)_| Remove blobs from bucket |
 | _[neuro blob sign-url](#neuro-blob-sign-url)_| Make signed url for blob in bucket |
+| _[neuro blob du](#neuro-blob-du)_| Get storage usage for BUCKET |
 
 
 
@@ -2384,6 +2386,26 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--expires TIMEDELTA_|Duration this signature will be valid in the format '1h2m3s'  \[default: 1h]|
+
+
+
+
+### neuro blob du
+
+Get storage usage for BUCKET.
+
+**Usage:**
+
+```bash
+neuro blob du [OPTIONS] BUCKET
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
 
 
 

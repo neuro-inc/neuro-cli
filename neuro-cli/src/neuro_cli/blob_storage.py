@@ -42,6 +42,7 @@ from neuro_cli.formatters.utils import (
     uri_formatter,
 )
 from neuro_cli.parse_utils import parse_timedelta
+from neuro_cli.utils import format_size
 
 from .const import EX_OSFILE
 from .formatters.blob_storage import (
@@ -338,6 +339,37 @@ async def statbucket(
     )
     with root.pager():
         root.print(bucket_fmtr(bucket_obj))
+
+
+@command()
+@option(
+    "--cluster",
+    type=CLUSTER,
+    help="Look on a specified cluster (the current cluster by default).",
+)
+@argument("bucket", type=BUCKET)
+async def du(root: Root, cluster: Optional[str], bucket: str) -> None:
+    """
+    Get storage usage for BUCKET.
+    """
+    bucket_obj = await root.client.buckets.get(bucket, cluster_name=cluster)
+
+    base_str = f"Calculating bucket {bucket_obj.name or bucket_obj.id} disk usage"
+
+    with root.status(base_str) as status:
+        async with root.client.buckets.get_disk_usage(
+            bucket_obj.id, cluster
+        ) as usage_it:
+            async for usage in usage_it:
+                status.update(
+                    f"{base_str}: total size {format_size(usage.total_bytes)}, "
+                    f"objects count {usage.object_count}"
+                )
+    root.print(
+        f"Bucket {bucket_obj.name or bucket_obj.id} disk usage:\n"
+        f"Total size: {format_size(usage.total_bytes)}\n"
+        f"Objects count: {usage.object_count}"
+    )
 
 
 @command()
@@ -1001,3 +1033,4 @@ blob_storage.add_command(ls)
 blob_storage.add_command(glob)
 blob_storage.add_command(rm)
 blob_storage.add_command(sign_url)
+blob_storage.add_command(du)

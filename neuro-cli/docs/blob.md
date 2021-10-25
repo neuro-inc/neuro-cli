@@ -28,6 +28,7 @@ Blob storage operations.
 | [_glob_](blob.md#glob) | List resources that match PATTERNS |
 | [_rm_](blob.md#rm) | Remove blobs from bucket |
 | [_sign-url_](blob.md#sign-url) | Make signed url for blob in bucket |
+| [_du_](blob.md#du) | Get storage usage for BUCKET |
 
 
 ### lsbucket
@@ -423,5 +424,27 @@ Make signed url for blob in bucket.
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _--expires TIMEDELTA_ | Duration this signature will be valid in the format '1h2m3s'  _\[default: 1h\]_ |
+
+
+
+### du
+
+Get storage usage for BUCKET
+
+
+#### Usage
+
+```bash
+neuro blob du [OPTIONS] BUCKET
+```
+
+Get storage usage for `BUCKET`.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
 
 
