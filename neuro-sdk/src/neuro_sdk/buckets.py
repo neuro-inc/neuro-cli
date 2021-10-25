@@ -994,6 +994,7 @@ class Bucket:
         MINIO = "minio"
         AZURE = "azure"
         GCP = "gcp"
+        OPEN_STACK = "open_stack"
 
 
 @dataclass(frozen=True)
@@ -1198,7 +1199,11 @@ class Buckets(metaclass=NoPublicConstructor):
             return await self.request_tmp_credentials(bucket.id, cluster_name)
 
         provider: BucketProvider
-        if bucket.provider in (Bucket.Provider.AWS, Bucket.Provider.MINIO):
+        if bucket.provider in (
+            Bucket.Provider.AWS,
+            Bucket.Provider.MINIO,
+            Bucket.Provider.OPEN_STACK,
+        ):
             async with S3Provider.create(bucket, _get_new_credentials) as provider:
                 yield provider
         elif bucket.provider == Bucket.Provider.AZURE:
