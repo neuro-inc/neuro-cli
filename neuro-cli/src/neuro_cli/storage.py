@@ -482,7 +482,9 @@ async def cp(
                     raise RuntimeError(
                         f"Copy operation of the file with scheme '{src.scheme}'"
                         f" to the file with scheme '{destination.scheme}'"
-                        f" is not supported"
+                        f" is not supported."
+                        " Checkout 'neuro-extras data --help',"
+                        " maybe it will suite your use-case?"
                     )
         except (OSError, ResourceNotFound, IllegalArgumentError) as error:
             log.error(f"cannot copy {src} to {destination}: {error}")

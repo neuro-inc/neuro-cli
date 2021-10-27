@@ -77,3 +77,4 @@ async def patch(root: Root, shell: str) -> None:
 
     with profile_file.open("wb+") as profile:
         profile.write(content)
+    root.print(f"Added completion configuration into '{profile_file}'")
