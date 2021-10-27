@@ -345,6 +345,8 @@ class GnuPainter(BasePainter):
         mapping = {
             FileStatusType.FILE: self.color_indicator[GnuIndicators.FILE],
             FileStatusType.DIRECTORY: self.color_indicator[GnuIndicators.DIR],
+            FileStatusType.SYMLINK: self.color_indicator[GnuIndicators.LINK],
+            FileStatusType.UNKNOWN: self.color_indicator[GnuIndicators.MISSING],
         }
         color = mapping[type]
         if not color:
@@ -451,7 +453,12 @@ class BaseFilesFormatter:
 class LongFilesFormatter(BaseFilesFormatter):
     permissions_mapping = {Action.MANAGE: "m", Action.WRITE: "w", Action.READ: "r"}
 
-    file_types_mapping = {FileStatusType.FILE: "-", FileStatusType.DIRECTORY: "d"}
+    file_types_mapping = {
+        FileStatusType.FILE: "-",
+        FileStatusType.DIRECTORY: "d",
+        FileStatusType.SYMLINK: "l",
+        FileStatusType.UNKNOWN: "?",
+    }
 
     def __init__(self, human_readable: bool, color: bool):
         self.human_readable = human_readable
@@ -470,6 +477,8 @@ class LongFilesFormatter(BaseFilesFormatter):
             size = str(file.size)
 
         name = self.painter.paint(file.name, file.type)
+        if file.target is not None:
+            name += f" -> {file.target}"
 
         return [f"{type}{permission}", f"{size}", f"{date}", name]
 

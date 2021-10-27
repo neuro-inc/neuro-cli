@@ -185,9 +185,28 @@ class TestGnuPainter:
             Action.WRITE,
             uri=URL("storage://default/usertmp"),
         )
+        link = FileStatus(
+            "link",
+            1,
+            FileStatusType.SYMLINK,
+            int(time.mktime(time.strptime("2018-12-31 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            Action.MANAGE,
+            target="test.txt",
+            uri=URL("storage://default/link"),
+        )
+        unknown = FileStatus(
+            "spam",
+            123,
+            FileStatusType.UNKNOWN,
+            int(time.mktime(time.strptime("2019-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            Action.WRITE,
+            uri=URL("storage://default/spam"),
+        )
         painter = GnuPainter(ls_colors)
         rich_cmp(painter.paint(file.name, file.type), index=0)
         rich_cmp(painter.paint(folder.name, folder.type), index=1)
+        rich_cmp(painter.paint(link.name, link.type), index=2)
+        rich_cmp(painter.paint(unknown.name, unknown.type), index=3)
 
 
 class TestBSDPainter:
@@ -215,9 +234,28 @@ class TestBSDPainter:
             Action.WRITE,
             uri=URL("storage://default/usertmp"),
         )
+        link = FileStatus(
+            "link",
+            1,
+            FileStatusType.SYMLINK,
+            int(time.mktime(time.strptime("2018-12-31 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            Action.MANAGE,
+            target="test.txt",
+            uri=URL("storage://default/link"),
+        )
+        unknown = FileStatus(
+            "spam",
+            123,
+            FileStatusType.UNKNOWN,
+            int(time.mktime(time.strptime("2019-01-01 03:00:00", "%Y-%m-%d %H:%M:%S"))),
+            Action.WRITE,
+            uri=URL("storage://default/spam"),
+        )
         painter = BSDPainter(ls_colors)
         rich_cmp(painter.paint(file.name, file.type), index=0)
         rich_cmp(painter.paint(folder.name, folder.type), index=1)
+        rich_cmp(painter.paint(link.name, link.type), index=2)
+        rich_cmp(painter.paint(unknown.name, unknown.type), index=3)
 
 
 class TestPainterFactory:
@@ -291,7 +329,38 @@ class TestFilesFormatter:
             uri=URL("storage://default/user1Folder with space"),
         ),
     ]
+    links = [
+        FileStatus(
+            "Link1",
+            1,
+            FileStatusType.SYMLINK,
+            int(time.mktime(time.strptime("2020-01-02 03:04:05", "%Y-%m-%d %H:%M:%S"))),
+            Action.WRITE,
+            target="File1",
+            uri=URL("storage://default/Link1"),
+        ),
+        FileStatus(
+            "Link2",
+            1,
+            FileStatusType.SYMLINK,
+            int(time.mktime(time.strptime("2020-02-03 04:05:06", "%Y-%m-%d %H:%M:%S"))),
+            Action.READ,
+            target="Folder1",
+            uri=URL("storage://default/Link2"),
+        ),
+    ]
+    others = [
+        FileStatus(
+            "Spam1",
+            1,
+            FileStatusType.UNKNOWN,
+            int(time.mktime(time.strptime("2020-01-02 03:04:05", "%Y-%m-%d %H:%M:%S"))),
+            Action.WRITE,
+            uri=URL("storage://default/Spam1"),
+        ),
+    ]
     files_and_folders = files + folders
+    all_entities = files_and_folders + links + others
 
     @pytest.mark.parametrize(
         "formatter",
@@ -301,10 +370,10 @@ class TestFilesFormatter:
             (LongFilesFormatter(human_readable=False, color=False)),
         ],
     )
-    def test_formatter_with_files_and_folders(
+    def test_formatter_with_all_entities(
         self, formatter: BaseFilesFormatter, rich_cmp: Any
     ) -> None:
-        rich_cmp(formatter(self.files_and_folders))
+        rich_cmp(formatter(self.all_entities))
 
     @pytest.mark.parametrize(
         "formatter",

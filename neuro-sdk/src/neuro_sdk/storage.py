@@ -78,6 +78,8 @@ Printer = Callable[[str], None]
 class FileStatusType(str, enum.Enum):
     DIRECTORY = "DIRECTORY"
     FILE = "FILE"
+    SYMLINK = "SYMLINK"
+    UNKNOWN = "UNKNOWN"
 
 
 @dataclass(frozen=True)
@@ -88,12 +90,16 @@ class FileStatus:
     modification_time: int
     permission: Action
     uri: URL
+    target: Optional[str] = None
 
     def is_file(self) -> bool:
         return self.type == FileStatusType.FILE
 
     def is_dir(self) -> bool:
         return self.type == FileStatusType.DIRECTORY
+
+    def is_symlink(self) -> bool:
+        return self.type == FileStatusType.SYMLINK
 
     @property
     def name(self) -> str:
@@ -925,25 +931,37 @@ def _isrecursive(pattern: str) -> bool:
 
 
 def _file_status_from_api_ls(base_uri: URL, values: Dict[str, Any]) -> FileStatus:
+    path = values["path"]
+    try:
+        type = FileStatusType(values["type"])
+    except ValueError:
+        type = FileStatusType.UNKNOWN
     return FileStatus(
-        path=values["path"],
-        type=FileStatusType(values["type"]),
+        path=path,
+        type=type,
         size=int(values["length"]),
         modification_time=int(values["modificationTime"]),
         permission=Action(values["permission"]),
-        uri=base_uri / values["path"],
+        uri=base_uri / path,
+        target=values.get("target"),
     )
 
 
 def _file_status_from_api_stat(cluster_name: str, values: Dict[str, Any]) -> FileStatus:
     base_uri = URL.build(scheme="storage", authority=cluster_name)
+    path = values["path"]
+    try:
+        type = FileStatusType(values["type"])
+    except ValueError:
+        type = FileStatusType.UNKNOWN
     return FileStatus(
-        path=values["path"],
-        type=FileStatusType(values["type"]),
+        path=path,
+        type=type,
         size=int(values["length"]),
         modification_time=int(values["modificationTime"]),
         permission=Action(values["permission"]),
-        uri=base_uri / values["path"].lstrip("/"),
+        uri=base_uri / path.lstrip("/"),
+        target=values.get("target"),
     )
 
 

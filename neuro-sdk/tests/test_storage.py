@@ -116,18 +116,23 @@ async def storage_server(
         elif op == "GETFILESTATUS":
             if not local_path.exists():
                 raise web.HTTPNotFound()
-            stat = local_path.stat()
-            return web.json_response(
-                {
-                    "FileStatus": {
-                        "path": local_path.name,
-                        "type": "FILE" if local_path.is_file() else "DIRECTORY",
-                        "length": stat.st_size,
-                        "modificationTime": stat.st_mtime,
-                        "permission": "write",
-                    }
-                }
-            )
+            stat = local_path.lstat()
+            status = {
+                "path": local_path.name,
+                "length": stat.st_size,
+                "modificationTime": stat.st_mtime,
+                "permission": "write",
+            }
+            if local_path.is_symlink():
+                status["type"] = "SYMLINK"
+                status["target"] = os.readlink(local_path)
+            elif local_path.is_file():
+                status["type"] = "FILE"
+            elif local_path.is_dir():
+                status["type"] = "DIRECTORY"
+            else:
+                status["type"] = "UNKNOWN"
+            return web.json_response({"FileStatus": status})
 
         elif op == "MKDIRS":
             try:
@@ -144,16 +149,23 @@ async def storage_server(
                 raise web.HTTPNotFound()
             ret = []
             for child in local_path.iterdir():
-                stat = child.stat()
-                ret.append(
-                    {
-                        "path": child.name,
-                        "type": "FILE" if child.is_file() else "DIRECTORY",
-                        "length": stat.st_size,
-                        "modificationTime": stat.st_mtime,
-                        "permission": "write",
-                    }
-                )
+                stat = child.lstat()
+                status = {
+                    "path": child.name,
+                    "length": stat.st_size,
+                    "modificationTime": stat.st_mtime,
+                    "permission": "write",
+                }
+                if child.is_symlink():
+                    status["type"] = "SYMLINK"
+                    status["target"] = os.readlink(local_path)
+                elif child.is_file():
+                    status["type"] = "FILE"
+                elif child.is_dir():
+                    status["type"] = "DIRECTORY"
+                else:
+                    status["type"] = "UNKNOWN"
+                ret.append(status)
             return await make_listiter_response(request, ret)
 
         else:
@@ -179,6 +191,21 @@ async def test_storage_ls_legacy(
                     "path": "bar",
                     "length": 4 * 1024,
                     "type": "DIRECTORY",
+                    "modificationTime": 0,
+                    "permission": "read",
+                },
+                {
+                    "path": "baz",
+                    "length": 1,
+                    "type": "SYMLINK",
+                    "modificationTime": 0,
+                    "permission": "read",
+                    "target": "foo",
+                },
+                {
+                    "path": "spam",
+                    "length": 1,
+                    "type": "SPAM",
                     "modificationTime": 0,
                     "permission": "read",
                 },
@@ -213,6 +240,23 @@ async def test_storage_ls_legacy(
             modification_time=0,
             permission=Action.READ,
             uri=URL("storage://default/user/folder/bar"),
+        ),
+        FileStatus(
+            path="baz",
+            size=1,
+            type=FileStatusType.SYMLINK,
+            modification_time=0,
+            permission=Action.READ,
+            target="foo",
+            uri=URL("storage://default/user/folder/baz"),
+        ),
+        FileStatus(
+            path="spam",
+            size=1,
+            type=FileStatusType.UNKNOWN,
+            modification_time=0,
+            permission=Action.READ,
+            uri=URL("storage://default/user/folder/spam"),
         ),
     ]
 
@@ -258,6 +302,21 @@ async def test_storage_ls(
             "modificationTime": 0,
             "permission": "read",
         },
+        {
+            "path": "baz",
+            "length": 1,
+            "type": "SYMLINK",
+            "modificationTime": 0,
+            "permission": "read",
+            "target": "foo",
+        },
+        {
+            "path": "spam",
+            "length": 1,
+            "type": "SPAM",
+            "modificationTime": 0,
+            "permission": "read",
+        },
     ]
 
     async def handler(request: web.Request) -> web.StreamResponse:
@@ -291,6 +350,23 @@ async def test_storage_ls(
             modification_time=0,
             permission=Action.READ,
             uri=URL("storage://default/user/folder/bar"),
+        ),
+        FileStatus(
+            path="baz",
+            size=1,
+            type=FileStatusType.SYMLINK,
+            modification_time=0,
+            permission=Action.READ,
+            target="foo",
+            uri=URL("storage://default/user/folder/baz"),
+        ),
+        FileStatus(
+            path="spam",
+            size=1,
+            type=FileStatusType.UNKNOWN,
+            modification_time=0,
+            permission=Action.READ,
+            uri=URL("storage://default/user/folder/spam"),
         ),
     ]
 
@@ -353,6 +429,21 @@ async def test_storage_ls_another_cluster(
             "modificationTime": 0,
             "permission": "read",
         },
+        {
+            "path": "baz",
+            "length": 1,
+            "type": "SYMLINK",
+            "modificationTime": 0,
+            "permission": "read",
+            "target": "foo",
+        },
+        {
+            "path": "spam",
+            "length": 1,
+            "type": "SPAM",
+            "modificationTime": 0,
+            "permission": "read",
+        },
     ]
 
     async def handler(request: web.Request) -> web.StreamResponse:
@@ -386,6 +477,23 @@ async def test_storage_ls_another_cluster(
             modification_time=0,
             permission=Action.READ,
             uri=URL("storage://another/user/folder/bar"),
+        ),
+        FileStatus(
+            path="baz",
+            size=1,
+            type=FileStatusType.SYMLINK,
+            modification_time=0,
+            permission=Action.READ,
+            target="foo",
+            uri=URL("storage://another/user/folder/baz"),
+        ),
+        FileStatus(
+            path="spam",
+            size=1,
+            type=FileStatusType.UNKNOWN,
+            modification_time=0,
+            permission=Action.READ,
+            uri=URL("storage://another/user/folder/spam"),
         ),
     ]
 
@@ -1136,6 +1244,43 @@ async def test_storage_stats_another_cluster(
             modification_time=3456,
             permission=Action.READ,
             uri=URL("storage://another/user/folder"),
+        )
+
+
+async def test_storage_stats_symlink(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        assert request.path == "/storage/user/link"
+        assert request.query == {"op": "GETFILESTATUS"}
+        return web.json_response(
+            {
+                "FileStatus": {
+                    "path": "/user/link",
+                    "type": "SYMLINK",
+                    "length": 1234,
+                    "modificationTime": 3456,
+                    "permission": "read",
+                    "target": "folder/subfolder/file",
+                }
+            }
+        )
+
+    app = web.Application()
+    app.router.add_get("/storage/user/link", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        stats = await client.storage.stat(URL("storage:link"))
+        assert stats == FileStatus(
+            path="/user/link",
+            type=FileStatusType.SYMLINK,
+            size=1234,
+            modification_time=3456,
+            permission=Action.READ,
+            target="folder/subfolder/file",
+            uri=URL("storage://default/user/link"),
         )
 
 
