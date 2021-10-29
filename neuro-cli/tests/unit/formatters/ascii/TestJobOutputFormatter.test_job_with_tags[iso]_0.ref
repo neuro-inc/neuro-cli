@@ -6,8 +6,8 @@ Job                     test-job
  Status                  failed (ErrorReason)             
  Image                   test-image                       
  Command                 test-command                     
- Price (credits / hour)  15                               
- Current cost            150                              
+ Price (credits / hour)  15.0000                          
+ Current cost            15.0000                          
  Resources                Memory  16.0M                   
                           CPU       0.1                   
  TTY                     False                            
