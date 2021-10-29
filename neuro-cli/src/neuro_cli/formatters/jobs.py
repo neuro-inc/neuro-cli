@@ -18,6 +18,7 @@ from rich.table import Table
 from rich.text import Text, TextType
 
 from neuro_sdk import JobDescription, JobRestartPolicy, JobStatus, JobTelemetry
+from neuro_sdk.config_factory import PASS_CONFIG_ENV_NAME
 
 from neuro_cli.formatters.utils import DatetimeFormatter
 from neuro_cli.parse_utils import JobTableFormat, JobTelemetryKeyFunc
@@ -106,6 +107,8 @@ class JobStatusFormatter:
             table.add_row("Tags", text)
         table.add_row("Owner", job_status.owner or "")
         table.add_row("Cluster", job_status.cluster_name)
+        if job_status.org_name:
+            table.add_row("Organisation", job_status.org_name)
         if job_status.description:
             table.add_row("Description", job_status.description)
         status_text = fmt_status(job_status.status)
@@ -122,6 +125,8 @@ class JobStatusFormatter:
             table.add_row("Working dir", job_status.container.working_dir)
         if job_status.preset_name:
             table.add_row("Preset", job_status.preset_name)
+        table.add_row("Price (credits / hour)", job_status.price_credits_per_hour)
+        table.add_row("Current cost", job_status.total_price_credits)
 
         resources = Table(box=None, show_header=False, show_edge=False)
         resources.add_column()
@@ -214,7 +219,10 @@ class JobStatusFormatter:
             environment.add_column("")
             environment.add_column("")
             for key, value in job_status.container.env.items():
-                environment.add_row(key, value)
+                if key == PASS_CONFIG_ENV_NAME:
+                    environment.add_row(key, "<hidden-user-token>")
+                else:
+                    environment.add_row(key, value)
             table.add_row("Environment", Styled(environment, style="reset"))
         if job_status.container.secret_env:
             secret_env = Table(box=None, show_header=False, show_edge=False)
