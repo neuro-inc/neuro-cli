@@ -124,8 +124,10 @@ class JobStatusFormatter:
             table.add_row("Working dir", job_status.container.working_dir)
         if job_status.preset_name:
             table.add_row("Preset", job_status.preset_name)
-        table.add_row("Price (credits / hour)", job_status.price_credits_per_hour)
-        table.add_row("Current cost", job_status.total_price_credits)
+        table.add_row(
+            "Price (credits / hour)", f"{job_status.price_credits_per_hour:.4f}"
+        )
+        table.add_row("Current cost", f"{job_status.price_credits_per_hour:.4f}")
 
         resources = Table(box=None, show_header=False, show_edge=False)
         resources.add_column()

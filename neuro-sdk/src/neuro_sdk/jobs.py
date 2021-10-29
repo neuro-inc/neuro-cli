@@ -216,8 +216,8 @@ class JobDescription:
     scheduler_enabled: bool
     pass_config: bool
     uri: URL
-    total_price_credits: str
-    price_credits_per_hour: str
+    total_price_credits: Decimal
+    price_credits_per_hour: Decimal
     name: Optional[str] = None
     tags: Sequence[str] = ()
     description: Optional[str] = None

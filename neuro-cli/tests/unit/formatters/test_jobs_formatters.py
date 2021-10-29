@@ -3,6 +3,7 @@ import itertools
 import sys
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from typing import Any, Callable, Optional
 
 import pytest
@@ -111,8 +112,8 @@ def job_descr_no_name() -> JobDescription:
         ),
         scheduler_enabled=True,
         pass_config=True,
-        total_price_credits="150",
-        price_credits_per_hour="15",
+        total_price_credits=Decimal("150"),
+        price_credits_per_hour=Decimal("15"),
     )
 
 
@@ -139,8 +140,8 @@ def job_descr() -> JobDescription:
         ),
         scheduler_enabled=True,
         pass_config=True,
-        total_price_credits="150",
-        price_credits_per_hour="15",
+        total_price_credits=Decimal("150"),
+        price_credits_per_hour=Decimal("15"),
     )
 
 
@@ -153,8 +154,8 @@ class TestJobStartProgress:
         name: Optional[str] = None,
         life_span: Optional[float] = None,
         description: str = "ErrorDesc",
-        total_price_credits: str = "150",
-        price_credits_per_hour: str = "15",
+        total_price_credits: Decimal = Decimal("150"),
+        price_credits_per_hour: Decimal = Decimal("15"),
     ) -> JobDescription:
         return JobDescription(
             name=name,
@@ -304,8 +305,8 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -344,8 +345,8 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -384,8 +385,8 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -424,8 +425,8 @@ class TestJobOutputFormatter:
             scheduler_enabled=False,
             pass_config=True,
             life_span=1.0 * ((60 * 60 * 24 * 1) + (60 * 60 * 2) + (60 * 3) + 4),
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -464,8 +465,8 @@ class TestJobOutputFormatter:
             scheduler_enabled=False,
             pass_config=True,
             life_span=0.0,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -505,8 +506,8 @@ class TestJobOutputFormatter:
             scheduler_enabled=False,
             pass_config=True,
             restart_policy=JobRestartPolicy.ALWAYS,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -544,8 +545,8 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -580,8 +581,8 @@ class TestJobOutputFormatter:
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -617,8 +618,8 @@ class TestJobOutputFormatter:
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -653,8 +654,8 @@ class TestJobOutputFormatter:
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -691,8 +692,8 @@ class TestJobOutputFormatter:
             scheduler_enabled=False,
             pass_config=True,
             internal_hostname="host.local",
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -750,8 +751,8 @@ class TestJobOutputFormatter:
             scheduler_enabled=False,
             pass_config=True,
             internal_hostname="host.local",
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -790,8 +791,8 @@ class TestJobOutputFormatter:
             pass_config=True,
             internal_hostname="host.local",
             internal_hostname_named="test-job--test-owner.local",
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -829,8 +830,8 @@ class TestJobOutputFormatter:
             scheduler_enabled=False,
             pass_config=True,
             internal_hostname="host.local",
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -876,8 +877,8 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -939,8 +940,8 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -997,8 +998,8 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         rich_cmp(
@@ -1069,8 +1070,8 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -1132,8 +1133,8 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -1179,8 +1180,8 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -1216,8 +1217,8 @@ class TestJobOutputFormatter:
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -1253,8 +1254,8 @@ class TestJobOutputFormatter:
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -1291,8 +1292,46 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
+        )
+
+        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        rich_cmp(
+            JobStatusFormatter(
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
+            )(description)
+        )
+
+    def test_job_with_partial_credits(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
+        description = JobDescription(
+            status=JobStatus.RUNNING,
+            owner="test-user",
+            name="test-job",
+            cluster_name="default",
+            org_name="test-job-org-name",
+            id="test-job",
+            uri=URL("job://default/test-user/test-job"),
+            history=JobStatusHistory(
+                status=JobStatus.RUNNING,
+                reason="ContainerRunning",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:24.759433+00:00"),
+                finished_at=None,
+            ),
+            http_url=URL("http://local.host.test/"),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_external_image(name="test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+            ),
+            scheduler_enabled=False,
+            pass_config=True,
+            total_price_credits=Decimal(150 / 15000),
+            price_credits_per_hour=Decimal(15 / 15000),
         )
 
         uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
@@ -1540,8 +1579,8 @@ class TestSimpleJobsFormatter:
                 ),
                 scheduler_enabled=True,
                 pass_config=True,
-                total_price_credits="150",
-                price_credits_per_hour="15",
+                total_price_credits=Decimal("150"),
+                price_credits_per_hour=Decimal("15"),
             ),
             JobDescription(
                 status=JobStatus.PENDING,
@@ -1564,8 +1603,8 @@ class TestSimpleJobsFormatter:
                 ),
                 scheduler_enabled=True,
                 pass_config=True,
-                total_price_credits="150",
-                price_credits_per_hour="15",
+                total_price_credits=Decimal("150"),
+                price_credits_per_hour=Decimal("15"),
             ),
         ]
         formatter = SimpleJobsFormatter()
@@ -1604,8 +1643,8 @@ class TestTabularJobRow:
             ),
             scheduler_enabled=True,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
     def test_with_job_name(self, datetime_formatter: DatetimeFormatter) -> None:
@@ -1742,8 +1781,8 @@ class TestTabularJobsFormatter:
             ),
             scheduler_enabled=True,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
         formatter = TabularJobsFormatter(
             "owner",
@@ -1793,8 +1832,8 @@ class TestTabularJobsFormatter:
                 ),
                 scheduler_enabled=True,
                 pass_config=True,
-                total_price_credits="150",
-                price_credits_per_hour="15",
+                total_price_credits=Decimal("150"),
+                price_credits_per_hour=Decimal("15"),
             ),
             JobDescription(
                 status=JobStatus.PENDING,
@@ -1828,8 +1867,8 @@ class TestTabularJobsFormatter:
                 ),
                 scheduler_enabled=True,
                 pass_config=True,
-                total_price_credits="150",
-                price_credits_per_hour="15",
+                total_price_credits=Decimal("150"),
+                price_credits_per_hour=Decimal("15"),
             ),
         ]
         formatter = TabularJobsFormatter(
@@ -1866,8 +1905,8 @@ class TestTabularJobsFormatter:
             ),
             scheduler_enabled=True,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         columns = parse_ps_columns("{status;align=right;min=20;Status Code}")
@@ -1908,8 +1947,8 @@ class TestTabularJobsFormatter:
                 scheduler_enabled=True,
                 pass_config=True,
                 life_span=life_span,
-                total_price_credits="150",
-                price_credits_per_hour="15",
+                total_price_credits=Decimal("150"),
+                price_credits_per_hour=Decimal("15"),
             )
             for i, life_span in enumerate(life_spans, 1)
         ]
@@ -1975,8 +2014,8 @@ class TestTabularJobsFormatter:
                 scheduler_enabled=False,
                 pass_config=True,
                 internal_hostname="host.local",
-                total_price_credits="150",
-                price_credits_per_hour="15",
+                total_price_credits=Decimal("150"),
+                price_credits_per_hour=Decimal("15"),
             )
             for i, item in enumerate(items, 1)
         ]
@@ -2019,8 +2058,8 @@ class TestTabularJobsFormatter:
                 scheduler_enabled=False,
                 pass_config=True,
                 internal_hostname="host.local",
-                total_price_credits="150",
-                price_credits_per_hour="15",
+                total_price_credits=Decimal("150"),
+                price_credits_per_hour=Decimal("15"),
             )
             for i, working_dir in enumerate(items, 1)
         ]
@@ -2061,8 +2100,8 @@ class TestTabularJobsFormatter:
                 pass_config=True,
                 internal_hostname="host.local",
                 preset_name=preset_name,
-                total_price_credits="150",
-                price_credits_per_hour="15",
+                total_price_credits=Decimal("150"),
+                price_credits_per_hour=Decimal("15"),
             )
             for i, preset_name in enumerate(items, 1)
         ]
@@ -2124,8 +2163,8 @@ class TestLifeSpanUpdateFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         formatter = LifeSpanUpdateFormatter(
@@ -2159,8 +2198,8 @@ class TestLifeSpanUpdateFormatter:
             scheduler_enabled=False,
             pass_config=True,
             life_span=3600,
-            total_price_credits="150",
-            price_credits_per_hour="15",
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
         )
 
         formatter = LifeSpanUpdateFormatter(
