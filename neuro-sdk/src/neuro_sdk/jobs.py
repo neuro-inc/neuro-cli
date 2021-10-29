@@ -1073,6 +1073,10 @@ def _job_to_api(
     if privileged:
         primitive["privileged"] = privileged
     if org_name:
+        log.warning(
+            "'org_name' parameter is not fully supported yet, "
+            "and will be ignored by the system!"
+        )
         primitive["org_name"] = org_name
     primitive["cluster_name"] = cluster_name
     return primitive

@@ -18,7 +18,6 @@ from rich.table import Table
 from rich.text import Text, TextType
 
 from neuro_sdk import JobDescription, JobRestartPolicy, JobStatus, JobTelemetry
-from neuro_sdk.config_factory import PASS_CONFIG_ENV_NAME
 
 from neuro_cli.formatters.utils import DatetimeFormatter
 from neuro_cli.parse_utils import JobTableFormat, JobTelemetryKeyFunc
@@ -219,10 +218,7 @@ class JobStatusFormatter:
             environment.add_column("")
             environment.add_column("")
             for key, value in job_status.container.env.items():
-                if key == PASS_CONFIG_ENV_NAME:
-                    environment.add_row(key, "<hidden-user-token>")
-                else:
-                    environment.add_row(key, value)
+                environment.add_row(key, value)
             table.add_row("Environment", Styled(environment, style="reset"))
         if job_status.container.secret_env:
             secret_env = Table(box=None, show_header=False, show_edge=False)
