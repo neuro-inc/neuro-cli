@@ -5,9 +5,11 @@ from enum import Enum, unique
 from typing import Any, Dict, List, Mapping, Optional
 
 from dateutil.parser import isoparse
+from yarl import URL
 
 from .config import Config
 from .core import _Core
+from .errors import NotSupportedError
 from .server_cfg import Preset
 from .utils import NoPublicConstructor
 
@@ -102,6 +104,14 @@ class _Admin(metaclass=NoPublicConstructor):
         self._core = core
         self._config = config
 
+    @property
+    def _admin_url(self) -> URL:
+        url = self._config.admin_url
+        if not url:
+            raise NotSupportedError("admin API is not supported by server")
+        else:
+            return url
+
     async def list_cloud_providers(self) -> Dict[str, Dict[str, Any]]:
         url = self._config.api_url / "cloud_providers"
         auth = await self._config._api_auth()
@@ -122,7 +132,7 @@ class _Admin(metaclass=NoPublicConstructor):
             return ret
 
     async def add_cluster(self, name: str, config: Dict[str, Any]) -> None:
-        url = self._config.admin_url / "clusters"
+        url = self._admin_url / "clusters"
         auth = await self._config._api_auth()
         payload = {"name": name}
         async with self._core.request("POST", url, auth=auth, json=payload) as resp:
@@ -147,7 +157,7 @@ class _Admin(metaclass=NoPublicConstructor):
         self, cluster_name: Optional[str] = None
     ) -> List[_ClusterUser]:
         cluster_name = cluster_name or self._config.cluster_name
-        url = self._config.admin_url / "clusters" / cluster_name / "users"
+        url = self._admin_url / "clusters" / cluster_name / "users"
         auth = await self._config._api_auth()
         async with self._core.request(
             "GET", url, auth=auth, params={"with_user_info": "true"}
@@ -162,7 +172,7 @@ class _Admin(metaclass=NoPublicConstructor):
     ) -> _ClusterUser:
         cluster_name = cluster_name or self._config.cluster_name
         user_name = user_name or self._config.username
-        url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
+        url = self._admin_url / "clusters" / cluster_name / "users" / user_name
         auth = await self._config._api_auth()
         async with self._core.request(
             "GET", url, auth=auth, params={"with_user_info": "true"}
@@ -173,7 +183,7 @@ class _Admin(metaclass=NoPublicConstructor):
     async def add_cluster_user(
         self, cluster_name: str, user_name: str, role: str
     ) -> _ClusterUser:
-        url = self._config.admin_url / "clusters" / cluster_name / "users"
+        url = self._admin_url / "clusters" / cluster_name / "users"
         payload = {"user_name": user_name, "role": role}
         auth = await self._config._api_auth()
 
@@ -184,7 +194,7 @@ class _Admin(metaclass=NoPublicConstructor):
             return _cluster_user_from_api(payload)
 
     async def remove_cluster_user(self, cluster_name: str, user_name: str) -> None:
-        url = self._config.admin_url / "clusters" / cluster_name / "users" / user_name
+        url = self._admin_url / "clusters" / cluster_name / "users" / user_name
         auth = await self._config._api_auth()
 
         async with self._core.request("DELETE", url, auth=auth):
@@ -198,12 +208,7 @@ class _Admin(metaclass=NoPublicConstructor):
         total_running_jobs: Optional[int],
     ) -> _ClusterUser:
         url = (
-            self._config.admin_url
-            / "clusters"
-            / cluster_name
-            / "users"
-            / user_name
-            / "quota"
+            self._admin_url / "clusters" / cluster_name / "users" / user_name / "quota"
         )
         payload = {
             "quota": {
@@ -227,7 +232,7 @@ class _Admin(metaclass=NoPublicConstructor):
         credits: Optional[Decimal],
     ) -> _ClusterUser:
         url = (
-            self._config.admin_url
+            self._admin_url
             / "clusters"
             / cluster_name
             / "users"
@@ -253,7 +258,7 @@ class _Admin(metaclass=NoPublicConstructor):
         additional_credits: Decimal,
     ) -> _ClusterUser:
         url = (
-            self._config.admin_url
+            self._admin_url
             / "clusters"
             / cluster_name
             / "users"

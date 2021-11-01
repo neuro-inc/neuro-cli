@@ -602,6 +602,10 @@ def main(args: Optional[List[str]] = None) -> None:
         log.exception(f"Docker API error: {error.message}")
         sys.exit(EX_PROTOCOL)
 
+    except neuro_sdk.NotSupportedError as error:
+        log.exception(f"{_err_to_str(error)}")
+        sys.exit(EX_SOFTWARE)
+
     except NotImplementedError as error:
         log.exception(f"{_err_to_str(error)}")
         sys.exit(EX_SOFTWARE)

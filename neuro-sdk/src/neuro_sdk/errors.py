@@ -36,3 +36,7 @@ class ConfigLoadException(Exception):
 
 class NDJSONError(ValueError):
     pass
+
+
+class NotSupportedError(NotImplementedError):
+    pass

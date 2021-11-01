@@ -100,7 +100,8 @@ def make_client(
         registry_url: str = "https://registry-dev.neu.ro",
         trace_id: str = "bd7a977555f6b982",
         clusters: Optional[Dict[str, Cluster]] = None,
-        token_url: Optional[URL] = None
+        token_url: Optional[URL] = None,
+        admin_url: Optional[URL] = None,
     ) -> Client:
         url = URL(url_str)
         if clusters is None:
@@ -162,11 +163,13 @@ def make_client(
             real_auth_config = replace(auth_config, token_url=token_url)
         else:
             real_auth_config = auth_config
+        if admin_url is None:
+            admin_url = URL(url) / ".." / ".." / "apis" / "admin" / "v1"
         config = _ConfigData(
             auth_config=real_auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
             url=URL(url),
-            admin_url=URL(url) / ".." / ".." / "apis" / "admin" / "v1",
+            admin_url=admin_url,
             version=__version__,
             cluster_name=next(iter(clusters)),
             clusters=clusters,
