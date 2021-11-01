@@ -51,6 +51,7 @@ from .errors import (
     ConfigError,
     IllegalArgumentError,
     NDJSONError,
+    NotSupportedError,
     ResourceNotFound,
     ServerNotAvailable,
 )
@@ -138,6 +139,7 @@ __all__ = (
     "Jobs",
     "LocalImage",
     "NDJSONError",
+    "NotSupportedError",
     "PASS_CONFIG_ENV_NAME",
     "Parser",
     "Permission",
