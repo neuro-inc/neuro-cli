@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Tuple
 
@@ -292,6 +293,8 @@ def test_job_to_args_simple() -> None:
         scheduler_enabled=False,
         pass_config=False,
         preset_name="testing",
+        total_price_credits=Decimal("150"),
+        price_credits_per_hour=Decimal("15"),
     )
     assert _job_to_cli_args(job) == [
         "--preset",
@@ -328,6 +331,8 @@ def test_job_to_args_drop_env_when_pass_config() -> None:
         scheduler_enabled=False,
         pass_config=True,
         preset_name="testing",
+        total_price_credits=Decimal("150"),
+        price_credits_per_hour=Decimal("15"),
     )
     assert _job_to_cli_args(job) == [
         "--preset",
@@ -411,6 +416,8 @@ def test_job_to_args_complex() -> None:
         life_span=200,
         schedule_timeout=3600 * 24 * 2 + 3600 * 11 + 60 * 17 + 12,
         privileged=True,
+        total_price_credits=Decimal("150"),
+        price_credits_per_hour=Decimal("15"),
     )
     assert _job_to_cli_args(job) == [
         "--preset",
