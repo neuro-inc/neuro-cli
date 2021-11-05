@@ -167,6 +167,7 @@ class JobStatusHistory:
     created_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
+    run_time_seconds: Optional[int] = None
     exit_code: Optional[int] = None
     transitions: Sequence[JobStatusItem] = field(default_factory=list)
 
@@ -989,6 +990,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         created_at=_parse_datetime(res["history"].get("created_at")),
         started_at=_parse_datetime(res["history"].get("started_at")),
         finished_at=_parse_datetime(res["history"].get("finished_at")),
+        run_time_seconds=res["history"].get("run_time_seconds"),
         exit_code=res["history"].get("exit_code"),
         transitions=[
             _job_status_item_from_api(item_raw) for item_raw in res.get("statuses", [])
