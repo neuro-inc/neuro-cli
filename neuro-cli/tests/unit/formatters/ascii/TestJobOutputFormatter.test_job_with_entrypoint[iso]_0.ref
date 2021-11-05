@@ -7,7 +7,7 @@ Job                     test-job
  Entrypoint              /usr/bin/make                    
  Command                 test                             
  Price (credits / hour)  15.0000                          
- Current cost            15.0000                          
+ Current cost            150.0000                         
  Resources                Memory  16.0M                   
                           CPU       0.1                   
  TTY                     False                            
