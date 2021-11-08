@@ -25,7 +25,7 @@ repos:
   hooks:
   - id: sort-all
 - repo: https://github.com/PyCQA/isort
-  rev: '5.9.3'
+  rev: '5.10.0'
   hooks:
   - id: isort
 - repo: https://github.com/psf/black
@@ -66,7 +66,7 @@ repos:
   - id: flake8
     exclude: "^neuro-sdk/docs/"
 - repo: https://github.com/rhysd/actionlint
-  rev: v1.6.6
+  rev: v1.6.7
   hooks:
   - id: actionlint-docker
     args:
