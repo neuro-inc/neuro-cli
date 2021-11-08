@@ -28,7 +28,7 @@ from typing import (
     Union,
 )
 
-import aiobotocore as aiobotocore
+import aiobotocore.session
 import botocore.exceptions
 from aiobotocore.client import AioBaseClient
 from aiobotocore.credentials import AioCredentials, AioRefreshableCredentials
@@ -366,7 +366,7 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
     ) -> AsyncIterator["S3Provider"]:
         initial_credentials = await _get_credentials()
 
-        session = aiobotocore.get_session()
+        session = aiobotocore.session.get_session()
 
         if "expiration" in initial_credentials.credentials:
 
