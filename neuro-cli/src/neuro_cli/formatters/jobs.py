@@ -115,7 +115,7 @@ class JobStatusFormatter:
         table.add_row(
             "Price (credits / hour)", f"{job_status.price_credits_per_hour:.4f}"
         )
-        table.add_row("Current cost", f"{job_status.price_credits_per_hour:.4f}")
+        table.add_row("Current cost", f"{job_status.total_price_credits:.4f}")
 
         resources = Table(box=None, show_header=False, show_edge=False)
         resources.add_column()

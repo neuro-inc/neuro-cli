@@ -6,7 +6,7 @@ Job                     test-job
  Image                   test-image              
  Command                 test-command            
  Price (credits / hour)  15.0000                 
- Current cost            15.0000                 
+ Current cost            150.0000                
  Resources                Memory  16.0M          
                           CPU       0.1          
  Restart policy          always                  
