@@ -538,9 +538,13 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     if uri_res.scheme == "image" and ":" in uri_res.path:
         raise ValueError("tag is not allowed")
 
-    # URI's for object storage can only operate on bucket level
-    if uri_res.scheme == "blob" and "/" in uri_res.path.strip("/"):
-        raise ValueError("Only bucket level permissions are supported for Blob Storage")
+    if uri_res.scheme == "blob":
+        # Lets check that this is bucket url, not object in bucket
+        res = root.client.parse.split_blob_uri(uri_res)
+        if res.key:
+            raise ValueError(
+                "Only bucket level permissions are supported for Blob Storage"
+            )
     return uri_res
 
 
