@@ -1,12 +1,14 @@
-Job          test-job                         
- Owner        owner                            
- Cluster      default                          
- Description  test job description             
- Status       pending                          
- Image        test-image                       
- Command      test-command                     
- Preset       cpu-small                        
- Resources     Memory  16.0M                   
-               CPU       0.1                   
- TTY          False                            
- Created      2018-09-25T12:28:21.298672+00:00
+Job                     test-job                         
+ Owner                   owner                            
+ Cluster                 default                          
+ Description             test job description             
+ Status                  pending                          
+ Image                   test-image                       
+ Command                 test-command                     
+ Preset                  cpu-small                        
+ Price (credits / hour)  15.0000                          
+ Current cost            150.0000                         
+ Resources                Memory  16.0M                   
+                          CPU       0.1                   
+ TTY                     False                            
+ Created                 2018-09-25T12:28:21.298672+00:00

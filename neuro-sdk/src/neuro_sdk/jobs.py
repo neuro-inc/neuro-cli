@@ -6,6 +6,7 @@ import sys
 from contextlib import suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from decimal import Decimal
 from functools import partial
 from typing import (
     Any,
@@ -166,6 +167,7 @@ class JobStatusHistory:
     created_at: Optional[datetime] = None
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
+    run_time_seconds: Optional[int] = None
     exit_code: Optional[int] = None
     transitions: Sequence[JobStatusItem] = field(default_factory=list)
 
@@ -215,6 +217,8 @@ class JobDescription:
     scheduler_enabled: bool
     pass_config: bool
     uri: URL
+    total_price_credits: Decimal
+    price_credits_per_hour: Decimal
     name: Optional[str] = None
     tags: Sequence[str] = ()
     description: Optional[str] = None
@@ -225,6 +229,7 @@ class JobDescription:
     life_span: Optional[float] = None
     schedule_timeout: Optional[float] = None
     preset_name: Optional[str] = None
+    org_name: Optional[str] = None
     preemptible_node: bool = False
     privileged: bool = False
     _internal: JobDescriptionInternal = JobDescriptionInternal()
@@ -313,6 +318,7 @@ class Jobs(metaclass=NoPublicConstructor):
         schedule_timeout: Optional[float] = None,
         restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
         life_span: Optional[float] = None,
+        org_name: Optional[str] = None,
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
         payload = _job_to_api(
@@ -325,6 +331,7 @@ class Jobs(metaclass=NoPublicConstructor):
             schedule_timeout=schedule_timeout,
             restart_policy=restart_policy,
             life_span=life_span,
+            org_name=org_name,
         )
         payload["container"] = _container_to_api(
             config=self._config,
@@ -353,6 +360,7 @@ class Jobs(metaclass=NoPublicConstructor):
         image: RemoteImage,
         preset_name: str,
         cluster_name: Optional[str] = None,
+        org_name: Optional[str] = None,
         entrypoint: Optional[str] = None,
         command: Optional[str] = None,
         working_dir: Optional[str] = None,
@@ -402,6 +410,7 @@ class Jobs(metaclass=NoPublicConstructor):
             restart_policy=restart_policy,
             life_span=life_span,
             privileged=privileged,
+            org_name=org_name,
         )
         payload.update(**container_payload)
         auth = await self._config._api_auth()
@@ -964,6 +973,8 @@ def _job_status_item_from_api(res: Dict[str, Any]) -> JobStatusItem:
 
 
 def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescription:
+    # TODO y.s.: maybe, catch KeyErrors and re-raise with an error message like
+    #   "SDK and API has incompatible versions: {key} was not found in the API responce"
     container = _container_from_api(res["container"], parse)
     owner = res["owner"]
     cluster_name = res["cluster_name"]
@@ -979,6 +990,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         created_at=_parse_datetime(res["history"].get("created_at")),
         started_at=_parse_datetime(res["history"].get("started_at")),
         finished_at=_parse_datetime(res["history"].get("finished_at")),
+        run_time_seconds=res["history"].get("run_time_seconds"),
         exit_code=res["history"].get("exit_code"),
         transitions=[
             _job_status_item_from_api(item_raw) for item_raw in res.get("statuses", [])
@@ -993,11 +1005,16 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
     life_span = (
         max_run_time_minutes * 60.0 if max_run_time_minutes is not None else None
     )
+    # TODO: this change requires a new release of API with
+    # https://github.com/neuro-inc/platform-api/pull/1770 merged
+    total_price_credits = Decimal(res["total_price_credits"])
+    price_credits_per_hour = Decimal(res["price_credits_per_hour"])
     return JobDescription(
         status=_calc_status(res["status"]),
         id=res["id"],
         owner=owner,
         cluster_name=cluster_name,
+        org_name=res.get("org_name"),
         history=history,
         container=container,
         scheduler_enabled=res["scheduler_enabled"],
@@ -1014,6 +1031,8 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         life_span=life_span,
         schedule_timeout=res.get("schedule_timeout", None),
         preset_name=res.get("preset_name"),
+        total_price_credits=total_price_credits,
+        price_credits_per_hour=price_credits_per_hour,
         _internal=JobDescriptionInternal(
             materialized=res.get("materialized", False),
             being_dropped=res.get("being_dropped", False),
@@ -1034,6 +1053,7 @@ def _job_to_api(
     restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
     life_span: Optional[float] = None,
     privileged: bool = False,
+    org_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     primitive: Dict[str, Any] = {"pass_config": pass_config}
     if name:
@@ -1054,6 +1074,12 @@ def _job_to_api(
         primitive["wait_for_jobs_quota"] = wait_for_jobs_quota
     if privileged:
         primitive["privileged"] = privileged
+    if org_name:
+        log.warning(
+            "'org_name' parameter is not fully supported yet, "
+            "and will be ignored by the system!"
+        )
+        primitive["org_name"] = org_name
     primitive["cluster_name"] = cluster_name
     return primitive
 

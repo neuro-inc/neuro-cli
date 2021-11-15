@@ -54,19 +54,6 @@ def fmt_status(status: JobStatus) -> Text:
     return Text(status.value, style=color)
 
 
-def _get_run_time(job: JobDescription) -> datetime.timedelta:
-    run_time = datetime.timedelta()
-    prev_time: Optional[datetime.datetime] = None
-    for item in job.history.transitions:
-        if prev_time:
-            run_time += item.transition_time - prev_time
-        prev_time = item.transition_time if item.status.is_running else None
-    if prev_time:
-        # job still running
-        run_time += datetime.datetime.now(datetime.timezone.utc) - prev_time
-    return run_time
-
-
 def get_lifespan_ends(job: JobDescription) -> Optional[datetime.datetime]:
     if (
         job.status
@@ -78,7 +65,8 @@ def get_lifespan_ends(job: JobDescription) -> Optional[datetime.datetime]:
         and job.life_span
     ):
         life_span = datetime.timedelta(seconds=job.life_span)
-        runtime_left = life_span - _get_run_time(job)
+        run_time = datetime.timedelta(seconds=job.history.run_time_seconds or 0)
+        runtime_left = life_span - run_time
         runtime_ends = datetime.datetime.now(datetime.timezone.utc) + runtime_left
         return runtime_ends
     return None
@@ -106,6 +94,8 @@ class JobStatusFormatter:
             table.add_row("Tags", text)
         table.add_row("Owner", job_status.owner or "")
         table.add_row("Cluster", job_status.cluster_name)
+        if job_status.org_name:
+            table.add_row("Organisation", job_status.org_name)
         if job_status.description:
             table.add_row("Description", job_status.description)
         status_text = fmt_status(job_status.status)
@@ -122,6 +112,10 @@ class JobStatusFormatter:
             table.add_row("Working dir", job_status.container.working_dir)
         if job_status.preset_name:
             table.add_row("Preset", job_status.preset_name)
+        table.add_row(
+            "Price (credits / hour)", f"{job_status.price_credits_per_hour:.4f}"
+        )
+        table.add_row("Current cost", f"{job_status.total_price_credits:.4f}")
 
         resources = Table(box=None, show_header=False, show_edge=False)
         resources.add_column()

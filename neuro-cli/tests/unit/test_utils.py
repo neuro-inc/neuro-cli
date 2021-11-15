@@ -55,6 +55,8 @@ def _job_entry(job_id: str, cluster_name: str = "default") -> Dict[str, Any]:
         "name": "my-job-name",
         "internal_hostname": f"job-id.{cluster_name}",
         "internal_hostname_named": f"my-job-name--job-owner.{cluster_name}",
+        "total_price_credits": "150",
+        "price_credits_per_hour": "15",
     }
 
 

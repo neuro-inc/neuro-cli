@@ -1,9 +1,9 @@
 Job                     test-job                         
- Tags                    tag1, tag2, tag3                 
+ Name                    test-job                         
  Owner                   test-user                        
  Cluster                 default                          
- Description             test job description             
- Status                  failed (ErrorReason)             
+ Organisation            test-job-org-name                
+ Status                  running (ContainerRunning)       
  Image                   test-image                       
  Command                 test-command                     
  Price (credits / hour)  15.0000                          
@@ -12,10 +12,5 @@ Job                     test-job
                           CPU       0.1                   
  TTY                     False                            
  Http URL                http://local.host.test/          
- Http port               80                               
- Http authentication     True                             
  Created                 2018-09-25T12:28:21.298672+00:00 
- Started                 2018-09-25T12:28:59.759433+00:00 
- Finished                2018-09-25T12:28:59.759433+00:00 
- Exit code               123                              
- Description             ErrorDesc
+ Started                 2018-09-25T12:28:24.759433+00:00

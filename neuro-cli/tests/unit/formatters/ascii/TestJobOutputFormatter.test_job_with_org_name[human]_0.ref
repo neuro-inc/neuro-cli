@@ -1,7 +1,8 @@
 Job                     test-job                   
+ Name                    test-job                   
  Owner                   test-user                  
  Cluster                 default                    
- Description             test job description       
+ Organisation            test-job-org-name          
  Status                  running (ContainerRunning) 
  Image                   test-image                 
  Command                 test-command               
@@ -10,7 +11,6 @@ Job                     test-job
  Resources                Memory  16.0M             
                           CPU       0.1             
  TTY                     False                      
- Internal Hostname       host.local                 
  Http URL                http://local.host.test/    
  Created                 Sep 25 2018 at 12:28       
  Started                 Sep 25 2018 at 12:28

@@ -2,6 +2,7 @@ import asyncio
 import json
 import sys
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any, Callable, Dict, List, Optional
 
 import pytest
@@ -561,6 +562,8 @@ async def test_status_failed(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-id",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -625,6 +628,8 @@ async def test_status_being_dropped(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-id",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -687,6 +692,8 @@ async def test_status_with_http(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-id",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -747,6 +754,8 @@ async def test_status_with_tpu(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-id",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "submit-image-name",
             "command": "submit-command",
@@ -807,6 +816,8 @@ async def test_job_start(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -896,6 +907,8 @@ async def test_job_start_with_privileged_flag(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -958,7 +971,10 @@ async def test_job_run(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "org_name": "my-test-org",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1055,6 +1071,8 @@ async def test_job_run_with_wait_for_quota(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1131,6 +1149,8 @@ async def test_job_run_with_name_and_description(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1235,6 +1255,8 @@ async def test_job_run_with_tags(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1337,6 +1359,8 @@ async def test_job_run_no_volumes(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1417,6 +1441,8 @@ async def test_job_run_with_relative_volume_uris(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1521,6 +1547,8 @@ async def test_job_run_with_secret_uris(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1619,6 +1647,8 @@ async def test_job_run_with_disk_volume_uris(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1711,6 +1741,8 @@ async def test_job_run_preemptible(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1814,6 +1846,8 @@ async def test_job_run_schedule_timeout(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1887,6 +1921,8 @@ async def test_job_run_tpu(
         "owner": "owner",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
         "container": {
             "image": "gcr.io/light-reality-205619/ubuntu:latest",
             "command": "date",
@@ -1992,8 +2028,11 @@ def create_job_response(
     status: str,
     owner: str = "owner",
     name: Optional[str] = None,
+    org_name: Optional[str] = None,
     image: str = "submit-image-name",
     tags: Optional[List[str]] = None,
+    total_price_credits: str = "10.01",
+    price_credits_per_hour: str = "20",
 ) -> Dict[str, Any]:
     result = {
         "id": id,
@@ -2021,11 +2060,15 @@ def create_job_response(
         "owner": owner,
         "cluster_name": "default",
         "uri": f"job://default/{owner}/{id}",
+        "total_price_credits": total_price_credits,
+        "price_credits_per_hour": price_credits_per_hour,
     }
     if name:
         result["name"] = name
     if tags:
         result["tags"] = tags
+    if org_name:
+        result["org_name"] = org_name
     return result
 
 
@@ -2688,3 +2731,113 @@ async def test_bump_life_span(
             additional_life_span=3600,  # 1h
         )
         assert called
+
+
+async def test_job_price_credits(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    total_price_credits = "105000.00000000000123"
+    price_credits_per_hour = "0.000123"
+
+    async def handler(request: web.Request) -> web.Response:
+        to_api_request = await request.json()
+        # we do not send total_price_credits and price_credits_per_hour
+        # they should be controled by the API
+        assert to_api_request == {
+            "container": {
+                "image": "submit-image-name",
+                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+            },
+            "scheduler_enabled": False,
+            "pass_config": False,
+            "cluster_name": "default",
+        }
+        api_responce = create_job_response(
+            "job-id-1",
+            "running",
+            total_price_credits=total_price_credits,
+            price_credits_per_hour=price_credits_per_hour,
+        )
+        return web.json_response(api_responce)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        container = Container(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            resources=Resources(16, 0.5),
+        )
+        resp = await client.jobs.run(container=container)
+        assert resp.total_price_credits == Decimal(total_price_credits)
+        assert resp.price_credits_per_hour == Decimal(price_credits_per_hour)
+
+
+async def test_job_with_org_name(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    org_name = "my-awesome-organization"
+
+    async def handler(request: web.Request) -> web.Response:
+        to_api_request = await request.json()
+        assert to_api_request == {
+            "container": {
+                "image": "submit-image-name",
+                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+            },
+            "scheduler_enabled": False,
+            "pass_config": False,
+            "cluster_name": "default",
+            "org_name": org_name,
+        }
+        api_responce = create_job_response(
+            "job-id-1",
+            "running",
+            org_name=org_name,
+        )
+        return web.json_response(api_responce)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        container = Container(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            resources=Resources(16, 0.5),
+        )
+        resp = await client.jobs.run(container=container, org_name=org_name)
+        assert resp.org_name == org_name
+
+
+async def test_job_without_org_name(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        to_api_request = await request.json()
+        assert to_api_request == {
+            "container": {
+                "image": "submit-image-name",
+                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+            },
+            "scheduler_enabled": False,
+            "pass_config": False,
+            "cluster_name": "default",
+        }
+        return web.json_response(create_job_response("job-id-1", "running"))
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        container = Container(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            resources=Resources(16, 0.5),
+        )
+        resp = await client.jobs.run(container=container)
+        assert not resp.org_name
