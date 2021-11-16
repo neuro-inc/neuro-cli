@@ -5,7 +5,16 @@ import sys
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
-from typing import Any, AsyncIterator, Callable, List, Optional, Sequence, Tuple
+from typing import (
+    Any,
+    AsyncIterator,
+    Callable,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+)
 from unittest import mock
 
 import pytest
@@ -488,233 +497,130 @@ def make_job(
 def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
     with mock.patch.object(Jobs, "list") as mocked_list:
         jobs = [
-            make_job("job-0123-4567"),
-            make_job("job-89ab-cdef", name="jeronimo"),
+            make_job("job-0123-4567", owner="user"),
+            make_job("job-89ab-cdef", owner="user", name="jeronimo"),
             make_job("job-0123-cdef", owner="other-user"),
-            make_job("job-89ab-4567", cluster_name="other-cluster"),
+            make_job("job-89ab-4567", cluster_name="other", owner="user"),
         ]
 
         @asyncgeneratorcontextmanager
         async def list(
+            *,
             since: Optional[datetime] = None,
             reverse: bool = False,
             limit: Optional[int] = None,
+            cluster_name: Optional[str] = None,
+            owners: Iterable[str] = (),
         ) -> AsyncIterator[JobDescription]:
+            # print(f"cluster_name = {cluster_name}")
+            # print(f"owners = {owners}")
             for job in jobs:
+                if cluster_name and job.cluster_name != cluster_name:
+                    continue
+                if owners and job.owner not in owners:
+                    continue
                 yield job
 
         mocked_list.side_effect = list
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "j"])
-        assert bash_out == (
-            "plain,job-0123-4567,\n"
-            "plain,job:job-0123-4567,\n"
-            "plain,job:/test-user/job-0123-4567,\n"
-            "plain,job://default/test-user/job-0123-4567,\n"
-            "plain,job-89ab-cdef,\n"
-            "plain,jeronimo,\n"
-            "plain,job:job-89ab-cdef,\n"
-            "plain,job:/test-user/job-89ab-cdef,\n"
-            "plain,job://default/test-user/job-89ab-cdef,\n"
-            "plain,job-0123-cdef,\n"
-            "plain,job:job-0123-cdef,\n"
-            "plain,job:/other-user/job-0123-cdef,\n"
-            "plain,job://default/other-user/job-0123-cdef,\n"
-            "plain,job-89ab-4567,\n"
-            "plain,job:job-89ab-4567,\n"
-            "plain,job:/test-user/job-89ab-4567,\n"
-            "plain,job://other-cluster/test-user/job-89ab-4567,"
-        )
-        assert zsh_out == (
-            "plain\njob-0123-4567\n_\n_\n"
-            "plain\njob:job-0123-4567\n_\n_\n"
-            "plain\njob:/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob-89ab-cdef\njeronimo\n_\n"
-            "plain\njeronimo\njeronimo\n_\n"
-            "plain\njob:job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob:/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob-0123-cdef\n_\n_\n"
-            "plain\njob:job-0123-cdef\n_\n_\n"
-            "plain\njob:/other-user/job-0123-cdef\n_\n_\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\n_\n"
-            "plain\njob-89ab-4567\n_\n_\n"
-            "plain\njob:job-89ab-4567\n_\n_\n"
-            "plain\njob:/test-user/job-89ab-4567\n_\n_\n"
-            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\n_"
-        )
+        assert bash_out == "uri,job:,"
+        assert zsh_out == "uri\njob:\n_\n_"
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "jo"])
-        assert bash_out == (
-            "plain,job-0123-4567,\n"
-            "plain,job:job-0123-4567,\n"
-            "plain,job:/test-user/job-0123-4567,\n"
-            "plain,job://default/test-user/job-0123-4567,\n"
-            "plain,job-89ab-cdef,\n"
-            "plain,job:job-89ab-cdef,\n"
-            "plain,job:/test-user/job-89ab-cdef,\n"
-            "plain,job://default/test-user/job-89ab-cdef,\n"
-            "plain,job-0123-cdef,\n"
-            "plain,job:job-0123-cdef,\n"
-            "plain,job:/other-user/job-0123-cdef,\n"
-            "plain,job://default/other-user/job-0123-cdef,\n"
-            "plain,job-89ab-4567,\n"
-            "plain,job:job-89ab-4567,\n"
-            "plain,job:/test-user/job-89ab-4567,\n"
-            "plain,job://other-cluster/test-user/job-89ab-4567,"
-        )
-        assert zsh_out == (
-            "plain\njob-0123-4567\n_\n_\n"
-            "plain\njob:job-0123-4567\n_\n_\n"
-            "plain\njob:/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob-89ab-cdef\njeronimo\n_\n"
-            "plain\njob:job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob:/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob-0123-cdef\n_\n_\n"
-            "plain\njob:job-0123-cdef\n_\n_\n"
-            "plain\njob:/other-user/job-0123-cdef\n_\n_\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\n_\n"
-            "plain\njob-89ab-4567\n_\n_\n"
-            "plain\njob:job-89ab-4567\n_\n_\n"
-            "plain\njob:/test-user/job-89ab-4567\n_\n_\n"
-            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\n_"
-        )
+        assert bash_out == "uri,job:,"
+        assert zsh_out == "uri\njob:\n_\n_"
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "je"])
         assert bash_out == "plain,jeronimo,"
-        assert zsh_out == "plain\njeronimo\njeronimo\n_"
+        assert zsh_out == "plain\njeronimo\njob-89ab-cdef\n_"
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:"])
         assert bash_out == (
-            "plain,job:job-0123-4567,\n"
-            "plain,job:/test-user/job-0123-4567,\n"
-            "plain,job://default/test-user/job-0123-4567,\n"
-            "plain,job:job-89ab-cdef,\n"
-            "plain,job:/test-user/job-89ab-cdef,\n"
-            "plain,job://default/test-user/job-89ab-cdef,\n"
-            "plain,job:job-0123-cdef,\n"
-            "plain,job:/other-user/job-0123-cdef,\n"
-            "plain,job://default/other-user/job-0123-cdef,\n"
-            "plain,job:job-89ab-4567,\n"
-            "plain,job:/test-user/job-89ab-4567,\n"
-            "plain,job://other-cluster/test-user/job-89ab-4567,"
+            "uri,job-0123-4567,\n" "uri,job-89ab-cdef,\n" "uri,jeronimo,"
         )
         assert zsh_out == (
-            "plain\njob:job-0123-4567\n_\n_\n"
-            "plain\njob:/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob:job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob:/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob:job-0123-cdef\n_\n_\n"
-            "plain\njob:/other-user/job-0123-cdef\n_\n_\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\n_\n"
-            "plain\njob:job-89ab-4567\n_\n_\n"
-            "plain\njob:/test-user/job-89ab-4567\n_\n_\n"
-            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\n_"
+            "uri\njob-0123-4567\n_\njob:\n"
+            "uri\njob-89ab-cdef\n_\njob:\n"
+            "uri\njeronimo\n_\njob:"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:j"])
         assert bash_out == (
-            "plain,job:job-0123-4567,\n"
-            "plain,job:job-89ab-cdef,\n"
-            "plain,job:job-0123-cdef,\n"
-            "plain,job:job-89ab-4567,"
+            "uri,job-0123-4567,\n" "uri,job-89ab-cdef,\n" "uri,jeronimo,"
         )
         assert zsh_out == (
-            "plain\njob:job-0123-4567\n_\n_\n"
-            "plain\njob:job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob:job-0123-cdef\n_\n_\n"
-            "plain\njob:job-89ab-4567\n_\n_"
+            "uri\njob-0123-4567\n_\njob:\n"
+            "uri\njob-89ab-cdef\n_\njob:\n"
+            "uri\njeronimo\n_\njob:"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:je"])
-        assert bash_out == ""
-        assert zsh_out == ""
+        assert bash_out == "uri,jeronimo,"
+        assert zsh_out == "uri\njeronimo\n_\njob:"
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:/"])
-        assert bash_out == (
-            "plain,job:/test-user/job-0123-4567,\n"
-            "plain,job://default/test-user/job-0123-4567,\n"
-            "plain,job:/test-user/job-89ab-cdef,\n"
-            "plain,job://default/test-user/job-89ab-cdef,\n"
-            "plain,job:/other-user/job-0123-cdef,\n"
-            "plain,job://default/other-user/job-0123-cdef,\n"
-            "plain,job:/test-user/job-89ab-4567,\n"
-            "plain,job://other-cluster/test-user/job-89ab-4567,"
-        )
-        assert zsh_out == (
-            "plain\njob:/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob:/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob:/other-user/job-0123-cdef\n_\n_\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\n_\n"
-            "plain\njob:/test-user/job-89ab-4567\n_\n_\n"
-            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\n_"
-        )
+        assert bash_out == ("uri,user/,/\n" "uri,other-user/,/")
+        assert zsh_out == ("uri\nuser/\n_\njob:/\n" "uri\nother-user/\n_\njob:/")
 
-        zsh_out, bash_out = run_autocomplete(["job", "status", "job:/t"])
-        assert bash_out == (
-            "plain,job:/test-user/job-0123-4567,\n"
-            "plain,job:/test-user/job-89ab-cdef,\n"
-            "plain,job:/test-user/job-89ab-4567,"
-        )
-        assert zsh_out == (
-            "plain\njob:/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob:/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob:/test-user/job-89ab-4567\n_\n_"
-        )
+        zsh_out, bash_out = run_autocomplete(["job", "status", "job:/u"])
+        assert bash_out == "uri,user/,/"
+        assert zsh_out == "uri\nuser/\n_\njob:/"
 
-        zsh_out, bash_out = run_autocomplete(["job", "status", "job:/test-user/j"])
+        zsh_out, bash_out = run_autocomplete(["job", "status", "job:/o"])
+        assert bash_out == "uri,other-user/,/"
+        assert zsh_out == "uri\nother-user/\n_\njob:/"
+
+        zsh_out, bash_out = run_autocomplete(["job", "status", "job:/user/j"])
         assert bash_out == (
-            "plain,job:/test-user/job-0123-4567,\n"
-            "plain,job:/test-user/job-89ab-cdef,\n"
-            "plain,job:/test-user/job-89ab-4567,"
+            "uri,job-0123-4567,/user/\n"
+            "uri,job-89ab-cdef,/user/\n"
+            "uri,jeronimo,/user/"
         )
         assert zsh_out == (
-            "plain\njob:/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob:/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob:/test-user/job-89ab-4567\n_\n_"
+            "uri\njob-0123-4567\n_\njob:/user/\n"
+            "uri\njob-89ab-cdef\n_\njob:/user/\n"
+            "uri\njeronimo\n_\njob:/user/"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job://"])
-        assert bash_out == (
-            "plain,job://default/test-user/job-0123-4567,\n"
-            "plain,job://default/test-user/job-89ab-cdef,\n"
-            "plain,job://default/other-user/job-0123-cdef,\n"
-            "plain,job://other-cluster/test-user/job-89ab-4567,"
-        )
-        assert zsh_out == (
-            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\n_\n"
-            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\n_"
-        )
+        assert bash_out == ("uri,default/,//\n" "uri,other/,//")
+        assert zsh_out == ("uri\ndefault/\n_\njob://\n" "uri\nother/\n_\njob://")
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job://d"])
-        assert bash_out == (
-            "plain,job://default/test-user/job-0123-4567,\n"
-            "plain,job://default/test-user/job-89ab-cdef,\n"
-            "plain,job://default/other-user/job-0123-cdef,"
-        )
-        assert zsh_out == (
-            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\n_"
-        )
+        assert bash_out == "uri,default/,//"
+        assert zsh_out == "uri\ndefault/\n_\njob://"
+
+        zsh_out, bash_out = run_autocomplete(["job", "status", "job://o"])
+        assert bash_out == "uri,other/,//"
+        assert zsh_out == "uri\nother/\n_\njob://"
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/"])
+        assert bash_out == ("uri,user/,//default/\n" "uri,other-user/,//default/")
+        assert zsh_out == (
+            "uri\nuser/\n_\njob://default/\n" "uri\nother-user/\n_\njob://default/"
+        )
+
+        zsh_out, bash_out = run_autocomplete(["job", "status", "job://other/"])
+        assert bash_out == "uri,user/,//other/"
+        assert zsh_out == "uri\nuser/\n_\njob://other/"
+
+        zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/u"])
+        assert bash_out == "uri,user/,//default/"
+        assert zsh_out == "uri\nuser/\n_\njob://default/"
+
+        zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/user/"])
         assert bash_out == (
-            "plain,job://default/test-user/job-0123-4567,\n"
-            "plain,job://default/test-user/job-89ab-cdef,\n"
-            "plain,job://default/other-user/job-0123-cdef,"
+            "uri,job-0123-4567,//default/user/\n"
+            "uri,job-89ab-cdef,//default/user/\n"
+            "uri,jeronimo,//default/user/"
         )
         assert zsh_out == (
-            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\n_"
+            "uri\njob-0123-4567\n_\njob://default/user/\n"
+            "uri\njob-89ab-cdef\n_\njob://default/user/\n"
+            "uri\njeronimo\n_\njob://default/user/"
         )
+
+        zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/user/je"])
+        assert bash_out == "uri,jeronimo,//default/user/"
+        assert zsh_out == "uri\njeronimo\n_\njob://default/user/"
