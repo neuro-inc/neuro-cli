@@ -5,6 +5,21 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.11.1 (2021-11-17)
+==================================
+
+Features
+--------
+
+- Add support of symlinks in `neuro ls`. ([#2400](https://github.com/neuro-inc/platform-client-python/issues/2400))
+
+
+Bugfixes
+--------
+
+- Fix sharing buckets using `neuro acl grant`. ([#2414](https://github.com/neuro-inc/platform-client-python/issues/2414))
+
+
 Neuro SDK/CLI 21.11.0 (2021-11-08)
 ==================================
 
