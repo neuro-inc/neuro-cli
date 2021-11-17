@@ -36,6 +36,8 @@ def test_file() -> None:
     assert stat.type == FileStatusType.FILE
     assert stat.is_file()
     assert not stat.is_dir()
+    assert not stat.is_symlink()
+    assert stat.target is None
 
 
 def test_is_dir() -> None:
@@ -52,6 +54,27 @@ def test_is_dir() -> None:
     assert stat.type == FileStatusType.DIRECTORY
     assert not stat.is_file()
     assert stat.is_dir()
+    assert not stat.is_symlink()
+    assert stat.target is None
+
+
+def test_is_symlink() -> None:
+    stat = _file_status_from_api_ls(
+        URL("storage://default/user/foo"),
+        {
+            "path": "name",
+            "type": "SYMLINK",
+            "length": 1234,
+            "modificationTime": 3456,
+            "permission": "read",
+            "target": "real/name",
+        },
+    )
+    assert stat.type == FileStatusType.SYMLINK
+    assert not stat.is_file()
+    assert not stat.is_dir()
+    assert stat.is_symlink()
+    assert stat.target == "real/name"
 
 
 def test_name() -> None:
