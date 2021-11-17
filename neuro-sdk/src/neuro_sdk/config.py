@@ -14,7 +14,6 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Dict, Iterator, List, Mapping, Optional, Set, Tuple, Union
 
-import pkg_resources
 import toml
 from yarl import URL
 
@@ -24,6 +23,12 @@ from .login import AuthTokenClient, _AuthConfig, _AuthToken
 from .plugins import PluginManager
 from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
 from .utils import NoPublicConstructor, find_project_root, flat
+
+if sys.version_info >= (3, 10):
+    from importlib.metadata import entry_points
+else:
+    from importlib_metadata import entry_points
+
 
 WIN32 = sys.platform == "win32"
 CMD_RE = re.compile("[A-Za-z][A-Za-z0-9-]*")
@@ -687,7 +692,7 @@ def _validate_user_config(
 
     plugin_manager.config.define_str_list("storage", "cp-exclude")
     plugin_manager.config.define_str_list("storage", "cp-exclude-from-files")
-    for entry_point in pkg_resources.iter_entry_points("neuro_api"):
+    for entry_point in entry_points(group="neuro_api"):
         entry_point.load()(plugin_manager)
     config_spec = plugin_manager.config._get_spec()
 
