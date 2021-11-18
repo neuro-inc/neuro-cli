@@ -4,6 +4,14 @@ from typing import Awaitable, Callable, List, Optional
 import aiohttp
 from yarl import URL
 
+from ._bucket_base import (
+    BlobCommonPrefix,
+    BlobObject,
+    Bucket,
+    BucketCredentials,
+    BucketEntry,
+    PersistentBucketCredentials,
+)
 from .abc import (
     AbstractDeleteProgress,
     AbstractDockerImageProgress,
@@ -23,15 +31,7 @@ from .abc import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from .buckets import (
-    BlobCommonPrefix,
-    BlobObject,
-    Bucket,
-    BucketCredentials,
-    BucketEntry,
-    Buckets,
-    PersistentBucketCredentials,
-)
+from .buckets import Buckets
 from .client import Client, Preset
 from .config import Config
 from .config_factory import (

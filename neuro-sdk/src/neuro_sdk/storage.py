@@ -66,7 +66,7 @@ from .utils import (
     retries,
 )
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(__package__)
 
 MAX_OPEN_FILES = 20
 READ_SIZE = 2 ** 20  # 1 MiB

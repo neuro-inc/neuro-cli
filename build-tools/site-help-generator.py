@@ -8,7 +8,8 @@ from pathlib import Path
 import click
 from click.formatting import wrap_text
 
-from neuro_cli.main import cli, topics
+from neuro_cli.main import cli
+from neuro_cli.topics import topics
 from neuro_cli.utils import split_examples
 
 HERE = Path(sys.argv[0]).resolve().parent

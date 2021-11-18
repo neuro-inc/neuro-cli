@@ -2,80 +2,8 @@ from textwrap import dedent
 
 from click.testing import CliRunner
 
-from neuro_cli.main import MainGroup
 from neuro_cli.root import Root
 from neuro_cli.utils import DeprecatedGroup, command, group
-
-
-def test_print() -> None:
-    @group()
-    def sub_command() -> None:
-        pass
-
-    @command()
-    async def plain_cmd(root: Root) -> None:
-        pass
-
-    @group(cls=MainGroup)
-    def main() -> None:
-        pass
-
-    main.add_command(sub_command)
-    main.add_command(plain_cmd)
-    main.skip_init = True
-
-    runner = CliRunner()
-    result = runner.invoke(main, [])
-    assert result.exit_code == 0
-    assert result.output == dedent(
-        """\
-        Usage: main [OPTIONS] COMMAND [ARGS]...
-
-        Commands:
-          sub-command
-
-        Command Shortcuts:
-          plain-cmd
-
-        Use "main help <command>" for more information about a given command or topic.
-        Use "main --options" for a list of global command-line options (applies to all
-        commands).
-    """
-    )
-
-
-def test_print_use_group_helpers() -> None:
-    @group(cls=MainGroup)
-    def main() -> None:
-        pass
-
-    @main.group()
-    def sub_command() -> None:
-        pass
-
-    @main.command()
-    async def plain_cmd(root: Root) -> None:
-        pass
-
-    main.skip_init = True
-    runner = CliRunner()
-    result = runner.invoke(main, [])
-    assert result.exit_code == 0
-    assert result.output == dedent(
-        """\
-        Usage: main [OPTIONS] COMMAND [ARGS]...
-
-        Commands:
-          sub-command
-
-        Command Shortcuts:
-          plain-cmd
-
-        Use "main help <command>" for more information about a given command or topic.
-        Use "main --options" for a list of global command-line options (applies to all
-        commands).
-    """
-    )
 
 
 def test_print_hidden() -> None:
@@ -149,7 +77,7 @@ def test_print_deprecated_group_content() -> None:
         Detailed description is here.
         """
 
-    @group(cls=MainGroup)
+    @group()
     def main() -> None:
         pass
 

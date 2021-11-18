@@ -31,7 +31,7 @@ else:
     from async_generator import asynccontextmanager
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(__package__)
 
 SESSION_COOKIE_MAXAGE = 5 * 60  # 5 min
 

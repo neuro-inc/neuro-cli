@@ -41,7 +41,7 @@ update-deps: ### Update dependencies
 		--color=$(COLOR) \
 		--durations 10 \
 		$(PYTEST_ARGS) \
-	        neuro-cli/tests
+		neuro-cli/tests
 
 .PHONY: e2e
 e2e: .update-deps .e2e ### Run end-to-end tests
@@ -55,7 +55,7 @@ e2e: .update-deps .e2e ### Run end-to-end tests
 		--cov-report xml:coverage.xml \
 		--color=$(COLOR) \
 		$(PYTEST_ARGS) \
-	        neuro-sdk/tests
+		neuro-sdk/tests
 
 .PHONY: .test-sdk
 test-sdk: .update-deps .test-sdk ### Run unit tests
@@ -69,7 +69,7 @@ test-sdk: .update-deps .test-sdk ### Run unit tests
 		--cov-report xml:coverage.xml \
 		--color=$(COLOR) \
 		$(PYTEST_ARGS) \
-	        neuro-cli/tests
+		neuro-cli/tests
 
 .PHONY: .test-cli
 test-cli: .update-deps .test-cli ### Run unit tests
@@ -94,8 +94,8 @@ endif
 
 .PHONY: lint
 lint: fmt ### Reformat files, run linters and mypy checks
-	mypy neuro-sdk
-	mypy neuro-cli
+	mypy neuro-sdk --show-error-codes
+	mypy neuro-cli --show-error-codes
 
 .PHONY: publish-lint
 publish-lint: ### Check for publishing safety

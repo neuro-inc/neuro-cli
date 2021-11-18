@@ -31,7 +31,7 @@ from neuro_sdk.utils import (
     queue_calls,
 )
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__package__)
 
 
 TIME_THRESHOLD = 1.0

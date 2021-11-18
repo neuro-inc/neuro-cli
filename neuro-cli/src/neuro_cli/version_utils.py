@@ -8,7 +8,7 @@ import aiohttp
 import certifi
 import click
 import dateutil.parser
-import pkg_resources
+from packaging.version import parse as parse_version
 from typing_extensions import TypedDict
 from yarl import URL
 
@@ -144,9 +144,7 @@ def _parse_date(value: str) -> float:
 def _parse_max_version(pypi_response: Dict[str, Any]) -> Optional[str]:
     try:
         ret = [version for version in pypi_response["releases"].keys()]
-        return max(
-            ver for ver in ret if not pkg_resources.parse_version(ver).is_prerelease
-        )
+        return max(ver for ver in ret if not parse_version(ver).is_prerelease)
     except (KeyError, ValueError):
         return None
 
@@ -174,8 +172,8 @@ def _warn_maybe(
 ) -> None:
 
     if neurocli_db is not None:
-        current = pkg_resources.parse_version(neuro_cli.__version__)
-        pypi = pkg_resources.parse_version(neurocli_db["version"])
+        current = parse_version(neuro_cli.__version__)
+        pypi = parse_version(neurocli_db["version"])
         if current < pypi:
             update_command = "pip install --upgrade neuro-cli"
             click.secho(
@@ -188,8 +186,8 @@ def _warn_maybe(
             )
 
     if certifi_db is not None:
-        current = pkg_resources.parse_version(certifi.__version__)  # type: ignore
-        pypi = pkg_resources.parse_version(certifi_db["version"])
+        current = parse_version(certifi.__version__)  # type: ignore
+        pypi = parse_version(certifi_db["version"])
         if (
             current < pypi
             and time.time() - certifi_db["uploaded"] > certifi_warning_delay

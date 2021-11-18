@@ -60,7 +60,7 @@ else:
     from async_generator import asynccontextmanager
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(__package__)
 
 INVALID_IMAGE_NAME = "INVALID-IMAGE-NAME"
 

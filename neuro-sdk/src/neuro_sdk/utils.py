@@ -150,7 +150,7 @@ class _ContextManager(Generic[_T], Awaitable[_T], AsyncContextManager[_T]):
         return None
 
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(__package__)
 
 
 class retries:

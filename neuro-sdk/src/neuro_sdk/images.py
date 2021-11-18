@@ -29,7 +29,7 @@ from .utils import NoPublicConstructor, aclosing
 REPOS_PER_PAGE = 30
 TAGS_PER_PAGE = 30
 
-log = logging.getLogger(__name__)
+log = logging.getLogger(__package__)
 
 
 class Images(metaclass=NoPublicConstructor):
