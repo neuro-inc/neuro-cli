@@ -16,7 +16,6 @@ import click
 from aiodocker.exceptions import DockerError
 from click.exceptions import Abort as ClickAbort
 from click.exceptions import Exit as ClickExit
-from packaging import version
 
 import neuro_sdk
 
@@ -301,7 +300,7 @@ class MainGroup(Group):
             if path is None:
                 return
             # borrowed from EntryPoint.load()
-            mod, sep, attr = path.partition(":")
+            mod, attr = path.split(":")
             module = import_module(mod)
             attrs = filter(None, (attr or "").split("."))
             cmd = functools.reduce(getattr, attrs, module)
@@ -566,13 +565,11 @@ def main(args: Optional[List[str]] = None) -> None:
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ResourceWarning)
-            kwargs = dict(
+            cli.main(
                 args=args,
                 standalone_mode=False,
+                windows_expand_args=False,
             )
-            if version.parse(click.__version__) >= version.parse("8.0.0"):
-                kwargs["windows_expand_args"] = False
-            cli.main(**kwargs)
     except ClickAbort:
         log.exception("Aborting.")
         sys.exit(130)
