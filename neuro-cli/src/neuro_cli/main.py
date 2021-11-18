@@ -1,10 +1,12 @@
 import asyncio
+import functools
 import io
 import logging
 import os
 import shutil
 import sys
 import warnings
+from importlib import import_module
 from pathlib import Path
 from textwrap import dedent
 from typing import Any, List, Optional, Sequence, Tuple, Union, cast
@@ -19,21 +21,8 @@ from packaging import version
 import neuro_sdk
 
 import neuro_cli
-from neuro_cli import file_logging, service_accounts
 
-from . import (
-    admin,
-    blob_storage,
-    completion,
-    config,
-    disks,
-    image,
-    job,
-    project,
-    secrets,
-    share,
-    storage,
-)
+from . import file_logging
 from .alias import find_alias
 from .asyncio_utils import setup_child_watcher
 from .const import (
@@ -48,7 +37,6 @@ from .const import (
 )
 from .log_formatter import ConsoleHandler
 from .root import Root
-from .topics import topics
 from .utils import (
     Context,
     Group,
@@ -119,7 +107,6 @@ def setup_logging(verbosity: int, color: bool, show_traceback: bool) -> ConsoleH
 
 
 class MainGroup(Group):
-    topics = None
     skip_init = False  # use it for testing onlt
 
     def make_context(
@@ -254,11 +241,12 @@ class MainGroup(Group):
         commands: List[Tuple[str, click.Command]] = []
         groups: List[Tuple[str, click.MultiCommand]] = []
         topics: List[Tuple[str, click.Command]] = []
-        if self.topics is not None:
-            topics = [
-                (name, self.topics.get_command(ctx, name))
-                for name in self.topics.list_commands(ctx)
-            ]
+        from .topics import topics as topic_defs
+
+        topics = [
+            (name, topic_defs.get_command(ctx, name))
+            for name in topic_defs.list_commands(ctx)
+        ]
 
         for subcommand in self.list_commands(ctx):
             cmd = self.get_command(ctx, subcommand)
@@ -292,6 +280,75 @@ class MainGroup(Group):
             f'Use "{ctx.info_name} --options" for a list of global command-line '
             "options (applies to all commands)."
         )
+
+    def get_command(self, ctx: click.Context, cmd_name: str) -> Optional[click.Command]:
+        ret = self.commands.get(cmd_name)
+        if ret is not None:
+            return ret
+        self._pre_load(name=cmd_name)
+        return self.commands.get(cmd_name)
+
+    def list_commands(self, ctx: click.Context) -> List[str]:
+        self._pre_load()
+        return list(self.commands)
+
+    def _pre_load(self, name: Optional[str] = None) -> None:
+        if name is None:
+            for name in CMD_MAP:
+                self._pre_load(name)
+        else:
+            path = CMD_MAP.get(name)
+            if path is None:
+                return
+            # borrowed from EntryPoint.load()
+            mod, sep, attr = path.partition(":")
+            module = import_module(mod)
+            attrs = filter(None, (attr or "").split("."))
+            cmd = functools.reduce(getattr, attrs, module)
+            assert isinstance(cmd, click.Command)
+            if cmd.name == name:
+                self.add_command(cmd)
+            else:
+                self.add_command(alias(cmd, name, deprecated=False, help=cmd.help))
+
+
+CMD_MAP = {
+    # groups
+    "admin": "neuro_cli.admin:admin",
+    "job": "neuro_cli.job:job",
+    "project": "neuro_cli.project:project",
+    "storage": "neuro_cli.storage:storage",
+    "image": "neuro_cli.image:image",
+    "config": "neuro_cli.config:config",
+    "completion": "neuro_cli.completion:completion",
+    "acl": "neuro_cli.share:acl",
+    "blob": "neuro_cli.blob_storage:blob_storage",
+    "secret": "neuro_cli.secrets:secret",
+    "disk": "neuro_cli.disks:disk",
+    "service-account": "neuro_cli.service_accounts:service_account",
+    # shortcuts
+    "run": "neuro_cli.job:run",
+    "ps": "neuro_cli.job:ls",
+    "status": "neuro_cli.job:status",
+    "exec": "neuro_cli.job:exec",
+    "port-forward": "neuro_cli.job:port_forward",
+    "attach": "neuro_cli.job:attach",
+    "logs": "neuro_cli.job:logs",
+    "kill": "neuro_cli.job:kill",
+    "top": "neuro_cli.job:top",
+    "save": "neuro_cli.job:save",
+    "login": "neuro_cli.config:login",
+    "logout": "neuro_cli.config:logout",
+    "cp": "neuro_cli.storage:cp",
+    "ls": "neuro_cli.storage:ls",
+    "rm": "neuro_cli.storage:rm",
+    "mkdir": "neuro_cli.storage:mkdir",
+    "mv": "neuro_cli.storage:mv",
+    "images": "neuro_cli.image:ls",
+    "push": "neuro_cli.image:push",
+    "pull": "neuro_cli.image:pull",
+    "share": "neuro_cli.share:grant",
+}
 
 
 def print_options(
@@ -461,6 +518,8 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
 
     if len(command) == 1:
         # try to find a topic
+        from .topics import topics
+
         for name, topic in topics.commands.items():
             if name == command[0]:
                 # Found a topic
@@ -494,46 +553,6 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
     finally:
         for ctx in reversed(ctx_stack[1:]):
             ctx.close()
-
-
-# groups
-cli.add_command(admin.admin)
-cli.add_command(job.job)
-cli.add_command(project.project)
-cli.add_command(storage.storage)
-cli.add_command(image.image)
-cli.add_command(config.config)
-cli.add_command(completion.completion)
-cli.add_command(share.acl)
-cli.add_command(blob_storage.blob_storage)
-cli.add_command(secrets.secret)
-cli.add_command(disks.disk)
-cli.add_command(service_accounts.service_account)
-
-# shortcuts
-cli.add_command(job.run)
-cli.add_command(alias(job.ls, "ps", help=job.ls.help, deprecated=False))
-cli.add_command(job.status)
-cli.add_command(job.exec)
-cli.add_command(job.port_forward)
-cli.add_command(job.attach)
-cli.add_command(job.logs)
-cli.add_command(job.kill)
-cli.add_command(job.top)
-cli.add_command(job.save)
-cli.add_command(config.login)
-cli.add_command(config.logout)
-cli.add_command(storage.cp)
-cli.add_command(storage.ls)
-cli.add_command(storage.rm)
-cli.add_command(storage.mkdir)
-cli.add_command(storage.mv)
-cli.add_command(alias(image.ls, "images", help=image.ls.help, deprecated=False))
-cli.add_command(image.push)
-cli.add_command(image.pull)
-cli.add_command(alias(share.grant, "share", help=share.grant.help, deprecated=False))
-
-cli.topics = topics
 
 
 def _err_to_str(err: Exception) -> str:
