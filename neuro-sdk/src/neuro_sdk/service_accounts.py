@@ -9,7 +9,7 @@ from .config import Config
 from .core import _Core
 from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__package__)
 
 
 @dataclass(frozen=True)

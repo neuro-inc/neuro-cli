@@ -1,17 +1,30 @@
 from datetime import datetime, timezone
 from pathlib import PurePosixPath
-from typing import Any, AsyncIterator, Dict, Mapping, Optional, Tuple, Union
+from typing import (
+    Any,
+    AsyncContextManager,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    Mapping,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import pytest
 
-from neuro_sdk import BucketEntry, ResourceNotFound
-from neuro_sdk.buckets import (
+from neuro_sdk import (
     BlobCommonPrefix,
     BlobObject,
     Bucket,
-    BucketFS,
-    BucketProvider,
+    BucketCredentials,
+    BucketEntry,
+    ResourceNotFound,
 )
+from neuro_sdk._bucket_base import BucketProvider
+from neuro_sdk.buckets import BucketFS
 from neuro_sdk.utils import asyncgeneratorcontextmanager
 
 
@@ -19,6 +32,14 @@ class MockBucketProvider(BucketProvider):
     def __init__(self, bucket: Bucket):
         self.keys: Dict[str, Mapping[str, Any]] = {}
         self.bucket = bucket
+
+    @classmethod
+    def create(
+        cls,
+        bucket: "Bucket",
+        _get_credentials: Callable[[], Awaitable["BucketCredentials"]],
+    ) -> AsyncContextManager[BucketProvider]:
+        raise NotImplementedError
 
     @asyncgeneratorcontextmanager
     async def list_blobs(
