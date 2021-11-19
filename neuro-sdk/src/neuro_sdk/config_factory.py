@@ -18,9 +18,15 @@ from .config import _ConfigData, _load, _load_recovery_data, _save
 from .core import DEFAULT_TIMEOUT
 from .errors import ConfigError
 from .login import AuthNegotiator, HeadlessNegotiator, _AuthToken, logout_from_browser
+from .plugins import PluginManager
 from .server_cfg import _ServerConfig, get_server_config
 from .tracing import _make_trace_config
 from .utils import _ContextManager
+
+if sys.version_info >= (3, 10):
+    from importlib.metadata import entry_points
+else:
+    from importlib_metadata import entry_points
 
 DEFAULT_CONFIG_PATH = "~/.neuro"
 CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
@@ -68,6 +74,9 @@ class Factory:
             self._trace_configs += trace_configs
         self._trace_id = trace_id
         self._trace_sampled = trace_sampled
+        self._plugin_manager = PluginManager()
+        for entry_point in entry_points(group="neuro_api"):
+            entry_point.load()(self._plugin_manager)
 
     @property
     def path(self) -> Path:
@@ -95,7 +104,11 @@ class Factory:
         session = await _make_session(timeout, self._trace_configs)
         try:
             client = Client._create(
-                session, self._path, self._trace_id, self._trace_sampled
+                session,
+                self._path,
+                self._trace_id,
+                self._trace_sampled,
+                self._plugin_manager,
             )
             await client.config.check_server()
         except (asyncio.CancelledError, Exception):

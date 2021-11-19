@@ -20,15 +20,9 @@ from yarl import URL
 from .core import _Core
 from .errors import ConfigError
 from .login import AuthTokenClient, _AuthConfig, _AuthToken
-from .plugins import PluginManager
+from .plugins import ConfigScope, PluginManager, _ParamType
 from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
 from .utils import NoPublicConstructor, find_project_root, flat
-
-if sys.version_info >= (3, 10):
-    from importlib.metadata import entry_points
-else:
-    from importlib_metadata import entry_points
-
 
 WIN32 = sys.platform == "win32"
 CMD_RE = re.compile("[A-Za-z][A-Za-z0-9-]*")
@@ -75,9 +69,10 @@ class _ConfigRecoveryData:
 
 
 class Config(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, path: Path) -> None:
+    def __init__(self, core: _Core, path: Path, plugin_manager: PluginManager) -> None:
         self._core = core
         self._path = path
+        self._plugin_manager = plugin_manager
         self.__config_data: Optional[_ConfigData] = None
 
     def _load(self) -> _ConfigData:
@@ -251,10 +246,10 @@ class Config(metaclass=NoPublicConstructor):
         ).decode("ascii")
 
     async def get_user_config(self) -> Mapping[str, Any]:
-        return load_user_config(self._path)
+        return load_user_config(self._plugin_manager, self._path)
 
     def _get_user_config(self) -> Mapping[str, Any]:
-        return load_user_config(self._path)
+        return load_user_config(self._plugin_manager, self._path)
 
     @contextlib.contextmanager
     def _open_db(self, suppress_errors: bool = True) -> Iterator[sqlite3.Connection]:
@@ -262,7 +257,7 @@ class Config(metaclass=NoPublicConstructor):
             yield db
 
 
-def load_user_config(path: Path) -> Mapping[str, Any]:
+def load_user_config(plugin_manager: PluginManager, path: Path) -> Mapping[str, Any]:
     # TODO: search in several locations (HOME+curdir),
     # merge found configs
     filename = path / "user.toml"
@@ -272,14 +267,14 @@ def load_user_config(path: Path) -> Mapping[str, Any]:
     elif not filename.is_file():
         raise ConfigError(f"User config {filename} should be a regular file")
     else:
-        config = _load_file(filename, allow_cluster_name=False)
+        config = _load_file(plugin_manager, filename, allow_cluster_name=False)
     try:
         project_root = find_project_root()
     except ConfigError:
         return config
     else:
         filename = project_root / ".neuro.toml"
-        local_config = _load_file(filename, allow_cluster_name=True)
+        local_config = _load_file(plugin_manager, filename, allow_cluster_name=True)
         return _merge_user_configs(config, local_config)
 
 
@@ -646,7 +641,7 @@ def _check_item(
 def _check_section(
     config: Mapping[str, Any],
     section: str,
-    params: Dict[str, Any],
+    params: Mapping[str, Tuple[_ParamType, ConfigScope]],
     filename: Union[str, "os.PathLike[str]"],
 ) -> None:
     sec = config.get(section)
@@ -664,6 +659,7 @@ def _check_section(
 
 
 def _validate_user_config(
+    plugin_manager: PluginManager,
     config: Mapping[str, Any],
     filename: Union[str, "os.PathLike[str]"],
     allow_cluster_name: bool = False,
@@ -676,24 +672,13 @@ def _validate_user_config(
     #
     # Since currently CLI is the only API client that reads user config data, API
     # validates it.
-    plugin_manager = PluginManager()
-    plugin_manager.config.define_str("job", "ps-format")
-    plugin_manager.config.define_str("job", "top-format")
-    plugin_manager.config.define_str("job", "life-span")
-    if allow_cluster_name:
-        plugin_manager.config.define_str("job", "cluster-name")
-    else:
+    if not allow_cluster_name:
         if "cluster-name" in config.get("job", {}):
             raise ConfigError(
                 f"{filename}: cluster name is not allowed in global user "
                 f"config file, use 'neuro config switch-cluster' for "
                 f"changing the default cluster name"
             )
-
-    plugin_manager.config.define_str_list("storage", "cp-exclude")
-    plugin_manager.config.define_str_list("storage", "cp-exclude-from-files")
-    for entry_point in entry_points(group="neuro_api"):
-        entry_point.load()(plugin_manager)
     config_spec = plugin_manager.config._get_spec()
 
     # Alias section uses different validation
@@ -721,12 +706,16 @@ def _validate_alias(
     pass
 
 
-def _load_file(filename: Path, allow_cluster_name: bool) -> Mapping[str, Any]:
+def _load_file(
+    plugin_manager: PluginManager, filename: Path, allow_cluster_name: bool
+) -> Mapping[str, Any]:
     try:
         config = toml.load(filename)
     except ValueError as exc:
         raise ConfigError(f"{filename}: {exc}")
-    _validate_user_config(config, filename, allow_cluster_name=allow_cluster_name)
+    _validate_user_config(
+        plugin_manager, config, filename, allow_cluster_name=allow_cluster_name
+    )
     return config
 
 

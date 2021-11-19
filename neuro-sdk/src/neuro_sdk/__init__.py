@@ -77,7 +77,7 @@ from .parser import (
     VolumeParseResult,
 )
 from .parsing_utils import LocalImage, RemoteImage, Tag, TagOption
-from .plugins import ConfigBuilder, PluginManager
+from .plugins import ConfigBuilder, ConfigScope, PluginManager, VersionChecker
 from .secrets import Secret, Secrets
 from .server_cfg import Cluster
 from .service_accounts import ServiceAccount, ServiceAccounts
@@ -112,6 +112,7 @@ __all__ = (
     "Config",
     "ConfigBuilder",
     "ConfigError",
+    "ConfigScope",
     "Container",
     "DEFAULT_API_URL",
     "DEFAULT_CONFIG_PATH",
@@ -168,6 +169,7 @@ __all__ = (
     "Tag",
     "TagOption",
     "Users",
+    "VersionChecker",
     "Volume",
     "VolumeParseResult",
     "find_project_root",

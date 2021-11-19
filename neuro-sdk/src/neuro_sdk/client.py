@@ -6,6 +6,7 @@ import aiohttp
 
 from neuro_sdk.service_accounts import ServiceAccounts
 
+from ._version_utils import VersionChecker
 from .admin import _Admin
 from .buckets import Buckets
 from .config import Config
@@ -14,6 +15,7 @@ from .disks import Disks
 from .images import Images
 from .jobs import Jobs
 from .parser import Parser
+from .plugins import PluginManager
 from .secrets import Secrets
 from .server_cfg import Preset
 from .storage import Storage
@@ -27,12 +29,14 @@ class Client(metaclass=NoPublicConstructor):
         session: aiohttp.ClientSession,
         path: Path,
         trace_id: Optional[str],
-        trace_sampled: Optional[bool] = None,
+        trace_sampled: Optional[bool],
+        plugin_manager: PluginManager,
     ) -> None:
         self._closed = False
         self._session = session
+        self._plugin_manager = plugin_manager
         self._core = _Core(session, trace_id, trace_sampled)
-        self._config = Config._create(self._core, path)
+        self._config = Config._create(self._core, path, plugin_manager)
 
         # Order does matter, need to check the main config before loading
         # the storage cookie session
@@ -51,6 +55,9 @@ class Client(metaclass=NoPublicConstructor):
         self._service_accounts = ServiceAccounts._create(self._core, self._config)
         self._buckets = Buckets._create(self._core, self._config, self._parser)
         self._images: Optional[Images] = None
+        self._version_checker: VersionChecker = VersionChecker._create(
+            self._core, self._config, plugin_manager
+        )
 
     async def close(self) -> None:
         if self._closed:
@@ -129,3 +136,7 @@ class Client(metaclass=NoPublicConstructor):
     @property
     def parse(self) -> Parser:
         return self._parser
+
+    @property
+    def version_checker(self) -> VersionChecker:
+        return self._version_checker
