@@ -44,8 +44,13 @@ class ConfigBuilder:
         self._config_spec.setdefault(section, dict())
         self._config_spec[section][name] = (type, scope)
 
-    def _get_spec(self) -> Mapping[str, Mapping[str, Tuple[_ParamType, ConfigScope]]]:
-        return self._config_spec
+    def _get_spec(
+        self, scope: ConfigScope = ConfigScope.ALL
+    ) -> Mapping[str, Mapping[str, _ParamType]]:
+        return {
+            section: {name: val[0] for name, val in body.items() if val[1] & scope}
+            for section, body in self._config_spec.items()
+        }
 
     def define_int(
         self, section: str, name: str, *, scope: ConfigScope = ConfigScope.ALL

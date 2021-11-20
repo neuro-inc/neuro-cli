@@ -246,10 +246,10 @@ class Config(metaclass=NoPublicConstructor):
         ).decode("ascii")
 
     async def get_user_config(self) -> Mapping[str, Any]:
-        return load_user_config(self._plugin_manager, self._path)
+        return _load_user_config(self._plugin_manager, self._path)
 
     def _get_user_config(self) -> Mapping[str, Any]:
-        return load_user_config(self._plugin_manager, self._path)
+        return _load_user_config(self._plugin_manager, self._path)
 
     @contextlib.contextmanager
     def _open_db(self, suppress_errors: bool = True) -> Iterator[sqlite3.Connection]:
@@ -257,7 +257,7 @@ class Config(metaclass=NoPublicConstructor):
             yield db
 
 
-def load_user_config(plugin_manager: PluginManager, path: Path) -> Mapping[str, Any]:
+def _load_user_config(plugin_manager: PluginManager, path: Path) -> Mapping[str, Any]:
     # TODO: search in several locations (HOME+curdir),
     # merge found configs
     filename = path / "user.toml"
@@ -641,7 +641,7 @@ def _check_item(
 def _check_section(
     config: Mapping[str, Any],
     section: str,
-    params: Mapping[str, Tuple[_ParamType, ConfigScope]],
+    params: Mapping[str, _ParamType],
     filename: Union[str, "os.PathLike[str]"],
 ) -> None:
     sec = config.get(section)
@@ -679,7 +679,9 @@ def _validate_user_config(
                 f"config file, use 'neuro config switch-cluster' for "
                 f"changing the default cluster name"
             )
-    config_spec = plugin_manager.config._get_spec()
+    config_spec = plugin_manager.config._get_spec(
+        ConfigScope.GLOBAL if not allow_cluster_name else ConfigScope.ALL
+    )
 
     # Alias section uses different validation
     _check_sections(config, set(config_spec.keys()) | {"alias"}, filename)

@@ -5,7 +5,7 @@ import os
 import ssl
 import sys
 from pathlib import Path
-from typing import Awaitable, Callable, List, Optional
+from typing import Any, Awaitable, Callable, List, Mapping, Optional
 
 import aiohttp
 import certifi
@@ -14,7 +14,7 @@ from yarl import URL
 from neuro_sdk.login import AuthTokenClient
 
 from .client import Client
-from .config import _ConfigData, _load, _load_recovery_data, _save
+from .config import _ConfigData, _load, _load_recovery_data, _load_user_config, _save
 from .core import DEFAULT_TIMEOUT
 from .errors import ConfigError
 from .login import AuthNegotiator, HeadlessNegotiator, _AuthToken, logout_from_browser
@@ -274,6 +274,9 @@ class Factory:
             except OSError:
                 # Directory Not Empty or Not A Directory
                 pass
+
+    async def load_user_config(self) -> Mapping[str, Any]:
+        return _load_user_config(self._plugin_manager, self._path)
 
     def _save(self, config: _ConfigData) -> None:
         _save(config, self._path, False)

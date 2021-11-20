@@ -10,13 +10,25 @@ import toml
 from aiohttp import web
 from yarl import URL
 
-from neuro_sdk import Client, Cluster, ConfigError, Preset
+from neuro_sdk import Client, Cluster, ConfigError, ConfigScope, PluginManager, Preset
 from neuro_sdk.config import _check_sections, _merge_user_configs, _validate_user_config
 from neuro_sdk.login import _AuthToken
 
 from tests import _TestServerFactory
 
 _MakeClient = Callable[..., Client]
+
+
+@pytest.fixture()
+def plugin_manager() -> PluginManager:
+    manager = PluginManager()
+    manager.config.define_str("job", "ps-format")
+    manager.config.define_str("job", "top-format")
+    manager.config.define_str("job", "life-span")
+    manager.config.define_str("job", "cluster-name", scope=ConfigScope.LOCAL)
+    manager.config.define_str_list("storage", "cp-exclude")
+    manager.config.define_str_list("storage", "cp-exclude-from-files")
+    return manager
 
 
 class TestMergeUserConfigs:
@@ -51,35 +63,43 @@ class TestUserConfigValidators:
         ):
             _check_sections({"a": 1}, {"a"}, "file.cfg")
 
-    def test_invalid_alias_name(self) -> None:
+    def test_invalid_alias_name(self, plugin_manager: PluginManager) -> None:
         with pytest.raises(ConfigError, match="file.cfg: invalid alias name 0123"):
-            _validate_user_config({"alias": {"0123": "ls"}}, "file.cfg")
+            _validate_user_config(plugin_manager, {"alias": {"0123": "ls"}}, "file.cfg")
 
-    def test_invalid_alias_type(self) -> None:
+    def test_invalid_alias_type(self, plugin_manager: PluginManager) -> None:
         with pytest.raises(ConfigError, match="file.cfg: invalid alias command type"):
-            _validate_user_config({"alias": {"new-name": True}}, "file.cfg")
+            _validate_user_config(
+                plugin_manager, {"alias": {"new-name": True}}, "file.cfg"
+            )
 
-    def test_extra_session_param(self) -> None:
+    def test_extra_session_param(self, plugin_manager: PluginManager) -> None:
         with pytest.raises(
             ConfigError, match="file.cfg: unknown parameters job.unknown-name"
         ):
-            _validate_user_config({"job": {"unknown-name": True}}, "file.cfg")
+            _validate_user_config(
+                plugin_manager, {"job": {"unknown-name": True}}, "file.cfg"
+            )
 
-    def test_invalid_param_type(self) -> None:
+    def test_invalid_param_type(self, plugin_manager: PluginManager) -> None:
         with pytest.raises(
             ConfigError,
             match="file.cfg: invalid type for job.ps-format, str is expected",
         ):
-            _validate_user_config({"job": {"ps-format": True}}, "file.cfg")
+            _validate_user_config(
+                plugin_manager, {"job": {"ps-format": True}}, "file.cfg"
+            )
 
-    def test_invalid_complex_type(self) -> None:
+    def test_invalid_complex_type(self, plugin_manager: PluginManager) -> None:
         with pytest.raises(
             ConfigError,
             match="file.cfg: invalid type for storage.cp-exclude, list is expected",
         ):
-            _validate_user_config({"storage": {"cp-exclude": "abc"}}, "file.cfg")
+            _validate_user_config(
+                plugin_manager, {"storage": {"cp-exclude": "abc"}}, "file.cfg"
+            )
 
-    def test_invalid_complex_item_type(self) -> None:
+    def test_invalid_complex_item_type(self, plugin_manager: PluginManager) -> None:
         with pytest.raises(
             ConfigError,
             match=(
@@ -87,11 +107,15 @@ class TestUserConfigValidators:
                 "str is expected"
             ),
         ):
-            _validate_user_config({"storage": {"cp-exclude": [1, 2]}}, "file.cfg")
+            _validate_user_config(
+                plugin_manager, {"storage": {"cp-exclude": [1, 2]}}, "file.cfg"
+            )
 
-    def test_not_allowed_cluster_name(self) -> None:
+    def test_not_allowed_cluster_name(self, plugin_manager: PluginManager) -> None:
         with pytest.raises(ConfigError, match=r"file.cfg: cluster name is not allowed"):
-            _validate_user_config({"job": {"cluster-name": "another"}}, "file.cfg")
+            _validate_user_config(
+                plugin_manager, {"job": {"cluster-name": "another"}}, "file.cfg"
+            )
 
 
 async def test_get_user_config_empty(make_client: _MakeClient) -> None:
