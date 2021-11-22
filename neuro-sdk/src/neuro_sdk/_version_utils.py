@@ -128,6 +128,7 @@ class VersionChecker(metaclass=NoPublicConstructor):
                     pypi["checked"],
                 )
             )
+            self._records[pypi["package"]] = pypi
 
     def _ensure_schema(self, db: sqlite3.Connection) -> None:
         cur = db.cursor()

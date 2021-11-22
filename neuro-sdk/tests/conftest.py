@@ -10,7 +10,7 @@ import pytest
 from jose import jwt
 from yarl import URL
 
-from neuro_sdk import Client, Cluster, Preset, __version__
+from neuro_sdk import Client, Cluster, PluginManager, Preset, __version__
 from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData, _save
 from neuro_sdk.tracing import _make_trace_config
 
@@ -102,6 +102,7 @@ def make_client(
         clusters: Optional[Dict[str, Cluster]] = None,
         token_url: Optional[URL] = None,
         admin_url: Optional[URL] = None,
+        plugin_manager: Optional[PluginManager] = None,
     ) -> Client:
         url = URL(url_str)
         if clusters is None:
@@ -165,6 +166,8 @@ def make_client(
             real_auth_config = auth_config
         if admin_url is None:
             admin_url = URL(url) / ".." / ".." / "apis" / "admin" / "v1"
+        if plugin_manager is None:
+            plugin_manager = PluginManager()
         config = _ConfigData(
             auth_config=real_auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
@@ -177,6 +180,6 @@ def make_client(
         config_dir = tmp_path / ".neuro"
         _save(config, config_dir)
         session = aiohttp.ClientSession(trace_configs=[_make_trace_config()])
-        return Client._create(session, config_dir, trace_id)
+        return Client._create(session, config_dir, trace_id, None, plugin_manager)
 
     return go

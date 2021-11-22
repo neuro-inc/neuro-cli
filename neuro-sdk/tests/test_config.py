@@ -194,8 +194,12 @@ async def test_get_cluster_name_from_local(
     make_client: _MakeClient,
     multiple_clusters_config: Dict[str, Cluster],
 ) -> None:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "cluster-name", scope=ConfigScope.LOCAL)
     async with make_client(
-        "https://example.org", clusters=multiple_clusters_config
+        "https://example.org",
+        clusters=multiple_clusters_config,
+        plugin_manager=plugin_manager,
     ) as client:
         proj_dir = tmp_path / "project"
         local_dir = proj_dir / "folder"
@@ -236,7 +240,11 @@ async def test_get_cluster_name_from_local_invalid_cluster(
     make_client: _MakeClient,
     multiple_clusters_config: Dict[str, Cluster],
 ) -> None:
-    async with make_client("https://example.org") as client:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "cluster-name", scope=ConfigScope.LOCAL)
+    async with make_client(
+        "https://example.org", plugin_manager=plugin_manager
+    ) as client:
         proj_dir = tmp_path / "project"
         local_dir = proj_dir / "folder"
         local_dir.mkdir(parents=True, exist_ok=True)
@@ -534,8 +542,12 @@ async def test_switch_clusters_local(
     make_client: _MakeClient,
     multiple_clusters_config: Dict[str, Cluster],
 ) -> None:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "cluster-name", scope=ConfigScope.LOCAL)
     async with make_client(
-        "https://example.org", clusters=multiple_clusters_config
+        "https://example.org",
+        clusters=multiple_clusters_config,
+        plugin_manager=plugin_manager,
     ) as client:
         proj_dir = tmp_path / "project"
         local_dir = proj_dir / "folder"
