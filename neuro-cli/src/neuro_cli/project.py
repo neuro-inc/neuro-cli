@@ -9,14 +9,14 @@ from .utils import argument, command, group
 log = logging.getLogger(__name__)
 
 
-@group()
+@group(deprecated=True)
 def project() -> None:
     """
     Project operations.
     """
 
 
-@command()
+@command(deprecated=True)
 @argument("name", type=str, required=False)
 async def init(root: Root, name: Optional[str]) -> None:
     """
