@@ -2,7 +2,7 @@ import asyncio
 import socket
 import ssl
 import time
-from typing import Any, AsyncIterator, Awaitable, Callable, Dict, List, Optional, Tuple
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple
 
 import aiohttp
 import dateutil.parser
@@ -241,7 +241,7 @@ def get_neuro_cli_txt(old: str, new: str) -> str:
 @pytest.fixture()
 async def client(
     fake_pypi: Tuple[FakePyPI, Dict[str, int]],
-    make_client: Callable[..., Awaitable[Client]],
+    make_client: Callable[..., Client],
 ) -> AsyncIterator[Client]:
     resolver = FakeResolver(fake_pypi[1])
     connector = aiohttp.TCPConnector(resolver=resolver, ssl=False, keepalive_timeout=0)
