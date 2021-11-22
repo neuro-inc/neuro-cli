@@ -158,7 +158,7 @@ Name | Description|
 |---|---|
 | _[neuro admin](#neuro-admin)_| Cluster administration commands |
 | _[neuro job](#neuro-job)_| Job operations |
-| _[neuro project](#neuro-project)_| Project operations |
+| _[neuro project](#neuro-project)_| \(Deprecated) Project operations |
 | _[neuro storage](#neuro-storage)_| Storage operations |
 | _[neuro image](#neuro-image)_| Container image operations |
 | _[neuro config](#neuro-config)_| Client configuration |
@@ -962,7 +962,7 @@ Name | Description|
 
 ## neuro project
 
-Project operations.
+Project operations. \(DEPRECATED)
 
 **Usage:**
 
@@ -981,14 +981,14 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro project init](#neuro-project-init)_| Initialize an empty project |
+| _[neuro project init](#neuro-project-init)_| \(Deprecated) Initialize an empty project |
 
 
 
 
 ### neuro project init
 
-Initialize an empty project.<br/>
+Initialize an empty project.<br/><br/> \(DEPRECATED)<br/>
 
 **Usage:**
 

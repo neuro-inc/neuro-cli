@@ -1,6 +1,6 @@
 # project
 
-Project operations
+(Deprecated) Project operations
 
 ## Usage
 
@@ -13,13 +13,15 @@ Project operations.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_init_](project.md#init) | Initialize an empty project |
+| [_init_](project.md#init) | \(Deprecated\) Initialize an empty project |
 
 
 ### init
 
-Initialize an empty project
+(Deprecated) Initialize an empty project
 
+
+~~DEPRECATED~~
 
 #### Usage
 
