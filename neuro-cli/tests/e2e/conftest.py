@@ -56,7 +56,6 @@ from neuro_sdk import (
 from neuro_sdk import get as api_get
 from neuro_sdk import login_with_token
 
-from neuro_cli.asyncio_utils import run
 from neuro_cli.utils import resolve_job
 
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
@@ -112,7 +111,7 @@ async def _run_async(
 
 def run_async(coro: Any) -> Callable[..., Any]:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        return run(_run_async(coro, *args, **kwargs))
+        return asyncio.run(_run_async(coro, *args, **kwargs))
 
     return wrapper
 
@@ -773,7 +772,7 @@ def _get_nmrc_path(tmp_path: Any, require_admin: bool) -> Optional[Path]:
     e2e_test_token = os.environ.get(token_env)
     if e2e_test_token:
         nmrc_path = tmp_path / "conftest.nmrc"
-        run(
+        asyncio.run(
             login_with_token(
                 e2e_test_token,
                 url=URL("https://dev.neu.ro/api/v1"),
