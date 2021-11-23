@@ -27,7 +27,7 @@ from rich.status import Status
 from rich.text import Text as RichText
 
 from neuro_sdk import Client, ConfigError, Factory, gen_trace_id
-from neuro_sdk.config import _ConfigData, load_user_config
+from neuro_sdk.config import _ConfigData
 
 from .asyncio_utils import Runner
 
@@ -190,7 +190,7 @@ class Root:
         try:
             client = await self.init_client()
         except ConfigError:
-            return load_user_config(self.config_path.expanduser())
+            return await self.factory.load_user_config()
         else:
             return await client.config.get_user_config()
 

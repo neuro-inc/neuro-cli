@@ -9,7 +9,7 @@ import toml
 from aiohttp import web
 from yarl import URL
 
-from neuro_sdk import Action, Client, JobStatus
+from neuro_sdk import Action, Client, JobStatus, PluginManager
 
 from neuro_cli.parse_utils import parse_timedelta
 from neuro_cli.root import Root
@@ -702,7 +702,12 @@ def test_pager_maybe_terminal_smaller() -> None:
 async def test_calc_life_span_none_default(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
-    async with make_client("https://example.com") as client:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "life-span")
+
+    async with make_client(
+        "https://example.com", plugin_manager=plugin_manager
+    ) as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         local_conf.write_text(toml.dumps({"job": {"life-span": "1d2h3m4s"}}))
@@ -715,7 +720,12 @@ async def test_calc_life_span_none_default(
 async def test_calc_life_span_default_life_span_all_keys(
     caplog: Any, monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
-    async with make_client("https://example.com") as client:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "life-span")
+
+    async with make_client(
+        "https://example.com", plugin_manager=plugin_manager
+    ) as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         # empty config
@@ -733,7 +743,12 @@ async def test_calc_default_life_span_invalid(
     tmp_path: Path,
     make_client: _MakeClient,
 ) -> None:
-    async with make_client("https://example.com") as client:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "life-span")
+
+    async with make_client(
+        "https://example.com", plugin_manager=plugin_manager
+    ) as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         # empty config

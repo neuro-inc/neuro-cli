@@ -3,7 +3,7 @@ from typing import Any, Callable
 
 import toml
 
-from neuro_sdk import Client
+from neuro_sdk import Client, PluginManager
 
 from neuro_cli.storage import calc_filters, calc_ignore_file_names
 
@@ -25,8 +25,13 @@ async def test_calc_filters_section_doesnt_exist(
 async def test_calc_filters_user_spec(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str_list("storage", "cp-exclude")
 
-    async with make_client("https://example.com") as client:
+    async with make_client(
+        "https://example.com",
+        plugin_manager=plugin_manager,
+    ) as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         local_conf.write_text(
@@ -41,8 +46,13 @@ async def test_calc_filters_user_spec(
 async def test_calc_filters_user_spec_and_options(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str_list("storage", "cp-exclude")
 
-    async with make_client("https://example.com") as client:
+    async with make_client(
+        "https://example.com",
+        plugin_manager=plugin_manager,
+    ) as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         local_conf.write_text(
@@ -60,7 +70,13 @@ async def test_calc_filters_user_spec_and_options(
 async def test_calc_ignore_file_names_default(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
-    async with make_client("https://example.com") as client:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str_list("storage", "cp-exclude-from-files")
+
+    async with make_client(
+        "https://example.com",
+        plugin_manager=plugin_manager,
+    ) as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         # empty config
@@ -73,7 +89,13 @@ async def test_calc_ignore_file_names_default(
 async def test_calc_ignore_file_names_user_spec(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
-    async with make_client("https://example.com") as client:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str_list("storage", "cp-exclude-from-files")
+
+    async with make_client(
+        "https://example.com",
+        plugin_manager=plugin_manager,
+    ) as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         local_conf.write_text(

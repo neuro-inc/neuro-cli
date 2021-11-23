@@ -17,6 +17,7 @@ from neuro_sdk import (
     JobRestartPolicy,
     JobStatus,
     JobStatusHistory,
+    PluginManager,
     RemoteImage,
     Resources,
     SecretFile,
@@ -232,8 +233,13 @@ async def test_calc_top_columns_section_doesnt_exist(
 async def test_calc_ps_columns_user_spec(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "ps-format")
 
-    async with make_client("https://example.com") as client:
+    async with make_client(
+        "https://example.com",
+        plugin_manager=plugin_manager,
+    ) as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         # empty config
@@ -247,8 +253,12 @@ async def test_calc_ps_columns_user_spec(
 async def test_calc_top_columns_user_spec(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "top-format")
 
-    async with make_client("https://example.com") as client:
+    async with make_client(
+        "https://example.com", plugin_manager=plugin_manager
+    ) as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         # empty config

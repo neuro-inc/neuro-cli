@@ -36,7 +36,6 @@ from neuro_sdk.url_utils import uri_from_cli
 from .parse_utils import parse_timedelta
 from .root import Root
 from .stats import upload_gmp_stats
-from .version_utils import run_version_checker
 
 log = logging.getLogger(__name__)
 
@@ -58,9 +57,17 @@ async def _run_async_function(
     if init_client:
         await root.init_client()
 
-        pypi_task: "asyncio.Task[None]" = loop.create_task(
-            run_version_checker(root.client, root.disable_pypi_version_check)
-        )
+        if not root.disable_pypi_version_check:
+            msgs = await root.client.version_checker.get_outdated()
+            for msg in msgs.values():
+                root.err_console.print(msg, style="yellow")
+
+            pypi_task: "asyncio.Task[None]" = loop.create_task(
+                root.client.version_checker.update()
+            )
+        else:
+            pypi_task = loop.create_task(asyncio.sleep(0))  # do nothing
+
         stats_task: "asyncio.Task[None]" = loop.create_task(
             upload_gmp_stats(
                 root.client, root.command_path, root.command_params, root.skip_gmp_stats

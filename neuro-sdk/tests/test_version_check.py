@@ -2,7 +2,7 @@ import asyncio
 import socket
 import ssl
 import time
-from typing import Any, AsyncIterator, Dict, List, Optional, Tuple
+from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple
 
 import aiohttp
 import dateutil.parser
@@ -12,10 +12,7 @@ from aiohttp import web
 from aiohttp.abc import AbstractResolver
 from aiohttp.test_utils import unused_port
 
-from neuro_sdk import Client
-
-from neuro_cli import version_utils
-from neuro_cli.root import Root
+from neuro_sdk import Client, PluginManager
 
 PYPI_JSON = {
     "info": {
@@ -50,7 +47,7 @@ PYPI_JSON = {
         "platform": "",
         "project_url": "https://pypi.org/project/neuro-cli/",
         "project_urls": {"Homepage": "https://neu.ro/"},
-        "release_url": "https://pypi.org/project/neuro-cli/0.2.1/",
+        "release_url": "https://pypi.org/project/neuro-cli/50.1.1/",
         "requires_dist": [
             "aiohttp (>=3.0)",
             "python-jose (>=3.0.0)",
@@ -63,7 +60,7 @@ PYPI_JSON = {
         ],
         "requires_python": ">=3.6.0",
         "summary": "Neuro Platform API client",
-        "version": "0.2.1",
+        "version": "50.1.1",
     },
     "last_serial": 4757285,
     "releases": {
@@ -83,10 +80,10 @@ PYPI_JSON = {
                 "requires_python": ">=3.6.0",
                 "size": 47043,
                 "upload_time": "2019-01-28T20:01:21",
-                "url": "https://files.pytho...ation-0.2.1-py3-none-any.whl",
+                "url": "https://files.pytho...ation-50.1.1-py3-none-any.whl",
             }
         ],
-        "0.2.1": [
+        "50.1.1": [
             {
                 "comment_text": "",
                 "digests": {
@@ -94,7 +91,7 @@ PYPI_JSON = {
                     "sha256": "fd50b1f904c4...af6213c363ec5a83f3168aae1b8",
                 },
                 "downloads": -1,
-                "filename": "neuro-cli-0.2.1-py3-none-any.whl",
+                "filename": "neuro-cli-50.1.1-py3-none-any.whl",
                 "has_sig": False,
                 "md5_digest": "8dd303ee04215ff7f5c2e7f03a6409da",
                 "packagetype": "bdist_wheel",
@@ -102,7 +99,7 @@ PYPI_JSON = {
                 "requires_python": ">=3.6.0",
                 "size": 48633,
                 "upload_time": "2019-01-29T23:45:22",
-                "url": "https://files.pytho...ation-0.2.1-py3-none-any.whl",
+                "url": "https://files.pytho...ation-50.1.1-py3-none-any.whl",
             },
             {
                 "comment_text": "",
@@ -111,7 +108,7 @@ PYPI_JSON = {
                     "sha256": "046832c04d4e7...38f6514d0e5b9acc4939",
                 },
                 "downloads": -1,
-                "filename": "neuro-cli-0.2.1.tar.gz",
+                "filename": "neuro-cli-50.1.1.tar.gz",
                 "has_sig": False,
                 "md5_digest": "af8fea5f3df6f7f81e9c6cbc6dd7c1e8",
                 "packagetype": "sdist",
@@ -119,7 +116,7 @@ PYPI_JSON = {
                 "requires_python": None,
                 "size": 156721,
                 "upload_time": "2019-01-30T00:02:23",
-                "url": "https://files.pytho...ation-0.2.1.tar.gz",
+                "url": "https://files.pytho...ation-50.1.1.tar.gz",
             },
         ],
     },
@@ -131,7 +128,7 @@ PYPI_JSON = {
                 "sha256": "fd50b1f90c...c5a83f3168aae1b8",
             },
             "downloads": -1,
-            "filename": "neuro-cli-0.2.1-py3-none-any.whl",
+            "filename": "neuro-cli-50.1.1-py3-none-any.whl",
             "has_sig": False,
             "md5_digest": "8dd303ee04215ff7f5c2e7f03a6409da",
             "packagetype": "bdist_wheel",
@@ -139,7 +136,7 @@ PYPI_JSON = {
             "requires_python": ">=3.6.0",
             "size": 48633,
             "upload_time": "2019-01-29T23:45:22",
-            "url": "https://files.pytho...ation-0.2.1-py3-none-any.whl",
+            "url": "https://files.pytho...ation-50.1.1-py3-none-any.whl",
         }
     ],
 }
@@ -230,17 +227,32 @@ async def fake_pypi(
     await fake_pypi.stop()
 
 
+NEURO_CLI_UPGRADE = """\
+You are using Neuro Platform Client {old_ver}, however {new_ver} is available.
+You should consider upgrading via the following command:
+    python -m pip install --upgrade neuro-cli
+"""
+
+
+def get_neuro_cli_txt(old: str, new: str) -> str:
+    return NEURO_CLI_UPGRADE.format(old_ver=old, new_ver=new)
+
+
 @pytest.fixture()
 async def client(
-    fake_pypi: Tuple[FakePyPI, Dict[str, int]], root: Root
+    fake_pypi: Tuple[FakePyPI, Dict[str, int]],
+    make_client: Callable[..., Client],
 ) -> AsyncIterator[Client]:
     resolver = FakeResolver(fake_pypi[1])
     connector = aiohttp.TCPConnector(resolver=resolver, ssl=False, keepalive_timeout=0)
-    old_session = root.client._session
-    async with aiohttp.ClientSession(connector=connector) as session:
-        root.client._session = session
-        yield root.client
-    root.client._session = old_session
+    plugin_manager = PluginManager()
+    plugin_manager.version_checker.register("neuro-cli", get_neuro_cli_txt)
+    client = make_client("http://example.com", plugin_manager=plugin_manager)
+    client._session = aiohttp.ClientSession(connector=connector)
+    client._core._session = client._session
+    yield client
+    await client.close()
+    await asyncio.sleep(0.5)  # can be removed for aiohttp 4.0
 
 
 @pytest.fixture
@@ -248,52 +260,43 @@ def pypi_server(fake_pypi: Tuple[FakePyPI, Dict[str, int]]) -> FakePyPI:
     return fake_pypi[0]
 
 
-async def test__fetch_pypi(pypi_server: FakePyPI, client: Client) -> None:
+async def test_update(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
     t0 = time.time()
-    record = await version_utils._fetch_package(client._session, "neuro-cli")
-    assert record is not None
-    assert record["version"] == "0.2.1"
+    await client.version_checker.update()
+    assert len(client.version_checker._records) == 1
+    record = client.version_checker._records["neuro-cli"]
+    assert record["package"] == "neuro-cli"
+    assert record["version"] == "50.1.1"
     assert (
         record["uploaded"] == dateutil.parser.parse("2019-01-30T00:02:23").timestamp()
     )
     assert t0 <= record["checked"] <= time.time()
 
-
-async def test__fetch_pypi_no_releases(pypi_server: FakePyPI, client: Client) -> None:
-    pypi_server.response = (200, {})
-
-    record = await version_utils._fetch_package(client._session, "neuro-cli")
-    assert record is None
-
-
-async def test__fetch_pypi_non_200(pypi_server: FakePyPI, client: Client) -> None:
-    pypi_server.response = (403, {"Status": "Forbidden"})
-
-    record = await version_utils._fetch_package(client._session, "neuro-cli")
-    assert record is None
-
-
-async def test_run_version_checker(pypi_server: FakePyPI, client: Client) -> None:
-    pypi_server.response = (200, PYPI_JSON)
-
-    await version_utils.run_version_checker(client, False)
     with client.config._open_db() as db:
         ret = list(db.execute("SELECT package, version FROM pypi"))
         assert len(ret) == 1
-        assert list(ret[0]) == ["neuro-cli", "0.2.1"]
+        assert list(ret[0]) == ["neuro-cli", "50.1.1"]
 
 
-async def test_run_version_checker_disabled(
-    pypi_server: FakePyPI, client: Client
-) -> None:
+async def test_update_no_releases(pypi_server: FakePyPI, client: Client) -> None:
+    pypi_server.response = (200, {})
+
+    await client.version_checker.update()
+    assert not client.version_checker._records
+
+
+async def test_update_non_200(pypi_server: FakePyPI, client: Client) -> None:
+    pypi_server.response = (403, {"Status": "Forbidden"})
+
+    await client.version_checker.update()
+    assert not client.version_checker._records
+
+
+async def test_get_outdated(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (200, PYPI_JSON)
 
-    with client.config._open_db() as db:
-        version_utils._ensure_schema(db)
-
-    await version_utils.run_version_checker(client, True)
-    with client.config._open_db() as db:
-        ret = list(db.execute("SELECT package, version FROM pypi"))
-        assert len(ret) == 0
+    await client.version_checker.update()
+    outdated = await client.version_checker.get_outdated()
+    assert "neuro-cli" in outdated.keys()
