@@ -4,9 +4,9 @@ import base64
 import errno
 import hashlib
 import secrets
-import sys
 import time
 import warnings
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import (
     Any,
@@ -41,11 +41,6 @@ from .errors import AuthError
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "int_from_bytes is deprecated", UserWarning)
     from jose import JWTError, jwt
-
-if sys.version_info >= (3, 7):  # pragma: no cover
-    from contextlib import asynccontextmanager
-else:
-    from async_generator import asynccontextmanager
 
 
 def urlsafe_unpadded_b64encode(payload: bytes) -> str:

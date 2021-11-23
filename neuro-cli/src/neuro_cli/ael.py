@@ -7,6 +7,7 @@ import logging
 import signal
 import sys
 import threading
+from contextlib import AsyncExitStack
 from datetime import datetime
 from typing import Any, Awaitable, Callable, List, Optional, Sequence, Tuple
 
@@ -29,7 +30,6 @@ from neuro_sdk.jobs import StdStreamError
 from .const import EX_IOERR, EX_PLATFORMERROR
 from .formatters.jobs import JobStopProgress
 from .root import Root
-from .utils import AsyncExitStack
 
 log = logging.getLogger(__name__)
 

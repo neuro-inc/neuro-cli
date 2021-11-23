@@ -155,17 +155,13 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
         )
 
     cmd = f"neuro image tags {image_full_str}"
-    result = subprocess.run(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
+    result = subprocess.run(cmd, capture_output=True, shell=True)
     assertion_msg = f"Command {cmd} should fail: {result.stdout!r} {result.stderr!r}"
     assert result.returncode, assertion_msg
 
     image_full_str_latest_tag = image_full_str.replace(f":{tag}", ":latest")
     cmd = f"neuro image tags {image_full_str_latest_tag}"
-    result = subprocess.run(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
+    result = subprocess.run(cmd, capture_output=True, shell=True)
     assertion_msg = f"Command {cmd} should fail: {result.stdout!r} {result.stderr!r}"
     assert result.returncode, assertion_msg
 
@@ -261,16 +257,12 @@ def test_docker_helper(
     username = helper.username
     full_tag = f"{registry}/{username}/{image}"
     tag_cmd = f"docker tag {image} {full_tag}"
-    result = subprocess.run(
-        tag_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
+    result = subprocess.run(tag_cmd, capture_output=True, shell=True)
     assert (
         not result.returncode
     ), f"Command {tag_cmd} failed: {result.stdout!r} {result.stderr!r} "
     push_cmd = f"docker push {full_tag}"
-    result = subprocess.run(
-        push_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-    )
+    result = subprocess.run(push_cmd, capture_output=True, shell=True)
     assert (
         not result.returncode
     ), f"Command {push_cmd} failed: {result.stdout!r} {result.stderr!r} "

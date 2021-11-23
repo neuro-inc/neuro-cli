@@ -2,8 +2,7 @@ import asyncio
 import enum
 import json
 import logging
-import sys
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -53,12 +52,6 @@ from .url_utils import (
     normalize_storage_path_uri,
 )
 from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
-
-if sys.version_info >= (3, 7):  # pragma: no cover
-    from contextlib import asynccontextmanager
-else:
-    from async_generator import asynccontextmanager
-
 
 log = logging.getLogger(__package__)
 
@@ -632,8 +625,7 @@ class Jobs(metaclass=NoPublicConstructor):
             yield
         finally:
             srv.close()
-            if sys.version_info >= (3, 7):
-                await srv.wait_closed()
+            await srv.wait_closed()
 
     async def _port_forward(
         self,
@@ -668,8 +660,7 @@ class Jobs(metaclass=NoPublicConstructor):
                         with suppress(asyncio.CancelledError):
                             await task
                 writer.close()
-                if sys.version_info >= (3, 7):
-                    await writer.wait_closed()
+                await writer.wait_closed()
                 await ws.close()
         except asyncio.CancelledError:
             raise
@@ -690,8 +681,7 @@ class Jobs(metaclass=NoPublicConstructor):
             writer.write(msg.data)
             await writer.drain()
         writer.close()
-        if sys.version_info >= (3, 7):
-            await writer.wait_closed()
+        await writer.wait_closed()
 
     async def _port_writer(
         self, ws: aiohttp.ClientWebSocketResponse, reader: asyncio.StreamReader

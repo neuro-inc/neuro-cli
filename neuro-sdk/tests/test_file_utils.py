@@ -200,7 +200,7 @@ async def test_transfer_dir(
     src.mkdir()
     await gen_file_tree(src)
     await transferer.transfer_dir(src, dst_dir / "sub_dir")
-    assert cmp_dirs(src, dst_dir / "sub_dir")
+    assert await cmp_dirs(src, dst_dir / "sub_dir")
 
 
 async def test_transfer_dir_dest_exists(
@@ -212,7 +212,7 @@ async def test_transfer_dir_dest_exists(
     dst.mkdir()
     await gen_file_tree(src, depths=1)
     await transferer.transfer_dir(src, dst)
-    assert cmp_dirs(src, dst)
+    assert await cmp_dirs(src, dst)
 
 
 async def test_transfer_dir_source_not_exists(

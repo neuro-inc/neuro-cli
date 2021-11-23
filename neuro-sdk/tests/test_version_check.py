@@ -248,8 +248,10 @@ async def client(
     plugin_manager = PluginManager()
     plugin_manager.version_checker.register("neuro-cli", get_neuro_cli_txt)
     client = make_client("http://example.com", plugin_manager=plugin_manager)
+    old_session = client._session
     client._session = aiohttp.ClientSession(connector=connector)
     client._core._session = client._session
+    await old_session.close()
     yield client
     await client.close()
     await asyncio.sleep(0.5)  # can be removed for aiohttp 4.0

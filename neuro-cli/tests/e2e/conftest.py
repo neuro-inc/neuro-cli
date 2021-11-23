@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tempfile
 from collections import namedtuple
-from contextlib import contextmanager, suppress
+from contextlib import asynccontextmanager, contextmanager, suppress
 from datetime import datetime, timedelta, timezone
 from hashlib import sha1
 from os.path import join
@@ -56,12 +56,6 @@ from neuro_sdk import (
 from neuro_sdk import get as api_get
 from neuro_sdk import login_with_token
 
-if sys.version_info >= (3, 7):  # pragma: no cover
-    from contextlib import asynccontextmanager
-else:
-    from async_generator import asynccontextmanager
-
-from neuro_cli.asyncio_utils import run
 from neuro_cli.utils import resolve_job
 
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
@@ -117,7 +111,7 @@ async def _run_async(
 
 def run_async(coro: Any) -> Callable[..., Any]:
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        return run(_run_async(coro, *args, **kwargs))
+        return asyncio.run(_run_async(coro, *args, **kwargs))
 
     return wrapper
 
@@ -481,8 +475,7 @@ class Helper:
             timeout=timeout,
             encoding="utf8",
             errors="replace",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             input=input,
         )
         try:
@@ -549,8 +542,7 @@ class Helper:
         proc = subprocess.run(
             "neuro",
             encoding="utf8",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             env=env,
             timeout=timeout,
         )
@@ -780,7 +772,7 @@ def _get_nmrc_path(tmp_path: Any, require_admin: bool) -> Optional[Path]:
     e2e_test_token = os.environ.get(token_env)
     if e2e_test_token:
         nmrc_path = tmp_path / "conftest.nmrc"
-        run(
+        asyncio.run(
             login_with_token(
                 e2e_test_token,
                 url=URL("https://dev.neu.ro/api/v1"),

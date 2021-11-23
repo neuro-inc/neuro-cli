@@ -7,6 +7,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import (
     Any,
+    AsyncContextManager,
     AsyncIterator,
     Awaitable,
     Callable,
@@ -27,23 +28,6 @@ from .errors import ConfigError
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
 _T_contra = TypeVar("_T_contra", contravariant=True)
-
-
-if sys.version_info >= (3, 7):
-    from typing import AsyncContextManager
-else:
-
-    class AsyncContextManager(Generic[_T]):
-        async def __aenter__(self) -> _T:
-            pass  # pragma: no cover
-
-        async def __aexit__(
-            self,
-            exc_type: Optional[Type[BaseException]],
-            exc: Optional[BaseException],
-            tb: Optional[TracebackType],
-        ) -> Optional[bool]:
-            pass  # pragma: no cover
 
 
 if sys.version_info >= (3, 10):

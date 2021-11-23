@@ -1,6 +1,6 @@
 import sqlite3
 import ssl
-import sys
+from contextlib import asynccontextmanager
 from typing import AsyncIterator, Callable
 
 import aiohttp
@@ -20,12 +20,6 @@ from neuro_sdk.core import (
 )
 
 from tests import _TestServerFactory
-
-if sys.version_info >= (3, 7):
-    from contextlib import asynccontextmanager
-else:
-    from async_generator import asynccontextmanager
-
 
 _ApiFactory = Callable[[URL], AsyncContextManager[_Core]]
 

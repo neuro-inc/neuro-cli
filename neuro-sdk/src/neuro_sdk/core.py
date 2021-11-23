@@ -3,8 +3,8 @@ import errno
 import json as jsonmodule
 import logging
 import sqlite3
-import sys
 import time
+from contextlib import asynccontextmanager
 from http.cookies import Morsel, SimpleCookie
 from types import SimpleNamespace
 from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence
@@ -24,12 +24,6 @@ from .errors import (
 )
 from .tracing import gen_trace_id
 from .utils import asyncgeneratorcontextmanager
-
-if sys.version_info >= (3, 7):  # pragma: no cover
-    from contextlib import asynccontextmanager
-else:
-    from async_generator import asynccontextmanager
-
 
 log = logging.getLogger(__package__)
 

@@ -1,6 +1,6 @@
 import asyncio
 import secrets
-import sys
+from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from typing import Any, AsyncIterator, Awaitable, Callable, Optional, Tuple, Union
@@ -23,12 +23,6 @@ from ._bucket_base import (
 )
 from .errors import ResourceNotFound
 from .utils import asyncgeneratorcontextmanager
-
-if sys.version_info >= (3, 7):
-    from contextlib import AsyncExitStack, asynccontextmanager
-else:
-    from async_exit_stack import AsyncExitStack
-    from async_generator import asynccontextmanager
 
 
 class AzureProvider(MeasureTimeDiffMixin, BucketProvider):

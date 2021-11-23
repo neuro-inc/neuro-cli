@@ -1,9 +1,9 @@
+import asyncio
 import sys
 from json import dumps
 
 import neuro_sdk
 
-from .asyncio_utils import run
 from .const import EX_DATAERR, EX_UNAVAILABLE, EX_USAGE
 
 
@@ -40,4 +40,4 @@ def main() -> None:
             EX_USAGE,
         )
     action = sys.argv[1]
-    run(async_main(action))
+    asyncio.run(async_main(action))
