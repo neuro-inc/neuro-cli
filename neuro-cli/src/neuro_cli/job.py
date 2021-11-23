@@ -5,6 +5,7 @@ import logging
 import shlex
 import sys
 import webbrowser
+from contextlib import AsyncExitStack
 from datetime import datetime, timedelta, timezone
 from typing import AsyncIterator, List, Optional, Sequence, Set, Tuple
 
@@ -69,7 +70,6 @@ from .parse_utils import (
 )
 from .root import Root
 from .utils import (
-    AsyncExitStack,
     argument,
     calc_life_span,
     command,

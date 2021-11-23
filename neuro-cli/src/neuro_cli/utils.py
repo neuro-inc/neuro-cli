@@ -586,12 +586,6 @@ def parse_permission_action(action: str) -> Action:
         )
 
 
-if sys.version_info >= (3, 7):  # pragma: no cover
-    from contextlib import AsyncExitStack
-else:
-    from async_exit_stack import AsyncExitStack  # noqa
-
-
 def format_size(value: Optional[float]) -> str:
     if value is None:
         return ""

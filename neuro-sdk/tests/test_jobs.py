@@ -1,6 +1,5 @@
 import asyncio
 import json
-import sys
 from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Any, Callable, Dict, List, Optional
@@ -2644,8 +2643,7 @@ async def test_port_forward(
                 ret = await reader.read(1024)
                 assert ret == b"rep-" + str(i).encode("ascii")
             writer.close()
-            if sys.version_info >= (3, 7):
-                await writer.wait_closed()
+            await writer.wait_closed()
 
 
 async def test_port_forward_logs_error(
@@ -2675,8 +2673,7 @@ async def test_port_forward_logs_error(
             writer.write(b"boom")
             await writer.drain()
             writer.close()
-            if sys.version_info >= (3, 7):
-                await writer.wait_closed()
+            await writer.wait_closed()
             await asyncio.sleep(0.1)
 
     assert "test error info" in caplog.text

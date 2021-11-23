@@ -1,7 +1,7 @@
 import abc
 import enum
-import sys
 import time
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import PurePosixPath
@@ -20,11 +20,6 @@ from typing import (
 from yarl import URL
 
 from neuro_sdk.utils import AsyncContextManager
-
-if sys.version_info >= (3, 7):
-    from contextlib import asynccontextmanager
-else:
-    from async_generator import asynccontextmanager
 
 
 @dataclass(frozen=True)  # type: ignore

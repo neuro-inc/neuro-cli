@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tempfile
 from collections import namedtuple
-from contextlib import contextmanager, suppress
+from contextlib import asynccontextmanager, contextmanager, suppress
 from datetime import datetime, timedelta, timezone
 from hashlib import sha1
 from os.path import join
@@ -55,11 +55,6 @@ from neuro_sdk import (
 )
 from neuro_sdk import get as api_get
 from neuro_sdk import login_with_token
-
-if sys.version_info >= (3, 7):  # pragma: no cover
-    from contextlib import asynccontextmanager
-else:
-    from async_generator import asynccontextmanager
 
 from neuro_cli.asyncio_utils import run
 from neuro_cli.utils import resolve_job
@@ -481,8 +476,7 @@ class Helper:
             timeout=timeout,
             encoding="utf8",
             errors="replace",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             input=input,
         )
         try:
@@ -549,8 +543,7 @@ class Helper:
         proc = subprocess.run(
             "neuro",
             encoding="utf8",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             env=env,
             timeout=timeout,
         )

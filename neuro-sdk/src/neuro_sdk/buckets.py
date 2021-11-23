@@ -1,6 +1,6 @@
 import json
 import re
-import sys
+from contextlib import asynccontextmanager
 from pathlib import PurePosixPath
 from typing import (
     AbstractSet,
@@ -43,11 +43,6 @@ from .core import _Core
 from .errors import NDJSONError, ResourceNotFound
 from .parser import Parser
 from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
-
-if sys.version_info >= (3, 7):
-    from contextlib import asynccontextmanager
-else:
-    from async_generator import asynccontextmanager
 
 
 class BucketFS(FileSystem[PurePosixPath]):
