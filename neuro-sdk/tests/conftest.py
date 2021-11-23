@@ -87,6 +87,7 @@ def cluster_config() -> Cluster:
             ),
         },
         name="default",
+        orgs=[None],
     )
 
 
@@ -137,6 +138,7 @@ def make_client(
                     ),
                 },
                 name="default",
+                orgs=[None],
             )
             cluster2_config = Cluster(
                 registry_url=(url / "registry2"),
@@ -155,6 +157,7 @@ def make_client(
                     ),
                 },
                 name="another",
+                orgs=[None, "some_org"],
             )
             clusters = {
                 cluster_config.name: cluster_config,
@@ -168,13 +171,15 @@ def make_client(
             admin_url = URL(url) / ".." / ".." / "apis" / "admin" / "v1"
         if plugin_manager is None:
             plugin_manager = PluginManager()
+        cluster_name = next(iter(clusters))
         config = _ConfigData(
             auth_config=real_auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
             url=URL(url),
             admin_url=admin_url,
             version=__version__,
-            cluster_name=next(iter(clusters)),
+            cluster_name=cluster_name,
+            org_name=clusters[cluster_name].orgs[0],
             clusters=clusters,
         )
         config_dir = tmp_path / ".neuro"

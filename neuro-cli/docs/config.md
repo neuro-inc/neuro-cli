@@ -21,6 +21,7 @@ Client configuration.
 | [_aliases_](config.md#aliases) | List available command aliases |
 | [_get-clusters_](config.md#get-clusters) | List available clusters |
 | [_switch-cluster_](config.md#switch-cluster) | Switch the active cluster |
+| [_switch-org_](config.md#switch-org) | Switch the active organization |
 | [_docker_](config.md#docker) | Configure local docker client |
 | [_logout_](config.md#logout) | Log out |
 
@@ -210,6 +211,32 @@ Switch the active cluster.
 `CLUSTER`_`NAME` is the cluster name to select.
 The interactive prompt is used if the
 name is omitted (default).
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### switch-org
+
+Switch the active organization
+
+
+#### Usage
+
+```bash
+neuro config switch-org [OPTIONS] ORG_NAME
+```
+
+Switch the active organization.
+
+`ORG`_`NAME` is the organization name to
+select. Use "no_org" value to access
+current cluster directly instead of as
+part of some org.
 
 #### Options
 

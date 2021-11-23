@@ -42,6 +42,7 @@ SCHEMA = {
                            admin_url TEXT,
                            version TEXT,
                            cluster_name TEXT,
+                           org_name TEXT,
                            clusters TEXT,
                            timestamp REAL)"""
     )
@@ -59,6 +60,7 @@ class _ConfigData:
     admin_url: URL
     version: str
     cluster_name: str
+    org_name: Optional[str]
     clusters: Mapping[str, Cluster]
 
 
@@ -66,7 +68,12 @@ class _ConfigData:
 class _ConfigRecoveryData:
     url: URL
     cluster_name: str
+    org_name: str
     refresh_token: str
+
+
+class _Unset:
+    pass
 
 
 @rewrite_module
@@ -114,6 +121,20 @@ class Config(metaclass=NoPublicConstructor):
         if section is not None:
             return section.get("cluster-name")
         return None
+
+    @property
+    def org_name(self) -> Optional[str]:
+        name = self._get_user_org_name()
+        if isinstance(name, _Unset):
+            name = self._config_data.org_name
+        return name
+
+    def _get_user_org_name(self) -> Union[str, None, _Unset]:
+        config = self._get_user_config()
+        section = config.get("job")
+        if section is not None:
+            return section.get("org-name", _Unset())
+        return _Unset()
 
     @property
     def _cluster(self) -> Cluster:
@@ -178,7 +199,29 @@ class Config(metaclass=NoPublicConstructor):
                 f"a list of available clusters {list(self.clusters)}. "
                 f"Please logout and login again."
             )
-        self.__config_data = replace(self._config_data, cluster_name=name)
+        org_name = self.org_name
+        if org_name not in self.clusters[name].orgs:
+            # Cannot keep using same org, set to first available
+            org_name = next(iter(self.clusters[name].orgs))
+        self.__config_data = replace(
+            self._config_data, cluster_name=name, org_name=org_name
+        )
+        _save(self._config_data, self._path)
+
+    async def switch_org(self, name: Optional[str]) -> None:
+        if not isinstance(self._get_user_org_name(), _Unset):
+            raise RuntimeError(
+                "Cannot switch the project org. " "Please edit the '.neuro.toml' file."
+            )
+        cluster_orgs = [org or "<no-org>" for org in self._cluster.orgs]
+        if name not in cluster_orgs:
+            raise RuntimeError(
+                f"Org {name or '<no-org>'} doesn't exist in "
+                f"a list of available orgs {list(cluster_orgs)} for "
+                f"cluster '{self.cluster_name}'. "
+                f"Please logout and login again."
+            )
+        self.__config_data = replace(self._config_data, org_name=name)
         _save(self._config_data, self._path)
 
     @property
@@ -269,14 +312,18 @@ def _load_user_config(plugin_manager: PluginManager, path: Path) -> Mapping[str,
     elif not filename.is_file():
         raise ConfigError(f"User config {filename} should be a regular file")
     else:
-        config = _load_file(plugin_manager, filename, allow_cluster_name=False)
+        config = _load_file(
+            plugin_manager, filename, allow_cluster_name=False, allow_org_name=False
+        )
     try:
         project_root = find_project_root()
     except ConfigError:
         return config
     else:
         filename = project_root / ".neuro.toml"
-        local_config = _load_file(plugin_manager, filename, allow_cluster_name=True)
+        local_config = _load_file(
+            plugin_manager, filename, allow_cluster_name=True, allow_org_name=True
+        )
         return _merge_user_configs(config, local_config)
 
 
@@ -307,7 +354,9 @@ def _open_db_rw(
 
 
 @contextlib.contextmanager
-def _open_db_ro(path: Path) -> Iterator[sqlite3.Connection]:
+def _open_db_ro(
+    path: Path, *, skip_schema_check: bool = False
+) -> Iterator[sqlite3.Connection]:
     config_file = path / "db"
     if not path.exists():
         raise ConfigError(f"Config at {path} does not exists. Please login.")
@@ -339,7 +388,8 @@ def _open_db_ro(path: Path) -> Iterator[sqlite3.Connection]:
         # forbid access for other users
         os.chmod(config_file, 0o600)
 
-        _check_db(db)
+        if not skip_schema_check:
+            _check_db(db)
         db.row_factory = sqlite3.Row
         yield db
 
@@ -352,7 +402,7 @@ def _load(path: Path) -> _ConfigData:
             cur.execute(
                 """
                 SELECT auth_config, token, expiration_time, refresh_token,
-                       url, admin_url, version, cluster_name, clusters
+                       url, admin_url, version, cluster_name, org_name, clusters
                 FROM main ORDER BY timestamp DESC LIMIT 1"""
             )
             payload = cur.fetchone()
@@ -363,6 +413,7 @@ def _load(path: Path) -> _ConfigData:
         clusters = _deserialize_clusters(payload)
         version = payload["version"]
         cluster_name = payload["cluster_name"]
+        org_name = payload["org_name"]
 
         auth_token = _AuthToken(
             payload["token"], payload["expiration_time"], payload["refresh_token"]
@@ -375,6 +426,7 @@ def _load(path: Path) -> _ConfigData:
             admin_url=admin_url,
             version=version,
             cluster_name=cluster_name,
+            org_name=org_name,
             clusters=clusters,
         )
     except (AttributeError, KeyError, TypeError, ValueError, sqlite3.DatabaseError):
@@ -383,20 +435,30 @@ def _load(path: Path) -> _ConfigData:
 
 def _load_recovery_data(path: Path) -> _ConfigRecoveryData:
     try:
-        with _open_db_ro(path) as db:
+        with _open_db_ro(path, skip_schema_check=True) as db:
             cur = db.cursor()
             # only one row is always present normally
-            cur.execute(
-                """
-                SELECT refresh_token, url, cluster_name
-                FROM main ORDER BY timestamp DESC LIMIT 1"""
-            )
-            payload = cur.fetchone()
+            try:
+                cur.execute(
+                    """
+                    SELECT refresh_token, url, cluster_name, org_name
+                    FROM main ORDER BY timestamp DESC LIMIT 1"""
+                )
+                payload = cur.fetchone()
+            except sqlite3.OperationalError:
+                # Maybe this config is before org_name was added?
+                cur.execute(
+                    """
+                    SELECT refresh_token, url, cluster_name
+                    FROM main ORDER BY timestamp DESC LIMIT 1"""
+                )
+                payload = cur.fetchone()
 
         return _ConfigRecoveryData(
             url=URL(payload["url"]),
             cluster_name=payload["cluster_name"],
             refresh_token=payload["refresh_token"],
+            org_name=payload["org_name"] if "org_name" in payload else None,
         )
     except (AttributeError, KeyError, TypeError, ValueError, sqlite3.DatabaseError):
         raise ConfigError(MALFORMED_CONFIG_MSG)
@@ -425,6 +487,7 @@ def _deserialize_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
     for cluster_config in clusters:
         cluster = Cluster(
             name=cluster_config["name"],
+            orgs=cluster_config.get("orgs", [None]),
             registry_url=URL(cluster_config["registry_url"]),
             storage_url=URL(cluster_config["storage_url"]),
             users_url=URL(cluster_config["users_url"]),
@@ -486,6 +549,7 @@ def _save(config: _ConfigData, path: Path, suppress_errors: bool = True) -> None
         clusters = _serialize_clusters(config.clusters)
         version = config.version
         cluster_name = config.cluster_name
+        org_name = config.org_name
         token = config.auth_token
     except (AttributeError, KeyError, TypeError, ValueError):
         raise ConfigError(MALFORMED_CONFIG_MSG)
@@ -499,8 +563,8 @@ def _save(config: _ConfigData, path: Path, suppress_errors: bool = True) -> None
             """
             INSERT INTO main
             (auth_config, token, expiration_time, refresh_token,
-             url, admin_url, version, cluster_name, clusters, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+             url, admin_url, version, cluster_name, org_name, clusters, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 auth_config,
                 token.token,
@@ -510,6 +574,7 @@ def _save(config: _ConfigData, path: Path, suppress_errors: bool = True) -> None
                 admin_url,
                 version,
                 cluster_name,
+                org_name,
                 clusters,
                 time.time(),
             ),
@@ -540,6 +605,7 @@ def _serialize_clusters(clusters: Mapping[str, Cluster]) -> str:
     for cluster in clusters.values():
         cluster_config = {
             "name": cluster.name,
+            "orgs": cluster.orgs,
             "registry_url": str(cluster.registry_url),
             "storage_url": str(cluster.storage_url),
             "users_url": str(cluster.users_url),
@@ -665,6 +731,7 @@ def _validate_user_config(
     config: Mapping[str, Any],
     filename: Union[str, "os.PathLike[str]"],
     allow_cluster_name: bool = False,
+    allow_org_name: bool = False,
 ) -> None:
     # This was a hard decision.
     # Config structure should be validated to generate meaningful error messages.
@@ -674,13 +741,29 @@ def _validate_user_config(
     #
     # Since currently CLI is the only API client that reads user config data, API
     # validates it.
-    if not allow_cluster_name:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "ps-format")
+    plugin_manager.config.define_str("job", "top-format")
+    plugin_manager.config.define_str("job", "life-span")
+    if allow_cluster_name:
+        plugin_manager.config.define_str("job", "cluster-name")
+    else:
         if "cluster-name" in config.get("job", {}):
             raise ConfigError(
                 f"{filename}: cluster name is not allowed in global user "
                 f"config file, use 'neuro config switch-cluster' for "
                 f"changing the default cluster name"
             )
+    if allow_org_name:
+        plugin_manager.config.define_str("job", "org-name")
+    else:
+        if "org-name" in config.get("job", {}):
+            raise ConfigError(
+                f"{filename}: org name is not allowed in global user "
+                f"config file, use 'neuro config switch-org' for "
+                f"changing the default org name"
+            )
+
     config_spec = plugin_manager.config._get_spec(
         ConfigScope.GLOBAL if not allow_cluster_name else ConfigScope.ALL
     )
@@ -711,14 +794,22 @@ def _validate_alias(
 
 
 def _load_file(
-    plugin_manager: PluginManager, filename: Path, allow_cluster_name: bool
+    plugin_manager: PluginManager,
+    filename: Path,
+    *,
+    allow_cluster_name: bool,
+    allow_org_name: bool,
 ) -> Mapping[str, Any]:
     try:
         config = toml.load(filename)
     except ValueError as exc:
         raise ConfigError(f"{filename}: {exc}")
     _validate_user_config(
-        plugin_manager, config, filename, allow_cluster_name=allow_cluster_name
+        plugin_manager,
+        config,
+        filename,
+        allow_cluster_name=allow_cluster_name,
+        allow_org_name=allow_org_name,
     )
     return config
 

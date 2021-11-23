@@ -245,6 +245,25 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
     )
 
 
+@command()
+@argument("org_name", required=True, type=str)
+async def switch_org(root: Root, org_name: Optional[str]) -> None:
+    """Switch the active organization.
+
+    ORG_NAME is the organization name to select. Use "no_org" value to access
+    current cluster directly instead of as part of some org.
+    """
+    with root.status("Fetching the list of available cluster/org pairs"):
+        await root.client.config.fetch()
+    if org_name == "no_org":
+        org_name = None
+    await root.client.config.switch_org(org_name)
+    root.print(
+        f"The current org_name is [u]{rich_escape(org_name or '<no-org>')}[/u]",
+        markup=True,
+    )
+
+
 async def prompt_cluster(
     root: Root, *, session: Optional[PromptSession[str]] = None
 ) -> str:
@@ -279,6 +298,7 @@ config.add_command(show_token)
 config.add_command(aliases)
 config.add_command(get_clusters)
 config.add_command(switch_cluster)
+config.add_command(switch_org)
 
 config.add_command(docker)
 

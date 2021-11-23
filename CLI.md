@@ -72,6 +72,7 @@
 		* [neuro config aliases](#neuro-config-aliases)
 		* [neuro config get-clusters](#neuro-config-get-clusters)
 		* [neuro config switch-cluster](#neuro-config-switch-cluster)
+		* [neuro config switch-org](#neuro-config-switch-org)
 		* [neuro config docker](#neuro-config-docker)
 		* [neuro config logout](#neuro-config-logout)
 	* [neuro completion](#neuro-completion)
@@ -1840,6 +1841,7 @@ Name | Description|
 | _[neuro config aliases](#neuro-config-aliases)_| List available command aliases |
 | _[neuro config get-clusters](#neuro-config-get-clusters)_| List available clusters |
 | _[neuro config switch-cluster](#neuro-config-switch-cluster)_| Switch the active cluster |
+| _[neuro config switch-org](#neuro-config-switch-org)_| Switch the active organization |
 | _[neuro config docker](#neuro-config-docker)_| Configure local docker client |
 | _[neuro config logout](#neuro-config-logout)_| Log out |
 
@@ -1987,6 +1989,25 @@ Switch the active cluster.<br/><br/>CLUSTER_NAME is the cluster name to select. 
 
 ```bash
 neuro config switch-cluster [OPTIONS] [CLUSTER_NAME]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config switch-org
+
+Switch the active organization.<br/><br/>ORG\_NAME is the organization name to select. Use "no_org" value to access<br/>current cluster directly instead of as part of some org.
+
+**Usage:**
+
+```bash
+neuro config switch-org [OPTIONS] ORG_NAME
 ```
 
 **Options:**

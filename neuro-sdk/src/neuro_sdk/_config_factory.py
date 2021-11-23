@@ -140,10 +140,12 @@ class Factory:
                 session, recovery_data.url, token=fresh_token.token
             )
             config = self._gen_config(config_authorized, fresh_token, recovery_data.url)
+        await self.logout()  # Drop old broken config
         self._save(config)
 
         client = await self.get(timeout=timeout)
         await client.config.switch_cluster(recovery_data.cluster_name)
+        await client.config.switch_org(recovery_data.org_name)
         await client.close()
 
     async def login(
@@ -243,6 +245,7 @@ class Factory:
         assert server_config.admin_url, "Authorized config should include admin_url"
 
         cluster_name = next(iter(server_config.clusters))
+        org_name = next(iter(server_config.clusters[cluster_name].orgs))
         config = _ConfigData(
             auth_config=server_config.auth_config,
             auth_token=token,
@@ -250,6 +253,7 @@ class Factory:
             admin_url=server_config.admin_url,
             version=__version__,
             cluster_name=cluster_name,
+            org_name=org_name,
             clusters=server_config.clusters,
         )
         return config

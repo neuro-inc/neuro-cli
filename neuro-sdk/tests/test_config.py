@@ -161,6 +161,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
     return {
         "default": Cluster(
             name="default",
+            orgs=[None],
             registry_url=URL("https://registry-dev.neu.ro"),
             storage_url=URL("https://storage-dev.neu.ro"),
             users_url=URL("https://users-dev.neu.ro"),
@@ -176,6 +177,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
         ),
         "another": Cluster(
             name="another",
+            orgs=[None, "some_org"],
             registry_url=URL("https://registry2-dev.neu.ro"),
             storage_url=URL("https://storage2-dev.neu.ro"),
             users_url=URL("https://users2-dev.neu.ro"),
@@ -352,6 +354,7 @@ async def test_clusters(
         assert dict(client.config.clusters) == {
             "default": Cluster(
                 name="default",
+                orgs=[None],
                 registry_url=URL("https://registry-dev.neu.ro"),
                 storage_url=srv.make_url("/storage"),
                 users_url=srv.make_url("/"),
@@ -363,6 +366,7 @@ async def test_clusters(
             ),
             "another": Cluster(
                 name="another",
+                orgs=[None, "some_org"],
                 registry_url=srv.make_url("/registry2"),
                 storage_url=srv.make_url("/storage2"),
                 users_url=srv.make_url("/"),
@@ -405,6 +409,7 @@ async def test_fetch(
         "clusters": [
             {
                 "name": "default",
+                "orgs": [None, "some-org"],
                 "registry_url": registry_url,
                 "storage_url": storage_url,
                 "users_url": users_url,
@@ -436,6 +441,7 @@ async def test_fetch(
         assert client.config.clusters == {
             "default": Cluster(
                 name="default",
+                orgs=[None, "some-org"],
                 registry_url=URL(registry_url),
                 storage_url=URL(storage_url),
                 users_url=URL(users_url),

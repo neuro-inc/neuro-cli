@@ -29,6 +29,7 @@ class ConfigFormatter:
         table.add_column(style="bold")
         table.add_row("User Name", config.username)
         table.add_row("Current Cluster", config.cluster_name)
+        table.add_row("Current Org", config.org_name or "<no-org>")
         table.add_row("Credits Quota", format_quota_details(quota.credits))
         table.add_row("Jobs Quota", format_quota_details(quota.total_running_jobs))
         table.add_row("API URL", str(config.api_url))
