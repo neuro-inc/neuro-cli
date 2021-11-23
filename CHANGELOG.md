@@ -5,6 +5,22 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.11.2 (2021-11-23)
+==================================
+
+Features
+--------
+
+- Configure version checker settings by plugins. ([#2405](https://github.com/neuro-inc/platform-client-python/issues/2405))
+- CLI startup time is 2 times shorter now. ([#2417](https://github.com/neuro-inc/platform-client-python/issues/2417))
+
+
+Deprecations and Removals
+-------------------------
+
+- Deprecate `neuro project init` command, use `cookiecutter gh:neuro-inc/cookiecutter-neuro-project` instead. ([#2418](https://github.com/neuro-inc/platform-client-python/issues/2418))
+
+
 Neuro SDK/CLI 21.11.1 (2021-11-17)
 ==================================
 
