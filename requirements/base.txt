@@ -2,7 +2,7 @@
 -e neuro-cli
 aiobotocore==2.0.0
 aiodocker==0.21.0
-aiohttp==3.8.0
+aiohttp==3.8.1
 async_generator==1.10; python_version<"3.7"
 # upgrade setup.py after pinning certtifi to new version
 certifi==2021.10.8
