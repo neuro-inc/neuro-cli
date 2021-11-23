@@ -44,18 +44,18 @@ def time_ctl() -> TimeCtl:
     return TimeCtl()
 
 
-def test_format_url_storage() -> None:
+def test_format_url_storage(root: Root) -> None:
     u = URL("storage://asvetlov/folder")
-    assert format_url(u) == "storage://asvetlov/folder"
+    assert format_url(root, u) == "storage://asvetlov/folder"
 
 
-def test_format_url_file() -> None:
+def test_format_url_file(root: Root) -> None:
     u = URL("file:///asvetlov/folder")
     if sys.platform == "win32":
         expected = "\\asvetlov\\folder"
     else:
         expected = "/asvetlov/folder"
-    assert format_url(u) == expected
+    assert format_url(root, u) == expected
 
 
 _MakeRoot = Callable[[bool, bool, bool], Root]

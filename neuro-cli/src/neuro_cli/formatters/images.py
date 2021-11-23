@@ -17,8 +17,8 @@ from neuro_sdk import (
     ImageProgressSave,
     ImageProgressStep,
     RemoteImage,
+    Tag,
 )
-from neuro_sdk.parsing_utils import Tag
 
 from ..utils import format_size
 from .utils import ImageFormatter

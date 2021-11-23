@@ -38,7 +38,7 @@ from .abc import (
 )
 from .config import Config
 from .core import _Core
-from .errors import NDJSONError, ResourceNotFound
+from .errors import NDJSONError, ResourceNotFound, StdStreamError
 from .images import (
     _DummyProgress,
     _raise_on_error_chunk,
@@ -241,13 +241,6 @@ class JobTelemetry:
 class Message:
     fileno: int
     data: bytes
-
-
-class StdStreamError(Exception):
-    def __init__(self, exit_code: int) -> None:
-        super().__init__(f"Stream finished with exit code {exit_code}")
-
-        self.exit_code = exit_code
 
 
 class StdStream:

@@ -13,8 +13,7 @@ import yaml
 from prompt_toolkit import PromptSession
 from rich.markup import escape as rich_escape
 
-from neuro_sdk import Preset
-from neuro_sdk.admin import _ClusterUserRoleType
+from neuro_sdk import Preset, _ClusterUserRoleType
 
 from neuro_cli.formatters.config import BalanceFormatter
 

@@ -40,3 +40,10 @@ class NDJSONError(ValueError):
 
 class NotSupportedError(NotImplementedError):
     pass
+
+
+class StdStreamError(Exception):
+    def __init__(self, exit_code: int) -> None:
+        super().__init__(f"Stream finished with exit code {exit_code}")
+
+        self.exit_code = exit_code

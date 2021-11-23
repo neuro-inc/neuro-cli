@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime, timedelta
 from typing import (
+    AsyncContextManager,
     AsyncIterator,
     Generic,
     Iterable,
@@ -34,7 +35,7 @@ from neuro_sdk import (
     ResourceNotFound,
     TagOption,
 )
-from neuro_sdk.utils import AsyncContextManager, asyncgeneratorcontextmanager
+from neuro_sdk.utils import asyncgeneratorcontextmanager
 
 from .parse_utils import (
     JobTableFormat,

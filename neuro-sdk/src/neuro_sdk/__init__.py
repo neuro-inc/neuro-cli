@@ -31,6 +31,14 @@ from .abc import (
     StorageProgressStart,
     StorageProgressStep,
 )
+from .admin import (
+    _Balance,
+    _Cluster,
+    _ClusterUser,
+    _ClusterUserRoleType,
+    _NodePool,
+    _Quota,
+)
 from .buckets import Buckets
 from .client import Client, Preset
 from .config import Config
@@ -54,7 +62,9 @@ from .errors import (
     NotSupportedError,
     ResourceNotFound,
     ServerNotAvailable,
+    StdStreamError,
 )
+from .file_filter import AsyncFilterFunc, FileFilter
 from .images import Images
 from .jobs import (
     Container,
@@ -81,9 +91,10 @@ from .plugins import ConfigBuilder, ConfigScope, PluginManager, VersionChecker
 from .secrets import Secret, Secrets
 from .server_cfg import Cluster
 from .service_accounts import ServiceAccount, ServiceAccounts
-from .storage import FileStatus, FileStatusType, Storage
+from .storage import DiskUsageInfo, FileStatus, FileStatusType, Storage
 from .tracing import gen_trace_id
-from .users import Action, Permission, Share, Users
+from .url_utils import CLUSTER_SCHEMES as SCHEMES
+from .users import Action, Permission, Quota, Share, Users
 from .utils import _ContextManager, find_project_root
 
 __version__ = "21.11.2"
@@ -95,6 +106,7 @@ __all__ = (
     "AbstractFileProgress",
     "AbstractRecursiveFileProgress",
     "Action",
+    "AsyncFilterFunc",
     "AuthError",
     "AuthError",
     "AuthenticationError",
@@ -117,10 +129,12 @@ __all__ = (
     "DEFAULT_API_URL",
     "DEFAULT_CONFIG_PATH",
     "Disk",
+    "DiskUsageInfo",
     "DiskVolume",
     "Disks",
     "EnvParseResult",
     "Factory",
+    "FileFilter",
     "FileStatus",
     "FileStatusType",
     "HTTPPort",
@@ -147,9 +161,11 @@ __all__ = (
     "PersistentBucketCredentials",
     "PluginManager",
     "Preset",
+    "Quota",
     "RemoteImage",
     "ResourceNotFound",
     "Resources",
+    "SCHEMES",
     "Secret",
     "SecretFile",
     "Secrets",
@@ -158,6 +174,7 @@ __all__ = (
     "ServiceAccounts",
     "Share",
     "StdStream",
+    "StdStreamError",
     "Storage",
     "StorageProgressComplete",
     "StorageProgressDelete",
@@ -172,6 +189,12 @@ __all__ = (
     "VersionChecker",
     "Volume",
     "VolumeParseResult",
+    "_Balance",
+    "_Cluster",
+    "_ClusterUser",
+    "_ClusterUserRoleType",
+    "_NodePool",
+    "_Quota",
     "find_project_root",
     "gen_trace_id",
     "get",

@@ -10,12 +10,11 @@ from yarl import URL
 from neuro_sdk import (
     Bucket,
     Client,
+    FileFilter,
     FileStatusType,
     IllegalArgumentError,
     ResourceNotFound,
 )
-from neuro_sdk.file_filter import FileFilter
-from neuro_sdk.url_utils import _extract_path
 
 from neuro_cli.click_types import (
     BUCKET,
@@ -766,7 +765,7 @@ async def _is_dir(root: Root, uri: URL) -> bool:
         return await root.client.buckets.blob_is_dir(uri)
 
     elif uri.scheme == "file":
-        path = _extract_path(uri)
+        path = root.client.parse.uri_to_path(uri)
         return path.is_dir()
     return False
 
@@ -787,7 +786,7 @@ async def _expand(
                     async for blob in blob_iter:
                         uris.append(blob.uri)
             elif allow_file and path.scheme == "file":
-                uri_path = str(_extract_path(path))
+                uri_path = str(root.client.parse.uri_to_path(path))
                 for p in globmodule.iglob(uri_path, recursive=True):
                     uris.append(path.with_path(p))
             else:

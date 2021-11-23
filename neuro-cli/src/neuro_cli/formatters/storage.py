@@ -32,6 +32,7 @@ from neuro_sdk import (
     AbstractDeleteProgress,
     AbstractRecursiveFileProgress,
     Action,
+    DiskUsageInfo,
     FileStatus,
     FileStatusType,
     StorageProgressComplete,
@@ -42,8 +43,6 @@ from neuro_sdk import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from neuro_sdk.storage import DiskUsageInfo
-from neuro_sdk.url_utils import _extract_path
 
 from neuro_cli.root import Root
 from neuro_cli.utils import format_size
@@ -603,9 +602,9 @@ def create_storage_progress(
         return StreamProgress(root)
 
 
-def format_url(url: URL) -> str:
+def format_url(root: Root, url: URL) -> str:
     if url.scheme == "file":
-        path = _extract_path(url)
+        path = root.client.parse.uri_to_path(url)
         return str(path)
     else:
         return str(url)
@@ -618,7 +617,7 @@ class StreamProgress(BaseStorageProgress):
         self._root = root
 
     def fmt_url(self, url: URL, type: FileStatusType) -> Text:
-        label = format_url(url)
+        label = format_url(self._root, url)
         return self.painter.paint(label, type)
 
     def begin(self, src: URL, dst: URL) -> StorageProgressContextManager:
@@ -708,7 +707,7 @@ class TTYProgress(BaseStorageProgress):
         self._progress.refresh()
 
     def fmt_url(self, url: URL, type: FileStatusType) -> Text:
-        return self.fmt_str(format_url(url), type)
+        return self.fmt_str(format_url(self._root, url), type)
 
     def fmt_str(self, label: str, type: FileStatusType) -> Text:
         return self.painter.paint(label, type)

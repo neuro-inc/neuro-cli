@@ -9,9 +9,13 @@ import click
 from rich.text import Text
 from yarl import URL
 
-from neuro_sdk import Client, FileStatusType, IllegalArgumentError, ResourceNotFound
-from neuro_sdk.file_filter import FileFilter
-from neuro_sdk.url_utils import _extract_path
+from neuro_sdk import (
+    Client,
+    FileFilter,
+    FileStatusType,
+    IllegalArgumentError,
+    ResourceNotFound,
+)
 
 from .click_types import PlatformURIType
 from .const import EX_OSFILE
@@ -737,7 +741,7 @@ async def _expand(
             painter = get_painter(root.color)
             uri_text = painter.paint(str(uri), FileStatusType.FILE)
             root.print(Text.assemble("Expand ", uri_text))
-        uri_path = str(_extract_path(uri))
+        uri_path = str(root.client.parse.uri_to_path(uri))
         if glob and globmodule.has_magic(uri_path):
             if uri.scheme == "storage":
                 async with root.client.storage.glob(uri) as it:
@@ -761,7 +765,7 @@ async def _is_dir(root: Root, uri: URL) -> bool:
         except ResourceNotFound:
             pass
     elif uri.scheme == "file":
-        path = _extract_path(uri)
+        path = root.client.parse.uri_to_path(uri)
         return path.is_dir()
     return False
 

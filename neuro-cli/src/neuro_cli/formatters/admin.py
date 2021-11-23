@@ -7,7 +7,7 @@ from rich.rule import Rule
 from rich.styled import Styled
 from rich.table import Table
 
-from neuro_sdk.admin import _Cluster, _ClusterUser, _NodePool
+from neuro_sdk import _Cluster, _ClusterUser, _NodePool
 
 from neuro_cli.formatters.config import format_quota_details
 from neuro_cli.formatters.utils import format_datetime_iso

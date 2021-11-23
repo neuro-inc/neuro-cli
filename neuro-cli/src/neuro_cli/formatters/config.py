@@ -9,9 +9,7 @@ from rich.padding import Padding
 from rich.table import Table
 from rich.text import Text
 
-from neuro_sdk import Cluster, Config, Preset
-from neuro_sdk.admin import _Balance, _Quota
-from neuro_sdk.users import Quota
+from neuro_sdk import Cluster, Config, Preset, Quota, _Balance, _Quota
 
 from neuro_cli.utils import format_size
 

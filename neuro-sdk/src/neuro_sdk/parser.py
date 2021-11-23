@@ -295,14 +295,14 @@ class Parser(metaclass=NoPublicConstructor):
 
     def str_to_uri(
         self,
-        uri: str,
+        id_or_name_or_uri: str,
         *,
         allowed_schemes: Iterable[str] = (),
         cluster_name: Optional[str] = None,
         short: bool = False,
     ) -> URL:
         ret = uri_from_cli(
-            uri,
+            id_or_name_or_uri,
             self._config.username,
             cluster_name or self._config.cluster_name,
             allowed_schemes=allowed_schemes,
