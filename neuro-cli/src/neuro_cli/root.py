@@ -27,7 +27,6 @@ from rich.status import Status
 from rich.text import Text as RichText
 
 from neuro_sdk import Client, ConfigError, Factory, gen_trace_id
-from neuro_sdk.config import _ConfigData
 
 from .asyncio_utils import Runner
 
@@ -142,11 +141,6 @@ class Root:
 
     def run(self, main: Awaitable[_T]) -> _T:
         return self._runner.run(main)
-
-    @property
-    def _config(self) -> _ConfigData:
-        assert self._client is not None
-        return self._client.config._config_data
 
     @property
     def quiet(self) -> bool:
