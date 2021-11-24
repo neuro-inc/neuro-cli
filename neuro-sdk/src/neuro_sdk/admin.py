@@ -1,10 +1,23 @@
 from dataclasses import dataclass
-from datetime import datetime
-from decimal import Decimal
-from enum import Enum, unique
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, AsyncIterator, Dict, List, Mapping, Optional
 
-from dateutil.parser import isoparse
+import aiohttp
+from neuro_admin_client import (
+    AdminClientBase,
+    Balance,
+    Cluster,
+    ClusterUser,
+    ClusterUserRoleType,
+    ClusterUserWithInfo,
+    Org,
+    OrgCluster,
+    OrgUser,
+    OrgUserRoleType,
+    OrgUserWithInfo,
+    Quota,
+    UserInfo,
+)
+from prompt_toolkit.eventloop.async_context_manager import asynccontextmanager
 from yarl import URL
 
 from .config import Config
@@ -13,53 +26,26 @@ from .errors import NotSupportedError
 from .server_cfg import Preset
 from .utils import NoPublicConstructor
 
+# Explicit __all__ to re-export neuro_admin_client entities
 
-@unique
-class _ClusterUserRoleType(str, Enum):
-    ADMIN = "admin"
-    MANAGER = "manager"
-    USER = "user"
-
-    def __str__(self) -> str:
-        return self.value
-
-
-@dataclass(frozen=True)
-class _UserInfo:
-    email: str
-    first_name: Optional[str]
-    last_name: Optional[str]
-    created_at: Optional[datetime]
-
-    @property
-    def full_name(self) -> str:
-        if self.first_name and self.last_name:
-            return f"{self.first_name} {self.last_name}"
-        if self.first_name:
-            return self.first_name
-        if self.last_name:
-            return self.last_name
-        return ""
-
-
-@dataclass(frozen=True)
-class _Quota:
-    total_running_jobs: Optional[int] = None
-
-
-@dataclass(frozen=True)
-class _Balance:
-    credits: Optional[Decimal] = None
-    spent_credits: Decimal = Decimal("0")
-
-
-@dataclass(frozen=True)
-class _ClusterUser:
-    user_name: str
-    role: _ClusterUserRoleType
-    quota: _Quota
-    user_info: _UserInfo
-    balance: _Balance
+__all__ = [
+    "Balance",
+    "Cluster",
+    "ClusterUser",
+    "ClusterUserRoleType",
+    "ClusterUserWithInfo",
+    "Org",
+    "OrgCluster",
+    "OrgUser",
+    "OrgUserRoleType",
+    "OrgUserWithInfo",
+    "Quota",
+    "UserInfo",
+    "_Admin",
+    "_CloudProvider",
+    "_NodePool",
+    "_Storage",
+]
 
 
 @dataclass(frozen=True)
@@ -99,7 +85,7 @@ class _Cluster:
     cloud_provider: Optional[_CloudProvider] = None
 
 
-class _Admin(metaclass=NoPublicConstructor):
+class _Admin(AdminClientBase, metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core
         self._config = config
@@ -112,13 +98,32 @@ class _Admin(metaclass=NoPublicConstructor):
         else:
             return url
 
+    @asynccontextmanager
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        json: Optional[Dict[str, Any]] = None,
+        params: Optional[Mapping[str, str]] = None,
+    ) -> AsyncIterator[aiohttp.ClientResponse]:
+        url = self._admin_url / path
+        auth = await self._config._api_auth()
+        async with self._core.request(
+            method=method,
+            url=url,
+            params=params,
+            json=json,
+            auth=auth,
+        ) as resp:
+            yield resp
+
     async def list_cloud_providers(self) -> Dict[str, Dict[str, Any]]:
         url = self._config.api_url / "cloud_providers"
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, auth=auth) as resp:
             return await resp.json()
 
-    async def list_clusters(self) -> Dict[str, _Cluster]:
+    async def list_config_clusters(self) -> Dict[str, _Cluster]:
         url = (self._config.api_url / "clusters").with_query(
             include="cloud_provider_infra"
         )
@@ -131,16 +136,14 @@ class _Admin(metaclass=NoPublicConstructor):
                 ret[cluster.name] = cluster
             return ret
 
-    async def add_cluster(self, name: str, config: Dict[str, Any]) -> None:
-        url = self._admin_url / "clusters"
+    async def setup_cluster_cloud_provider(
+        self, name: str, config: Dict[str, Any]
+    ) -> None:
         auth = await self._config._api_auth()
-        payload = {"name": name}
-        async with self._core.request("POST", url, auth=auth, json=payload) as resp:
-            resp
         url = self._config.api_url / "clusters" / name / "cloud_provider"
         url = url.with_query(start_deployment="true")
-        async with self._core.request("PUT", url, auth=auth, json=config) as resp:
-            resp
+        async with self._core.request("PUT", url, auth=auth, json=config):
+            pass
 
     async def update_cluster_resource_presets(
         self, name: str, presets: Mapping[str, Preset]
@@ -153,127 +156,6 @@ class _Admin(metaclass=NoPublicConstructor):
         async with self._core.request("PUT", url, auth=auth, json=payload):
             pass
 
-    async def list_cluster_users(
-        self, cluster_name: Optional[str] = None
-    ) -> List[_ClusterUser]:
-        cluster_name = cluster_name or self._config.cluster_name
-        url = self._admin_url / "clusters" / cluster_name / "users"
-        auth = await self._config._api_auth()
-        async with self._core.request(
-            "GET", url, auth=auth, params={"with_user_info": "true"}
-        ) as resp:
-            res = await resp.json()
-            return [_cluster_user_from_api(payload) for payload in res]
-
-    async def get_cluster_user(
-        self,
-        cluster_name: Optional[str] = None,
-        user_name: Optional[str] = None,
-    ) -> _ClusterUser:
-        cluster_name = cluster_name or self._config.cluster_name
-        user_name = user_name or self._config.username
-        url = self._admin_url / "clusters" / cluster_name / "users" / user_name
-        auth = await self._config._api_auth()
-        async with self._core.request(
-            "GET", url, auth=auth, params={"with_user_info": "true"}
-        ) as resp:
-            res = await resp.json()
-            return _cluster_user_from_api(res)
-
-    async def add_cluster_user(
-        self, cluster_name: str, user_name: str, role: str
-    ) -> _ClusterUser:
-        url = self._admin_url / "clusters" / cluster_name / "users"
-        payload = {"user_name": user_name, "role": role}
-        auth = await self._config._api_auth()
-
-        async with self._core.request(
-            "POST", url, json=payload, auth=auth, params={"with_user_info": "true"}
-        ) as resp:
-            payload = await resp.json()
-            return _cluster_user_from_api(payload)
-
-    async def remove_cluster_user(self, cluster_name: str, user_name: str) -> None:
-        url = self._admin_url / "clusters" / cluster_name / "users" / user_name
-        auth = await self._config._api_auth()
-
-        async with self._core.request("DELETE", url, auth=auth):
-            # No content response
-            pass
-
-    async def set_user_quota(
-        self,
-        cluster_name: str,
-        user_name: str,
-        total_running_jobs: Optional[int],
-    ) -> _ClusterUser:
-        url = (
-            self._admin_url / "clusters" / cluster_name / "users" / user_name / "quota"
-        )
-        payload = {
-            "quota": {
-                "total_running_jobs": total_running_jobs,
-            },
-        }
-        payload["quota"] = {k: v for k, v in payload["quota"].items() if v is not None}
-
-        auth = await self._config._api_auth()
-
-        async with self._core.request(
-            "PATCH", url, json=payload, auth=auth, params={"with_user_info": "true"}
-        ) as resp:
-            payload = await resp.json()
-            return _cluster_user_from_api(payload)
-
-    async def set_user_credits(
-        self,
-        cluster_name: str,
-        user_name: str,
-        credits: Optional[Decimal],
-    ) -> _ClusterUser:
-        url = (
-            self._admin_url
-            / "clusters"
-            / cluster_name
-            / "users"
-            / user_name
-            / "balance"
-        )
-        payload = {
-            "credits": str(credits) if credits is not None else None,
-        }
-
-        auth = await self._config._api_auth()
-
-        async with self._core.request(
-            "PATCH", url, json=payload, auth=auth, params={"with_user_info": "true"}
-        ) as resp:
-            payload = await resp.json()
-            return _cluster_user_from_api(payload)
-
-    async def add_user_credits(
-        self,
-        cluster_name: str,
-        user_name: str,
-        additional_credits: Decimal,
-    ) -> _ClusterUser:
-        url = (
-            self._admin_url
-            / "clusters"
-            / cluster_name
-            / "users"
-            / user_name
-            / "balance"
-        )
-        payload = {"additional_credits": str(additional_credits)}
-        auth = await self._config._api_auth()
-
-        async with self._core.request(
-            "PATCH", url, json=payload, auth=auth, params={"with_user_info": "true"}
-        ) as resp:
-            payload = await resp.json()
-            return _cluster_user_from_api(payload)
-
     async def get_cloud_provider_options(
         self, cloud_provider_name: str
     ) -> Mapping[str, Any]:
@@ -281,37 +163,6 @@ class _Admin(metaclass=NoPublicConstructor):
         auth = await self._config._api_auth()
         async with self._core.request("GET", url, auth=auth) as resp:
             return await resp.json()
-
-
-def _user_info_from_api(payload: Dict[str, Any]) -> _UserInfo:
-    created_at = payload.get("created_at")
-    if created_at is not None:
-        created_at = isoparse(created_at)
-    return _UserInfo(
-        email=payload["email"],
-        first_name=payload.get("first_name"),
-        last_name=payload.get("last_name"),
-        created_at=created_at,
-    )
-
-
-def _cluster_user_from_api(payload: Dict[str, Any]) -> _ClusterUser:
-    quota_dict = payload.get("quota", {})
-    balance_dict = payload.get("balance", {})
-    return _ClusterUser(
-        user_name=payload["user_name"],
-        role=_ClusterUserRoleType(payload["role"]),
-        quota=_Quota(
-            total_running_jobs=quota_dict.get("total_running_jobs"),
-        ),
-        balance=_Balance(
-            credits=Decimal(balance_dict["credits"])
-            if "credits" in balance_dict
-            else None,
-            spent_credits=Decimal(balance_dict["spent_credits"]),
-        ),
-        user_info=_user_info_from_api(payload["user_info"]),
-    )
 
 
 def _cluster_from_api(payload: Dict[str, Any]) -> _Cluster:

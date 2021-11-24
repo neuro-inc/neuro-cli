@@ -157,6 +157,8 @@ roles: admin, manager or user.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _-c, --credits AMOUNT_ | Credits amount to set |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota |
 
 
 

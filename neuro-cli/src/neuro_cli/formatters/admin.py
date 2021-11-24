@@ -7,7 +7,7 @@ from rich.rule import Rule
 from rich.styled import Styled
 from rich.table import Table
 
-from neuro_sdk.admin import _Cluster, _ClusterUser, _NodePool
+from neuro_sdk.admin import ClusterUserWithInfo, _Cluster, _NodePool
 
 from neuro_cli.formatters.config import format_quota_details
 from neuro_cli.formatters.utils import format_datetime_iso
@@ -15,7 +15,7 @@ from neuro_cli.utils import format_size
 
 
 class ClusterUserFormatter:
-    def __call__(self, clusters_users: Iterable[_ClusterUser]) -> RenderableType:
+    def __call__(self, clusters_users: Iterable[ClusterUserWithInfo]) -> RenderableType:
         table = Table(box=box.MINIMAL_HEAVY_HEAD)
         table.add_column("Name", style="bold")
         table.add_column("Role")

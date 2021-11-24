@@ -10,7 +10,8 @@ from rich.table import Table
 from rich.text import Text
 
 from neuro_sdk import Cluster, Config, Preset
-from neuro_sdk.admin import _Balance, _Quota
+from neuro_sdk.admin import Balance
+from neuro_sdk.admin import Quota as AdminQuota
 from neuro_sdk.users import Quota
 
 from neuro_cli.utils import format_size
@@ -50,7 +51,7 @@ class QuotaFormatter:
 
 
 class AdminQuotaFormatter:
-    def __call__(self, quota: _Quota) -> RenderableType:
+    def __call__(self, quota: AdminQuota) -> RenderableType:
         jobs_details = format_quota_details(quota.total_running_jobs)
         return RenderGroup(
             Text.assemble(Text("Jobs", style="bold"), f": ", jobs_details),
@@ -58,7 +59,7 @@ class AdminQuotaFormatter:
 
 
 class BalanceFormatter:
-    def __call__(self, balance: _Balance) -> RenderableType:
+    def __call__(self, balance: Balance) -> RenderableType:
         credits_details = format_quota_details(balance.credits)
         spent_credits_details = format_quota_details(balance.spent_credits)
         return RenderGroup(

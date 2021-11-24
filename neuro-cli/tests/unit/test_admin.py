@@ -6,12 +6,12 @@ from unittest import mock
 
 from neuro_sdk import Preset
 from neuro_sdk.admin import (
+    Balance,
+    ClusterUserRoleType,
+    ClusterUserWithInfo,
+    Quota,
+    UserInfo,
     _Admin,
-    _Balance,
-    _ClusterUser,
-    _ClusterUserRoleType,
-    _Quota,
-    _UserInfo,
 )
 from neuro_sdk.config import Config
 
@@ -24,15 +24,17 @@ def test_add_cluster_user_print_result(run_cli: _RunCli) -> None:
     with mock.patch.object(_Admin, "add_cluster_user") as mocked:
 
         async def add_cluster_user(
-            cluster_name: str, user_name: str, role: str
-        ) -> _ClusterUser:
+            cluster_name: str, user_name: str, role: ClusterUserRoleType
+        ) -> ClusterUserWithInfo:
             # NOTE: We return a different role to check that we print it to user
-            return _ClusterUser(
-                user_name,
-                _ClusterUserRoleType.MANAGER,
-                quota=_Quota(),
-                balance=_Balance(),
-                user_info=_UserInfo(
+            return ClusterUserWithInfo(
+                user_name=user_name,
+                cluster_name=cluster_name,
+                org_name=None,
+                role=ClusterUserRoleType.MANAGER,
+                quota=Quota(),
+                balance=Balance(),
+                user_info=UserInfo(
                     email="some@email.com",
                     created_at=None,
                     first_name=None,

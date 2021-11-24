@@ -24,6 +24,8 @@ from .utils import NoPublicConstructor
 
 
 class Client(metaclass=NoPublicConstructor):
+    _admin: _Admin
+
     def __init__(
         self,
         session: aiohttp.ClientSession,
