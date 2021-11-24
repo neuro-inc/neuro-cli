@@ -2,8 +2,13 @@ from typing import Callable
 
 from aiohttp import web
 
-from neuro_sdk import Client, Cluster, PersistentBucketCredentials
-from neuro_sdk.buckets import Bucket, BucketCredentials
+from neuro_sdk import (
+    Bucket,
+    BucketCredentials,
+    Client,
+    Cluster,
+    PersistentBucketCredentials,
+)
 
 from tests import _TestServerFactory
 

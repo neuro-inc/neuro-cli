@@ -22,7 +22,7 @@ from neuro_sdk import (
     Factory,
     __version__,
 )
-from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData
+from neuro_sdk._config import _AuthConfig, _AuthToken, _ConfigData
 
 from tests import _TestServerFactory
 

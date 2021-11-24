@@ -17,18 +17,21 @@ from typing import (
 from typing_extensions import Literal
 from yarl import URL
 
-from .config import Config
-from .parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
-from .url_utils import _check_scheme, _extract_path, _normalize_uri, uri_from_cli
-from .utils import NoPublicConstructor
+from ._config import Config
+from ._parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
+from ._rewrite import rewrite_module
+from ._url_utils import _check_scheme, _extract_path, _normalize_uri, uri_from_cli
+from ._utils import NoPublicConstructor
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class SecretFile:
     secret_uri: URL
     container_path: str
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Volume:
     storage_uri: URL
@@ -36,6 +39,7 @@ class Volume:
     read_only: bool = False
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class DiskVolume:
     disk_uri: URL
@@ -43,6 +47,7 @@ class DiskVolume:
     read_only: bool = False
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class VolumeParseResult:
     volumes: Sequence[Volume]
@@ -87,12 +92,14 @@ class VolumeParseResult:
             raise IndexError(idx)
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class EnvParseResult:
     env: Dict[str, str]
     secret_env: Dict[str, URL]
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class BucketUriParseResult:
     cluster_name: str
@@ -101,6 +108,7 @@ class BucketUriParseResult:
     key: str
 
 
+@rewrite_module
 class Parser(metaclass=NoPublicConstructor):
     def __init__(self, config: Config) -> None:
         self._config = config
@@ -295,14 +303,14 @@ class Parser(metaclass=NoPublicConstructor):
 
     def str_to_uri(
         self,
-        uri: str,
+        id_or_name_or_uri: str,
         *,
         allowed_schemes: Iterable[str] = (),
         cluster_name: Optional[str] = None,
         short: bool = False,
     ) -> URL:
         ret = uri_from_cli(
-            uri,
+            id_or_name_or_uri,
             self._config.username,
             cluster_name or self._config.cluster_name,
             allowed_schemes=allowed_schemes,

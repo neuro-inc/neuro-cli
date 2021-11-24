@@ -4,15 +4,7 @@ from typing import Awaitable, Callable, List, Optional
 import aiohttp
 from yarl import URL
 
-from ._bucket_base import (
-    BlobCommonPrefix,
-    BlobObject,
-    Bucket,
-    BucketCredentials,
-    BucketEntry,
-    PersistentBucketCredentials,
-)
-from .abc import (
+from ._abc import (
     AbstractDeleteProgress,
     AbstractDockerImageProgress,
     AbstractFileProgress,
@@ -31,19 +23,39 @@ from .abc import (
     StorageProgressStart,
     StorageProgressStep,
 )
-from .buckets import Buckets
-from .client import Client, Preset
-from .config import Config
-from .config_factory import (
+from ._admin import (
+    _Admin,
+    _Balance,
+    _CloudProvider,
+    _Cluster,
+    _ClusterUser,
+    _ClusterUserRoleType,
+    _NodePool,
+    _Quota,
+    _Storage,
+    _UserInfo,
+)
+from ._bucket_base import (
+    BlobCommonPrefix,
+    BlobObject,
+    Bucket,
+    BucketCredentials,
+    BucketEntry,
+    PersistentBucketCredentials,
+)
+from ._buckets import Buckets
+from ._client import Client, Preset
+from ._config import Config
+from ._config_factory import (
     CONFIG_ENV_NAME,
     DEFAULT_API_URL,
     DEFAULT_CONFIG_PATH,
     PASS_CONFIG_ENV_NAME,
     Factory,
 )
-from .core import DEFAULT_TIMEOUT
-from .disks import Disk, Disks
-from .errors import (
+from ._core import DEFAULT_TIMEOUT
+from ._disks import Disk, Disks
+from ._errors import (
     AuthenticationError,
     AuthError,
     AuthorizationError,
@@ -54,9 +66,11 @@ from .errors import (
     NotSupportedError,
     ResourceNotFound,
     ServerNotAvailable,
+    StdStreamError,
 )
-from .images import Images
-from .jobs import (
+from ._file_filter import AsyncFilterFunc, FileFilter
+from ._images import Images
+from ._jobs import (
     Container,
     HTTPPort,
     JobDescription,
@@ -64,11 +78,12 @@ from .jobs import (
     Jobs,
     JobStatus,
     JobStatusHistory,
+    JobStatusItem,
     JobTelemetry,
     Resources,
     StdStream,
 )
-from .parser import (
+from ._parser import (
     DiskVolume,
     EnvParseResult,
     Parser,
@@ -76,15 +91,16 @@ from .parser import (
     Volume,
     VolumeParseResult,
 )
-from .parsing_utils import LocalImage, RemoteImage, Tag, TagOption
-from .plugins import ConfigBuilder, ConfigScope, PluginManager, VersionChecker
-from .secrets import Secret, Secrets
-from .server_cfg import Cluster
-from .service_accounts import ServiceAccount, ServiceAccounts
-from .storage import FileStatus, FileStatusType, Storage
-from .tracing import gen_trace_id
-from .users import Action, Permission, Share, Users
-from .utils import _ContextManager, find_project_root
+from ._parsing_utils import LocalImage, RemoteImage, Tag, TagOption
+from ._plugins import ConfigBuilder, ConfigScope, PluginManager, VersionChecker
+from ._secrets import Secret, Secrets
+from ._server_cfg import Cluster
+from ._service_accounts import ServiceAccount, ServiceAccounts
+from ._storage import DiskUsageInfo, FileStatus, FileStatusType, Storage
+from ._tracing import gen_trace_id
+from ._url_utils import CLUSTER_SCHEMES as SCHEMES
+from ._users import Action, Permission, Quota, Share, Users
+from ._utils import _ContextManager, find_project_root
 
 __version__ = "21.11.2"
 
@@ -95,6 +111,7 @@ __all__ = (
     "AbstractFileProgress",
     "AbstractRecursiveFileProgress",
     "Action",
+    "AsyncFilterFunc",
     "AuthError",
     "AuthError",
     "AuthenticationError",
@@ -117,10 +134,12 @@ __all__ = (
     "DEFAULT_API_URL",
     "DEFAULT_CONFIG_PATH",
     "Disk",
+    "DiskUsageInfo",
     "DiskVolume",
     "Disks",
     "EnvParseResult",
     "Factory",
+    "FileFilter",
     "FileStatus",
     "FileStatusType",
     "HTTPPort",
@@ -136,6 +155,7 @@ __all__ = (
     "JobRestartPolicy",
     "JobStatus",
     "JobStatusHistory",
+    "JobStatusItem",
     "JobTelemetry",
     "Jobs",
     "LocalImage",
@@ -147,9 +167,11 @@ __all__ = (
     "PersistentBucketCredentials",
     "PluginManager",
     "Preset",
+    "Quota",
     "RemoteImage",
     "ResourceNotFound",
     "Resources",
+    "SCHEMES",
     "Secret",
     "SecretFile",
     "Secrets",
@@ -158,6 +180,7 @@ __all__ = (
     "ServiceAccounts",
     "Share",
     "StdStream",
+    "StdStreamError",
     "Storage",
     "StorageProgressComplete",
     "StorageProgressDelete",
@@ -172,6 +195,17 @@ __all__ = (
     "VersionChecker",
     "Volume",
     "VolumeParseResult",
+    "_Admin",
+    "_Balance",
+    "_CloudProvider",
+    "_Cluster",
+    "_ClusterUser",
+    "_ClusterUserRoleType",
+    "_NodePool",
+    "_Quota",
+    "_Storage",
+    "_UserInfo",
+    "__version__",
     "find_project_root",
     "gen_trace_id",
     "get",

@@ -4,7 +4,7 @@ import pytest
 from yarl import URL
 
 from neuro_sdk import Client, DiskVolume, LocalImage, RemoteImage, SecretFile, Volume
-from neuro_sdk.parsing_utils import _get_url_authority
+from neuro_sdk._parsing_utils import _get_url_authority
 
 _MakeClient = Callable[..., Client]
 

@@ -1,3 +1,6 @@
+# Admin API is experimental,
+# remove underscore prefix after stabilizing and making public
+
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
@@ -7,13 +10,15 @@ from typing import Any, Dict, List, Mapping, Optional
 from dateutil.parser import isoparse
 from yarl import URL
 
-from .config import Config
-from .core import _Core
-from .errors import NotSupportedError
-from .server_cfg import Preset
-from .utils import NoPublicConstructor
+from ._config import Config
+from ._core import _Core
+from ._errors import NotSupportedError
+from ._rewrite import rewrite_module
+from ._server_cfg import Preset
+from ._utils import NoPublicConstructor
 
 
+@rewrite_module
 @unique
 class _ClusterUserRoleType(str, Enum):
     ADMIN = "admin"
@@ -24,6 +29,7 @@ class _ClusterUserRoleType(str, Enum):
         return self.value
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class _UserInfo:
     email: str
@@ -42,17 +48,20 @@ class _UserInfo:
         return ""
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class _Quota:
     total_running_jobs: Optional[int] = None
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class _Balance:
     credits: Optional[Decimal] = None
     spent_credits: Decimal = Decimal("0")
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class _ClusterUser:
     user_name: str
@@ -62,6 +71,7 @@ class _ClusterUser:
     balance: _Balance
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class _NodePool:
     min_size: int
@@ -78,11 +88,13 @@ class _NodePool:
     idle_size: int = 0
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class _Storage:
     description: str
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class _CloudProvider:
     type: str
@@ -92,6 +104,7 @@ class _CloudProvider:
     storage: Optional[_Storage]
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class _Cluster:
     name: str
@@ -99,6 +112,7 @@ class _Cluster:
     cloud_provider: Optional[_CloudProvider] = None
 
 
+@rewrite_module
 class _Admin(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core

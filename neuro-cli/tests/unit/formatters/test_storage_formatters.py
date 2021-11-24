@@ -4,8 +4,7 @@ from typing import Any, List
 import pytest
 from yarl import URL
 
-from neuro_sdk import Action, FileStatus, FileStatusType
-from neuro_sdk.storage import DiskUsageInfo
+from neuro_sdk import Action, DiskUsageInfo, FileStatus, FileStatusType
 
 from neuro_cli.formatters.storage import (
     BaseFilesFormatter,

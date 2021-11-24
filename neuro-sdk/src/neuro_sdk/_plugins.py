@@ -3,9 +3,11 @@ import numbers
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Mapping, Tuple, Type, Union
 
-from .errors import ConfigError
+from ._errors import ConfigError
+from ._rewrite import rewrite_module
 
 
+@rewrite_module
 class ConfigScope(enum.Flag):
     GLOBAL = enum.auto()
     LOCAL = enum.auto()
@@ -24,6 +26,7 @@ _ParamType = Union[
 ]
 
 
+@rewrite_module
 class ConfigBuilder:
     _config_spec: Dict[str, Dict[str, Tuple[_ParamType, ConfigScope]]]
 
@@ -101,6 +104,7 @@ class _VersionRecord:
     delay: float
 
 
+@rewrite_module
 class VersionChecker:
     def __init__(self) -> None:
         self._records: Dict[str, _VersionRecord] = {}
@@ -120,6 +124,7 @@ class VersionChecker:
         self._records[package] = record
 
 
+@rewrite_module
 class PluginManager:
 
     _config: ConfigBuilder

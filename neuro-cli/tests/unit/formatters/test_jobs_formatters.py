@@ -20,14 +20,13 @@ from neuro_sdk import (
     JobRestartPolicy,
     JobStatus,
     JobStatusHistory,
+    JobStatusItem,
     JobTelemetry,
     RemoteImage,
     Resources,
     SecretFile,
     Volume,
 )
-from neuro_sdk.jobs import JobStatusItem
-from neuro_sdk.parsing_utils import _ImageNameParser
 
 from neuro_cli.formatters.jobs import (
     JobStartProgress,
@@ -47,6 +46,7 @@ from neuro_cli.formatters.utils import (
     uri_formatter,
 )
 from neuro_cli.parse_utils import parse_ps_columns, parse_sort_keys, parse_top_columns
+from neuro_cli.root import Root
 
 TEST_JOB_ID = "job-ad09fe07-0c64-4d32-b477-3b737d215621"
 TEST_JOB_ID2 = "job-3f9c5f93-45be-4c5d-acbd-11c68260235f"
@@ -1612,14 +1612,14 @@ class TestSimpleJobsFormatter:
 
 
 class TestTabularJobRow:
-    image_parser = _ImageNameParser(
-        "bob", "test-cluster", {"test-cluster": URL("https://registry-test.neu.ro")}
-    )
-
     def _job_descr_with_status(
-        self, status: JobStatus, image: str = "nginx:latest", name: Optional[str] = None
+        self,
+        root: Root,
+        status: JobStatus,
+        image: str = "nginx:latest",
+        name: Optional[str] = None,
     ) -> JobDescription:
-        remote_image = self.image_parser.parse_remote(image)
+        remote_image = root.client.parse.remote_image(image)
         return JobDescription(
             status=status,
             id="job-1f5ab792-e534-4bb4-be56-8af1ce722692",
@@ -1647,18 +1647,22 @@ class TestTabularJobRow:
             price_credits_per_hour=Decimal("15"),
         )
 
-    def test_with_job_name(self, datetime_formatter: DatetimeFormatter) -> None:
+    def test_with_job_name(
+        self, root: Root, datetime_formatter: DatetimeFormatter
+    ) -> None:
         row = TabularJobRow.from_job(
-            self._job_descr_with_status(JobStatus.RUNNING, name="job-name"),
+            self._job_descr_with_status(root, JobStatus.RUNNING, name="job-name"),
             "owner",
             image_formatter=str,
             datetime_formatter=datetime_formatter,
         )
         assert row.name == "job-name"
 
-    def test_without_job_name(self, datetime_formatter: DatetimeFormatter) -> None:
+    def test_without_job_name(
+        self, root: Root, datetime_formatter: DatetimeFormatter
+    ) -> None:
         row = TabularJobRow.from_job(
-            self._job_descr_with_status(JobStatus.RUNNING, name=None),
+            self._job_descr_with_status(root, JobStatus.RUNNING, name=None),
             "owner",
             image_formatter=str,
             datetime_formatter=datetime_formatter,
@@ -1680,9 +1684,10 @@ class TestTabularJobRow:
         status: JobStatus,
         date: str,
         color: str,
+        root: Root,
     ) -> None:
         row = TabularJobRow.from_job(
-            self._job_descr_with_status(status),
+            self._job_descr_with_status(root, status),
             "owner",
             image_formatter=str,
             datetime_formatter=format_datetime_human,
@@ -1691,14 +1696,15 @@ class TestTabularJobRow:
         assert row.when == date
 
     def test_image_from_registry_parsing_short(
-        self, datetime_formatter: DatetimeFormatter
+        self, root: Root, datetime_formatter: DatetimeFormatter
     ) -> None:
-        uri_fmtr = uri_formatter(username="bob", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(username="bob", cluster_name="default")
         image_fmtr = image_formatter(uri_formatter=uri_fmtr)
         row = TabularJobRow.from_job(
             self._job_descr_with_status(
+                root,
                 JobStatus.PENDING,
-                "registry-test.neu.ro/bob/swiss-box:red",
+                "registry-dev.neu.ro/bob/swiss-box:red",
             ),
             "bob",
             image_formatter=image_fmtr,
@@ -1708,18 +1714,19 @@ class TestTabularJobRow:
         assert row.name == ""
 
     def test_image_from_registry_parsing_long(
-        self, datetime_formatter: DatetimeFormatter
+        self, root: Root, datetime_formatter: DatetimeFormatter
     ) -> None:
         row = TabularJobRow.from_job(
             self._job_descr_with_status(
+                root,
                 JobStatus.PENDING,
-                "registry-test.neu.ro/bob/swiss-box:red",
+                "registry-dev.neu.ro/bob/swiss-box:red",
             ),
             "owner",
             image_formatter=str,
             datetime_formatter=datetime_formatter,
         )
-        assert row.image == "image://test-cluster/bob/swiss-box:red"
+        assert row.image == "image://default/bob/swiss-box:red"
         assert row.name == ""
 
 
@@ -1735,9 +1742,6 @@ class TestTabularJobsFormatter:
         "DESCRIPTION",
         "COMMAND",
     ]
-    image_parser = _ImageNameParser(
-        "bob", "test-cluster", {"test-cluster": URL("https://registry-test.neu.ro")}
-    )
 
     def test_empty(self, rich_cmp: Any, datetime_formatter: DatetimeFormatter) -> None:
         formatter = TabularJobsFormatter(

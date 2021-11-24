@@ -19,9 +19,11 @@ from typing import (
 
 from yarl import URL
 
-from neuro_sdk.utils import AsyncContextManager
+from ._rewrite import rewrite_module
+from ._utils import AsyncContextManager
 
 
+@rewrite_module
 @dataclass(frozen=True)  # type: ignore
 class BucketEntry(abc.ABC):
     key: str
@@ -49,6 +51,7 @@ class BucketEntry(abc.ABC):
         pass
 
 
+@rewrite_module
 class BlobObject(BucketEntry):
     def is_file(self) -> bool:
         return not self.is_dir()
@@ -57,6 +60,7 @@ class BlobObject(BucketEntry):
         return self.key.endswith("/") and self.size == 0
 
 
+@rewrite_module
 class BlobCommonPrefix(BucketEntry):
     size: int = 0
     # This is "folder" analog in blobs
@@ -71,6 +75,7 @@ class BlobCommonPrefix(BucketEntry):
         return True
 
 
+@rewrite_module
 class BucketProvider(abc.ABC):
     """
     Defines how to execute generic blob operations in a specific bucket provider
@@ -123,6 +128,7 @@ class BucketProvider(abc.ABC):
         pass
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Bucket:
     id: str
@@ -146,12 +152,14 @@ class Bucket:
         OPEN_STACK = "open_stack"
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class BucketUsage:
     total_bytes: int
     object_count: int
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class BucketCredentials:
     bucket_id: str
@@ -159,6 +167,7 @@ class BucketCredentials:
     credentials: Mapping[str, str]
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class PersistentBucketCredentials:
     id: str
@@ -169,6 +178,7 @@ class PersistentBucketCredentials:
     credentials: List[BucketCredentials]
 
 
+@rewrite_module
 class MeasureTimeDiffMixin:
     def __init__(self) -> None:
         self._min_time_diff: Optional[float] = 0

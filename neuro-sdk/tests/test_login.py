@@ -21,7 +21,7 @@ from aiohttp.web import (
 from yarl import URL
 
 from neuro_sdk import AuthError
-from neuro_sdk.login import (
+from neuro_sdk._login import (
     AuthCode,
     AuthNegotiator,
     AuthTokenClient,

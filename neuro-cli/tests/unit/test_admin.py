@@ -4,8 +4,8 @@ from decimal import Decimal
 from typing import Any, Callable, List, Mapping
 from unittest import mock
 
-from neuro_sdk import Preset
-from neuro_sdk.admin import (
+from neuro_sdk import (
+    Preset,
     _Admin,
     _Balance,
     _ClusterUser,
@@ -13,7 +13,7 @@ from neuro_sdk.admin import (
     _Quota,
     _UserInfo,
 )
-from neuro_sdk.config import Config
+from neuro_sdk._config import Config
 
 from .conftest import SysCapWithCode
 

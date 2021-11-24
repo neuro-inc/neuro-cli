@@ -4,11 +4,13 @@ from typing import Optional
 
 from yarl import URL
 
-from .parsing_utils import LocalImage, RemoteImage
+from ._parsing_utils import LocalImage, RemoteImage
+from ._rewrite import rewrite_module
 
 # storage
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class StorageProgressStart:
     src: URL
@@ -16,6 +18,7 @@ class StorageProgressStart:
     size: int
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class StorageProgressComplete:
     src: URL
@@ -23,6 +26,7 @@ class StorageProgressComplete:
     size: int
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class StorageProgressStep:
     src: URL
@@ -31,18 +35,21 @@ class StorageProgressStep:
     size: int
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class StorageProgressEnterDir:
     src: URL
     dst: URL
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class StorageProgressLeaveDir:
     src: URL
     dst: URL
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class StorageProgressFail:
     src: URL
@@ -50,12 +57,14 @@ class StorageProgressFail:
     message: str
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class StorageProgressDelete:
     uri: URL
     is_dir: bool
 
 
+@rewrite_module
 class AbstractFileProgress(abc.ABC):
     # design note:
     # dataclasses used instead of direct passing parameters
@@ -76,6 +85,7 @@ class AbstractFileProgress(abc.ABC):
         pass  # pragma: no cover
 
 
+@rewrite_module
 class AbstractRecursiveFileProgress(AbstractFileProgress):
     @abc.abstractmethod
     def enter(self, data: StorageProgressEnterDir) -> None:
@@ -90,6 +100,7 @@ class AbstractRecursiveFileProgress(AbstractFileProgress):
         pass  # pragma: no cover
 
 
+@rewrite_module
 class AbstractDeleteProgress(abc.ABC):
     @abc.abstractmethod
     def delete(self, data: StorageProgressDelete) -> None:
@@ -136,24 +147,28 @@ class _AsyncAbstractDeleteProgress(abc.ABC):
 # image
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class ImageProgressPull:
     src: RemoteImage
     dst: LocalImage
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class ImageProgressPush:
     src: LocalImage
     dst: RemoteImage
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class ImageProgressSave:
     job: str
     dst: RemoteImage
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class ImageProgressStep:
     message: str
@@ -163,17 +178,20 @@ class ImageProgressStep:
     total: Optional[float]
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class ImageCommitStarted:
     job_id: str
     target_image: RemoteImage
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class ImageCommitFinished:
     job_id: str
 
 
+@rewrite_module
 class AbstractDockerImageProgress(abc.ABC):
     @abc.abstractmethod
     def pull(self, data: ImageProgressPull) -> None:

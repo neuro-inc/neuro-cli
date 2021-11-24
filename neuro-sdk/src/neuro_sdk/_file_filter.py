@@ -2,6 +2,8 @@ import re
 from pathlib import Path
 from typing import Any, Awaitable, Callable, List, Tuple, cast
 
+from ._rewrite import rewrite_module
+
 AsyncFilterFunc = Callable[[str], Awaitable[bool]]
 
 
@@ -9,6 +11,7 @@ async def _always_match(path: str) -> bool:
     return True
 
 
+@rewrite_module
 class FileFilter:
     def __init__(self, default: AsyncFilterFunc = _always_match) -> None:
         self.filters: List[Tuple[bool, str, str, Callable[[str], Any]]] = []

@@ -5,8 +5,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuro_sdk import Action, Client, Permission, ResourceNotFound
-from neuro_sdk.users import Quota
+from neuro_sdk import Action, Client, Permission, Quota, ResourceNotFound
 
 from tests import _TestServerFactory
 

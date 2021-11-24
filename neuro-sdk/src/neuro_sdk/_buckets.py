@@ -18,18 +18,11 @@ from typing import (
 from dateutil.parser import isoparse
 from yarl import URL
 
-from neuro_sdk import AbstractRecursiveFileProgress, file_utils
-from neuro_sdk.abc import AbstractDeleteProgress, AbstractFileProgress
-from neuro_sdk.file_filter import (
-    AsyncFilterFunc,
-    _glob_safe_prefix,
-    _has_magic,
-    _isrecursive,
-    translate,
+from ._abc import (
+    AbstractDeleteProgress,
+    AbstractFileProgress,
+    AbstractRecursiveFileProgress,
 )
-from neuro_sdk.file_utils import FileSystem, FileTransferer, LocalFS
-from neuro_sdk.url_utils import _extract_path, normalize_local_path_uri
-
 from ._bucket_base import (
     Bucket,
     BucketCredentials,
@@ -38,11 +31,21 @@ from ._bucket_base import (
     BucketUsage,
     PersistentBucketCredentials,
 )
-from .config import Config
-from .core import _Core
-from .errors import NDJSONError, ResourceNotFound
-from .parser import Parser
-from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
+from ._config import Config
+from ._core import _Core
+from ._errors import NDJSONError, ResourceNotFound
+from ._file_filter import (
+    AsyncFilterFunc,
+    _glob_safe_prefix,
+    _has_magic,
+    _isrecursive,
+    translate,
+)
+from ._file_utils import FileSystem, FileTransferer, LocalFS, rm
+from ._parser import Parser
+from ._rewrite import rewrite_module
+from ._url_utils import _extract_path, normalize_local_path_uri
+from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 
 class BucketFS(FileSystem[PurePosixPath]):
@@ -159,6 +162,7 @@ class BucketFS(FileSystem[PurePosixPath]):
         return path / child
 
 
+@rewrite_module
 class Buckets(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config, parser: Parser) -> None:
         self._core = core
@@ -631,7 +635,7 @@ class Buckets(metaclass=NoPublicConstructor):
         async with self._get_bucket_fs(
             res.bucket_name, res.cluster_name, res.owner
         ) as bucket_fs:
-            await file_utils.rm(bucket_fs, PurePosixPath(res.key), recursive, progress)
+            await rm(bucket_fs, PurePosixPath(res.key), recursive, progress)
 
     async def make_signed_url(
         self,

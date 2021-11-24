@@ -36,7 +36,7 @@ from aiohttp.web import (
 )
 from yarl import URL
 
-from .errors import AuthError
+from ._errors import AuthError
 
 with warnings.catch_warnings():
     warnings.filterwarnings("ignore", "int_from_bytes is deprecated", UserWarning)

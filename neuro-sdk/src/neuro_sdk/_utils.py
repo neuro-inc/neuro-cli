@@ -23,7 +23,8 @@ from typing import (
 
 import aiohttp
 
-from .errors import ConfigError
+from ._errors import ConfigError
+from ._rewrite import rewrite_module
 
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
@@ -176,6 +177,7 @@ def flat(sql: str) -> str:
     return " ".join(line.strip() for line in sql.splitlines() if line.strip())
 
 
+@rewrite_module
 def find_project_root(path: Optional[Path] = None) -> Path:
     if path is None:
         path = Path.cwd()

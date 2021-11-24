@@ -9,7 +9,7 @@ from aiohttp.web_exceptions import HTTPOk
 from yarl import URL
 
 from neuro_sdk import Client, NotSupportedError
-from neuro_sdk.admin import (
+from neuro_sdk._admin import (
     _Balance,
     _CloudProvider,
     _Cluster,
@@ -20,7 +20,7 @@ from neuro_sdk.admin import (
     _Storage,
     _UserInfo,
 )
-from neuro_sdk.server_cfg import Preset
+from neuro_sdk._server_cfg import Preset
 
 from tests import _TestServerFactory
 

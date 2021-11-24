@@ -7,13 +7,15 @@ from typing import Any, AsyncIterator, Mapping, Optional
 from dateutil.parser import isoparse
 from yarl import URL
 
-from .config import Config
-from .core import _Core
-from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
+from ._config import Config
+from ._core import _Core
+from ._rewrite import rewrite_module
+from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 logger = logging.getLogger(__package__)
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Disk:
     id: str
@@ -45,6 +47,7 @@ class Disk:
         BROKEN = "Broken"
 
 
+@rewrite_module
 class Disks(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core

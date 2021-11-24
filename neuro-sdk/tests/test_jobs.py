@@ -24,7 +24,7 @@ from neuro_sdk import (
     SecretFile,
     Volume,
 )
-from neuro_sdk.jobs import INVALID_IMAGE_NAME, _calc_status, _job_description_from_api
+from neuro_sdk._jobs import INVALID_IMAGE_NAME, _calc_status, _job_description_from_api
 
 from tests import _TestServerFactory
 

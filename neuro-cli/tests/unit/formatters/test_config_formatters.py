@@ -6,9 +6,7 @@ from typing import Callable
 import toml
 from rich.console import RenderableType
 
-from neuro_sdk import Client, Cluster, Preset
-from neuro_sdk.admin import _Balance, _Quota
-from neuro_sdk.users import Quota
+from neuro_sdk import Client, Cluster, Preset, Quota, _Balance, _Quota
 
 from neuro_cli.alias import list_aliases
 from neuro_cli.formatters.config import (

@@ -23,9 +23,13 @@ from prompt_toolkit.output import Output, create_output
 from prompt_toolkit.shortcuts import PromptSession
 from typing_extensions import NoReturn
 
-from neuro_sdk import JobDescription, JobStatus, StdStream
-from neuro_sdk.errors import ResourceNotFound
-from neuro_sdk.jobs import StdStreamError
+from neuro_sdk import (
+    JobDescription,
+    JobStatus,
+    ResourceNotFound,
+    StdStream,
+    StdStreamError,
+)
 
 from .const import EX_IOERR, EX_PLATFORMERROR
 from .formatters.jobs import JobStopProgress
