@@ -35,8 +35,8 @@ from neuro_sdk import (
     ResourceNotFound,
     TagOption,
 )
-from neuro_sdk.utils import asyncgeneratorcontextmanager
 
+from .asyncio_utils import asyncgeneratorcontextmanager
 from .parse_utils import (
     JobTableFormat,
     parse_ps_columns,
