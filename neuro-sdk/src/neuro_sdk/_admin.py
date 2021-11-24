@@ -1,53 +1,47 @@
+# Admin API is experimental,
+# remove underscore prefix after stabilizing and making public
+
 from dataclasses import dataclass
 from typing import Any, AsyncIterator, Dict, List, Mapping, Optional
 
 import aiohttp
-from neuro_admin_client import (
-    AdminClientBase,
-    Balance,
-    Cluster,
-    ClusterUser,
-    ClusterUserRoleType,
-    ClusterUserWithInfo,
-    Org,
-    OrgCluster,
-    OrgUser,
-    OrgUserRoleType,
-    OrgUserWithInfo,
-    Quota,
-    UserInfo,
-)
+from neuro_admin_client import AdminClientBase
+from neuro_admin_client import Balance as _Balance
+from neuro_admin_client import Cluster as _Cluster
+from neuro_admin_client import ClusterUser as _ClusterUser
+from neuro_admin_client import ClusterUserRoleType as _ClusterUserRoleType
+from neuro_admin_client import ClusterUserWithInfo as _ClusterUserWithInfo
+from neuro_admin_client import Quota as _Quota
+from neuro_admin_client import UserInfo as _UserInfo
 from prompt_toolkit.eventloop.async_context_manager import asynccontextmanager
 from yarl import URL
 
-from .config import Config
-from .core import _Core
-from .errors import NotSupportedError
-from .server_cfg import Preset
-from .utils import NoPublicConstructor
+from ._config import Config
+from ._core import _Core
+from ._errors import NotSupportedError
+from ._rewrite import rewrite_module
+from ._server_cfg import Preset
+from ._utils import NoPublicConstructor
 
 # Explicit __all__ to re-export neuro_admin_client entities
 
 __all__ = [
-    "Balance",
-    "Cluster",
-    "ClusterUser",
-    "ClusterUserRoleType",
-    "ClusterUserWithInfo",
-    "Org",
-    "OrgCluster",
-    "OrgUser",
-    "OrgUserRoleType",
-    "OrgUserWithInfo",
-    "Quota",
-    "UserInfo",
     "_Admin",
+    "_Balance",
     "_CloudProvider",
+    "_Cluster",
+    "_ClusterUser",
+    "_ClusterUserRoleType",
+    "_ClusterUserWithInfo",
+    "_ConfigCluster",
     "_NodePool",
+    "_Quota",
     "_Storage",
+    "_UserInfo",
 ]
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class _NodePool:
     min_size: int
@@ -64,11 +58,13 @@ class _NodePool:
     idle_size: int = 0
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class _Storage:
     description: str
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class _CloudProvider:
     type: str
@@ -78,13 +74,15 @@ class _CloudProvider:
     storage: Optional[_Storage]
 
 
+@rewrite_module
 @dataclass(frozen=True)
-class _Cluster:
+class _ConfigCluster:
     name: str
     status: str
     cloud_provider: Optional[_CloudProvider] = None
 
 
+@rewrite_module
 class _Admin(AdminClientBase, metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core
@@ -123,7 +121,7 @@ class _Admin(AdminClientBase, metaclass=NoPublicConstructor):
         async with self._core.request("GET", url, auth=auth) as resp:
             return await resp.json()
 
-    async def list_config_clusters(self) -> Dict[str, _Cluster]:
+    async def list_config_clusters(self) -> Dict[str, _ConfigCluster]:
         url = (self._config.api_url / "clusters").with_query(
             include="cloud_provider_infra"
         )
@@ -165,10 +163,10 @@ class _Admin(AdminClientBase, metaclass=NoPublicConstructor):
             return await resp.json()
 
 
-def _cluster_from_api(payload: Dict[str, Any]) -> _Cluster:
+def _cluster_from_api(payload: Dict[str, Any]) -> _ConfigCluster:
     if "cloud_provider" in payload:
         cloud_provider = payload["cloud_provider"]
-        return _Cluster(
+        return _ConfigCluster(
             name=payload["name"],
             status=payload["status"],
             cloud_provider=_CloudProvider(
@@ -190,7 +188,7 @@ def _cluster_from_api(payload: Dict[str, Any]) -> _Cluster:
                 ),
             ),
         )
-    return _Cluster(name=payload["name"], status=payload["status"])
+    return _ConfigCluster(name=payload["name"], status=payload["status"])
 
 
 def _node_pool_from_api(payload: Dict[str, Any]) -> _NodePool:

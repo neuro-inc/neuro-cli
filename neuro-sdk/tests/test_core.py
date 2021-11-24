@@ -1,6 +1,6 @@
 import sqlite3
 import ssl
-import sys
+from contextlib import asynccontextmanager
 from typing import AsyncIterator, Callable
 
 import aiohttp
@@ -11,7 +11,7 @@ from typing_extensions import AsyncContextManager
 from yarl import URL
 
 from neuro_sdk import IllegalArgumentError, ServerNotAvailable
-from neuro_sdk.core import (
+from neuro_sdk._core import (
     _Core,
     _ensure_schema,
     _load_cookies,
@@ -20,12 +20,6 @@ from neuro_sdk.core import (
 )
 
 from tests import _TestServerFactory
-
-if sys.version_info >= (3, 7):
-    from contextlib import asynccontextmanager
-else:
-    from async_generator import asynccontextmanager
-
 
 _ApiFactory = Callable[[URL], AsyncContextManager[_Core]]
 

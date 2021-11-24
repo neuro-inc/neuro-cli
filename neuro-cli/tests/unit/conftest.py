@@ -13,7 +13,7 @@ from rich.console import Console, RenderableType
 from yarl import URL
 
 from neuro_sdk import Cluster, Factory, Preset
-from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData
+from neuro_sdk._config import _AuthConfig, _AuthToken, _ConfigData
 
 from neuro_cli import __version__
 from neuro_cli.const import EX_OK

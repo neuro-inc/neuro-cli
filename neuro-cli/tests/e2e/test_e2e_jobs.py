@@ -23,8 +23,6 @@ from yarl import URL
 from neuro_sdk import Container, JobStatus, RemoteImage, Resources
 from neuro_sdk import get as api_get
 
-from neuro_cli.asyncio_utils import run
-
 from tests.e2e import make_image_name
 from tests.e2e.conftest import Helper
 
@@ -767,10 +765,12 @@ def test_job_submit_http_auth(
     http_job = secret_job(http_port=True, http_auth=True)
     ingress_secret_url = http_job["ingress_url"].with_path("/secret.txt")
 
-    run(_test_http_auth_redirect(ingress_secret_url))
+    asyncio.run(_test_http_auth_redirect(ingress_secret_url))
 
     cookies = {"dat": helper.token}
-    run(_test_http_auth_with_cookie(ingress_secret_url, cookies, http_job["secret"]))
+    asyncio.run(
+        _test_http_auth_with_cookie(ingress_secret_url, cookies, http_job["secret"])
+    )
 
 
 @pytest.mark.e2e

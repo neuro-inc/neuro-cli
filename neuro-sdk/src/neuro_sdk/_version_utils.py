@@ -10,10 +10,10 @@ from packaging.version import parse as parse_version
 from typing_extensions import TypedDict
 from yarl import URL
 
-from .config import Config
-from .core import _Core
-from .plugins import PluginManager
-from .utils import NoPublicConstructor
+from ._config import Config
+from ._core import _Core
+from ._plugins import PluginManager
+from ._utils import NoPublicConstructor
 
 if sys.version_info >= (3, 10):
     from importlib.metadata import version

@@ -11,8 +11,12 @@ from aiohttp import web
 from yarl import URL
 
 from neuro_sdk import Client, Cluster, ConfigError, ConfigScope, PluginManager, Preset
-from neuro_sdk.config import _check_sections, _merge_user_configs, _validate_user_config
-from neuro_sdk.login import _AuthToken
+from neuro_sdk._config import (
+    _check_sections,
+    _merge_user_configs,
+    _validate_user_config,
+)
+from neuro_sdk._login import _AuthToken
 
 from tests import _TestServerFactory
 

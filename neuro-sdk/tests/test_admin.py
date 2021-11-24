@@ -8,8 +8,8 @@ from aiohttp.web_exceptions import HTTPOk
 from yarl import URL
 
 from neuro_sdk import Client, NotSupportedError
-from neuro_sdk.admin import _CloudProvider, _Cluster, _NodePool, _Storage
-from neuro_sdk.server_cfg import Preset
+from neuro_sdk._admin import _CloudProvider, _ConfigCluster, _NodePool, _Storage
+from neuro_sdk._server_cfg import Preset
 
 from tests import _TestServerFactory
 
@@ -33,10 +33,10 @@ async def test_list_clusters(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/api/v1")) as client:
-        clusters = await client._admin.list_clusters()
+        clusters = await client._admin.list_config_clusters()
         assert clusters == {
-            "default": _Cluster(name="default", status="deployed"),
-            "other": _Cluster(name="other", status="deployed"),
+            "default": _ConfigCluster(name="default", status="deployed"),
+            "other": _ConfigCluster(name="other", status="deployed"),
         }
 
 
@@ -121,9 +121,9 @@ async def test_list_clusters_with_cloud_provider(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/api/v1")) as client:
-        clusters = await client._admin.list_clusters()
+        clusters = await client._admin.list_config_clusters()
         assert clusters == {
-            "default": _Cluster(
+            "default": _ConfigCluster(
                 name="default",
                 status="deployed",
                 cloud_provider=_CloudProvider(
@@ -157,7 +157,7 @@ async def test_list_clusters_with_cloud_provider(
                     storage=_Storage(description="Filestore"),
                 ),
             ),
-            "on-prem": _Cluster(
+            "on-prem": _ConfigCluster(
                 name="on-prem",
                 status="deployed",
                 cloud_provider=_CloudProvider(
@@ -177,7 +177,7 @@ async def test_list_clusters_with_cloud_provider(
                     storage=_Storage(description="NFS"),
                 ),
             ),
-            "other1": _Cluster(
+            "other1": _ConfigCluster(
                 name="other1",
                 status="deployed",
                 cloud_provider=_CloudProvider(
@@ -188,7 +188,7 @@ async def test_list_clusters_with_cloud_provider(
                     storage=None,
                 ),
             ),
-            "other2": _Cluster(
+            "other2": _ConfigCluster(
                 name="other2",
                 status="deployed",
                 cloud_provider=_CloudProvider(
@@ -251,7 +251,7 @@ async def test_add_cluster(
     async def handle_create_cluster(request: web.Request) -> web.StreamResponse:
         nonlocal create_cluster_json
         create_cluster_json = await request.json()
-        return web.Response(status=201)
+        return web.json_response(create_cluster_json, status=201)
 
     async def handle_put_cloud_provider(request: web.Request) -> web.StreamResponse:
         nonlocal put_cloud_json

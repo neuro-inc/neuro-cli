@@ -19,9 +19,8 @@ from neuro_sdk import (
     StorageProgressLeaveDir,
     StorageProgressStart,
     StorageProgressStep,
-    file_utils,
 )
-from neuro_sdk.file_utils import READ_SIZE, FileTransferer, LocalFS
+from neuro_sdk._file_utils import READ_SIZE, FileTransferer, LocalFS, rm
 
 
 @pytest.fixture()
@@ -200,7 +199,7 @@ async def test_transfer_dir(
     src.mkdir()
     await gen_file_tree(src)
     await transferer.transfer_dir(src, dst_dir / "sub_dir")
-    assert cmp_dirs(src, dst_dir / "sub_dir")
+    assert await cmp_dirs(src, dst_dir / "sub_dir")
 
 
 async def test_transfer_dir_dest_exists(
@@ -212,7 +211,7 @@ async def test_transfer_dir_dest_exists(
     dst.mkdir()
     await gen_file_tree(src, depths=1)
     await transferer.transfer_dir(src, dst)
-    assert cmp_dirs(src, dst)
+    assert await cmp_dirs(src, dst)
 
 
 async def test_transfer_dir_source_not_exists(
@@ -435,7 +434,7 @@ async def test_rm_file(
 ) -> None:
     file_path = src_dir / "file"
     file_path.touch()
-    await file_utils.rm(LocalFS(), file_path, recursive=False)
+    await rm(LocalFS(), file_path, recursive=False)
     assert not file_path.exists()
 
 
@@ -445,7 +444,7 @@ async def test_rm_dir(
     dir_path = src_dir / "sub_dir"
     dir_path.mkdir()
     await gen_file_tree(dir_path, depths=1)
-    await file_utils.rm(LocalFS(), dir_path, recursive=True)
+    await rm(LocalFS(), dir_path, recursive=True)
     assert not dir_path.exists()
 
 
@@ -454,7 +453,7 @@ async def test_rm_not_exists(
 ) -> None:
     file_path = src_dir / "file"
     with pytest.raises(FileNotFoundError) as e:
-        await file_utils.rm(LocalFS(), file_path, recursive=False)
+        await rm(LocalFS(), file_path, recursive=False)
     assert e.value.args[0] == errno.ENOENT
 
 
@@ -464,5 +463,5 @@ async def test_rm_dir_not_recursive(
     dir_path = src_dir / "sub_dir"
     dir_path.mkdir()
     with pytest.raises(IsADirectoryError) as e:
-        await file_utils.rm(LocalFS(), dir_path, recursive=False)
+        await rm(LocalFS(), dir_path, recursive=False)
     assert e.value.args[0] == errno.EISDIR

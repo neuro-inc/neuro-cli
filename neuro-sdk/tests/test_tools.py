@@ -7,7 +7,7 @@ from unittest.mock import Mock, call
 import pytest
 
 from neuro_sdk import ConfigError, find_project_root
-from neuro_sdk.utils import queue_calls
+from neuro_sdk._utils import queue_calls
 
 
 @pytest.fixture()

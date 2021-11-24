@@ -4,15 +4,18 @@ from typing import Dict, Optional, Tuple
 
 from yarl import URL
 
-from .url_utils import _check_uri, _check_uri_str
+from ._rewrite import rewrite_module
+from ._url_utils import _check_uri, _check_uri_str
 
 
+@rewrite_module
 class TagOption(enum.Enum):
     ALLOW = enum.auto()
     DENY = enum.auto()
     DEFAULT = enum.auto()
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class RemoteImage:
     name: str
@@ -95,6 +98,7 @@ def _as_repo_str(image: RemoteImage) -> str:
     return pre + image.name + post
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class LocalImage:
     name: str
@@ -292,6 +296,7 @@ class _ImageNameParser:
         return name, tag
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Tag:
     name: str

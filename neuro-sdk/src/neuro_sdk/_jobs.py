@@ -2,8 +2,7 @@ import asyncio
 import enum
 import json
 import logging
-import sys
-from contextlib import suppress
+from contextlib import asynccontextmanager, suppress
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -30,41 +29,37 @@ from dateutil.parser import isoparse
 from multidict import MultiDict
 from yarl import URL
 
-from .abc import (
+from ._abc import (
     AbstractDockerImageProgress,
     ImageCommitFinished,
     ImageCommitStarted,
     ImageProgressPush,
     ImageProgressSave,
 )
-from .config import Config
-from .core import _Core
-from .errors import NDJSONError, ResourceNotFound
-from .images import (
+from ._config import Config
+from ._core import _Core
+from ._errors import NDJSONError, ResourceNotFound, StdStreamError
+from ._images import (
     _DummyProgress,
     _raise_on_error_chunk,
     _try_parse_image_progress_step,
 )
-from .parser import DiskVolume, Parser, SecretFile, Volume
-from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
-from .url_utils import (
+from ._parser import DiskVolume, Parser, SecretFile, Volume
+from ._parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
+from ._rewrite import rewrite_module
+from ._url_utils import (
     normalize_disk_uri,
     normalize_secret_uri,
     normalize_storage_path_uri,
 )
-from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
-
-if sys.version_info >= (3, 7):  # pragma: no cover
-    from contextlib import asynccontextmanager
-else:
-    from async_generator import asynccontextmanager
-
+from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 log = logging.getLogger(__package__)
 
 INVALID_IMAGE_NAME = "INVALID-IMAGE-NAME"
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Resources:
     memory_mb: int
@@ -76,6 +71,7 @@ class Resources:
     tpu_software_version: Optional[str] = None
 
 
+@rewrite_module
 class JobStatus(str, enum.Enum):
     """An Enum subclass that represents job statuses.
 
@@ -127,12 +123,14 @@ class JobStatus(str, enum.Enum):
     __str__ = str.__str__
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class HTTPPort:
     port: int
     requires_auth: bool = True
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Container:
     image: RemoteImage
@@ -149,6 +147,7 @@ class Container:
     tty: bool = False
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class JobStatusItem:
     status: JobStatus
@@ -158,6 +157,7 @@ class JobStatusItem:
     exit_code: Optional[int] = None
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class JobStatusHistory:
     status: JobStatus
@@ -187,6 +187,7 @@ class JobStatusHistory:
         return when
 
 
+@rewrite_module
 class JobRestartPolicy(str, enum.Enum):
     NEVER = "never"
     ON_FAILURE = "on-failure"
@@ -199,6 +200,7 @@ class JobRestartPolicy(str, enum.Enum):
         return repr(self.value)
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class JobDescriptionInternal:
     materialized: bool = False
@@ -206,6 +208,7 @@ class JobDescriptionInternal:
     logs_removed: bool = False
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class JobDescription:
     id: str
@@ -235,6 +238,7 @@ class JobDescription:
     _internal: JobDescriptionInternal = JobDescriptionInternal()
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class JobTelemetry:
     cpu: float
@@ -244,19 +248,14 @@ class JobTelemetry:
     gpu_memory: Optional[float] = None
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Message:
     fileno: int
     data: bytes
 
 
-class StdStreamError(Exception):
-    def __init__(self, exit_code: int) -> None:
-        super().__init__(f"Stream finished with exit code {exit_code}")
-
-        self.exit_code = exit_code
-
-
+@rewrite_module
 class StdStream:
     def __init__(self, ws: aiohttp.ClientWebSocketResponse) -> None:
         self._ws = ws
@@ -294,6 +293,7 @@ class StdStream:
         await self._ws.send_bytes(b"\x04" + f'{{"height":{h},"width":{w}}}'.encode())
 
 
+@rewrite_module
 class Jobs(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config, parse: Parser) -> None:
         self._core = core
@@ -632,8 +632,7 @@ class Jobs(metaclass=NoPublicConstructor):
             yield
         finally:
             srv.close()
-            if sys.version_info >= (3, 7):
-                await srv.wait_closed()
+            await srv.wait_closed()
 
     async def _port_forward(
         self,
@@ -668,8 +667,7 @@ class Jobs(metaclass=NoPublicConstructor):
                         with suppress(asyncio.CancelledError):
                             await task
                 writer.close()
-                if sys.version_info >= (3, 7):
-                    await writer.wait_closed()
+                await writer.wait_closed()
                 await ws.close()
         except asyncio.CancelledError:
             raise
@@ -690,8 +688,7 @@ class Jobs(metaclass=NoPublicConstructor):
             writer.write(msg.data)
             await writer.drain()
         writer.close()
-        if sys.version_info >= (3, 7):
-            await writer.wait_closed()
+        await writer.wait_closed()
 
     async def _port_writer(
         self, ws: aiohttp.ClientWebSocketResponse, reader: asyncio.StreamReader

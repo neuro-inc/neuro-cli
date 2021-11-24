@@ -1,7 +1,7 @@
 from yarl import URL
 
 from neuro_sdk import FileStatusType
-from neuro_sdk.storage import _file_status_from_api_ls, _file_status_from_api_stat
+from neuro_sdk._storage import _file_status_from_api_ls, _file_status_from_api_stat
 
 
 def test_from_api() -> None:

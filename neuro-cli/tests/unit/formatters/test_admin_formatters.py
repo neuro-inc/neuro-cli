@@ -4,16 +4,16 @@ from typing import Callable
 from dateutil.parser import isoparse
 from rich.console import RenderableType
 
-from neuro_sdk.admin import (
-    Balance,
-    ClusterUserRoleType,
-    ClusterUserWithInfo,
-    Quota,
-    UserInfo,
+from neuro_sdk import (
+    _Balance,
     _CloudProvider,
-    _Cluster,
+    _ClusterUserRoleType,
+    _ClusterUserWithInfo,
+    _ConfigCluster,
     _NodePool,
+    _Quota,
     _Storage,
+    _UserInfo,
 )
 
 from neuro_cli.formatters.admin import ClustersFormatter, ClusterUserFormatter
@@ -25,56 +25,56 @@ class TestClusterUserFormatter:
     def test_cluster_list(self, rich_cmp: RichCmp) -> None:
         formatter = ClusterUserFormatter()
         users = [
-            ClusterUserWithInfo(
+            _ClusterUserWithInfo(
                 user_name="denis",
                 cluster_name="default",
                 org_name=None,
-                role=ClusterUserRoleType("admin"),
-                quota=Quota(),
-                balance=Balance(),
-                user_info=UserInfo(
+                role=_ClusterUserRoleType("admin"),
+                quota=_Quota(),
+                balance=_Balance(),
+                user_info=_UserInfo(
                     first_name="denis",
                     last_name="admin",
                     email="denis@domain.name",
                     created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
                 ),
             ),
-            ClusterUserWithInfo(
+            _ClusterUserWithInfo(
                 user_name="andrew",
                 cluster_name="default",
                 org_name=None,
-                role=ClusterUserRoleType("manager"),
-                quota=Quota(),
-                balance=Balance(credits=Decimal(100)),
-                user_info=UserInfo(
+                role=_ClusterUserRoleType("manager"),
+                quota=_Quota(),
+                balance=_Balance(credits=Decimal(100)),
+                user_info=_UserInfo(
                     first_name="andrew",
                     last_name=None,
                     email="andrew@domain.name",
                     created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
                 ),
             ),
-            ClusterUserWithInfo(
+            _ClusterUserWithInfo(
                 user_name="ivan",
                 cluster_name="default",
                 org_name=None,
-                role=ClusterUserRoleType("user"),
-                quota=Quota(total_running_jobs=1),
-                balance=Balance(),
-                user_info=UserInfo(
+                role=_ClusterUserRoleType("user"),
+                quota=_Quota(total_running_jobs=1),
+                balance=_Balance(),
+                user_info=_UserInfo(
                     first_name=None,
                     last_name="user",
                     email="ivan@domain.name",
                     created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
                 ),
             ),
-            ClusterUserWithInfo(
+            _ClusterUserWithInfo(
                 user_name="alex",
                 cluster_name="default",
                 org_name=None,
-                role=ClusterUserRoleType("user"),
-                quota=Quota(total_running_jobs=2),
-                balance=Balance(credits=Decimal(100), spent_credits=Decimal(20)),
-                user_info=UserInfo(
+                role=_ClusterUserRoleType("user"),
+                quota=_Quota(total_running_jobs=2),
+                balance=_Balance(credits=Decimal(100), spent_credits=Decimal(20)),
+                user_info=_UserInfo(
                     first_name=None,
                     last_name=None,
                     email="alex@domain.name",
@@ -112,13 +112,13 @@ class TestClustersFormatter:
 
     def test_cluster_list(self, rich_cmp: RichCmp) -> None:
         formatter = ClustersFormatter()
-        clusters = [_Cluster(name="default", status="deployed")]
+        clusters = [_ConfigCluster(name="default", status="deployed")]
         rich_cmp(formatter(clusters))
 
     def test_cluster_with_on_prem_cloud_provider_list(self, rich_cmp: RichCmp) -> None:
         formatter = ClustersFormatter()
         clusters = [
-            _Cluster(
+            _ConfigCluster(
                 name="on-prem",
                 status="deployed",
                 cloud_provider=_CloudProvider(
@@ -135,7 +135,7 @@ class TestClustersFormatter:
     def test_cluster_with_cloud_provider_storage_list(self, rich_cmp: RichCmp) -> None:
         formatter = ClustersFormatter()
         clusters = [
-            _Cluster(
+            _ConfigCluster(
                 name="default",
                 status="deployed",
                 cloud_provider=_CloudProvider(
@@ -154,7 +154,7 @@ class TestClustersFormatter:
     ) -> None:
         formatter = ClustersFormatter()
         clusters = [
-            _Cluster(
+            _ConfigCluster(
                 name="default",
                 status="deployed",
                 cloud_provider=_CloudProvider(
@@ -178,7 +178,7 @@ class TestClustersFormatter:
     ) -> None:
         formatter = ClustersFormatter()
         clusters = [
-            _Cluster(
+            _ConfigCluster(
                 name="default",
                 status="deployed",
                 cloud_provider=_CloudProvider(

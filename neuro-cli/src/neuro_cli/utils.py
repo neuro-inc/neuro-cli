@@ -31,7 +31,6 @@ from aiohttp import ClientResponseError
 from yarl import URL
 
 from neuro_sdk import Action, Client, JobStatus, Volume
-from neuro_sdk.url_utils import uri_from_cli
 
 from .parse_utils import parse_timedelta
 from .root import Root
@@ -435,10 +434,8 @@ async def resolve_job_ex(
     default_user = client.username
     default_cluster = client.cluster_name
     if id_or_name_or_uri.startswith("job:"):
-        uri = uri_from_cli(
+        uri = client.parse.str_to_uri(
             id_or_name_or_uri,
-            username=default_user,
-            cluster_name=default_cluster,
             allowed_schemes=("job",),
         )
         assert uri.host
@@ -536,10 +533,8 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     """Parses the neuro resource URI string.
     Available schemes: storage, image, job. For image URIs, tags are not allowed.
     """
-    uri_res = uri_from_cli(
+    uri_res = root.client.parse.str_to_uri(
         uri,
-        root.client.username,
-        root.client.cluster_name,
         allowed_schemes=SHARE_SCHEMES,
     )
     if uri_res.scheme == "image" and ":" in uri_res.path:
@@ -559,19 +554,15 @@ def parse_file_resource(uri: str, root: Root) -> URL:
     """Parses the neuro resource URI string.
     Available schemes: file, storage.
     """
-    return uri_from_cli(
+    return root.client.parse.str_to_uri(
         uri,
-        root.client.username,
-        root.client.cluster_name,
         allowed_schemes=("file", "storage"),
     )
 
 
 def parse_secret_resource(uri: str, root: Root) -> URL:
-    return uri_from_cli(
+    return root.client.parse.str_to_uri(
         uri,
-        root.client.username,
-        root.client.cluster_name,
         allowed_schemes=("secret"),
     )
 
@@ -584,12 +575,6 @@ def parse_permission_action(action: str) -> Action:
         raise ValueError(
             f"invalid permission action '{action}', allowed values: {valid_actions}"
         )
-
-
-if sys.version_info >= (3, 7):  # pragma: no cover
-    from contextlib import AsyncExitStack
-else:
-    from async_exit_stack import AsyncExitStack  # noqa
 
 
 def format_size(value: Optional[float]) -> str:

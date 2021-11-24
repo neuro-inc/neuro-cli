@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import gc
 import itertools
 import logging
@@ -7,20 +8,28 @@ import ssl
 import sys
 import threading
 import warnings
-from asyncio import AbstractEventLoop
 from concurrent.futures import ThreadPoolExecutor
 from types import TracebackType
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Type, TypeVar
+from typing import (
+    Any,
+    AsyncContextManager,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 from typing_extensions import final
 
-if sys.version_info >= (3, 7):
-    from asyncio import current_task
-else:
-    current_task = asyncio.Task.current_task
-
-
 _T = TypeVar("_T")
+_T_co = TypeVar("_T_co", covariant=True)
+_T_contra = TypeVar("_T_contra", contravariant=True)
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,10 +40,11 @@ class Runner:
         self._started = False
         self._stopped = False
         self._executor = ThreadPoolExecutor()
-        self._old_loop: Optional[AbstractEventLoop] = None
         self._loop = asyncio.new_event_loop()
         self._loop.set_default_executor(self._executor)
-        _setup_exception_handler(self._loop, self._debug)
+        self._loop.set_debug(self._debug)
+        if not debug:
+            self._loop.set_exception_handler(_exception_handler)
 
     def run(self, main: Awaitable[_T]) -> _T:
         assert self._started
@@ -43,15 +53,6 @@ class Runner:
             raise ValueError(f"a coroutine was expected, got {main!r}")
         main_task = self._loop.create_task(main)
 
-        if sys.version_info <= (3, 7):
-
-            def retrieve_exc(fut: "asyncio.Task[Any]") -> None:
-                # suppress exception printing
-                if not fut.cancelled():
-                    fut.exception()
-
-            main_task.add_done_callback(retrieve_exc)
-
         return self._loop.run_until_complete(main_task)
 
     def __enter__(self) -> "Runner":
@@ -59,30 +60,15 @@ class Runner:
         assert not self._stopped
         self._started = True
 
-        if sys.version_info >= (3, 7):
-            try:
-                asyncio.get_running_loop()
-            except RuntimeError:
-                # there is no current loop
-                pass
-            else:
-                raise RuntimeError(
-                    "asyncio.run() cannot be called from a running event loop"
-                )
         try:
-            current_loop = asyncio.get_event_loop_policy().get_event_loop()
+            asyncio.get_running_loop()
         except RuntimeError:
             # there is no current loop
             pass
         else:
-            if current_loop.is_running():
-                raise RuntimeError(
-                    "asyncio.run() cannot be called from a running event loop"
-                )
-            self._old_loop = current_loop
-
-        asyncio.set_event_loop(self._loop)
-        self._loop.set_debug(self._debug)
+            raise RuntimeError(
+                "asyncio.run() cannot be called from a running event loop"
+            )
         return self
 
     def __exit__(
@@ -95,7 +81,6 @@ class Runner:
             self._loop.run_until_complete(self._loop.shutdown_asyncgens())
         finally:
             self._executor.shutdown(wait=True)
-            asyncio.set_event_loop(self._old_loop)
             # simple workaround for:
             # http://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
             with warnings.catch_warnings():
@@ -103,36 +88,6 @@ class Runner:
                 self._loop.close()
                 del self._loop
                 gc.collect()
-
-
-def run(main: Awaitable[_T], *, debug: bool = False) -> _T:
-    # Backport from python 3.7
-
-    """Run a coroutine.
-
-    This function runs the passed coroutine, taking care of
-    managing the asyncio event loop and finalizing asynchronous
-    generators.
-
-    This function cannot be called when another asyncio event loop is
-    running in the same thread.
-
-    If debug is True, the event loop will be run in debug mode.
-
-    This function always creates a new event loop and closes it at the end.
-    It should be used as a main entry point for asyncio programs, and should
-    ideally only be called once.
-
-    Example:
-
-        async def main():
-            await asyncio.sleep(1)
-            print('hello')
-
-        asyncio.run(main())
-    """
-    with Runner(debug=debug) as runner:
-        return runner.run(main)
 
 
 def _exception_handler(
@@ -150,17 +105,9 @@ def _exception_handler(
     loop.default_exception_handler(context)
 
 
-def _setup_exception_handler(loop: asyncio.AbstractEventLoop, debug: bool) -> None:
-    if debug:
-        return
-    loop.set_exception_handler(_exception_handler)
-
-
 def _cancel_all_tasks(loop: asyncio.AbstractEventLoop) -> None:
-    if sys.version_info >= (3, 7):
-        to_cancel = asyncio.all_tasks(loop)
-    else:
-        to_cancel = [t for t in asyncio.Task.all_tasks(loop) if not t.done()]
+    to_cancel = asyncio.all_tasks(loop)
+
     if not to_cancel:
         return
 
@@ -303,17 +250,55 @@ if sys.platform != "win32":
 
 def setup_child_watcher() -> None:
     if sys.platform == "win32":
-        if sys.version_info < (3, 7):
-            # Python 3.6 has no WindowsProactorEventLoopPolicy class
-            from asyncio import events
-
-            class WindowsProactorEventLoopPolicy(events.BaseDefaultEventLoopPolicy):
-                _loop_factory = asyncio.ProactorEventLoop
-
-        else:
-            WindowsProactorEventLoopPolicy = asyncio.WindowsProactorEventLoopPolicy
+        WindowsProactorEventLoopPolicy = asyncio.WindowsProactorEventLoopPolicy
 
         asyncio.set_event_loop_policy(WindowsProactorEventLoopPolicy())
     else:
         if sys.version_info < (3, 8):
             asyncio.set_child_watcher(ThreadedChildWatcher())
+
+
+# TODO (S Storchaka 2021-06-01): Methods __aiter__ and __anext__
+# are supported for compatibility, but using the iterator without
+# "async with" is strongly discouraged. In future these methods
+# will be deprecated and finally removed. It will be just a context
+# manager returning an iterator.
+class _AsyncIteratorAndContextManager(
+    Generic[_T_co],
+    AsyncIterator[_T_co],
+    AsyncContextManager[AsyncIterator[_T_co]],
+):
+    def __init__(self, gen: AsyncIterator[_T_co]) -> None:
+        self._gen = gen
+
+    async def __aenter__(self) -> AsyncIterator[_T_co]:
+        return self._gen
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc: Optional[BaseException],
+        tb: Optional[TracebackType],
+    ) -> None:
+        # Actually it is an AsyncGenerator.
+        await self._gen.aclose()  # type: ignore
+
+    def __aiter__(self) -> AsyncIterator[_T_co]:
+        return self._gen.__aiter__()
+
+    def __anext__(self) -> Awaitable[_T_co]:
+        return self._gen.__anext__()
+
+
+# XXX (S Storchaka 2021-06-01): The decorated function should actually
+# return an AsyncGenerator, but all of our generator functions are annotated
+# as returning an AsyncIterator.
+def asyncgeneratorcontextmanager(
+    func: Callable[..., AsyncIterator[_T_co]]
+) -> Callable[..., _AsyncIteratorAndContextManager[_T_co]]:
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> _AsyncIteratorAndContextManager[_T_co]:
+        gen = func(*args, **kwargs)
+        return _AsyncIteratorAndContextManager[_T_co](gen)
+
+    return wrapper

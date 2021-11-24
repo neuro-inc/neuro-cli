@@ -3,8 +3,8 @@ import errno
 import json as jsonmodule
 import logging
 import sqlite3
-import sys
 import time
+from contextlib import asynccontextmanager
 from http.cookies import Morsel, SimpleCookie
 from types import SimpleNamespace
 from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence
@@ -14,7 +14,7 @@ from aiohttp import WSMessage
 from multidict import CIMultiDict
 from yarl import URL
 
-from .errors import (
+from ._errors import (
     AuthenticationError,
     AuthorizationError,
     ClientError,
@@ -22,14 +22,8 @@ from .errors import (
     ResourceNotFound,
     ServerNotAvailable,
 )
-from .tracing import gen_trace_id
-from .utils import asyncgeneratorcontextmanager
-
-if sys.version_info >= (3, 7):  # pragma: no cover
-    from contextlib import asynccontextmanager
-else:
-    from async_generator import asynccontextmanager
-
+from ._tracing import gen_trace_id
+from ._utils import asyncgeneratorcontextmanager
 
 log = logging.getLogger(__package__)
 

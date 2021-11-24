@@ -7,7 +7,7 @@ import pytest
 from yarl import URL
 
 from neuro_sdk import Client
-from neuro_sdk.url_utils import (
+from neuro_sdk._url_utils import (
     _extract_path,
     normalize_local_path_uri,
     normalize_storage_path_uri,

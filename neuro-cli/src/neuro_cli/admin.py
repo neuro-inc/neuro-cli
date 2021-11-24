@@ -13,8 +13,7 @@ import yaml
 from prompt_toolkit import PromptSession
 from rich.markup import escape as rich_escape
 
-from neuro_sdk import Preset
-from neuro_sdk.admin import Balance, ClusterUserRoleType, Quota
+from neuro_sdk import Preset, _Balance, _ClusterUserRoleType, _Quota
 
 from neuro_cli.formatters.config import BalanceFormatter
 
@@ -373,9 +372,9 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
 @argument(
     "role",
     required=False,
-    default=ClusterUserRoleType.USER.value,
+    default=_ClusterUserRoleType.USER.value,
     metavar="[ROLE]",
-    type=click.Choice([str(role) for role in list(ClusterUserRoleType)]),
+    type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
 )
 @option(
     "-c",
@@ -407,9 +406,9 @@ async def add_cluster_user(
     user = await root.client._admin.create_cluster_user(
         cluster_name,
         user_name,
-        ClusterUserRoleType(role),
-        balance=Balance(credits=_parse_credits_value(credits)),
-        quota=Quota(total_running_jobs=jobs),
+        _ClusterUserRoleType(role),
+        balance=_Balance(credits=_parse_credits_value(credits)),
+        quota=_Quota(total_running_jobs=jobs),
     )
     if not root.quiet:
         root.print(
@@ -493,7 +492,7 @@ async def set_user_quota(
     user_with_quota = await root.client._admin.update_cluster_user_quota(
         cluster_name=cluster_name,
         user_name=user_name,
-        quota=Quota(total_running_jobs=jobs),
+        quota=_Quota(total_running_jobs=jobs),
     )
     fmt = AdminQuotaFormatter()
     root.print(

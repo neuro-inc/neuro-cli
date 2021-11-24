@@ -24,8 +24,8 @@ from neuro_sdk import (
     ResourceNotFound,
 )
 from neuro_sdk._bucket_base import BucketProvider
-from neuro_sdk.buckets import BucketFS
-from neuro_sdk.utils import asyncgeneratorcontextmanager
+from neuro_sdk._buckets import BucketFS
+from neuro_sdk._utils import asyncgeneratorcontextmanager
 
 
 class MockBucketProvider(BucketProvider):

@@ -3,8 +3,8 @@ import asyncio
 import base64
 import json
 import logging
-import sys
 import urllib.parse
+from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from io import BytesIO
@@ -25,14 +25,8 @@ from ._bucket_base import (
     BucketProvider,
     MeasureTimeDiffMixin,
 )
-from .errors import ResourceNotFound
-from .utils import asyncgeneratorcontextmanager
-
-if sys.version_info >= (3, 7):
-    from contextlib import asynccontextmanager
-else:
-    from async_generator import asynccontextmanager
-
+from ._errors import ResourceNotFound
+from ._utils import asyncgeneratorcontextmanager
 
 logger = logging.getLogger(__package__)
 

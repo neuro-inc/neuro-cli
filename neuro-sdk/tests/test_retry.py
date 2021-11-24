@@ -4,7 +4,7 @@ from typing import Any
 import aiohttp
 import pytest
 
-from neuro_sdk.utils import retries
+from neuro_sdk._utils import retries
 
 
 async def test_success(caplog: Any) -> None:

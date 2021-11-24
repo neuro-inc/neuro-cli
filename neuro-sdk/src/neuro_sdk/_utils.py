@@ -7,6 +7,7 @@ from pathlib import Path
 from types import TracebackType
 from typing import (
     Any,
+    AsyncContextManager,
     AsyncIterator,
     Awaitable,
     Callable,
@@ -22,28 +23,12 @@ from typing import (
 
 import aiohttp
 
-from .errors import ConfigError
+from ._errors import ConfigError
+from ._rewrite import rewrite_module
 
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
 _T_contra = TypeVar("_T_contra", contravariant=True)
-
-
-if sys.version_info >= (3, 7):
-    from typing import AsyncContextManager
-else:
-
-    class AsyncContextManager(Generic[_T]):
-        async def __aenter__(self) -> _T:
-            pass  # pragma: no cover
-
-        async def __aexit__(
-            self,
-            exc_type: Optional[Type[BaseException]],
-            exc: Optional[BaseException],
-            tb: Optional[TracebackType],
-        ) -> Optional[bool]:
-            pass  # pragma: no cover
 
 
 if sys.version_info >= (3, 10):
@@ -192,6 +177,7 @@ def flat(sql: str) -> str:
     return " ".join(line.strip() for line in sql.splitlines() if line.strip())
 
 
+@rewrite_module
 def find_project_root(path: Optional[Path] = None) -> Path:
     if path is None:
         path = Path.cwd()

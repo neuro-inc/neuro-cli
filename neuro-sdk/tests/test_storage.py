@@ -12,19 +12,19 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-import neuro_sdk.storage
 from neuro_sdk import (
     Action,
     Client,
+    DiskUsageInfo,
     FileStatus,
     FileStatusType,
     IllegalArgumentError,
     StorageProgressComplete,
+    StorageProgressDelete,
     StorageProgressStart,
     StorageProgressStep,
 )
-from neuro_sdk.abc import StorageProgressDelete
-from neuro_sdk.storage import DiskUsageInfo, _parse_content_range
+from neuro_sdk._storage import _parse_content_range
 
 from tests import _RawTestServerFactory, _TestServerFactory
 
@@ -50,7 +50,9 @@ def calc_diff(dcmp: "dircmp[str]", *, pre: str = "") -> List[Tuple[str, str]]:
 
 @pytest.fixture
 def small_block_size(monkeypatch: Any) -> None:
-    monkeypatch.setattr(neuro_sdk.storage, "READ_SIZE", 300)
+    import neuro_sdk._storage
+
+    monkeypatch.setattr(neuro_sdk._storage, "READ_SIZE", 300)
 
 
 @pytest.fixture
@@ -1837,7 +1839,9 @@ async def test_storage_download_dir_slash_ending(
 
 @pytest.fixture
 def zero_time_threshold(monkeypatch: Any) -> None:
-    monkeypatch.setattr(neuro_sdk.storage, "TIME_THRESHOLD", 0.0)
+    import neuro_sdk._storage
+
+    monkeypatch.setattr(neuro_sdk._storage, "TIME_THRESHOLD", 0.0)
 
 
 async def test_storage_upload_file_update(

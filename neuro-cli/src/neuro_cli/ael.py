@@ -7,6 +7,7 @@ import logging
 import signal
 import sys
 import threading
+from contextlib import AsyncExitStack
 from datetime import datetime
 from typing import Any, Awaitable, Callable, List, Optional, Sequence, Tuple
 
@@ -22,14 +23,17 @@ from prompt_toolkit.output import Output, create_output
 from prompt_toolkit.shortcuts import PromptSession
 from typing_extensions import NoReturn
 
-from neuro_sdk import JobDescription, JobStatus, StdStream
-from neuro_sdk.errors import ResourceNotFound
-from neuro_sdk.jobs import StdStreamError
+from neuro_sdk import (
+    JobDescription,
+    JobStatus,
+    ResourceNotFound,
+    StdStream,
+    StdStreamError,
+)
 
 from .const import EX_IOERR, EX_PLATFORMERROR
 from .formatters.jobs import JobStopProgress
 from .root import Root
-from .utils import AsyncExitStack
 
 log = logging.getLogger(__name__)
 

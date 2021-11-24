@@ -5,8 +5,7 @@ import humanize
 from typing_extensions import Protocol
 from yarl import URL
 
-from neuro_sdk import RemoteImage
-from neuro_sdk.url_utils import CLUSTER_SCHEMES
+from neuro_sdk import SCHEMES, RemoteImage
 
 URIFormatter = Callable[[URL], str]
 ImageFormatter = Callable[[RemoteImage], str]
@@ -14,7 +13,7 @@ ImageFormatter = Callable[[RemoteImage], str]
 
 def uri_formatter(username: str, cluster_name: str) -> URIFormatter:
     def formatter(uri: URL) -> str:
-        if uri.scheme in CLUSTER_SCHEMES:
+        if uri.scheme in SCHEMES:
             if uri.host == cluster_name:
                 assert uri.path[0] == "/"
                 path = uri.path.lstrip("/")

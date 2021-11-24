@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 import os
@@ -21,7 +22,7 @@ from neuro_sdk import (
     Factory,
     __version__,
 )
-from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData
+from neuro_sdk._config import _AuthConfig, _AuthToken, _ConfigData
 
 from tests import _TestServerFactory
 
@@ -468,8 +469,10 @@ class TestConfigRecovery:
             control.client_id = "test2"
             client = await Factory().get()
             assert client.config._config_data.version == "21.13.13"
+            await client.close()
 
         await mock_for_login.close()
+        await asyncio.sleep(0.01)
 
     async def test_recovery_cluster_is_preserved(
         self,
@@ -486,5 +489,7 @@ class TestConfigRecovery:
             control.client_id = "test2"
             client = await Factory().get()
             assert client.config.cluster_name == "default2"
+            await client.close()
 
         await mock_for_login.close()
+        await asyncio.sleep(0.01)

@@ -53,21 +53,7 @@ def setup_stdout(errors: str) -> None:
     if not isinstance(sys.stdout, io.TextIOWrapper):
         return
     sys.stdout.flush()
-    if sys.version_info < (3, 7):
-        buffered = hasattr(sys.stdout.buffer, "raw")
-        buf = open(os.dup(sys.stdout.fileno()), "wb", -1 if buffered else 0)
-        raw = getattr(buf, "raw", buf)
-        raw.name = "<stdout>"
-        sys.stdout = io.TextIOWrapper(
-            buf,
-            encoding=sys.stdout.encoding,
-            errors=errors,
-            line_buffering=sys.stdout.line_buffering,
-            write_through=not buffered,
-        )
-    else:
-        # cast() is a workaround for https://github.com/python/typeshed/issues/3049
-        cast(Any, sys.stdout).reconfigure(errors=errors)
+    sys.stdout.reconfigure(errors=errors)
 
 
 setup_stdout(errors="replace")
