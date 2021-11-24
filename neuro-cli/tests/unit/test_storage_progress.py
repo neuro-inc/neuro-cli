@@ -62,7 +62,7 @@ _MakeRoot = Callable[[bool, bool, bool], Root]
 
 
 @pytest.fixture
-def make_root(new_console: NewConsole) -> Iterator[_MakeRoot]:
+def make_root(new_console: NewConsole, nmrc_path: Path) -> Iterator[_MakeRoot]:
     root = None
 
     def make(color: bool, tty: bool, verbose: bool) -> Root:
@@ -72,7 +72,7 @@ def make_root(new_console: NewConsole) -> Iterator[_MakeRoot]:
             tty,
             True,
             60,
-            Path("~/.neuro"),
+            config_path=nmrc_path,
             verbosity=int(verbose),
             trace=False,
             trace_hide_token=True,
