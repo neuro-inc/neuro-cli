@@ -17,12 +17,12 @@ from typing import Any, Dict, Iterator, List, Mapping, Optional, Set, Tuple, Uni
 import toml
 from yarl import URL
 
-from .core import _Core
-from .errors import ConfigError
-from .login import AuthTokenClient, _AuthConfig, _AuthToken
-from .plugins import ConfigScope, PluginManager, _ParamType
-from .server_cfg import Cluster, Preset, _ServerConfig, get_server_config
-from .utils import NoPublicConstructor, find_project_root, flat
+from ._core import _Core
+from ._errors import ConfigError
+from ._login import AuthTokenClient, _AuthConfig, _AuthToken
+from ._plugins import ConfigScope, PluginManager, _ParamType
+from ._server_cfg import Cluster, Preset, _ServerConfig, get_server_config
+from ._utils import NoPublicConstructor, find_project_root, flat
 
 WIN32 = sys.platform == "win32"
 CMD_RE = re.compile("[A-Za-z][A-Za-z0-9-]*")

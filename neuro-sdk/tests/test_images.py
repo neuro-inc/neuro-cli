@@ -9,13 +9,15 @@ from aiohttp import web
 from aiohttp.hdrs import LINK
 from yarl import URL
 
-from neuro_sdk import AuthorizationError, Client, LocalImage, RemoteImage, TagOption
-from neuro_sdk.parsing_utils import (
+from neuro_sdk import (
+    AuthorizationError,
+    Client,
+    LocalImage,
+    RemoteImage,
     Tag,
-    _as_repo_str,
-    _get_url_authority,
-    _ImageNameParser,
+    TagOption,
 )
+from neuro_sdk._parsing_utils import _as_repo_str, _get_url_authority, _ImageNameParser
 
 from tests import _TestServerFactory
 

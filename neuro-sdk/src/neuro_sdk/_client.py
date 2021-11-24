@@ -4,23 +4,22 @@ from typing import Mapping, Optional, Type
 
 import aiohttp
 
-from neuro_sdk.service_accounts import ServiceAccounts
-
+from ._admin import _Admin
+from ._buckets import Buckets
+from ._config import Config
+from ._core import _Core
+from ._disks import Disks
+from ._images import Images
+from ._jobs import Jobs
+from ._parser import Parser
+from ._plugins import PluginManager
+from ._secrets import Secrets
+from ._server_cfg import Preset
+from ._service_accounts import ServiceAccounts
+from ._storage import Storage
+from ._users import Users
+from ._utils import NoPublicConstructor
 from ._version_utils import VersionChecker
-from .admin import _Admin
-from .buckets import Buckets
-from .config import Config
-from .core import _Core
-from .disks import Disks
-from .images import Images
-from .jobs import Jobs
-from .parser import Parser
-from .plugins import PluginManager
-from .secrets import Secrets
-from .server_cfg import Preset
-from .storage import Storage
-from .users import Users
-from .utils import NoPublicConstructor
 
 
 class Client(metaclass=NoPublicConstructor):

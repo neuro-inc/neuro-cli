@@ -11,17 +11,21 @@ import aiohttp
 import certifi
 from yarl import URL
 
-from neuro_sdk.login import AuthTokenClient
-
-from .client import Client
-from .config import _ConfigData, _load, _load_recovery_data, _load_user_config, _save
-from .core import DEFAULT_TIMEOUT
-from .errors import ConfigError
-from .login import AuthNegotiator, HeadlessNegotiator, _AuthToken, logout_from_browser
-from .plugins import PluginManager
-from .server_cfg import _ServerConfig, get_server_config
-from .tracing import _make_trace_config
-from .utils import _ContextManager
+from ._client import Client
+from ._config import _ConfigData, _load, _load_recovery_data, _load_user_config, _save
+from ._core import DEFAULT_TIMEOUT
+from ._errors import ConfigError
+from ._login import (
+    AuthNegotiator,
+    AuthTokenClient,
+    HeadlessNegotiator,
+    _AuthToken,
+    logout_from_browser,
+)
+from ._plugins import PluginManager
+from ._server_cfg import _ServerConfig, get_server_config
+from ._tracing import _make_trace_config
+from ._utils import _ContextManager
 
 if sys.version_info >= (3, 10):
     from importlib.metadata import entry_points

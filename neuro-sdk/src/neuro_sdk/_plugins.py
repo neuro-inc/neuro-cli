@@ -3,7 +3,7 @@ import numbers
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Mapping, Tuple, Type, Union
 
-from .errors import ConfigError
+from ._errors import ConfigError
 
 
 class ConfigScope(enum.Flag):

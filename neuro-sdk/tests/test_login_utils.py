@@ -6,8 +6,8 @@ from aiohttp import web
 from yarl import URL
 
 from neuro_sdk import Cluster, Preset
-from neuro_sdk.login import _AuthConfig
-from neuro_sdk.server_cfg import _ServerConfig, get_server_config
+from neuro_sdk._login import _AuthConfig
+from neuro_sdk._server_cfg import _ServerConfig, get_server_config
 
 from tests import _TestClientFactory
 

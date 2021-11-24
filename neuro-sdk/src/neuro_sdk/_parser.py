@@ -17,10 +17,10 @@ from typing import (
 from typing_extensions import Literal
 from yarl import URL
 
-from .config import Config
-from .parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
-from .url_utils import _check_scheme, _extract_path, _normalize_uri, uri_from_cli
-from .utils import NoPublicConstructor
+from ._config import Config
+from ._parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
+from ._url_utils import _check_scheme, _extract_path, _normalize_uri, uri_from_cli
+from ._utils import NoPublicConstructor
 
 
 @dataclass(frozen=True)

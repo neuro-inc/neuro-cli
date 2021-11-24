@@ -17,8 +17,8 @@ from ._bucket_base import (
     BucketProvider,
     MeasureTimeDiffMixin,
 )
-from .errors import ResourceNotFound
-from .utils import asyncgeneratorcontextmanager
+from ._errors import ResourceNotFound
+from ._utils import asyncgeneratorcontextmanager
 
 
 class S3Provider(MeasureTimeDiffMixin, BucketProvider):

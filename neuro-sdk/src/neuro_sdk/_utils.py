@@ -23,7 +23,7 @@ from typing import (
 
 import aiohttp
 
-from .errors import ConfigError
+from ._errors import ConfigError
 
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)

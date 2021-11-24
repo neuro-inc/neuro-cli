@@ -14,7 +14,7 @@ from aiohttp import WSMessage
 from multidict import CIMultiDict
 from yarl import URL
 
-from .errors import (
+from ._errors import (
     AuthenticationError,
     AuthorizationError,
     ClientError,
@@ -22,8 +22,8 @@ from .errors import (
     ResourceNotFound,
     ServerNotAvailable,
 )
-from .tracing import gen_trace_id
-from .utils import asyncgeneratorcontextmanager
+from ._tracing import gen_trace_id
+from ._utils import asyncgeneratorcontextmanager
 
 log = logging.getLogger(__package__)
 

@@ -4,7 +4,7 @@ from typing import Optional
 
 from yarl import URL
 
-from .parsing_utils import LocalImage, RemoteImage
+from ._parsing_utils import LocalImage, RemoteImage
 
 # storage
 

@@ -4,7 +4,7 @@ from typing import Dict, Optional, Tuple
 
 from yarl import URL
 
-from .url_utils import _check_uri, _check_uri_str
+from ._url_utils import _check_uri, _check_uri_str
 
 
 class TagOption(enum.Enum):

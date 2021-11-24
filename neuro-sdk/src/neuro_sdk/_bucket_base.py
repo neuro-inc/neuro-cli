@@ -19,7 +19,7 @@ from typing import (
 
 from yarl import URL
 
-from neuro_sdk.utils import AsyncContextManager
+from ._utils import AsyncContextManager
 
 
 @dataclass(frozen=True)  # type: ignore

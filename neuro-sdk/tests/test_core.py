@@ -11,7 +11,7 @@ from typing_extensions import AsyncContextManager
 from yarl import URL
 
 from neuro_sdk import IllegalArgumentError, ServerNotAvailable
-from neuro_sdk.core import (
+from neuro_sdk._core import (
     _Core,
     _ensure_schema,
     _load_cookies,

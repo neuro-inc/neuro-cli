@@ -85,6 +85,7 @@ def make_root(new_console: NewConsole) -> Iterator[_MakeRoot]:
         )
         root.console = new_console(tty=tty, color=color)
         root.err_console = new_console(tty=tty, color=color)
+        root.run(root.init_client())
         return root
 
     yield make

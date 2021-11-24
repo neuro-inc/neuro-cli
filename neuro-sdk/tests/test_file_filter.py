@@ -1,6 +1,6 @@
 import codecs
 
-from neuro_sdk.file_filter import FileFilter, translate
+from neuro_sdk._file_filter import FileFilter, translate
 
 
 async def test_empty_filter() -> None:

@@ -29,29 +29,29 @@ from dateutil.parser import isoparse
 from multidict import MultiDict
 from yarl import URL
 
-from .abc import (
+from ._abc import (
     AbstractDockerImageProgress,
     ImageCommitFinished,
     ImageCommitStarted,
     ImageProgressPush,
     ImageProgressSave,
 )
-from .config import Config
-from .core import _Core
-from .errors import NDJSONError, ResourceNotFound, StdStreamError
-from .images import (
+from ._config import Config
+from ._core import _Core
+from ._errors import NDJSONError, ResourceNotFound, StdStreamError
+from ._images import (
     _DummyProgress,
     _raise_on_error_chunk,
     _try_parse_image_progress_step,
 )
-from .parser import DiskVolume, Parser, SecretFile, Volume
-from .parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
-from .url_utils import (
+from ._parser import DiskVolume, Parser, SecretFile, Volume
+from ._parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
+from ._url_utils import (
     normalize_disk_uri,
     normalize_secret_uri,
     normalize_storage_path_uri,
 )
-from .utils import NoPublicConstructor, asyncgeneratorcontextmanager
+from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 log = logging.getLogger(__package__)
 

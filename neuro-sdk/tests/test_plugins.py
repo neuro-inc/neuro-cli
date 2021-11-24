@@ -3,8 +3,7 @@ from typing import Any
 
 import pytest
 
-from neuro_sdk import ConfigError
-from neuro_sdk.plugins import ConfigBuilder
+from neuro_sdk import ConfigBuilder, ConfigError
 
 
 @pytest.mark.parametrize(

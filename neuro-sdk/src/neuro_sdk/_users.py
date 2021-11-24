@@ -6,10 +6,10 @@ from typing import Any, Dict, Optional, Sequence
 from aiohttp.web import HTTPCreated, HTTPNoContent
 from yarl import URL
 
-from .config import Config
-from .core import _Core
-from .errors import ClientError
-from .utils import NoPublicConstructor
+from ._config import Config
+from ._core import _Core
+from ._errors import ClientError
+from ._utils import NoPublicConstructor
 
 
 class Action(str, Enum):

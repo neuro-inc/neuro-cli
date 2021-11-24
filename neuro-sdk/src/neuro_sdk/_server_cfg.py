@@ -5,8 +5,8 @@ from typing import Any, Dict, Mapping, Optional
 import aiohttp
 from yarl import URL
 
-from .errors import AuthError
-from .login import _AuthConfig
+from ._errors import AuthError
+from ._login import _AuthConfig
 
 
 @dataclass(frozen=True)

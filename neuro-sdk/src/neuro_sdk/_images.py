@@ -10,7 +10,7 @@ import aiohttp
 from aiodocker.exceptions import DockerError
 from yarl import URL
 
-from .abc import (
+from ._abc import (
     AbstractDockerImageProgress,
     ImageCommitFinished,
     ImageCommitStarted,
@@ -19,12 +19,12 @@ from .abc import (
     ImageProgressSave,
     ImageProgressStep,
 )
-from .config import Config
-from .core import _Core
-from .errors import AuthorizationError
-from .parser import Parser
-from .parsing_utils import LocalImage, RemoteImage, Tag, TagOption, _as_repo_str
-from .utils import NoPublicConstructor, aclosing
+from ._config import Config
+from ._core import _Core
+from ._errors import AuthorizationError
+from ._parser import Parser
+from ._parsing_utils import LocalImage, RemoteImage, Tag, TagOption, _as_repo_str
+from ._utils import NoPublicConstructor, aclosing
 
 REPOS_PER_PAGE = 30
 TAGS_PER_PAGE = 30

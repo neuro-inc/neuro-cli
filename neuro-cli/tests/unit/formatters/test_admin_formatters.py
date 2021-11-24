@@ -4,7 +4,7 @@ from typing import Callable
 from dateutil.parser import isoparse
 from rich.console import RenderableType
 
-from neuro_sdk.admin import (
+from neuro_sdk import (
     _Balance,
     _CloudProvider,
     _Cluster,

@@ -11,8 +11,8 @@ from jose import jwt
 from yarl import URL
 
 from neuro_sdk import Client, Cluster, PluginManager, Preset, __version__
-from neuro_sdk.config import _AuthConfig, _AuthToken, _ConfigData, _save
-from neuro_sdk.tracing import _make_trace_config
+from neuro_sdk._config import _AuthConfig, _AuthToken, _ConfigData, _save
+from neuro_sdk._tracing import _make_trace_config
 
 from neuro_cli.asyncio_utils import setup_child_watcher
 
