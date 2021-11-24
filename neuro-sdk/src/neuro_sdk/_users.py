@@ -9,33 +9,39 @@ from yarl import URL
 from ._config import Config
 from ._core import _Core
 from ._errors import ClientError
+from ._rewrite import rewrite_module
 from ._utils import NoPublicConstructor
 
 
+@rewrite_module
 class Action(str, Enum):
     READ = "read"
     WRITE = "write"
     MANAGE = "manage"
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Permission:
     uri: URL
     action: Action
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Share:
     user: str
     permission: Permission
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Quota:
     credits: Optional[Decimal] = None
     total_running_jobs: Optional[int] = None
 
 
+@rewrite_module
 class Users(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core

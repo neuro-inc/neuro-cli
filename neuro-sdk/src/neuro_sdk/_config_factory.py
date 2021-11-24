@@ -23,6 +23,7 @@ from ._login import (
     logout_from_browser,
 )
 from ._plugins import PluginManager
+from ._rewrite import rewrite_module
 from ._server_cfg import _ServerConfig, get_server_config
 from ._tracing import _make_trace_config
 from ._utils import _ContextManager
@@ -62,6 +63,7 @@ async def __make_session(
     )
 
 
+@rewrite_module
 class Factory:
     def __init__(
         self,

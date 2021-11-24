@@ -7,8 +7,10 @@ from yarl import URL
 
 from ._errors import AuthError
 from ._login import _AuthConfig
+from ._rewrite import rewrite_module
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Preset:
     credits_per_hour: Decimal
@@ -22,6 +24,7 @@ class Preset:
     tpu_software_version: Optional[str] = None
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Cluster:
     name: str

@@ -43,6 +43,7 @@ from ._file_filter import (
 )
 from ._file_utils import FileSystem, FileTransferer, LocalFS, rm
 from ._parser import Parser
+from ._rewrite import rewrite_module
 from ._url_utils import _extract_path, normalize_local_path_uri
 from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
@@ -161,6 +162,7 @@ class BucketFS(FileSystem[PurePosixPath]):
         return path / child
 
 
+@rewrite_module
 class Buckets(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config, parser: Parser) -> None:
         self._core = core

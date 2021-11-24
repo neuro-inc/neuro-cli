@@ -9,7 +9,10 @@ from typing import Optional
 import aiohttp
 from multidict import CIMultiDict
 
+from ._rewrite import rewrite_module
 
+
+@rewrite_module
 def gen_trace_id() -> str:
     """Return 32 random hexadecimal digits.
 

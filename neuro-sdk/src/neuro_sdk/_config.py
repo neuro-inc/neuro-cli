@@ -21,6 +21,7 @@ from ._core import _Core
 from ._errors import ConfigError
 from ._login import AuthTokenClient, _AuthConfig, _AuthToken
 from ._plugins import ConfigScope, PluginManager, _ParamType
+from ._rewrite import rewrite_module
 from ._server_cfg import Cluster, Preset, _ServerConfig, get_server_config
 from ._utils import NoPublicConstructor, find_project_root, flat
 
@@ -68,6 +69,7 @@ class _ConfigRecoveryData:
     refresh_token: str
 
 
+@rewrite_module
 class Config(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, path: Path, plugin_manager: PluginManager) -> None:
         self._core = core

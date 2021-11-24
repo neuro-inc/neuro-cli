@@ -6,9 +6,11 @@ from yarl import URL
 
 from ._config import Config
 from ._core import _Core
+from ._rewrite import rewrite_module
 from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class Secret:
     key: str
@@ -20,6 +22,7 @@ class Secret:
         return URL(f"secret://{self.cluster_name}/{self.owner}/{self.key}")
 
 
+@rewrite_module
 class Secrets(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core

@@ -13,6 +13,7 @@ from ._images import Images
 from ._jobs import Jobs
 from ._parser import Parser
 from ._plugins import PluginManager
+from ._rewrite import rewrite_module
 from ._secrets import Secrets
 from ._server_cfg import Preset
 from ._service_accounts import ServiceAccounts
@@ -22,6 +23,7 @@ from ._utils import NoPublicConstructor
 from ._version_utils import VersionChecker
 
 
+@rewrite_module
 class Client(metaclass=NoPublicConstructor):
     def __init__(
         self,

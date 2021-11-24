@@ -51,6 +51,7 @@ from ._config import Config
 from ._core import _Core
 from ._errors import NDJSONError, ResourceNotFound
 from ._file_filter import AsyncFilterFunc, FileFilter
+from ._rewrite import rewrite_module
 from ._url_utils import (
     _extract_path,
     normalize_local_path_uri,
@@ -75,6 +76,7 @@ TIME_THRESHOLD = 1.0
 Printer = Callable[[str], None]
 
 
+@rewrite_module
 class FileStatusType(str, enum.Enum):
     DIRECTORY = "DIRECTORY"
     FILE = "FILE"
@@ -82,6 +84,7 @@ class FileStatusType(str, enum.Enum):
     UNKNOWN = "UNKNOWN"
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class FileStatus:
     path: str
@@ -106,6 +109,7 @@ class FileStatus:
         return Path(self.path).name
 
 
+@rewrite_module
 @dataclass(frozen=True)
 class DiskUsageInfo:
     cluster_name: str
@@ -114,6 +118,7 @@ class DiskUsageInfo:
     free: int
 
 
+@rewrite_module
 class Storage(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config) -> None:
         self._core = core

@@ -205,6 +205,7 @@ __all__ = (
     "_Quota",
     "_Storage",
     "_UserInfo",
+    "__version__",
     "find_project_root",
     "gen_trace_id",
     "get",

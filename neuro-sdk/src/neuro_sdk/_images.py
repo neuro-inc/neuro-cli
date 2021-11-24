@@ -24,6 +24,7 @@ from ._core import _Core
 from ._errors import AuthorizationError
 from ._parser import Parser
 from ._parsing_utils import LocalImage, RemoteImage, Tag, TagOption, _as_repo_str
+from ._rewrite import rewrite_module
 from ._utils import NoPublicConstructor, aclosing
 
 REPOS_PER_PAGE = 30
@@ -32,6 +33,7 @@ TAGS_PER_PAGE = 30
 log = logging.getLogger(__package__)
 
 
+@rewrite_module
 class Images(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, config: Config, parse: Parser) -> None:
         self._core = core
