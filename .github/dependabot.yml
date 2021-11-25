@@ -7,6 +7,18 @@ updates:
     interval: daily
     time: "03:00"
   open-pull-requests-limit: 10
+- package-ecosystem: pip
+  directory: /neuro-sdk
+  schedule:
+    interval: daily
+    time: "03:00"
+  open-pull-requests-limit: 10
+- package-ecosystem: pip
+  directory: /neuro-cli
+  schedule:
+    interval: daily
+    time: "03:00"
+  open-pull-requests-limit: 10
 - package-ecosystem: github-actions
   directory: /
   schedule:
