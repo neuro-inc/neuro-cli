@@ -5,7 +5,9 @@ updates:
   directory: /requirements
   ignore:
     - dependency-name: "neuro-sdk"
+      versions: ['*']
     - dependency-name: "neuro-cli"
+      versions: ['*']
   schedule:
     interval: daily
     time: "03:00"
