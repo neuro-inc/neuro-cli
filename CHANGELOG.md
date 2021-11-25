@@ -5,6 +5,14 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.11.4 (2021-11-25)
+==================================
+
+Bugfixes
+--------
+
+- Fix `neuro rm storage:...` command
+
 Neuro SDK/CLI 21.11.3 (2021-11-25)
 ==================================
 
