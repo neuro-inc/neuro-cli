@@ -3,6 +3,9 @@ version: 2
 updates:
 - package-ecosystem: pip
   directory: /requirements
+  ignore:
+    - dependency-name: "neuro-sdk"
+    - dependency-name: "neuro-cli"
   schedule:
     interval: daily
     time: "03:00"
