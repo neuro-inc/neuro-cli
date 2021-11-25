@@ -5,6 +5,21 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.11.3 (2021-11-25)
+==================================
+
+Features
+--------
+
+- Add Python 3.10 support. ([#2421](https://github.com/neuro-inc/platform-client-python/issues/2421))
+
+
+Deprecations and Removals
+-------------------------
+
+- Drop Python 3.6 support. ([#2421](https://github.com/neuro-inc/platform-client-python/issues/2421))
+
+
 Neuro SDK/CLI 21.11.2 (2021-11-23)
 ==================================
 
