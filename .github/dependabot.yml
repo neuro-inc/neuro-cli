@@ -2,7 +2,7 @@ version: 2
 
 updates:
 - package-ecosystem: pip
-  directory: /requirements
+  directory: /
   ignore:
     - dependency-name: "neuro-sdk"
       versions: ['*']
