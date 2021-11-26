@@ -15,7 +15,7 @@ from yarl import URL
 
 from neuro_sdk import DEFAULT_API_URL, ConfigError
 
-from neuro_cli.formatters.config import ClustersFormatter, QuotaFormatter
+from neuro_cli.formatters.config import ClustersFormatter
 
 from .alias import list_aliases
 from .formatters.config import AliasesFormatter, ConfigFormatter
@@ -39,7 +39,8 @@ async def show(root: Root) -> None:
         jobs_capacity = await root.client.jobs.get_capacity(cluster_name=cluster_name)
     except ClientConnectionError:
         jobs_capacity = {}
-    root.print(fmt(root.client.config, jobs_capacity))
+    quota = await root.client.users.get_quota()
+    root.print(fmt(root.client.config, jobs_capacity, quota))
 
 
 @command()
@@ -48,25 +49,6 @@ async def show_token(root: Root) -> None:
     Print current authorization token.
     """
     root.print(await root.client.config.token(), soft_wrap=True)
-
-
-@command()
-@argument("user", required=False, default=None, type=str)
-async def show_quota(root: Root, user: Optional[str]) -> None:
-    """
-    Print quota and remaining computation time for active cluster.
-    """
-    username = user or root.client.config.username
-    quotas = await root.client._users.get_quota(username)
-    cluster_name = root.client.config.cluster_name
-    if cluster_name not in quotas:
-        raise ValueError(
-            f"No quota information available for cluster {cluster_name}.\n"
-            "Please logout and login again."
-        )
-    cluster_quota = quotas[cluster_name]
-    fmt = QuotaFormatter()
-    root.print(fmt(cluster_quota))
 
 
 def _print_welcome(root: Root, url: URL) -> None:
@@ -290,7 +272,6 @@ config.add_command(login_with_token)
 config.add_command(login_headless)
 config.add_command(show)
 config.add_command(show_token)
-config.add_command(show_quota)
 config.add_command(aliases)
 config.add_command(get_clusters)
 config.add_command(switch_cluster)
