@@ -51,7 +51,10 @@ class Users(metaclass=NoPublicConstructor):
 
     async def get_quota(self) -> Quota:
         try:
-            ret = await self._admin.get_cluster_user()
+            ret = await self._admin.get_cluster_user(
+                cluster_name=self._config.cluster_name,
+                user_name=self._config.username,
+            )
         except NotSupportedError:
             # FOSS configuration without admin service and limits
             return Quota(credits=None, total_running_jobs=None)
