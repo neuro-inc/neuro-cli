@@ -3,6 +3,23 @@ version: 2
 updates:
 - package-ecosystem: pip
   directory: /
+  ignore:
+    - dependency-name: "neuro-sdk"
+      versions: ['*']
+    - dependency-name: "neuro-cli"
+      versions: ['*']
+  schedule:
+    interval: daily
+    time: "03:00"
+  open-pull-requests-limit: 10
+- package-ecosystem: pip
+  directory: /neuro-sdk
+  schedule:
+    interval: daily
+    time: "03:00"
+  open-pull-requests-limit: 10
+- package-ecosystem: pip
+  directory: /neuro-cli
   schedule:
     interval: daily
     time: "03:00"

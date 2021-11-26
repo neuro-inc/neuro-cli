@@ -1,24 +1,22 @@
 -e neuro-sdk
 -e neuro-cli
-aiobotocore==2.0.0
+aiobotocore==2.0.1
 aiodocker==0.21.0
 aiohttp==3.8.1
-async_generator==1.10; python_version<"3.7"
 # upgrade setup.py after pinning certtifi to new version
 certifi==2021.10.8
 click==8.0.3
-ConfigUpdater==3.0
+ConfigUpdater==3.0.1
 contextlib2==21.6.0
-dataclasses==0.7; python_version<"3.7"
 humanize==3.12.0
-importlib-metadata==3.6; python_version<"3.10"
-packaging==20.4
+importlib-metadata==4.8.2; python_version<"3.10"
+packaging==21.3
 python-dateutil==2.8.2
 python-jose==3.3.0
 pyyaml==6.0
 requests==2.26.0
-rich==10.12.0
+rich==10.14.0
 toml==0.10.2
-typing_extensions==3.10.0.2
+typing_extensions==4.0.0
 wcwidth==0.2.5
-yarl==1.7.0
+yarl==1.7.2

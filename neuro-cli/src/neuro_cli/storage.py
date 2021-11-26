@@ -741,7 +741,11 @@ async def _expand(
             painter = get_painter(root.color)
             uri_text = painter.paint(str(uri), FileStatusType.FILE)
             root.print(Text.assemble("Expand ", uri_text))
-        uri_path = str(root.client.parse.uri_to_path(uri))
+        uri_path = (
+            str(root.client.parse.uri_to_path(uri))
+            if uri.scheme == "file"
+            else uri.path
+        )
         if glob and globmodule.has_magic(uri_path):
             if uri.scheme == "storage":
                 async with root.client.storage.glob(uri) as it:
