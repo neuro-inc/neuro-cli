@@ -16,7 +16,7 @@ Cluster administration commands.
 | [_get-clusters_](admin.md#get-clusters) | Print the list of available clusters |
 | [_generate-cluster-config_](admin.md#generate-cluster-config) | Create a cluster configuration file |
 | [_add-cluster_](admin.md#add-cluster) | Create a new cluster and start its... |
-| [_show-cluster-options_](admin.md#show-cluster-options) | Create a cluster configuration file |
+| [_show-cluster-options_](admin.md#show-cluster-options) | Show awailable cluster options |
 | [_get-cluster-users_](admin.md#get-cluster-users) | Print the list of all users in the cluster... |
 | [_add-cluster-user_](admin.md#add-cluster-user) | Add user access to specified cluster |
 | [_remove-cluster-user_](admin.md#remove-cluster-user) | Remove user access from the cluster |
@@ -95,7 +95,7 @@ Create a new cluster and start its provisioning.
 
 ### show-cluster-options
 
-Create a cluster configuration file
+Show awailable cluster options
 
 
 #### Usage
@@ -104,7 +104,7 @@ Create a cluster configuration file
 neuro admin show-cluster-options [OPTIONS]
 ```
 
-Create a cluster configuration file.
+Show awailable cluster options.
 
 #### Options
 

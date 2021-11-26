@@ -66,7 +66,7 @@ async def add_cluster(root: Root, cluster_name: str, config: IO[str]) -> None:
 )
 async def show_cluster_options(root: Root, type: str) -> None:
     """
-    Create a cluster configuration file.
+    Show awailable cluster options.
     """
     config_options = await root.client._admin.get_cloud_provider_options(type)
     root.print(
