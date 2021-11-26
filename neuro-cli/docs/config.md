@@ -15,14 +15,14 @@ Client configuration.
 | :--- | :--- |
 | [_login_](config.md#login) | Log into Neuro Platform |
 | [_login-with-token_](config.md#login-with-token) | Log into Neuro Platform with token |
-| [_login-headless_](config.md#login-headless) | Log into Neuro Platform from non-GUI... |
+| [_login-headless_](config.md#login-headless) | Log into Neuro Platform in non-GUI environ |
 | [_show_](config.md#show) | Print current settings |
 | [_show-token_](config.md#show-token) | Print current authorization token |
-| [_show-quota_](config.md#show-quota) | Print quota and remaining computation time... |
+| [_show-quota_](config.md#show-quota) | Print quota for an active cluster |
 | [_aliases_](config.md#aliases) | List available command aliases |
-| [_get-clusters_](config.md#get-clusters) | Fetch and display the list of available... |
+| [_get-clusters_](config.md#get-clusters) | List available clusters |
 | [_switch-cluster_](config.md#switch-cluster) | Switch the active cluster |
-| [_docker_](config.md#docker) | Configure docker client to fit the Neuro... |
+| [_docker_](config.md#docker) | Configure local docker client |
 | [_logout_](config.md#logout) | Log out |
 
 
@@ -76,7 +76,7 @@ by administration team.
 
 ### login-headless
 
-Log into Neuro Platform from non-GUI...
+Log into Neuro Platform in non-GUI environ
 
 
 #### Usage
@@ -85,21 +85,20 @@ Log into Neuro Platform from non-GUI...
 neuro config login-headless [OPTIONS] [URL]
 ```
 
-Log into Neuro Platform from non`-GUI` server environment.
+Log into Neuro Platform in non`-GUI` environ
 
-`URL` is a
-platform entrypoint `URL`.
+`URL` is a platform entrypoint
+`URL`.
 
-The command works similar to "neuro login" but
-instead of
-opening a browser for performing OAuth registration prints
-an `URL`
-that should be open on guest host.
+The command works similar to "neuro login" but instead of
+opening a
+browser for performing OAuth registration prints
+an `URL` that should be open
+on guest host.
 
-Then user inputs a code displayed in a
-browser after successful login
-back in neuro command to finish the login
-process.
+Then user inputs a code displayed in a browser after
+successful login
+back in neuro command to finish the login process.
 
 #### Options
 
@@ -153,7 +152,7 @@ Print current authorization token.
 
 ### show-quota
 
-Print quota and remaining computation time...
+Print quota for an active cluster
 
 
 #### Usage
@@ -162,7 +161,7 @@ Print quota and remaining computation time...
 neuro config show-quota [OPTIONS] [USER]
 ```
 
-Print quota and remaining computation time for active cluster.
+Print quota for an active cluster.
 
 #### Options
 
@@ -195,7 +194,7 @@ List available command aliases.
 
 ### get-clusters
 
-Fetch and display the list of available...
+List available clusters
 
 
 #### Usage
@@ -204,7 +203,10 @@ Fetch and display the list of available...
 neuro config get-clusters [OPTIONS]
 ```
 
-Fetch and display the list of available clusters.
+List available clusters.
+
+This command re-fetches cluster list and then
+displays it.
 
 #### Options
 
@@ -241,7 +243,7 @@ name is omitted (default).
 
 ### docker
 
-Configure docker client to fit the Neuro...
+Configure local docker client
 
 
 #### Usage
@@ -250,7 +252,10 @@ Configure docker client to fit the Neuro...
 neuro config docker [OPTIONS]
 ```
 
-Configure docker client to fit the Neuro Platform.
+Configure local docker client
+
+This command configures local docker client to
+use Neuro Platform's docker registry.
 
 #### Options
 

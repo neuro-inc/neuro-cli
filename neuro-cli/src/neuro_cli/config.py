@@ -54,7 +54,7 @@ async def show_token(root: Root) -> None:
 @argument("user", required=False, default=None, type=str)
 async def show_quota(root: Root, user: Optional[str]) -> None:
     """
-    Print quota and remaining computation time for active cluster.
+    Print quota for an active cluster.
     """
     username = user or root.client.config.username
     quotas = await root.client._users.get_quota(username)
@@ -141,7 +141,7 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
 @argument("url", required=False, default=DEFAULT_API_URL, type=URL)
 async def login_headless(root: Root, url: URL) -> None:
     """
-    Log into Neuro Platform from non-GUI server environment.
+    Log into Neuro Platform in non-GUI environ
 
     URL is a platform entrypoint URL.
 
@@ -201,7 +201,10 @@ async def aliases(root: Root) -> None:
 )
 async def docker(root: Root, docker_config: str) -> None:
     """
-    Configure docker client to fit the Neuro Platform.
+    Configure local docker client
+
+    This command configures local docker client to
+    use Neuro Platform's docker registry.
     """
     config_path = Path(docker_config)
     if not config_path.exists():
@@ -233,8 +236,9 @@ async def docker(root: Root, docker_config: str) -> None:
 @command()
 async def get_clusters(root: Root) -> None:
     """
-    Fetch and display the list of available clusters.
+    List available clusters.
 
+    This command re-fetches cluster list and then displays it.
     """
 
     with root.status("Fetching the list of available clusters"):

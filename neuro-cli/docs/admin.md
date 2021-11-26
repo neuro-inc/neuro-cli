@@ -15,9 +15,9 @@ Cluster administration commands.
 | :--- | :--- |
 | [_get-clusters_](admin.md#get-clusters) | Print the list of available clusters |
 | [_generate-cluster-config_](admin.md#generate-cluster-config) | Create a cluster configuration file |
-| [_add-cluster_](admin.md#add-cluster) | Create a new cluster and start its... |
-| [_show-cluster-options_](admin.md#show-cluster-options) | Show awailable cluster options |
-| [_get-cluster-users_](admin.md#get-cluster-users) | Print the list of all users in the cluster... |
+| [_add-cluster_](admin.md#add-cluster) | Create a new cluster |
+| [_show-cluster-options_](admin.md#show-cluster-options) | Show available cluster options |
+| [_get-cluster-users_](admin.md#get-cluster-users) | List users in specified cluster |
 | [_add-cluster-user_](admin.md#add-cluster-user) | Add user access to specified cluster |
 | [_remove-cluster-user_](admin.md#remove-cluster-user) | Remove user access from the cluster |
 | [_get-user-quota_](admin.md#get-user-quota) | Get info about user quota in given cluster |
@@ -74,7 +74,7 @@ Create a cluster configuration file.
 
 ### add-cluster
 
-Create a new cluster and start its...
+Create a new cluster
 
 
 #### Usage
@@ -83,7 +83,11 @@ Create a new cluster and start its...
 neuro admin add-cluster [OPTIONS] CLUSTER_NAME CONFIG
 ```
 
-Create a new cluster and start its provisioning.
+Create a new cluster.
+
+Creates cluster entry on admin side and then start its
+provisioning using
+provided config.
 
 #### Options
 
@@ -95,7 +99,7 @@ Create a new cluster and start its provisioning.
 
 ### show-cluster-options
 
-Show awailable cluster options
+Show available cluster options
 
 
 #### Usage
@@ -104,7 +108,7 @@ Show awailable cluster options
 neuro admin show-cluster-options [OPTIONS]
 ```
 
-Show awailable cluster options.
+Show available cluster options.
 
 #### Options
 
@@ -117,7 +121,7 @@ Show awailable cluster options.
 
 ### get-cluster-users
 
-Print the list of all users in the cluster...
+List users in specified cluster
 
 
 #### Usage
@@ -126,7 +130,7 @@ Print the list of all users in the cluster...
 neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
 ```
 
-Print the list of all users in the cluster with their assigned role.
+List users in specified cluster
 
 #### Options
 

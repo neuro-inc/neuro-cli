@@ -100,6 +100,8 @@ async def create(
     cluster: Optional[str] = None,
 ) -> None:
     """
+    Create a disk
+
     Create a disk with at least storage amount STORAGE.
 
     To specify the amount, you can use the following suffixes: "kKMGTPEZY"

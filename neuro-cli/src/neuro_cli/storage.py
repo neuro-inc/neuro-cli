@@ -688,7 +688,7 @@ async def mv(
 async def tree(
     root: Root, path: URL, size: bool, human_readable: bool, sort: str, show_all: bool
 ) -> None:
-    """List contents of directories in a tree-like format.
+    """List storage in a tree-like format
 
     Tree is a recursive directory listing program that produces a depth indented listing
     of files, which is colorized ala dircolors if the LS_COLORS environment variable is
