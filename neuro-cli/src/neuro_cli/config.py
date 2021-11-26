@@ -69,19 +69,6 @@ async def show_quota(root: Root, user: Optional[str]) -> None:
     root.print(fmt(cluster_quota))
 
 
-@command()
-async def add_quota(root: Root) -> None:
-    """
-    Print instructions for increasing quota for current user
-    """
-    user_name = root.client.config.username
-    cluster_name = root.client.config.cluster_name
-    root.print(
-        f"In order to increase your quota, please navigate to "
-        f"https://neuro.payments.com/{user_name}/{cluster_name}?pay=usd100"
-    )
-
-
 def _print_welcome(root: Root, url: URL) -> None:
     root.print(f"Logged into {url}")
     root.print(
