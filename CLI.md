@@ -224,7 +224,7 @@ Name | Description|
 | _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
 | _[neuro admin generate\-cluster-config](#neuro-admin-generate-cluster-config)_| Create a cluster configuration file |
 | _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster and start its provisioning |
-| _[neuro admin show\-cluster-options](#neuro-admin-show-cluster-options)_| Create a cluster configuration file |
+| _[neuro admin show\-cluster-options](#neuro-admin-show-cluster-options)_| Show awailable cluster options |
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
 | _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster |
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
@@ -299,7 +299,7 @@ Name | Description|
 
 ### neuro admin show-cluster-options
 
-Create a cluster configuration file.
+Show awailable cluster options.
 
 **Usage:**
 
