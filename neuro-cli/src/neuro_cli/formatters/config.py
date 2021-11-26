@@ -16,7 +16,7 @@ from neuro_cli.utils import format_size
 
 class ConfigFormatter:
     def __call__(
-        self, config: Config, available_jobs_counts: Mapping[str, int]
+        self, config: Config, available_jobs_counts: Mapping[str, int], quota: Quota
     ) -> RenderableType:
         table = Table(
             title="User Configuration:",
@@ -29,21 +29,14 @@ class ConfigFormatter:
         table.add_column(style="bold")
         table.add_row("User Name", config.username)
         table.add_row("Current Cluster", config.cluster_name)
+        table.add_row("Credits Quota", format_quota_details(quota.credits))
+        table.add_row("Jobs Quota", format_quota_details(quota.total_running_jobs))
         table.add_row("API URL", str(config.api_url))
         table.add_row("Docker Registry URL", str(config.registry_url))
 
         return RenderGroup(
-            table, _format_presets(config.presets, available_jobs_counts)
-        )
-
-
-class QuotaFormatter:
-    def __call__(self, quota: Quota) -> RenderableType:
-        credits_details = format_quota_details(quota.credits)
-        jobs_details = format_quota_details(quota.total_running_jobs)
-        return RenderGroup(
-            Text.assemble(Text("Credits", style="bold"), f": ", credits_details),
-            Text.assemble(Text("Jobs", style="bold"), f": ", jobs_details),
+            table,
+            _format_presets(config.presets, available_jobs_counts),
         )
 
 

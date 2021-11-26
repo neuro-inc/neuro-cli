@@ -1,6 +1,8 @@
 User Configuration:                               
  User Name            user                        
  Current Cluster      default                     
+ Credits Quota        500.00                      
+ Jobs Quota           10                          
  API URL              https://dev.neu.ro/api/v1   
  Docker Registry URL  https://registry-dev.neu.ro 
 Resource Presets:                                                                                      
