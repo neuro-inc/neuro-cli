@@ -2,9 +2,9 @@ FILE_SIZE_MB = 2
 FILE_SIZE_B = FILE_SIZE_MB * 1024 * 1024
 GENERATION_TIMEOUT_SEC = 120
 
-UBUNTU_IMAGE_NAME = "ubuntu:latest"
-NGINX_IMAGE_NAME = "nginx:latest"
-ALPINE_IMAGE_NAME = "alpine:latest"
+UBUNTU_IMAGE_NAME = "ghcr.io/neuro-inc/ubuntu:latest"
+NGINX_IMAGE_NAME = "ghcr.io/neuro-inc/nginx:latest"
+ALPINE_IMAGE_NAME = "ghcr.io/neuro-inc/alpine:latest"
 
 format_list = "{type:<15}{size:<15,}{name:<}".format
 format_list_pattern = "(file|directory)\\s*\\d+\\s*{name}".format

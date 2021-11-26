@@ -32,9 +32,9 @@ SKIP_NON_LINUX = pytest.mark.skipif(
     sys.platform != "linux", reason="PTY tests require Linux box"
 )
 
-ALPINE_IMAGE_NAME = "alpine:latest"
-UBUNTU_IMAGE_NAME = "ubuntu:latest"
-NGINX_IMAGE_NAME = "nginx:latest"
+ALPINE_IMAGE_NAME = "ghcr.io/neuro-inc/alpine:latest"
+UBUNTU_IMAGE_NAME = "ghcr.io/neuro-inc/ubuntu:latest"
+NGINX_IMAGE_NAME = "ghcr.io/neuro-inc/nginx:latest"
 MIN_PORT = 49152
 MAX_PORT = 65535
 
@@ -624,7 +624,9 @@ async def nginx_job_async(
             f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
         )
         container = Container(
-            image=RemoteImage.new_external_image(name="nginx", tag="latest"),
+            image=RemoteImage.new_external_image(
+                name="ghcr.io/neuro-inc/nginx", tag="latest"
+            ),
             command=command,
             resources=Resources(memory_mb=100, cpu=0.1),
         )
@@ -698,7 +700,14 @@ async def test_run_with_port_forward(helper: Helper) -> None:
     )
 
     proc = await helper.acli(
-        ["run", "--port-forward", f"{port}:80", "nginx:latest", "--", command]
+        [
+            "run",
+            "--port-forward",
+            f"{port}:80",
+            "ghcr.io/neuro-inc/nginx:latest",
+            "--",
+            command,
+        ]
     )
     try:
         await asyncio.sleep(1)
