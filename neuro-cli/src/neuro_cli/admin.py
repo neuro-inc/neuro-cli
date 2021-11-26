@@ -13,7 +13,7 @@ import yaml
 from prompt_toolkit import PromptSession
 from rich.markup import escape as rich_escape
 
-from neuro_sdk import Preset, _ClusterUserRoleType
+from neuro_sdk import Preset, _Balance, _ClusterUserRoleType, _Quota
 
 from neuro_cli.formatters.config import BalanceFormatter
 
@@ -39,7 +39,7 @@ async def get_clusters(root: Root) -> None:
     """
     fmt = ClustersFormatter()
     with root.status("Fetching the list of clusters"):
-        clusters = await root.client._admin.list_clusters()
+        clusters = await root.client._admin.list_config_clusters()
     with root.pager():
         root.print(fmt(clusters.values()))
 
@@ -55,7 +55,8 @@ async def add_cluster(root: Root, cluster_name: str, config: IO[str]) -> None:
     provided config.
     """
     config_dict = yaml.safe_load(config)
-    await root.client._admin.add_cluster(cluster_name, config_dict)
+    await root.client._admin.create_cluster(cluster_name)
+    await root.client._admin.setup_cluster_cloud_provider(cluster_name, config_dict)
     if not root.quiet:
         root.print(
             f"Cluster {cluster_name} successfully added "
@@ -361,7 +362,9 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     with root.status(
         f"Fetching the list of cluster users of cluster [b]{cluster_name}[/b]"
     ):
-        users = await root.client._admin.list_cluster_users(cluster_name)
+        users = await root.client._admin.list_cluster_users(
+            cluster_name, with_user_info=True
+        )
     with root.pager():
         root.print(fmt(users))
 
@@ -376,15 +379,40 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     metavar="[ROLE]",
     type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
 )
+@option(
+    "-c",
+    "--credits",
+    metavar="AMOUNT",
+    type=str,
+    help="Credits amount to set",
+)
+@option(
+    "-j",
+    "--jobs",
+    metavar="AMOUNT",
+    type=int,
+    help="Maximum running jobs quota",
+)
 async def add_cluster_user(
-    root: Root, cluster_name: str, user_name: str, role: str
+    root: Root,
+    cluster_name: str,
+    user_name: str,
+    role: str,
+    credits: Optional[str],
+    jobs: Optional[int],
 ) -> None:
     """
     Add user access to specified cluster.
 
     The command supports one of 3 user roles: admin, manager or user.
     """
-    user = await root.client._admin.add_cluster_user(cluster_name, user_name, role)
+    user = await root.client._admin.create_cluster_user(
+        cluster_name,
+        user_name,
+        _ClusterUserRoleType(role),
+        balance=_Balance(credits=_parse_credits_value(credits)),
+        quota=_Quota(total_running_jobs=jobs),
+    )
     if not root.quiet:
         root.print(
             f"Added [bold]{rich_escape(user.user_name)}[/bold] to cluster "
@@ -392,27 +420,6 @@ async def add_cluster_user(
             f"[bold]{rich_escape(user.role)}[/bold]",
             markup=True,
         )
-
-
-def _parse_quota_value(
-    value: Optional[str], allow_infinity: bool = False
-) -> Optional[int]:
-    if value is None:
-        return None
-    try:
-        if value[-1] not in ("h", "m"):
-            raise ValueError(f"Unable to parse: '{value}'")
-        result = float(value[:-1]) * {"h": 60, "m": 1}[value[-1]]
-        if result < 0:
-            raise ValueError(f"Negative quota values ({value}) are not allowed")
-        if result == float("inf"):
-            if allow_infinity:
-                return None
-            else:
-                raise ValueError("Infinite quota values are not allowed")
-    except (ValueError, LookupError):
-        raise
-    return int(result)
 
 
 def _parse_credits_value(value: Optional[str]) -> Optional[Decimal]:
@@ -431,7 +438,7 @@ async def remove_cluster_user(root: Root, cluster_name: str, user_name: str) -> 
     """
     Remove user access from the cluster.
     """
-    await root.client._admin.remove_cluster_user(cluster_name, user_name)
+    await root.client._admin.delete_cluster_user(cluster_name, user_name)
     if not root.quiet:
         root.print(
             f"Removed [bold]{rich_escape(user_name)}[/bold] from cluster "
@@ -485,10 +492,10 @@ async def set_user_quota(
     """
     Set user quota to given values
     """
-    user_with_quota = await root.client._admin.set_user_quota(
+    user_with_quota = await root.client._admin.update_cluster_user_quota(
         cluster_name=cluster_name,
         user_name=user_name,
-        total_running_jobs=jobs,
+        quota=_Quota(total_running_jobs=jobs),
     )
     fmt = AdminQuotaFormatter()
     root.print(
@@ -519,7 +526,7 @@ async def set_user_credits(
     Set user credits to given value
     """
     credits_decimal = _parse_credits_value(credits)
-    user_with_quota = await root.client._admin.set_user_credits(
+    user_with_quota = await root.client._admin.update_cluster_user_balance(
         cluster_name=cluster_name,
         user_name=user_name,
         credits=credits_decimal,
@@ -553,10 +560,11 @@ async def add_user_credits(
     Add given values to user quota
     """
     additional_credits = _parse_credits_value(credits)
-    user_with_quota = await root.client._admin.add_user_credits(
+    assert additional_credits
+    user_with_quota = await root.client._admin.update_cluster_user_balance_by_delta(
         cluster_name,
         user_name,
-        additional_credits=additional_credits,
+        delta=additional_credits,
     )
     fmt = BalanceFormatter()
     root.print(

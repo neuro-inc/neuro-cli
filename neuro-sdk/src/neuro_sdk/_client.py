@@ -25,6 +25,8 @@ from ._version_utils import VersionChecker
 
 @rewrite_module
 class Client(metaclass=NoPublicConstructor):
+    _admin: _Admin
+
     def __init__(
         self,
         session: aiohttp.ClientSession,
