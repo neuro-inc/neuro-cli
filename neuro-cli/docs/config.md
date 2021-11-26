@@ -18,7 +18,6 @@ Client configuration.
 | [_login-headless_](config.md#login-headless) | Log into Neuro Platform from non-GUI... |
 | [_show_](config.md#show) | Print current settings |
 | [_show-token_](config.md#show-token) | Print current authorization token |
-| [_show-quota_](config.md#show-quota) | Print quota and remaining computation time... |
 | [_aliases_](config.md#aliases) | List available command aliases |
 | [_get-clusters_](config.md#get-clusters) | Fetch and display the list of available... |
 | [_switch-cluster_](config.md#switch-cluster) | Switch the active cluster |
@@ -142,27 +141,6 @@ neuro config show-token [OPTIONS]
 ```
 
 Print current authorization token.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### show-quota
-
-Print quota and remaining computation time...
-
-
-#### Usage
-
-```bash
-neuro config show-quota [OPTIONS] [USER]
-```
-
-Print quota and remaining computation time for active cluster.
 
 #### Options
 

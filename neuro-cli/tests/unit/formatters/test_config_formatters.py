@@ -1,8 +1,9 @@
 from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Union
 
+import pytest
 import toml
 from rich.console import RenderableType
 
@@ -14,16 +15,31 @@ from neuro_cli.formatters.config import (
     AliasesFormatter,
     BalanceFormatter,
     ConfigFormatter,
-    QuotaFormatter,
+    format_quota_details,
 )
 from neuro_cli.root import Root
 
 RichCmp = Callable[[RenderableType], None]
 
 
+@pytest.mark.parametrize(
+    "quota,expected",
+    [
+        pytest.param(None, "infinity", id="None->infinity"),
+        pytest.param(0, "0", id="zero"),
+        pytest.param(10, "10", id="int"),
+        pytest.param(Decimal("1.23456"), "1.23", id="decimal"),
+    ],
+)
+def test_format_quota_details(quota: Union[None, int, Decimal], expected: str) -> None:
+    assert format_quota_details(quota) == expected
+
+
 class TestConfigFormatter:
     async def test_output(self, root: Root, rich_cmp: RichCmp) -> None:
-        out = ConfigFormatter()(root.client.config, {})
+        out = ConfigFormatter()(
+            root.client.config, {}, Quota(credits=Decimal("500"), total_running_jobs=10)
+        )
         rich_cmp(out)
 
     async def test_output_for_tpu_presets(
@@ -57,7 +73,9 @@ class TestConfigFormatter:
         client = make_client(
             "https://dev.neu.ro/api/v1", clusters={new_config.name: new_config}
         )
-        out = ConfigFormatter()(client.config, {})
+        out = ConfigFormatter()(
+            client.config, {}, Quota(credits=Decimal("500"), total_running_jobs=10)
+        )
         rich_cmp(out)
         await client.close()
 
@@ -68,54 +86,16 @@ class TestConfigFormatter:
             "cpu-small": 1,
             "cpu-large": 2,
         }
-        out = ConfigFormatter()(root.client.config, available_jobs_counts)
+        out = ConfigFormatter()(
+            root.client.config,
+            available_jobs_counts,
+            Quota(credits=Decimal("500"), total_running_jobs=10),
+        )
         rich_cmp(out)
 
 
 bold_start = "\x1b[1m"
 bold_end = "\x1b[0m"
-
-
-class TestQuotaFormatter:
-    def test_output(self, rich_cmp: RichCmp) -> None:
-        quota = Quota(
-            credits=Decimal("10"),
-            total_running_jobs=10,
-        )
-        out = QuotaFormatter()(quota)
-        rich_cmp(out)
-
-    def test_output_no_quota(self, rich_cmp: RichCmp) -> None:
-        quota = Quota(
-            credits=None,
-            total_running_jobs=None,
-        )
-        out = QuotaFormatter()(quota)
-        rich_cmp(out)
-
-    def test_output_only_jobs(self, rich_cmp: RichCmp) -> None:
-        quota = Quota(
-            credits=None,
-            total_running_jobs=10,
-        )
-        out = QuotaFormatter()(quota)
-        rich_cmp(out)
-
-    def test_output_only_credits(self, rich_cmp: RichCmp) -> None:
-        quota = Quota(
-            credits=Decimal("10"),
-            total_running_jobs=None,
-        )
-        out = QuotaFormatter()(quota)
-        rich_cmp(out)
-
-    def test_output_zeroes(self, rich_cmp: RichCmp) -> None:
-        quota = Quota(
-            credits=Decimal("0"),
-            total_running_jobs=0,
-        )
-        out = QuotaFormatter()(quota)
-        rich_cmp(out)
 
 
 class TestAdminQuotaFormatter:

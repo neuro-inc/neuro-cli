@@ -56,7 +56,6 @@
 		* [neuro config login-headless](#neuro-config-login-headless)
 		* [neuro config show](#neuro-config-show)
 		* [neuro config show-token](#neuro-config-show-token)
-		* [neuro config show-quota](#neuro-config-show-quota)
 		* [neuro config aliases](#neuro-config-aliases)
 		* [neuro config get-clusters](#neuro-config-get-clusters)
 		* [neuro config switch-cluster](#neuro-config-switch-cluster)
@@ -1549,7 +1548,6 @@ Name | Description|
 | _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuro Platform from non-GUI server environment |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
-| _[neuro config show-quota](#neuro-config-show-quota)_| Print quota and remaining computation time for active cluster |
 | _[neuro config aliases](#neuro-config-aliases)_| List available command aliases |
 | _[neuro config get-clusters](#neuro-config-get-clusters)_| Fetch and display the list of available clusters |
 | _[neuro config switch-cluster](#neuro-config-switch-cluster)_| Switch the active cluster |
@@ -1643,25 +1641,6 @@ Print current authorization token.
 
 ```bash
 neuro config show-token [OPTIONS]
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro config show-quota
-
-Print quota and remaining computation time for active cluster.
-
-**Usage:**
-
-```bash
-neuro config show-quota [OPTIONS] [USER]
 ```
 
 **Options:**

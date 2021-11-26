@@ -6,9 +6,10 @@ from typing import Any, Dict, Optional, Sequence
 from aiohttp.web import HTTPCreated, HTTPNoContent
 from yarl import URL
 
+from ._admin import _Admin
 from ._config import Config
 from ._core import _Core
-from ._errors import ClientError
+from ._errors import ClientError, NotSupportedError
 from ._rewrite import rewrite_module
 from ._utils import NoPublicConstructor
 
@@ -43,25 +44,21 @@ class Quota:
 
 @rewrite_module
 class Users(metaclass=NoPublicConstructor):
-    def __init__(self, core: _Core, config: Config) -> None:
+    def __init__(self, core: _Core, config: Config, admin: _Admin) -> None:
         self._core = core
         self._config = config
+        self._admin = admin
 
-    async def get_quota(self, user: str) -> Dict[str, Quota]:
-        url = self._get_user_url(user)
-        auth = await self._config._api_auth()
-        res = {}
-        async with self._core.request("GET", url, auth=auth) as resp:
-            payload = await resp.json()
-            for cluster_dict in payload["clusters"]:
-                quota_dict = cluster_dict.get("quota", {})
-                res[cluster_dict["name"]] = Quota(
-                    credits=Decimal(quota_dict["credits"])
-                    if "credits" in quota_dict
-                    else None,
-                    total_running_jobs=quota_dict.get("total_running_jobs"),
-                )
-        return res
+    async def get_quota(self) -> Quota:
+        try:
+            ret = await self._admin.get_cluster_user()
+        except NotSupportedError:
+            # FOSS configuration without admin service and limits
+            return Quota(credits=None, total_running_jobs=None)
+        return Quota(
+            credits=ret.balance.credits,
+            total_running_jobs=ret.quota.total_running_jobs,
+        )
 
     async def get_acl(
         self, user: str, scheme: Optional[str] = None, *, uri: Optional[URL] = None

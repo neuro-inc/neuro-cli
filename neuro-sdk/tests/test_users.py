@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import AsyncIterator, Callable
 
@@ -80,46 +81,52 @@ async def mocked_remove_role_client(
 
 
 @pytest.fixture()
-async def mocked_get_user_client(
+async def mocked_get_quota_client(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> AsyncIterator[Client]:
-    async def handler(request: web.Request) -> web.Response:
-        assert request.match_info["name"] == "test_user"
-        return web.json_response(
-            {
-                "user_name": "test_user",
-                "clusters": [
-                    {"name": "cluster1"},
-                    {"name": "cluster2", "quota": {}},
-                    {"name": "cluster3", "quota": {"credits": "100"}},
-                    {"name": "cluster4", "quota": {"total_running_jobs": 5}},
-                    {
-                        "name": "cluster5",
-                        "quota": {"credits": "100", "total_running_jobs": 5},
-                    },
-                ],
+    date = datetime.now(timezone.utc)
+
+    async def handle_get_cluster_user(request: web.Request) -> web.StreamResponse:
+        data = {
+            "user_name": "denis",
+            "role": "admin",
+            "user_info": {
+                "first_name": "denis",
+                "last_name": "admin",
+                "email": "denis@domain.name",
+                "created_at": date.isoformat(),
             },
-            status=web.HTTPOk.status_code,
-        )
+            "balance": {
+                "credits": "500",
+                "spent_credits": "10",
+            },
+            "quota": {"total_running_jobs": 10},
+        }
+        return web.json_response(data)
 
     app = web.Application()
-    app.router.add_get("/users/{name}", handler)
+    app.router.add_get(
+        "/apis/admin/v1/clusters/{cluster_name}/users/{username}",
+        handle_get_cluster_user,
+    )
+
     srv = await aiohttp_server(app)
-    client = make_client(srv.make_url("/"))
+
+    client = make_client(srv.make_url("/api/v1"))
     yield client
     await client.close()
 
 
 class TestUsers:
-    async def test_get_quota(self, mocked_get_user_client: Client) -> None:
-        res = await mocked_get_user_client.users.get_quota(
-            user="test_user",
-        )
-        assert res["cluster1"] == Quota()
-        assert res["cluster2"] == Quota()
-        assert res["cluster3"] == Quota(credits=Decimal("100"))
-        assert res["cluster4"] == Quota(total_running_jobs=5)
-        assert res["cluster5"] == Quota(credits=Decimal("100"), total_running_jobs=5)
+    async def test_get_quota(self, mocked_get_quota_client: Client) -> None:
+        res = await mocked_get_quota_client.users.get_quota()
+        assert res == Quota(credits=Decimal("500"), total_running_jobs=10)
+
+    async def test_get_quota_adminless(self, make_client: _MakeClient) -> None:
+        async with make_client("https://dev.example.com", admin_url="") as client:
+            quota = await client.users.get_quota()
+            assert quota.credits is None
+            assert quota.total_running_jobs is None
 
     async def test_share_unknown_user(self, mocked_share_client: Client) -> None:
         with pytest.raises(ResourceNotFound):
