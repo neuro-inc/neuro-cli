@@ -15,7 +15,7 @@ python-dateutil==2.8.2
 python-jose==3.3.0
 pyyaml==6.0
 requests==2.26.0
-rich==10.14.0
+rich==10.15.0
 toml==0.10.2
 typing_extensions==4.0.0
 wcwidth==0.2.5
