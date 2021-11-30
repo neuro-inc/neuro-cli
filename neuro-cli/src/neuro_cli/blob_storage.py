@@ -407,7 +407,7 @@ async def set_bucket_publicity(
     root: Root, cluster: Optional[str], bucket: str, public_level: str
 ) -> None:
     """
-    Change public access settings for bucket BUCKET.
+    Change public access settings for BUCKET
 
     Examples:
 
@@ -621,7 +621,7 @@ async def cp(
     progress: bool,
 ) -> None:
     """
-    Simple utility to copy files and directories into and from Blob Storage.
+    Copy blobs into and from Blob Storage.
 
     Either SOURCES or DESTINATION should have `blob://` scheme.
     If scheme is omitted, file:// scheme is assumed. It is currently not possible to

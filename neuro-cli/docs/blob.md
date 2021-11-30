@@ -18,12 +18,12 @@ Blob storage operations.
 | [_importbucket_](blob.md#importbucket) | Import an existing bucket |
 | [_statbucket_](blob.md#statbucket) | Get bucket BUCKET |
 | [_rmbucket_](blob.md#rmbucket) | Remove bucket BUCKET |
-| [_set-bucket-publicity_](blob.md#set-bucket-publicity) | Change public access settings for bucket... |
+| [_set-bucket-publicity_](blob.md#set-bucket-publicity) | Change public access settings for BUCKET |
 | [_lscredentials_](blob.md#lscredentials) | List bucket credentials |
 | [_mkcredentials_](blob.md#mkcredentials) | Create a new bucket credential |
 | [_statcredentials_](blob.md#statcredentials) | Get bucket credential BUCKET\_CREDENTIAL |
 | [_rmcredentials_](blob.md#rmcredentials) | Remove bucket credential BUCKET\_CREDENTIAL |
-| [_cp_](blob.md#cp) | Simple utility to copy files and... |
+| [_cp_](blob.md#cp) | Copy blobs into and from Blob Storage |
 | [_ls_](blob.md#ls) | List buckets or bucket contents |
 | [_glob_](blob.md#glob) | List resources that match PATTERNS |
 | [_rm_](blob.md#rm) | Remove blobs from bucket |
@@ -158,7 +158,7 @@ Remove bucket `BUCKET`.
 
 ### set-bucket-publicity
 
-Change public access settings for bucket...
+Change public access settings for BUCKET
 
 
 #### Usage
@@ -167,7 +167,7 @@ Change public access settings for bucket...
 neuro blob set-bucket-publicity [OPTIONS] BUCKET {public|private}
 ```
 
-Change public access settings for bucket `BUCKET`.
+Change public access settings for `BUCKET`
 
 #### Examples
 
@@ -278,7 +278,7 @@ Remove bucket credential `BUCKET`_`CREDENTIAL`.
 
 ### cp
 
-Simple utility to copy files and...
+Copy blobs into and from Blob Storage
 
 
 #### Usage
@@ -287,33 +287,33 @@ Simple utility to copy files and...
 neuro blob cp [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
-Simple utility to copy files and directories into and from Blob Storage.
-Either `SOURCES` or `DESTINATION` should have `blob://` scheme.
-If scheme is
-omitted, file:// scheme is assumed. It is currently not possible to
-copy files
-between Blob Storage (`blob://`) destination, nor with `storage://`
-scheme
-paths.
+Copy blobs into and from Blob Storage.
 
-Use `/dev/stdin` and `/dev/stdout` file names to upload a file from
-standard input
-or output to stdout.
+Either `SOURCES` or `DESTINATION`
+should have `blob://` scheme.
+If scheme is omitted, file:// scheme is assumed.
+It is currently not possible to
+copy files between Blob Storage (`blob://`)
+destination, nor with `storage://`
+scheme paths.
 
-Any number of --exclude and --include
-options can be passed.  The
-filters that appear later in the command take
-precedence over filters
-that appear earlier in the command.  If neither
---exclude nor
---include options are specified the default can be changed using
-the
-storage.cp-exclude configuration variable documented in
-"neuro help user-
-config".
+Use `/dev/stdin` and
+`/dev/stdout` file names to upload a file from standard input
+or output to
+stdout.
 
-File permissions, modification times and other attributes will not
-be passed to
+Any number of --exclude and --include options can be passed.  The
+filters that appear later in the command take precedence over filters
+that
+appear earlier in the command.  If neither --exclude nor
+--include options are
+specified the default can be changed using the
+storage.cp-exclude
+configuration variable documented in
+"neuro help user-config".
+
+File
+permissions, modification times and other attributes will not be passed to
 Blob Storage metadata during upload.
 
 #### Options

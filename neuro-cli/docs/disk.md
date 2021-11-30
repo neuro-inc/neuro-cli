@@ -14,7 +14,7 @@ Operations with disks.
 | Usage | Description |
 | :--- | :--- |
 | [_ls_](disk.md#ls) | List disks |
-| [_create_](disk.md#create) | Create a disk with at least storage amount... |
+| [_create_](disk.md#create) | Create a disk |
 | [_get_](disk.md#get) | Get disk DISK\_ID |
 | [_rm_](disk.md#rm) | Remove disk DISK\_ID |
 
@@ -45,7 +45,7 @@ List disks.
 
 ### create
 
-Create a disk with at least storage amount...
+Create a disk
 
 
 #### Usage
@@ -54,18 +54,19 @@ Create a disk with at least storage amount...
 neuro disk create [OPTIONS] STORAGE
 ```
 
+Create a disk
+
 Create a disk with at least storage amount `STORAGE`.
 
-To specify the amount,
-you can use the following suffixes: "k`KMGTPEZY`"
-To use decimal quantities,
-append "b" or "B". For example:
+To
+specify the amount, you can use the following suffixes: "k`KMGTPEZY`"
+To use
+decimal quantities, append "b" or "B". For example:
 - 1K or 1k is `1024` bytes
-- 1Kb or `1KB` is
-`1000` bytes
+- 1Kb or `1KB` is `1000` bytes
 - `20G` is 20 * 2 ^ 30 bytes
-- `20G`b or `20GB` is
-20.`000`.`000`.`000` bytes
+- `20G`b or `20GB`
+is 20.`000`.`000`.`000` bytes
 
 Note that server can have big granularity (for
 example, 1G)

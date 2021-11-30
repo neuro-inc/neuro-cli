@@ -65,7 +65,10 @@ async def add_cluster(
     root: Root, cluster_name: str, config: IO[str], skip_provisioning: bool = False
 ) -> None:
     """
-    Create a new cluster and start its provisioning.
+    Create a new cluster.
+
+    Creates cluster entry on admin side and then start its provisioning using
+    provided config.
     """
     config_dict = yaml.safe_load(config)
     await root.client._admin.create_cluster(cluster_name)
@@ -105,7 +108,7 @@ async def remove_cluster(root: Root, cluster_name: str, force: bool) -> None:
 )
 async def show_cluster_options(root: Root, type: str) -> None:
     """
-    Show awailable cluster options.
+    Show available cluster options.
     """
     config_options = await root.client._admin.get_cloud_provider_options(type)
     root.print(
@@ -390,7 +393,7 @@ async def generate_vcd(root: Root, session: PromptSession[str]) -> str:
 @argument("cluster_name", required=False, default=None, type=str)
 async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     """
-    Print the list of all users in the cluster with their assigned role.
+    List users in specified cluster
     """
     fmt = ClusterUserFormatter()
     cluster_name = cluster_name or root.client.config.cluster_name

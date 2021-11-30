@@ -157,7 +157,9 @@ async def port_forward(
     root: Root, job: str, local_remote_port: List[Tuple[int, int]]
 ) -> None:
     """
-    Forward port(s) of a running job to local port(s).
+    Forward port(s) of a job.
+
+    Forwards port(s) of a running job to local port(s).
 
     Examples:
 
@@ -245,6 +247,8 @@ async def logs(root: Root, since: str, job: str, timestamps: bool) -> None:
 )
 async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> None:
     """
+    Attach terminal to a job
+
     Attach local standard input, output, and error streams to a running job.
     """
     id = await resolve_job(
@@ -1030,7 +1034,7 @@ async def run(
     share: Sequence[str],
 ) -> None:
     """
-    Run a job with predefined resources configuration.
+    Run a job
 
     IMAGE docker image name to run in a job.
 

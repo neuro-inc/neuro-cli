@@ -2,12 +2,12 @@
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_neuro run_](shortcuts.md#run) | Run a job with predefined resources... |
+| [_neuro run_](shortcuts.md#run) | Run a job |
 | [_neuro ps_](shortcuts.md#ps) | List all jobs |
 | [_neuro status_](shortcuts.md#status) | Display status of a job |
 | [_neuro exec_](shortcuts.md#exec) | Execute command in a running job |
-| [_neuro port-forward_](shortcuts.md#port-forward) | Forward port\(s\) of a running job to local... |
-| [_neuro attach_](shortcuts.md#attach) | Attach local standard input, output, and... |
+| [_neuro port-forward_](shortcuts.md#port-forward) | Forward port\(s\) of a job |
+| [_neuro attach_](shortcuts.md#attach) | Attach terminal to a job |
 | [_neuro logs_](shortcuts.md#logs) | Print the logs for a job |
 | [_neuro kill_](shortcuts.md#kill) | Kill job\(s\) |
 | [_neuro top_](shortcuts.md#top) | Display GPU/CPU/Memory usage |
@@ -27,7 +27,7 @@
 
 ### run
 
-Run a job with predefined resources...
+Run a job
 
 
 #### Usage
@@ -36,13 +36,12 @@ Run a job with predefined resources...
 neuro run [OPTIONS] IMAGE [-- CMD...]
 ```
 
-Run a job with predefined resources configuration.
+Run a job
 
-`IMAGE` docker image name
-to run in a job.
+`IMAGE` docker image name to run in a job.
 
-`CMD` list will be passed as arguments to the executed job's
-image.
+`CMD` list will be
+passed as arguments to the executed job's image.
 
 #### Examples
 
@@ -197,7 +196,7 @@ $ neuro exec --no-tty my-job -- ls -l
 
 ### port-forward
 
-Forward port(s) of a running job to local...
+Forward port(s) of a job
 
 
 #### Usage
@@ -206,7 +205,9 @@ Forward port(s) of a running job to local...
 neuro port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
 ```
 
-Forward port(s) of a running job to local port(s).
+Forward port(s) of a job.
+
+Forwards port(s) of a running job to local port(s).
 
 #### Examples
 
@@ -236,7 +237,7 @@ $ neuro job port-forward my-job 2080:80 2222:22 2000:100
 
 ### attach
 
-Attach local standard input, output, and...
+Attach terminal to a job
 
 
 #### Usage
@@ -245,7 +246,10 @@ Attach local standard input, output, and...
 neuro attach [OPTIONS] JOB
 ```
 
-Attach local standard input, output, and error streams to a running job.
+Attach terminal to a job
+
+Attach local standard input, output, and error
+streams to a running job.
 
 #### Options
 
