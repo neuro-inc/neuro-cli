@@ -499,3 +499,96 @@ def test_org_cluster_user_default_set_balance_and_quota(
     )
     assert "Jobs: 20" in captured.out
     assert "Credits: 200.22" in captured.out
+
+
+@pytest.mark.e2e
+def test_org_cluster_default_unlimited_quota(
+    helper: Helper,
+    tmp_test_cluster: str,
+    tmp_test_org: str,
+) -> None:
+    helper.run_cli(["admin", "add-org-cluster", tmp_test_cluster, tmp_test_org])
+    captured = helper.run_cli(
+        ["admin", "get-org-cluster-quota", tmp_test_cluster, tmp_test_org]
+    )
+    assert "Jobs: infinity" in captured.out
+    assert "Credits: infinity" in captured.out
+
+
+@pytest.mark.e2e
+def test_org_cluster_set_quota_during_add(
+    helper: Helper,
+    tmp_test_cluster: str,
+    tmp_test_org: str,
+) -> None:
+    helper.run_cli(
+        [
+            "admin",
+            "add-org-cluster",
+            "-c",
+            "200.22",
+            "-j",
+            "20",
+            tmp_test_cluster,
+            tmp_test_org,
+        ]
+    )
+    captured = helper.run_cli(
+        ["admin", "get-org-cluster-quota", tmp_test_cluster, tmp_test_org]
+    )
+    assert "Jobs: 20" in captured.out
+    assert "Credits: 200.22" in captured.out
+
+
+@pytest.mark.e2e
+def test_org_cluster_set_balance_and_quota(
+    helper: Helper,
+    tmp_test_cluster: str,
+    tmp_test_org: str,
+) -> None:
+    helper.run_cli(["admin", "add-org-cluster", tmp_test_cluster, tmp_test_org])
+    helper.run_cli(
+        [
+            "admin",
+            "set-org-cluster-credits",
+            "-c",
+            "200.22",
+            tmp_test_cluster,
+            tmp_test_org,
+        ]
+    )
+    helper.run_cli(
+        ["admin", "set-org-cluster-quota", "-j", "20", tmp_test_cluster, tmp_test_org]
+    )
+    captured = helper.run_cli(
+        ["admin", "get-org-cluster-quota", tmp_test_cluster, tmp_test_org]
+    )
+    assert "Jobs: 20" in captured.out
+    assert "Credits: 200.22" in captured.out
+
+
+@pytest.mark.e2e
+def test_org_cluster_set_balance_and_quota_to_unlimited(
+    helper: Helper,
+    tmp_test_cluster: str,
+    tmp_test_org: str,
+) -> None:
+    helper.run_cli(
+        [
+            "admin",
+            "add-org-cluster",
+            "-c",
+            "200.22",
+            "-j",
+            "20",
+            tmp_test_cluster,
+            tmp_test_org,
+        ]
+    )
+    helper.run_cli(["admin", "set-org-cluster-credits", tmp_test_cluster, tmp_test_org])
+    helper.run_cli(["admin", "set-org-cluster-quota", tmp_test_cluster, tmp_test_org])
+    captured = helper.run_cli(
+        ["admin", "get-org-cluster-quota", tmp_test_cluster, tmp_test_org]
+    )
+    assert "Jobs: infinity" in captured.out
+    assert "Credits: infinity" in captured.out

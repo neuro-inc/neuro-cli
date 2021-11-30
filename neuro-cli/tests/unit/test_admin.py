@@ -1,7 +1,7 @@
 import json
 from contextlib import ExitStack
 from decimal import Decimal
-from typing import Any, Callable, List, Mapping
+from typing import Any, Callable, List, Mapping, Optional
 from unittest import mock
 
 from neuro_sdk import (
@@ -29,12 +29,13 @@ def test_add_cluster_user_print_result(run_cli: _RunCli) -> None:
             role: _ClusterUserRoleType,
             balance: _Balance,
             quota: _Quota,
+            org_name: Optional[str] = None,
         ) -> _ClusterUserWithInfo:
             # NOTE: We return a different role to check that we print it to user
             return _ClusterUserWithInfo(
                 user_name=user_name,
                 cluster_name=cluster_name,
-                org_name=None,
+                org_name=org_name,
                 role=_ClusterUserRoleType.MANAGER,
                 quota=quota,
                 balance=balance,
@@ -63,7 +64,11 @@ def test_add_cluster_user_print_result(run_cli: _RunCli) -> None:
 def test_remove_cluster_user_print_result(run_cli: _RunCli) -> None:
     with mock.patch.object(_Admin, "delete_cluster_user") as mocked:
 
-        async def delete_cluster_user(cluster_name: str, user_name: str) -> None:
+        async def delete_cluster_user(
+            cluster_name: str,
+            user_name: str,
+            org_name: Optional[str] = None,
+        ) -> None:
             return
 
         mocked.side_effect = delete_cluster_user

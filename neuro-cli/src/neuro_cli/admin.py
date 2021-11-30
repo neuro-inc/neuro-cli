@@ -502,13 +502,13 @@ async def remove_cluster_user(
     await root.client._admin.delete_cluster_user(cluster_name, user_name, org_name=org)
     if not root.quiet:
         root.print(
-            f"Removed [bold]{rich_escape(user_name)}[/bold]"
+            f"Removed [bold]{rich_escape(user_name)}[/bold] "
             + (
-                f"as member of org [bold]{rich_escape(org)}[/bold]"
+                f"as member of org [bold]{rich_escape(org)}[/bold] "
                 if org is not None
                 else ""
             )
-            + "from cluster [bold]{rich_escape(cluster_name)}[/bold]",
+            + f"from cluster [bold]{rich_escape(cluster_name)}[/bold]",
             markup=True,
         )
 
@@ -542,7 +542,7 @@ async def get_user_quota(
     root.print(
         f"Quota and balance for [u]{rich_escape(user_with_quota.user_name)}[/u] "
         + (
-            f"as member of org [bold]{rich_escape(org)}[/bold]"
+            f"as member of org [bold]{rich_escape(org)}[/bold] "
             if org is not None
             else ""
         )
@@ -590,7 +590,7 @@ async def set_user_quota(
     root.print(
         f"New quotas for [u]{rich_escape(user_with_quota.user_name)}[/u] "
         + (
-            f"as member of org [bold]{rich_escape(org)}[/bold]"
+            f"as member of org [bold]{rich_escape(org)}[/bold] "
             if org is not None
             else ""
         )
@@ -638,7 +638,7 @@ async def set_user_credits(
     root.print(
         f"New credits for [u]{rich_escape(user_with_quota.user_name)}[/u] "
         + (
-            f"as member of org [bold]{rich_escape(org)}[/bold]"
+            f"as member of org [bold]{rich_escape(org)}[/bold] "
             if org is not None
             else ""
         )
@@ -687,7 +687,7 @@ async def add_user_credits(
     root.print(
         f"New credits for [u]{rich_escape(user_with_quota.user_name)}[/u] "
         + (
-            f"as member of org [bold]{rich_escape(org)}[/bold]"
+            f"as member of org [bold]{rich_escape(org)}[/bold] "
             if org is not None
             else ""
         )
@@ -967,7 +967,7 @@ async def get_orgs(root: Root) -> None:
 @argument("org_name", required=True, type=str)
 async def add_org(root: Root, org_name: str) -> None:
     """
-    Create a new cluster and start its provisioning.
+    Create a new org.
     """
     await root.client._admin.create_org(org_name)
 
@@ -996,7 +996,7 @@ async def remove_org(root: Root, org_name: str, force: bool) -> None:
 @argument("org_name", required=True, type=str)
 async def get_org_users(root: Root, org_name: str) -> None:
     """
-    Print the list of all users in the org with their assigned role.
+    List users in specified org
     """
     fmt = OrgUserFormatter()
     with root.status(f"Fetching the list of org users of org [b]{org_name}[/b]"):
@@ -1045,7 +1045,7 @@ async def add_org_user(
 @argument("user_name", required=True, type=str)
 async def remove_org_user(root: Root, org_name: str, user_name: str) -> None:
     """
-    Remove user access from the cluster.
+    Remove user access from the org.
     """
     await root.client._admin.delete_org_user(org_name, user_name)
     if not root.quiet:
@@ -1074,10 +1074,26 @@ async def get_org_clusters(root: Root, cluster_name: str) -> None:
 @command()
 @argument("cluster_name", required=True, type=str)
 @argument("org_name", required=True, type=str)
+@option(
+    "-c",
+    "--credits",
+    metavar="AMOUNT",
+    type=str,
+    help="Credits amount to set",
+)
+@option(
+    "-j",
+    "--jobs",
+    metavar="AMOUNT",
+    type=int,
+    help="Maximum running jobs quota",
+)
 async def add_org_cluster(
     root: Root,
     cluster_name: str,
     org_name: str,
+    credits: Optional[str],
+    jobs: Optional[int],
 ) -> None:
     """
     Add org access to specified cluster.
@@ -1086,6 +1102,8 @@ async def add_org_cluster(
     await root.client._admin.create_org_cluster(
         cluster_name=cluster_name,
         org_name=org_name,
+        balance=_Balance(credits=_parse_credits_value(credits)),
+        quota=_Quota(total_running_jobs=jobs),
     )
     if not root.quiet:
         root.print(
@@ -1119,6 +1137,134 @@ async def remove_org_cluster(
     await root.client._admin.delete_org_cluster(cluster_name, org_name)
 
 
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("org_name", required=True, type=str)
+async def get_org_cluster_quota(
+    root: Root,
+    cluster_name: str,
+    org_name: str,
+) -> None:
+    """
+    Get info about org quota in given cluster
+    """
+    org = await root.client._admin.get_org_cluster(
+        cluster_name=cluster_name,
+        org_name=org_name,
+    )
+    quota_fmt = AdminQuotaFormatter()
+    balance_fmt = BalanceFormatter()
+    root.print(
+        f"Quota and balance for org [u]{rich_escape(org_name)}[/u] "
+        + f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
+        markup=True,
+    )
+    root.print(quota_fmt(org.quota))
+    root.print(balance_fmt(org.balance))
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("org_name", required=True, type=str)
+@option(
+    "-j",
+    "--jobs",
+    metavar="AMOUNT",
+    type=int,
+    help="Maximum running jobs quota",
+)
+async def set_org_cluster_quota(
+    root: Root,
+    cluster_name: str,
+    org_name: str,
+    jobs: Optional[int],
+) -> None:
+    """
+    Set org cluster quota to given values
+    """
+    org = await root.client._admin.update_org_cluster_quota(
+        cluster_name=cluster_name,
+        org_name=org_name,
+        quota=_Quota(total_running_jobs=jobs),
+    )
+    fmt = AdminQuotaFormatter()
+    root.print(
+        f"New quotas for org [u]{rich_escape(org_name)}[/u] "
+        + f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
+        markup=True,
+    )
+    root.print(fmt(org.quota))
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("org_name", required=True, type=str)
+@option(
+    "-c",
+    "--credits",
+    metavar="AMOUNT",
+    type=str,
+    help="Credits amount to set",
+)
+async def set_org_cluster_credits(
+    root: Root,
+    cluster_name: str,
+    org_name: str,
+    credits: Optional[str],
+) -> None:
+    """
+    Set org cluster credits to given value
+    """
+    credits_decimal = _parse_credits_value(credits)
+    org = await root.client._admin.update_org_cluster_balance(
+        cluster_name=cluster_name,
+        org_name=org_name,
+        credits=credits_decimal,
+    )
+    fmt = BalanceFormatter()
+    root.print(
+        f"New credits for org [u]{rich_escape(org_name)}[/u] "
+        + f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
+        markup=True,
+    )
+    root.print(fmt(org.balance))
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("org_name", required=True, type=str)
+@option(
+    "-c",
+    "--credits",
+    metavar="AMOUNT",
+    type=str,
+    help="Credits amount to add",
+)
+async def add_org_cluster_credits(
+    root: Root,
+    cluster_name: str,
+    org_name: str,
+    credits: str,
+) -> None:
+    """
+    Add given values to org cluster balance
+    """
+    additional_credits = _parse_credits_value(credits)
+    assert additional_credits
+    org = await root.client._admin.update_org_cluster_balance_by_delta(
+        cluster_name,
+        org_name,
+        delta=additional_credits,
+    )
+    fmt = BalanceFormatter()
+    root.print(
+        f"New credits for org [u]{rich_escape(org_name)}[/u] "
+        + f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
+        markup=True,
+    )
+    root.print(fmt(org.balance))
+
+
 admin.add_command(get_clusters)
 admin.add_command(generate_cluster_config)
 admin.add_command(add_cluster)
@@ -1149,3 +1295,8 @@ admin.add_command(remove_org_user)
 admin.add_command(get_org_clusters)
 admin.add_command(add_org_cluster)
 admin.add_command(remove_org_cluster)
+
+admin.add_command(get_org_cluster_quota)
+admin.add_command(set_org_cluster_quota)
+admin.add_command(set_org_cluster_credits)
+admin.add_command(add_org_cluster_credits)

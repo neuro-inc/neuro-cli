@@ -28,12 +28,16 @@ Cluster administration commands.
 | [_update-resource-preset_](admin.md#update-resource-preset) | Update existing resource preset |
 | [_remove-resource-preset_](admin.md#remove-resource-preset) | Remove resource preset |
 | [_get-orgs_](admin.md#get-orgs) | Print the list of available orgs |
-| [_add-org_](admin.md#add-org) | Create a new cluster and start its... |
-| [_get-org-users_](admin.md#get-org-users) | Print the list of all users in the org... |
+| [_add-org_](admin.md#add-org) | Create a new org |
+| [_get-org-users_](admin.md#get-org-users) | List users in specified org |
 | [_add-org-user_](admin.md#add-org-user) | Add user access to specified org |
-| [_remove-org-user_](admin.md#remove-org-user) | Remove user access from the cluster |
+| [_remove-org-user_](admin.md#remove-org-user) | Remove user access from the org |
 | [_get-org-clusters_](admin.md#get-org-clusters) | Print the list of all orgs in the cluster |
 | [_add-org-cluster_](admin.md#add-org-cluster) | Add org access to specified cluster |
+| [_get-org-cluster-quota_](admin.md#get-org-cluster-quota) | Get info about org quota in given cluster |
+| [_set-org-cluster-quota_](admin.md#set-org-cluster-quota) | Set org cluster quota to given values |
+| [_set-org-cluster-credits_](admin.md#set-org-cluster-credits) | Set org cluster credits to given value |
+| [_add-org-cluster-credits_](admin.md#add-org-cluster-credits) | Add given values to org cluster balance |
 
 
 ### get-clusters
@@ -391,7 +395,7 @@ Print the list of available orgs.
 
 ### add-org
 
-Create a new cluster and start its...
+Create a new org
 
 
 #### Usage
@@ -400,7 +404,7 @@ Create a new cluster and start its...
 neuro admin add-org [OPTIONS] ORG_NAME
 ```
 
-Create a new cluster and start its provisioning.
+Create a new org.
 
 #### Options
 
@@ -412,7 +416,7 @@ Create a new cluster and start its provisioning.
 
 ### get-org-users
 
-Print the list of all users in the org...
+List users in specified org
 
 
 #### Usage
@@ -421,7 +425,7 @@ Print the list of all users in the org...
 neuro admin get-org-users [OPTIONS] ORG_NAME
 ```
 
-Print the list of all users in the org with their assigned role.
+List users in specified org
 
 #### Options
 
@@ -457,7 +461,7 @@ admin, manager or user.
 
 ### remove-org-user
 
-Remove user access from the cluster
+Remove user access from the org
 
 
 #### Usage
@@ -466,7 +470,7 @@ Remove user access from the cluster
 neuro admin remove-org-user [OPTIONS] ORG_NAME USER_NAME
 ```
 
-Remove user access from the cluster.
+Remove user access from the org.
 
 #### Options
 
@@ -515,5 +519,94 @@ Add org access to specified cluster.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _-c, --credits AMOUNT_ | Credits amount to set |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota |
+
+
+
+### get-org-cluster-quota
+
+Get info about org quota in given cluster
+
+
+#### Usage
+
+```bash
+neuro admin get-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+Get info about org quota in given cluster
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### set-org-cluster-quota
+
+Set org cluster quota to given values
+
+
+#### Usage
+
+```bash
+neuro admin set-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+Set org cluster quota to given values
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota |
+
+
+
+### set-org-cluster-credits
+
+Set org cluster credits to given value
+
+
+#### Usage
+
+```bash
+neuro admin set-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+Set org cluster credits to given value
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _-c, --credits AMOUNT_ | Credits amount to set |
+
+
+
+### add-org-cluster-credits
+
+Add given values to org cluster balance
+
+
+#### Usage
+
+```bash
+neuro admin add-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+Add given values to org cluster balance
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _-c, --credits AMOUNT_ | Credits amount to add |
 
 

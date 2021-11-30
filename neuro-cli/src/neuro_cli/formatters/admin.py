@@ -84,17 +84,23 @@ class OrgUserFormatter:
 
 
 class OrgClusterFormatter:
-    def __call__(self, org_users: Iterable[_OrgCluster]) -> RenderableType:
+    def __call__(self, org_clusters: Iterable[_OrgCluster]) -> RenderableType:
         table = Table(box=box.MINIMAL_HEAVY_HEAD)
         table.add_column("Org name", style="bold")
         table.add_column("Cluster name")
+        table.add_column("Credits")
+        table.add_column("Spent credits")
+        table.add_column("Max jobs")
         rows = []
 
-        for user in org_users:
+        for org_cluster in org_clusters:
             rows.append(
                 (
-                    user.org_name,
-                    user.cluster_name,
+                    org_cluster.org_name,
+                    org_cluster.cluster_name,
+                    format_quota_details(org_cluster.balance.credits),
+                    format_quota_details(org_cluster.balance.spent_credits),
+                    format_quota_details(org_cluster.quota.total_running_jobs),
                 )
             )
         rows.sort(key=operator.itemgetter(0))
