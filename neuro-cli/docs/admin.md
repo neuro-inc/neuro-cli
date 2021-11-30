@@ -27,6 +27,13 @@ Cluster administration commands.
 | [_add-resource-preset_](admin.md#add-resource-preset) | Add new resource preset |
 | [_update-resource-preset_](admin.md#update-resource-preset) | Update existing resource preset |
 | [_remove-resource-preset_](admin.md#remove-resource-preset) | Remove resource preset |
+| [_get-orgs_](admin.md#get-orgs) | Print the list of available orgs |
+| [_add-org_](admin.md#add-org) | Create a new cluster and start its... |
+| [_get-org-users_](admin.md#get-org-users) | Print the list of all users in the org... |
+| [_add-org-user_](admin.md#add-org-user) | Add user access to specified org |
+| [_remove-org-user_](admin.md#remove-org-user) | Remove user access from the cluster |
+| [_get-org-clusters_](admin.md#get-org-clusters) | Print the list of all orgs in the cluster |
+| [_add-org-cluster_](admin.md#add-org-cluster) | Add org access to specified cluster |
 
 
 ### get-clusters
@@ -159,6 +166,7 @@ roles: admin, manager or user.
 | _--help_ | Show this message and exit. |
 | _-c, --credits AMOUNT_ | Credits amount to set |
 | _-j, --jobs AMOUNT_ | Maximum running jobs quota |
+| _--org ORG_ | org name for org-cluster users |
 
 
 
@@ -180,6 +188,7 @@ Remove user access from the cluster.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--org ORG_ | org name for org-cluster users |
 
 
 
@@ -201,6 +210,7 @@ Get info about user quota in given cluster
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--org ORG_ | org name for org-cluster users |
 
 
 
@@ -223,6 +233,7 @@ Set user quota to given values
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _-j, --jobs AMOUNT_ | Maximum running jobs quota |
+| _--org ORG_ | org name for org-cluster users |
 
 
 
@@ -245,6 +256,7 @@ Set user credits to given value
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _-c, --credits AMOUNT_ | Credits amount to set |
+| _--org ORG_ | org name for org-cluster users |
 
 
 
@@ -267,6 +279,7 @@ Add given values to user quota
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _-c, --credits AMOUNT_ | Credits amount to add |
+| _--org ORG_ | org name for org-cluster users |
 
 
 
@@ -342,6 +355,156 @@ neuro admin remove-resource-preset [OPTIONS] PRESET_NAME
 ```
 
 Remove resource preset
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### get-orgs
+
+Print the list of available orgs
+
+
+#### Usage
+
+```bash
+neuro admin get-orgs [OPTIONS]
+```
+
+Print the list of available orgs.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### add-org
+
+Create a new cluster and start its...
+
+
+#### Usage
+
+```bash
+neuro admin add-org [OPTIONS] ORG_NAME
+```
+
+Create a new cluster and start its provisioning.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### get-org-users
+
+Print the list of all users in the org...
+
+
+#### Usage
+
+```bash
+neuro admin get-org-users [OPTIONS] ORG_NAME
+```
+
+Print the list of all users in the org with their assigned role.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### add-org-user
+
+Add user access to specified org
+
+
+#### Usage
+
+```bash
+neuro admin add-org-user [OPTIONS] ORG_NAME USER_NAME [ROLE]
+```
+
+Add user access to specified org.
+
+The command supports one of 3 user roles:
+admin, manager or user.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### remove-org-user
+
+Remove user access from the cluster
+
+
+#### Usage
+
+```bash
+neuro admin remove-org-user [OPTIONS] ORG_NAME USER_NAME
+```
+
+Remove user access from the cluster.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### get-org-clusters
+
+Print the list of all orgs in the cluster
+
+
+#### Usage
+
+```bash
+neuro admin get-org-clusters [OPTIONS] CLUSTER_NAME
+```
+
+Print the list of all orgs in the cluster
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### add-org-cluster
+
+Add org access to specified cluster
+
+
+#### Usage
+
+```bash
+neuro admin add-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+Add org access to specified cluster.
 
 #### Options
 
