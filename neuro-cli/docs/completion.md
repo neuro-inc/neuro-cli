@@ -13,13 +13,13 @@ Output shell completion code.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_generate_](completion.md#generate) | Provide an instruction for shell... |
-| [_patch_](completion.md#patch) | Automatically patch shell configuration... |
+| [_generate_](completion.md#generate) | Show instructions for shell completion |
+| [_patch_](completion.md#patch) | Patch shell profile to enable completion |
 
 
 ### generate
 
-Provide an instruction for shell...
+Show instructions for shell completion
 
 
 #### Usage
@@ -28,7 +28,7 @@ Provide an instruction for shell...
 neuro completion generate [OPTIONS] {bash|zsh}
 ```
 
-Provide an instruction for shell completion generation.
+Show instructions for shell completion.
 
 #### Options
 
@@ -40,7 +40,7 @@ Provide an instruction for shell completion generation.
 
 ### patch
 
-Automatically patch shell configuration...
+Patch shell profile to enable completion
 
 
 #### Usage
@@ -49,7 +49,14 @@ Automatically patch shell configuration...
 neuro completion patch [OPTIONS] {bash|zsh}
 ```
 
-Automatically patch shell configuration profile to enable completion
+Patch shell profile to enable completion
+
+Patches shell configuration while
+depending of current shell.
+Files patched:
+
+bash: `~/.bashrc`
+zsh: `~/.zshrc`
 
 #### Options
 

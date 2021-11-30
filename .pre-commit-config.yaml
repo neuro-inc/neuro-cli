@@ -6,6 +6,11 @@ repos:
     language: system
     entry: ./build-tools/version.py update
     pass_filenames: false
+  - id: check-commands-docs
+    name: Check commands docs
+    language: system
+    entry: ./build-tools/cli-command-checks.py
+    pass_filenames: false
   - id: gen-cli-docs
     name: Generate CLI docs
     language: system

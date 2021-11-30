@@ -13,24 +13,24 @@ Job operations.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_run_](job.md#run) | Run a job with predefined resources... |
+| [_run_](job.md#run) | Run a job |
 | [_generate-run-command_](job.md#generate-run-command) | Generate command that will rerun given job |
 | [_ls_](job.md#ls) | List all jobs |
 | [_status_](job.md#status) | Display status of a job |
 | [_exec_](job.md#exec) | Execute command in a running job |
-| [_port-forward_](job.md#port-forward) | Forward port\(s\) of a running job to local... |
+| [_port-forward_](job.md#port-forward) | Forward port\(s\) of a job |
 | [_logs_](job.md#logs) | Print the logs for a job |
 | [_kill_](job.md#kill) | Kill job\(s\) |
 | [_top_](job.md#top) | Display GPU/CPU/Memory usage |
 | [_save_](job.md#save) | Save job's state to an image |
 | [_browse_](job.md#browse) | Opens a job's URL in a web browser |
-| [_attach_](job.md#attach) | Attach local standard input, output, and... |
+| [_attach_](job.md#attach) | Attach terminal to a job |
 | [_bump-life-span_](job.md#bump-life-span) | Increase job life span |
 
 
 ### run
 
-Run a job with predefined resources...
+Run a job
 
 
 #### Usage
@@ -39,13 +39,12 @@ Run a job with predefined resources...
 neuro job run [OPTIONS] IMAGE [-- CMD...]
 ```
 
-Run a job with predefined resources configuration.
+Run a job
 
-`IMAGE` docker image name
-to run in a job.
+`IMAGE` docker image name to run in a job.
 
-`CMD` list will be passed as arguments to the executed job's
-image.
+`CMD` list will be
+passed as arguments to the executed job's image.
 
 #### Examples
 
@@ -229,7 +228,7 @@ $ neuro exec --no-tty my-job -- ls -l
 
 ### port-forward
 
-Forward port(s) of a running job to local...
+Forward port(s) of a job
 
 
 #### Usage
@@ -238,7 +237,9 @@ Forward port(s) of a running job to local...
 neuro job port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
 ```
 
-Forward port(s) of a running job to local port(s).
+Forward port(s) of a job.
+
+Forwards port(s) of a running job to local port(s).
 
 #### Examples
 
@@ -405,7 +406,7 @@ Opens a job's `URL` in a web browser.
 
 ### attach
 
-Attach local standard input, output, and...
+Attach terminal to a job
 
 
 #### Usage
@@ -414,7 +415,10 @@ Attach local standard input, output, and...
 neuro job attach [OPTIONS] JOB
 ```
 
-Attach local standard input, output, and error streams to a running job.
+Attach terminal to a job
+
+Attach local standard input, output, and error
+streams to a running job.
 
 #### Options
 

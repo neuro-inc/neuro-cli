@@ -19,7 +19,7 @@ Storage operations.
 | [_rm_](storage.md#rm) | Remove files or directories |
 | [_mkdir_](storage.md#mkdir) | Make directories |
 | [_mv_](storage.md#mv) | Move or rename files and directories |
-| [_tree_](storage.md#tree) | List contents of directories in a... |
+| [_tree_](storage.md#tree) | List storage in a tree-like format |
 | [_df_](storage.md#df) | Show current usage of storage |
 
 
@@ -265,7 +265,7 @@ $ neuro mv storage://{username}/foo.txt storage:bar.dat
 
 ### tree
 
-List contents of directories in a...
+List storage in a tree-like format
 
 
 #### Usage
@@ -274,24 +274,23 @@ List contents of directories in a...
 neuro storage tree [OPTIONS] [PATH]
 ```
 
-List contents of directories in a tree-like format.
+List storage in a tree-like format
 
-Tree is a recursive
-directory listing program that produces a depth indented listing
-of files,
-which is colorized ala dircolors if the LS_`COLORS` environment variable is
-set and output is to tty.  With no arguments, tree lists the files in the
-storage:
-directory.  When directory arguments are given, tree lists all the
-files and/or
-directories found in the given directories each in turn.  Upon
-completion of listing
-all files/directories found, tree returns the total
-number of files and/or
+Tree is a recursive directory listing
+program that produces a depth indented listing
+of files, which is colorized
+ala dircolors if the LS_`COLORS` environment variable is
+set and output is to
+tty.  With no arguments, tree lists the files in the storage:
+directory.  When
+directory arguments are given, tree lists all the files and/or
+directories
+found in the given directories each in turn.  Upon completion of listing
+all
+files/directories found, tree returns the total number of files and/or
 directories listed.
 
-By default `PATH` is equal user's
-home dir (storage:)
+By default `PATH` is equal user's home dir (storage:)
 
 #### Options
 

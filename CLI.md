@@ -174,12 +174,12 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro help](#neuro-help)_| Get help on a command |
-| _[neuro run](#neuro-run)_| Run a job with predefined resources configuration |
+| _[neuro run](#neuro-run)_| Run a job |
 | _[neuro ps](#neuro-ps)_| List all jobs |
 | _[neuro status](#neuro-status)_| Display status of a job |
 | _[neuro exec](#neuro-exec)_| Execute command in a running job |
-| _[neuro port-forward](#neuro-port-forward)_| Forward port\(s) of a running job to local port\(s) |
-| _[neuro attach](#neuro-attach)_| Attach local standard input, output, and error streams to a running job |
+| _[neuro port-forward](#neuro-port-forward)_| Forward port\(s) of a job |
+| _[neuro attach](#neuro-attach)_| Attach terminal to a job |
 | _[neuro logs](#neuro-logs)_| Print the logs for a job |
 | _[neuro kill](#neuro-kill)_| Kill job\(s) |
 | _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
@@ -222,9 +222,9 @@ Name | Description|
 |---|---|
 | _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
 | _[neuro admin generate\-cluster-config](#neuro-admin-generate-cluster-config)_| Create a cluster configuration file |
-| _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster and start its provisioning |
-| _[neuro admin show\-cluster-options](#neuro-admin-show-cluster-options)_| Show awailable cluster options |
-| _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| Print the list of all users in the cluster with their assigned role |
+| _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster |
+| _[neuro admin show\-cluster-options](#neuro-admin-show-cluster-options)_| Show available cluster options |
+| _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| List users in specified cluster |
 | _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster |
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
 | _[neuro admin get\-user-quota](#neuro-admin-get-user-quota)_| Get info about user quota in given cluster |
@@ -279,7 +279,7 @@ Name | Description|
 
 ### neuro admin add-cluster
 
-Create a new cluster and start its provisioning.
+Create a new cluster.<br/><br/>Creates cluster entry on admin side and then start its provisioning using<br/>provided config.
 
 **Usage:**
 
@@ -298,7 +298,7 @@ Name | Description|
 
 ### neuro admin show-cluster-options
 
-Show awailable cluster options.
+Show available cluster options.
 
 **Usage:**
 
@@ -318,7 +318,7 @@ Name | Description|
 
 ### neuro admin get-cluster-users
 
-Print the list of all users in the cluster with their assigned role.
+List users in specified cluster
 
 **Usage:**
 
@@ -550,18 +550,18 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro job run](#neuro-job-run)_| Run a job with predefined resources configuration |
+| _[neuro job run](#neuro-job-run)_| Run a job |
 | _[neuro job generate\-run-command](#neuro-job-generate-run-command)_| Generate command that will rerun given job |
 | _[neuro job ls](#neuro-job-ls)_| List all jobs |
 | _[neuro job status](#neuro-job-status)_| Display status of a job |
 | _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
-| _[neuro job port-forward](#neuro-job-port-forward)_| Forward port\(s) of a running job to local port\(s) |
+| _[neuro job port-forward](#neuro-job-port-forward)_| Forward port\(s) of a job |
 | _[neuro job logs](#neuro-job-logs)_| Print the logs for a job |
 | _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
 | _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
 | _[neuro job save](#neuro-job-save)_| Save job's state to an image |
 | _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
-| _[neuro job attach](#neuro-job-attach)_| Attach local standard input, output, and error streams to a running job |
+| _[neuro job attach](#neuro-job-attach)_| Attach terminal to a job |
 | _[neuro job bump\-life-span](#neuro-job-bump-life-span)_| Increase job life span |
 
 
@@ -569,7 +569,7 @@ Name | Description|
 
 ### neuro job run
 
-Run a job with predefined resources configuration.<br/><br/>IMAGE docker image name to run in a job.<br/><br/>CMD list will be passed as arguments to the executed job's image.<br/>
+Run a job<br/><br/>IMAGE docker image name to run in a job.<br/><br/>CMD list will be passed as arguments to the executed job's image.<br/>
 
 **Usage:**
 
@@ -756,7 +756,7 @@ Name | Description|
 
 ### neuro job port-forward
 
-Forward port\(s) of a running job to local port\(s).<br/>
+Forward port\(s) of a job.<br/><br/>Forwards port\(s) of a running job to local port\(s).<br/>
 
 **Usage:**
 
@@ -924,7 +924,7 @@ Name | Description|
 
 ### neuro job attach
 
-Attach local standard input, output, and error streams to a running job.
+Attach terminal to a job<br/><br/>Attach local standard input, output, and error streams to a running job.
 
 **Usage:**
 
@@ -1047,7 +1047,7 @@ Name | Description|
 | _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
 | _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
-| _[neuro storage tree](#neuro-storage-tree)_| List contents of directories in a tree-like format |
+| _[neuro storage tree](#neuro-storage-tree)_| List storage in a tree-like format |
 | _[neuro storage df](#neuro-storage-df)_| Show current usage of storage |
 
 
@@ -1256,7 +1256,7 @@ Name | Description|
 
 ### neuro storage tree
 
-List contents of directories in a tree-like format.<br/><br/>Tree is a recursive directory listing program that produces a depth indented<br/>listing of files, which is colorized ala dircolors if the LS_COLORS<br/>environment variable is set and output is to tty.  With no arguments, tree<br/>lists the files in the storage: directory.  When directory arguments are<br/>given, tree lists all the files and/or directories found in the given<br/>directories each in turn.  Upon completion of listing all files/directories<br/>found, tree returns the total number of files and/or directories listed.<br/><br/>By default PATH is equal user's home dir \(storage:)
+List storage in a tree-like format<br/><br/>Tree is a recursive directory listing program that produces a depth indented<br/>listing of files, which is colorized ala dircolors if the LS_COLORS<br/>environment variable is set and output is to tty.  With no arguments, tree<br/>lists the files in the storage: directory.  When directory arguments are<br/>given, tree lists all the files and/or directories found in the given<br/>directories each in turn.  Upon completion of listing all files/directories<br/>found, tree returns the total number of files and/or directories listed.<br/><br/>By default PATH is equal user's home dir \(storage:)
 
 **Usage:**
 
@@ -1547,13 +1547,13 @@ Name | Description|
 |---|---|
 | _[neuro config login](#neuro-config-login)_| Log into Neuro Platform |
 | _[neuro config login\-with-token](#neuro-config-login-with-token)_| Log into Neuro Platform with token |
-| _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuro Platform from non-GUI server environment |
+| _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuro Platform in non-GUI environ |
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config aliases](#neuro-config-aliases)_| List available command aliases |
-| _[neuro config get-clusters](#neuro-config-get-clusters)_| Fetch and display the list of available clusters |
+| _[neuro config get-clusters](#neuro-config-get-clusters)_| List available clusters |
 | _[neuro config switch-cluster](#neuro-config-switch-cluster)_| Switch the active cluster |
-| _[neuro config docker](#neuro-config-docker)_| Configure docker client to fit the Neuro Platform |
+| _[neuro config docker](#neuro-config-docker)_| Configure local docker client |
 | _[neuro config logout](#neuro-config-logout)_| Log out |
 
 
@@ -1599,7 +1599,7 @@ Name | Description|
 
 ### neuro config login-headless
 
-Log into Neuro Platform from non-GUI server environment.<br/><br/>URL is a platform entrypoint URL.<br/><br/>The command works similar to "neuro login" but instead of opening a browser<br/>for performing OAuth registration prints an URL that should be open on guest<br/>host.<br/><br/>Then user inputs a code displayed in a browser after successful login back in<br/>neuro command to finish the login process.
+Log into Neuro Platform in non-GUI environ<br/><br/>URL is a platform entrypoint URL.<br/><br/>The command works similar to "neuro login" but instead of opening a browser<br/>for performing OAuth registration prints an URL that should be open on guest<br/>host.<br/><br/>Then user inputs a code displayed in a browser after successful login back in<br/>neuro command to finish the login process.
 
 **Usage:**
 
@@ -1675,7 +1675,7 @@ Name | Description|
 
 ### neuro config get-clusters
 
-Fetch and display the list of available clusters.
+List available clusters.<br/><br/>This command re-fetches cluster list and then displays it.
 
 **Usage:**
 
@@ -1713,7 +1713,7 @@ Name | Description|
 
 ### neuro config docker
 
-Configure docker client to fit the Neuro Platform.
+Configure local docker client<br/><br/>This command configures local docker client to use Neuro Platform's docker<br/>registry.
 
 **Usage:**
 
@@ -1771,15 +1771,15 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro completion generate](#neuro-completion-generate)_| Provide an instruction for shell completion generation |
-| _[neuro completion patch](#neuro-completion-patch)_| Automatically patch shell configuration profile to enable completion |
+| _[neuro completion generate](#neuro-completion-generate)_| Show instructions for shell completion |
+| _[neuro completion patch](#neuro-completion-patch)_| Patch shell profile to enable completion |
 
 
 
 
 ### neuro completion generate
 
-Provide an instruction for shell completion generation.
+Show instructions for shell completion.
 
 **Usage:**
 
@@ -1798,7 +1798,7 @@ Name | Description|
 
 ### neuro completion patch
 
-Automatically patch shell configuration profile to enable completion
+Patch shell profile to enable completion<br/><br/>Patches shell configuration while depending of current shell. Files patched:<br/><br/>bash: `~/.bashrc` zsh: `~/.zshrc`
 
 **Usage:**
 
@@ -2016,12 +2016,12 @@ Name | Description|
 | _[neuro blob importbucket](#neuro-blob-importbucket)_| Import an existing bucket |
 | _[neuro blob statbucket](#neuro-blob-statbucket)_| Get bucket BUCKET |
 | _[neuro blob rmbucket](#neuro-blob-rmbucket)_| Remove bucket BUCKET |
-| _[neuro blob set\-bucket-publicity](#neuro-blob-set-bucket-publicity)_| Change public access settings for bucket BUCKET |
+| _[neuro blob set\-bucket-publicity](#neuro-blob-set-bucket-publicity)_| Change public access settings for BUCKET |
 | _[neuro blob lscredentials](#neuro-blob-lscredentials)_| List bucket credentials |
 | _[neuro blob mkcredentials](#neuro-blob-mkcredentials)_| Create a new bucket credential |
 | _[neuro blob statcredentials](#neuro-blob-statcredentials)_| Get bucket credential BUCKET_CREDENTIAL |
 | _[neuro blob rmcredentials](#neuro-blob-rmcredentials)_| Remove bucket credential BUCKET_CREDENTIAL |
-| _[neuro blob cp](#neuro-blob-cp)_| Simple utility to copy files and directories into and from Blob Storage |
+| _[neuro blob cp](#neuro-blob-cp)_| Copy blobs into and from Blob Storage |
 | _[neuro blob ls](#neuro-blob-ls)_| List buckets or bucket contents |
 | _[neuro blob glob](#neuro-blob-glob)_| List resources that match PATTERNS |
 | _[neuro blob rm](#neuro-blob-rm)_| Remove blobs from bucket |
@@ -2148,7 +2148,7 @@ Name | Description|
 
 ### neuro blob set-bucket-publicity
 
-Change public access settings for bucket BUCKET.<br/>
+Change public access settings for BUCKET<br/>
 
 **Usage:**
 
@@ -2259,7 +2259,7 @@ Name | Description|
 
 ### neuro blob cp
 
-Simple utility to copy files and directories into and from Blob Storage.<br/><br/>Either SOURCES or DESTINATION should have `blob://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy files<br/>between Blob Storage \(`blob://`) destination, nor with `storage://` scheme<br/>paths.<br/><br/>Use `/dev/stdin` and `/dev/stdout` file names to upload a file from standard<br/>input or output to stdout.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters that<br/>appear later in the command take precedence over filters that appear earlier<br/>in the command.  If neither \--exclude nor --include options are specified the<br/>default can be changed using the storage.cp-exclude configuration variable<br/>documented in "neuro help user-config".<br/><br/>File permissions, modification times and other attributes will not be passed<br/>to Blob Storage metadata during upload.
+Copy blobs into and from Blob Storage.<br/><br/>Either SOURCES or DESTINATION should have `blob://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy files<br/>between Blob Storage \(`blob://`) destination, nor with `storage://` scheme<br/>paths.<br/><br/>Use `/dev/stdin` and `/dev/stdout` file names to upload a file from standard<br/>input or output to stdout.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters that<br/>appear later in the command take precedence over filters that appear earlier<br/>in the command.  If neither \--exclude nor --include options are specified the<br/>default can be changed using the storage.cp-exclude configuration variable<br/>documented in "neuro help user-config".<br/><br/>File permissions, modification times and other attributes will not be passed<br/>to Blob Storage metadata during upload.
 
 **Usage:**
 
@@ -2511,7 +2511,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro disk ls](#neuro-disk-ls)_| List disks |
-| _[neuro disk create](#neuro-disk-create)_| Create a disk with at least storage amount STORAGE |
+| _[neuro disk create](#neuro-disk-create)_| Create a disk |
 | _[neuro disk get](#neuro-disk-get)_| Get disk DISK_ID |
 | _[neuro disk rm](#neuro-disk-rm)_| Remove disk DISK_ID |
 
@@ -2542,7 +2542,7 @@ Name | Description|
 
 ### neuro disk create
 
-Create a disk with at least storage amount STORAGE.<br/><br/>To specify the amount, you can use the following suffixes: "kKMGTPEZY" To use<br/>decimal quantities, append "b" or "B". For example: - 1K or 1k is 1024 bytes -<br/>1Kb or 1KB is 1000 bytes - 20G is 20 * 2 ^ 30 bytes - 20Gb or 20GB is<br/>20.000.000.000 bytes<br/><br/>Note that server can have big granularity \(for example, 1G) so it will<br/>possibly round-up the amount you requested.<br/>
+Create a disk<br/><br/>Create a disk with at least storage amount STORAGE.<br/><br/>To specify the amount, you can use the following suffixes: "kKMGTPEZY" To use<br/>decimal quantities, append "b" or "B". For example: - 1K or 1k is 1024 bytes -<br/>1Kb or 1KB is 1000 bytes - 20G is 20 * 2 ^ 30 bytes - 20Gb or 20GB is<br/>20.000.000.000 bytes<br/><br/>Note that server can have big granularity \(for example, 1G) so it will<br/>possibly round-up the amount you requested.<br/>
 
 **Usage:**
 
@@ -2740,7 +2740,7 @@ Name | Description|
 
 ## neuro run
 
-Run a job with predefined resources configuration.<br/><br/>IMAGE docker image name to run in a job.<br/><br/>CMD list will be passed as arguments to the executed job's image.<br/>
+Run a job<br/><br/>IMAGE docker image name to run in a job.<br/><br/>CMD list will be passed as arguments to the executed job's image.<br/>
 
 **Usage:**
 
@@ -2899,7 +2899,7 @@ Name | Description|
 
 ## neuro port-forward
 
-Forward port\(s) of a running job to local port\(s).<br/>
+Forward port\(s) of a job.<br/><br/>Forwards port\(s) of a running job to local port\(s).<br/>
 
 **Usage:**
 
@@ -2937,7 +2937,7 @@ Name | Description|
 
 ## neuro attach
 
-Attach local standard input, output, and error streams to a running job.
+Attach terminal to a job<br/><br/>Attach local standard input, output, and error streams to a running job.
 
 **Usage:**
 
