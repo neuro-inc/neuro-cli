@@ -91,3 +91,4 @@ ci:
   - check-github-actions
   - version-check
   - gen-cli-docs
+  - check-commands-docs
