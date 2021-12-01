@@ -326,7 +326,9 @@ def test_remove_org_cluster(
     helper: Helper, tmp_test_org: str, tmp_test_cluster: str
 ) -> None:
     helper.run_cli(["admin", "add-org-cluster", tmp_test_cluster, tmp_test_org])
-    helper.run_cli(["admin", "remove-org-cluster", tmp_test_cluster, tmp_test_org])
+    helper.run_cli(
+        ["admin", "remove-org-cluster", "--force", tmp_test_cluster, tmp_test_org]
+    )
     captured = helper.run_cli(["admin", "get-org-clusters", tmp_test_cluster])
     assert tmp_test_org not in captured.out
 
