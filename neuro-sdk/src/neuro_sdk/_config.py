@@ -123,6 +123,10 @@ class Config(metaclass=NoPublicConstructor):
         return None
 
     @property
+    def cluster_orgs(self) -> List[Optional[str]]:
+        return self.clusters[self.cluster_name].orgs
+
+    @property
     def org_name(self) -> Optional[str]:
         name = self._get_user_org_name()
         if isinstance(name, _Unset):
@@ -213,11 +217,11 @@ class Config(metaclass=NoPublicConstructor):
             raise RuntimeError(
                 "Cannot switch the project org. " "Please edit the '.neuro.toml' file."
             )
-        cluster_orgs = [org or "<no-org>" for org in self._cluster.orgs]
-        if name not in cluster_orgs:
+        if name not in self._cluster.orgs:
+            cluster_org_names = [org or "NO_ORG" for org in self._cluster.orgs]
             raise RuntimeError(
-                f"Org {name or '<no-org>'} doesn't exist in "
-                f"a list of available orgs {list(cluster_orgs)} for "
+                f"Org {name or 'NO_ORG'} doesn't exist in "
+                f"a list of available orgs {list(cluster_org_names)} for "
                 f"cluster '{self.cluster_name}'. "
                 f"Please logout and login again."
             )

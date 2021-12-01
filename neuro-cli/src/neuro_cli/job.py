@@ -45,6 +45,7 @@ from .click_types import (
     JOB_COLUMNS,
     JOB_NAME,
     LOCAL_REMOTE_PORT,
+    ORG,
     PRESET,
     TOP_COLUMNS,
     RemoteImageType,
@@ -825,6 +826,12 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     default=None,
 )
 @option(
+    "--org",
+    type=ORG,
+    help="Run job in a specified org",
+    default=None,
+)
+@option(
     "-s",
     "--preset",
     type=PRESET,
@@ -1008,6 +1015,7 @@ async def run(
     image: RemoteImage,
     preset: str,
     cluster: Optional[str],
+    org: Optional[str],
     extshm: bool,
     http: int,
     http_auth: Optional[bool],
@@ -1055,6 +1063,9 @@ async def run(
     """
     cmd = _fix_cmd("neuro run", "IMAGE -- CMD...", cmd)
     cluster_name = cluster or root.client.cluster_name
+    org_name = org or root.client.config.org_name
+    if org == "NO_ORG":
+        org_name = None
     cluster_config = root.client.config.clusters[cluster_name]
     if not preset:
         preset = next(iter(cluster_config.presets.keys()))
@@ -1090,7 +1101,8 @@ async def run(
         schedule_timeout=schedule_timeout,
         privileged=privileged,
         share=share,
-        cluster_name=cluster or root.client.cluster_name,
+        cluster_name=cluster_name,
+        org_name=org_name,
     )
 
 
@@ -1161,6 +1173,7 @@ async def run_job(
     privileged: bool,
     share: Sequence[str],
     cluster_name: str,
+    org_name: str,
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -1234,6 +1247,7 @@ async def run_job(
         image=image,
         preset_name=preset,
         cluster_name=cluster_name,
+        org_name=org_name,
         entrypoint=entrypoint,
         command=real_cmd,
         working_dir=working_dir,

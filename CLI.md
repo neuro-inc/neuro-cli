@@ -899,6 +899,7 @@ Name | Description|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\-n, --name NAME_|Optional job name|
+|_--org ORG_|Run job in a specified org|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
@@ -3090,6 +3091,7 @@ Name | Description|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\-n, --name NAME_|Optional job name|
+|_--org ORG_|Run job in a specified org|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|

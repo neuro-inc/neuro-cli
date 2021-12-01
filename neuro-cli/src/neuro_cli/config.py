@@ -255,7 +255,7 @@ async def switch_org(root: Root, org_name: Optional[str]) -> None:
     """
     with root.status("Fetching the list of available cluster/org pairs"):
         await root.client.config.fetch()
-    if org_name == "no_org":
+    if org_name == "NO_ORG":
         org_name = None
     await root.client.config.switch_org(org_name)
     root.print(
