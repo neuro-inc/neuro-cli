@@ -82,7 +82,7 @@ async def add_cluster(
         )
 
 
-@command(hidden=True)
+@command()
 @option("--force", default=False, help="Skip prompt", is_flag=True)
 @argument("cluster_name", required=True, type=str)
 async def remove_cluster(root: Root, cluster_name: str, force: bool) -> None:
@@ -972,7 +972,7 @@ async def add_org(root: Root, org_name: str) -> None:
     await root.client._admin.create_org(org_name)
 
 
-@command(hidden=True)
+@command()
 @option("--force", default=False, help="Skip prompt", is_flag=True)
 @argument("org_name", required=True, type=str)
 async def remove_org(root: Root, org_name: str, force: bool) -> None:

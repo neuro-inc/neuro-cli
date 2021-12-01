@@ -16,6 +16,7 @@ Cluster administration commands.
 | [_get-clusters_](admin.md#get-clusters) | Print the list of available clusters |
 | [_generate-cluster-config_](admin.md#generate-cluster-config) | Create a cluster configuration file |
 | [_add-cluster_](admin.md#add-cluster) | Create a new cluster |
+| [_remove-cluster_](admin.md#remove-cluster) | Drop a cluster |
 | [_show-cluster-options_](admin.md#show-cluster-options) | Show available cluster options |
 | [_get-cluster-users_](admin.md#get-cluster-users) | List users in specified cluster |
 | [_add-cluster-user_](admin.md#add-cluster-user) | Add user access to specified cluster |
@@ -29,6 +30,7 @@ Cluster administration commands.
 | [_remove-resource-preset_](admin.md#remove-resource-preset) | Remove resource preset |
 | [_get-orgs_](admin.md#get-orgs) | Print the list of available orgs |
 | [_add-org_](admin.md#add-org) | Create a new org |
+| [_remove-org_](admin.md#remove-org) | Drop a org |
 | [_get-org-users_](admin.md#get-org-users) | List users in specified org |
 | [_add-org-user_](admin.md#add-org-user) | Add user access to specified org |
 | [_remove-org-user_](admin.md#remove-org-user) | Remove user access from the org |
@@ -105,6 +107,30 @@ provided config.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+
+
+
+### remove-cluster
+
+Drop a cluster
+
+
+#### Usage
+
+```bash
+neuro admin remove-cluster [OPTIONS] CLUSTER_NAME
+```
+
+Drop a cluster
+
+Completely removes cluster from the system.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--force_ | Skip prompt |
 
 
 
@@ -411,6 +437,30 @@ Create a new org.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+
+
+
+### remove-org
+
+Drop a org
+
+
+#### Usage
+
+```bash
+neuro admin remove-org [OPTIONS] ORG_NAME
+```
+
+Drop a org
+
+Completely removes org from the system.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--force_ | Skip prompt |
 
 
 

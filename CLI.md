@@ -6,6 +6,7 @@
 		* [neuro admin get-clusters](#neuro-admin-get-clusters)
 		* [neuro admin generate-cluster-config](#neuro-admin-generate-cluster-config)
 		* [neuro admin add-cluster](#neuro-admin-add-cluster)
+		* [neuro admin remove-cluster](#neuro-admin-remove-cluster)
 		* [neuro admin show-cluster-options](#neuro-admin-show-cluster-options)
 		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
 		* [neuro admin add-cluster-user](#neuro-admin-add-cluster-user)
@@ -19,6 +20,7 @@
 		* [neuro admin remove-resource-preset](#neuro-admin-remove-resource-preset)
 		* [neuro admin get-orgs](#neuro-admin-get-orgs)
 		* [neuro admin add-org](#neuro-admin-add-org)
+		* [neuro admin remove-org](#neuro-admin-remove-org)
 		* [neuro admin get-org-users](#neuro-admin-get-org-users)
 		* [neuro admin add-org-user](#neuro-admin-add-org-user)
 		* [neuro admin remove-org-user](#neuro-admin-remove-org-user)
@@ -234,6 +236,7 @@ Name | Description|
 | _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
 | _[neuro admin generate\-cluster-config](#neuro-admin-generate-cluster-config)_| Create a cluster configuration file |
 | _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster |
+| _[neuro admin remove-cluster](#neuro-admin-remove-cluster)_| Drop a cluster |
 | _[neuro admin show\-cluster-options](#neuro-admin-show-cluster-options)_| Show available cluster options |
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| List users in specified cluster |
 | _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster |
@@ -247,6 +250,7 @@ Name | Description|
 | _[neuro admin remove\-resource-preset](#neuro-admin-remove-resource-preset)_| Remove resource preset |
 | _[neuro admin get-orgs](#neuro-admin-get-orgs)_| Print the list of available orgs |
 | _[neuro admin add-org](#neuro-admin-add-org)_| Create a new org |
+| _[neuro admin remove-org](#neuro-admin-remove-org)_| Drop a org |
 | _[neuro admin get\-org-users](#neuro-admin-get-org-users)_| List users in specified org |
 | _[neuro admin add\-org-user](#neuro-admin-add-org-user)_| Add user access to specified org |
 | _[neuro admin remove\-org-user](#neuro-admin-remove-org-user)_| Remove user access from the org |
@@ -314,6 +318,26 @@ neuro admin add-cluster [OPTIONS] CLUSTER_NAME CONFIG
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin remove-cluster
+
+Drop a cluster<br/><br/>Completely removes cluster from the system.
+
+**Usage:**
+
+```bash
+neuro admin remove-cluster [OPTIONS] CLUSTER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--force_|Skip prompt|
 
 
 
@@ -591,6 +615,26 @@ neuro admin add-org [OPTIONS] ORG_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin remove-org
+
+Drop a org<br/><br/>Completely removes org from the system.
+
+**Usage:**
+
+```bash
+neuro admin remove-org [OPTIONS] ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--force_|Skip prompt|
 
 
 
