@@ -1107,7 +1107,7 @@ async def add_org_cluster(
     )
     if not root.quiet:
         root.print(
-            f"Added org [bold]{rich_escape(org_name)}[/bold] to"
+            f"Added org [bold]{rich_escape(org_name)}[/bold] to "
             f"[bold]{rich_escape(cluster_name)}[/bold]",
             markup=True,
         )
