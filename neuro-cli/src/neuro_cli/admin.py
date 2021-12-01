@@ -465,7 +465,7 @@ async def add_cluster_user(
             f"Added [bold]{rich_escape(user.user_name)}[/bold] to cluster "
             f"[bold]{rich_escape(cluster_name)}[/bold] as "
             + (
-                f"member of org [bold]{rich_escape(org)}[/bold] as"
+                f"member of org [bold]{rich_escape(org)}[/bold] as "
                 if org is not None
                 else ""
             )
