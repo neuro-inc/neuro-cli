@@ -230,7 +230,7 @@ jobs:
         cp neuro-sdk/dist/* dist/
         cp neuro-cli/dist/* dist/
     - name: GitHub Release
-      uses: aio-libs/create-release@v1.2.3
+      uses: aio-libs/create-release@v1.3.1
       with:
         changes_file: CHANGELOG.md
         name: Neuro SDK/CLI
