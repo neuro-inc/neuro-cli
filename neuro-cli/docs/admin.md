@@ -161,8 +161,8 @@ roles: admin, manager or user.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to set |
-| _-j, --jobs AMOUNT_ | Maximum running jobs quota |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 
 
 
@@ -226,7 +226,7 @@ Set user quota to given values
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-j, --jobs AMOUNT_ | Maximum running jobs quota |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[required\]_ |
 
 
 
@@ -248,7 +248,7 @@ Set user credits to given value
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to set |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[required\]_ |
 
 
 
@@ -270,7 +270,7 @@ Add given values to user quota
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to add |
+| _-c, --credits AMOUNT_ | Credits amount to add  _\[required\]_ |
 
 
 

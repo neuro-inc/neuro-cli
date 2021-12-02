@@ -144,7 +144,7 @@ class AliasesFormatter:
         return table
 
 
-_QUOTA_NOT_SET = "infinity"
+_QUOTA_NOT_SET = "unlimited"
 
 
 def format_quota_details(quota: Optional[Union[int, Decimal]]) -> str:
