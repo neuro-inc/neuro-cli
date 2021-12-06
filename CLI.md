@@ -350,8 +350,8 @@ neuro admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-c, --credits AMOUNT_|Credits amount to set|
-|_\-j, --jobs AMOUNT_|Maximum running jobs quota|
+|_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 
 
 
@@ -409,7 +409,7 @@ neuro admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-j, --jobs AMOUNT_|Maximum running jobs quota|
+|_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[required]|
 
 
 
@@ -429,7 +429,7 @@ neuro admin set-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-c, --credits AMOUNT_|Credits amount to set|
+|_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[required]|
 
 
 
@@ -449,7 +449,7 @@ neuro admin add-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-c, --credits AMOUNT_|Credits amount to add|
+|_\-c, --credits AMOUNT_|Credits amount to add  \[required]|
 
 
 
