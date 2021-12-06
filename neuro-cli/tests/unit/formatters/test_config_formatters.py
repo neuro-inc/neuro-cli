@@ -25,7 +25,7 @@ RichCmp = Callable[[RenderableType], None]
 @pytest.mark.parametrize(
     "quota,expected",
     [
-        pytest.param(None, "infinity", id="None->infinity"),
+        pytest.param(None, "unlimited", id="None->infinity"),
         pytest.param(0, "0", id="zero"),
         pytest.param(10, "10", id="int"),
         pytest.param(Decimal("1.23456"), "1.23", id="decimal"),

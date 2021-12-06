@@ -138,8 +138,8 @@ def test_cluster_user_default_unlimited_quota(
     username = test_user_names[0]
     helper.run_cli(["admin", "add-cluster-user", tmp_test_cluster, username, "user"])
     captured = helper.run_cli(["admin", "get-user-quota", tmp_test_cluster, username])
-    assert "Jobs: infinity" in captured.out
-    assert "Credits: infinity" in captured.out
+    assert "Jobs: unlimited" in captured.out
+    assert "Credits: unlimited" in captured.out
 
 
 @pytest.mark.e2e
@@ -198,11 +198,15 @@ def test_cluster_user_default_set_balance_and_quota_to_unlimited(
             "user",
         ]
     )
-    helper.run_cli(["admin", "set-user-credits", tmp_test_cluster, username])
-    helper.run_cli(["admin", "set-user-quota", tmp_test_cluster, username])
+    helper.run_cli(
+        ["admin", "set-user-credits", "-c", "unlimited", tmp_test_cluster, username]
+    )
+    helper.run_cli(
+        ["admin", "set-user-quota", "-j", "unlimited", tmp_test_cluster, username]
+    )
     captured = helper.run_cli(["admin", "get-user-quota", tmp_test_cluster, username])
-    assert "Jobs: infinity" in captured.out
-    assert "Credits: infinity" in captured.out
+    assert "Jobs: unlimited" in captured.out
+    assert "Credits: unlimited" in captured.out
 
 
 @pytest.fixture
@@ -429,8 +433,8 @@ def test_org_cluster_user_default_unlimited_quota(
     captured = helper.run_cli(
         ["admin", "get-user-quota", "--org", org_name, cluster_name, username]
     )
-    assert "Jobs: infinity" in captured.out
-    assert "Credits: infinity" in captured.out
+    assert "Jobs: unlimited" in captured.out
+    assert "Credits: unlimited" in captured.out
 
 
 @pytest.mark.e2e
@@ -513,8 +517,8 @@ def test_org_cluster_default_unlimited_quota(
     captured = helper.run_cli(
         ["admin", "get-org-cluster-quota", tmp_test_cluster, tmp_test_org]
     )
-    assert "Jobs: infinity" in captured.out
-    assert "Credits: infinity" in captured.out
+    assert "Jobs: unlimited" in captured.out
+    assert "Credits: unlimited" in captured.out
 
 
 @pytest.mark.e2e
@@ -587,10 +591,28 @@ def test_org_cluster_set_balance_and_quota_to_unlimited(
             tmp_test_org,
         ]
     )
-    helper.run_cli(["admin", "set-org-cluster-credits", tmp_test_cluster, tmp_test_org])
-    helper.run_cli(["admin", "set-org-cluster-quota", tmp_test_cluster, tmp_test_org])
+    helper.run_cli(
+        [
+            "admin",
+            "set-org-cluster-credits",
+            "-c",
+            "unlimited",
+            tmp_test_cluster,
+            tmp_test_org,
+        ]
+    )
+    helper.run_cli(
+        [
+            "admin",
+            "set-org-cluster-quota",
+            "-j",
+            "unlimited",
+            tmp_test_cluster,
+            tmp_test_org,
+        ]
+    )
     captured = helper.run_cli(
         ["admin", "get-org-cluster-quota", tmp_test_cluster, tmp_test_org]
     )
-    assert "Jobs: infinity" in captured.out
-    assert "Credits: infinity" in captured.out
+    assert "Jobs: unlimited" in captured.out
+    assert "Credits: unlimited" in captured.out

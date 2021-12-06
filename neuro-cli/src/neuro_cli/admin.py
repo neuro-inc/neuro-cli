@@ -5,7 +5,7 @@ import logging
 import os
 import pathlib
 from dataclasses import replace
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import IO, Any, Mapping, Optional
 
 import click
@@ -32,6 +32,8 @@ from .root import Root
 from .utils import argument, command, group, option
 
 log = logging.getLogger(__name__)
+
+UNLIMITED = "unlimited"
 
 
 @group()
@@ -429,22 +431,26 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
     "--credits",
     metavar="AMOUNT",
     type=str,
-    help="Credits amount to set",
+    default=UNLIMITED,
+    show_default=True,
+    help="Credits amount to set (`unlimited' stands for no limit)",
 )
 @option(
     "-j",
     "--jobs",
     metavar="AMOUNT",
-    type=int,
-    help="Maximum running jobs quota",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Maximum running jobs quota (`unlimited' stands for no limit)",
 )
 async def add_cluster_user(
     root: Root,
     cluster_name: str,
     user_name: str,
     role: str,
-    credits: Optional[str],
-    jobs: Optional[int],
+    credits: str,
+    jobs: str,
     org: Optional[str],
 ) -> None:
     """
@@ -458,7 +464,7 @@ async def add_cluster_user(
         _ClusterUserRoleType(role),
         org_name=org,
         balance=_Balance(credits=_parse_credits_value(credits)),
-        quota=_Quota(total_running_jobs=jobs),
+        quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
     )
     if not root.quiet:
         root.print(
@@ -474,13 +480,32 @@ async def add_cluster_user(
         )
 
 
-def _parse_credits_value(value: Optional[str]) -> Optional[Decimal]:
-    if value is None:
+def _parse_finite_decimal(value: str) -> Decimal:
+    try:
+        result = Decimal(value)
+        if result.is_finite():
+            return result
+    except (ValueError, LookupError, InvalidOperation):
+        pass
+    raise click.BadParameter(f"{value} is not valid decimal number")
+
+
+def _parse_credits_value(value: str) -> Optional[Decimal]:
+    if value == UNLIMITED:
+        return None
+    return _parse_finite_decimal(value)
+
+
+def _parse_jobs_value(value: str) -> Optional[int]:
+    if value == UNLIMITED:
         return None
     try:
-        return Decimal(value)
-    except (ValueError, LookupError):
-        raise click.BadParameter(f"{value} is not valid decimal number")
+        result = int(value, 10)
+        if result >= 0:
+            return result
+    except ValueError:
+        pass
+    raise click.BadParameter("jobs quota should be non-negative integer")
 
 
 @command()
@@ -560,8 +585,9 @@ async def get_user_quota(
     "-j",
     "--jobs",
     metavar="AMOUNT",
-    type=int,
-    help="Maximum running jobs quota",
+    type=str,
+    required=True,
+    help="Maximum running jobs quota (`unlimited' stands for no limit)",
 )
 @option(
     "--org",
@@ -574,7 +600,7 @@ async def set_user_quota(
     root: Root,
     cluster_name: str,
     user_name: str,
-    jobs: Optional[int],
+    jobs: str,
     org: Optional[str],
 ) -> None:
     """
@@ -583,7 +609,7 @@ async def set_user_quota(
     user_with_quota = await root.client._admin.update_cluster_user_quota(
         cluster_name=cluster_name,
         user_name=user_name,
-        quota=_Quota(total_running_jobs=jobs),
+        quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
         org_name=org,
     )
     fmt = AdminQuotaFormatter()
@@ -608,7 +634,8 @@ async def set_user_quota(
     "--credits",
     metavar="AMOUNT",
     type=str,
-    help="Credits amount to set",
+    required=True,
+    help="Credits amount to set (`unlimited' stands for no limit)",
 )
 @option(
     "--org",
@@ -621,7 +648,7 @@ async def set_user_credits(
     root: Root,
     cluster_name: str,
     user_name: str,
-    credits: Optional[str],
+    credits: str,
     org: Optional[str],
 ) -> None:
     """
@@ -656,6 +683,7 @@ async def set_user_credits(
     "--credits",
     metavar="AMOUNT",
     type=str,
+    required=True,
     help="Credits amount to add",
 )
 @option(
@@ -675,8 +703,7 @@ async def add_user_credits(
     """
     Add given values to user quota
     """
-    additional_credits = _parse_credits_value(credits)
-    assert additional_credits
+    additional_credits = _parse_finite_decimal(credits)
     user_with_quota = await root.client._admin.update_cluster_user_balance_by_delta(
         cluster_name,
         user_name,
@@ -810,7 +837,7 @@ async def add_resource_preset(
     if preset_name in presets:
         raise ValueError(f"Preset '{preset_name}' already exists")
     presets[preset_name] = Preset(
-        credits_per_hour=Decimal(credits_per_hour),
+        credits_per_hour=_parse_finite_decimal(credits_per_hour),
         cpu=cpu,
         memory_mb=memory,
         gpu=gpu,
@@ -903,7 +930,7 @@ async def update_resource_preset(
         raise ValueError(f"Preset '{preset_name}' does not exists")
 
     kwargs = {
-        "credits_per_hour": Decimal(credits_per_hour)
+        "credits_per_hour": _parse_finite_decimal(credits_per_hour)
         if credits_per_hour is not None
         else None,
         "cpu": cpu,
@@ -1079,21 +1106,25 @@ async def get_org_clusters(root: Root, cluster_name: str) -> None:
     "--credits",
     metavar="AMOUNT",
     type=str,
-    help="Credits amount to set",
+    default=UNLIMITED,
+    show_default=True,
+    help="Credits amount to set (`unlimited' stands for no limit)",
 )
 @option(
     "-j",
     "--jobs",
     metavar="AMOUNT",
-    type=int,
-    help="Maximum running jobs quota",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Maximum running jobs quota (`unlimited' stands for no limit)",
 )
 async def add_org_cluster(
     root: Root,
     cluster_name: str,
     org_name: str,
-    credits: Optional[str],
-    jobs: Optional[int],
+    credits: str,
+    jobs: str,
 ) -> None:
     """
     Add org access to specified cluster.
@@ -1103,7 +1134,7 @@ async def add_org_cluster(
         cluster_name=cluster_name,
         org_name=org_name,
         balance=_Balance(credits=_parse_credits_value(credits)),
-        quota=_Quota(total_running_jobs=jobs),
+        quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
     )
     if not root.quiet:
         root.print(
@@ -1170,14 +1201,15 @@ async def get_org_cluster_quota(
     "-j",
     "--jobs",
     metavar="AMOUNT",
-    type=int,
-    help="Maximum running jobs quota",
+    type=str,
+    required=True,
+    help="Maximum running jobs quota (`unlimited' stands for no limit)",
 )
 async def set_org_cluster_quota(
     root: Root,
     cluster_name: str,
     org_name: str,
-    jobs: Optional[int],
+    jobs: str,
 ) -> None:
     """
     Set org cluster quota to given values
@@ -1185,7 +1217,7 @@ async def set_org_cluster_quota(
     org = await root.client._admin.update_org_cluster_quota(
         cluster_name=cluster_name,
         org_name=org_name,
-        quota=_Quota(total_running_jobs=jobs),
+        quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
     )
     fmt = AdminQuotaFormatter()
     root.print(
@@ -1204,13 +1236,14 @@ async def set_org_cluster_quota(
     "--credits",
     metavar="AMOUNT",
     type=str,
-    help="Credits amount to set",
+    required=True,
+    help="Credits amount to set (`unlimited' stands for no limit)",
 )
 async def set_org_cluster_credits(
     root: Root,
     cluster_name: str,
     org_name: str,
-    credits: Optional[str],
+    credits: str,
 ) -> None:
     """
     Set org cluster credits to given value
@@ -1249,7 +1282,7 @@ async def add_org_cluster_credits(
     """
     Add given values to org cluster balance
     """
-    additional_credits = _parse_credits_value(credits)
+    additional_credits = _parse_finite_decimal(credits)
     assert additional_credits
     org = await root.client._admin.update_org_cluster_balance_by_delta(
         cluster_name,

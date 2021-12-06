@@ -1,7 +1,7 @@
 import json
-from contextlib import ExitStack
+from contextlib import ExitStack, contextmanager
 from decimal import Decimal
-from typing import Any, Callable, List, Mapping, Optional
+from typing import Any, Callable, Iterator, List, Mapping, Optional
 from unittest import mock
 
 from neuro_sdk import (
@@ -20,7 +20,8 @@ from .conftest import SysCapWithCode
 _RunCli = Callable[[List[str]], SysCapWithCode]
 
 
-def test_add_cluster_user_print_result(run_cli: _RunCli) -> None:
+@contextmanager
+def mock_create_cluster_user() -> Iterator[None]:
     with mock.patch.object(_Admin, "create_cluster_user") as mocked:
 
         async def create_cluster_user(
@@ -48,17 +49,237 @@ def test_add_cluster_user_print_result(run_cli: _RunCli) -> None:
             )
 
         mocked.side_effect = create_cluster_user
-        capture = run_cli(["admin", "add-cluster-user", "default", "ivan", "admin"])
-        assert not capture.err
-        assert capture.out == "Added ivan to cluster default as manager"
+        yield
 
-        # Same with quiet mode
-        mocked.side_effect = create_cluster_user
+
+def test_add_cluster_user_print_result(run_cli: _RunCli) -> None:
+    with mock_create_cluster_user():
+        capture = run_cli(["admin", "add-cluster-user", "default", "ivan", "admin"])
+    assert not capture.err
+    assert capture.out == "Added ivan to cluster default as manager"
+    assert capture.code == 0
+
+    # Same with quiet mode
+    with mock_create_cluster_user():
         capture = run_cli(
             ["-q", "admin", "add-cluster-user", "default", "ivan", "admin"]
         )
+    assert not capture.err
+    assert not capture.out
+    assert capture.code == 0
+
+
+def test_add_cluster_user_with_credits(run_cli: _RunCli) -> None:
+    for value in ("1234.5", "0", "-1234.5", "unlimited"):
+        with mock_create_cluster_user():
+            capture = run_cli(
+                [
+                    "admin",
+                    "add-cluster-user",
+                    "default",
+                    "ivan",
+                    "admin",
+                    "--credits",
+                    value,
+                ]
+            )
         assert not capture.err
-        assert not capture.out
+        assert capture.code == 0
+
+    for value in ("spam", "inf", "nan", "infinity", "Infinity"):
+        with mock_create_cluster_user():
+            capture = run_cli(
+                [
+                    "admin",
+                    "add-cluster-user",
+                    "default",
+                    "ivan",
+                    "admin",
+                    "--credits",
+                    value,
+                ]
+            )
+        assert f"{value} is not valid decimal number" in capture.err, capture
+        assert capture.code == 2
+
+
+def test_add_cluster_user_with_jobs(run_cli: _RunCli) -> None:
+    for value in ("100", "0", "unlimited"):
+        with mock_create_cluster_user():
+            capture = run_cli(
+                [
+                    "admin",
+                    "add-cluster-user",
+                    "default",
+                    "ivan",
+                    "admin",
+                    "--jobs",
+                    value,
+                ]
+            )
+        assert not capture.err
+        assert capture.code == 0
+
+    for value in ("spam", "-100", "10.5", "inf", "nan", "infinity", "Infinity"):
+        with mock_create_cluster_user():
+            capture = run_cli(
+                [
+                    "admin",
+                    "add-cluster-user",
+                    "default",
+                    "ivan",
+                    "admin",
+                    "--jobs",
+                    value,
+                ]
+            )
+        assert f"jobs quota should be non-negative integer" in capture.err, capture
+        assert capture.code == 2
+
+
+def test_set_user_credits(run_cli: _RunCli) -> None:
+    with mock.patch.object(_Admin, "update_cluster_user_balance") as mocked:
+
+        async def update_cluster_user_balance(
+            cluster_name: str,
+            user_name: str,
+            credits: Optional[Decimal],
+            org_name: Optional[str] = None,
+        ) -> _ClusterUserWithInfo:
+            return _ClusterUserWithInfo(
+                cluster_name=cluster_name,
+                user_name=user_name,
+                role=_ClusterUserRoleType.USER,
+                quota=_Quota(),
+                balance=_Balance(credits=credits),
+                org_name=org_name,
+                user_info=_UserInfo(email=f"{user_name}@example.org"),
+            )
+
+        for value, outvalue in (
+            ("1234.5", "1234.50"),
+            ("0", "0.00"),
+            ("-1234.5", "-1234.50"),
+            ("unlimited", "unlimited"),
+        ):
+            mocked.side_effect = update_cluster_user_balance
+            capture = run_cli(
+                ["admin", "set-user-credits", "default", "ivan", "--credits", value]
+            )
+            assert not capture.err
+            assert capture.out == (
+                f"New credits for ivan on cluster default:\n"
+                f"Credits: {outvalue}\n"
+                f"Spend credits: 0.00"
+            )
+            assert capture.code == 0
+
+        for value in ("spam", "inf", "nan", "infinity", "Infinity"):
+            mocked.side_effect = update_cluster_user_balance
+            capture = run_cli(
+                ["admin", "set-user-credits", "default", "ivan", "--credits", value]
+            )
+            assert f"{value} is not valid decimal number" in capture.err
+            assert capture.code == 2
+
+        mocked.side_effect = update_cluster_user_balance
+        capture = run_cli(["admin", "set-user-credits", "default", "ivan"])
+        assert "Missing option '-c' / '--credits'." in capture.err
+        assert capture.code == 2
+
+
+def test_add_user_credits(run_cli: _RunCli) -> None:
+    with mock.patch.object(_Admin, "update_cluster_user_balance_by_delta") as mocked:
+
+        async def update_cluster_user_balance_by_delta(
+            cluster_name: str,
+            user_name: str,
+            delta: Decimal,
+            org_name: Optional[str] = None,
+        ) -> _ClusterUserWithInfo:
+            return _ClusterUserWithInfo(
+                cluster_name=cluster_name,
+                user_name=user_name,
+                role=_ClusterUserRoleType.USER,
+                quota=_Quota(),
+                balance=_Balance(credits=100 + delta),
+                org_name=org_name,
+                user_info=_UserInfo(email=f"{user_name}@example.org"),
+            )
+
+        for value, outvalue in (
+            ("1234.5", "1334.50"),
+            ("0", "100.00"),
+            ("-1234.5", "-1134.50"),
+        ):
+            mocked.side_effect = update_cluster_user_balance_by_delta
+            capture = run_cli(
+                ["admin", "add-user-credits", "default", "ivan", "--credits", value]
+            )
+            assert not capture.err
+            assert capture.out == (
+                f"New credits for ivan on cluster default:\n"
+                f"Credits: {outvalue}\n"
+                f"Spend credits: 0.00"
+            )
+            assert capture.code == 0
+
+        for value in ("spam", "unlimited", "inf", "nan", "infinity", "Infinity"):
+            mocked.side_effect = update_cluster_user_balance_by_delta
+            capture = run_cli(
+                ["admin", "add-user-credits", "default", "ivan", "--credits", value]
+            )
+            assert f"{value} is not valid decimal number" in capture.err
+            assert capture.code == 2
+
+        mocked.side_effect = update_cluster_user_balance_by_delta
+        capture = run_cli(["admin", "add-user-credits", "default", "ivan"])
+        assert "Missing option '-c' / '--credits'." in capture.err
+        assert capture.code == 2
+
+
+def test_set_user_quota(run_cli: _RunCli) -> None:
+    with mock.patch.object(_Admin, "update_cluster_user_quota") as mocked:
+
+        async def update_cluster_user_quota(
+            cluster_name: str,
+            user_name: str,
+            quota: _Quota,
+            org_name: Optional[str] = None,
+        ) -> _ClusterUserWithInfo:
+            return _ClusterUserWithInfo(
+                cluster_name=cluster_name,
+                user_name=user_name,
+                role=_ClusterUserRoleType.USER,
+                quota=quota,
+                balance=_Balance(),
+                org_name=org_name,
+                user_info=_UserInfo(email=f"{user_name}@example.org"),
+            )
+
+        for value in ("100", "0", "unlimited"):
+            mocked.side_effect = update_cluster_user_quota
+            capture = run_cli(
+                ["admin", "set-user-quota", "default", "ivan", "--jobs", value]
+            )
+            assert not capture.err
+            assert (
+                capture.out == f"New quotas for ivan on cluster default:\nJobs: {value}"
+            )
+            assert capture.code == 0
+
+        for value in ("spam", "-100", "10.5", "inf", "nan", "infinity", "Infinity"):
+            mocked.side_effect = update_cluster_user_quota
+            capture = run_cli(
+                ["admin", "set-user-quota", "default", "ivan", "--jobs", value]
+            )
+            assert "jobs quota should be non-negative integer" in capture.err
+            assert capture.code == 2
+
+        mocked.side_effect = update_cluster_user_quota
+        capture = run_cli(["admin", "set-user-quota", "default", "ivan"])
+        assert "Missing option '-j' / '--jobs'." in capture.err
+        assert capture.code == 2
 
 
 def test_remove_cluster_user_print_result(run_cli: _RunCli) -> None:
@@ -159,7 +380,7 @@ def test_add_resource_preset(run_cli: _RunCli) -> None:
         assert capture.code == 0, capture.out + capture.err
 
 
-def test_add_existing_resource_preset_not_alloed(run_cli: _RunCli) -> None:
+def test_add_existing_resource_preset_not_allowed(run_cli: _RunCli) -> None:
     with ExitStack() as exit_stack:
         admin_mocked = exit_stack.enter_context(
             mock.patch.object(_Admin, "update_cluster_resource_presets")

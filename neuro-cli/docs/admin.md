@@ -198,8 +198,8 @@ roles: admin, manager or user.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to set |
-| _-j, --jobs AMOUNT_ | Maximum running jobs quota |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--org ORG_ | org name for org-cluster users |
 
 
@@ -266,7 +266,7 @@ Set user quota to given values
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-j, --jobs AMOUNT_ | Maximum running jobs quota |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[required\]_ |
 | _--org ORG_ | org name for org-cluster users |
 
 
@@ -289,7 +289,7 @@ Set user credits to given value
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to set |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[required\]_ |
 | _--org ORG_ | org name for org-cluster users |
 
 
@@ -312,7 +312,7 @@ Add given values to user quota
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to add |
+| _-c, --credits AMOUNT_ | Credits amount to add  _\[required\]_ |
 | _--org ORG_ | org name for org-cluster users |
 
 
@@ -569,8 +569,8 @@ Add org access to specified cluster.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to set |
-| _-j, --jobs AMOUNT_ | Maximum running jobs quota |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 
 
 
@@ -613,7 +613,7 @@ Set org cluster quota to given values
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-j, --jobs AMOUNT_ | Maximum running jobs quota |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[required\]_ |
 
 
 
@@ -635,7 +635,7 @@ Set org cluster credits to given value
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to set |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[required\]_ |
 
 
 
