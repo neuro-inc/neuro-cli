@@ -745,7 +745,6 @@ def _validate_user_config(
     #
     # Since currently CLI is the only API client that reads user config data, API
     # validates it.
-    plugin_manager = PluginManager()
     if not allow_cluster_name:
         if "cluster-name" in config.get("job", {}):
             raise ConfigError(
