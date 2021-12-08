@@ -377,6 +377,7 @@ neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--org ORG_|org name for org-cluster users|
 
 
 

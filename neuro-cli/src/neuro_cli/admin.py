@@ -392,8 +392,17 @@ async def generate_vcd(root: Root, session: PromptSession[str]) -> str:
 
 
 @command()
+@option(
+    "--org",
+    metavar="ORG",
+    default=None,
+    type=str,
+    help="org name for org-cluster users",
+)
 @argument("cluster_name", required=False, default=None, type=str)
-async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
+async def get_cluster_users(
+    root: Root, org: Optional[str], cluster_name: Optional[str]
+) -> None:
     """
     List users in specified cluster
     """
@@ -403,7 +412,9 @@ async def get_cluster_users(root: Root, cluster_name: Optional[str]) -> None:
         f"Fetching the list of cluster users of cluster [b]{cluster_name}[/b]"
     ):
         users = await root.client._admin.list_cluster_users(
-            cluster_name, with_user_info=True
+            cluster_name=cluster_name,
+            with_user_info=True,
+            org_name=org,
         )
     with root.pager():
         root.print(fmt(users))
