@@ -11,6 +11,7 @@ from rich.text import Text
 
 from neuro_sdk import Cluster, Config, Preset, Quota, _Balance, _Quota
 
+from neuro_cli.click_types import OrgType
 from neuro_cli.utils import format_size
 
 
@@ -63,16 +64,28 @@ class BalanceFormatter:
 
 class ClustersFormatter:
     def __call__(
-        self, clusters: Iterable[Cluster], default_name: Optional[str]
+        self,
+        clusters: Iterable[Cluster],
+        default_cluster: Optional[str],
+        default_org: Optional[str],
     ) -> RenderableType:
         out: List[RenderableType] = [Text("Available clusters:", style="i")]
         for cluster in clusters:
             name: Union[str, Text] = cluster.name or ""
             pre = "  "
-            if cluster.name == default_name:
+            org_names: List[Text] = [
+                Text(org or OrgType.NO_ORG_STR)
+                if org == default_org and cluster.name == default_cluster
+                else Text(org or OrgType.NO_ORG_STR, style="u")
+                for org in cluster.orgs
+            ]
+            if cluster.name == default_cluster:
                 name = Text(cluster.name, style="u")
                 pre = "* "
             out.append(Text.assemble(pre, Text("Name"), ": ", name))
+            out.append(
+                Text.assemble("  ", Text("Orgs"), ": ", Text(", ").join(org_names))
+            )
             out.append(Padding.indent(_format_presets(cluster.presets, None), 2))
         return RenderGroup(*out)
 

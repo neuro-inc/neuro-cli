@@ -206,7 +206,7 @@ class Config(metaclass=NoPublicConstructor):
         org_name = self.org_name
         if org_name not in self.clusters[name].orgs:
             # Cannot keep using same org, set to first available
-            org_name = next(iter(self.clusters[name].orgs))
+            org_name = self.clusters[name].orgs[0]
         self.__config_data = replace(
             self._config_data, cluster_name=name, org_name=org_name
         )
@@ -215,7 +215,7 @@ class Config(metaclass=NoPublicConstructor):
     async def switch_org(self, name: Optional[str]) -> None:
         if not isinstance(self._get_user_org_name(), _Unset):
             raise RuntimeError(
-                "Cannot switch the project org. " "Please edit the '.neuro.toml' file."
+                "Cannot switch the project org. Please edit the '.neuro.toml' file."
             )
         if name not in self._cluster.orgs:
             cluster_org_names = [org or "NO_ORG" for org in self._cluster.orgs]
@@ -450,7 +450,7 @@ def _load_recovery_data(path: Path) -> _ConfigRecoveryData:
                 )
                 payload = cur.fetchone()
             except sqlite3.OperationalError:
-                # Maybe this config is before org_name was added?
+                # Maybe this config was created before org_name was added?
                 cur.execute(
                     """
                     SELECT refresh_token, url, cluster_name
@@ -746,21 +746,14 @@ def _validate_user_config(
     # Since currently CLI is the only API client that reads user config data, API
     # validates it.
     plugin_manager = PluginManager()
-    plugin_manager.config.define_str("job", "ps-format")
-    plugin_manager.config.define_str("job", "top-format")
-    plugin_manager.config.define_str("job", "life-span")
-    if allow_cluster_name:
-        plugin_manager.config.define_str("job", "cluster-name")
-    else:
+    if not allow_cluster_name:
         if "cluster-name" in config.get("job", {}):
             raise ConfigError(
                 f"{filename}: cluster name is not allowed in global user "
                 f"config file, use 'neuro config switch-cluster' for "
                 f"changing the default cluster name"
             )
-    if allow_org_name:
-        plugin_manager.config.define_str("job", "org-name")
-    else:
+    if not allow_org_name:
         if "org-name" in config.get("job", {}):
             raise ConfigError(
                 f"{filename}: org name is not allowed in global user "

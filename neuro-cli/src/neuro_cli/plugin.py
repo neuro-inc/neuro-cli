@@ -31,6 +31,7 @@ def setup(manager: PluginManager) -> None:
     manager.config.define_str("job", "top-format")
     manager.config.define_str("job", "life-span")
     manager.config.define_str("job", "cluster-name", scope=ConfigScope.LOCAL)
+    manager.config.define_str("job", "org-name", scope=ConfigScope.LOCAL)
     manager.config.define_str_list("storage", "cp-exclude")
     manager.config.define_str_list("storage", "cp-exclude-from-files")
 

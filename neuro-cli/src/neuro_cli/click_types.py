@@ -377,6 +377,7 @@ CLUSTER = ClusterType()
 
 class OrgType(AsyncType[str]):
     name = "org"
+    NO_ORG_STR = "NO_ORG"
 
     async def async_convert(
         self,
@@ -384,13 +385,13 @@ class OrgType(AsyncType[str]):
         value: str,
         param: Optional[click.Parameter],
         ctx: Optional[click.Context],
-    ) -> Optional[str]:
+    ) -> str:
         client = await root.init_client()
-        org_name = value if value != "NO_ORG" else None
+        org_name = value if value != self.NO_ORG_STR else None
         if org_name not in client.config.clusters[client.config.cluster_name].orgs:
             raise click.BadParameter(
                 f"Org {value} is not valid, "
-                "run 'neuro config get-orgs' to get a list of available orgs",
+                "run 'neuro config get-clusters' to get a list of available orgs",
                 ctx,
                 param,
             )
@@ -402,7 +403,7 @@ class OrgType(AsyncType[str]):
         # async context manager is used to prevent a message about
         # unclosed session
         async with await root.init_client() as client:
-            org_names = [org or "NO_ORG" for org in client.config.cluster_orgs]
+            org_names = [org or self.NO_ORG_STR for org in client.config.cluster_orgs]
             return [
                 CompletionItem(org_name)
                 for org_name in org_names

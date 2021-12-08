@@ -1840,7 +1840,7 @@ Name | Description|
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config aliases](#neuro-config-aliases)_| List available command aliases |
-| _[neuro config get-clusters](#neuro-config-get-clusters)_| List available clusters |
+| _[neuro config get-clusters](#neuro-config-get-clusters)_| List available clusters/org pairs |
 | _[neuro config switch-cluster](#neuro-config-switch-cluster)_| Switch the active cluster |
 | _[neuro config switch-org](#neuro-config-switch-org)_| Switch the active organization |
 | _[neuro config docker](#neuro-config-docker)_| Configure local docker client |
@@ -1965,7 +1965,7 @@ Name | Description|
 
 ### neuro config get-clusters
 
-List available clusters.<br/><br/>This command re-fetches cluster list and then displays it.
+List available clusters/org pairs.<br/><br/>This command re-fetches cluster list and then displays each cluster with<br/>available orgs.
 
 **Usage:**
 

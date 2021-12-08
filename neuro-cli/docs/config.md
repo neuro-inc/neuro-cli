@@ -19,7 +19,7 @@ Client configuration.
 | [_show_](config.md#show) | Print current settings |
 | [_show-token_](config.md#show-token) | Print current authorization token |
 | [_aliases_](config.md#aliases) | List available command aliases |
-| [_get-clusters_](config.md#get-clusters) | List available clusters |
+| [_get-clusters_](config.md#get-clusters) | List available clusters/org pairs |
 | [_switch-cluster_](config.md#switch-cluster) | Switch the active cluster |
 | [_switch-org_](config.md#switch-org) | Switch the active organization |
 | [_docker_](config.md#docker) | Configure local docker client |
@@ -173,7 +173,7 @@ List available command aliases.
 
 ### get-clusters
 
-List available clusters
+List available clusters/org pairs
 
 
 #### Usage
@@ -182,10 +182,11 @@ List available clusters
 neuro config get-clusters [OPTIONS]
 ```
 
-List available clusters.
+List available clusters/org pairs.
 
-This command re-fetches cluster list and then
-displays it.
+This command re-fetches cluster list and
+then displays each
+cluster with available orgs.
 
 #### Options
 

@@ -18,6 +18,7 @@ from neuro_sdk import DEFAULT_API_URL, ConfigError
 from neuro_cli.formatters.config import ClustersFormatter
 
 from .alias import list_aliases
+from .click_types import CLUSTER, ORG
 from .formatters.config import AliasesFormatter, ConfigFormatter
 from .root import Root
 from .utils import argument, command, group, option
@@ -205,9 +206,10 @@ async def docker(root: Root, docker_config: str) -> None:
 @command()
 async def get_clusters(root: Root) -> None:
     """
-    List available clusters.
+    List available clusters/org pairs.
 
-    This command re-fetches cluster list and then displays it.
+    This command re-fetches cluster list and then displays each
+    cluster with available orgs.
     """
 
     with root.status("Fetching the list of available clusters"):
@@ -215,12 +217,16 @@ async def get_clusters(root: Root) -> None:
     fmt = ClustersFormatter()
     with root.pager():
         root.print(
-            fmt(root.client.config.clusters.values(), root.client.config.cluster_name)
+            fmt(
+                root.client.config.clusters.values(),
+                root.client.config.cluster_name,
+                root.client.config.org_name,
+            )
         )
 
 
 @command()
-@argument("cluster_name", required=False, default=None, type=str)
+@argument("cluster_name", required=False, default=None, type=CLUSTER)
 async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
     """Switch the active cluster.
 
@@ -246,7 +252,7 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
 
 
 @command()
-@argument("org_name", required=True, type=str)
+@argument("org_name", required=True, type=ORG)
 async def switch_org(root: Root, org_name: Optional[str]) -> None:
     """Switch the active organization.
 
@@ -255,7 +261,7 @@ async def switch_org(root: Root, org_name: Optional[str]) -> None:
     """
     with root.status("Fetching the list of available cluster/org pairs"):
         await root.client.config.fetch()
-    if org_name == "NO_ORG":
+    if org_name == ORG.NO_ORG_STR:
         org_name = None
     await root.client.config.switch_org(org_name)
     root.print(
@@ -272,7 +278,13 @@ async def prompt_cluster(
     clusters = root.client.config.clusters
     while True:
         fmt = ClustersFormatter()
-        root.print(fmt(clusters.values(), root.client.config.cluster_name))
+        root.print(
+            fmt(
+                clusters.values(),
+                root.client.config.cluster_name,
+                root.client.config.org_name,
+            )
+        )
         with patch_stdout():
             answer = await session.prompt_async(
                 f"Select cluster to switch [{root.client.config.cluster_name}]: "
