@@ -11,6 +11,11 @@ from neuro_admin_client import Cluster as _Cluster
 from neuro_admin_client import ClusterUser as _ClusterUser
 from neuro_admin_client import ClusterUserRoleType as _ClusterUserRoleType
 from neuro_admin_client import ClusterUserWithInfo as _ClusterUserWithInfo
+from neuro_admin_client import Org as _Org
+from neuro_admin_client import OrgCluster as _OrgCluster
+from neuro_admin_client import OrgUser as _OrgUser
+from neuro_admin_client import OrgUserRoleType as _OrgUserRoleType
+from neuro_admin_client import OrgUserWithInfo as _OrgUserWithInfo
 from neuro_admin_client import Quota as _Quota
 from neuro_admin_client import UserInfo as _UserInfo
 from prompt_toolkit.eventloop.async_context_manager import asynccontextmanager
@@ -35,6 +40,11 @@ __all__ = [
     "_ClusterUserWithInfo",
     "_ConfigCluster",
     "_NodePool",
+    "_Org",
+    "_OrgCluster",
+    "_OrgUser",
+    "_OrgUserRoleType",
+    "_OrgUserWithInfo",
     "_Quota",
     "_Storage",
     "_UserInfo",

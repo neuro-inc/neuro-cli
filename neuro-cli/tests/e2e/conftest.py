@@ -988,3 +988,16 @@ def drop_old_test_images() -> None:
                 helper.run_cli(["image", "rm", image_str])
             except Exception:
                 pass
+
+
+@pytest.fixture()
+def test_user_names() -> List[str]:
+    # This is real users in dev cluster.
+    # This values are used for testing `neuro admin ...` commands
+    return [
+        "e2e-fake-user-1",
+        "e2e-fake-user-2",
+        "e2e-fake-user-3",
+        "e2e-fake-user-4",
+        "e2e-fake-user-5",
+    ]

@@ -7,7 +7,14 @@ from rich.rule import Rule
 from rich.styled import Styled
 from rich.table import Table
 
-from neuro_sdk import _ClusterUserWithInfo, _ConfigCluster, _NodePool
+from neuro_sdk import (
+    _ClusterUserWithInfo,
+    _ConfigCluster,
+    _NodePool,
+    _Org,
+    _OrgCluster,
+    _OrgUserWithInfo,
+)
 
 from neuro_cli.formatters.config import format_quota_details
 from neuro_cli.formatters.utils import format_datetime_iso
@@ -49,6 +56,60 @@ class ClusterUserFormatter:
         return table
 
 
+class OrgUserFormatter:
+    def __call__(self, org_users: Iterable[_OrgUserWithInfo]) -> RenderableType:
+        table = Table(box=box.MINIMAL_HEAVY_HEAD)
+        table.add_column("Name", style="bold")
+        table.add_column("Role")
+        table.add_column("Email")
+        table.add_column("Full name")
+        table.add_column("Registered")
+        rows = []
+
+        for user in org_users:
+            rows.append(
+                (
+                    user.user_name,
+                    user.role.value,
+                    user.user_info.email,
+                    user.user_info.full_name,
+                    format_datetime_iso(user.user_info.created_at),
+                )
+            )
+        rows.sort(key=operator.itemgetter(0))
+
+        for row in rows:
+            table.add_row(*row)
+        return table
+
+
+class OrgClusterFormatter:
+    def __call__(self, org_clusters: Iterable[_OrgCluster]) -> RenderableType:
+        table = Table(box=box.MINIMAL_HEAVY_HEAD)
+        table.add_column("Org name", style="bold")
+        table.add_column("Cluster name")
+        table.add_column("Credits")
+        table.add_column("Spent credits")
+        table.add_column("Max jobs")
+        rows = []
+
+        for org_cluster in org_clusters:
+            rows.append(
+                (
+                    org_cluster.org_name,
+                    org_cluster.cluster_name,
+                    format_quota_details(org_cluster.balance.credits),
+                    format_quota_details(org_cluster.balance.spent_credits),
+                    format_quota_details(org_cluster.quota.total_running_jobs),
+                )
+            )
+        rows.sort(key=operator.itemgetter(0))
+
+        for row in rows:
+            table.add_row(*row)
+        return table
+
+
 class ClustersFormatter:
     def __call__(self, clusters: Iterable[_ConfigCluster]) -> RenderableType:
         out: List[RenderableType] = []
@@ -60,6 +121,7 @@ class ClustersFormatter:
                 box=None,
                 show_header=False,
                 show_edge=False,
+                min_width=len(cluster.name),
             )
             table.add_column()
             table.add_column(style="bold")
@@ -173,3 +235,12 @@ def _gpu(node_pool: _NodePool) -> str:
     if node_pool.gpu:
         return f"{node_pool.gpu} x {node_pool.gpu_model}"
     return ""
+
+
+class OrgsFormatter:
+    def __call__(self, orgs: Iterable[_Org]) -> RenderableType:
+        table = Table(box=box.SIMPLE_HEAVY)
+        table.add_column("Name")
+        for org in orgs:
+            table.add_row(org.name)
+        return table

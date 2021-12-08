@@ -30,12 +30,13 @@ def mock_create_cluster_user() -> Iterator[None]:
             role: _ClusterUserRoleType,
             balance: _Balance,
             quota: _Quota,
+            org_name: Optional[str] = None,
         ) -> _ClusterUserWithInfo:
             # NOTE: We return a different role to check that we print it to user
             return _ClusterUserWithInfo(
                 user_name=user_name,
                 cluster_name=cluster_name,
-                org_name=None,
+                org_name=org_name,
                 role=_ClusterUserRoleType.MANAGER,
                 quota=quota,
                 balance=balance,
@@ -140,7 +141,10 @@ def test_set_user_credits(run_cli: _RunCli) -> None:
     with mock.patch.object(_Admin, "update_cluster_user_balance") as mocked:
 
         async def update_cluster_user_balance(
-            cluster_name: str, user_name: str, credits: Optional[Decimal]
+            cluster_name: str,
+            user_name: str,
+            credits: Optional[Decimal],
+            org_name: Optional[str] = None,
         ) -> _ClusterUserWithInfo:
             return _ClusterUserWithInfo(
                 cluster_name=cluster_name,
@@ -148,7 +152,7 @@ def test_set_user_credits(run_cli: _RunCli) -> None:
                 role=_ClusterUserRoleType.USER,
                 quota=_Quota(),
                 balance=_Balance(credits=credits),
-                org_name=None,
+                org_name=org_name,
                 user_info=_UserInfo(email=f"{user_name}@example.org"),
             )
 
@@ -188,7 +192,10 @@ def test_add_user_credits(run_cli: _RunCli) -> None:
     with mock.patch.object(_Admin, "update_cluster_user_balance_by_delta") as mocked:
 
         async def update_cluster_user_balance_by_delta(
-            cluster_name: str, user_name: str, delta: Decimal
+            cluster_name: str,
+            user_name: str,
+            delta: Decimal,
+            org_name: Optional[str] = None,
         ) -> _ClusterUserWithInfo:
             return _ClusterUserWithInfo(
                 cluster_name=cluster_name,
@@ -196,7 +203,7 @@ def test_add_user_credits(run_cli: _RunCli) -> None:
                 role=_ClusterUserRoleType.USER,
                 quota=_Quota(),
                 balance=_Balance(credits=100 + delta),
-                org_name=None,
+                org_name=org_name,
                 user_info=_UserInfo(email=f"{user_name}@example.org"),
             )
 
@@ -235,7 +242,10 @@ def test_set_user_quota(run_cli: _RunCli) -> None:
     with mock.patch.object(_Admin, "update_cluster_user_quota") as mocked:
 
         async def update_cluster_user_quota(
-            cluster_name: str, user_name: str, quota: _Quota
+            cluster_name: str,
+            user_name: str,
+            quota: _Quota,
+            org_name: Optional[str] = None,
         ) -> _ClusterUserWithInfo:
             return _ClusterUserWithInfo(
                 cluster_name=cluster_name,
@@ -243,7 +253,7 @@ def test_set_user_quota(run_cli: _RunCli) -> None:
                 role=_ClusterUserRoleType.USER,
                 quota=quota,
                 balance=_Balance(),
-                org_name=None,
+                org_name=org_name,
                 user_info=_UserInfo(email=f"{user_name}@example.org"),
             )
 
@@ -275,7 +285,11 @@ def test_set_user_quota(run_cli: _RunCli) -> None:
 def test_remove_cluster_user_print_result(run_cli: _RunCli) -> None:
     with mock.patch.object(_Admin, "delete_cluster_user") as mocked:
 
-        async def delete_cluster_user(cluster_name: str, user_name: str) -> None:
+        async def delete_cluster_user(
+            cluster_name: str,
+            user_name: str,
+            org_name: Optional[str] = None,
+        ) -> None:
             return
 
         mocked.side_effect = delete_cluster_user

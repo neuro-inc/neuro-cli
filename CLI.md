@@ -6,6 +6,7 @@
 		* [neuro admin get-clusters](#neuro-admin-get-clusters)
 		* [neuro admin generate-cluster-config](#neuro-admin-generate-cluster-config)
 		* [neuro admin add-cluster](#neuro-admin-add-cluster)
+		* [neuro admin remove-cluster](#neuro-admin-remove-cluster)
 		* [neuro admin show-cluster-options](#neuro-admin-show-cluster-options)
 		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
 		* [neuro admin add-cluster-user](#neuro-admin-add-cluster-user)
@@ -17,6 +18,18 @@
 		* [neuro admin add-resource-preset](#neuro-admin-add-resource-preset)
 		* [neuro admin update-resource-preset](#neuro-admin-update-resource-preset)
 		* [neuro admin remove-resource-preset](#neuro-admin-remove-resource-preset)
+		* [neuro admin get-orgs](#neuro-admin-get-orgs)
+		* [neuro admin add-org](#neuro-admin-add-org)
+		* [neuro admin remove-org](#neuro-admin-remove-org)
+		* [neuro admin get-org-users](#neuro-admin-get-org-users)
+		* [neuro admin add-org-user](#neuro-admin-add-org-user)
+		* [neuro admin remove-org-user](#neuro-admin-remove-org-user)
+		* [neuro admin get-org-clusters](#neuro-admin-get-org-clusters)
+		* [neuro admin add-org-cluster](#neuro-admin-add-org-cluster)
+		* [neuro admin get-org-cluster-quota](#neuro-admin-get-org-cluster-quota)
+		* [neuro admin set-org-cluster-quota](#neuro-admin-set-org-cluster-quota)
+		* [neuro admin set-org-cluster-credits](#neuro-admin-set-org-cluster-credits)
+		* [neuro admin add-org-cluster-credits](#neuro-admin-add-org-cluster-credits)
 	* [neuro job](#neuro-job)
 		* [neuro job run](#neuro-job-run)
 		* [neuro job generate-run-command](#neuro-job-generate-run-command)
@@ -223,6 +236,7 @@ Name | Description|
 | _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
 | _[neuro admin generate\-cluster-config](#neuro-admin-generate-cluster-config)_| Create a cluster configuration file |
 | _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster |
+| _[neuro admin remove-cluster](#neuro-admin-remove-cluster)_| Drop a cluster |
 | _[neuro admin show\-cluster-options](#neuro-admin-show-cluster-options)_| Show available cluster options |
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| List users in specified cluster |
 | _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster |
@@ -234,6 +248,18 @@ Name | Description|
 | _[neuro admin add\-resource-preset](#neuro-admin-add-resource-preset)_| Add new resource preset |
 | _[neuro admin update\-resource-preset](#neuro-admin-update-resource-preset)_| Update existing resource preset |
 | _[neuro admin remove\-resource-preset](#neuro-admin-remove-resource-preset)_| Remove resource preset |
+| _[neuro admin get-orgs](#neuro-admin-get-orgs)_| Print the list of available orgs |
+| _[neuro admin add-org](#neuro-admin-add-org)_| Create a new org |
+| _[neuro admin remove-org](#neuro-admin-remove-org)_| Drop a org |
+| _[neuro admin get\-org-users](#neuro-admin-get-org-users)_| List users in specified org |
+| _[neuro admin add\-org-user](#neuro-admin-add-org-user)_| Add user access to specified org |
+| _[neuro admin remove\-org-user](#neuro-admin-remove-org-user)_| Remove user access from the org |
+| _[neuro admin get\-org-clusters](#neuro-admin-get-org-clusters)_| Print the list of all orgs in the cluster |
+| _[neuro admin add\-org-cluster](#neuro-admin-add-org-cluster)_| Add org access to specified cluster |
+| _[neuro admin get\-org-cluster-quota](#neuro-admin-get-org-cluster-quota)_| Get info about org quota in given cluster |
+| _[neuro admin set\-org-cluster-quota](#neuro-admin-set-org-cluster-quota)_| Set org cluster quota to given values |
+| _[neuro admin set\-org-cluster-credits](#neuro-admin-set-org-cluster-credits)_| Set org cluster credits to given value |
+| _[neuro admin add\-org-cluster-credits](#neuro-admin-add-org-cluster-credits)_| Add given values to org cluster balance |
 
 
 
@@ -296,6 +322,26 @@ Name | Description|
 
 
 
+### neuro admin remove-cluster
+
+Drop a cluster<br/><br/>Completely removes cluster from the system.
+
+**Usage:**
+
+```bash
+neuro admin remove-cluster [OPTIONS] CLUSTER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--force_|Skip prompt|
+
+
+
+
 ### neuro admin show-cluster-options
 
 Show available cluster options.
@@ -331,6 +377,7 @@ neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--org ORG_|org name for org-cluster users|
 
 
 
@@ -352,6 +399,7 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_--org ORG_|org name for org-cluster users|
 
 
 
@@ -371,6 +419,7 @@ neuro admin remove-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--org ORG_|org name for org-cluster users|
 
 
 
@@ -390,6 +439,7 @@ neuro admin get-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--org ORG_|org name for org-cluster users|
 
 
 
@@ -410,6 +460,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[required]|
+|_--org ORG_|org name for org-cluster users|
 
 
 
@@ -430,6 +481,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[required]|
+|_--org ORG_|org name for org-cluster users|
 
 
 
@@ -450,6 +502,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-c, --credits AMOUNT_|Credits amount to add  \[required]|
+|_--org ORG_|org name for org-cluster users|
 
 
 
@@ -525,6 +578,240 @@ neuro admin remove-resource-preset [OPTIONS] PRESET_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin get-orgs
+
+Print the list of available orgs.
+
+**Usage:**
+
+```bash
+neuro admin get-orgs [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin add-org
+
+Create a new org.
+
+**Usage:**
+
+```bash
+neuro admin add-org [OPTIONS] ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin remove-org
+
+Drop a org<br/><br/>Completely removes org from the system.
+
+**Usage:**
+
+```bash
+neuro admin remove-org [OPTIONS] ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--force_|Skip prompt|
+
+
+
+
+### neuro admin get-org-users
+
+List users in specified org
+
+**Usage:**
+
+```bash
+neuro admin get-org-users [OPTIONS] ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin add-org-user
+
+Add user access to specified org.<br/><br/>The command supports one of 3 user roles: admin, manager or user.
+
+**Usage:**
+
+```bash
+neuro admin add-org-user [OPTIONS] ORG_NAME USER_NAME [ROLE]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin remove-org-user
+
+Remove user access from the org.
+
+**Usage:**
+
+```bash
+neuro admin remove-org-user [OPTIONS] ORG_NAME USER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin get-org-clusters
+
+Print the list of all orgs in the cluster
+
+**Usage:**
+
+```bash
+neuro admin get-org-clusters [OPTIONS] CLUSTER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin add-org-cluster
+
+Add org access to specified cluster.
+
+**Usage:**
+
+```bash
+neuro admin add-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+
+
+
+
+### neuro admin get-org-cluster-quota
+
+Get info about org quota in given cluster
+
+**Usage:**
+
+```bash
+neuro admin get-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin set-org-cluster-quota
+
+Set org cluster quota to given values
+
+**Usage:**
+
+```bash
+neuro admin set-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[required]|
+
+
+
+
+### neuro admin set-org-cluster-credits
+
+Set org cluster credits to given value
+
+**Usage:**
+
+```bash
+neuro admin set-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[required]|
+
+
+
+
+### neuro admin add-org-cluster-credits
+
+Add given values to org cluster balance
+
+**Usage:**
+
+```bash
+neuro admin add-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\-c, --credits AMOUNT_|Credits amount to add|
 
 
 
