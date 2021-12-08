@@ -235,9 +235,9 @@ neuro config switch-org [OPTIONS] ORG_NAME
 Switch the active organization.
 
 `ORG`_`NAME` is the organization name to
-select. Use "no_org" value to access
-current cluster directly instead of as
-part of some org.
+select. Use literal "NO_`ORG`" to switch
+to using current cluster directly
+instead of on behalf of some org.
 
 #### Options
 

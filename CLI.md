@@ -2003,7 +2003,7 @@ Name | Description|
 
 ### neuro config switch-org
 
-Switch the active organization.<br/><br/>ORG\_NAME is the organization name to select. Use "no_org" value to access<br/>current cluster directly instead of as part of some org.
+Switch the active organization.<br/><br/>ORG\_NAME is the organization name to select. Use literal "NO_ORG" to switch to<br/>using current cluster directly instead of on behalf of some org.
 
 **Usage:**
 

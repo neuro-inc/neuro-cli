@@ -620,6 +620,28 @@ async def test_switch_org_local(
         assert client.config.org_name == "test-org"
 
 
+async def test_no_org_local(
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
+    multiple_clusters_config: Dict[str, Cluster],
+) -> None:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "org-name", scope=ConfigScope.LOCAL)
+    async with make_client(
+        "https://example.org",
+        clusters=multiple_clusters_config,
+        plugin_manager=plugin_manager,
+    ) as client:
+        proj_dir = tmp_path / "project"
+        local_dir = proj_dir / "folder"
+        local_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.chdir(local_dir)
+        local_conf = proj_dir / ".neuro.toml"
+        local_conf.write_text(toml.dumps({"job": {"org-name": "NO_ORG"}}))
+        assert client.config.org_name is None
+
+
 async def test_check_server_mismatch_clusters(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:

@@ -256,8 +256,8 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
 async def switch_org(root: Root, org_name: Optional[str]) -> None:
     """Switch the active organization.
 
-    ORG_NAME is the organization name to select. Use "no_org" value to access
-    current cluster directly instead of as part of some org.
+    ORG_NAME is the organization name to select. Use literal "NO_ORG" to switch
+    to using current cluster directly instead of on behalf of some org.
     """
     with root.status("Fetching the list of available cluster/org pairs"):
         await root.client.config.fetch()

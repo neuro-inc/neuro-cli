@@ -72,10 +72,6 @@ class _ConfigRecoveryData:
     refresh_token: str
 
 
-class _Unset:
-    pass
-
-
 @rewrite_module
 class Config(metaclass=NoPublicConstructor):
     def __init__(self, core: _Core, path: Path, plugin_manager: PluginManager) -> None:
@@ -129,16 +125,18 @@ class Config(metaclass=NoPublicConstructor):
     @property
     def org_name(self) -> Optional[str]:
         name = self._get_user_org_name()
-        if isinstance(name, _Unset):
+        if name == "NO_ORG":
+            return None
+        if name is None:
             name = self._config_data.org_name
         return name
 
-    def _get_user_org_name(self) -> Union[str, None, _Unset]:
+    def _get_user_org_name(self) -> Optional[str]:
         config = self._get_user_config()
         section = config.get("job")
         if section is not None:
-            return section.get("org-name", _Unset())
-        return _Unset()
+            return section.get("org-name")
+        return None
 
     @property
     def _cluster(self) -> Cluster:
@@ -213,7 +211,7 @@ class Config(metaclass=NoPublicConstructor):
         _save(self._config_data, self._path)
 
     async def switch_org(self, name: Optional[str]) -> None:
-        if not isinstance(self._get_user_org_name(), _Unset):
+        if self._get_user_org_name() is not None:
             raise RuntimeError(
                 "Cannot switch the project org. Please edit the '.neuro.toml' file."
             )
