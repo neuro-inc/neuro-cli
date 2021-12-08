@@ -51,6 +51,13 @@ Config
 
       To switch on another cluster use :meth:`switch_cluster`.
 
+
+   .. attribute:: org_name
+
+      The current org name, read-only :class:`str`.
+
+      To switch on another org use :meth:`switch_org`.
+
    .. comethod:: fetch() -> None
 
       Fetch available clusters configuration from the Neuro Platform.
@@ -62,6 +69,14 @@ Config
    .. comethod:: switch_cluster(name: str) -> None
 
       Switch the current cluster to *name*.
+
+      .. note::
+
+         The call updates local configuration files.
+
+   .. comethod:: switch_org(name: str) -> None
+
+      Switch the current org to *name*.
 
       .. note::
 
