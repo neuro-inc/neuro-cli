@@ -935,7 +935,11 @@ def _container_to_api(
         primitive["volumes"] = [_volume_to_api(v, config) for v in volumes]
     if secret_env:
         primitive["secret_env"] = {
-            k: str(normalize_secret_uri(v, config.username, config.cluster_name))
+            k: str(
+                normalize_secret_uri(
+                    v, config.username, config.cluster_name, config.org_name
+                )
+            )
             for k, v in secret_env.items()
         }
     if secret_files:
@@ -1089,7 +1093,7 @@ def _job_telemetry_from_api(value: Dict[str, Any]) -> JobTelemetry:
 
 def _volume_to_api(volume: Volume, config: Config) -> Dict[str, Any]:
     uri = normalize_storage_path_uri(
-        volume.storage_uri, config.username, config.cluster_name
+        volume.storage_uri, config.username, config.cluster_name, config.org_name
     )
     resp: Dict[str, Any] = {
         "src_storage_uri": str(uri),
@@ -1101,7 +1105,7 @@ def _volume_to_api(volume: Volume, config: Config) -> Dict[str, Any]:
 
 def _secret_file_to_api(secret_file: SecretFile, config: Config) -> Dict[str, Any]:
     uri = normalize_secret_uri(
-        secret_file.secret_uri, config.username, config.cluster_name
+        secret_file.secret_uri, config.username, config.cluster_name, config.org_name
     )
     return {
         "src_secret_uri": str(uri),
@@ -1110,7 +1114,9 @@ def _secret_file_to_api(secret_file: SecretFile, config: Config) -> Dict[str, An
 
 
 def _disk_volume_to_api(volume: DiskVolume, config: Config) -> Dict[str, Any]:
-    uri = normalize_disk_uri(volume.disk_uri, config.username, config.cluster_name)
+    uri = normalize_disk_uri(
+        volume.disk_uri, config.username, config.cluster_name, config.org_name
+    )
     resp: Dict[str, Any] = {
         "src_disk_uri": str(uri),
         "dst_path": volume.container_path,

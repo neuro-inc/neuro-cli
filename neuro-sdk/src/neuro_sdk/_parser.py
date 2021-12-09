@@ -11,6 +11,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    Union,
     overload,
 )
 
@@ -108,6 +109,10 @@ class BucketUriParseResult:
     key: str
 
 
+class _Unset:
+    pass
+
+
 @rewrite_module
 class Parser(metaclass=NoPublicConstructor):
     def __init__(self, config: Config) -> None:
@@ -128,12 +133,18 @@ class Parser(metaclass=NoPublicConstructor):
         raw_uri = ":".join(parts)
         return raw_uri, container_path, read_only
 
-    def volume(self, volume: str, cluster_name: Optional[str] = None) -> Volume:
+    def volume(
+        self,
+        volume: str,
+        cluster_name: Optional[str] = None,
+        org_name: Union[str, None, _Unset] = _Unset(),
+    ) -> Volume:
         raw_uri, container_path, read_only = self._parse_generic_volume(volume)
         storage_uri = uri_from_cli(
             raw_uri,
             self._config.username,
             cluster_name or self._config.cluster_name,
+            org_name if not isinstance(org_name, _Unset) else self._config.org_name,
             allowed_schemes=("storage",),
         )
         return Volume(
@@ -163,12 +174,16 @@ class Parser(metaclass=NoPublicConstructor):
         return secret_files
 
     def _parse_secret_resource(
-        self, uri: str, cluster_name: Optional[str] = None
+        self,
+        uri: str,
+        cluster_name: Optional[str] = None,
+        org_name: Union[str, None, _Unset] = _Unset(),
     ) -> URL:
         return uri_from_cli(
             uri,
             self._config.username,
             cluster_name or self._config.cluster_name,
+            org_name if not isinstance(org_name, _Unset) else self._config.org_name,
             allowed_schemes=("secret",),
         )
 
@@ -184,11 +199,17 @@ class Parser(metaclass=NoPublicConstructor):
             disk_volumes.append(DiskVolume(disk_uri, container_path, read_only))
         return disk_volumes
 
-    def _parse_disk_resource(self, uri: str, cluster_name: Optional[str] = None) -> URL:
+    def _parse_disk_resource(
+        self,
+        uri: str,
+        cluster_name: Optional[str] = None,
+        org_name: Union[str, None, _Unset] = _Unset(),
+    ) -> URL:
         return uri_from_cli(
             uri,
             self._config.username,
             cluster_name or self._config.cluster_name,
+            org_name if not isinstance(org_name, _Unset) else self._config.org_name,
             allowed_schemes=("disk",),
         )
 
@@ -307,12 +328,14 @@ class Parser(metaclass=NoPublicConstructor):
         *,
         allowed_schemes: Iterable[str] = (),
         cluster_name: Optional[str] = None,
+        org_name: Union[None, str, _Unset] = _Unset(),
         short: bool = False,
     ) -> URL:
         ret = uri_from_cli(
             id_or_name_or_uri,
             self._config.username,
             cluster_name or self._config.cluster_name,
+            org_name if not isinstance(org_name, _Unset) else self._config.org_name,
             allowed_schemes=allowed_schemes,
         )
         if short:
@@ -334,6 +357,7 @@ class Parser(metaclass=NoPublicConstructor):
             str(path),
             self._config.username,
             self._config.cluster_name,
+            self._config.org_name,
             allowed_schemes=("file",),
         )
 
@@ -343,6 +367,7 @@ class Parser(metaclass=NoPublicConstructor):
         *,
         allowed_schemes: Iterable[str] = (),
         cluster_name: Optional[str] = None,
+        org_name: Union[None, str, _Unset] = _Unset(),
         short: bool = False,
     ) -> URL:
         _check_scheme(uri.scheme, allowed_schemes)
@@ -350,6 +375,7 @@ class Parser(metaclass=NoPublicConstructor):
             uri,
             self._config.username,
             cluster_name or self._config.cluster_name,
+            org_name if not isinstance(org_name, _Unset) else self._config.org_name,
         )
         if short:
             ret = self._short(ret)

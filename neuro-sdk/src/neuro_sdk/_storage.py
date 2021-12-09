@@ -129,7 +129,7 @@ class Storage(metaclass=NoPublicConstructor):
 
     def _normalize_uri(self, uri: URL) -> URL:
         return normalize_storage_path_uri(
-            uri, self._config.username, self._config.cluster_name
+            uri, self._config.username, self._config.cluster_name, self._config.org_name
         )
 
     def _get_storage_url(self, uri: URL, *, normalized: bool = False) -> URL:
@@ -502,9 +502,7 @@ class Storage(metaclass=NoPublicConstructor):
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
-        dst = normalize_storage_path_uri(
-            dst, self._config.username, self._config.cluster_name
-        )
+        dst = self._normalize_uri(dst)
         path = _extract_path(src)
         try:
             if not path.exists():
@@ -605,9 +603,7 @@ class Storage(metaclass=NoPublicConstructor):
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
-        dst = normalize_storage_path_uri(
-            dst, self._config.username, self._config.cluster_name
-        )
+        dst = self._normalize_uri(dst)
         path = _extract_path(src).resolve()
         if not path.exists():
             raise FileNotFoundError(errno.ENOENT, "No such file", str(path))
@@ -743,9 +739,7 @@ class Storage(metaclass=NoPublicConstructor):
         continue_: bool = False,
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
-        src = normalize_storage_path_uri(
-            src, self._config.username, self._config.cluster_name
-        )
+        src = self._normalize_uri(src)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
         src_stat = await self.stat(src)
@@ -817,9 +811,7 @@ class Storage(metaclass=NoPublicConstructor):
     ) -> None:
         if filter is None:
             filter = _always
-        src = normalize_storage_path_uri(
-            src, self._config.username, self._config.cluster_name
-        )
+        src = self._normalize_uri(src)
         dst = normalize_local_path_uri(dst)
         path = _extract_path(dst)
 

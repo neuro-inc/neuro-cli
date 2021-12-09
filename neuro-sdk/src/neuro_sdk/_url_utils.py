@@ -2,7 +2,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, Optional
 from urllib.parse import quote_from_bytes
 
 from yarl import URL
@@ -14,6 +14,7 @@ def uri_from_cli(
     path_or_uri: str,
     username: str,
     cluster_name: str,
+    org_name: Optional[str],
     *,
     allowed_schemes: Iterable[str] = ("file", "storage"),
 ) -> URL:
@@ -53,7 +54,7 @@ def uri_from_cli(
     if uri.scheme == "file":
         uri = normalize_local_path_uri(uri)
     else:
-        uri = _normalize_uri(uri, username, cluster_name)
+        uri = _normalize_uri(uri, username, cluster_name, org_name)
     return uri
 
 
@@ -73,34 +74,42 @@ def _check_scheme(scheme: str, allowed: Iterable[str]) -> None:
         )
 
 
-def normalize_storage_path_uri(uri: URL, username: str, cluster_name: str) -> URL:
+def normalize_storage_path_uri(
+    uri: URL, username: str, cluster_name: str, org_name: Optional[str]
+) -> URL:
     """Normalize storage url."""
     if uri.scheme != "storage":
         raise ValueError(
             f"Invalid storage scheme '{uri.scheme}:' (only 'storage:' is allowed)"
         )
-    return _normalize_uri(uri, username, cluster_name)
+    return _normalize_uri(uri, username, cluster_name, org_name)
 
 
-def normalize_secret_uri(uri: URL, username: str, cluster_name: str) -> URL:
+def normalize_secret_uri(
+    uri: URL, username: str, cluster_name: str, org_name: Optional[str]
+) -> URL:
     """Normalize secret url."""
     if uri.scheme != "secret":
         raise ValueError(
             f"Invalid secret scheme '{uri.scheme}:' (only 'secret:' is allowed)"
         )
-    return _normalize_uri(uri, username, cluster_name)
+    return _normalize_uri(uri, username, cluster_name, org_name)
 
 
-def normalize_disk_uri(uri: URL, username: str, cluster_name: str) -> URL:
+def normalize_disk_uri(
+    uri: URL, username: str, cluster_name: str, org_name: Optional[str]
+) -> URL:
     """Normalize disk url."""
     if uri.scheme != "disk":
         raise ValueError(
             f"Invalid disk scheme '{uri.scheme}:' (only 'disk:' is allowed)"
         )
-    return _normalize_uri(uri, username, cluster_name)
+    return _normalize_uri(uri, username, cluster_name, org_name)
 
 
-def _normalize_uri(uri: URL, username: str, cluster_name: str) -> URL:
+def _normalize_uri(
+    uri: URL, username: str, cluster_name: str, org_name: Optional[str]
+) -> URL:
     """Normalize all other user-bound URI's like jobs, storage, images, etc."""
     _check_uri(uri)
     path = uri.path
@@ -113,6 +122,8 @@ def _normalize_uri(uri: URL, username: str, cluster_name: str) -> URL:
                 path = path.lstrip("/")
             else:
                 path = f"{username}/{path}" if path else username
+            if org_name is not None:
+                path = f"{org_name}/{path}"
         else:
             raise ValueError(f"Absolute URI is required for scheme {uri.scheme}")
         uri = URL.build(scheme=uri.scheme, host=host, path="/" + path)
