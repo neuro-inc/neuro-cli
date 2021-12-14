@@ -1,0 +1,8 @@
+Id          bucket                                   
+ Uri         blob://cluster/test-org/user/test-bucket 
+ Name        test-bucket                              
+ Org name    test-org                                 
+ Created at  Mar 04 2017                              
+ Provider    aws                                      
+ Imported    False                                    
+ Public      False
