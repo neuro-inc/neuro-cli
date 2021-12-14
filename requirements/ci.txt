@@ -1,6 +1,6 @@
 -r base.txt
 -r mypy.txt
-cmarkgfm==0.6.0
+cmarkgfm==0.7.0
 markdown-toc==1.2.6
 pexpect==4.8.0
 pre-commit==2.16.0
