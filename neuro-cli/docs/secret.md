@@ -38,6 +38,7 @@ List secrets.
 | _--help_ | Show this message and exit. |
 | _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
 | _--full-uri_ | Output full disk URI. |
+| _--org ORG_ | Look on a specified org \(the current org by default\). |
 
 
 
@@ -71,6 +72,7 @@ $ neuro secret add KEY_NAME @path/to/file.txt
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
+| _--org ORG_ | Look on a specified org \(the current org by default\). |
 
 
 
@@ -93,5 +95,6 @@ Remove secret `KEY`.
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
+| _--org ORG_ | Look on a specified org \(the current org by default\). |
 
 

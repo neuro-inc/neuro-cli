@@ -16,10 +16,14 @@ class Secret:
     key: str
     owner: str
     cluster_name: str
+    org_name: Optional[str]
 
     @property
     def uri(self) -> URL:
-        return URL(f"secret://{self.cluster_name}/{self.owner}/{self.key}")
+        base = f"secret://{self.cluster_name}"
+        if self.org_name:
+            base += f"/{self.org_name}"
+        return URL(f"{base}/{self.owner}/{self.key}")
 
 
 @rewrite_module
@@ -43,23 +47,38 @@ class Secrets(metaclass=NoPublicConstructor):
                 yield Secret(
                     key=j["key"],
                     owner=j["owner"],
-                    cluster_name=self._config.cluster_name,
+                    cluster_name=cluster_name or self._config.cluster_name,
+                    org_name=j.get("org_name"),
                 )
 
     async def add(
-        self, key: str, value: bytes, cluster_name: Optional[str] = None
+        self,
+        key: str,
+        value: bytes,
+        cluster_name: Optional[str] = None,
+        org_name: Optional[str] = None,
     ) -> None:
         url = self._get_secrets_url(cluster_name)
         auth = await self._config._api_auth()
         data = {
             "key": key,
             "value": base64.b64encode(value).decode("ascii"),
+            "org_name": org_name or self._config.org_name,
         }
         async with self._core.request("POST", url, auth=auth, json=data):
             pass
 
-    async def rm(self, key: str, cluster_name: Optional[str] = None) -> None:
+    async def rm(
+        self,
+        key: str,
+        cluster_name: Optional[str] = None,
+        org_name: Optional[str] = None,
+    ) -> None:
         url = self._get_secrets_url(cluster_name) / key
         auth = await self._config._api_auth()
-        async with self._core.request("DELETE", url, auth=auth):
+        params = {}
+        org_name = org_name or self._config.org_name
+        if org_name:
+            params["org_name"] = org_name
+        async with self._core.request("DELETE", url, auth=auth, params=params):
             pass
