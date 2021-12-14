@@ -309,7 +309,58 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
+        rich_cmp(
+            JobStatusFormatter(
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
+            )(description)
+        )
+
+    def test_job_with_org_urls(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
+        description = JobDescription(
+            status=JobStatus.FAILED,
+            owner="test-user",
+            cluster_name="default",
+            org_name="test-org",
+            id="test-job",
+            uri=URL("job://default/test-org/test-user/test-job"),
+            name="test-job-name",
+            description="test job description",
+            http_url=URL("http://local.host.test/"),
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="ErrorReason",
+                description="ErrorDesc",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                exit_code=123,
+            ),
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_external_image(name="test-image"),
+                resources=Resources(16, 0.1, 0, None, False, None, None),
+                http=HTTPPort(port=80, requires_auth=True),
+                volumes=[
+                    Volume(
+                        storage_uri=URL("storage://default/test-org/test-user/folder"),
+                        container_path="/mnt/storage",
+                    )
+                ],
+            ),
+            scheduler_enabled=False,
+            pass_config=True,
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
+        )
+
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="default", org_name="test-org"
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -349,7 +400,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -389,7 +442,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -429,7 +484,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -469,7 +526,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -510,7 +569,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -549,7 +610,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -585,7 +648,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -622,7 +687,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -658,7 +725,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -696,7 +765,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -755,7 +826,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -795,7 +868,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -834,7 +909,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -881,7 +958,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -944,7 +1023,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -1074,7 +1155,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -1137,7 +1220,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -1184,7 +1269,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -1221,7 +1308,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -1258,7 +1347,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -1296,7 +1387,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal("15"),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -1334,7 +1427,9 @@ class TestJobOutputFormatter:
             price_credits_per_hour=Decimal(15 / 15000),
         )
 
-        uri_fmtr = uri_formatter(username="test-user", cluster_name="test-cluster")
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
         rich_cmp(
             JobStatusFormatter(
                 uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
@@ -1698,7 +1793,7 @@ class TestTabularJobRow:
     def test_image_from_registry_parsing_short(
         self, root: Root, datetime_formatter: DatetimeFormatter
     ) -> None:
-        uri_fmtr = uri_formatter(username="bob", cluster_name="default")
+        uri_fmtr = uri_formatter(username="bob", cluster_name="default", org_name=None)
         image_fmtr = image_formatter(uri_formatter=uri_fmtr)
         row = TabularJobRow.from_job(
             self._job_descr_with_status(

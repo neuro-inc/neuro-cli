@@ -49,6 +49,7 @@ async def ls(
             uri_fmtr = uri_formatter(
                 username=root.client.username,
                 cluster_name=cluster or root.client.cluster_name,
+                org_name=root.client.config.org_name,
             )
         disks_fmtr = DisksFormatter(
             uri_fmtr,
@@ -159,6 +160,7 @@ async def get(root: Root, cluster: Optional[str], disk: str, full_uri: bool) -> 
         uri_fmtr = uri_formatter(
             username=root.client.username,
             cluster_name=cluster or root.client.cluster_name,
+            org_name=root.client.config.org_name,
         )
     disk_fmtr = DiskFormatter(
         uri_fmtr, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)

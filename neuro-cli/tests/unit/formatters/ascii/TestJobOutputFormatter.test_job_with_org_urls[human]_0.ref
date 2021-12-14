@@ -1,0 +1,23 @@
+Job                     test-job                          
+ Name                    test-job-name                     
+ Owner                   test-user                         
+ Cluster                 default                           
+ Organisation            test-org                          
+ Description             test job description              
+ Status                  failed (ErrorReason)              
+ Image                   test-image                        
+ Command                 test-command                      
+ Price (credits / hour)  15.0000                           
+ Current cost            150.0000                          
+ Resources                Memory  16.0M                    
+                          CPU       0.1                    
+ TTY                     False                             
+ Volumes                  /mnt/storage  storage:folder     
+ Http URL                http://local.host.test/           
+ Http port               80                                
+ Http authentication     True                              
+ Created                 Sep 25 2018 at 12:28              
+ Started                 Sep 25 2018 at 12:28              
+ Finished                Sep 25 2018 at 12:28              
+ Exit code               123                               
+ Description             ErrorDesc

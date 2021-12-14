@@ -40,6 +40,7 @@ async def ls(root: Root, full_uri: bool, cluster: Optional[str]) -> None:
             uri_fmtr = uri_formatter(
                 username=root.client.username,
                 cluster_name=cluster or root.client.cluster_name,
+                org_name=root.client.config.org_name,
             )
         secrets_fmtr = SecretsFormatter(
             uri_fmtr,

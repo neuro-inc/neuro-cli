@@ -97,6 +97,7 @@ async def lsbucket(
             uri_fmtr = uri_formatter(
                 username=root.client.username,
                 cluster_name=cluster or root.client.cluster_name,
+                org_name=root.client.config.org_name,
             )
         buckets_fmtr = BucketsFormatter(
             uri_fmtr,
@@ -332,6 +333,7 @@ async def statbucket(
         uri_fmtr = uri_formatter(
             username=root.client.username,
             cluster_name=cluster or root.client.cluster_name,
+            org_name=root.client.config.org_name,
         )
     bucket_fmtr = BucketFormatter(
         uri_fmtr, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
@@ -463,6 +465,7 @@ async def ls(
         uri_fmtr = uri_formatter(
             username=root.client.username,
             cluster_name=root.client.cluster_name,
+            org_name=root.client.config.org_name,
         )
     if format_long:
         # Similar to `ls -l`
@@ -515,6 +518,7 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[URL]) -> None:
         uri_fmtr = uri_formatter(
             username=root.client.username,
             cluster_name=root.client.cluster_name,
+            org_name=root.client.config.org_name,
         )
     for pattern in patterns:
 

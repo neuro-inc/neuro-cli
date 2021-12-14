@@ -11,13 +11,19 @@ URIFormatter = Callable[[URL], str]
 ImageFormatter = Callable[[RemoteImage], str]
 
 
-def uri_formatter(username: str, cluster_name: str) -> URIFormatter:
+def uri_formatter(
+    username: str, cluster_name: str, org_name: Optional[str]
+) -> URIFormatter:
     def formatter(uri: URL) -> str:
         if uri.scheme in SCHEMES:
             if uri.host == cluster_name:
                 assert uri.path[0] == "/"
                 path = uri.path.lstrip("/")
-                owner, _, rest = path.partition("/")
+                owner_or_org, _, rest = path.partition("/")
+                if owner_or_org == org_name:
+                    owner, _, rest = rest.partition("/")
+                else:
+                    owner = owner_or_org
                 if owner == username:
                     return f"{uri.scheme}:{rest.lstrip('/')}"
                 return f"{uri.scheme}:/{path}"
