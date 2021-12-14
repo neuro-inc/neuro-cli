@@ -58,6 +58,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
             ),
         },
         name="default",
+        orgs=[None],
     )
     cluster2_config = Cluster(
         registry_url=URL("https://registry2-dev.neu.ro"),
@@ -73,6 +74,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
             ),
         },
         name="other",
+        orgs=[None],
     )
     config = _ConfigData(
         auth_config=auth_config,
@@ -80,7 +82,8 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         url=URL("https://dev.neu.ro/api/v1"),
         admin_url=URL("https://dev.neu.ro/apis/admin/v1"),
         version=__version__,
-        cluster_name="default",
+        cluster_name=cluster_config.name,
+        org_name=cluster_config.orgs[0],
         clusters={
             cluster_config.name: cluster_config,
             cluster2_config.name: cluster2_config,

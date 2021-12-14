@@ -101,6 +101,7 @@ def cluster_config() -> Cluster:
             ),
         },
         name="default",
+        orgs=[None, "some-org"],
     )
 
 
@@ -150,6 +151,7 @@ def make_client(
                     ),
                 },
                 name="default",
+                orgs=[None],
             )
             clusters = {cluster_config.name: cluster_config}
         if token_url is not None:
@@ -158,13 +160,15 @@ def make_client(
             real_auth_config = auth_config
         if plugin_manager is None:
             plugin_manager = PluginManager()
+        cluster_name = next(iter(clusters))
         config = _ConfigData(
             auth_config=real_auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
             url=URL(url),
             admin_url=URL(url) / ".." / ".." / "apis" / "admin" / "v1",
             version=__version__,
-            cluster_name=next(iter(clusters)),
+            cluster_name=cluster_name,
+            org_name=clusters[cluster_name].orgs[0],
             clusters=clusters,
         )
         config_dir = tmp_path / ".neuro"

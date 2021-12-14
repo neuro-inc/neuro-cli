@@ -72,6 +72,7 @@
 		* [neuro config aliases](#neuro-config-aliases)
 		* [neuro config get-clusters](#neuro-config-get-clusters)
 		* [neuro config switch-cluster](#neuro-config-switch-cluster)
+		* [neuro config switch-org](#neuro-config-switch-org)
 		* [neuro config docker](#neuro-config-docker)
 		* [neuro config logout](#neuro-config-logout)
 	* [neuro completion](#neuro-completion)
@@ -898,6 +899,7 @@ Name | Description|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\-n, --name NAME_|Optional job name|
+|_--org ORG_|Run job in a specified org|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
@@ -1838,8 +1840,9 @@ Name | Description|
 | _[neuro config show](#neuro-config-show)_| Print current settings |
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config aliases](#neuro-config-aliases)_| List available command aliases |
-| _[neuro config get-clusters](#neuro-config-get-clusters)_| List available clusters |
+| _[neuro config get-clusters](#neuro-config-get-clusters)_| List available clusters/org pairs |
 | _[neuro config switch-cluster](#neuro-config-switch-cluster)_| Switch the active cluster |
+| _[neuro config switch-org](#neuro-config-switch-org)_| Switch the active organization |
 | _[neuro config docker](#neuro-config-docker)_| Configure local docker client |
 | _[neuro config logout](#neuro-config-logout)_| Log out |
 
@@ -1962,7 +1965,7 @@ Name | Description|
 
 ### neuro config get-clusters
 
-List available clusters.<br/><br/>This command re-fetches cluster list and then displays it.
+List available clusters/org pairs.<br/><br/>This command re-fetches cluster list and then displays each cluster with<br/>available orgs.
 
 **Usage:**
 
@@ -1987,6 +1990,25 @@ Switch the active cluster.<br/><br/>CLUSTER_NAME is the cluster name to select. 
 
 ```bash
 neuro config switch-cluster [OPTIONS] [CLUSTER_NAME]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config switch-org
+
+Switch the active organization.<br/><br/>ORG\_NAME is the organization name to select. Use literal "NO_ORG" to switch to<br/>using current cluster directly instead of on behalf of some org.
+
+**Usage:**
+
+```bash
+neuro config switch-org [OPTIONS] ORG_NAME
 ```
 
 **Options:**
@@ -3069,6 +3091,7 @@ Name | Description|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\-n, --name NAME_|Optional job name|
+|_--org ORG_|Run job in a specified org|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|

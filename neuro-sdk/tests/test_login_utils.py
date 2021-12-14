@@ -249,6 +249,7 @@ async def test_get_server_config_with_token_legacy(
                     ),
                 },
                 name="default",
+                orgs=[None],
             )
         },
     )
@@ -421,6 +422,7 @@ async def test_get_server_config_with_token(aiohttp_client: _TestClientFactory) 
             ),
         },
         name="default",
+        orgs=[None],
     )
     assert config == _ServerConfig(
         auth_config=_AuthConfig(

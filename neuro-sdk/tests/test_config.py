@@ -30,6 +30,7 @@ def plugin_manager() -> PluginManager:
     manager.config.define_str("job", "top-format")
     manager.config.define_str("job", "life-span")
     manager.config.define_str("job", "cluster-name", scope=ConfigScope.LOCAL)
+    manager.config.define_str("job", "org-name", scope=ConfigScope.LOCAL)
     manager.config.define_str_list("storage", "cp-exclude")
     manager.config.define_str_list("storage", "cp-exclude-from-files")
     return manager
@@ -161,6 +162,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
     return {
         "default": Cluster(
             name="default",
+            orgs=[None, "test-org"],
             registry_url=URL("https://registry-dev.neu.ro"),
             storage_url=URL("https://storage-dev.neu.ro"),
             users_url=URL("https://users-dev.neu.ro"),
@@ -176,6 +178,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
         ),
         "another": Cluster(
             name="another",
+            orgs=[None, "some_org"],
             registry_url=URL("https://registry2-dev.neu.ro"),
             storage_url=URL("https://storage2-dev.neu.ro"),
             users_url=URL("https://users2-dev.neu.ro"),
@@ -352,6 +355,7 @@ async def test_clusters(
         assert dict(client.config.clusters) == {
             "default": Cluster(
                 name="default",
+                orgs=[None],
                 registry_url=URL("https://registry-dev.neu.ro"),
                 storage_url=srv.make_url("/storage"),
                 users_url=srv.make_url("/"),
@@ -363,6 +367,7 @@ async def test_clusters(
             ),
             "another": Cluster(
                 name="another",
+                orgs=[None, "some_org"],
                 registry_url=srv.make_url("/registry2"),
                 storage_url=srv.make_url("/storage2"),
                 users_url=srv.make_url("/"),
@@ -405,6 +410,7 @@ async def test_fetch(
         "clusters": [
             {
                 "name": "default",
+                "orgs": [None, "some-org"],
                 "registry_url": registry_url,
                 "storage_url": storage_url,
                 "users_url": users_url,
@@ -436,6 +442,7 @@ async def test_fetch(
         assert client.config.clusters == {
             "default": Cluster(
                 name="default",
+                orgs=[None, "some-org"],
                 registry_url=URL(registry_url),
                 storage_url=URL(storage_url),
                 users_url=URL(users_url),
@@ -532,12 +539,35 @@ async def test_switch_clusters(
         assert client.config.cluster_name == "another"
 
 
+async def test_switch_org(
+    make_client: _MakeClient, multiple_clusters_config: Dict[str, Cluster]
+) -> None:
+    async with make_client(
+        "https://example.org", clusters=multiple_clusters_config
+    ) as client:
+        assert client.config.org_name is None
+        await client.config.switch_org("test-org")
+        assert client.config.org_name == "test-org"
+
+
 async def test_switch_clusters_unknown(make_client: _MakeClient) -> None:
     async with make_client("https://example.org") as client:
         assert client.config.cluster_name == "default"
         with pytest.raises(RuntimeError, match="Cluster unknown doesn't exist"):
             await client.config.switch_cluster("unknown")
         assert client.config.cluster_name == "default"
+
+
+async def test_switch_org_unknown(
+    make_client: _MakeClient, multiple_clusters_config: Dict[str, Cluster]
+) -> None:
+    async with make_client(
+        "https://example.org", clusters=multiple_clusters_config
+    ) as client:
+        assert client.config.org_name is None
+        with pytest.raises(RuntimeError, match="Org unknown doesn't exist"):
+            await client.config.switch_org("unknown")
+        assert client.config.org_name is None
 
 
 async def test_switch_clusters_local(
@@ -563,6 +593,53 @@ async def test_switch_clusters_local(
         with pytest.raises(RuntimeError, match=r"\.neuro\.toml"):
             await client.config.switch_cluster("default")
         assert client.config.cluster_name == "another"
+
+
+async def test_switch_org_local(
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
+    multiple_clusters_config: Dict[str, Cluster],
+) -> None:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "org-name", scope=ConfigScope.LOCAL)
+    async with make_client(
+        "https://example.org",
+        clusters=multiple_clusters_config,
+        plugin_manager=plugin_manager,
+    ) as client:
+        proj_dir = tmp_path / "project"
+        local_dir = proj_dir / "folder"
+        local_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.chdir(local_dir)
+        local_conf = proj_dir / ".neuro.toml"
+        local_conf.write_text(toml.dumps({"job": {"org-name": "test-org"}}))
+        assert client.config.org_name == "test-org"
+        with pytest.raises(RuntimeError, match=r"\.neuro\.toml"):
+            await client.config.switch_org(None)
+        assert client.config.org_name == "test-org"
+
+
+async def test_no_org_local(
+    monkeypatch: Any,
+    tmp_path: Path,
+    make_client: _MakeClient,
+    multiple_clusters_config: Dict[str, Cluster],
+) -> None:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "org-name", scope=ConfigScope.LOCAL)
+    async with make_client(
+        "https://example.org",
+        clusters=multiple_clusters_config,
+        plugin_manager=plugin_manager,
+    ) as client:
+        proj_dir = tmp_path / "project"
+        local_dir = proj_dir / "folder"
+        local_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.chdir(local_dir)
+        local_conf = proj_dir / ".neuro.toml"
+        local_conf.write_text(toml.dumps({"job": {"org-name": "NO_ORG"}}))
+        assert client.config.org_name is None
 
 
 async def test_check_server_mismatch_clusters(

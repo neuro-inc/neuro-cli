@@ -33,6 +33,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
                 )
             },
             name="first",
+            orgs=[None],
         ),
         "second": Cluster(
             registry_url=URL("https://registry2-dev.neu.ro"),
@@ -48,6 +49,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
                 )
             },
             name="second",
+            orgs=[None],
         ),
     }
 
@@ -103,6 +105,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
                 )
             },
             name="first",
+            orgs=[None],
         ),
         "second": Cluster(
             registry_url=URL("https://registry2-dev.neu.ro"),
@@ -118,6 +121,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
                 )
             },
             name="second",
+            orgs=[None],
         ),
     }
 

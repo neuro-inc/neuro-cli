@@ -19,8 +19,9 @@ Client configuration.
 | [_show_](config.md#show) | Print current settings |
 | [_show-token_](config.md#show-token) | Print current authorization token |
 | [_aliases_](config.md#aliases) | List available command aliases |
-| [_get-clusters_](config.md#get-clusters) | List available clusters |
+| [_get-clusters_](config.md#get-clusters) | List available clusters/org pairs |
 | [_switch-cluster_](config.md#switch-cluster) | Switch the active cluster |
+| [_switch-org_](config.md#switch-org) | Switch the active organization |
 | [_docker_](config.md#docker) | Configure local docker client |
 | [_logout_](config.md#logout) | Log out |
 
@@ -172,7 +173,7 @@ List available command aliases.
 
 ### get-clusters
 
-List available clusters
+List available clusters/org pairs
 
 
 #### Usage
@@ -181,10 +182,11 @@ List available clusters
 neuro config get-clusters [OPTIONS]
 ```
 
-List available clusters.
+List available clusters/org pairs.
 
-This command re-fetches cluster list and then
-displays it.
+This command re-fetches cluster list and
+then displays each
+cluster with available orgs.
 
 #### Options
 
@@ -210,6 +212,32 @@ Switch the active cluster.
 `CLUSTER`_`NAME` is the cluster name to select.
 The interactive prompt is used if the
 name is omitted (default).
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### switch-org
+
+Switch the active organization
+
+
+#### Usage
+
+```bash
+neuro config switch-org [OPTIONS] ORG_NAME
+```
+
+Switch the active organization.
+
+`ORG`_`NAME` is the organization name to
+select. Use literal "NO_`ORG`" to switch
+to using current cluster directly
+instead of on behalf of some org.
 
 #### Options
 

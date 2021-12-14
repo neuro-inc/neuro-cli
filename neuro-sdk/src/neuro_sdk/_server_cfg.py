@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Dict, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 import aiohttp
 from yarl import URL
@@ -28,6 +28,7 @@ class Preset:
 @dataclass(frozen=True)
 class Cluster:
     name: str
+    orgs: List[Optional[str]]
     registry_url: URL
     storage_url: URL
     users_url: URL
@@ -67,6 +68,7 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
         )
     cluster_config = Cluster(
         name=payload["name"],
+        orgs=payload.get("orgs", [None]),
         registry_url=URL(payload["registry_url"]),
         storage_url=URL(payload["storage_url"]),
         users_url=URL(payload["users_url"]),

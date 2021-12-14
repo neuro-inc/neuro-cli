@@ -192,6 +192,13 @@ async def user_config() -> None:
     `neuro config switch-cluster`.  Can only be specified in the **local**
     configuration file.
 
+    **`org-name`**
+
+    The name of active organization which overrides the global organization
+    name set by `neuro config switch-org`.  Can only be specified in
+    the **local** configuration file. Use literal 'NO_ORG' to setup direct
+    access instead of on behalf of some organization.
+
     **`ps-format`**
 
     Default value for the `neuro ps --format=XXX` option.

@@ -57,6 +57,7 @@ def _create_config(
         admin_url=URL("https://dev.neu.ro/apis/admin/v1"),
         version=__version__,
         cluster_name=cluster_config.name,
+        org_name=cluster_config.orgs[0],
         clusters={cluster_config.name: cluster_config},
     )
     Factory(nmrc_path)._save(config)
