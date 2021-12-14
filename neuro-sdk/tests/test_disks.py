@@ -34,6 +34,7 @@ async def test_list(
                     "storage": 600,
                     "owner": "user",
                     "status": "Pending",
+                    "org_name": "test-org",
                     "created_at": created_at.isoformat(),
                     "last_usage": last_usage.isoformat(),
                     "life_span": 3600,
@@ -61,6 +62,7 @@ async def test_list(
             owner="user",
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
+            org_name=None,
             created_at=created_at,
             timeout_unused=None,
             name=None,
@@ -71,6 +73,7 @@ async def test_list(
             owner="user",
             status=Disk.Status.PENDING,
             cluster_name=cluster_config.name,
+            org_name="test-org",
             created_at=created_at,
             last_usage=last_usage,
             timeout_unused=timedelta(hours=1),
@@ -92,6 +95,7 @@ async def test_add(
             "storage": 500,
             "life_span": 3600,
             "name": "test-disk",
+            "org_name": None,
         }
         return web.json_response(
             {
@@ -118,6 +122,57 @@ async def test_add(
             owner="user",
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
+            org_name=None,
+            created_at=created_at,
+            timeout_unused=timedelta(hours=1),
+            name="test-disk",
+        )
+
+
+async def test_add_with_org_name(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_config: Cluster,
+) -> None:
+    created_at = datetime.now()
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "storage": 500,
+            "life_span": 3600,
+            "name": "test-disk",
+            "org_name": "test-org",
+        }
+        return web.json_response(
+            {
+                "id": "disk-1",
+                "storage": 500,
+                "owner": "user",
+                "status": "Ready",
+                "created_at": created_at.isoformat(),
+                "life_span": 3600,
+                "name": "test-disk",
+                "org_name": "test-org",
+            },
+        )
+
+    app = web.Application()
+    app.router.add_post("/disk", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        disk = await client.disks.create(
+            500, timedelta(hours=1), name="test-disk", org_name="test-org"
+        )
+        assert disk == Disk(
+            id="disk-1",
+            storage=500,
+            owner="user",
+            status=Disk.Status.READY,
+            cluster_name=cluster_config.name,
+            org_name="test-org",
             created_at=created_at,
             timeout_unused=timedelta(hours=1),
             name="test-disk",
@@ -158,6 +213,7 @@ async def test_get(
             owner="user",
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
+            org_name=None,
             created_at=created_at,
         )
 

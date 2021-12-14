@@ -87,6 +87,7 @@ $ neuro disk create 500M
 | _--help_ | Show this message and exit. |
 | _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
 | _--name NAME_ | Optional disk name |
+| _--org ORG_ | Perform in a specified org \(the current org by default\). |
 | _--timeout-unused TIMEDELTA_ | Optional disk lifetime limit after last usage in the format '1d2h3m4s' \(some parts may be missing\). Set '0' to disable. Default value '1d' can be changed in the user config. |
 
 

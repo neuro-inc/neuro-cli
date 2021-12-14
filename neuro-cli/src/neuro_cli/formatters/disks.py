@@ -11,6 +11,7 @@ from rich.text import Text
 from neuro_sdk import Disk
 
 from neuro_cli import utils
+from neuro_cli.click_types import ORG
 from neuro_cli.formatters.utils import DatetimeFormatter, URIFormatter, format_timedelta
 
 
@@ -51,6 +52,7 @@ class DisksFormatter(BaseDisksFormatter):
         ]
         if self._long_format:
             line += [
+                disk.org_name or ORG.NO_ORG_STR,
                 self._datetime_formatter(disk.created_at),
                 self._datetime_formatter(disk.last_usage),
                 format_disk_timeout_unused(disk.timeout_unused),
@@ -69,6 +71,7 @@ class DisksFormatter(BaseDisksFormatter):
         table.add_column("Uri")
         table.add_column("Status")
         if self._long_format:
+            table.add_column("Org name")
             table.add_column("Created at")
             table.add_column("Last used")
             table.add_column("Timeout unused")
@@ -98,6 +101,7 @@ class DiskFormatter:
         table.add_row("Uri", self._uri_formatter(disk.uri))
         if disk.name:
             table.add_row("Name", disk.name)
+        table.add_row("Org name", disk.org_name or ORG.NO_ORG_STR)
         table.add_row("Status", disk.status.value)
         table.add_row("Created at", self._datetime_formatter(disk.created_at))
         table.add_row("Last used", self._datetime_formatter(disk.last_usage))
