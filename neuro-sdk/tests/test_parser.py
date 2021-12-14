@@ -142,6 +142,7 @@ async def test_parse_remote(make_client: _MakeClient) -> None:
         owner="bob",
         registry="registry-dev.neu.ro",
         cluster_name="default",
+        org_name=None,
     )
 
 
@@ -156,6 +157,7 @@ async def test_parse_remote_registry_image(make_client: _MakeClient) -> None:
         owner="bob",
         registry="localhost:5000",
         cluster_name="default",
+        org_name=None,
     )
 
 

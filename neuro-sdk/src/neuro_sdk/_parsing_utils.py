@@ -23,6 +23,11 @@ class RemoteImage:
     owner: Optional[str] = None
     registry: Optional[str] = None
     cluster_name: Optional[str] = None
+    org_name: Optional[str] = None
+
+    @property
+    def _is_in_neuro_registry(self) -> bool:
+        return bool(self.registry and self.owner and self.cluster_name)
 
     @classmethod
     def new_neuro_image(
@@ -32,6 +37,7 @@ class RemoteImage:
         *,
         owner: str,
         cluster_name: str,
+        org_name: Optional[str],
         tag: Optional[str] = None,
     ) -> "RemoteImage":
         return RemoteImage(
@@ -40,6 +46,7 @@ class RemoteImage:
             owner=owner,
             registry=registry,
             cluster_name=cluster_name,
+            org_name=org_name,
         )
 
     @classmethod
@@ -61,8 +68,11 @@ class RemoteImage:
                 raise ValueError("required registry")
 
     def as_docker_url(self, with_scheme: bool = False) -> str:
-        if _is_in_neuro_registry(self):
-            prefix = f"{self.registry}/{self.owner}/"
+        if self._is_in_neuro_registry:
+            if self.org_name:
+                prefix = f"{self.registry}/{self.org_name}/{self.owner}/"
+            else:
+                prefix = f"{self.registry}/{self.owner}/"
             prefix = "https://" + prefix if with_scheme else prefix
         else:
             prefix = ""
@@ -73,29 +83,22 @@ class RemoteImage:
         result = self.name
         if self.tag:
             result = f"{result}:{self.tag}"
-        if _is_in_neuro_registry(self):
+        if self._is_in_neuro_registry:
             assert self.cluster_name is not None
+            base = ""
+            if self.org_name:
+                base = f"/{self.org_name}"
             result = str(
                 URL.build(
                     scheme="image",
                     host=self.cluster_name,
-                    path=f"/{self.owner}/{result}",
+                    path=f"{base}/{self.owner}/{result}",
                 )
             )
         return result
 
     def __rich__(self) -> str:
         return str(self)
-
-
-def _is_in_neuro_registry(image: RemoteImage) -> bool:
-    return bool(image.registry and image.owner and image.cluster_name)
-
-
-def _as_repo_str(image: RemoteImage) -> str:
-    pre = f"{image.registry}/{image.owner}/" if _is_in_neuro_registry(image) else ""
-    post = f":{image.tag}" if image.tag else ""
-    return pre + image.name + post
 
 
 @rewrite_module
@@ -114,10 +117,15 @@ class LocalImage:
 
 class _ImageNameParser:
     def __init__(
-        self, default_user: str, default_cluster: str, registry_urls: Dict[str, URL]
+        self,
+        default_user: str,
+        default_cluster: str,
+        default_org: Optional[str],
+        registry_urls: Dict[str, URL],
     ):
         self._default_user = default_user
         self._default_cluster = default_cluster
+        self._default_org_name = default_org
         self._registries = {}
         for cluster_name, registry_url in registry_urls.items():
             if not registry_url.host:
@@ -168,6 +176,7 @@ class _ImageNameParser:
 
     def convert_to_neuro_image(self, image: LocalImage) -> RemoteImage:
         cluster_name = self._default_cluster
+        org_name = self._default_org_name
         owner = self._default_user
         name = image.name
         res = self._find_by_registry(name)
@@ -184,6 +193,7 @@ class _ImageNameParser:
             tag=image.tag,
             owner=owner,
             cluster_name=cluster_name,
+            org_name=org_name,
             registry=self._registries[cluster_name],
         )
 
@@ -221,10 +231,13 @@ class _ImageNameParser:
             _check_uri_str(image, "image")
             url = URL(image)
             if not url.scheme and url.path.startswith("image:"):
+                prefix = ""
+                if self._default_org_name:
+                    prefix = f"/{self._default_org_name}"
                 url = URL.build(
                     scheme="image",
                     host=self._default_cluster,
-                    path=f"/{self._default_user}/{url.path[len('image:') :]}",
+                    path=f"{prefix}/{self._default_user}/{url.path[len('image:') :]}",
                 )
         else:
             res = self._find_by_registry(image)
@@ -238,9 +251,19 @@ class _ImageNameParser:
         _check_uri(url)
 
         name, tag = self._split_image_name(url.path.lstrip("/"), default_tag)
-        cluster_name = url.host or self._default_cluster
+        if url.host is None:
+            # This is short url, either image:name or image:/username/name
+            cluster_name = self._default_cluster
+            org_name = self._default_org_name
+        else:
+            cluster_name = url.host
+            org_name = None
         if url.path.startswith("/"):
             owner, _, name = name.partition("/")
+            if owner == self._default_org_name and url.host:
+                # Long form with explicit org name (image://cluster/org/user/image)
+                org_name = owner
+                owner, _, name = name.partition("/")
             if not name:
                 raise ValueError("no image name specified")
         else:
@@ -258,6 +281,7 @@ class _ImageNameParser:
             registry=self._registries[cluster_name],
             owner=owner,
             cluster_name=cluster_name,
+            org_name=org_name,
         )
 
     def _find_by_registry(self, image: str) -> Optional[Tuple[str, str]]:

@@ -17,7 +17,7 @@ from neuro_sdk import (
     Tag,
     TagOption,
 )
-from neuro_sdk._parsing_utils import _as_repo_str, _get_url_authority, _ImageNameParser
+from neuro_sdk._parsing_utils import _get_url_authority, _ImageNameParser
 
 from tests import _TestServerFactory
 
@@ -37,6 +37,7 @@ class TestImageParser:
     parser = _ImageNameParser(
         default_user="alice",
         default_cluster="default",
+        default_org=None,
         registry_urls={
             "default": URL("https://reg.neu.ro"),
             "another": URL("https://example.org"),
@@ -102,6 +103,7 @@ class TestImageParser:
         parser = _ImageNameParser(
             default_user="alice",
             default_cluster="test-cluster",
+            default_org=None,
             registry_urls={"test-cluster": URL(registry_url)},
         )
         assert parser._registries == {"test-cluster": "reg.neu.ro"}
@@ -113,6 +115,7 @@ class TestImageParser:
         parser = _ImageNameParser(
             default_user="alice",
             default_cluster="test-cluster",
+            default_org=None,
             registry_urls={"test-cluster": URL(registry_url)},
         )
         assert parser._registries == {"test-cluster": "reg.neu.ro:5000"}
@@ -128,6 +131,7 @@ class TestImageParser:
             _ImageNameParser(
                 default_user="alice",
                 default_cluster="test-cluster",
+                default_org=None,
                 registry_urls={"test-cluster": URL(registry_url)},
             )
 
@@ -315,6 +319,29 @@ class TestImageParser:
         ):
             self.parser.parse_as_neuro_image(image)
 
+    def test_parse_as_neuro_image_with_org(
+        self,
+    ) -> None:
+        image = "image://another/test-org/bob/ubuntu:v10.04"
+        parser = _ImageNameParser(
+            default_user="alice",
+            default_cluster="default",
+            default_org="test-org",
+            registry_urls={
+                "default": URL("https://reg.neu.ro"),
+                "another": URL("https://example.org"),
+            },
+        )
+        parsed = parser.parse_as_neuro_image(image)
+        assert parsed == RemoteImage.new_neuro_image(
+            name="ubuntu",
+            tag="v10.04",
+            owner="bob",
+            cluster_name="another",
+            registry="example.org",
+            org_name="test-org",
+        )
+
     def test_parse_as_neuro_image_with_scheme_with_cluster_with_user_with_tag(
         self,
     ) -> None:
@@ -326,6 +353,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="another",
             registry="example.org",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_with_cluster_with_user_with_tag_2(
@@ -339,6 +367,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="another",
             registry="example.org",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_with_cluster_with_user_no_tag(
@@ -352,6 +381,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="another",
             registry="example.org",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_with_cluster_with_user_no_tag_2(
@@ -365,6 +395,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="another",
             registry="example.org",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_unknown_cluster(self) -> None:
@@ -387,6 +418,7 @@ class TestImageParser:
             owner="alice",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_no_slash_no_cluster_no_user_no_tag_2(
@@ -400,6 +432,7 @@ class TestImageParser:
             owner="alice",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_no_slash_no_cluster_no_user_with_tag(
@@ -413,6 +446,7 @@ class TestImageParser:
             owner="alice",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_no_slash_no_cluster_no_user_with_tag_2(
@@ -426,6 +460,7 @@ class TestImageParser:
             owner="alice",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_1_slash_no_cluster_no_name_no_tag(
@@ -444,6 +479,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_1_slash_no_cluster_no_tag_2(self) -> None:
@@ -455,6 +491,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_1_slash_no_cluster_no_name_with_tag(
@@ -473,6 +510,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_1_slash_no_cluster_with_tag_2(
@@ -486,6 +524,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_2_slash_cluster_user_no_name_no_tag_fail(
@@ -518,6 +557,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_3_slash_no_cluster_no_tag_2(self) -> None:
@@ -529,6 +569,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_3_slash_no_cluster_no_name_with_tag(
@@ -547,6 +588,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_3_slash_no_cluster_with_tag_2(
@@ -560,6 +602,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_4_slash_no_cluster_no_name_with_tag(
@@ -578,6 +621,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_4_slash_no_cluster_with_tag_2(
@@ -591,6 +635,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_4_slash_no_cluster_no_name_no_tag(
@@ -609,6 +654,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_4_slash_no_cluster_no_tag_2(self) -> None:
@@ -620,6 +666,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_special_chars(self) -> None:
@@ -631,6 +678,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="another",
             registry="example.org",
+            org_name=None,
         )
         assert self.parser.parse_as_neuro_image(str(parsed)) == parsed
 
@@ -683,6 +731,7 @@ class TestImageParser:
             owner="user",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
         assert self.parser.parse_as_neuro_image(str(image)) == image
 
@@ -700,6 +749,7 @@ class TestImageParser:
             owner="alice",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_allow_tag_false_no_scheme_no_tag(self) -> None:
@@ -730,6 +780,7 @@ class TestImageParser:
             owner="artem",
             cluster_name="default",
             registry="reg.com",
+            org_name=None,
         )
         local_image = self.parser.convert_to_local_image(neuro_image)
         assert local_image == LocalImage(name="ubuntu", tag="latest")
@@ -743,6 +794,28 @@ class TestImageParser:
             owner="alice",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
+        )
+
+    def test_convert_to_neuro_image_with_defualt_org(self) -> None:
+        local_image = LocalImage(name="ubuntu", tag="latest")
+        parser = _ImageNameParser(
+            default_user="alice",
+            default_cluster="default",
+            default_org="test-org",
+            registry_urls={
+                "default": URL("https://reg.neu.ro"),
+                "another": URL("https://example.org"),
+            },
+        )
+        neuro_image = parser.convert_to_neuro_image(local_image)
+        assert neuro_image == RemoteImage.new_neuro_image(
+            name="ubuntu",
+            tag="latest",
+            owner="alice",
+            cluster_name="default",
+            registry="reg.neu.ro",
+            org_name="test-org",
         )
 
     def test_convert_to_neuro_image__neuro_registry(self) -> None:
@@ -754,6 +827,7 @@ class TestImageParser:
             owner="bob",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_convert_to_neuro_image__neuro_registry__no_user(self) -> None:
@@ -765,6 +839,7 @@ class TestImageParser:
             owner="alice",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_convert_to_neuro_image__neuro_registry__no_path(self) -> None:
@@ -776,6 +851,7 @@ class TestImageParser:
             owner="alice",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     # corner case 'image:latest'
@@ -801,6 +877,7 @@ class TestImageParser:
             owner="alice",
             cluster_name="default",
             registry="reg.neu.ro",
+            org_name=None,
         )
 
     def test_parse_as_local_image__neuro_registry(self) -> None:
@@ -812,6 +889,7 @@ class TestImageParser:
         my_parser = _ImageNameParser(
             default_user="alice",
             default_cluster="test-cluster",
+            default_org=None,
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
         image = "localhost:5000/bob/ubuntu:v10.04"
@@ -822,6 +900,7 @@ class TestImageParser:
         my_parser = _ImageNameParser(
             default_user="alice",
             default_cluster="test-cluster",
+            default_org=None,
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
         image = "image://test-cluster/bob/library/ubuntu:v10.04"
@@ -832,12 +911,14 @@ class TestImageParser:
             owner="bob",
             cluster_name="test-cluster",
             registry="localhost:5000",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image__registry_has_port__image_in_good_repo(self) -> None:
         my_parser = _ImageNameParser(
             default_user="alice",
             default_cluster="test-cluster",
+            default_org=None,
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
         image = "localhost:5000/bob/library/ubuntu:v10.04"
@@ -848,12 +929,14 @@ class TestImageParser:
             owner="bob",
             cluster_name="test-cluster",
             registry="localhost:5000",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image__registry_has_port__image_in_bad_repo(self) -> None:
         my_parser = _ImageNameParser(
             default_user="alice",
             default_cluster="test-cluster",
+            default_org=None,
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
         image = "localhost:9999/bob/library/ubuntu:v10.04"
@@ -864,6 +947,7 @@ class TestImageParser:
         my_parser = _ImageNameParser(
             default_user="alice",
             default_cluster="test-cluster",
+            default_org=None,
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
         image = "image://test-cluster/bob/library/ubuntu:v10.04"
@@ -874,12 +958,14 @@ class TestImageParser:
             owner="bob",
             cluster_name="test-cluster",
             registry="localhost:5000",
+            org_name=None,
         )
 
     def test_parse_remote__registry_has_port__image_in_good_repo(self) -> None:
         my_parser = _ImageNameParser(
             default_user="alice",
             default_cluster="test-cluster",
+            default_org=None,
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
         image = "localhost:5000/bob/library/ubuntu:v10.04"
@@ -890,12 +976,14 @@ class TestImageParser:
             owner="bob",
             cluster_name="test-cluster",
             registry="localhost:5000",
+            org_name=None,
         )
 
     def test_parse_remote__registry_has_port__image_in_other_repo(self) -> None:
         my_parser = _ImageNameParser(
             default_user="alice",
             default_cluster="test-cluster",
+            default_org=None,
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
         image = "example.com:9999/bob/library/ubuntu:v10.04"
@@ -915,10 +1003,11 @@ class TestRemoteImage:
             tag=None,
             owner="me",
             cluster_name="test-cluster",
+            org_name=None,
             registry="registry.io",
         )
         assert str(image) == "image://test-cluster/me/ubuntu"
-        assert _as_repo_str(image) == "registry.io/me/ubuntu"
+        assert image.as_docker_url() == "registry.io/me/ubuntu"
 
     def test_as_str_in_neuro_registry_tag_yes(self) -> None:
         image = RemoteImage.new_neuro_image(
@@ -927,9 +1016,10 @@ class TestRemoteImage:
             owner="me",
             cluster_name="test-cluster",
             registry="registry.io",
+            org_name=None,
         )
         assert str(image) == "image://test-cluster/me/ubuntu:v10.04"
-        assert _as_repo_str(image) == "registry.io/me/ubuntu:v10.04"
+        assert image.as_docker_url() == "registry.io/me/ubuntu:v10.04"
 
     def test_as_str_in_neuro_registry_tag_special_chars(self) -> None:
         image = RemoteImage.new_neuro_image(
@@ -938,22 +1028,23 @@ class TestRemoteImage:
             owner="me",
             cluster_name="test-cluster",
             registry="registry.io",
+            org_name=None,
         )
         assert (
             str(image)
             == "image://test-cluster/me/image%23%252d%3F%C3%9F:tag%23%252d%3F%C3%9F"
         )
-        assert _as_repo_str(image) == "registry.io/me/image#%2d?ß:tag#%2d?ß"
+        assert image.as_docker_url() == "registry.io/me/image#%2d?ß:tag#%2d?ß"
 
     def test_as_str_not_in_neuro_registry_tag_none(self) -> None:
         image = RemoteImage.new_external_image(name="ubuntu")
         assert str(image) == "ubuntu"
-        assert _as_repo_str(image) == "ubuntu"
+        assert image.as_docker_url() == "ubuntu"
 
     def test_as_str_not_in_neuro_registry_tag_yes(self) -> None:
         image = RemoteImage.new_external_image(name="ubuntu", tag="v10.04")
         assert str(image) == "ubuntu:v10.04"
-        assert _as_repo_str(image) == "ubuntu:v10.04"
+        assert image.as_docker_url() == "ubuntu:v10.04"
 
     def test_as_docker_url_in_neuro_registry(self) -> None:
         image = RemoteImage(
@@ -975,6 +1066,7 @@ class TestImages:
     parser = _ImageNameParser(
         default_user="user",
         default_cluster="default",
+        default_org=None,
         registry_urls={"default": URL("https://registry-dev.neu.ro")},
     )
 
@@ -1194,6 +1286,7 @@ class TestRegistry:
                 owner="bob",
                 cluster_name="default",
                 registry=registry,
+                org_name=None,
             ),
             RemoteImage.new_neuro_image(
                 "bananas",
@@ -1201,6 +1294,7 @@ class TestRegistry:
                 owner="jill",
                 cluster_name="default",
                 registry=registry,
+                org_name=None,
             ),
         }
 
@@ -1249,6 +1343,7 @@ class TestRegistry:
                 owner="bob",
                 cluster_name="default",
                 registry=registry,
+                org_name=None,
             ),
             RemoteImage.new_neuro_image(
                 "library/ubuntu",
@@ -1256,6 +1351,7 @@ class TestRegistry:
                 owner="alice",
                 cluster_name="default",
                 registry=registry,
+                org_name=None,
             ),
             RemoteImage.new_neuro_image(
                 "bananas",
@@ -1263,6 +1359,7 @@ class TestRegistry:
                 owner="jill",
                 cluster_name="default",
                 registry=registry,
+                org_name=None,
             ),
         }
 
@@ -1305,6 +1402,7 @@ class TestRegistry:
                 owner="me",
                 cluster_name="default",
                 registry="reg",
+                org_name=None,
             )
             ret = await client.images.tags(image)
 
@@ -1315,6 +1413,7 @@ class TestRegistry:
                 owner="me",
                 cluster_name="default",
                 registry="reg",
+                org_name=None,
             ),
             RemoteImage.new_neuro_image(
                 "test",
@@ -1322,6 +1421,7 @@ class TestRegistry:
                 owner="me",
                 cluster_name="default",
                 registry="reg",
+                org_name=None,
             ),
             RemoteImage.new_neuro_image(
                 "test",
@@ -1329,6 +1429,7 @@ class TestRegistry:
                 owner="me",
                 cluster_name="default",
                 registry="reg",
+                org_name=None,
             ),
         }
 
@@ -1375,6 +1476,7 @@ class TestRegistry:
                 owner="me",
                 cluster_name="default",
                 registry="reg",
+                org_name=None,
             )
             ret = await client.images.tags(image)
         assert step == 3  # All steps are passed
@@ -1386,6 +1488,7 @@ class TestRegistry:
                 owner="me",
                 cluster_name="default",
                 registry="reg",
+                org_name=None,
             ),
             RemoteImage.new_neuro_image(
                 "test",
@@ -1393,6 +1496,7 @@ class TestRegistry:
                 owner="me",
                 cluster_name="default",
                 registry="reg",
+                org_name=None,
             ),
             RemoteImage.new_neuro_image(
                 "test",
@@ -1400,6 +1504,7 @@ class TestRegistry:
                 owner="me",
                 cluster_name="default",
                 registry="reg",
+                org_name=None,
             ),
         }
 
@@ -1452,6 +1557,7 @@ class TestRegistry:
                 owner="me",
                 cluster_name="default",
                 registry="reg",
+                org_name=None,
             )
             ret = await client.images.tag_info(image)
             assert image.tag
@@ -1471,6 +1577,7 @@ class TestRegistry:
                 owner="me",
                 cluster_name="default",
                 registry="reg",
+                org_name=None,
             )
             with pytest.raises(ValueError, match="tag is not allowed"):
                 await client.images.tags(image)
@@ -1488,6 +1595,7 @@ class TestRegistry:
                 owner="me",
                 cluster_name="default",
                 registry="reg",
+                org_name=None,
             )
             with pytest.raises(ValueError, match="missing image name"):
                 await client.images.tags(image)

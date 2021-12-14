@@ -242,6 +242,14 @@ RemoteImage
       Public DockerHub_ images (e.g. ``"ubuntu:latest"``) have no *owner*, the attribute
       is ``None``.
 
+   .. attribute:: org_name
+
+      Name (:class:`str`) of an organization who manages this image  or `None`
+      if there is no such org.
+
+      Public DockerHub_ images (e.g. ``"ubuntu:latest"``) have no *org*, the attribute
+      is ``None``.
+
    .. attribute:: registry
 
       Host name for images hosted on Neuro Registry (:class:`str`), ``None`` for

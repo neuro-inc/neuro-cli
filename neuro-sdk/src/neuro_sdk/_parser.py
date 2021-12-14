@@ -213,13 +213,18 @@ class Parser(metaclass=NoPublicConstructor):
             allowed_schemes=("disk",),
         )
 
-    def _get_image_parser(self, cluster_name: Optional[str] = None) -> _ImageNameParser:
+    def _get_image_parser(
+        self, cluster_name: Optional[str] = None, org_name: Optional[str] = None
+    ) -> _ImageNameParser:
         registry = {
             cluster.name: cluster.registry_url
             for cluster in self._config.clusters.values()
         }
         return _ImageNameParser(
-            self._config.username, cluster_name or self._config.cluster_name, registry
+            default_user=self._config.username,
+            default_cluster=cluster_name or self._config.cluster_name,
+            default_org=org_name or self._config.org_name,
+            registry_urls=registry,
         )
 
     def local_image(self, image: str) -> LocalImage:
