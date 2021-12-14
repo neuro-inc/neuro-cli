@@ -27,6 +27,7 @@ Buckets
    .. comethod:: create(  \
                         name: typing.Optional[str], \
                         cluster_name: Optional[str] = None, \
+                        org_name: Optional[str] = None, \
                  ) -> Bucket
 
       Create a new bucket.
@@ -36,8 +37,38 @@ Buckets
 
       :param str cluster_name: cluster to create a bucket. Default is current cluster.
 
+      :param str org_name: org to create a bucket. Default is current org.
+
 
       :return: Newly created bucket info (:class:`Bucket`)
+
+   .. comethod:: import_external(  \
+                                 provider: Bucket.Provider, \
+                                 provider_bucket_name: str, \
+                                 credentials: Mapping[str, str], \
+                                 name: Optional[str] = None, \
+                                 cluster_name: Optional[str] = None, \
+                                 org_name: Optional[str] = None, \
+                 ) -> Bucket
+
+      Import a new bucket.
+
+
+      :param Bucket.Provider provider: Provider type of imported bucket.
+
+      :param str provider_bucket_name: Name of external bucket inside the provider.
+
+      :param Mapping[str, str] credentials: Raw credentials to access bucket provider.
+
+      :param ~typing.Optional[str] name: Name of the bucket. Should be unique among all user's
+                                         bucket.
+
+      :param str cluster_name: cluster to import a bucket. Default is current cluster.
+
+      :param str org_name: org to import a bucket. Default is current org.
+
+
+      :return: Newly imported bucket info (:class:`Bucket`)
 
    .. comethod:: get(bucket_id_or_name: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> Bucket
 
@@ -454,6 +485,10 @@ Bucket
    .. attribute:: cluster_name
 
       Cluster this bucket belongs to, :class:`str`.
+
+   .. attribute:: org_name
+
+      Org this bucket belongs to, :class:`str` or `None` if there is no such org.
 
    .. attribute:: created_at
 

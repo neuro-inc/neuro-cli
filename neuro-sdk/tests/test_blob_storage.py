@@ -104,6 +104,7 @@ def mock_bucket() -> Bucket:
         created_at=datetime.now(timezone.utc),
         provider=Bucket.Provider.AWS,
         imported=False,
+        org_name=None,
     )
 
 

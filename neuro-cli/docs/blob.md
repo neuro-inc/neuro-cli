@@ -75,6 +75,7 @@ Create a new bucket.
 | _--help_ | Show this message and exit. |
 | _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
 | _--name NAME_ | Optional bucket name |
+| _--org ORG_ | Perform in a specified org \(the current org by default\). |
 
 
 
@@ -106,6 +107,7 @@ Import an existing bucket.
 | _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
 | _--gcp-sa-credential GCP\_SA\_CREDNETIAL_ | GCP service account credential in form of base64 encoded json string that grants access to imported bucket. Required when PROVIDER is 'gcp' |
 | _--name NAME_ | Optional bucket name |
+| _--org ORG_ | Perform in a specified org \(the current org by default\). |
 | _--provider PROVIDER_ | Bucket provider that hosts bucket  _\[required\]_ |
 | _--provider-bucket-name EXTERNAL\_NAME_ | Name of bucket \(or container in case of Azure\) inside the provider  _\[required\]_ |
 

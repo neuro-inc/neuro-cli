@@ -27,6 +27,7 @@ async def test_list(
                     "provider": "aws",
                     "created_at": created_at.isoformat(),
                     "imported": False,
+                    "org_name": None,
                 },
                 {
                     "id": "bucket-2",
@@ -35,6 +36,7 @@ async def test_list(
                     "provider": "aws",
                     "created_at": created_at.isoformat(),
                     "imported": True,
+                    "org_name": "test-org",
                 },
             ]
         )
@@ -60,6 +62,7 @@ async def test_list(
             created_at=created_at,
             provider=Bucket.Provider.AWS,
             imported=False,
+            org_name=None,
         ),
         Bucket(
             id="bucket-2",
@@ -69,6 +72,7 @@ async def test_list(
             created_at=created_at,
             provider=Bucket.Provider.AWS,
             imported=True,
+            org_name="test-org",
         ),
     ]
 
@@ -84,6 +88,7 @@ async def test_add(
         data = await request.json()
         assert data == {
             "name": "test-bucket",
+            "org_name": None,
         }
         return web.json_response(
             {
@@ -110,6 +115,50 @@ async def test_add(
             created_at=created_at,
             provider=Bucket.Provider.AWS,
             imported=False,
+            org_name=None,
+        )
+
+
+async def test_add_with_org(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_config: Cluster,
+) -> None:
+    created_at = datetime.now()
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "name": "test-bucket",
+            "org_name": "test-org",
+        }
+        return web.json_response(
+            {
+                "id": "bucket-1",
+                "owner": "user",
+                "name": "test-bucket",
+                "created_at": created_at.isoformat(),
+                "provider": "aws",
+                "org_name": "test-org",
+            }
+        )
+
+    app = web.Application()
+    app.router.add_post("/buckets/buckets", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        bucket = await client.buckets.create(name="test-bucket", org_name="test-org")
+        assert bucket == Bucket(
+            id="bucket-1",
+            owner="user",
+            cluster_name=cluster_config.name,
+            name="test-bucket",
+            created_at=created_at,
+            provider=Bucket.Provider.AWS,
+            imported=False,
+            org_name="test-org",
         )
 
 
@@ -127,6 +176,7 @@ async def test_import(
             "provider": "aws",
             "provider_bucket_name": "test-external",
             "credentials": {"key": "value"},
+            "org_name": None,
         }
         return web.json_response(
             {
@@ -159,6 +209,60 @@ async def test_import(
             created_at=created_at,
             provider=Bucket.Provider.AWS,
             imported=True,
+            org_name=None,
+        )
+
+
+async def test_import_with_org(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_config: Cluster,
+) -> None:
+    created_at = datetime.now()
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "name": "test-bucket",
+            "provider": "aws",
+            "provider_bucket_name": "test-external",
+            "credentials": {"key": "value"},
+            "org_name": "test-org",
+        }
+        return web.json_response(
+            {
+                "id": "bucket-1",
+                "owner": "user",
+                "name": "test-bucket",
+                "created_at": created_at.isoformat(),
+                "provider": "aws",
+                "imported": True,
+                "org_name": "test-org",
+            }
+        )
+
+    app = web.Application()
+    app.router.add_post("/buckets/buckets/import/external", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        bucket = await client.buckets.import_external(
+            provider=Bucket.Provider.AWS,
+            provider_bucket_name="test-external",
+            credentials={"key": "value"},
+            name="test-bucket",
+            org_name="test-org",
+        )
+        assert bucket == Bucket(
+            id="bucket-1",
+            owner="user",
+            cluster_name=cluster_config.name,
+            name="test-bucket",
+            created_at=created_at,
+            provider=Bucket.Provider.AWS,
+            imported=True,
+            org_name="test-org",
         )
 
 
@@ -196,6 +300,7 @@ async def test_get(
             created_at=created_at,
             provider=Bucket.Provider.AWS,
             imported=False,
+            org_name=None,
         )
 
 

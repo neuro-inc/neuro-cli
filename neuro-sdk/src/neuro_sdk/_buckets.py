@@ -180,6 +180,7 @@ class Buckets(metaclass=NoPublicConstructor):
             imported=payload.get("imported", False),
             public=payload.get("public", False),
             cluster_name=self._config.cluster_name,
+            org_name=payload.get("org_name"),
         )
 
     def _parse_bucket_credentials_payload(
@@ -217,11 +218,13 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
+        org_name: Optional[str] = None,
     ) -> Bucket:
         url = self._get_buckets_url(cluster_name)
         auth = await self._config._api_auth()
         data = {
             "name": name,
+            "org_name": org_name or self._config.org_name,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()
@@ -234,6 +237,7 @@ class Buckets(metaclass=NoPublicConstructor):
         credentials: Mapping[str, str],
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
+        org_name: Optional[str] = None,
     ) -> Bucket:
         url = self._get_buckets_url(cluster_name) / "import" / "external"
         auth = await self._config._api_auth()
@@ -242,6 +246,7 @@ class Buckets(metaclass=NoPublicConstructor):
             "provider": provider.value,
             "provider_bucket_name": provider_bucket_name,
             "credentials": credentials,
+            "org_name": org_name or self._config.org_name,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()
