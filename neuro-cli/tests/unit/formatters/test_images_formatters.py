@@ -81,6 +81,7 @@ class TestDockerImageProgress:
                         owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
+                        org_name=None,
                     ),
                     LocalImage("input", "latest"),
                 )
@@ -103,6 +104,7 @@ class TestDockerImageProgress:
                         owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
+                        org_name=None,
                     ),
                 )
             )
@@ -124,6 +126,7 @@ class TestDockerImageProgress:
                         owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
+                        org_name=None,
                     ),
                 )
             )
@@ -143,6 +146,7 @@ class TestDockerImageProgress:
                         owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
+                        org_name=None,
                     ),
                 )
             )
@@ -167,6 +171,7 @@ class TestDockerImageProgress:
                         owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
+                        org_name=None,
                     ),
                     LocalImage("input", "latest"),
                 )
@@ -191,6 +196,7 @@ class TestDockerImageProgress:
                         owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
+                        org_name=None,
                     ),
                 )
             )
@@ -214,6 +220,7 @@ class TestDockerImageProgress:
                         owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
+                        org_name=None,
                     ),
                 )
             )

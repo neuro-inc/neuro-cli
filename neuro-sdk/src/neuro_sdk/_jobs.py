@@ -45,7 +45,7 @@ from ._images import (
     _try_parse_image_progress_step,
 )
 from ._parser import DiskVolume, Parser, SecretFile, Volume
-from ._parsing_utils import LocalImage, RemoteImage, _as_repo_str, _is_in_neuro_registry
+from ._parsing_utils import LocalImage, RemoteImage
 from ._rewrite import rewrite_module
 from ._url_utils import (
     normalize_disk_uri,
@@ -576,12 +576,12 @@ class Jobs(metaclass=NoPublicConstructor):
         progress: Optional[AbstractDockerImageProgress] = None,
         cluster_name: Optional[str] = None,
     ) -> None:
-        if not _is_in_neuro_registry(image):
+        if not image._is_in_neuro_registry:
             raise ValueError(f"Image `{image}` must be in the neuro registry")
         if progress is None:
             progress = _DummyProgress()
 
-        payload = {"container": {"image": _as_repo_str(image)}}
+        payload = {"container": {"image": image.as_docker_url()}}
         url = self._get_monitoring_url(cluster_name) / id / "save"
 
         auth = await self._config._api_auth()
@@ -918,7 +918,7 @@ def _container_to_api(
     tty: bool = False,
     shm: bool = False,
 ) -> Dict[str, Any]:
-    primitive: Dict[str, Any] = {"image": _as_repo_str(image)}
+    primitive: Dict[str, Any] = {"image": image.as_docker_url()}
     if shm:
         primitive["resources"] = {"shm": shm}
     if entrypoint:

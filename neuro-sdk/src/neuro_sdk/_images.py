@@ -23,7 +23,7 @@ from ._config import Config
 from ._core import _Core
 from ._errors import AuthorizationError
 from ._parser import Parser
-from ._parsing_utils import LocalImage, RemoteImage, Tag, TagOption, _as_repo_str
+from ._parsing_utils import LocalImage, RemoteImage, Tag, TagOption
 from ._rewrite import rewrite_module
 from ._utils import NoPublicConstructor, aclosing
 
@@ -49,7 +49,12 @@ class Images(metaclass=NoPublicConstructor):
             registry_url = self._config.get_cluster(cluster_name).registry_url
         else:
             registry_url = self._config.registry_url
-        return registry_url.with_path("/v2/") / f"{remote.owner}/{remote.name}"
+        org_prefix = ""
+        if remote.org_name:
+            org_prefix = f"{remote.org_name}/"
+        return (
+            registry_url.with_path("/v2/") / f"{org_prefix}{remote.owner}/{remote.name}"
+        )
 
     @property
     def _docker(self) -> aiodocker.Docker:
@@ -93,7 +98,7 @@ class Images(metaclass=NoPublicConstructor):
             progress = _DummyProgress()
         progress.push(ImageProgressPush(local, remote))
 
-        repo = _as_repo_str(remote)
+        repo = remote.as_docker_url()
         try:
             await self._docker.images.tag(str(local), repo)
         except DockerError as error:
@@ -168,7 +173,7 @@ class Images(metaclass=NoPublicConstructor):
             progress = _DummyProgress()
         progress.pull(ImageProgressPull(remote, local))
 
-        repo = _as_repo_str(remote)
+        repo = remote.as_docker_url()
         auth = await self._config._docker_auth()
         try:
             async with aclosing(

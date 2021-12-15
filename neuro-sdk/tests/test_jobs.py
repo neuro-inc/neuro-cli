@@ -355,7 +355,11 @@ async def test_save_ok(
 
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage.new_neuro_image(
-            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+            registry="gcr.io",
+            owner="me",
+            cluster_name="test-cluster",
+            name="img",
+            org_name=None,
         )
         await client.jobs.save("job-id", image)
 
@@ -390,7 +394,11 @@ async def test_save_commit_started_invalid_status_fails(
 
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage.new_neuro_image(
-            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+            registry="gcr.io",
+            owner="me",
+            cluster_name="test-cluster",
+            name="img",
+            org_name=None,
         )
         with pytest.raises(
             DockerError,
@@ -428,7 +436,11 @@ async def test_save_commit_started_missing_image_details_fails(
 
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage.new_neuro_image(
-            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+            registry="gcr.io",
+            owner="me",
+            cluster_name="test-cluster",
+            name="img",
+            org_name=None,
         )
         with pytest.raises(DockerError, match="Missing required details: 'image'"):
             await client.jobs.save("job-id", image)
@@ -463,7 +475,11 @@ async def test_save_commit_finished_invalid_status_fails(
 
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage.new_neuro_image(
-            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+            registry="gcr.io",
+            owner="me",
+            cluster_name="test-cluster",
+            name="img",
+            org_name=None,
         )
         with pytest.raises(
             DockerError,
@@ -500,7 +516,11 @@ async def test_save_commit_started_missing_status_fails(
 
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage.new_neuro_image(
-            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+            registry="gcr.io",
+            owner="me",
+            cluster_name="test-cluster",
+            name="img",
+            org_name=None,
         )
         with pytest.raises(DockerError, match='Missing required field: "status"'):
             await client.jobs.save("job-id", image)
@@ -534,7 +554,11 @@ async def test_save_commit_finished_missing_status_fails(
 
     async with make_client(srv.make_url("/")) as client:
         image = RemoteImage.new_neuro_image(
-            registry="gcr.io", owner="me", cluster_name="test-cluster", name="img"
+            registry="gcr.io",
+            owner="me",
+            cluster_name="test-cluster",
+            name="img",
+            org_name=None,
         )
         with pytest.raises(DockerError, match='Missing required field: "status"'):
             await client.jobs.save("job-id", image)
