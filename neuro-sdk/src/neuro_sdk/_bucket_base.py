@@ -134,6 +134,7 @@ class Bucket:
     id: str
     owner: str
     cluster_name: str
+    org_name: Optional[str]
     provider: "Bucket.Provider"
     created_at: datetime
     imported: bool
@@ -142,7 +143,10 @@ class Bucket:
 
     @property
     def uri(self) -> URL:
-        return URL(f"blob://{self.cluster_name}/{self.owner}/{self.name or self.id}")
+        base = f"blob://{self.cluster_name}"
+        if self.org_name:
+            base += f"/{self.org_name}"
+        return URL(f"{base}/{self.owner}/{self.name or self.id}")
 
     class Provider(str, enum.Enum):
         AWS = "aws"

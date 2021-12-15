@@ -21,6 +21,7 @@ from neuro_cli.click_types import (
     BUCKET_CREDENTIAL,
     BUCKET_NAME,
     CLUSTER,
+    ORG,
     PlatformURIType,
 )
 from neuro_cli.formatters.bucket_credentials import (
@@ -123,6 +124,11 @@ async def lsbucket(
     help="Perform in a specified cluster (the current cluster by default).",
 )
 @option(
+    "--org",
+    type=ORG,
+    help="Perform in a specified org (the current org by default).",
+)
+@option(
     "--name",
     type=BUCKET_NAME,
     metavar="NAME",
@@ -133,6 +139,7 @@ async def mkbucket(
     root: Root,
     name: Optional[str] = None,
     cluster: Optional[str] = None,
+    org: Optional[str] = None,
 ) -> None:
     """
     Create a new bucket.
@@ -140,6 +147,7 @@ async def mkbucket(
     bucket = await root.client.buckets.create(
         name=name,
         cluster_name=cluster,
+        org_name=org,
     )
     bucket_fmtr = BucketFormatter(
         str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
@@ -153,6 +161,11 @@ async def mkbucket(
     "--cluster",
     type=CLUSTER,
     help="Perform in a specified cluster (the current cluster by default).",
+)
+@option(
+    "--org",
+    type=ORG,
+    help="Perform in a specified org (the current org by default).",
 )
 @option(
     "--name",
@@ -255,6 +268,7 @@ async def importbucket(
     gcp_sa_credential: Optional[str] = None,
     name: Optional[str] = None,
     cluster: Optional[str] = None,
+    org: Optional[str] = None,
 ) -> None:
     """
     Import an existing bucket.
@@ -303,6 +317,7 @@ async def importbucket(
         credentials=credentials,
         name=name,
         cluster_name=cluster,
+        org_name=org,
     )
     bucket_fmtr = BucketFormatter(
         str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
