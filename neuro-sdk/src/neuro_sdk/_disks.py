@@ -23,6 +23,7 @@ class Disk:
     owner: str
     status: "Disk.Status"
     cluster_name: str
+    org_name: Optional[str]
     created_at: datetime
     last_usage: Optional[datetime] = None
     name: Optional[str] = None
@@ -39,7 +40,10 @@ class Disk:
 
     @property
     def uri(self) -> URL:
-        return URL(f"disk://{self.cluster_name}/{self.owner}/{self.id}")
+        base = f"disk://{self.cluster_name}"
+        if self.org_name:
+            base += f"/{self.org_name}"
+        return URL(f"{base}/{self.owner}/{self.id}")
 
     class Status(Enum):
         PENDING = "Pending"
@@ -72,6 +76,7 @@ class Disks(metaclass=NoPublicConstructor):
             name=payload.get("name"),
             status=Disk.Status(payload["status"]),
             cluster_name=self._config.cluster_name,
+            org_name=payload.get("org_name"),
             created_at=isoparse(payload["created_at"]),
             last_usage=last_usage,
             timeout_unused=timeout_unused,
@@ -97,6 +102,7 @@ class Disks(metaclass=NoPublicConstructor):
         timeout_unused: Optional[timedelta] = None,
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
+        org_name: Optional[str] = None,
     ) -> Disk:
         url = self._get_disks_url(cluster_name)
         auth = await self._config._api_auth()
@@ -104,6 +110,7 @@ class Disks(metaclass=NoPublicConstructor):
             "storage": storage,
             "life_span": timeout_unused.total_seconds() if timeout_unused else None,
             "name": name,
+            "org_name": org_name or self._config.org_name,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()

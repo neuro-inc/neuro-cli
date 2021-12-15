@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Optional, Sequence
 
-from neuro_cli.click_types import CLUSTER, DISK, DISK_NAME
+from neuro_cli.click_types import CLUSTER, DISK, DISK_NAME, ORG
 from neuro_cli.formatters.utils import get_datetime_formatter
 from neuro_cli.utils import resolve_disk
 
@@ -76,6 +76,11 @@ async def ls(
     help="Perform in a specified cluster (the current cluster by default).",
 )
 @option(
+    "--org",
+    type=ORG,
+    help="Perform in a specified org (the current org by default).",
+)
+@option(
     "--timeout-unused",
     type=str,
     metavar="TIMEDELTA",
@@ -99,6 +104,7 @@ async def create(
     timeout_unused: Optional[str] = None,
     name: Optional[str] = None,
     cluster: Optional[str] = None,
+    org: Optional[str] = None,
 ) -> None:
     """
     Create a disk
@@ -132,6 +138,7 @@ async def create(
         timeout_unused=disk_timeout_unused,
         name=name,
         cluster_name=cluster,
+        org_name=org,
     )
     disk_fmtr = DiskFormatter(
         str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)

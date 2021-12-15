@@ -3,6 +3,7 @@ Id              disk
  Used                                     
  Uri             disk://cluster/user/disk 
  Name            test-disk                
+ Org name        NO_ORG                   
  Status          Ready                    
  Created at      Mar 04 2017              
  Last used       Apr 04 2017              

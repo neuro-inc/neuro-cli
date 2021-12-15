@@ -25,6 +25,7 @@ Disks
                         life_span: typing.Optional[datetime.timedelta], \
                         name: typing.Optional[str], \
                         cluster_name: Optional[str] = None, \
+                        org_name: Optional[str] = None, \
                  ) -> Disk
 
       Create a disk with capacity of *storage* bytes.
@@ -39,6 +40,8 @@ Disks
                                          disk.
 
       :param str cluster_name: cluster to create a disk. Default is current cluster.
+
+      :param str org_name: org to create a disk. Default is current org.
 
 
       :return: Newly created disk info (:class:`Disk`)
@@ -103,6 +106,10 @@ Disk
    .. attribute:: cluster_name
 
       Cluster disk resource belongs to, :class:`str`.
+
+   .. attribute:: org_name
+
+      Org disk resource belongs to, :class:`str` or `None` if there is no such org.
 
    .. attribute:: created_at
 
