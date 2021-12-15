@@ -1,7 +1,7 @@
 import pathlib
 from typing import Optional
 
-from neuro_cli.click_types import CLUSTER
+from neuro_cli.click_types import CLUSTER, ORG
 from neuro_cli.formatters.secrets import (
     BaseSecretsFormatter,
     SecretsFormatter,
@@ -26,8 +26,15 @@ def secret() -> None:
     type=CLUSTER,
     help="Look on a specified cluster (the current cluster by default).",
 )
+@option(
+    "--org",
+    type=ORG,
+    help="Look on a specified org (the current org by default).",
+)
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
-async def ls(root: Root, full_uri: bool, cluster: Optional[str]) -> None:
+async def ls(
+    root: Root, full_uri: bool, cluster: Optional[str], org: Optional[str]
+) -> None:
     """
     List secrets.
     """
@@ -48,7 +55,7 @@ async def ls(root: Root, full_uri: bool, cluster: Optional[str]) -> None:
 
     secrets = []
     with root.status("Fetching secrets") as status:
-        async with root.client.secrets.list(cluster_name=cluster) as it:
+        async with root.client.secrets.list(cluster_name=cluster, org_name=org) as it:
             async for secret in it:
                 secrets.append(secret)
                 status.update(f"Fetching secrets ({len(secrets)} loaded)")
@@ -63,9 +70,16 @@ async def ls(root: Root, full_uri: bool, cluster: Optional[str]) -> None:
     type=CLUSTER,
     help="Perform on a specified cluster (the current cluster by default).",
 )
+@option(
+    "--org",
+    type=ORG,
+    help="Look on a specified org (the current org by default).",
+)
 @argument("key")
 @argument("value")
-async def add(root: Root, key: str, value: str, cluster: Optional[str]) -> None:
+async def add(
+    root: Root, key: str, value: str, cluster: Optional[str], org: Optional[str]
+) -> None:
     """
     Add secret KEY with data VALUE.
 
@@ -76,7 +90,9 @@ async def add(root: Root, key: str, value: str, cluster: Optional[str]) -> None:
       neuro secret add KEY_NAME VALUE
       neuro secret add KEY_NAME @path/to/file.txt
     """
-    await root.client.secrets.add(key, read_data(value), cluster_name=cluster)
+    await root.client.secrets.add(
+        key, read_data(value), cluster_name=cluster, org_name=org
+    )
 
 
 @command()
@@ -85,13 +101,18 @@ async def add(root: Root, key: str, value: str, cluster: Optional[str]) -> None:
     type=CLUSTER,
     help="Perform on a specified cluster (the current cluster by default).",
 )
+@option(
+    "--org",
+    type=ORG,
+    help="Look on a specified org (the current org by default).",
+)
 @argument("key")
-async def rm(root: Root, key: str, cluster: Optional[str]) -> None:
+async def rm(root: Root, key: str, cluster: Optional[str], org: Optional[str]) -> None:
     """
     Remove secret KEY.
     """
 
-    await root.client.secrets.rm(key, cluster_name=cluster)
+    await root.client.secrets.rm(key, cluster_name=cluster, org_name=org)
     if root.verbosity > 0:
         root.print(f"Secret with key '{key}' was successfully removed")
 

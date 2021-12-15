@@ -14,16 +14,19 @@ def secrets_list() -> List[Secret]:
             key="key1",
             owner="user",
             cluster_name="cluster",
+            org_name=None,
         ),
         Secret(
             key="key2",
             owner="user",
             cluster_name="cluster",
+            org_name="test-org",
         ),
         Secret(
             key="key3",
             owner="anotheruser",
             cluster_name="cluster",
+            org_name=None,
         ),
     ]
 

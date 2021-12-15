@@ -9,6 +9,7 @@ from rich.text import Text
 
 from neuro_sdk import Secret
 
+from neuro_cli.click_types import ORG
 from neuro_cli.formatters.utils import URIFormatter
 
 
@@ -33,6 +34,7 @@ class SecretsFormatter(BaseSecretsFormatter):
     def _secret_to_table_row(self, secret: Secret) -> Sequence[str]:
         line = [
             self._uri_formatter(secret.uri),
+            secret.org_name or ORG.NO_ORG_STR,
         ]
         return line
 
@@ -40,6 +42,7 @@ class SecretsFormatter(BaseSecretsFormatter):
         secrets = sorted(secrets, key=operator.attrgetter("key"))
         table = Table(box=box.SIMPLE_HEAVY)
         table.add_column("Key", style="bold")
+        table.add_column("Org")
 
         for secret in secrets:
             table.add_row(*self._secret_to_table_row(secret))
