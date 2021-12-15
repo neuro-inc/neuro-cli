@@ -40,11 +40,7 @@ class Runner:
         self._started = False
         self._stopped = False
         self._executor = ThreadPoolExecutor()
-        self._loop = asyncio.new_event_loop()
-        self._loop.set_default_executor(self._executor)
-        self._loop.set_debug(self._debug)
-        if not debug:
-            self._loop.set_exception_handler(_exception_handler)
+        self._loop = None
 
     def run(self, main: Awaitable[_T]) -> _T:
         assert self._started
@@ -59,28 +55,27 @@ class Runner:
         assert not self._started
         assert not self._stopped
         self._started = True
-
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            # there is no current loop
-            pass
-        else:
-            raise RuntimeError(
-                "asyncio.run() cannot be called from a running event loop"
-            )
+        assert self._loop is None
+        self._loop = asyncio.new_event_loop()
+        self._loop.set_default_executor(self._executor)
+        self._loop.set_debug(self._debug)
+        if not self._debug:
+            self._loop.set_exception_handler(_exception_handler)
         return self
 
     def __exit__(
         self, exc_type: Type[BaseException], exc_val: Exception, exc_tb: TracebackType
     ) -> None:
-        assert self._started
-        assert not self._stopped
+        assert self._started, "Loop was not started"
+        assert self._loop is not None
+        if self._stopped:
+            return
+        if self._loop.is_closed():
+            return
         try:
             _cancel_all_tasks(self._loop)
             self._loop.run_until_complete(self._loop.shutdown_asyncgens())
         finally:
-            self._executor.shutdown(wait=True)
             # simple workaround for:
             # http://docs.aiohttp.org/en/stable/client_advanced.html#graceful-shutdown
             with warnings.catch_warnings():
@@ -88,6 +83,8 @@ class Runner:
                 self._loop.close()
                 del self._loop
                 gc.collect()
+            self._executor.shutdown(wait=True)
+        self._stopped = True
 
 
 def _exception_handler(

@@ -159,6 +159,7 @@ class MainGroup(Group):
             skip_gmp_stats=kwargs["skip_stats"],
             show_traceback=show_traceback,
             iso_datetime_format=kwargs["iso_datetime_format"],
+            ctx=ctx,
         )
         handler.setConsole(root.err_console)
         ctx.obj = root
@@ -493,13 +494,11 @@ def cli(
     pass
 
 
-@cli.command(wrap_async=False)
-@argument("command", nargs=-1)
-@click.pass_context
-def help(ctx: click.Context, command: Sequence[str]) -> None:
+@cli.command(init_client=False)
+@argument("command", type=click.UNPROCESSED, nargs=-1)
+async def help(root: Root, command: Sequence[str]) -> None:
     """Get help on a command."""
-    top_ctx = ctx.find_root()
-    root = cast(Root, ctx.obj)
+    top_ctx = root.ctx
 
     if len(command) == 1:
         # try to find a topic
@@ -508,7 +507,7 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
         for name, topic in topics.commands.items():
             if name == command[0]:
                 # Found a topic
-                formatter = ctx.make_formatter()
+                formatter = root.ctx.make_formatter()
                 topic.format_help(top_ctx, formatter)
                 pager_maybe(
                     formatter.getvalue().rstrip("\n").splitlines(),
@@ -524,7 +523,9 @@ def help(ctx: click.Context, command: Sequence[str]) -> None:
         for cmd_name in command:
             current_cmd = ctx_stack[-1].command
             if isinstance(current_cmd, click.MultiCommand):
-                sub_name, sub_cmd, args = current_cmd.resolve_command(ctx, [cmd_name])
+                sub_name, sub_cmd, args = current_cmd.resolve_command(
+                    root.ctx, [cmd_name]
+                )
                 if sub_cmd is None or sub_cmd.hidden:
                     root.print(not_found)
                     break

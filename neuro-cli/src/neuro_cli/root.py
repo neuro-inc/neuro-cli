@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from types import SimpleNamespace
 from typing import (
+    TYPE_CHECKING,
     Any,
     Awaitable,
     Dict,
@@ -29,6 +30,9 @@ from rich.text import Text as RichText
 from neuro_sdk import Client, ConfigError, Factory, gen_trace_id
 
 from .asyncio_utils import Runner
+
+if TYPE_CHECKING:
+    from .utils import Context
 
 log = logging.getLogger(__name__)
 
@@ -76,6 +80,7 @@ class Root:
     skip_gmp_stats: bool
     show_traceback: bool
     iso_datetime_format: bool
+    ctx: "Context"
 
     _client: Optional[Client] = None
     _factory: Optional[Factory] = None
