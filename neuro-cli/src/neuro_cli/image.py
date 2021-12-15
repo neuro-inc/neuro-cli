@@ -154,7 +154,9 @@ async def ls(
         image_fmtr = str
     else:
         uri_fmtr = uri_formatter(
-            username=root.client.username, cluster_name=root.client.cluster_name
+            username=root.client.username,
+            cluster_name=root.client.cluster_name,
+            org_name=root.client.config.org_name,
         )
         image_fmtr = image_formatter(uri_formatter=uri_fmtr)
     formatter: BaseImagesFormatter

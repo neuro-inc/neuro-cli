@@ -40,27 +40,27 @@ async def test_config_username(token: str, client: Client) -> None:
 
 
 def test_uri_from_cli_relative_path() -> None:
-    uri = uri_from_cli("path/to/file.txt", "testuser", "test-cluster")
+    uri = uri_from_cli("path/to/file.txt", "testuser", "test-cluster", None)
     assert str(uri) == Path("path/to/file.txt").absolute().as_uri()
 
 
 def test_uri_from_cli_absolute_path() -> None:
-    uri = uri_from_cli("/path/to/file.txt", "testuser", "test-cluster")
+    uri = uri_from_cli("/path/to/file.txt", "testuser", "test-cluster", None)
     assert str(uri) == Path("/path/to/file.txt").absolute().as_uri()
 
 
 def test_uri_from_cli_relative_path_special_chars() -> None:
-    uri = uri_from_cli("path/to/file#%23:?@~", "testuser", "test-cluster")
+    uri = uri_from_cli("path/to/file#%23:?@~", "testuser", "test-cluster", None)
     assert uri.path.endswith("/path/to/file#%23:?@~")
 
 
 def test_uri_from_cli_absolute_path_special_chars() -> None:
-    uri = uri_from_cli("/path/to/file#%23:?@~", "testuser", "test-cluster")
+    uri = uri_from_cli("/path/to/file#%23:?@~", "testuser", "test-cluster", None)
     assert _extract_path(uri) == Path("/path/to/file#%23:?@~").absolute()
 
 
 def test_uri_from_cli_path_with_tilde(fake_homedir: Path) -> None:
-    uri = uri_from_cli("~/path/to/file.txt", "testuser", "test-cluster")
+    uri = uri_from_cli("~/path/to/file.txt", "testuser", "test-cluster", None)
     assert str(uri) == (fake_homedir / "path/to/file.txt").as_uri()
 
 
@@ -70,53 +70,53 @@ def test_uri_from_cli_path_with_tilde(fake_homedir: Path) -> None:
 )
 def test_uri_from_cli_path_with_tilde_unknown_user() -> None:
     with pytest.raises(ValueError, match=r"Cannot expand user for "):
-        uri_from_cli("~unknownuser/path/to/file.txt", "testuser", "test-cluster")
+        uri_from_cli("~unknownuser/path/to/file.txt", "testuser", "test-cluster", None)
 
 
 def test_uri_from_cli_tilde_only(fake_homedir: Path) -> None:
-    uri = uri_from_cli("~", "testuser", "test-cluster")
+    uri = uri_from_cli("~", "testuser", "test-cluster", None)
     assert str(uri) == fake_homedir.as_uri()
 
 
 def test_uri_from_cli_relative_file_uri() -> None:
-    uri = uri_from_cli("file:path/to/file.txt", "testuser", "test-cluster")
+    uri = uri_from_cli("file:path/to/file.txt", "testuser", "test-cluster", None)
     assert str(uri) == Path("path/to/file.txt").absolute().as_uri()
 
 
 def test_uri_from_cli_absolute_file_uri() -> None:
-    uri = uri_from_cli("file:/path/to/file.txt", "testuser", "test-cluster")
+    uri = uri_from_cli("file:/path/to/file.txt", "testuser", "test-cluster", None)
     assert str(uri) == Path("/path/to/file.txt").absolute().as_uri()
-    uri = uri_from_cli("file:///path/to/file.txt", "testuser", "test-cluster")
+    uri = uri_from_cli("file:///path/to/file.txt", "testuser", "test-cluster", None)
     assert str(uri) == Path("/path/to/file.txt").absolute().as_uri()
 
 
 def test_uri_from_cli_relative_file_uri_special_chars() -> None:
     uri = uri_from_cli(
-        "file:path/to/file%23%252d%3f:@~%C3%9F", "testuser", "test-cluster"
+        "file:path/to/file%23%252d%3f:@~%C3%9F", "testuser", "test-cluster", None
     )
     assert uri.path.endswith("/path/to/file#%2d?:@~ß")
 
 
 def test_uri_from_cli_absolute_file_uri_special_chars() -> None:
     uri = uri_from_cli(
-        "file:/path/to/file%23%252d%3f:@~%C3%9F", "testuser", "test-cluster"
+        "file:/path/to/file%23%252d%3f:@~%C3%9F", "testuser", "test-cluster", None
     )
     assert uri.path.endswith("/path/to/file#%2d?:@~ß")
 
 
 def test_uri_from_cli_relative_storage_uri() -> None:
-    uri = uri_from_cli("storage:path/to/file.txt", "testuser", "test-cluster")
+    uri = uri_from_cli("storage:path/to/file.txt", "testuser", "test-cluster", None)
     assert str(uri) == "storage://test-cluster/testuser/path/to/file.txt"
-    uri = uri_from_cli("storage:/path/to/file.txt", "testuser", "test-cluster")
+    uri = uri_from_cli("storage:/path/to/file.txt", "testuser", "test-cluster", None)
     assert str(uri) == "storage://test-cluster/path/to/file.txt"
 
 
 def test_uri_from_cli_absolute_storage_uri() -> None:
     uri = uri_from_cli(
-        "storage://otheruser/path/to/file.txt", "testuser", "test-cluster"
+        "storage://otheruser/path/to/file.txt", "testuser", "test-cluster", None
     )
     assert str(uri) == "storage://otheruser/path/to/file.txt"
-    uri = uri_from_cli("storage:///path/to/file.txt", "testuser", "test-cluster")
+    uri = uri_from_cli("storage:///path/to/file.txt", "testuser", "test-cluster", None)
     assert str(uri) == "storage://test-cluster/path/to/file.txt"
 
 
@@ -125,22 +125,23 @@ def test_uri_from_cli_absolute_storage_uri_special_chars() -> None:
         "storage://cluster/user/path/to/file%23%252d%3f:@~%C3%9F",
         "testuser",
         "test-cluster",
+        None,
     )
     assert uri.path == "/user/path/to/file#%2d?:@~ß"
 
 
 def test_uri_from_cli_numberic_path() -> None:
-    uri = uri_from_cli("256", "testuser", "test-cluster")
+    uri = uri_from_cli("256", "testuser", "test-cluster", None)
     assert str(uri) == Path("256").absolute().as_uri()
-    uri = uri_from_cli("123456", "testuser", "test-cluster")
+    uri = uri_from_cli("123456", "testuser", "test-cluster", None)
     assert str(uri) == Path("123456").absolute().as_uri()
-    uri = uri_from_cli("file:256", "testuser", "test-cluster")
+    uri = uri_from_cli("file:256", "testuser", "test-cluster", None)
     assert str(uri) == Path("256").absolute().as_uri()
-    uri = uri_from_cli("file:123456", "testuser", "test-cluster")
+    uri = uri_from_cli("file:123456", "testuser", "test-cluster", None)
     assert str(uri) == Path("123456").absolute().as_uri()
-    uri = uri_from_cli("storage:256", "testuser", "test-cluster")
+    uri = uri_from_cli("storage:256", "testuser", "test-cluster", None)
     assert str(uri) == "storage://test-cluster/testuser/256"
-    uri = uri_from_cli("storage:123456", "testuser", "test-cluster")
+    uri = uri_from_cli("storage:123456", "testuser", "test-cluster", None)
     assert str(uri) == "storage://test-cluster/testuser/123456"
 
 
@@ -157,7 +158,7 @@ def test_uri_from_cli_numberic_path() -> None:
 )
 async def test_uri_from_cli__file__fail(path_or_uri: str) -> None:
     with pytest.raises(ValueError):
-        uri_from_cli(path_or_uri, "u", "c", allowed_schemes=("file",))
+        uri_from_cli(path_or_uri, "u", "c", None, allowed_schemes=("file",))
 
 
 @pytest.mark.parametrize(
@@ -177,7 +178,7 @@ async def test_uri_from_cli__file__fail(path_or_uri: str) -> None:
 )
 async def test_uri_from_cli__storage__fail(uri: str) -> None:
     with pytest.raises(ValueError):
-        uri_from_cli(uri, "u", "c", allowed_schemes=("storage",))
+        uri_from_cli(uri, "u", "c", None, allowed_schemes=("storage",))
 
 
 @pytest.mark.parametrize(
@@ -197,7 +198,7 @@ async def test_uri_from_cli__storage__fail(uri: str) -> None:
 )
 async def test_uri_from_cli__image__fail(uri: str) -> None:
     with pytest.raises(ValueError):
-        uri_from_cli(uri, "u", "c", allowed_schemes=("image",))
+        uri_from_cli(uri, "u", "c", None, allowed_schemes=("image",))
 
 
 @pytest.mark.parametrize(
@@ -217,12 +218,12 @@ async def test_uri_from_cli__image__fail(uri: str) -> None:
 )
 async def test_uri_from_cli__blob__fail(uri: str) -> None:
     with pytest.raises(ValueError):
-        uri_from_cli(uri, "u", "c", allowed_schemes=("blob",))
+        uri_from_cli(uri, "u", "c", None, allowed_schemes=("blob",))
 
 
 async def test_normalize_storage_path_uri_no_path(client: Client) -> None:
     url = URL("storage:")
-    url = normalize_storage_path_uri(url, client.username, "test-cluster")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", None)
     assert url.scheme == "storage"
     assert url.host == "test-cluster"
     assert url.path == "/user"
@@ -239,11 +240,20 @@ async def test_normalize_local_path_uri_no_path(pwd: Path) -> None:
 
 async def test_normalize_storage_path_uri_no_slashes(client: Client) -> None:
     url = URL("storage:file.txt")
-    url = normalize_storage_path_uri(url, client.username, "test-cluster")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", None)
     assert url.scheme == "storage"
     assert url.host == "test-cluster"
     assert url.path == "/user/file.txt"
     assert str(url) == "storage://test-cluster/user/file.txt"
+
+
+async def test_normalize_storage_path_uri_no_slashes_with_org(client: Client) -> None:
+    url = URL("storage:file.txt")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", "test-org")
+    assert url.scheme == "storage"
+    assert url.host == "test-cluster"
+    assert url.path == "/test-org/user/file.txt"
+    assert str(url) == "storage://test-cluster/test-org/user/file.txt"
 
 
 async def test_normalize_local_path_uri_no_slashes(pwd: Path) -> None:
@@ -256,11 +266,22 @@ async def test_normalize_local_path_uri_no_slashes(pwd: Path) -> None:
 
 async def test_normalize_storage_path_uri__0_slashes_relative(client: Client) -> None:
     url = URL("storage:path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username, "test-cluster")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", None)
     assert url.scheme == "storage"
     assert url.host == "test-cluster"
     assert url.path == "/user/path/to/file.txt"
     assert str(url) == "storage://test-cluster/user/path/to/file.txt"
+
+
+async def test_normalize_storage_path_uri__0_slashes_relative_with_org(
+    client: Client,
+) -> None:
+    url = URL("storage:path/to/file.txt")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", "test-org")
+    assert url.scheme == "storage"
+    assert url.host == "test-cluster"
+    assert url.path == "/test-org/user/path/to/file.txt"
+    assert str(url) == "storage://test-cluster/test-org/user/path/to/file.txt"
 
 
 async def test_normalize_local_path_uri__0_slashes_relative(pwd: Path) -> None:
@@ -273,11 +294,22 @@ async def test_normalize_local_path_uri__0_slashes_relative(pwd: Path) -> None:
 
 async def test_normalize_storage_path_uri__1_slash_absolute(client: Client) -> None:
     url = URL("storage:/path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username, "test-cluster")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", None)
     assert url.scheme == "storage"
     assert url.host == "test-cluster"
     assert url.path == "/path/to/file.txt"
     assert str(url) == "storage://test-cluster/path/to/file.txt"
+
+
+async def test_normalize_storage_path_uri__1_slash_absolute_with_org(
+    client: Client,
+) -> None:
+    url = URL("storage:/path/to/file.txt")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", "test-org")
+    assert url.scheme == "storage"
+    assert url.host == "test-cluster"
+    assert url.path == "/test-org/path/to/file.txt"
+    assert str(url) == "storage://test-cluster/test-org/path/to/file.txt"
 
 
 async def test_normalize_local_path_uri__1_slash_absolute(pwd: Path) -> None:
@@ -290,7 +322,7 @@ async def test_normalize_local_path_uri__1_slash_absolute(pwd: Path) -> None:
 
 async def test_normalize_storage_path_uri__2_slashes(client: Client) -> None:
     url = URL("storage://path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username, "test-cluster")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", None)
     assert url.scheme == "storage"
     assert url.host == "path"
     assert url.path == "/to/file.txt"
@@ -307,7 +339,7 @@ async def test_normalize_local_path_uri__2_slashes(pwd: Path) -> None:
 
 async def test_normalize_storage_path_uri__3_slashes_relative(client: Client) -> None:
     url = URL("storage:///path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username, "test-cluster")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", None)
     assert url.scheme == "storage"
     assert url.host == "test-cluster"
     assert url.path == "/path/to/file.txt"
@@ -324,7 +356,7 @@ async def test_normalize_local_path_uri__3_slashes_relative(pwd: Path) -> None:
 
 async def test_normalize_storage_path_uri__4_slashes_relative(client: Client) -> None:
     url = URL("storage:////path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username, "test-cluster")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", None)
     assert url.scheme == "storage"
     assert url.host == "test-cluster"
     assert url.path == "/path/to/file.txt"
@@ -357,7 +389,7 @@ async def test_normalize_local_path_uri__4_slashes_relative() -> None:
 async def test_normalize_storage_path_uri__fail(uri_str: str) -> None:
     uri = URL(uri_str)
     with pytest.raises(ValueError):
-        normalize_storage_path_uri(uri, "test-user", "test-cluster")
+        normalize_storage_path_uri(uri, "test-user", "test-cluster", None)
 
 
 async def test_normalize_storage_path_uri__tilde_in_relative_path(
@@ -365,7 +397,7 @@ async def test_normalize_storage_path_uri__tilde_in_relative_path(
 ) -> None:
     url = URL("storage:~/path/to/file.txt")
     with pytest.raises(ValueError, match=".*Cannot expand user.*"):
-        normalize_storage_path_uri(url, client.username, "test-cluster")
+        normalize_storage_path_uri(url, client.username, "test-cluster", None)
 
 
 async def test_normalize_local_path_uri__tilde_in_relative_path(
@@ -380,7 +412,7 @@ async def test_normalize_storage_path_uri__tilde_in_relative_path_2(
     client: Client,
 ) -> None:
     url = URL("storage:./~/path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username, "test-cluster")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", None)
     assert url.scheme == "storage"
     assert url.host == "test-cluster"
     assert url.path == "/user/~/path/to/file.txt"
@@ -402,7 +434,7 @@ async def test_normalize_storage_path_uri__tilde_in_relative_path_3(
     client: Client,
 ) -> None:
     url = URL("storage:path/to~file.txt")
-    url = normalize_storage_path_uri(url, client.username, "test-cluster")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", None)
     assert url.scheme == "storage"
     assert url.host == "test-cluster"
     assert url.path == "/user/path/to~file.txt"
@@ -425,7 +457,7 @@ async def test_normalize_storage_path_uri__tilde_in_absolute_path(
 ) -> None:
     url = URL("storage:/~/path/to/file.txt")
     with pytest.raises(ValueError, match=r"Cannot expand user for "):
-        normalize_storage_path_uri(url, client.username, "test-cluster")
+        normalize_storage_path_uri(url, client.username, "test-cluster", None)
 
 
 async def test_normalize_local_path_uri__tilde_in_absolute_path(
@@ -442,7 +474,7 @@ async def test_normalize_local_path_uri__tilde_in_absolute_path(
 async def test_normalize_storage_path_uri__tilde_in_host(client: Client) -> None:
     url = URL("storage://~/path/to/file.txt")
     with pytest.raises(ValueError, match=r"Cannot expand user for "):
-        normalize_storage_path_uri(url, client.username, "test-cluster")
+        normalize_storage_path_uri(url, client.username, "test-cluster", None)
 
 
 async def test_normalize_local_path_uri__tilde_in_host(
@@ -458,7 +490,7 @@ async def test_normalize_local_path_uri__tilde_in_host(
 async def test_normalize_storage_path_uri__bad_scheme(client: Client) -> None:
     with pytest.raises(ValueError, match="Invalid storage scheme 'other:'"):
         url = URL("other:path/to/file.txt")
-        normalize_storage_path_uri(url, client.username, "test-cluster")
+        normalize_storage_path_uri(url, client.username, "test-cluster", None)
 
 
 async def test_normalize_local_path_uri__bad_scheme() -> None:
@@ -472,7 +504,7 @@ async def test_normalize_local_path_uri__bad_scheme() -> None:
 
 async def test_normalize_storage_path_uri__no_slash__double(client: Client) -> None:
     url = URL("storage:path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username, "test-cluster")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", None)
     assert url.scheme == "storage"
     assert url.host == "test-cluster"
     assert url.path == "/user/path/to/file.txt"
@@ -490,7 +522,7 @@ async def test_normalize_local_path_uri__no_slash__double(pwd: Path) -> None:
 async def test_normalize_storage_path_uri__tilde_slash__double(client: Client) -> None:
     url = URL("storage:~/path/to/file.txt")
     with pytest.raises(ValueError, match=".*Cannot expand user.*"):
-        normalize_storage_path_uri(url, client.username, "test-cluster")
+        normalize_storage_path_uri(url, client.username, "test-cluster", None)
 
 
 async def test_normalize_local_path_uri__tilde_slash__double() -> None:
@@ -501,7 +533,7 @@ async def test_normalize_local_path_uri__tilde_slash__double() -> None:
 
 async def test_normalize_storage_path_uri__3_slashes__double(client: Client) -> None:
     url = URL("storage:///path/to/file.txt")
-    url = normalize_storage_path_uri(url, client.username, "test-cluster")
+    url = normalize_storage_path_uri(url, client.username, "test-cluster", None)
     assert url.scheme == "storage"
     assert url.host == "test-cluster"
     assert url.path == "/path/to/file.txt"

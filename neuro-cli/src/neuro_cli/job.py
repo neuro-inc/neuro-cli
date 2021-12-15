@@ -405,7 +405,9 @@ async def ls(
         uri_fmtr = str
     else:
         uri_fmtr = uri_formatter(
-            username=root.client.username, cluster_name=root.client.cluster_name
+            username=root.client.username,
+            cluster_name=root.client.cluster_name,
+            org_name=root.client.config.org_name,
         )
     if root.quiet:
         formatter: BaseJobsFormatter = SimpleJobsFormatter()
@@ -475,7 +477,9 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
         uri_fmtr = str
     else:
         uri_fmtr = uri_formatter(
-            username=root.client.username, cluster_name=root.client.cluster_name
+            username=root.client.username,
+            cluster_name=root.client.cluster_name,
+            org_name=root.client.config.org_name,
         )
     root.print(
         JobStatusFormatter(
@@ -749,7 +753,9 @@ async def top(
         uri_fmtr = str
     else:
         uri_fmtr = uri_formatter(
-            username=root.client.username, cluster_name=root.client.cluster_name
+            username=root.client.username,
+            cluster_name=root.client.cluster_name,
+            org_name=root.client.config.org_name,
         )
     image_fmtr = image_formatter(uri_formatter=uri_fmtr)
     datetime_fmtr = get_datetime_formatter(root.iso_datetime_format)

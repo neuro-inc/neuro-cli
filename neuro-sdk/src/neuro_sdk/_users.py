@@ -53,6 +53,7 @@ class Users(metaclass=NoPublicConstructor):
         try:
             ret = await self._admin.get_cluster_user(
                 cluster_name=self._config.cluster_name,
+                org_name=self._config.org_name,
                 user_name=self._config.username,
             )
         except NotSupportedError:

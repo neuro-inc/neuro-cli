@@ -138,7 +138,9 @@ async def ls(
         uri_fmtr = str
     else:
         uri_fmtr = uri_formatter(
-            username=root.client.username, cluster_name=root.client.cluster_name
+            username=root.client.username,
+            cluster_name=root.client.cluster_name,
+            org_name=root.client.config.org_name,
         )
 
     uri_obj = URL(uri) if uri else None

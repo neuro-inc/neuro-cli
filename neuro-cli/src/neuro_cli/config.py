@@ -13,7 +13,7 @@ from prompt_toolkit.patch_stdout import patch_stdout
 from rich.markup import escape as rich_escape
 from yarl import URL
 
-from neuro_sdk import DEFAULT_API_URL, ConfigError
+from neuro_sdk import DEFAULT_API_URL, AuthorizationError, ConfigError
 
 from neuro_cli.formatters.config import ClustersFormatter
 
@@ -38,7 +38,7 @@ async def show(root: Root) -> None:
     fmt = ConfigFormatter()
     try:
         jobs_capacity = await root.client.jobs.get_capacity(cluster_name=cluster_name)
-    except ClientConnectionError:
+    except (ClientConnectionError, AuthorizationError):
         jobs_capacity = {}
     quota = await root.client.users.get_quota()
     root.print(fmt(root.client.config, jobs_capacity, quota))
