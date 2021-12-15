@@ -11,6 +11,11 @@ from neuro_sdk import Client, Cluster, Preset
 
 from neuro_cli.config import prompt_cluster
 from neuro_cli.root import Root
+from neuro_cli.utils import Command, Context
+
+
+async def cmd() -> None:
+    pass
 
 
 @pytest.mark.skipif(
@@ -68,6 +73,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
         skip_gmp_stats=True,
         show_traceback=False,
         iso_datetime_format=False,
+        ctx=Context(Command(cmd, name="")),
     )
 
     async def _async_make_client() -> Client:
@@ -77,6 +83,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
 
     session = mock.Mock()
     loop = root._runner._loop
+    assert loop is not None
     fut = loop.create_future()
     fut.set_result("second")
     session.prompt_async.return_value = fut
@@ -140,6 +147,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
         skip_gmp_stats=True,
         show_traceback=False,
         iso_datetime_format=False,
+        ctx=Context(Command(cmd, name="")),
     )
 
     async def _async_make_client() -> Client:
@@ -149,6 +157,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
 
     session = mock.Mock()
     loop = root._runner._loop
+    assert loop is not None
     fut = loop.create_future()
     fut.set_result("")
     session.prompt_async.return_value = fut

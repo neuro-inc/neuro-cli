@@ -5,10 +5,14 @@ import aiohttp
 import pytest
 
 from neuro_cli.root import Root
+from neuro_cli.utils import Command, Context
 
 
 @pytest.fixture
 def root_uninitialized() -> Iterator[Root]:
+    async def cmd() -> None:
+        pass
+
     root = Root(
         color=False,
         tty=False,
@@ -24,6 +28,7 @@ def root_uninitialized() -> Iterator[Root]:
         skip_gmp_stats=True,
         show_traceback=False,
         iso_datetime_format=False,
+        ctx=Context(Command(cmd, name="")),
     )
     yield root
     root.close()
