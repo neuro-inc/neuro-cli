@@ -40,11 +40,12 @@ class Runner:
         self._started = False
         self._stopped = False
         self._executor = ThreadPoolExecutor()
-        self._loop = None
+        self._loop: Optional[asyncio.AbstractEventLoop] = None
 
     def run(self, main: Awaitable[_T]) -> _T:
         assert self._started
         assert not self._stopped
+        assert self._loop is not None
         if not asyncio.iscoroutine(main):
             raise ValueError(f"a coroutine was expected, got {main!r}")
         main_task = self._loop.create_task(main)

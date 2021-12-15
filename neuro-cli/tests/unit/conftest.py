@@ -19,6 +19,7 @@ from neuro_cli import __version__
 from neuro_cli.const import EX_OK
 from neuro_cli.main import main
 from neuro_cli.root import Root
+from neuro_cli.utils import Command, Context
 
 SysCapWithCode = namedtuple("SysCapWithCode", ["out", "err", "code"])
 log = logging.getLogger(__name__)
@@ -94,6 +95,9 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
 
 
 def create_root(config_path: Path) -> Root:
+    async def cmd() -> None:
+        pass
+
     return Root(
         color=False,
         tty=False,
@@ -109,6 +113,7 @@ def create_root(config_path: Path) -> Root:
         skip_gmp_stats=True,
         show_traceback=False,
         iso_datetime_format=False,
+        ctx=Context(Command(cmd)),
     )
 
 

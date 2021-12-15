@@ -24,6 +24,7 @@ from neuro_cli.formatters.storage import (
     format_url,
 )
 from neuro_cli.root import Root
+from neuro_cli.utils import Command, Context
 
 from tests.unit.conftest import NewConsole
 
@@ -65,6 +66,9 @@ _MakeRoot = Callable[[bool, bool, bool], Root]
 def make_root(new_console: NewConsole, nmrc_path: Path) -> Iterator[_MakeRoot]:
     root = None
 
+    async def cmd() -> None:
+        pass
+
     def make(color: bool, tty: bool, verbose: bool) -> Root:
         nonlocal root
         root = Root(
@@ -82,6 +86,7 @@ def make_root(new_console: NewConsole, nmrc_path: Path) -> Iterator[_MakeRoot]:
             skip_gmp_stats=True,
             show_traceback=False,
             iso_datetime_format=False,
+            ctx=Context(Command(cmd)),
         )
         root.console = new_console(tty=tty, color=color)
         root.err_console = new_console(tty=tty, color=color)
