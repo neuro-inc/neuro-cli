@@ -73,7 +73,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
         skip_gmp_stats=True,
         show_traceback=False,
         iso_datetime_format=False,
-        ctx=Context(Command(cmd)),
+        ctx=Context(Command(cmd, name="")),
     )
 
     async def _async_make_client() -> Client:
@@ -147,7 +147,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
         skip_gmp_stats=True,
         show_traceback=False,
         iso_datetime_format=False,
-        ctx=Context(Command(cmd)),
+        ctx=Context(Command(cmd, name="")),
     )
 
     async def _async_make_client() -> Client:

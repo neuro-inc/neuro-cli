@@ -113,7 +113,7 @@ def create_root(config_path: Path) -> Root:
         skip_gmp_stats=True,
         show_traceback=False,
         iso_datetime_format=False,
-        ctx=Context(Command(cmd)),
+        ctx=Context(Command(cmd, name="")),
     )
 
 

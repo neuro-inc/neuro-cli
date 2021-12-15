@@ -86,7 +86,7 @@ def make_root(new_console: NewConsole, nmrc_path: Path) -> Iterator[_MakeRoot]:
             skip_gmp_stats=True,
             show_traceback=False,
             iso_datetime_format=False,
-            ctx=Context(Command(cmd)),
+            ctx=Context(Command(cmd, name="")),
         )
         root.console = new_console(tty=tty, color=color)
         root.err_console = new_console(tty=tty, color=color)

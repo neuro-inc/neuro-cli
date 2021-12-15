@@ -28,7 +28,7 @@ def root_uninitialized() -> Iterator[Root]:
         skip_gmp_stats=True,
         show_traceback=False,
         iso_datetime_format=False,
-        ctx=Context(Command(cmd)),
+        ctx=Context(Command(cmd, name="")),
     )
     yield root
     root.close()
