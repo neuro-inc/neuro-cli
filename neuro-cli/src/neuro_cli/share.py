@@ -50,7 +50,7 @@ async def grant(root: Root, uri: str, user: str, permission: str) -> None:
     neuro acl grant job:///my_job_id alice write
     """
     try:
-        uri_obj = parse_resource_for_sharing(uri, root)
+        uri_obj = await parse_resource_for_sharing(uri, root)
         action_obj = parse_permission_action(permission)
         permission_obj = Permission(uri=uri_obj, action=action_obj)
         log.info(f"Using resource '{permission_obj.uri}'")
@@ -86,7 +86,7 @@ async def revoke(root: Root, uri: str, user: str) -> None:
     neuro acl revoke job:///my_job_id alice
     """
     try:
-        uri_obj = parse_resource_for_sharing(uri, root)
+        uri_obj = await parse_resource_for_sharing(uri, root)
         log.info(f"Using resource '{uri_obj}'")
 
         await root.client.users.revoke(user, uri_obj)

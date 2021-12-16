@@ -26,14 +26,11 @@ def secret() -> None:
     type=CLUSTER,
     help="Look on a specified cluster (the current cluster by default).",
 )
-@option(
-    "--org",
-    type=ORG,
-    help="Look on a specified org (the current org by default).",
-)
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
 async def ls(
-    root: Root, full_uri: bool, cluster: Optional[str], org: Optional[str]
+    root: Root,
+    full_uri: bool,
+    cluster: Optional[str],
 ) -> None:
     """
     List secrets.
@@ -55,7 +52,7 @@ async def ls(
 
     secrets = []
     with root.status("Fetching secrets") as status:
-        async with root.client.secrets.list(cluster_name=cluster, org_name=org) as it:
+        async with root.client.secrets.list(cluster_name=cluster) as it:
             async for secret in it:
                 secrets.append(secret)
                 status.update(f"Fetching secrets ({len(secrets)} loaded)")

@@ -529,7 +529,7 @@ async def resolve_bucket_credential(
 SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret", "disk")
 
 
-def parse_resource_for_sharing(uri: str, root: Root) -> URL:
+async def parse_resource_for_sharing(uri: str, root: Root) -> URL:
     """Parses the neuro resource URI string.
     Available schemes: storage, image, job. For image URIs, tags are not allowed.
     """
@@ -542,7 +542,7 @@ def parse_resource_for_sharing(uri: str, root: Root) -> URL:
 
     if uri_res.scheme == "blob":
         # Lets check that this is bucket url, not object in bucket
-        res = root.client.parse.split_blob_uri(uri_res)
+        res = await root.client.parse.split_blob_uri(uri_res)
         if res.key:
             raise ValueError(
                 "Only bucket level permissions are supported for Blob Storage"

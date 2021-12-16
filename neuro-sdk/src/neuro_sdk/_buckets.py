@@ -445,7 +445,7 @@ class Buckets(metaclass=NoPublicConstructor):
         recursive: bool = False,
         limit: Optional[int] = None,
     ) -> AsyncIterator[BucketEntry]:
-        res = self._parser.split_blob_uri(uri)
+        res = await self._parser.split_blob_uri(uri)
         async with self._get_provider(
             res.bucket_name, res.cluster_name, res.owner
         ) as provider:
@@ -457,7 +457,7 @@ class Buckets(metaclass=NoPublicConstructor):
 
     @asyncgeneratorcontextmanager
     async def glob_blobs(self, uri: URL) -> AsyncIterator[BucketEntry]:
-        res = self._parser.split_blob_uri(uri)
+        res = await self._parser.split_blob_uri(uri)
         if _has_magic(res.bucket_name):
             raise ValueError(
                 "You can not glob on bucket names. Please provide name explicitly."
@@ -535,7 +535,7 @@ class Buckets(metaclass=NoPublicConstructor):
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
-        res = self._parser.split_blob_uri(dst)
+        res = await self._parser.split_blob_uri(dst)
         async with self._get_bucket_fs(
             res.bucket_name, res.cluster_name, res.owner
         ) as bucket_fs:
@@ -556,7 +556,7 @@ class Buckets(metaclass=NoPublicConstructor):
         continue_: bool = False,
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
-        res = self._parser.split_blob_uri(src)
+        res = await self._parser.split_blob_uri(src)
         dst = normalize_local_path_uri(dst)
         async with self._get_bucket_fs(
             res.bucket_name, res.cluster_name, res.owner
@@ -581,7 +581,7 @@ class Buckets(metaclass=NoPublicConstructor):
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
-        res = self._parser.split_blob_uri(dst)
+        res = await self._parser.split_blob_uri(dst)
         async with self._get_bucket_fs(
             res.bucket_name, res.cluster_name, res.owner
         ) as bucket_fs:
@@ -605,7 +605,7 @@ class Buckets(metaclass=NoPublicConstructor):
         filter: Optional[AsyncFilterFunc] = None,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
-        res = self._parser.split_blob_uri(src)
+        res = await self._parser.split_blob_uri(src)
         dst = normalize_local_path_uri(dst)
         async with self._get_bucket_fs(
             res.bucket_name, res.cluster_name, res.owner
@@ -621,7 +621,7 @@ class Buckets(metaclass=NoPublicConstructor):
             )
 
     async def blob_is_dir(self, uri: URL) -> bool:
-        res = self._parser.split_blob_uri(uri)
+        res = await self._parser.split_blob_uri(uri)
         if res.key.endswith("/"):
             return True
         async with self._get_bucket_fs(
@@ -636,7 +636,7 @@ class Buckets(metaclass=NoPublicConstructor):
         recursive: bool = False,
         progress: Optional[AbstractDeleteProgress] = None,
     ) -> None:
-        res = self._parser.split_blob_uri(uri)
+        res = await self._parser.split_blob_uri(uri)
         async with self._get_bucket_fs(
             res.bucket_name, res.cluster_name, res.owner
         ) as bucket_fs:
@@ -647,7 +647,7 @@ class Buckets(metaclass=NoPublicConstructor):
         uri: URL,
         expires_in_seconds: int = 3600,
     ) -> URL:
-        res = self._parser.split_blob_uri(uri)
+        res = await self._parser.split_blob_uri(uri)
         url = (
             self._get_buckets_url(res.cluster_name) / res.bucket_name / "sign_blob_url"
         )

@@ -61,6 +61,7 @@ class Client(metaclass=NoPublicConstructor):
         self._version_checker: VersionChecker = VersionChecker._create(
             self._core, self._config, plugin_manager
         )
+        self._parser._set_buckets(self._buckets)
 
     async def close(self) -> None:
         if self._closed:

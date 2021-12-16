@@ -3,6 +3,7 @@ import warnings
 from dataclasses import dataclass
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     Iterable,
@@ -23,6 +24,9 @@ from ._parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
 from ._rewrite import rewrite_module
 from ._url_utils import _check_scheme, _extract_path, _normalize_uri, uri_from_cli
 from ._utils import NoPublicConstructor
+
+if TYPE_CHECKING:
+    from . import Buckets
 
 
 @rewrite_module
@@ -116,7 +120,11 @@ class _Unset:
 @rewrite_module
 class Parser(metaclass=NoPublicConstructor):
     def __init__(self, config: Config) -> None:
+        self._buckets: Optional["Buckets"] = None
         self._config = config
+
+    def _set_buckets(self, buckets: "Buckets") -> None:
+        self._buckets = buckets
 
     def _parse_generic_volume(
         self, volume: str, allow_rw_spec: bool = True, resource_name: str = "volume"
@@ -404,13 +412,40 @@ class Parser(metaclass=NoPublicConstructor):
             ret = URL.build(scheme=ret.scheme, host=ret.host or "", path=ret.path[:-1])
         return ret
 
-    def split_blob_uri(self, uri: URL) -> BucketUriParseResult:
+    async def split_blob_uri(self, uri: URL) -> BucketUriParseResult:
         uri = self.normalize_uri(uri)
         cluster_name = uri.host
         assert cluster_name
-        parts = uri.path.lstrip("/").split("/", 2)
+        assert self._buckets
+        async with self._buckets.list(cluster_name) as it:
+            buckets_list = [bucket async for bucket in it]
+            buckets = {bucket.id: bucket for bucket in buckets_list}
+            buckets.update(
+                {bucket.name: bucket for bucket in buckets_list if bucket.name}
+            )
+
+        parts = uri.path.lstrip("/").split("/")
         if len(parts) == 1:
             raise ValueError(f"Blob uri doesn't contain bucket name: {uri}")
+
+        # Try to find bucket in list:
+        for name_part_idx in range(1, len(parts)):
+            name_or_id = parts[name_part_idx]
+            bucket = buckets.get(name_or_id)
+            if bucket:
+                bucket_path = bucket.owner
+                if bucket.org_name:
+                    bucket_path = f"{bucket.org_name}/{bucket_path}"
+                    uri_path = "/".join(parts[:name_part_idx])
+                    if bucket_path == uri_path:
+                        return BucketUriParseResult(
+                            cluster_name=cluster_name,
+                            owner=bucket.owner,
+                            bucket_name=name_or_id,
+                            key="/".join(parts[name_part_idx + 1 :]),
+                        )
+        # Did not found bucket, do simple parsing guessing there is
+        # no org_name and username without slash
         if len(parts) == 3:
             owner, bucket_id, key = parts
         else:
