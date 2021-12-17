@@ -148,6 +148,17 @@ class Bucket:
             base += f"/{self.org_name}"
         return URL(f"{base}/{self.owner}/{self.name or self.id}")
 
+    def get_key_for_uri(self, uri: URL) -> str:
+        self_uris = [self.uri]
+        if self.name:
+            self_uris.append(self.uri.parent / self.id)
+        uri_str = str(uri)
+        for self_uri in self_uris:
+            self_uri_str = str(self_uri)
+            if uri_str.startswith(self_uri_str):
+                return uri_str[len(self_uri_str) :].lstrip("/")
+        raise ValueError(f"URI {uri} is not related to bucket {self.uri}")
+
     class Provider(str, enum.Enum):
         AWS = "aws"
         MINIO = "minio"
