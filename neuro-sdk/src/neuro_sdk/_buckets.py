@@ -341,13 +341,12 @@ class Buckets(metaclass=NoPublicConstructor):
         uri = self._parser.normalize_uri(uri)
         cluster_name = uri.host
 
-        # Move this code to server!
-        async with self.list(cluster_name) as it:
-            async for bucket in it:
-                if str(uri).startswith(str(bucket.uri)):
-                    return bucket
-
-        raise ResourceNotFound(f"Bucket for uri {uri} not found")
+        url = self._get_buckets_url(cluster_name) / "find" / "by_path"
+        query = {"path": uri.path.lstrip("/")}
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth, params=query) as resp:
+            payload = await resp.json()
+            return self._parse_bucket_payload(payload)
 
     @asynccontextmanager
     async def _get_provider(self, uri: URL) -> AsyncIterator[BucketProvider]:
