@@ -42,7 +42,7 @@ def drop_old_clusters() -> None:
             try:
                 _, time_str, _ = out_line.split(CLUSTER_DATETIME_SEP)
                 cluster_time = datetime.strptime(time_str, CLUSTER_DATETIME_FORMAT)
-                if datetime.now() - cluster_time < timedelta(seconds=0):
+                if datetime.now() - cluster_time < timedelta(days=1):
                     continue
                 helper.run_cli(["admin", "remove-cluster", "--force", cluster_name])
             except Exception:
