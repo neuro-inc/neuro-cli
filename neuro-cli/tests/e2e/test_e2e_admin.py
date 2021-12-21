@@ -1,18 +1,57 @@
 import secrets
 import subprocess
+import tempfile
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Iterator, List, Tuple
 
 import pytest
 
 from tests.e2e import Helper
+from tests.e2e.conftest import SysCap, _get_nmrc_path
 
-pytestmark = pytest.mark.skip
+pytestmark = [pytest.mark.xdist_group(name="admin_group")]
+
+
+CLUSTER_DATETIME_FORMAT = "%Y%m%d%H%M"
+CLUSTER_DATETIME_SEP = "-date"
+
+
+def make_cluster_name() -> str:
+    time_str = datetime.now().strftime(CLUSTER_DATETIME_FORMAT)
+    return (
+        f"e2e-testing-{secrets.token_hex(4)}{CLUSTER_DATETIME_SEP}{time_str}"
+        f"{CLUSTER_DATETIME_SEP}"
+    )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def drop_old_clusters() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmpdir_path = Path(tmpdir)
+        nmrc_path = _get_nmrc_path(tmpdir_path, False)
+        subdir = tmpdir_path / "tmp"
+        subdir.mkdir()
+        helper = Helper(nmrc_path=nmrc_path, tmp_path=subdir)
+
+        res: SysCap = helper.run_cli(["admin", "get-clusters"])
+        for out_line in res.out.splitlines():
+            if not out_line.startswith("e2e-testing-"):
+                continue
+            cluster_name = out_line.strip()
+            try:
+                _, time_str, _ = out_line.split(CLUSTER_DATETIME_SEP)
+                cluster_time = datetime.strptime(time_str, CLUSTER_DATETIME_FORMAT)
+                if datetime.now() - cluster_time < timedelta(seconds=0):
+                    continue
+                helper.run_cli(["admin", "remove-cluster", "--force", cluster_name])
+            except Exception:
+                pass
 
 
 @pytest.fixture
 def tmp_test_cluster(helper: Helper, tmp_path: Path) -> Iterator[str]:
-    cluster_name = "e2e-testing-" + secrets.token_hex(10)
+    cluster_name = make_cluster_name()
     fake_conf = tmp_path / "fake_cluster_config"
     fake_conf.write_text("")
     helper.run_cli(
