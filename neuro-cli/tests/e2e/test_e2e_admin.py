@@ -7,7 +7,7 @@ import pytest
 
 from tests.e2e import Helper
 
-pytestmark = pytest.mark.require_admin
+pytestmark = pytest.mark.skip
 
 
 @pytest.fixture
