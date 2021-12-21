@@ -33,6 +33,7 @@ update-deps: ### Update dependencies
 .e2e:
 	COLUMNS=160 LINES=75 pytest \
 	    -n ${PYTEST_XDIST_NUM_THREADS} \
+	    --dist loadgroup \
 		-m "e2e" \
 		--cov=neuro-cli --cov=neuro-sdk \
 		--cov-report term-missing:skip-covered \
