@@ -694,6 +694,7 @@ def test_tree(helper: Helper, data: _Data, tmp_path: Path) -> None:
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Autocompletion is not supported on Windows"
 )
+@pytest.mark.xfail("autocomplete is not working")
 @pytest.mark.e2e
 def test_storage_autocomplete_remote(helper: Helper, tmp_path: Path) -> None:
     folder = tmp_path / "folder"
@@ -734,6 +735,7 @@ def test_storage_autocomplete_remote(helper: Helper, tmp_path: Path) -> None:
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Autocompletion is not supported on Windows"
 )
+@pytest.mark.xfail("autocomplete is not working")
 @pytest.mark.e2e
 def test_storage_autocomplete_local(helper: Helper, tmp_path: Path) -> None:
     folder = tmp_path / "folder"

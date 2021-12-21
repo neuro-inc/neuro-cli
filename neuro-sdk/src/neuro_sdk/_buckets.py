@@ -326,7 +326,7 @@ class Buckets(metaclass=NoPublicConstructor):
     ) -> AsyncIterator[BucketUsage]:
         total_bytes = 0
         obj_count = 0
-        async with self._get_provider(
+        async with self._get_provider_by_exact(
             bucket_id_or_name, cluster_name, bucket_owner
         ) as provider:
             async with provider.list_blobs("", recursive=True) as it:
@@ -338,7 +338,6 @@ class Buckets(metaclass=NoPublicConstructor):
     # Helper functions
 
     async def _get_bucket_for_uri(self, uri: URL) -> Bucket:
-        uri = self._parser.normalize_uri(uri)
         cluster_name = uri.host
 
         url = self._get_buckets_url(cluster_name) / "find" / "by_path"
@@ -351,7 +350,26 @@ class Buckets(metaclass=NoPublicConstructor):
     @asynccontextmanager
     async def _get_provider(self, uri: URL) -> AsyncIterator[BucketProvider]:
         bucket = await self._get_bucket_for_uri(uri)
+        async with self._get_provider_for_bucket(bucket) as provider:
+            yield provider
 
+    @asynccontextmanager
+    async def _get_provider_by_exact(
+        self,
+        bucket_id_or_name: str,
+        cluster_name: Optional[str] = None,
+        bucket_owner: Optional[str] = None,
+    ) -> AsyncIterator[BucketProvider]:
+        bucket = await self.get(
+            bucket_id_or_name, cluster_name=cluster_name, bucket_owner=bucket_owner
+        )
+        async with self._get_provider_for_bucket(bucket) as provider:
+            yield provider
+
+    @asynccontextmanager
+    async def _get_provider_for_bucket(
+        self, bucket: Bucket
+    ) -> AsyncIterator[BucketProvider]:
         async def _get_new_credentials() -> BucketCredentials:
             return await self.request_tmp_credentials(bucket.id, bucket.cluster_name)
 
@@ -393,7 +411,7 @@ class Buckets(metaclass=NoPublicConstructor):
         cluster_name: Optional[str] = None,
         bucket_owner: Optional[str] = None,
     ) -> BucketEntry:
-        async with self._get_provider(
+        async with self._get_provider_by_exact(
             bucket_id_or_name, cluster_name, bucket_owner
         ) as provider:
             return await provider.head_blob(key)
@@ -406,7 +424,7 @@ class Buckets(metaclass=NoPublicConstructor):
         cluster_name: Optional[str] = None,
         bucket_owner: Optional[str] = None,
     ) -> None:
-        async with self._get_provider(
+        async with self._get_provider_by_exact(
             bucket_id_or_name, cluster_name, bucket_owner
         ) as provider:
             await provider.put_blob(key, body)
@@ -420,7 +438,7 @@ class Buckets(metaclass=NoPublicConstructor):
         cluster_name: Optional[str] = None,
         bucket_owner: Optional[str] = None,
     ) -> AsyncIterator[bytes]:
-        async with self._get_provider(
+        async with self._get_provider_by_exact(
             bucket_id_or_name, cluster_name, bucket_owner
         ) as provider:
             async with provider.fetch_blob(key, offset=offset) as it:
@@ -434,7 +452,7 @@ class Buckets(metaclass=NoPublicConstructor):
         cluster_name: Optional[str] = None,
         bucket_owner: Optional[str] = None,
     ) -> None:
-        async with self._get_provider(
+        async with self._get_provider_by_exact(
             bucket_id_or_name, cluster_name, bucket_owner
         ) as provider:
             return await provider.delete_blob(key)
@@ -448,6 +466,7 @@ class Buckets(metaclass=NoPublicConstructor):
         recursive: bool = False,
         limit: Optional[int] = None,
     ) -> AsyncIterator[BucketEntry]:
+        uri = self._parser.normalize_uri(uri, allowed_schemes=("blob",))
         async with self._get_provider(uri) as provider:
             key = provider.bucket.get_key_for_uri(uri)
             async with provider.list_blobs(key, recursive=recursive, limit=limit) as it:
@@ -456,11 +475,7 @@ class Buckets(metaclass=NoPublicConstructor):
 
     @asyncgeneratorcontextmanager
     async def glob_blobs(self, uri: URL) -> AsyncIterator[BucketEntry]:
-        # if _has_magic(res.bucket_name):
-        #     raise ValueError(
-        #         "You can not glob on bucket names. Please provide name explicitly."
-        #     )
-
+        uri = self._parser.normalize_uri(uri, allowed_schemes=("blob",))
         async with self._get_provider(uri) as provider:
             key = provider.bucket.get_key_for_uri(uri)
             async with self._glob_blobs("", key, provider) as it:
@@ -532,6 +547,7 @@ class Buckets(metaclass=NoPublicConstructor):
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
+        dst = self._parser.normalize_uri(dst, allowed_schemes=("blob",))
         async with self._get_bucket_fs(dst) as bucket_fs:
             dst_key = bucket_fs.bucket.get_key_for_uri(dst)
             transferer = FileTransferer(LocalFS(), bucket_fs)
@@ -551,6 +567,7 @@ class Buckets(metaclass=NoPublicConstructor):
         continue_: bool = False,
         progress: Optional[AbstractFileProgress] = None,
     ) -> None:
+        src = self._parser.normalize_uri(src, allowed_schemes=("blob",))
         dst = normalize_local_path_uri(dst)
         async with self._get_bucket_fs(src) as bucket_fs:
 
@@ -575,6 +592,7 @@ class Buckets(metaclass=NoPublicConstructor):
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
         src = normalize_local_path_uri(src)
+        dst = self._parser.normalize_uri(dst, allowed_schemes=("blob",))
         async with self._get_bucket_fs(dst) as bucket_fs:
 
             dst_key = bucket_fs.bucket.get_key_for_uri(dst)
@@ -598,6 +616,7 @@ class Buckets(metaclass=NoPublicConstructor):
         filter: Optional[AsyncFilterFunc] = None,
         progress: Optional[AbstractRecursiveFileProgress] = None,
     ) -> None:
+        src = self._parser.normalize_uri(src, allowed_schemes=("blob",))
         dst = normalize_local_path_uri(dst)
         async with self._get_bucket_fs(src) as bucket_fs:
             src_key = bucket_fs.bucket.get_key_for_uri(src)
@@ -612,6 +631,7 @@ class Buckets(metaclass=NoPublicConstructor):
             )
 
     async def blob_is_dir(self, uri: URL) -> bool:
+        uri = self._parser.normalize_uri(uri, allowed_schemes=("blob",))
         if uri.path.endswith("/"):
             return True
         async with self._get_bucket_fs(uri) as bucket_fs:
@@ -625,6 +645,7 @@ class Buckets(metaclass=NoPublicConstructor):
         recursive: bool = False,
         progress: Optional[AbstractDeleteProgress] = None,
     ) -> None:
+        uri = self._parser.normalize_uri(uri, allowed_schemes=("blob",))
         async with self._get_bucket_fs(uri) as bucket_fs:
             key = bucket_fs.bucket.get_key_for_uri(uri)
             await rm(bucket_fs, PurePosixPath(key), recursive, progress)
@@ -634,6 +655,7 @@ class Buckets(metaclass=NoPublicConstructor):
         uri: URL,
         expires_in_seconds: int = 3600,
     ) -> URL:
+        uri = self._parser.normalize_uri(uri, allowed_schemes=("blob",))
         bucket = await self._get_bucket_for_uri(uri)
         url = self._get_buckets_url(bucket.cluster_name) / bucket.id / "sign_blob_url"
         auth = await self._config._api_auth()
