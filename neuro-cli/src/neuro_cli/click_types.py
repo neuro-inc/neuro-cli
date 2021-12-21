@@ -894,7 +894,7 @@ class NewBashComplete(BashComplete):
         return f"{item.type},{item.value},{prefix}"
 
 
-# add_completion_class(NewBashComplete)
+add_completion_class(NewBashComplete)
 
 
 class BucketType(AsyncType[str]):
