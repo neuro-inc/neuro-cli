@@ -684,7 +684,7 @@ class Helper:
                 # If we do, please add a semaphore here.
                 tasks = []
                 async for blob in blobs_it:
-                    log.info("Removing %s %s", blob.uri)
+                    log.info("Removing %s", blob.uri)
                     tasks.append(
                         client.buckets.delete_blob(
                             bucket.id, key=blob.key, bucket_owner=bucket.owner
