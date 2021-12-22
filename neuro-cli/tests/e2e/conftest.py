@@ -677,20 +677,25 @@ class Helper:
         # Each test needs a clean bucket state and we can't delete bucket until it's
         # cleaned
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            async with client.buckets.list_blobs(
-                bucket.uri, recursive=True
-            ) as blobs_it:
-                # XXX: We do assume we will not have tests that run 10000 of objects.
-                # If we do, please add a semaphore here.
-                tasks = []
-                async for blob in blobs_it:
-                    log.info("Removing %s", blob.uri)
-                    tasks.append(
-                        client.buckets.delete_blob(
-                            bucket.id, key=blob.key, bucket_owner=bucket.owner
+            try:
+                async with client.buckets.list_blobs(
+                    bucket.uri, recursive=True
+                ) as blobs_it:
+                    # XXX: We do assume we will not have tests that run
+                    # 10000 of objects.
+                    # If we do, please add a semaphore here.
+                    tasks = []
+                    async for blob in blobs_it:
+                        log.info("Removing %s", blob.uri)
+                        tasks.append(
+                            client.buckets.delete_blob(
+                                bucket.id, key=blob.key, bucket_owner=bucket.owner
+                            )
                         )
-                    )
-            await asyncio.gather(*tasks)
+                await asyncio.gather(*tasks)
+            except Exception:
+                # Ignore errors - another run can remove bucket faster then this run
+                pass
 
     cleanup_bucket = run_async(acleanup_bucket)
 
