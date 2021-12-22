@@ -1,6 +1,6 @@
 # Admin API is experimental,
 # remove underscore prefix after stabilizing and making public
-
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any, AsyncIterator, Dict, List, Mapping, Optional
 
@@ -18,7 +18,6 @@ from neuro_admin_client import OrgUserRoleType as _OrgUserRoleType
 from neuro_admin_client import OrgUserWithInfo as _OrgUserWithInfo
 from neuro_admin_client import Quota as _Quota
 from neuro_admin_client import UserInfo as _UserInfo
-from prompt_toolkit.eventloop.async_context_manager import asynccontextmanager
 from yarl import URL
 
 from ._config import Config
