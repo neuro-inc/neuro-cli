@@ -13,32 +13,9 @@ Operations with secrets.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_ls_](secret.md#ls) | List secrets |
 | [_add_](secret.md#add) | Add secret KEY with data VALUE |
+| [_ls_](secret.md#ls) | List secrets |
 | [_rm_](secret.md#rm) | Remove secret KEY |
-
-
-### ls
-
-List secrets
-
-
-#### Usage
-
-```bash
-neuro secret ls [OPTIONS]
-```
-
-List secrets.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
-| _--full-uri_ | Output full disk URI. |
-
 
 
 ### add
@@ -72,6 +49,29 @@ $ neuro secret add KEY_NAME @path/to/file.txt
 | _--help_ | Show this message and exit. |
 | _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
 | _--org ORG_ | Look on a specified org \(the current org by default\). |
+
+
+
+### ls
+
+List secrets
+
+
+#### Usage
+
+```bash
+neuro secret ls [OPTIONS]
+```
+
+List secrets.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
+| _--full-uri_ | Output full disk URI. |
 
 
 

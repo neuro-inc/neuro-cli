@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Optional, Type, cast
+from typing import Any, Callable, Optional, Type, cast
 
 import click
 from click.utils import make_default_short_help
@@ -49,9 +49,6 @@ class Group(click.Group):
             return cmd
 
         return decorator
-
-    def list_commands(self, ctx: click.Context) -> List[str]:
-        return sorted(self.commands)
 
 
 def group(name: Optional[str] = None, **kwargs: Any) -> Group:

@@ -13,31 +13,10 @@ Operations with service accounts.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_ls_](service-account.md#ls) | List service accounts |
 | [_create_](service-account.md#create) | Create a service account |
 | [_get_](service-account.md#get) | Get service account SERVICE\_ACCOUNT |
+| [_ls_](service-account.md#ls) | List service accounts |
 | [_rm_](service-account.md#rm) | Remove service accounts SERVICE\_ACCOUNT |
-
-
-### ls
-
-List service accounts
-
-
-#### Usage
-
-```bash
-neuro service-account ls [OPTIONS]
-```
-
-List service accounts.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
 
 
 ### create
@@ -75,6 +54,27 @@ neuro service-account get [OPTIONS] SERVICE_ACCOUNT
 ```
 
 Get service account `SERVICE`_`ACCOUNT`.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### ls
+
+List service accounts
+
+
+#### Usage
+
+```bash
+neuro service-account ls [OPTIONS]
+```
+
+List service accounts.
 
 #### Options
 

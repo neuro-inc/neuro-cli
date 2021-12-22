@@ -276,7 +276,7 @@ class MainGroup(Group):
 
     def list_commands(self, ctx: click.Context) -> List[str]:
         self._pre_load()
-        return list(self.commands)
+        return sorted(self.commands)
 
     def _pre_load(self, name: Optional[str] = None) -> None:
         if name is None:

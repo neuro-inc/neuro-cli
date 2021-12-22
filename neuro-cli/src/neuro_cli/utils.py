@@ -321,9 +321,6 @@ class Group(NeuroGroupMixin, click.Group):
 
         return decorator
 
-    def list_commands(self, ctx: click.Context) -> List[str]:
-        return list(self.commands)
-
     def invoke(self, ctx: click.Context) -> None:
         if not ctx.args and not ctx.protected_args:
             print_help(ctx)

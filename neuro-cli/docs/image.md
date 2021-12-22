@@ -13,13 +13,46 @@ Container image operations.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
+| [_digest_](image.md#digest) | Get digest of an image from remote registry |
 | [_ls_](image.md#ls) | List images |
-| [_push_](image.md#push) | Push an image to platform registry |
 | [_pull_](image.md#pull) | Pull an image from platform registry |
+| [_push_](image.md#push) | Push an image to platform registry |
 | [_rm_](image.md#rm) | Remove image from platform registry |
 | [_size_](image.md#size) | Get image size |
-| [_digest_](image.md#digest) | Get digest of an image from remote registry |
 | [_tags_](image.md#tags) | List tags for image in platform registry |
+
+
+### digest
+
+Get digest of an image from remote registry
+
+
+#### Usage
+
+```bash
+neuro image digest [OPTIONS] IMAGE
+```
+
+Get digest of an image from remote registry
+
+Image name must be `URL` with
+image:// scheme.
+Image name must contain tag.
+
+#### Examples
+
+```bash
+
+$ neuro image digest image://myfriend/alpine:shared
+$ neuro image digest image:myimage:latest
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
 
 
 ### ls
@@ -45,6 +78,40 @@ List images.
 | _--full-uri_ | Output full image URI. |
 | _-n, --name PATTERN_ | Filter out images by name regex. |
 | _-o, --owner TEXT_ | Filter out images by owner \(multiple option\). Supports `ME` option to filter by the current user. |
+
+
+
+### pull
+
+Pull an image from platform registry
+
+
+#### Usage
+
+```bash
+neuro image pull [OPTIONS] REMOTE_IMAGE [LOCAL_IMAGE]
+```
+
+Pull an image from platform registry.
+
+Remote image name must be `URL` with
+image:// scheme.
+Image names can contain tag.
+
+#### Examples
+
+```bash
+
+$ neuro pull image:myimage
+$ neuro pull image://myfriend/alpine:shared
+$ neuro pull image://username/my-alpine:production alpine:from-registry
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -74,40 +141,6 @@ used as value.
 $ neuro push myimage
 $ neuro push alpine:latest image:my-alpine:production
 $ neuro push alpine image://myfriend/alpine:shared
-```
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### pull
-
-Pull an image from platform registry
-
-
-#### Usage
-
-```bash
-neuro image pull [OPTIONS] REMOTE_IMAGE [LOCAL_IMAGE]
-```
-
-Pull an image from platform registry.
-
-Remote image name must be `URL` with
-image:// scheme.
-Image names can contain tag.
-
-#### Examples
-
-```bash
-
-$ neuro pull image:myimage
-$ neuro pull image://myfriend/alpine:shared
-$ neuro pull image://username/my-alpine:production alpine:from-registry
 ```
 
 #### Options
@@ -175,39 +208,6 @@ contain tag.
 
 $ neuro image size image://myfriend/alpine:shared
 $ neuro image size image:myimage:latest
-```
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### digest
-
-Get digest of an image from remote registry
-
-
-#### Usage
-
-```bash
-neuro image digest [OPTIONS] IMAGE
-```
-
-Get digest of an image from remote registry
-
-Image name must be `URL` with
-image:// scheme.
-Image name must contain tag.
-
-#### Examples
-
-```bash
-
-$ neuro image digest image://myfriend/alpine:shared
-$ neuro image digest image:myimage:latest
 ```
 
 #### Options

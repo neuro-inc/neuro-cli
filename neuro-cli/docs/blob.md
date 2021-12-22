@@ -13,269 +13,22 @@ Blob storage operations.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_lsbucket_](blob.md#lsbucket) | List buckets |
-| [_mkbucket_](blob.md#mkbucket) | Create a new bucket |
-| [_importbucket_](blob.md#importbucket) | Import an existing bucket |
-| [_statbucket_](blob.md#statbucket) | Get bucket BUCKET |
-| [_rmbucket_](blob.md#rmbucket) | Remove bucket BUCKET |
-| [_set-bucket-publicity_](blob.md#set-bucket-publicity) | Change public access settings for BUCKET |
-| [_lscredentials_](blob.md#lscredentials) | List bucket credentials |
-| [_mkcredentials_](blob.md#mkcredentials) | Create a new bucket credential |
-| [_statcredentials_](blob.md#statcredentials) | Get bucket credential BUCKET\_CREDENTIAL |
-| [_rmcredentials_](blob.md#rmcredentials) | Remove bucket credential BUCKET\_CREDENTIAL |
 | [_cp_](blob.md#cp) | Copy blobs into and from Blob Storage |
-| [_ls_](blob.md#ls) | List buckets or bucket contents |
-| [_glob_](blob.md#glob) | List resources that match PATTERNS |
-| [_rm_](blob.md#rm) | Remove blobs from bucket |
-| [_sign-url_](blob.md#sign-url) | Make signed url for blob in bucket |
 | [_du_](blob.md#du) | Get storage usage for BUCKET |
-
-
-### lsbucket
-
-List buckets
-
-
-#### Usage
-
-```bash
-neuro blob lsbucket [OPTIONS]
-```
-
-List buckets.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
-| _--full-uri_ | Output full bucket URI. |
-| _--long-format_ | Output all info about bucket. |
-
-
-
-### mkbucket
-
-Create a new bucket
-
-
-#### Usage
-
-```bash
-neuro blob mkbucket [OPTIONS]
-```
-
-Create a new bucket.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
-| _--name NAME_ | Optional bucket name |
-| _--org ORG_ | Perform in a specified org \(the current org by default\). |
-
-
-
-### importbucket
-
-Import an existing bucket
-
-
-#### Usage
-
-```bash
-neuro blob importbucket [OPTIONS]
-```
-
-Import an existing bucket.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--aws-access-key-id AWS\_ACCESS\_KEY\_ID_ | AWS access\_key\_id to use to access the bucket.  Required when PROVIDER is 'aws' |
-| _--aws-endpoint-url AWS\_ENDPOINT_ | AWS endpoint to use to access the bucket. Usually you need to set this if you use non-AWS S3 compatible provider |
-| _--aws-region-name AWS\_REGION_ | AWS region to use to access the bucket. |
-| _--aws-secret-access-key AWS\_SECRET\_ACCESS\_KEY_ | AWS secret\_access\_key to use to access the bucket. Required when PROVIDER is 'aws' |
-| _--azure-storage-account-url AZURE\_STORAGE\_ACCOUNT\_URL_ | Azure account url. Usually it has following format: https://&lt;account\_id&gt;.blob.core.windows.net Required when PROVIDER is 'azure' |
-| _--azure-storage-credential AZURE\_STORAGE\_CREDENTIAL_ | Azure storage credential that grants access to imported bucket. Either this or AZURE\_SAS is required when PROVIDER is 'azure' |
-| _--azure-storage-sas-token AZURE\_SAS_ | Azure shared access signature token that grants access to imported bucket. Either this or AZURE\_STORAGE\_CREDENTIAL is required when PROVIDER is 'azure' |
-| _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
-| _--gcp-sa-credential GCP\_SA\_CREDNETIAL_ | GCP service account credential in form of base64 encoded json string that grants access to imported bucket. Required when PROVIDER is 'gcp' |
-| _--name NAME_ | Optional bucket name |
-| _--org ORG_ | Perform in a specified org \(the current org by default\). |
-| _--provider PROVIDER_ | Bucket provider that hosts bucket  _\[required\]_ |
-| _--provider-bucket-name EXTERNAL\_NAME_ | Name of bucket \(or container in case of Azure\) inside the provider  _\[required\]_ |
-
-
-
-### statbucket
-
-Get bucket BUCKET
-
-
-#### Usage
-
-```bash
-neuro blob statbucket [OPTIONS] BUCKET
-```
-
-Get bucket `BUCKET`.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
-| _--full-uri_ | Output full bucket URI. |
-
-
-
-### rmbucket
-
-Remove bucket BUCKET
-
-
-#### Usage
-
-```bash
-neuro blob rmbucket [OPTIONS] BUCKETS...
-```
-
-Remove bucket `BUCKET`.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
-
-
-
-### set-bucket-publicity
-
-Change public access settings for BUCKET
-
-
-#### Usage
-
-```bash
-neuro blob set-bucket-publicity [OPTIONS] BUCKET {public|private}
-```
-
-Change public access settings for `BUCKET`
-
-#### Examples
-
-```bash
-
-$ neuro blob set-bucket-publicity my-bucket public
-$ neuro blob set-bucket-publicity my-bucket private
-```
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
-
-
-
-### lscredentials
-
-List bucket credentials
-
-
-#### Usage
-
-```bash
-neuro blob lscredentials [OPTIONS]
-```
-
-List bucket credentials.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
-
-
-
-### mkcredentials
-
-Create a new bucket credential
-
-
-#### Usage
-
-```bash
-neuro blob mkcredentials [OPTIONS] BUCKETS...
-```
-
-Create a new bucket credential.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
-| _--name NAME_ | Optional bucket credential name |
-| _--read-only_ | Make read-only credential |
-
-
-
-### statcredentials
-
-Get bucket credential BUCKET_CREDENTIAL
-
-
-#### Usage
-
-```bash
-neuro blob statcredentials [OPTIONS] BUCKET_CREDENTIAL
-```
-
-Get bucket credential `BUCKET`_`CREDENTIAL`.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
-
-
-
-### rmcredentials
-
-Remove bucket credential BUCKET_CREDENTIAL
-
-
-#### Usage
-
-```bash
-neuro blob rmcredentials [OPTIONS] CREDENTIALS...
-```
-
-Remove bucket credential `BUCKET`_`CREDENTIAL`.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
-
+| [_glob_](blob.md#glob) | List resources that match PATTERNS |
+| [_importbucket_](blob.md#importbucket) | Import an existing bucket |
+| [_ls_](blob.md#ls) | List buckets or bucket contents |
+| [_lsbucket_](blob.md#lsbucket) | List buckets |
+| [_lscredentials_](blob.md#lscredentials) | List bucket credentials |
+| [_mkbucket_](blob.md#mkbucket) | Create a new bucket |
+| [_mkcredentials_](blob.md#mkcredentials) | Create a new bucket credential |
+| [_rm_](blob.md#rm) | Remove blobs from bucket |
+| [_rmbucket_](blob.md#rmbucket) | Remove bucket BUCKET |
+| [_rmcredentials_](blob.md#rmcredentials) | Remove bucket credential BUCKET\_CREDENTIAL |
+| [_set-bucket-publicity_](blob.md#set-bucket-publicity) | Change public access settings for BUCKET |
+| [_sign-url_](blob.md#sign-url) | Make signed url for blob in bucket |
+| [_statbucket_](blob.md#statbucket) | Get bucket BUCKET |
+| [_statcredentials_](blob.md#statcredentials) | Get bucket credential BUCKET\_CREDENTIAL |
 
 
 ### cp
@@ -336,6 +89,84 @@ Blob Storage metadata during upload.
 
 
 
+### du
+
+Get storage usage for BUCKET
+
+
+#### Usage
+
+```bash
+neuro blob du [OPTIONS] BUCKET
+```
+
+Get storage usage for `BUCKET`.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
+
+
+
+### glob
+
+List resources that match PATTERNS
+
+
+#### Usage
+
+```bash
+neuro blob glob [OPTIONS] [PATTERNS]...
+```
+
+List resources that match `PATTERNS`.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--full-uri_ | Output full bucket URI. |
+
+
+
+### importbucket
+
+Import an existing bucket
+
+
+#### Usage
+
+```bash
+neuro blob importbucket [OPTIONS]
+```
+
+Import an existing bucket.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--aws-access-key-id AWS\_ACCESS\_KEY\_ID_ | AWS access\_key\_id to use to access the bucket.  Required when PROVIDER is 'aws' |
+| _--aws-endpoint-url AWS\_ENDPOINT_ | AWS endpoint to use to access the bucket. Usually you need to set this if you use non-AWS S3 compatible provider |
+| _--aws-region-name AWS\_REGION_ | AWS region to use to access the bucket. |
+| _--aws-secret-access-key AWS\_SECRET\_ACCESS\_KEY_ | AWS secret\_access\_key to use to access the bucket. Required when PROVIDER is 'aws' |
+| _--azure-storage-account-url AZURE\_STORAGE\_ACCOUNT\_URL_ | Azure account url. Usually it has following format: https://&lt;account\_id&gt;.blob.core.windows.net Required when PROVIDER is 'azure' |
+| _--azure-storage-credential AZURE\_STORAGE\_CREDENTIAL_ | Azure storage credential that grants access to imported bucket. Either this or AZURE\_SAS is required when PROVIDER is 'azure' |
+| _--azure-storage-sas-token AZURE\_SAS_ | Azure shared access signature token that grants access to imported bucket. Either this or AZURE\_STORAGE\_CREDENTIAL is required when PROVIDER is 'azure' |
+| _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
+| _--gcp-sa-credential GCP\_SA\_CREDNETIAL_ | GCP service account credential in form of base64 encoded json string that grants access to imported bucket. Required when PROVIDER is 'gcp' |
+| _--name NAME_ | Optional bucket name |
+| _--org ORG_ | Perform in a specified org \(the current org by default\). |
+| _--provider PROVIDER_ | Bucket provider that hosts bucket  _\[required\]_ |
+| _--provider-bucket-name EXTERNAL\_NAME_ | Name of bucket \(or container in case of Azure\) inside the provider  _\[required\]_ |
+
+
+
 ### ls
 
 List buckets or bucket contents
@@ -361,25 +192,97 @@ List buckets or bucket contents.
 
 
 
-### glob
+### lsbucket
 
-List resources that match PATTERNS
+List buckets
 
 
 #### Usage
 
 ```bash
-neuro blob glob [OPTIONS] [PATTERNS]...
+neuro blob lsbucket [OPTIONS]
 ```
 
-List resources that match `PATTERNS`.
+List buckets.
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
 | _--full-uri_ | Output full bucket URI. |
+| _--long-format_ | Output all info about bucket. |
+
+
+
+### lscredentials
+
+List bucket credentials
+
+
+#### Usage
+
+```bash
+neuro blob lscredentials [OPTIONS]
+```
+
+List bucket credentials.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
+
+
+
+### mkbucket
+
+Create a new bucket
+
+
+#### Usage
+
+```bash
+neuro blob mkbucket [OPTIONS]
+```
+
+Create a new bucket.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
+| _--name NAME_ | Optional bucket name |
+| _--org ORG_ | Perform in a specified org \(the current org by default\). |
+
+
+
+### mkcredentials
+
+Create a new bucket credential
+
+
+#### Usage
+
+```bash
+neuro blob mkcredentials [OPTIONS] BUCKETS...
+```
+
+Create a new bucket credential.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Perform in a specified cluster \(the current cluster by default\). |
+| _--name NAME_ | Optional bucket credential name |
+| _--read-only_ | Make read-only credential |
 
 
 
@@ -407,6 +310,80 @@ Remove blobs from bucket.
 
 
 
+### rmbucket
+
+Remove bucket BUCKET
+
+
+#### Usage
+
+```bash
+neuro blob rmbucket [OPTIONS] BUCKETS...
+```
+
+Remove bucket `BUCKET`.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
+
+
+
+### rmcredentials
+
+Remove bucket credential BUCKET_CREDENTIAL
+
+
+#### Usage
+
+```bash
+neuro blob rmcredentials [OPTIONS] CREDENTIALS...
+```
+
+Remove bucket credential `BUCKET`_`CREDENTIAL`.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
+
+
+
+### set-bucket-publicity
+
+Change public access settings for BUCKET
+
+
+#### Usage
+
+```bash
+neuro blob set-bucket-publicity [OPTIONS] BUCKET {public|private}
+```
+
+Change public access settings for `BUCKET`
+
+#### Examples
+
+```bash
+
+$ neuro blob set-bucket-publicity my-bucket public
+$ neuro blob set-bucket-publicity my-bucket private
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
+
+
+
 ### sign-url
 
 Make signed url for blob in bucket
@@ -429,18 +406,41 @@ Make signed url for blob in bucket.
 
 
 
-### du
+### statbucket
 
-Get storage usage for BUCKET
+Get bucket BUCKET
 
 
 #### Usage
 
 ```bash
-neuro blob du [OPTIONS] BUCKET
+neuro blob statbucket [OPTIONS] BUCKET
 ```
 
-Get storage usage for `BUCKET`.
+Get bucket `BUCKET`.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
+| _--full-uri_ | Output full bucket URI. |
+
+
+
+### statcredentials
+
+Get bucket credential BUCKET_CREDENTIAL
+
+
+#### Usage
+
+```bash
+neuro blob statcredentials [OPTIONS] BUCKET_CREDENTIAL
+```
+
+Get bucket credential `BUCKET`_`CREDENTIAL`.
 
 #### Options
 

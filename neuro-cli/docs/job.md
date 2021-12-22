@@ -13,19 +13,280 @@ Job operations.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_run_](job.md#run) | Run a job |
-| [_generate-run-command_](job.md#generate-run-command) | Generate command that will rerun given job |
-| [_ls_](job.md#ls) | List all jobs |
-| [_status_](job.md#status) | Display status of a job |
-| [_exec_](job.md#exec) | Execute command in a running job |
-| [_port-forward_](job.md#port-forward) | Forward port\(s\) of a job |
-| [_logs_](job.md#logs) | Print the logs for a job |
-| [_kill_](job.md#kill) | Kill job\(s\) |
-| [_top_](job.md#top) | Display GPU/CPU/Memory usage |
-| [_save_](job.md#save) | Save job's state to an image |
-| [_browse_](job.md#browse) | Opens a job's URL in a web browser |
 | [_attach_](job.md#attach) | Attach terminal to a job |
+| [_browse_](job.md#browse) | Opens a job's URL in a web browser |
 | [_bump-life-span_](job.md#bump-life-span) | Increase job life span |
+| [_exec_](job.md#exec) | Execute command in a running job |
+| [_generate-run-command_](job.md#generate-run-command) | Generate command that will rerun given job |
+| [_kill_](job.md#kill) | Kill job\(s\) |
+| [_logs_](job.md#logs) | Print the logs for a job |
+| [_ls_](job.md#ls) | List all jobs |
+| [_port-forward_](job.md#port-forward) | Forward port\(s\) of a job |
+| [_run_](job.md#run) | Run a job |
+| [_save_](job.md#save) | Save job's state to an image |
+| [_status_](job.md#status) | Display status of a job |
+| [_top_](job.md#top) | Display GPU/CPU/Memory usage |
+
+
+### attach
+
+Attach terminal to a job
+
+
+#### Usage
+
+```bash
+neuro job attach [OPTIONS] JOB
+```
+
+Attach terminal to a job
+
+Attach local standard input, output, and error
+streams to a running job.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--port-forward LOCAL\_PORT:REMOTE\_RORT_ | Forward port\(s\) of a running job to local port\(s\) \(use multiple times for forwarding several ports\) |
+
+
+
+### browse
+
+Opens a job's URL in a web browser
+
+
+#### Usage
+
+```bash
+neuro job browse [OPTIONS] JOB
+```
+
+Opens a job's `URL` in a web browser.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### bump-life-span
+
+Increase job life span
+
+
+#### Usage
+
+```bash
+neuro job bump-life-span [OPTIONS] JOB TIMEDELTA
+```
+
+Increase job life span
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### exec
+
+Execute command in a running job
+
+
+#### Usage
+
+```bash
+neuro job exec [OPTIONS] JOB -- CMD...
+```
+
+Execute command in a running job.
+
+#### Examples
+
+```bash
+
+# Provides a shell to the container:
+$ neuro exec my-job -- /bin/bash
+
+# Executes a single command in the container and returns the control:
+$ neuro exec --no-tty my-job -- ls -l
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _-t, --tty / -T, --no-tty_ | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script. |
+
+
+
+### generate-run-command
+
+Generate command that will rerun given job
+
+
+#### Usage
+
+```bash
+neuro job generate-run-command [OPTIONS] JOB
+```
+
+Generate command that will rerun given job.
+
+#### Examples
+
+```bash
+
+# You can use the following to directly re-execute it:
+$ eval $(neuro job generate-run-command <job-id>)
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### kill
+
+Kill job(s)
+
+
+#### Usage
+
+```bash
+neuro job kill [OPTIONS] JOBS...
+```
+
+Kill job(s).
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### logs
+
+Print the logs for a job
+
+
+#### Usage
+
+```bash
+neuro job logs [OPTIONS] JOB
+```
+
+Print the logs for a job.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--since DATE\_OR\_TIMEDELTA_ | Only return logs after a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
+| _--timestamps_ | Include timestamps on each line in the log output. |
+
+
+
+### ls
+
+List all jobs
+
+
+#### Usage
+
+```bash
+neuro job ls [OPTIONS]
+```
+
+List all jobs.
+
+#### Examples
+
+```bash
+
+$ neuro ps -a
+$ neuro ps -a --owner=user-1 --owner=user-2
+$ neuro ps --name my-experiments-v1 -s failed -s succeeded
+$ neuro ps --description=my favourite job
+$ neuro ps -s failed -s succeeded -q
+$ neuro ps -t tag1 -t tag2
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _-a, --all_ | Show all jobs regardless the status. |
+| _--cluster CLUSTER_ | Show jobs on a specified cluster \(the current cluster by default\). |
+| _-d, --description DESCRIPTION_ | Filter out jobs by description \(exact match\). |
+| _--distinct_ | Show only first job if names are same. |
+| _--format COLUMNS_ | Output table format, see "neuro help ps-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config" |
+| _--full-uri_ | Output full image URI. |
+| _-n, --name NAME_ | Filter out jobs by name. |
+| _-o, --owner TEXT_ | Filter out jobs by owner \(multiple option\). Supports `ME` option to filter by the current user. |
+| _--recent-first / --recent-last_ | Show newer jobs first or last |
+| _--since DATE\_OR\_TIMEDELTA_ | Show jobs created after a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
+| _-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled\]_ | Filter out jobs by status \(multiple option\). |
+| _-t, --tag TAG_ | Filter out jobs by tag \(multiple option\) |
+| _--until DATE\_OR\_TIMEDELTA_ | Show jobs created before a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
+| _-w, --wide_ | Do not cut long lines for terminal width. |
+
+
+
+### port-forward
+
+Forward port(s) of a job
+
+
+#### Usage
+
+```bash
+neuro job port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
+```
+
+Forward port(s) of a job.
+
+Forwards port(s) of a running job to local port(s).
+
+#### Examples
+
+```bash
+
+# Forward local port 2080 to port 80 of job's container.
+# You can use http://localhost:2080 in browser to access job's served http
+$ neuro job port-forward my-fastai-job 2080:80
+
+# Forward local port 2222 to job's port 22
+# Then copy all data from container's folder '/data' to current folder
+# (please run second command in other terminal)
+$ neuro job port-forward my-job-with-ssh-server 2222:22
+$ rsync -avxzhe ssh -p 2222 root@localhost:/data .
+
+# Forward few ports at once
+$ neuro job port-forward my-job 2080:80 2222:22 2000:100
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
 
 
 ### run
@@ -96,25 +357,25 @@ $ neuro run -s cpu-small --entrypoint=/script.sh image:my-ubuntu:latest -- arg1 
 
 
 
-### generate-run-command
+### save
 
-Generate command that will rerun given job
+Save job's state to an image
 
 
 #### Usage
 
 ```bash
-neuro job generate-run-command [OPTIONS] JOB
+neuro job save [OPTIONS] JOB IMAGE
 ```
 
-Generate command that will rerun given job.
+Save job's state to an image.
 
 #### Examples
 
 ```bash
-
-# You can use the following to directly re-execute it:
-$ eval $(neuro job generate-run-command <job-id>)
+$ neuro job save job-id image:ubuntu-patched
+$ neuro job save my-favourite-job image:ubuntu-patched:v1
+$ neuro job save my-favourite-job image://bob/ubuntu-patched
 ```
 
 #### Options
@@ -122,53 +383,6 @@ $ eval $(neuro job generate-run-command <job-id>)
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-
-
-
-### ls
-
-List all jobs
-
-
-#### Usage
-
-```bash
-neuro job ls [OPTIONS]
-```
-
-List all jobs.
-
-#### Examples
-
-```bash
-
-$ neuro ps -a
-$ neuro ps -a --owner=user-1 --owner=user-2
-$ neuro ps --name my-experiments-v1 -s failed -s succeeded
-$ neuro ps --description=my favourite job
-$ neuro ps -s failed -s succeeded -q
-$ neuro ps -t tag1 -t tag2
-```
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _-a, --all_ | Show all jobs regardless the status. |
-| _--cluster CLUSTER_ | Show jobs on a specified cluster \(the current cluster by default\). |
-| _-d, --description DESCRIPTION_ | Filter out jobs by description \(exact match\). |
-| _--distinct_ | Show only first job if names are same. |
-| _--format COLUMNS_ | Output table format, see "neuro help ps-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config" |
-| _--full-uri_ | Output full image URI. |
-| _-n, --name NAME_ | Filter out jobs by name. |
-| _-o, --owner TEXT_ | Filter out jobs by owner \(multiple option\). Supports `ME` option to filter by the current user. |
-| _--recent-first / --recent-last_ | Show newer jobs first or last |
-| _--since DATE\_OR\_TIMEDELTA_ | Show jobs created after a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
-| _-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled\]_ | Filter out jobs by status \(multiple option\). |
-| _-t, --tag TAG_ | Filter out jobs by tag \(multiple option\) |
-| _--until DATE\_OR\_TIMEDELTA_ | Show jobs created before a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
-| _-w, --wide_ | Do not cut long lines for terminal width. |
 
 
 
@@ -191,124 +405,6 @@ Display status of a job.
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _--full-uri_ | Output full URI. |
-
-
-
-### exec
-
-Execute command in a running job
-
-
-#### Usage
-
-```bash
-neuro job exec [OPTIONS] JOB -- CMD...
-```
-
-Execute command in a running job.
-
-#### Examples
-
-```bash
-
-# Provides a shell to the container:
-$ neuro exec my-job -- /bin/bash
-
-# Executes a single command in the container and returns the control:
-$ neuro exec --no-tty my-job -- ls -l
-```
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _-t, --tty / -T, --no-tty_ | Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script. |
-
-
-
-### port-forward
-
-Forward port(s) of a job
-
-
-#### Usage
-
-```bash
-neuro job port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
-```
-
-Forward port(s) of a job.
-
-Forwards port(s) of a running job to local port(s).
-
-#### Examples
-
-```bash
-
-# Forward local port 2080 to port 80 of job's container.
-# You can use http://localhost:2080 in browser to access job's served http
-$ neuro job port-forward my-fastai-job 2080:80
-
-# Forward local port 2222 to job's port 22
-# Then copy all data from container's folder '/data' to current folder
-# (please run second command in other terminal)
-$ neuro job port-forward my-job-with-ssh-server 2222:22
-$ rsync -avxzhe ssh -p 2222 root@localhost:/data .
-
-# Forward few ports at once
-$ neuro job port-forward my-job 2080:80 2222:22 2000:100
-```
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### logs
-
-Print the logs for a job
-
-
-#### Usage
-
-```bash
-neuro job logs [OPTIONS] JOB
-```
-
-Print the logs for a job.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--since DATE\_OR\_TIMEDELTA_ | Only return logs after a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
-| _--timestamps_ | Include timestamps on each line in the log output. |
-
-
-
-### kill
-
-Kill job(s)
-
-
-#### Usage
-
-```bash
-neuro job kill [OPTIONS] JOBS...
-```
-
-Kill job(s).
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
 
 
 
@@ -352,101 +448,5 @@ $ neuro top -t tag1 -t tag2
 | _-t, --tag TAG_ | Filter out jobs by tag \(multiple option\) |
 | _--timeout FLOAT_ | Maximum allowed time for executing the command, 0 for no timeout  _\[default: 0\]_ |
 | _--until DATE\_OR\_TIMEDELTA_ | Show jobs created before a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
-
-
-
-### save
-
-Save job's state to an image
-
-
-#### Usage
-
-```bash
-neuro job save [OPTIONS] JOB IMAGE
-```
-
-Save job's state to an image.
-
-#### Examples
-
-```bash
-$ neuro job save job-id image:ubuntu-patched
-$ neuro job save my-favourite-job image:ubuntu-patched:v1
-$ neuro job save my-favourite-job image://bob/ubuntu-patched
-```
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### browse
-
-Opens a job's URL in a web browser
-
-
-#### Usage
-
-```bash
-neuro job browse [OPTIONS] JOB
-```
-
-Opens a job's `URL` in a web browser.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### attach
-
-Attach terminal to a job
-
-
-#### Usage
-
-```bash
-neuro job attach [OPTIONS] JOB
-```
-
-Attach terminal to a job
-
-Attach local standard input, output, and error
-streams to a running job.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--port-forward LOCAL\_PORT:REMOTE\_RORT_ | Forward port\(s\) of a running job to local port\(s\) \(use multiple times for forwarding several ports\) |
-
-
-
-### bump-life-span
-
-Increase job life span
-
-
-#### Usage
-
-```bash
-neuro job bump-life-span [OPTIONS] JOB TIMEDELTA
-```
-
-Increase job life span
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
 
 
