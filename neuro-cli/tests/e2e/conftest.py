@@ -677,25 +677,21 @@ class Helper:
         # Each test needs a clean bucket state and we can't delete bucket until it's
         # cleaned
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            try:
-                async with client.buckets.list_blobs(
-                    bucket.uri, recursive=True
-                ) as blobs_it:
-                    # XXX: We do assume we will not have tests that run
-                    # 10000 of objects.
-                    # If we do, please add a semaphore here.
-                    tasks = []
-                    async for blob in blobs_it:
-                        log.info("Removing %s", blob.uri)
-                        tasks.append(
-                            client.buckets.delete_blob(
-                                bucket.id, key=blob.key, bucket_owner=bucket.owner
-                            )
+            async with client.buckets.list_blobs(
+                bucket.uri, recursive=True
+            ) as blobs_it:
+                # XXX: We do assume we will not have tests that run
+                # 10000 of objects.
+                # If we do, please add a semaphore here.
+                tasks = []
+                async for blob in blobs_it:
+                    log.info("Removing %s", blob.uri)
+                    tasks.append(
+                        client.buckets.delete_blob(
+                            bucket.id, key=blob.key, bucket_owner=bucket.owner
                         )
-                await asyncio.gather(*tasks)
-            except Exception:
-                # Ignore errors - another run can remove bucket faster then this run
-                pass
+                    )
+            await asyncio.gather(*tasks)
 
     cleanup_bucket = run_async(acleanup_bucket)
 
@@ -711,11 +707,14 @@ class Helper:
                         and datetime.now(timezone.utc) - bucket.created_at
                         > timedelta(hours=4)
                     ):
-                        with suppress(ResourceNotFound):
-                            # bucket can be deleted by another parallel test run,
-                            # ignore ResourceNotFound errors
+                        try:
                             await self.acleanup_bucket(bucket)
                             await self.adelete_bucket(bucket)
+                        except Exception as e:
+                            # bucket can be deleted by another parallel test run,
+                            # this can lead for botocore/sdk exceptions, so
+                            # we have to ignore everything here
+                            print(e)
 
     @run_async
     async def upload_blob(
