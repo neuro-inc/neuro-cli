@@ -329,6 +329,7 @@ Remove bucket `BUCKET`.
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
+| _-f, --force_ | Force removal of all blobs inside bucket |
 
 
 

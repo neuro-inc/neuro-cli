@@ -394,8 +394,19 @@ async def du(root: Root, cluster: Optional[str], bucket: str) -> None:
     type=CLUSTER,
     help="Perform on a specified cluster (the current cluster by default).",
 )
+@option(
+    "-f",
+    "--force",
+    is_flag=True,
+    help="Force removal of all blobs inside bucket",
+)
 @argument("buckets", type=BUCKET, nargs=-1, required=True)
-async def rmbucket(root: Root, cluster: Optional[str], buckets: Sequence[str]) -> None:
+async def rmbucket(
+    root: Root,
+    cluster: Optional[str],
+    force: bool,
+    buckets: Sequence[str],
+) -> None:
     """
     Remove bucket BUCKET.
     """
@@ -403,6 +414,12 @@ async def rmbucket(root: Root, cluster: Optional[str], buckets: Sequence[str]) -
         bucket_id = await resolve_bucket(
             bucket, client=root.client, cluster_name=cluster
         )
+        if force:
+            bucket_obj = await root.client.buckets.get(
+                bucket_id,
+                cluster_name=cluster,
+            )
+            await root.client.buckets.blob_rm(bucket_obj.uri, recursive=True)
         await root.client.buckets.rm(bucket_id, cluster_name=cluster)
         if root.verbosity >= 0:
             root.print(f"Bucket with id '{bucket_id}' was successfully removed.")
