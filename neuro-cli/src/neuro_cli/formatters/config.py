@@ -57,7 +57,7 @@ class BalanceFormatter:
         return RenderGroup(
             Text.assemble(Text("Credits", style="bold"), f": ", credits_details),
             Text.assemble(
-                Text("Spend credits", style="bold"), f": ", spent_credits_details
+                Text("Credits spent", style="bold"), f": ", spent_credits_details
             ),
         )
 

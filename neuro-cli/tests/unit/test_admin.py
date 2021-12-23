@@ -170,7 +170,7 @@ def test_set_user_credits(run_cli: _RunCli) -> None:
             assert capture.out == (
                 f"New credits for ivan on cluster default:\n"
                 f"Credits: {outvalue}\n"
-                f"Spend credits: 0.00"
+                f"Credits spent: 0.00"
             )
             assert capture.code == 0
 
@@ -220,7 +220,7 @@ def test_add_user_credits(run_cli: _RunCli) -> None:
             assert capture.out == (
                 f"New credits for ivan on cluster default:\n"
                 f"Credits: {outvalue}\n"
-                f"Spend credits: 0.00"
+                f"Credits spent: 0.00"
             )
             assert capture.code == 0
 
