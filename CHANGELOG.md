@@ -5,6 +5,22 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 21.12.2 (2021-12-23)
+==================================
+
+Features
+--------
+
+- Sort CLI commands, groups and topics alphabetically. ([#2488](https://github.com/neuro-inc/platform-client-python/issues/2488))
+- Add support for Open-Sourced user-less services deployment. ([#2492](https://github.com/neuro-inc/platform-client-python/issues/2492))
+
+
+Bugfixes
+--------
+
+- Replace "Spend credits" with "Credits spent" in formatter. ([#2435](https://github.com/neuro-inc/platform-client-python/issues/2435))
+
+
 Neuro SDK/CLI 21.12.1 (2021-12-22)
 ==================================
 
