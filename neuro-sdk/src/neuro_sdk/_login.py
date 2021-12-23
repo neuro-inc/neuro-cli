@@ -47,6 +47,9 @@ def urlsafe_unpadded_b64encode(payload: bytes) -> str:
     return base64.urlsafe_b64encode(payload).decode().rstrip("=")
 
 
+# Used only for standalone platform deploymens
+JWT_STANDALONE_SECRET = "neuro"
+
 JWT_IDENTITY_CLAIM = "https://platform.neuromation.io/user"
 JWT_IDENTITY_CLAIM_OPTIONS = ("identity", JWT_IDENTITY_CLAIM)
 
@@ -486,3 +489,8 @@ async def logout_from_browser(
 ) -> None:
     logout_url = config.logout_url.update_query(client_id=config.client_id)
     await show_browser_cb(logout_url)
+
+
+def create_standalone_token() -> _AuthToken:
+    token = jwt.encode({JWT_IDENTITY_CLAIM: "user"}, JWT_STANDALONE_SECRET)
+    return _AuthToken.create_non_expiring(token)

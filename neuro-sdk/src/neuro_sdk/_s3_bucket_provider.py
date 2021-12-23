@@ -76,6 +76,18 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
                 secret_key=initial_credentials.credentials["secret_access_key"],
             )
 
+        # Use system root CA certificates
+        # Currently you cannot override ssl context.
+        #
+        # Aiobotocore always sets it's own context if verify is None.
+        #
+        # If verify is not None aiohttp raises error `verify_ssl, ssl_context,
+        # fingerprint and ssl parameters are mutually exclusive`.
+        #
+        # ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        # ssl_context.load_verify_locations(capath=certifi.where())
+        # config = AioConfig(connector_args={"ssl_context": ssl_context})
+
         async with session.create_client(
             "s3",
             endpoint_url=initial_credentials.credentials.get("endpoint_url"),
