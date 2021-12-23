@@ -109,7 +109,7 @@ class _Core:
         params: Optional[Mapping[str, str]] = None,
         data: Any = None,
         json: Any = None,
-        headers: Optional[Dict[str, str]] = None,
+        headers: Optional[Mapping[str, str]] = None,
         timeout: Optional[aiohttp.ClientTimeout] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
         assert url.is_absolute()
