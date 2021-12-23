@@ -7,7 +7,17 @@ import time
 from contextlib import asynccontextmanager
 from http.cookies import Morsel, SimpleCookie
 from types import SimpleNamespace
-from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import aiohttp
 from aiohttp import WSMessage
@@ -106,7 +116,7 @@ class _Core:
         url: URL,
         *,
         auth: str,
-        params: Optional[Mapping[str, str]] = None,
+        params: Union[Sequence[Tuple[str, str]], Mapping[str, str], None] = None,
         data: Any = None,
         json: Any = None,
         headers: Optional[Mapping[str, str]] = None,
