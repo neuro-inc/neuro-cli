@@ -97,7 +97,9 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
         ) as client:
             # Dirty hack to override ssl context in aiobotocore
             # The check exists to make sure that the patch is compatible with used aiobotocore version
-            assert isinstance(client._endpoint.http_session._session._connector._ssl, ssl.SSLContext)
+            assert isinstance(
+                client._endpoint.http_session._session._connector._ssl, ssl.SSLContext
+            )
             client._endpoint.http_session._session._connector._ssl = ssl_context
             yield cls(client, bucket, initial_credentials.credentials["bucket_name"])
 
