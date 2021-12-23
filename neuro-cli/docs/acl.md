@@ -15,6 +15,7 @@ Access Control List management.
 | :--- | :--- |
 | [_add-role_](acl.md#add-role) | Add new role |
 | [_grant_](acl.md#grant) | Shares resource with another user |
+| [_list-roles_](acl.md#list-roles) | List roles |
 | [_ls_](acl.md#ls) | List shared resources |
 | [_remove-role_](acl.md#remove-role) | Remove existing role |
 | [_revoke_](acl.md#revoke) | Revoke user access from another user |
@@ -81,6 +82,35 @@ $ neuro acl grant job:///my_job_id alice write
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+
+
+
+### list-roles
+
+List roles
+
+
+#### Usage
+
+```bash
+neuro acl list-roles [OPTIONS]
+```
+
+List roles.
+
+#### Examples
+
+```bash
+$ neuro acl list-roles
+$ neuro acl list-roles username/projects
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _-u TEXT_ | Fetch roles of specified user or role. |
 
 
 

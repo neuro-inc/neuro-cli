@@ -200,3 +200,18 @@ def test_add_grant_remove_role(request: Any, helper: Helper) -> None:
     result = [line.split() for line in captured.out.splitlines()]
     assert [f"role://{role_name}", "read"] not in result
     assert [uri, "read"] not in result
+
+
+@pytest.mark.e2e
+def test_list_roles(helper: Helper) -> None:
+    role_name = f"{helper.username}/roles/test-{uuid4()}"
+    try:
+        captured = helper.run_cli(["acl", "add-role", role_name])
+        assert captured.err == ""
+        assert captured.out == ""
+        captured = helper.run_cli(["acl", "list-roles"])
+        assert role_name in captured.out
+    finally:
+        captured = helper.run_cli(["acl", "remove-role", role_name])
+    assert captured.err == ""
+    assert captured.out == ""
