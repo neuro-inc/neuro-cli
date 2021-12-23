@@ -24,7 +24,7 @@ from neuro_sdk import (
     __version__,
 )
 from neuro_sdk._config import _AuthConfig, _AuthToken, _ConfigData
-from neuro_sdk._login import JWT_IDENTITY_CLAIM, JWT_STANDALONE_SECRET
+from neuro_sdk._login import JWT_STANDALONE_SECRET
 
 from tests import _TestServerFactory
 

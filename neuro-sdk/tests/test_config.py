@@ -466,6 +466,66 @@ async def test_fetch(
         }
 
 
+async def test_fetch_without_admin_url(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    registry_url = "https://registry2-dev.neu.ro"
+    storage_url = "https://storage2-dev.neu.ro"
+    users_url = "https://users2-dev.neu.ro"
+    monitoring_url = "https://jobs2-dev.neu.ro"
+    secrets_url = "https://secrets2-dev.neu.ro"
+    disks_url = "https://disks2-dev.neu.ro"
+    buckets_url = "https://buckets2-dev.neu.ro"
+    auth_url = "https://dev-neuro.auth0.com/authorize"
+    token_url = "https://dev-neuro.auth0.com/oauth/token"
+    logout_url = "https://dev-neuro.auth0.com/v2/logout"
+    client_id = "this_is_client_id"
+    audience = "https://platform.dev.neu.ro."
+    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    success_redirect_url = "https://platform.neu.ro"
+    JSON = {
+        "auth_url": auth_url,
+        "token_url": token_url,
+        "logout_url": logout_url,
+        "client_id": client_id,
+        "audience": audience,
+        "headless_callback_url": headless_callback_url,
+        "success_redirect_url": success_redirect_url,
+        "clusters": [
+            {
+                "name": "default",
+                "orgs": [None, "some-org"],
+                "registry_url": registry_url,
+                "storage_url": storage_url,
+                "users_url": users_url,
+                "monitoring_url": monitoring_url,
+                "secrets_url": secrets_url,
+                "disks_url": disks_url,
+                "buckets_url": buckets_url,
+                "resource_presets": [
+                    {
+                        "name": "cpu-small",
+                        "credits_per_hour": "10",
+                        "cpu": 2,
+                        "memory_mb": 2 * 1024,
+                    }
+                ],
+            }
+        ],
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.add_routes([web.get("/config", handler)])
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/"), admin_url=None) as client:
+        await client.config.fetch()
+        assert client.config.admin_url is None
+
+
 async def test_fetch_dropped_selected_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
