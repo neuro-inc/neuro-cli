@@ -57,8 +57,8 @@ def test_print_deprecated_group() -> None:
         Usage: main [OPTIONS] COMMAND [ARGS]...
 
         Commands:
-          sub-command  Sub-command
           alias        (Deprecated) Alias for sub-command
+          sub-command  Sub-command
     """
     )
 
