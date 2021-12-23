@@ -119,7 +119,7 @@ class JobStatus(str, enum.Enum):
     def finished_items(cls) -> Set["JobStatus"]:
         return {item for item in cls.items() if item.is_finished}
 
-    __format__ = str.__format__
+    __format__ = str.__format__  # type: ignore[assignment]
     __str__ = str.__str__
 
 
