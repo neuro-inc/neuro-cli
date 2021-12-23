@@ -43,6 +43,7 @@ from yarl import URL
 
 from neuro_sdk import (
     AuthorizationError,
+    Bucket,
     Client,
     Config,
     Container,
@@ -639,10 +640,10 @@ class Helper:
 
     kill_job = run_async(akill_job)
 
-    async def acreate_bucket(self, name: str, *, wait: bool = False) -> None:
+    async def acreate_bucket(self, name: str, *, wait: bool = False) -> Bucket:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.buckets.create(name)
+            bucket = await client.buckets.create(name)
             if wait:
                 t0 = time()
                 delay = 1
@@ -652,7 +653,7 @@ class Helper:
                         async with client.buckets.list_blobs(url, limit=1) as it:
                             async for _ in it:
                                 pass
-                        return
+                        return bucket
                     except Exception as e:
                         print(e)
                         delay = min(delay * 2, 10)
@@ -660,31 +661,35 @@ class Helper:
                 raise RuntimeError(
                     f"Bucket {name} doesn't available after the creation"
                 )
+            return bucket
 
     create_bucket = run_async(acreate_bucket)
 
-    async def adelete_bucket(self, bucket_name_or_id: str) -> None:
+    async def adelete_bucket(self, bucket: Bucket) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.buckets.rm(bucket_name_or_id)
+            await client.buckets.rm(bucket.id, bucket_owner=bucket.owner)
 
     delete_bucket = run_async(adelete_bucket)
 
-    async def acleanup_bucket(self, bucket_name_or_id: str) -> None:
+    async def acleanup_bucket(self, bucket: Bucket) -> None:
         __tracebackhide__ = True
         # Each test needs a clean bucket state and we can't delete bucket until it's
         # cleaned
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             async with client.buckets.list_blobs(
-                URL(f"blob:{bucket_name_or_id}"), recursive=True
+                bucket.uri, recursive=True
             ) as blobs_it:
-                # XXX: We do assume we will not have tests that run 10000 of objects.
+                # XXX: We do assume we will not have tests that run
+                # 10000 of objects.
                 # If we do, please add a semaphore here.
                 tasks = []
                 async for blob in blobs_it:
-                    log.info("Removing %s %s", bucket_name_or_id, blob.key)
+                    log.info("Removing %s", blob.uri)
                     tasks.append(
-                        client.buckets.delete_blob(bucket_name_or_id, key=blob.key)
+                        client.buckets.delete_blob(
+                            bucket.id, key=blob.key, bucket_owner=bucket.owner
+                        )
                     )
             await asyncio.gather(*tasks)
 
@@ -702,11 +707,14 @@ class Helper:
                         and datetime.now(timezone.utc) - bucket.created_at
                         > timedelta(hours=4)
                     ):
-                        with suppress(ResourceNotFound):
+                        try:
+                            await self.acleanup_bucket(bucket)
+                            await self.adelete_bucket(bucket)
+                        except Exception as e:
                             # bucket can be deleted by another parallel test run,
-                            # ignore ResourceNotFound errors
-                            await self.acleanup_bucket(bucket.id)
-                            await self.adelete_bucket(bucket.id)
+                            # this can lead for botocore/sdk exceptions, so
+                            # we have to ignore everything here
+                            print(e)
 
     @run_async
     async def upload_blob(
@@ -854,7 +862,7 @@ def nested_data(static_path: Path) -> Tuple[str, str, str]:
 @pytest.fixture(scope="session")
 def _tmp_bucket_create(
     tmp_path_factory: Any, request: Any
-) -> Iterator[Tuple[str, Helper]]:
+) -> Iterator[Tuple[Bucket, Helper]]:
     tmp_path = tmp_path_factory.mktemp("tmp_bucket" + str(uuid()))
     tmpbucketname = f"neuro-e2e-{secrets.token_hex(10)}"
     nmrc_path = _get_nmrc_path(tmp_path_factory.mktemp("config"), require_admin=False)
@@ -863,20 +871,20 @@ def _tmp_bucket_create(
 
     try:
         helper.drop_stale_buckets("neuro-e2e-")
-        helper.create_bucket(tmpbucketname, wait=True)
+        bucket = helper.create_bucket(tmpbucketname, wait=True)
     except AuthorizationError:
         pytest.skip("No permission to create bucket for user E2E_TOKEN")
-    yield tmpbucketname, helper
-    helper.delete_bucket(tmpbucketname)
+    yield bucket, helper
+    helper.delete_bucket(bucket)
     helper.close()
 
 
 @pytest.fixture
-def tmp_bucket(_tmp_bucket_create: Tuple[str, Helper]) -> Iterator[str]:
-    tmpbucketname, helper = _tmp_bucket_create
-    yield tmpbucketname
+def tmp_bucket(_tmp_bucket_create: Tuple[Bucket, Helper]) -> Iterator[str]:
+    bucket, helper = _tmp_bucket_create
+    yield bucket.name or bucket.id
     try:
-        helper.cleanup_bucket(tmpbucketname)
+        helper.cleanup_bucket(bucket)
     except aiohttp.ClientOSError as exc:
         if exc.errno == errno.ETIMEDOUT:
             # Try next time
