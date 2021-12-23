@@ -13,11 +13,38 @@ Access Control List management.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_grant_](acl.md#grant) | Shares resource with another user |
-| [_revoke_](acl.md#revoke) | Revoke user access from another user |
-| [_ls_](acl.md#ls) | List shared resources |
 | [_add-role_](acl.md#add-role) | Add new role |
+| [_grant_](acl.md#grant) | Shares resource with another user |
+| [_ls_](acl.md#ls) | List shared resources |
 | [_remove-role_](acl.md#remove-role) | Remove existing role |
+| [_revoke_](acl.md#revoke) | Revoke user access from another user |
+
+
+### add-role
+
+Add new role
+
+
+#### Usage
+
+```bash
+neuro acl add-role [OPTIONS] ROLE_NAME
+```
+
+Add new role.
+
+#### Examples
+
+```bash
+$ neuro acl add-role mycompany/subdivision
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
 
 
 ### grant
@@ -47,40 +74,6 @@ manage.
 $ neuro acl grant storage:///sample_data/ alice manage
 $ neuro acl grant image:resnet50 bob read
 $ neuro acl grant job:///my_job_id alice write
-```
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### revoke
-
-Revoke user access from another user
-
-
-#### Usage
-
-```bash
-neuro acl revoke [OPTIONS] URI USER
-```
-
-Revoke user access from another user.
-
-`URI` previously shared resource to
-revoke.
-
-`USER` to revoke `URI` resource from.
-
-#### Examples
-
-```bash
-$ neuro acl revoke storage:///sample_data/ alice
-$ neuro acl revoke image:resnet50 bob
-$ neuro acl revoke job:///my_job_id alice
 ```
 
 #### Options
@@ -130,33 +123,6 @@ $ neuro acl list --shared image://
 
 
 
-### add-role
-
-Add new role
-
-
-#### Usage
-
-```bash
-neuro acl add-role [OPTIONS] ROLE_NAME
-```
-
-Add new role.
-
-#### Examples
-
-```bash
-$ neuro acl add-role mycompany/subdivision
-```
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
 ### remove-role
 
 Remove existing role
@@ -174,6 +140,40 @@ Remove existing role.
 
 ```bash
 $ neuro acl remove-role mycompany/subdivision
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### revoke
+
+Revoke user access from another user
+
+
+#### Usage
+
+```bash
+neuro acl revoke [OPTIONS] URI USER
+```
+
+Revoke user access from another user.
+
+`URI` previously shared resource to
+revoke.
+
+`USER` to revoke `URI` resource from.
+
+#### Examples
+
+```bash
+$ neuro acl revoke storage:///sample_data/ alice
+$ neuro acl revoke image:resnet50 bob
+$ neuro acl revoke job:///my_job_id alice
 ```
 
 #### Options

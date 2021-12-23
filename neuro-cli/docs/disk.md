@@ -13,34 +13,10 @@ Operations with disks.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_ls_](disk.md#ls) | List disks |
 | [_create_](disk.md#create) | Create a disk |
 | [_get_](disk.md#get) | Get disk DISK\_ID |
+| [_ls_](disk.md#ls) | List disks |
 | [_rm_](disk.md#rm) | Remove disk DISK\_ID |
-
-
-### ls
-
-List disks
-
-
-#### Usage
-
-```bash
-neuro disk ls [OPTIONS]
-```
-
-List disks.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
-| _--full-uri_ | Output full disk URI. |
-| _--long-format_ | Output all info about disk. |
-
 
 
 ### create
@@ -112,6 +88,30 @@ Get disk `DISK`_ID.
 | _--help_ | Show this message and exit. |
 | _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
 | _--full-uri_ | Output full disk URI. |
+
+
+
+### ls
+
+List disks
+
+
+#### Usage
+
+```bash
+neuro disk ls [OPTIONS]
+```
+
+List disks.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
+| _--full-uri_ | Output full disk URI. |
+| _--long-format_ | Output all info about disk. |
 
 
 

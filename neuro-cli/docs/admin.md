@@ -13,76 +13,33 @@ Cluster administration commands.
 **Commands:**
 | Usage | Description |
 | :--- | :--- |
-| [_get-clusters_](admin.md#get-clusters) | Print the list of available clusters |
-| [_generate-cluster-config_](admin.md#generate-cluster-config) | Create a cluster configuration file |
 | [_add-cluster_](admin.md#add-cluster) | Create a new cluster |
-| [_remove-cluster_](admin.md#remove-cluster) | Drop a cluster |
-| [_show-cluster-options_](admin.md#show-cluster-options) | Show available cluster options |
-| [_get-cluster-users_](admin.md#get-cluster-users) | List users in specified cluster |
 | [_add-cluster-user_](admin.md#add-cluster-user) | Add user access to specified cluster |
-| [_remove-cluster-user_](admin.md#remove-cluster-user) | Remove user access from the cluster |
-| [_get-user-quota_](admin.md#get-user-quota) | Get info about user quota in given cluster |
-| [_set-user-quota_](admin.md#set-user-quota) | Set user quota to given values |
-| [_set-user-credits_](admin.md#set-user-credits) | Set user credits to given value |
-| [_add-user-credits_](admin.md#add-user-credits) | Add given values to user quota |
-| [_add-resource-preset_](admin.md#add-resource-preset) | Add new resource preset |
-| [_update-resource-preset_](admin.md#update-resource-preset) | Update existing resource preset |
-| [_remove-resource-preset_](admin.md#remove-resource-preset) | Remove resource preset |
-| [_get-orgs_](admin.md#get-orgs) | Print the list of available orgs |
 | [_add-org_](admin.md#add-org) | Create a new org |
-| [_remove-org_](admin.md#remove-org) | Drop a org |
-| [_get-org-users_](admin.md#get-org-users) | List users in specified org |
-| [_add-org-user_](admin.md#add-org-user) | Add user access to specified org |
-| [_remove-org-user_](admin.md#remove-org-user) | Remove user access from the org |
-| [_get-org-clusters_](admin.md#get-org-clusters) | Print the list of all orgs in the cluster |
 | [_add-org-cluster_](admin.md#add-org-cluster) | Add org access to specified cluster |
-| [_get-org-cluster-quota_](admin.md#get-org-cluster-quota) | Get info about org quota in given cluster |
-| [_set-org-cluster-quota_](admin.md#set-org-cluster-quota) | Set org cluster quota to given values |
-| [_set-org-cluster-credits_](admin.md#set-org-cluster-credits) | Set org cluster credits to given value |
 | [_add-org-cluster-credits_](admin.md#add-org-cluster-credits) | Add given values to org cluster balance |
-
-
-### get-clusters
-
-Print the list of available clusters
-
-
-#### Usage
-
-```bash
-neuro admin get-clusters [OPTIONS]
-```
-
-Print the list of available clusters.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### generate-cluster-config
-
-Create a cluster configuration file
-
-
-#### Usage
-
-```bash
-neuro admin generate-cluster-config [OPTIONS] [CONFIG]
-```
-
-Create a cluster configuration file.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--type \[aws &#124; gcp &#124; azure &#124; vcd\]_ |  |
-
+| [_add-org-user_](admin.md#add-org-user) | Add user access to specified org |
+| [_add-resource-preset_](admin.md#add-resource-preset) | Add new resource preset |
+| [_add-user-credits_](admin.md#add-user-credits) | Add given values to user quota |
+| [_generate-cluster-config_](admin.md#generate-cluster-config) | Create a cluster configuration file |
+| [_get-cluster-users_](admin.md#get-cluster-users) | List users in specified cluster |
+| [_get-clusters_](admin.md#get-clusters) | Print the list of available clusters |
+| [_get-org-cluster-quota_](admin.md#get-org-cluster-quota) | Get info about org quota in given cluster |
+| [_get-org-clusters_](admin.md#get-org-clusters) | Print the list of all orgs in the cluster |
+| [_get-org-users_](admin.md#get-org-users) | List users in specified org |
+| [_get-orgs_](admin.md#get-orgs) | Print the list of available orgs |
+| [_get-user-quota_](admin.md#get-user-quota) | Get info about user quota in given cluster |
+| [_remove-cluster_](admin.md#remove-cluster) | Drop a cluster |
+| [_remove-cluster-user_](admin.md#remove-cluster-user) | Remove user access from the cluster |
+| [_remove-org_](admin.md#remove-org) | Drop a org |
+| [_remove-org-user_](admin.md#remove-org-user) | Remove user access from the org |
+| [_remove-resource-preset_](admin.md#remove-resource-preset) | Remove resource preset |
+| [_set-org-cluster-credits_](admin.md#set-org-cluster-credits) | Set org cluster credits to given value |
+| [_set-org-cluster-quota_](admin.md#set-org-cluster-quota) | Set org cluster quota to given values |
+| [_set-user-credits_](admin.md#set-user-credits) | Set user credits to given value |
+| [_set-user-quota_](admin.md#set-user-quota) | Set user quota to given values |
+| [_show-cluster-options_](admin.md#show-cluster-options) | Show available cluster options |
+| [_update-resource-preset_](admin.md#update-resource-preset) | Update existing resource preset |
 
 
 ### add-cluster
@@ -107,74 +64,6 @@ provided config.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-
-
-
-### remove-cluster
-
-Drop a cluster
-
-
-#### Usage
-
-```bash
-neuro admin remove-cluster [OPTIONS] CLUSTER_NAME
-```
-
-Drop a cluster
-
-Completely removes cluster from the system.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--force_ | Skip prompt |
-
-
-
-### show-cluster-options
-
-Show available cluster options
-
-
-#### Usage
-
-```bash
-neuro admin show-cluster-options [OPTIONS]
-```
-
-Show available cluster options.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--type \[aws &#124; gcp &#124; azure\]_ |  |
-
-
-
-### get-cluster-users
-
-List users in specified cluster
-
-
-#### Usage
-
-```bash
-neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
-```
-
-List users in specified cluster
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--org ORG_ | org name for org-cluster users |
 
 
 
@@ -205,116 +94,93 @@ roles: admin, manager or user.
 
 
 
-### remove-cluster-user
+### add-org
 
-Remove user access from the cluster
+Create a new org
 
 
 #### Usage
 
 ```bash
-neuro admin remove-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME
+neuro admin add-org [OPTIONS] ORG_NAME
 ```
 
-Remove user access from the cluster.
+Create a new org.
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _--org ORG_ | org name for org-cluster users |
 
 
 
-### get-user-quota
+### add-org-cluster
 
-Get info about user quota in given cluster
+Add org access to specified cluster
 
 
 #### Usage
 
 ```bash
-neuro admin get-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+neuro admin add-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
-Get info about user quota in given cluster
+Add org access to specified cluster.
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _--org ORG_ | org name for org-cluster users |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 
 
 
-### set-user-quota
+### add-org-cluster-credits
 
-Set user quota to given values
+Add given values to org cluster balance
 
 
 #### Usage
 
 ```bash
-neuro admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+neuro admin add-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
-Set user quota to given values
+Add given values to org cluster balance
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[required\]_ |
-| _--org ORG_ | org name for org-cluster users |
+| _-c, --credits AMOUNT_ | Credits amount to add |
 
 
 
-### set-user-credits
+### add-org-user
 
-Set user credits to given value
+Add user access to specified org
 
 
 #### Usage
 
 ```bash
-neuro admin set-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
+neuro admin add-org-user [OPTIONS] ORG_NAME USER_NAME [ROLE]
 ```
 
-Set user credits to given value
+Add user access to specified org.
+
+The command supports one of 3 user roles:
+admin, manager or user.
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[required\]_ |
-| _--org ORG_ | org name for org-cluster users |
-
-
-
-### add-user-credits
-
-Add given values to user quota
-
-
-#### Usage
-
-```bash
-neuro admin add-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
-```
-
-Add given values to user quota
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to add  _\[required\]_ |
-| _--org ORG_ | org name for org-cluster users |
 
 
 
@@ -348,135 +214,85 @@ Add new resource preset
 
 
 
-### update-resource-preset
+### add-user-credits
 
-Update existing resource preset
+Add given values to user quota
 
 
 #### Usage
 
 ```bash
-neuro admin update-resource-preset [OPTIONS] PRESET_NAME
+neuro admin add-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
-Update existing resource preset
+Add given values to user quota
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --cpu NUMBER_ | Number of CPUs |
-| _--credits-per-hour AMOUNT_ | Price of running job of this preset for an hour in credits |
-| _-g, --gpu NUMBER_ | Number of GPUs |
-| _--gpu-model MODEL_ | GPU model |
-| _-m, --memory AMOUNT_ | Memory amount |
-| _--preemptible-node / --non-preemptible-node_ | Use a lower-cost preemptible instance |
-| _-p, --scheduler / -P, --no-scheduler_ | Use round robin scheduler for jobs |
-| _--tpu-sw-version VERSION_ | TPU software version |
-| _--tpu-type TYPE_ | TPU type |
+| _-c, --credits AMOUNT_ | Credits amount to add  _\[required\]_ |
+| _--org ORG_ | org name for org-cluster users |
 
 
 
-### remove-resource-preset
+### generate-cluster-config
 
-Remove resource preset
+Create a cluster configuration file
 
 
 #### Usage
 
 ```bash
-neuro admin remove-resource-preset [OPTIONS] PRESET_NAME
+neuro admin generate-cluster-config [OPTIONS] [CONFIG]
 ```
 
-Remove resource preset
+Create a cluster configuration file.
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--type \[aws &#124; gcp &#124; azure &#124; vcd\]_ |  |
 
 
 
-### get-orgs
+### get-cluster-users
 
-Print the list of available orgs
+List users in specified cluster
 
 
 #### Usage
 
 ```bash
-neuro admin get-orgs [OPTIONS]
+neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
 ```
 
-Print the list of available orgs.
+List users in specified cluster
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--org ORG_ | org name for org-cluster users |
 
 
 
-### add-org
+### get-clusters
 
-Create a new org
-
-
-#### Usage
-
-```bash
-neuro admin add-org [OPTIONS] ORG_NAME
-```
-
-Create a new org.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### remove-org
-
-Drop a org
+Print the list of available clusters
 
 
 #### Usage
 
 ```bash
-neuro admin remove-org [OPTIONS] ORG_NAME
+neuro admin get-clusters [OPTIONS]
 ```
 
-Drop a org
-
-Completely removes org from the system.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--force_ | Skip prompt |
-
-
-
-### get-org-users
-
-List users in specified org
-
-
-#### Usage
-
-```bash
-neuro admin get-org-users [OPTIONS] ORG_NAME
-```
-
-List users in specified org
+Print the list of available clusters.
 
 #### Options
 
@@ -486,42 +302,18 @@ List users in specified org
 
 
 
-### add-org-user
+### get-org-cluster-quota
 
-Add user access to specified org
-
-
-#### Usage
-
-```bash
-neuro admin add-org-user [OPTIONS] ORG_NAME USER_NAME [ROLE]
-```
-
-Add user access to specified org.
-
-The command supports one of 3 user roles:
-admin, manager or user.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### remove-org-user
-
-Remove user access from the org
+Get info about org quota in given cluster
 
 
 #### Usage
 
 ```bash
-neuro admin remove-org-user [OPTIONS] ORG_NAME USER_NAME
+neuro admin get-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
-Remove user access from the org.
+Get info about org quota in given cluster
 
 #### Options
 
@@ -552,41 +344,18 @@ Print the list of all orgs in the cluster
 
 
 
-### add-org-cluster
+### get-org-users
 
-Add org access to specified cluster
-
-
-#### Usage
-
-```bash
-neuro admin add-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
-```
-
-Add org access to specified cluster.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
-| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
-
-
-
-### get-org-cluster-quota
-
-Get info about org quota in given cluster
+List users in specified org
 
 
 #### Usage
 
 ```bash
-neuro admin get-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
+neuro admin get-org-users [OPTIONS] ORG_NAME
 ```
 
-Get info about org quota in given cluster
+List users in specified org
 
 #### Options
 
@@ -596,25 +365,158 @@ Get info about org quota in given cluster
 
 
 
-### set-org-cluster-quota
+### get-orgs
 
-Set org cluster quota to given values
+Print the list of available orgs
 
 
 #### Usage
 
 ```bash
-neuro admin set-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
+neuro admin get-orgs [OPTIONS]
 ```
 
-Set org cluster quota to given values
+Print the list of available orgs.
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[required\]_ |
+
+
+
+### get-user-quota
+
+Get info about user quota in given cluster
+
+
+#### Usage
+
+```bash
+neuro admin get-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+Get info about user quota in given cluster
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--org ORG_ | org name for org-cluster users |
+
+
+
+### remove-cluster
+
+Drop a cluster
+
+
+#### Usage
+
+```bash
+neuro admin remove-cluster [OPTIONS] CLUSTER_NAME
+```
+
+Drop a cluster
+
+Completely removes cluster from the system.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--force_ | Skip prompt |
+
+
+
+### remove-cluster-user
+
+Remove user access from the cluster
+
+
+#### Usage
+
+```bash
+neuro admin remove-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+Remove user access from the cluster.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--org ORG_ | org name for org-cluster users |
+
+
+
+### remove-org
+
+Drop a org
+
+
+#### Usage
+
+```bash
+neuro admin remove-org [OPTIONS] ORG_NAME
+```
+
+Drop a org
+
+Completely removes org from the system.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--force_ | Skip prompt |
+
+
+
+### remove-org-user
+
+Remove user access from the org
+
+
+#### Usage
+
+```bash
+neuro admin remove-org-user [OPTIONS] ORG_NAME USER_NAME
+```
+
+Remove user access from the org.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### remove-resource-preset
+
+Remove resource preset
+
+
+#### Usage
+
+```bash
+neuro admin remove-resource-preset [OPTIONS] PRESET_NAME
+```
+
+Remove resource preset
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
 
 
 
@@ -640,24 +542,122 @@ Set org cluster credits to given value
 
 
 
-### add-org-cluster-credits
+### set-org-cluster-quota
 
-Add given values to org cluster balance
+Set org cluster quota to given values
 
 
 #### Usage
 
 ```bash
-neuro admin add-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
+neuro admin set-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
-Add given values to org cluster balance
+Set org cluster quota to given values
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to add |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[required\]_ |
+
+
+
+### set-user-credits
+
+Set user credits to given value
+
+
+#### Usage
+
+```bash
+neuro admin set-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+Set user credits to given value
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[required\]_ |
+| _--org ORG_ | org name for org-cluster users |
+
+
+
+### set-user-quota
+
+Set user quota to given values
+
+
+#### Usage
+
+```bash
+neuro admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+```
+
+Set user quota to given values
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[required\]_ |
+| _--org ORG_ | org name for org-cluster users |
+
+
+
+### show-cluster-options
+
+Show available cluster options
+
+
+#### Usage
+
+```bash
+neuro admin show-cluster-options [OPTIONS]
+```
+
+Show available cluster options.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--type \[aws &#124; gcp &#124; azure\]_ |  |
+
+
+
+### update-resource-preset
+
+Update existing resource preset
+
+
+#### Usage
+
+```bash
+neuro admin update-resource-preset [OPTIONS] PRESET_NAME
+```
+
+Update existing resource preset
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _-c, --cpu NUMBER_ | Number of CPUs |
+| _--credits-per-hour AMOUNT_ | Price of running job of this preset for an hour in credits |
+| _-g, --gpu NUMBER_ | Number of GPUs |
+| _--gpu-model MODEL_ | GPU model |
+| _-m, --memory AMOUNT_ | Memory amount |
+| _--preemptible-node / --non-preemptible-node_ | Use a lower-cost preemptible instance |
+| _-p, --scheduler / -P, --no-scheduler_ | Use round robin scheduler for jobs |
+| _--tpu-sw-version VERSION_ | TPU software version |
+| _--tpu-type TYPE_ | TPU type |
 
 

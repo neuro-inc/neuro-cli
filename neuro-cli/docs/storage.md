@@ -14,13 +14,13 @@ Storage operations.
 | Usage | Description |
 | :--- | :--- |
 | [_cp_](storage.md#cp) | Copy files and directories |
-| [_ls_](storage.md#ls) | List directory contents |
+| [_df_](storage.md#df) | Show current usage of storage |
 | [_glob_](storage.md#glob) | List resources that match PATTERNS |
-| [_rm_](storage.md#rm) | Remove files or directories |
+| [_ls_](storage.md#ls) | List directory contents |
 | [_mkdir_](storage.md#mkdir) | Make directories |
 | [_mv_](storage.md#mv) | Move or rename files and directories |
+| [_rm_](storage.md#rm) | Remove files or directories |
 | [_tree_](storage.md#tree) | List storage in a tree-like format |
-| [_df_](storage.md#df) | Show current usage of storage |
 
 
 ### cp
@@ -104,6 +104,48 @@ $ neuro cp storage:results/*.out .
 
 
 
+### df
+
+Show current usage of storage
+
+
+#### Usage
+
+```bash
+neuro storage df [OPTIONS]
+```
+
+Show current usage of storage.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### glob
+
+List resources that match PATTERNS
+
+
+#### Usage
+
+```bash
+neuro storage glob [OPTIONS] [PATTERNS]...
+```
+
+List resources that match `PATTERNS`.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
 ### ls
 
 List directory contents
@@ -130,61 +172,6 @@ By default `PATH` is equal user's home dir
 | _-h, --human-readable_ | with -l print human readable sizes \(e.g., 2K, 540M\). |
 | _-a, --all_ | do not ignore entries starting with . |
 | _--sort \[name &#124; size &#124; time\]_ | sort by given field, default is name. |
-
-
-
-### glob
-
-List resources that match PATTERNS
-
-
-#### Usage
-
-```bash
-neuro storage glob [OPTIONS] [PATTERNS]...
-```
-
-List resources that match `PATTERNS`.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### rm
-
-Remove files or directories
-
-
-#### Usage
-
-```bash
-neuro storage rm [OPTIONS] PATHS...
-```
-
-Remove files or directories.
-
-#### Examples
-
-```bash
-
-$ neuro rm storage:foo/bar
-$ neuro rm storage://{username}/foo/bar
-$ neuro rm --recursive storage://{username}/foo/
-$ neuro rm storage:foo/**/*.tmp
-```
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _--glob / --no-glob_ | Expand glob patterns in PATHS  _\[default: glob\]_ |
-| _-p, --progress / -P, --no-progress_ | Show progress, on by default in TTY mode, off otherwise. |
-| _-r, --recursive_ | remove directories and their contents recursively |
 
 
 
@@ -263,6 +250,40 @@ $ neuro mv storage://{username}/foo.txt storage:bar.dat
 
 
 
+### rm
+
+Remove files or directories
+
+
+#### Usage
+
+```bash
+neuro storage rm [OPTIONS] PATHS...
+```
+
+Remove files or directories.
+
+#### Examples
+
+```bash
+
+$ neuro rm storage:foo/bar
+$ neuro rm storage://{username}/foo/bar
+$ neuro rm --recursive storage://{username}/foo/
+$ neuro rm storage:foo/**/*.tmp
+```
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--glob / --no-glob_ | Expand glob patterns in PATHS  _\[default: glob\]_ |
+| _-p, --progress / -P, --no-progress_ | Show progress, on by default in TTY mode, off otherwise. |
+| _-r, --recursive_ | remove directories and their contents recursively |
+
+
+
 ### tree
 
 List storage in a tree-like format
@@ -301,26 +322,5 @@ By default `PATH` is equal user's home dir (storage:)
 | _-a, --all_ | do not ignore entries starting with . |
 | _-s, --size_ | Print the size in bytes of each file. |
 | _--sort \[name &#124; size &#124; time\]_ | sort by given field, default is name |
-
-
-
-### df
-
-Show current usage of storage
-
-
-#### Usage
-
-```bash
-neuro storage df [OPTIONS]
-```
-
-Show current usage of storage.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
 
 
