@@ -1,3 +1,4 @@
+import ssl
 from contextlib import asynccontextmanager
 from datetime import datetime
 from email.utils import parsedate_to_datetime
@@ -5,6 +6,7 @@ from typing import Any, AsyncIterator, Awaitable, Callable, Mapping, Optional, U
 
 import aiobotocore.session
 import botocore.exceptions
+import certifi
 from aiobotocore.client import AioBaseClient
 from aiobotocore.credentials import AioCredentials, AioRefreshableCredentials
 
@@ -76,11 +78,30 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
                 secret_key=initial_credentials.credentials["secret_access_key"],
             )
 
+        # Use system root CA certificates
+        # Currently you cannot override ssl context.
+        #
+        # Aiobotocore always sets it's own context if verify is None.
+        #
+        # If verify is not None aiohttp raises error `verify_ssl, ssl_context,
+        # fingerprint and ssl parameters are mutually exclusive`.
+        #
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        ssl_context.load_verify_locations(capath=certifi.where())
+        # config = AioConfig(connector_args={"ssl_context": ssl_context})
+
         async with session.create_client(
             "s3",
             endpoint_url=initial_credentials.credentials.get("endpoint_url"),
             region_name=initial_credentials.credentials.get("region_name"),
         ) as client:
+            # Dirty hack to override ssl context in aiobotocore
+            # The check exists to make sure that the patch is compatible
+            # with used aiobotocore version
+            assert isinstance(
+                client._endpoint.http_session._session._connector._ssl, ssl.SSLContext
+            )
+            client._endpoint.http_session._session._connector._ssl = ssl_context
             yield cls(client, bucket, initial_credentials.credentials["bucket_name"])
 
     @asyncgeneratorcontextmanager

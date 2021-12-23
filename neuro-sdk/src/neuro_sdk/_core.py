@@ -120,7 +120,9 @@ class _Core:
             real_headers: CIMultiDict[str] = CIMultiDict(headers)
         else:
             real_headers = CIMultiDict()
-        real_headers["Authorization"] = auth
+        if len(auth.split()) > 1:
+            # auth contains scheme and parameter
+            real_headers["Authorization"] = auth
         if "Content-Type" not in real_headers:
             if json is not None:
                 real_headers["Content-Type"] = "application/json"
