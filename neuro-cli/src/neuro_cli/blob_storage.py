@@ -418,13 +418,23 @@ async def du(
     help="Perform on a specified cluster (the current cluster by default).",
 )
 @option(
+    "-f",
+    "--force",
+    is_flag=True,
+    help="Force removal of all blobs inside bucket",
+)
+@option(
     "--owner",
     type=str,
     help="Owner of bucket to assume for named bucket (the current user by default)",
 )
 @argument("buckets", type=BUCKET, nargs=-1, required=True)
 async def rmbucket(
-    root: Root, cluster: Optional[str], owner: Optional[str], buckets: Sequence[str]
+    root: Root,
+    cluster: Optional[str],
+    force: bool,
+    owner: Optional[str],
+    buckets: Sequence[str],
 ) -> None:
     """
     Remove bucket BUCKET.
@@ -436,6 +446,13 @@ async def rmbucket(
             cluster_name=cluster,
             bucket_owner=owner,
         )
+        if force:
+            bucket_obj = await root.client.buckets.get(
+                bucket_id,
+                cluster_name=cluster,
+                bucket_owner=owner,
+            )
+            await root.client.buckets.blob_rm(bucket_obj.uri, recursive=True)
         await root.client.buckets.rm(
             bucket_id, cluster_name=cluster, bucket_owner=owner
         )
