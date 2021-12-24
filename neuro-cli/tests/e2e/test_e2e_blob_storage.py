@@ -320,7 +320,6 @@ def test_e2e_blob_storage_rm_dir(
 @pytest.mark.skipif(
     sys.platform == "win32", reason="Autocompletion is not supported on Windows"
 )
-@pytest.mark.xfail(reason="autocomplete is not working")
 @pytest.mark.e2e
 def test_blob_autocomplete(helper: Helper, tmp_path: Path, tmp_bucket: str) -> None:
     folder = tmp_path / "folder"
