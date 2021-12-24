@@ -7,7 +7,17 @@ import time
 from contextlib import asynccontextmanager
 from http.cookies import Morsel, SimpleCookie
 from types import SimpleNamespace
-from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence
+from typing import (
+    Any,
+    AsyncIterator,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import aiohttp
 from aiohttp import WSMessage
@@ -106,10 +116,10 @@ class _Core:
         url: URL,
         *,
         auth: str,
-        params: Optional[Mapping[str, str]] = None,
+        params: Union[Sequence[Tuple[str, str]], Mapping[str, str], None] = None,
         data: Any = None,
         json: Any = None,
-        headers: Optional[Dict[str, str]] = None,
+        headers: Optional[Mapping[str, str]] = None,
         timeout: Optional[aiohttp.ClientTimeout] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
         assert url.is_absolute()
@@ -120,7 +130,9 @@ class _Core:
             real_headers: CIMultiDict[str] = CIMultiDict(headers)
         else:
             real_headers = CIMultiDict()
-        real_headers["Authorization"] = auth
+        if len(auth.split()) > 1:
+            # auth contains scheme and parameter
+            real_headers["Authorization"] = auth
         if "Content-Type" not in real_headers:
             if json is not None:
                 real_headers["Content-Type"] = "application/json"

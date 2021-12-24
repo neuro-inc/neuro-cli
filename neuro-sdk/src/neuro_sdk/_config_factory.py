@@ -20,6 +20,7 @@ from ._login import (
     AuthTokenClient,
     HeadlessNegotiator,
     _AuthToken,
+    create_standalone_token,
     logout_from_browser,
 )
 from ._plugins import PluginManager
@@ -160,15 +161,20 @@ class Factory:
             raise ConfigError(f"Config at {self._path} already exists. Please logout")
         async with _make_session(timeout, self._trace_configs) as session:
             config_unauthorized = await get_server_config(session, url)
-            negotiator = AuthNegotiator(
-                session, config_unauthorized.auth_config, show_browser_cb
-            )
-            auth_token = await negotiator.get_token()
 
-            config_authorized = await get_server_config(
-                session, url, token=auth_token.token
-            )
-        config = self._gen_config(config_authorized, auth_token, url)
+            if config_unauthorized.clusters:
+                config_authorized = config_unauthorized
+                auth_token = create_standalone_token()
+            else:
+                negotiator = AuthNegotiator(
+                    session, config_unauthorized.auth_config, show_browser_cb
+                )
+                auth_token = await negotiator.get_token()
+
+                config_authorized = await get_server_config(
+                    session, url, token=auth_token.token
+                )
+            config = self._gen_config(config_authorized, auth_token, url)
         self._save(config)
 
     async def login_headless(
@@ -241,8 +247,6 @@ class Factory:
         self, server_config: _ServerConfig, token: _AuthToken, url: URL
     ) -> _ConfigData:
         from . import __version__
-
-        assert server_config.admin_url, "Authorized config should include admin_url"
 
         cluster_name = next(iter(server_config.clusters))
         org_name = next(iter(server_config.clusters[cluster_name].orgs))

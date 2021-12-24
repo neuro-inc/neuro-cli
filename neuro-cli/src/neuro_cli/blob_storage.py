@@ -332,16 +332,26 @@ async def importbucket(
     type=CLUSTER,
     help="Look on a specified cluster (the current cluster by default).",
 )
+@option(
+    "--owner",
+    type=str,
+    help="Owner of bucket to assume for named bucket (the current user by default)",
+)
 @argument("bucket", type=BUCKET)
 @option("--full-uri", is_flag=True, help="Output full bucket URI.")
 async def statbucket(
-    root: Root, cluster: Optional[str], bucket: str, full_uri: bool
+    root: Root,
+    cluster: Optional[str],
+    owner: Optional[str],
+    bucket: str,
+    full_uri: bool,
 ) -> None:
     """
     Get bucket BUCKET.
     """
-    bucket_id = await resolve_bucket(bucket, client=root.client, cluster_name=cluster)
-    bucket_obj = await root.client.buckets.get(bucket_id, cluster_name=cluster)
+    bucket_obj = await root.client.buckets.get(
+        bucket, cluster_name=cluster, bucket_owner=owner
+    )
     if full_uri:
         uri_fmtr: URIFormatter = str
     else:
@@ -363,18 +373,31 @@ async def statbucket(
     type=CLUSTER,
     help="Look on a specified cluster (the current cluster by default).",
 )
+@option(
+    "--owner",
+    type=str,
+    help="Owner of bucket to assume for named bucket (the current user by default)",
+)
 @argument("bucket", type=BUCKET)
-async def du(root: Root, cluster: Optional[str], bucket: str) -> None:
+async def du(
+    root: Root, cluster: Optional[str], owner: Optional[str], bucket: str
+) -> None:
     """
     Get storage usage for BUCKET.
     """
-    bucket_obj = await root.client.buckets.get(bucket, cluster_name=cluster)
+    bucket_obj = await root.client.buckets.get(
+        bucket, cluster_name=cluster, bucket_owner=owner
+    )
 
-    base_str = f"Calculating bucket {bucket_obj.name or bucket_obj.id} disk usage"
+    bucket_str = bucket_obj.name or bucket_obj.id
+    if bucket_obj.owner != root.client.config.username:
+        bucket_str += f" (owner {bucket_obj.owner})"
+
+    base_str = f"Calculating bucket {bucket_str} disk usage"
 
     with root.status(base_str) as status:
         async with root.client.buckets.get_disk_usage(
-            bucket_obj.id, cluster
+            bucket_obj.id, cluster_name=cluster, bucket_owner=bucket_obj.owner
         ) as usage_it:
             async for usage in usage_it:
                 status.update(
@@ -382,7 +405,7 @@ async def du(root: Root, cluster: Optional[str], bucket: str) -> None:
                     f"objects count {usage.object_count}"
                 )
     root.print(
-        f"Bucket {bucket_obj.name or bucket_obj.id} disk usage:\n"
+        f"Bucket {bucket_str} disk usage:\n"
         f"Total size: {format_size(usage.total_bytes)}\n"
         f"Objects count: {usage.object_count}"
     )
@@ -400,11 +423,17 @@ async def du(root: Root, cluster: Optional[str], bucket: str) -> None:
     is_flag=True,
     help="Force removal of all blobs inside bucket",
 )
+@option(
+    "--owner",
+    type=str,
+    help="Owner of bucket to assume for named bucket (the current user by default)",
+)
 @argument("buckets", type=BUCKET, nargs=-1, required=True)
 async def rmbucket(
     root: Root,
     cluster: Optional[str],
     force: bool,
+    owner: Optional[str],
     buckets: Sequence[str],
 ) -> None:
     """
@@ -412,15 +441,21 @@ async def rmbucket(
     """
     for bucket in buckets:
         bucket_id = await resolve_bucket(
-            bucket, client=root.client, cluster_name=cluster
+            bucket,
+            client=root.client,
+            cluster_name=cluster,
+            bucket_owner=owner,
         )
         if force:
             bucket_obj = await root.client.buckets.get(
                 bucket_id,
                 cluster_name=cluster,
+                bucket_owner=owner,
             )
             await root.client.buckets.blob_rm(bucket_obj.uri, recursive=True)
-        await root.client.buckets.rm(bucket_id, cluster_name=cluster)
+        await root.client.buckets.rm(
+            bucket_id, cluster_name=cluster, bucket_owner=owner
+        )
         if root.verbosity >= 0:
             root.print(f"Bucket with id '{bucket_id}' was successfully removed.")
 
@@ -431,6 +466,11 @@ async def rmbucket(
     type=CLUSTER,
     help="Perform on a specified cluster (the current cluster by default).",
 )
+@option(
+    "--owner",
+    type=str,
+    help="Owner of bucket to assume for named bucket (the current user by default)",
+)
 @argument("bucket", type=BUCKET, required=True)
 @argument(
     "public_level",
@@ -438,7 +478,11 @@ async def rmbucket(
     required=True,
 )
 async def set_bucket_publicity(
-    root: Root, cluster: Optional[str], bucket: str, public_level: str
+    root: Root,
+    cluster: Optional[str],
+    owner: Optional[str],
+    bucket: str,
+    public_level: str,
 ) -> None:
     """
     Change public access settings for BUCKET
@@ -449,7 +493,9 @@ async def set_bucket_publicity(
       neuro blob set-bucket-publicity my-bucket private
     """
     public = public_level == "public"
-    await root.client.buckets.set_public_access(bucket, public, cluster_name=cluster)
+    await root.client.buckets.set_public_access(
+        bucket, public, cluster_name=cluster, bucket_owner=owner
+    )
     if root.verbosity >= 0:
         root.print(
             f"Bucket '{bucket}' was made {'public' if public else 'non-public'}."

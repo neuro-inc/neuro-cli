@@ -1078,6 +1078,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
+|_--owner TEXT_|Owner of bucket to assume for named bucket \(the current user by default)|
 
 
 
@@ -1282,6 +1283,7 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_--cluster CLUSTER_|Perform on a specified cluster \(the current cluster by default).|
 |_\-f, --force_|Force removal of all blobs inside bucket|
+|_--owner TEXT_|Owner of bucket to assume for named bucket \(the current user by default)|
 
 
 
@@ -1331,6 +1333,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--cluster CLUSTER_|Perform on a specified cluster \(the current cluster by default).|
+|_--owner TEXT_|Owner of bucket to assume for named bucket \(the current user by default)|
 
 
 
@@ -1372,6 +1375,7 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
 |_\--full-uri_|Output full bucket URI.|
+|_--owner TEXT_|Owner of bucket to assume for named bucket \(the current user by default)|
 
 
 

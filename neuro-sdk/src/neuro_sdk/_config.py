@@ -57,7 +57,7 @@ class _ConfigData:
     auth_config: _AuthConfig
     auth_token: _AuthToken
     url: URL
-    admin_url: URL
+    admin_url: Optional[URL]
     version: str
     cluster_name: str
     org_name: Optional[str]
@@ -231,7 +231,7 @@ class Config(metaclass=NoPublicConstructor):
         return self._config_data.url
 
     @property
-    def admin_url(self) -> URL:
+    def admin_url(self) -> Optional[URL]:
         return self._config_data.admin_url
 
     @property
@@ -410,7 +410,10 @@ def _load(path: Path) -> _ConfigData:
             payload = cur.fetchone()
 
         api_url = URL(payload["url"])
-        admin_url = URL(payload["admin_url"])
+        if not payload["admin_url"]:
+            admin_url = None
+        else:
+            admin_url = URL(payload["admin_url"])
         auth_config = _deserialize_auth_config(payload)
         clusters = _deserialize_clusters(payload)
         version = payload["version"]
@@ -546,7 +549,10 @@ def _save(config: _ConfigData, path: Path, suppress_errors: bool = True) -> None
     # Factory._save()
     try:
         url = str(config.url)
-        admin_url = str(config.admin_url)
+        if not config.admin_url:
+            admin_url = None
+        else:
+            admin_url = str(config.admin_url)
         auth_config = _serialize_auth_config(config.auth_config)
         clusters = _serialize_clusters(config.clusters)
         version = config.version

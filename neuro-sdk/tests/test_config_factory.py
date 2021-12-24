@@ -12,6 +12,7 @@ import aiohttp
 import pytest
 from aiohttp import web
 from aiohttp.test_utils import TestServer as _TestServer
+from jose import jws
 from yarl import URL
 
 from neuro_sdk import (
@@ -23,6 +24,7 @@ from neuro_sdk import (
     __version__,
 )
 from neuro_sdk._config import _AuthConfig, _AuthToken, _ConfigData
+from neuro_sdk._login import JWT_STANDALONE_SECRET
 
 from tests import _TestServerFactory
 
@@ -76,7 +78,9 @@ async def mock_for_login_factory(
     token: str,
     aiohttp_unused_port: Callable[[], int],
 ) -> Callable[[MockForLoginControl], Awaitable[_TestServer]]:
-    async def _factory(control: MockForLoginControl) -> _TestServer:
+    async def _factory(
+        control: MockForLoginControl, auth_enabled: bool = True
+    ) -> _TestServer:
         callback_urls = [
             f"http://127.0.0.1:{aiohttp_unused_port()}",
             f"http://127.0.0.1:{aiohttp_unused_port()}",
@@ -96,7 +100,7 @@ async def mock_for_login_factory(
                 "success_redirect_url": "http://example.com",
             }
 
-            if (
+            if not auth_enabled or (
                 "Authorization" in request.headers
                 and "incorrect" not in request.headers["Authorization"]
             ):
@@ -277,6 +281,27 @@ class TestLogin:
         await Factory().login(self.show_dummy_browser, url=mock_for_login.make_url("/"))
         nmrc_path = tmp_home / ".neuro"
         assert Path(nmrc_path).exists(), "Config file not written after login "
+
+    async def test_login_to_server_without_auth(
+        self,
+        tmp_home: Path,
+        mock_for_login_factory: Callable[..., Awaitable[_TestServer]],
+    ) -> None:
+        mock_for_login = await mock_for_login_factory(
+            MockForLoginControl(), auth_enabled=False
+        )
+        await Factory().login(self.show_dummy_browser, url=mock_for_login.make_url("/"))
+        nmrc_path = tmp_home / ".neuro"
+        assert Path(nmrc_path).exists(), "Config file not written after login "
+
+        client = await Factory(Path(nmrc_path)).get()
+        await client.close()
+        token = await client.config.token()
+
+        assert client.config.username == "user"
+        jws.verify(
+            token, JWT_STANDALONE_SECRET, algorithms="HS256"
+        )  # verify it is standalone token
 
 
 class TestLoginWithToken:

@@ -2,7 +2,7 @@ import asyncio
 from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
-from typing import Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 
 import aiohttp
 import aiohttp.pytest_plugin
@@ -102,8 +102,8 @@ def make_client(
         trace_id: str = "bd7a977555f6b982",
         clusters: Optional[Dict[str, Cluster]] = None,
         token_url: Optional[URL] = None,
-        admin_url: Optional[URL] = None,
         plugin_manager: Optional[PluginManager] = None,
+        **kwargs: Any,
     ) -> Client:
         url = URL(url_str)
         if clusters is None:
@@ -167,8 +167,10 @@ def make_client(
             real_auth_config = replace(auth_config, token_url=token_url)
         else:
             real_auth_config = auth_config
-        if admin_url is None:
+        if "admin_url" not in kwargs:
             admin_url = URL(url) / ".." / ".." / "apis" / "admin" / "v1"
+        else:
+            admin_url = kwargs["admin_url"]
         if plugin_manager is None:
             plugin_manager = PluginManager()
         cluster_name = next(iter(clusters))
