@@ -495,13 +495,21 @@ BUCKET_ID_PATTERN = (
 
 
 async def resolve_bucket(
-    id_or_name: str, *, client: Client, cluster_name: Optional[str] = None
+    id_or_name: str,
+    *,
+    client: Client,
+    cluster_name: Optional[str] = None,
+    bucket_owner: Optional[str] = None,
 ) -> str:
     # Temporary fast path.
     if re.fullmatch(BUCKET_ID_PATTERN, id_or_name):
         return id_or_name
 
-    bucket = await client.buckets.get(id_or_name, cluster_name)
+    bucket = await client.buckets.get(
+        id_or_name,
+        cluster_name=cluster_name,
+        bucket_owner=bucket_owner,
+    )
     return bucket.id
 
 
