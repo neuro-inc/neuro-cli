@@ -24,6 +24,7 @@ import neuro_cli
 from . import file_logging
 from .alias import find_alias
 from .asyncio_utils import setup_child_watcher
+from .click_types import setup_shell_completion
 from .const import (
     EX_DATAERR,
     EX_IOERR,
@@ -549,6 +550,8 @@ def _err_to_str(err: Exception) -> str:
 
 
 def main(args: Optional[List[str]] = None) -> None:
+    setup_shell_completion()
+
     try:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ResourceWarning)

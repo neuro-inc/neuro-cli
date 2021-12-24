@@ -815,9 +815,6 @@ class NewZshComplete(ZshComplete):
         )
 
 
-add_completion_class(NewZshComplete)
-
-
 _SOURCE_BASH = """\
 %(complete_func)s() {
     local IFS=$'\\n'
@@ -894,9 +891,6 @@ class NewBashComplete(BashComplete):
         return f"{item.type},{item.value},{prefix}"
 
 
-add_completion_class(NewBashComplete)
-
-
 class BucketType(AsyncType[str]):
     name = "bucket"
 
@@ -965,3 +959,8 @@ class BucketCredentialType(AsyncType[str]):
 
 
 BUCKET_CREDENTIAL = BucketCredentialType()
+
+
+def setup_shell_completion() -> None:
+    add_completion_class(NewZshComplete)
+    add_completion_class(NewBashComplete)
