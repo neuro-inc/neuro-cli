@@ -1077,8 +1077,9 @@ async def run(
     neuro run -s cpu-small --entrypoint=/script.sh image:my-ubuntu:latest -- arg1 arg2
     """
     if http is not None:
+        root.console.print("[red]--http option is deprecated,", markup=True)
         root.console.print(
-            "[red]Please use  --http-port option instead of --http[/red]"
+            "[red]Please use  --http-port option instead of --http", markup=True
         )
         http_port = http
     cmd = _fix_cmd("neuro run", "IMAGE -- CMD...", cmd)
