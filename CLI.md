@@ -95,8 +95,6 @@
 		* [neuro job save](#neuro-job-save)
 		* [neuro job status](#neuro-job-status)
 		* [neuro job top](#neuro-job-top)
-	* [neuro project](#neuro-project)
-		* [neuro project init](#neuro-project-init)
 	* [neuro secret](#neuro-secret)
 		* [neuro secret add](#neuro-secret-add)
 		* [neuro secret ls](#neuro-secret-ls)
@@ -177,7 +175,6 @@ Name | Description|
 | _[neuro disk](#neuro-disk)_| Operations with disks |
 | _[neuro image](#neuro-image)_| Container image operations |
 | _[neuro job](#neuro-job)_| Job operations |
-| _[neuro project](#neuro-project)_| \(Deprecated) Project operations |
 | _[neuro secret](#neuro-secret)_| Operations with secrets |
 | _[neuro service-account](#neuro-service-account)_| Operations with service accounts |
 | _[neuro storage](#neuro-storage)_| Storage operations |
@@ -2492,65 +2489,6 @@ Name | Description|
 |_\-t, --tag TAG_|Filter out jobs by tag \(multiple option)|
 |_--timeout FLOAT_|Maximum allowed time for executing the command, 0 for no timeout  \[default: 0]|
 |_--until DATE\_OR_TIMEDELTA_|Show jobs created before a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
-
-
-
-
-## neuro project
-
-Project operations. \(DEPRECATED)
-
-**Usage:**
-
-```bash
-neuro project [OPTIONS] COMMAND [ARGS]...
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-**Commands:**
-
-|Usage|Description|
-|---|---|
-| _[neuro project init](#neuro-project-init)_| \(Deprecated) Initialize an empty project |
-
-
-
-
-### neuro project init
-
-Initialize an empty project.<br/><br/> \(DEPRECATED)<br/>
-
-**Usage:**
-
-```bash
-neuro project init [OPTIONS] [NAME]
-```
-
-**Examples:**
-
-```bash
-
-# Initializes a scaffolding for the new project with the recommended project
-# structure (see http://github.com/neuro-inc/cookiecutter-neuro-project)
-neuro project init
-
-# Initializes a scaffolding for the new project with the recommended project
-# structure and sets the project name to 'my-project'
-neuro project init my-project
-
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
 
 
 
