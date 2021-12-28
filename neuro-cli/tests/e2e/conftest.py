@@ -906,7 +906,7 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
         )
         args: List[str] = []
         if http_port:
-            args += ["--http", "80"]
+            args += ["--http-port", "80"]
             if http_auth:
                 args += ["--http-auth"]
             else:

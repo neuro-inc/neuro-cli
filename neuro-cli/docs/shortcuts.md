@@ -621,8 +621,8 @@ $ neuro run -s cpu-small --entrypoint=/script.sh image:my-ubuntu:latest -- arg1 
 | _-e, --env VAR=VAL_ | Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables. |
 | _--env-file PATH_ | File with environment variables to pass |
 | _-x, --extshm / -X, --no-extshm_ | Request extended '/dev/shm' space  _\[default: x\]_ |
-| _--http PORT_ | Enable HTTP port forwarding to container  _\[default: 80\]_ |
 | _--http-auth / --no-http-auth_ | Enable HTTP authentication for forwarded HTTP port  _\[default: True\]_ |
+| _--http-port PORT_ | Enable HTTP port forwarding to container  _\[default: 80\]_ |
 | _--life-span TIMEDELTA_ | Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing\). Set '0' to disable. Default value '1d' can be changed in the user config. |
 | _-n, --name NAME_ | Optional job name |
 | _--org ORG_ | Run job in a specified org |

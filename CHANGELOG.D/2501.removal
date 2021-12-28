@@ -1,0 +1,1 @@
+Replace `--http` option with `--http-port`, keep `--http` option as a hidden deprecated alternative, scheduled for removal later.
