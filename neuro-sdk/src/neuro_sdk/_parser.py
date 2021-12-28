@@ -1,21 +1,8 @@
 import os
-import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-    overload,
-)
+from typing import Dict, Iterable, Iterator, List, Optional, Sequence, Tuple, Union
 
-from typing_extensions import Literal
 from yarl import URL
 
 from ._config import Config
@@ -54,43 +41,6 @@ class VolumeParseResult:
     volumes: Sequence[Volume]
     secret_files: Sequence[SecretFile]
     disk_volumes: Sequence[DiskVolume]
-
-    # backward compatibility
-
-    def __len__(self) -> int:
-        warnings.warn(
-            "tuple-like access to client.parse.volumes() result is deprecated "
-            "and scheduled for removal in future Neuro CLI release. "
-            "Please access by attribute names) instead, "
-            "e.g. client.parse.volumes().secret_files",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return 2
-
-    @overload
-    def __getitem__(self, idx: Literal[0]) -> Sequence[Volume]:
-        pass
-
-    @overload
-    def __getitem__(self, idx: Literal[1]) -> Sequence[SecretFile]:
-        pass
-
-    def __getitem__(self, idx: Any) -> Any:
-        warnings.warn(
-            "tuple-like access to client.parse.volumes() result is deprecated "
-            "and scheduled for removal in future Neuro CLI release. "
-            "Please access by attribute names) instead, "
-            "e.g. client.parse.volumes().secret_files",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if idx == 0:
-            return self.volumes
-        elif idx == 1:
-            return self.secret_files
-        else:
-            raise IndexError(idx)
 
 
 @rewrite_module
@@ -239,18 +189,6 @@ class Parser(metaclass=NoPublicConstructor):
 
     def _remote_to_local_image(self, image: RemoteImage) -> LocalImage:
         return self._get_image_parser().convert_to_local_image(image)
-
-    def env(
-        self, env: Sequence[str], env_file: Sequence[str] = ()
-    ) -> Tuple[Dict[str, str], Dict[str, URL]]:
-        warnings.warn(
-            "client.parse.env() method is deprecated and scheduled for removal "
-            "in future Neuro CLI release, please use client.parse.envs() instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        ret = self.envs(env, env_file)
-        return ret.env, ret.secret_env
 
     def envs(
         self,

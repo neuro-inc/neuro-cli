@@ -1368,13 +1368,6 @@ class TestRegistry:
         assert step == 3  # All steps are passed
         assert set(ret) == expected
 
-        step = 0
-        with pytest.warns(DeprecationWarning):
-            async with make_client(url, registry_url=registry_url) as client:
-                ret = await client.images.ls()
-            assert step == 3  # All steps are passed
-            assert set(ret) == expected
-
     @pytest.mark.skipif(
         sys.platform == "win32", reason="aiodocker doesn't support Windows pipes yet"
     )

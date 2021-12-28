@@ -31,14 +31,6 @@ class Disk:
     used_bytes: Optional[int] = None
 
     @property
-    def life_span(self) -> Optional[timedelta]:
-        logger.warning(
-            "Disk.life_span property is deprecated, "
-            "please use Disk.timeout_unused instead"
-        )
-        return self.timeout_unused
-
-    @property
     def uri(self) -> URL:
         base = f"disk://{self.cluster_name}"
         if self.org_name:
