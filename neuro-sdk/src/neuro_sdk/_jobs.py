@@ -12,7 +12,6 @@ from typing import (
     AsyncIterator,
     Dict,
     Iterable,
-    List,
     Mapping,
     Optional,
     Sequence,
@@ -541,13 +540,6 @@ class Jobs(metaclass=NoPublicConstructor):
         async with self._core.request("GET", url, auth=auth) as resp:
             ret = await resp.json()
             return _job_description_from_api(ret, self._parse)
-
-    async def tags(self) -> List[str]:
-        url = self._config.api_url / "tags"
-        auth = await self._config._api_auth()
-        async with self._core.request("GET", url, auth=auth) as resp:
-            ret = await resp.json()
-            return ret["tags"]
 
     @asyncgeneratorcontextmanager
     async def top(
