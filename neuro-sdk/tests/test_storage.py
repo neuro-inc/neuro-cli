@@ -267,11 +267,6 @@ async def test_storage_ls_legacy(
             ret = [file async for file in it]
             assert ret == expected
 
-        with pytest.warns(DeprecationWarning):
-            async with client.storage.ls(URL("storage:folder")) as it:
-                ret = [file async for file in it]
-                assert ret == expected
-
 
 async def make_listiter_response(
     request: web.Request, file_statuses: List[Any]
