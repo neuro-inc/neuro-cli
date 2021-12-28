@@ -2383,8 +2383,8 @@ Name | Description|
 |_\-e, --env VAR=VAL_|Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables.|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: x]|
-|_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
+|_\--http-port PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\-n, --name NAME_|Optional job name|
 |_--org ORG_|Run job in a specified org|
@@ -3575,8 +3575,8 @@ Name | Description|
 |_\-e, --env VAR=VAL_|Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables.|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: x]|
-|_--http PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
+|_\--http-port PORT_|Enable HTTP port forwarding to container  \[default: 80]|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\-n, --name NAME_|Optional job name|
 |_--org ORG_|Run job in a specified org|

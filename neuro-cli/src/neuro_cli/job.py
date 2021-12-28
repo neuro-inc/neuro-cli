@@ -859,6 +859,14 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "--http",
     type=int,
     metavar="PORT",
+    default=None,
+    help="Enable HTTP port forwarding to container (use --http-port instead)",
+    hidden=True,
+)
+@option(
+    "--http-port",
+    type=int,
+    metavar="PORT",
     default=80,
     show_default=True,
     help="Enable HTTP port forwarding to container",
@@ -1023,7 +1031,8 @@ async def run(
     cluster: Optional[str],
     org: Optional[str],
     extshm: bool,
-    http: int,
+    http: Optional[int],
+    http_port: int,
     http_auth: Optional[bool],
     entrypoint: Optional[str],
     cmd: Sequence[str],
@@ -1067,6 +1076,11 @@ async def run(
     # registry, run /script.sh and pass arg1 and arg2 as its arguments:
     neuro run -s cpu-small --entrypoint=/script.sh image:my-ubuntu:latest -- arg1 arg2
     """
+    if http is not None:
+        root.console.print(
+            "[red]Please use  --http-port option instead of --http[/red]"
+        )
+        http_port = http
     cmd = _fix_cmd("neuro run", "IMAGE -- CMD...", cmd)
     cluster_name = cluster or root.client.cluster_name
     org_name = org or root.client.config.org_name
@@ -1084,7 +1098,7 @@ async def run(
         image=image,
         preset=preset,
         extshm=extshm,
-        http=http,
+        http_port=http_port,
         http_auth=http_auth,
         entrypoint=entrypoint,
         cmd=cmd,
@@ -1155,7 +1169,7 @@ async def run_job(
     image: RemoteImage,
     preset: str,
     extshm: bool,
-    http: Optional[int],
+    http_port: Optional[int],
     http_auth: Optional[bool],
     entrypoint: Optional[str],
     cmd: Sequence[str],
@@ -1183,13 +1197,13 @@ async def run_job(
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
-    elif not http:
+    elif not http_port:
         if http_auth:
-            raise click.UsageError("--http-auth requires --http")
+            raise click.UsageError("--http-auth requires --http-port")
         else:
-            raise click.UsageError("--no-http-auth requires --http")
-    if browse and not http:
-        raise click.UsageError("--browse requires --http")
+            raise click.UsageError("--no-http-auth requires --http-port")
+    if browse and not http_port:
+        raise click.UsageError("--browse requires --http-port")
     if browse and not wait_start:
         raise click.UsageError("Cannot use --browse and --no-wait-start together")
     if not wait_start:
@@ -1257,7 +1271,7 @@ async def run_job(
         entrypoint=entrypoint,
         command=real_cmd,
         working_dir=working_dir,
-        http=HTTPPort(http, http_auth) if http else None,
+        http=HTTPPort(http_port, http_auth) if http_port else None,
         env=env_dict,
         volumes=volumes,
         secret_env=secret_env_dict,
@@ -1399,7 +1413,7 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
         res += ["--no-extshm"]
     if job.container.http:
         if job.container.http.port != 80:
-            res += ["--http", str(job.container.http.port)]
+            res += ["--http-port", str(job.container.http.port)]
         if not job.container.http.requires_auth:
             res += ["--no-http-auth"]
     if job.name:

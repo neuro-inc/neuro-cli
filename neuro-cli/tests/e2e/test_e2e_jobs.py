@@ -77,7 +77,7 @@ def test_job_run(helper: Helper) -> None:
         [
             "job",
             "run",
-            "--http",
+            "--http-port",
             "80",
             "--no-wait-start",
             "--restart",
@@ -159,7 +159,7 @@ def test_job_description(helper: Helper) -> None:
         [
             "job",
             "run",
-            "--http",
+            "--http-port",
             "80",
             "--description",
             description,
@@ -827,10 +827,10 @@ def test_pass_config(helper: Helper) -> None:
 def test_job_submit_bad_http_auth(helper: Helper, http_auth: str) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
         helper.run_cli(
-            ["job", "run", "--http=0", http_auth, UBUNTU_IMAGE_NAME, "--", "true"]
+            ["job", "run", "--http-port=0", http_auth, UBUNTU_IMAGE_NAME, "--", "true"]
         )
     assert cm.value.returncode == 2
-    assert f"{http_auth} requires --http" in cm.value.stderr
+    assert f"{http_auth} requires --http-port" in cm.value.stderr
 
 
 @pytest.fixture
@@ -895,7 +895,7 @@ def test_job_submit_no_detach_failure(helper: Helper) -> None:
                 "-v",
                 "job",
                 "run",
-                "--http",
+                "--http-port",
                 "80",
                 UBUNTU_IMAGE_NAME,
                 "--",
