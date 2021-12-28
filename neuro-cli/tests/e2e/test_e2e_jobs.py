@@ -191,36 +191,6 @@ def test_job_description(helper: Helper) -> None:
     helper.kill_job(job_id, wait=False)
 
 
-@pytest.mark.skip(reason="'neuro job tags' is slow and will be deprecated")
-@pytest.mark.e2e
-def test_job_tags(helper: Helper) -> None:
-    tags = [f"test-tag:{uuid4()}", "test-tag:common"]
-    tag_options = [key for pair in [("--tag", t) for t in tags] for key in pair]
-
-    command = "sleep 10m"
-    captured = helper.run_cli(
-        [
-            "job",
-            "run",
-            *tag_options,
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            "--",
-            command,
-        ]
-    )
-    match = re.match("Job ID: (.+)", captured.out)
-    assert match is not None
-    job_id = match.group(1)
-
-    captured = helper.run_cli(["-q", "ps", *tag_options])
-    assert job_id in captured.out
-
-    captured = helper.run_cli(["job", "tags"])
-    tags_listed = [tag.strip() for tag in captured.out.split("\n")]
-    assert set(tags) <= set(tags_listed)
-
-
 @pytest.mark.e2e
 def test_job_filter_by_date_range(helper: Helper) -> None:
     captured = helper.run_cli(

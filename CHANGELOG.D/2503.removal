@@ -1,0 +1,1 @@
+Remove `client.job.tags()` method from SDK and `neuro job tags` command from CLI.

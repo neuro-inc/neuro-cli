@@ -12,7 +12,6 @@ from typing import AsyncIterator, List, Optional, Sequence, Set, Tuple
 import async_timeout
 import click
 from dateutil.parser import isoparse
-from rich.table import Table
 from yarl import URL
 
 from neuro_sdk import (
@@ -516,20 +515,6 @@ async def bump_life_span(root: Root, job: str, additional_life_span: str) -> Non
                 datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
             )(res)
         )
-
-
-@command(deprecated=True, hidden=True)
-async def tags(root: Root) -> None:
-    """
-    List all tags submitted by the user.
-    """
-    res = await root.client.jobs.tags()
-    table = Table.grid()
-    table.add_column("")
-    for item in res:
-        table.add_row(item)
-    with root.pager():
-        root.print(table)
 
 
 @command()
@@ -1152,7 +1137,6 @@ job.add_command(run)
 job.add_command(generate_run_command)
 job.add_command(ls)
 job.add_command(status)
-job.add_command(tags)
 job.add_command(exec)
 job.add_command(port_forward)
 job.add_command(logs)
