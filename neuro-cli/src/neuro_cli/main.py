@@ -303,7 +303,6 @@ CMD_MAP = {
     # groups
     "admin": "neuro_cli.admin:admin",
     "job": "neuro_cli.job:job",
-    "project": "neuro_cli.project:project",
     "storage": "neuro_cli.storage:storage",
     "image": "neuro_cli.image:image",
     "config": "neuro_cli.config:config",
