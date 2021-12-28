@@ -2,6 +2,7 @@ import asyncio
 import functools
 import logging
 import sys
+import warnings
 from functools import partial
 from pathlib import Path
 from types import TracebackType
@@ -77,9 +78,15 @@ class _AsyncIteratorAndContextManager(
         await self._gen.aclose()  # type: ignore
 
     def __aiter__(self) -> AsyncIterator[_T_co]:
+        warnings.warn(
+            "Please use 'async with' instead of 'async for'", DeprecationWarning
+        )
         return self._gen.__aiter__()
 
     def __anext__(self) -> Awaitable[_T_co]:
+        warnings.warn(
+            "Please use 'async with' instead of 'async for'", DeprecationWarning
+        )
         return self._gen.__anext__()
 
 
