@@ -5,7 +5,6 @@ import errno
 import hashlib
 import secrets
 import time
-import warnings
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import (
@@ -34,13 +33,10 @@ from aiohttp.web import (
     Response,
     TCPSite,
 )
+from jose import JWTError, jwt
 from yarl import URL
 
 from ._errors import AuthError
-
-with warnings.catch_warnings():
-    warnings.filterwarnings("ignore", "int_from_bytes is deprecated", UserWarning)
-    from jose import JWTError, jwt
 
 
 def urlsafe_unpadded_b64encode(payload: bytes) -> str:
