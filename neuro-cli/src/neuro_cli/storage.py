@@ -183,12 +183,12 @@ async def ls(
                     human_readable=human_readable, color=root.color
                 )
             else:
-                if root.tty:
+                if root.tty and not root.quiet:
                     formatter = VerticalColumnsFilesFormatter(
                         width=root.terminal_size[0], color=root.color
                     )
                 else:
-                    formatter = SimpleFilesFormatter(root.color)
+                    formatter = SimpleFilesFormatter(False)
 
             if not show_all:
                 files = [item for item in files if not item.name.startswith(".")]

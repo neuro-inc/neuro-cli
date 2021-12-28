@@ -553,7 +553,10 @@ async def ls(
     else:
         # Similar to `ls -1`, default for non-terminal on UNIX. We show full uris of
         # blobs, thus column formatting does not work too well.
-        formatter = SimpleBlobFormatter(root.color, uri_fmtr)
+        if root.tty and not root.quiet:
+            formatter = SimpleBlobFormatter(root.color, uri_fmtr)
+        else:
+            formatter = SimpleBlobFormatter(False, uri_fmtr)
 
     if not paths:
         # List Buckets instead of blobs in bucket
