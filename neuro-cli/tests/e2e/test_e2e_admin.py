@@ -34,7 +34,7 @@ def drop_old_clusters() -> None:
         subdir.mkdir()
         helper = Helper(nmrc_path=nmrc_path, tmp_path=subdir)
 
-        res: SysCap = helper.run_cli(["admin", "get-clusters"])
+        res: SysCap = helper.run_cli(["admin", "get-admin-clusters"])
         for out_line in res.out.splitlines():
             if not out_line.startswith("e2e-testing-"):
                 continue

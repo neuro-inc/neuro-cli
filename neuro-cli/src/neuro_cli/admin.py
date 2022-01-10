@@ -53,6 +53,18 @@ async def get_clusters(root: Root) -> None:
         root.print(fmt(clusters.values()))
 
 
+@command(hidden=True)
+async def get_admin_clusters(root: Root) -> None:
+    """
+    Print the list of clusters on platform-admin side.
+    """
+    with root.status("Fetching the list of clusters"):
+        clusters = await root.client._admin.list_clusters()
+    with root.pager():
+        for cluster in clusters:
+            root.print(cluster.name)
+
+
 @command()
 @option(
     "--skip-provisioning",
@@ -1310,6 +1322,7 @@ async def add_org_cluster_credits(
 
 
 admin.add_command(get_clusters)
+admin.add_command(get_admin_clusters)
 admin.add_command(generate_cluster_config)
 admin.add_command(add_cluster)
 admin.add_command(remove_cluster)
