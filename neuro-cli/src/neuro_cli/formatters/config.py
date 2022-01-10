@@ -4,7 +4,8 @@ from typing import Iterable, List, Mapping, Optional, Union
 
 import click
 from rich import box
-from rich.console import RenderableType, RenderGroup
+from rich.console import Group as RichGroup
+from rich.console import RenderableType
 from rich.padding import Padding
 from rich.table import Table
 from rich.text import Text
@@ -36,7 +37,7 @@ class ConfigFormatter:
         table.add_row("API URL", str(config.api_url))
         table.add_row("Docker Registry URL", str(config.registry_url))
 
-        return RenderGroup(
+        return RichGroup(
             table,
             _format_presets(config.presets, available_jobs_counts),
         )
@@ -45,7 +46,7 @@ class ConfigFormatter:
 class AdminQuotaFormatter:
     def __call__(self, quota: _Quota) -> RenderableType:
         jobs_details = format_quota_details(quota.total_running_jobs)
-        return RenderGroup(
+        return RichGroup(
             Text.assemble(Text("Jobs", style="bold"), f": ", jobs_details),
         )
 
@@ -54,7 +55,7 @@ class BalanceFormatter:
     def __call__(self, balance: _Balance) -> RenderableType:
         credits_details = format_quota_details(balance.credits)
         spent_credits_details = format_quota_details(balance.spent_credits)
-        return RenderGroup(
+        return RichGroup(
             Text.assemble(Text("Credits", style="bold"), f": ", credits_details),
             Text.assemble(
                 Text("Credits spent", style="bold"), f": ", spent_credits_details
@@ -87,7 +88,7 @@ class ClustersFormatter:
                 Text.assemble("  ", Text("Orgs"), ": ", Text(", ").join(org_names))
             )
             out.append(Padding.indent(_format_presets(cluster.presets, None), 2))
-        return RenderGroup(*out)
+        return RichGroup(*out)
 
 
 def _format_presets(

@@ -5,7 +5,8 @@ import operator
 from typing import Sequence
 
 from rich import box
-from rich.console import RenderableType, RenderGroup
+from rich.console import Group as RichGroup
+from rich.console import RenderableType
 from rich.table import Table
 from rich.text import Text
 
@@ -22,7 +23,7 @@ class BaseServiceAccountsFormatter:
 
 class SimpleServiceAccountsFormatter(BaseServiceAccountsFormatter):
     def __call__(self, accounts: Sequence[ServiceAccount]) -> RenderableType:
-        return RenderGroup(*(Text(account.id) for account in accounts))
+        return RichGroup(*(Text(account.id) for account in accounts))
 
 
 class ServiceAccountsFormatter(BaseServiceAccountsFormatter):

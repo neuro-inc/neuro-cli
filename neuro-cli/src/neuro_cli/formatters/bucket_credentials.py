@@ -3,7 +3,8 @@ import operator
 from typing import Awaitable, Callable, Sequence
 
 from rich import box
-from rich.console import RenderableType, RenderGroup
+from rich.console import Group as RichGroup
+from rich.console import RenderableType
 from rich.styled import Styled
 from rich.table import Table
 from rich.text import Text
@@ -23,7 +24,7 @@ class SimpleBucketCredentialsFormatter(BaseBucketCredentialsFormatter):
     async def __call__(
         self, credentials: Sequence[PersistentBucketCredentials]
     ) -> RenderableType:
-        return RenderGroup(*(Text(credential.id) for credential in credentials))
+        return RichGroup(*(Text(credential.id) for credential in credentials))
 
 
 class BucketCredentialsFormatter(BaseBucketCredentialsFormatter):
