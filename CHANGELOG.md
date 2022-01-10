@@ -5,6 +5,26 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 22.1.0 (2022-01-10)
+=================================
+
+Features
+--------
+
+- Added support `--owner` argument in blob bucket level commands to allow referring to another users bucket by name. ([#2494](https://github.com/neuro-inc/platform-client-python/issues/2494))
+- Add --force/-f flag to neuro blob rmbucket to force remove non-empty bucket. ([#2495](https://github.com/neuro-inc/platform-client-python/issues/2495))
+- Support `neuro -q ls` and `neuro -q blob ls` for quiet output enforcing. ([#2506](https://github.com/neuro-inc/platform-client-python/issues/2506))
+
+
+Deprecations and Removals
+-------------------------
+
+- Replace `--http` option with `--http-port`, keep `--http` option as a hidden deprecated alternative, scheduled for removal later. ([#2501](https://github.com/neuro-inc/platform-client-python/issues/2501))
+- Remove deprecated `neuro project init` command. ([#2502](https://github.com/neuro-inc/platform-client-python/issues/2502))
+- Remove `client.job.tags()` method from SDK and `neuro job tags` command from CLI. ([#2503](https://github.com/neuro-inc/platform-client-python/issues/2503))
+- Drop deprecated API from SDK ([#2505](https://github.com/neuro-inc/platform-client-python/issues/2505))
+
+
 Neuro SDK/CLI 21.12.2 (2021-12-23)
 ==================================
 
