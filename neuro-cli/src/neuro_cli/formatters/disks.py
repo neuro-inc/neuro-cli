@@ -4,7 +4,8 @@ from datetime import timedelta
 from typing import Optional, Sequence
 
 from rich import box
-from rich.console import RenderableType, RenderGroup
+from rich.console import Group as RichGroup
+from rich.console import RenderableType
 from rich.table import Table
 from rich.text import Text
 
@@ -23,7 +24,7 @@ class BaseDisksFormatter:
 
 class SimpleDisksFormatter(BaseDisksFormatter):
     def __call__(self, disks: Sequence[Disk]) -> RenderableType:
-        return RenderGroup(*(Text(disk.id) for disk in disks))
+        return RichGroup(*(Text(disk.id) for disk in disks))
 
 
 class DisksFormatter(BaseDisksFormatter):

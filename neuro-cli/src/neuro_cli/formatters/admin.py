@@ -2,7 +2,8 @@ import operator
 from typing import Iterable, List
 
 from rich import box
-from rich.console import RenderableType, RenderGroup
+from rich.console import Group as RichGroup
+from rich.console import RenderableType
 from rich.rule import Rule
 from rich.styled import Styled
 from rich.table import Table
@@ -145,7 +146,7 @@ class ClustersFormatter:
                     table.add_row("Storage", cloud_provider.storage.description)
             out.append(table)
             out.append(Rule())
-        return RenderGroup(*out)
+        return RichGroup(*out)
 
 
 def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:

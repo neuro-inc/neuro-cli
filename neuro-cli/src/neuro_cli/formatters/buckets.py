@@ -3,7 +3,8 @@ import operator
 from typing import Sequence
 
 from rich import box
-from rich.console import RenderableType, RenderGroup
+from rich.console import Group as RichGroup
+from rich.console import RenderableType
 from rich.table import Table
 from rich.text import Text
 
@@ -21,7 +22,7 @@ class BaseBucketsFormatter:
 
 class SimpleBucketsFormatter(BaseBucketsFormatter):
     def __call__(self, buckets: Sequence[Bucket]) -> RenderableType:
-        return RenderGroup(*(Text(bucket.id) for bucket in buckets))
+        return RichGroup(*(Text(bucket.id) for bucket in buckets))
 
 
 class BucketsFormatter(BaseBucketsFormatter):
