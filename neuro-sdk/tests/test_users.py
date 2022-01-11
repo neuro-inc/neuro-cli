@@ -117,6 +117,30 @@ async def mocked_get_quota_client(
     await client.close()
 
 
+@pytest.fixture()
+async def mocked_get_subroles_client(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> AsyncIterator[Client]:
+    async def handle_get_subroles(request: web.Request) -> web.StreamResponse:
+        username = request.match_info["username"]
+        data = {
+            "subroles": [f"{username}/sub1", f"{username}/sub2", f"{username}/sub3"]
+        }
+        return web.json_response(data)
+
+    app = web.Application()
+    app.router.add_get(
+        "/api/v1/users/{username}/subroles",
+        handle_get_subroles,
+    )
+
+    srv = await aiohttp_server(app)
+
+    client = make_client(srv.make_url("/api/v1"))
+    yield client
+    await client.close()
+
+
 class TestUsers:
     async def test_get_quota(self, mocked_get_quota_client: Client) -> None:
         res = await mocked_get_quota_client.users.get_quota()
@@ -174,6 +198,10 @@ class TestUsers:
     async def test_remove_role(self, mocked_remove_role_client: Client) -> None:
         ret = await mocked_remove_role_client.users.remove("mycompany/team/role")
         assert ret is None  # at this moment no result
+
+    async def test_get_subroles(self, mocked_get_subroles_client: Client) -> None:
+        res = await mocked_get_subroles_client.users.get_subroles("test")
+        assert set(res) == {"test/sub1", "test/sub2", "test/sub3"}
 
     async def test_remove_role_invalid_name(
         self, mocked_remove_role_client: Client
