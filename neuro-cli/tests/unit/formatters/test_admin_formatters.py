@@ -7,6 +7,7 @@ from rich.console import RenderableType
 from neuro_sdk import (
     _Balance,
     _CloudProvider,
+    _Cluster,
     _ClusterUserRoleType,
     _ClusterUserWithInfo,
     _ConfigCluster,
@@ -112,87 +113,108 @@ class TestClustersFormatter:
 
     def test_cluster_list(self, rich_cmp: RichCmp) -> None:
         formatter = ClustersFormatter()
-        clusters = [_ConfigCluster(name="default", status="deployed")]
+        clusters = {
+            "default": (
+                _Cluster(
+                    name="default",
+                    default_credits=Decimal(20),
+                    default_quota=_Quota(total_running_jobs=42),
+                ),
+                _ConfigCluster(name="default", status="deployed"),
+            )
+        }
         rich_cmp(formatter(clusters))
 
     def test_cluster_with_on_prem_cloud_provider_list(self, rich_cmp: RichCmp) -> None:
         formatter = ClustersFormatter()
-        clusters = [
-            _ConfigCluster(
-                name="on-prem",
-                status="deployed",
-                cloud_provider=_CloudProvider(
-                    type="on_prem",
-                    region=None,
-                    zones=[],
-                    node_pools=[],
-                    storage=None,
+        clusters = {
+            "on-prem": (
+                _Cluster(name="on-prem", default_credits=None, default_quota=_Quota()),
+                _ConfigCluster(
+                    name="on-prem",
+                    status="deployed",
+                    cloud_provider=_CloudProvider(
+                        type="on_prem",
+                        region=None,
+                        zones=[],
+                        node_pools=[],
+                        storage=None,
+                    ),
                 ),
-            ),
-        ]
+            )
+        }
         rich_cmp(formatter(clusters))
 
     def test_cluster_with_cloud_provider_storage_list(self, rich_cmp: RichCmp) -> None:
         formatter = ClustersFormatter()
-        clusters = [
-            _ConfigCluster(
-                name="default",
-                status="deployed",
-                cloud_provider=_CloudProvider(
-                    type="gcp",
-                    region="us-central1",
-                    zones=["us-central1-a", "us-central1-c"],
-                    node_pools=[],
-                    storage=_Storage(description="Filestore"),
+        clusters = {
+            "default": (
+                _Cluster(name="default", default_credits=None, default_quota=_Quota()),
+                _ConfigCluster(
+                    name="default",
+                    status="deployed",
+                    cloud_provider=_CloudProvider(
+                        type="gcp",
+                        region="us-central1",
+                        zones=["us-central1-a", "us-central1-c"],
+                        node_pools=[],
+                        storage=_Storage(description="Filestore"),
+                    ),
                 ),
             )
-        ]
+        }
         rich_cmp(formatter(clusters))
 
     def test_cluster_with_cloud_provider_with_minimum_node_pool_properties_list(
         self, rich_cmp: RichCmp
     ) -> None:
         formatter = ClustersFormatter()
-        clusters = [
-            _ConfigCluster(
-                name="default",
-                status="deployed",
-                cloud_provider=_CloudProvider(
-                    type="on_prem",
-                    region=None,
-                    zones=[],
-                    node_pools=[
-                        self._create_node_pool(disk_type="", is_scalable=False),
-                        self._create_node_pool(
-                            disk_type="ssd", is_scalable=False, is_gpu=True
-                        ),
-                    ],
-                    storage=None,
+        clusters = {
+            "default": (
+                _Cluster(name="default", default_credits=None, default_quota=_Quota()),
+                _ConfigCluster(
+                    name="default",
+                    status="deployed",
+                    cloud_provider=_CloudProvider(
+                        type="on_prem",
+                        region=None,
+                        zones=[],
+                        node_pools=[
+                            self._create_node_pool(disk_type="", is_scalable=False),
+                            self._create_node_pool(
+                                disk_type="ssd", is_scalable=False, is_gpu=True
+                            ),
+                        ],
+                        storage=None,
+                    ),
                 ),
             )
-        ]
+        }
         rich_cmp(formatter(clusters))
 
     def test_cluster_with_cloud_provider_with_maximum_node_pool_properties_list(
         self, rich_cmp: RichCmp
     ) -> None:
         formatter = ClustersFormatter()
-        clusters = [
-            _ConfigCluster(
-                name="default",
-                status="deployed",
-                cloud_provider=_CloudProvider(
-                    type="gcp",
-                    region="us-central1",
-                    zones=[],
-                    node_pools=[
-                        self._create_node_pool(
-                            is_preemptible=True, is_tpu_enabled=True, has_idle=True
-                        ),
-                        self._create_node_pool(),
-                    ],
-                    storage=None,
+        clusters = {
+            "default": (
+                _Cluster(name="default", default_credits=None, default_quota=_Quota()),
+                _ConfigCluster(
+                    name="default",
+                    status="deployed",
+                    cloud_provider=_CloudProvider(
+                        type="gcp",
+                        region="us-central1",
+                        zones=[],
+                        node_pools=[
+                            self._create_node_pool(
+                                is_preemptible=True, is_tpu_enabled=True, has_idle=True
+                            ),
+                            self._create_node_pool(),
+                        ],
+                        storage=None,
+                    ),
                 ),
             )
-        ]
+        }
         rich_cmp(formatter(clusters))

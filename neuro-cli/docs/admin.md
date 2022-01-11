@@ -39,6 +39,8 @@ Cluster administration commands.
 | [_set-user-credits_](admin.md#set-user-credits) | Set user credits to given value |
 | [_set-user-quota_](admin.md#set-user-quota) | Set user quota to given values |
 | [_show-cluster-options_](admin.md#show-cluster-options) | Show available cluster options |
+| [_update-cluster_](admin.md#update-cluster) | Update a cluster |
+| [_update-org-cluster_](admin.md#update-org-cluster) | Update org cluster quotas |
 | [_update-resource-preset_](admin.md#update-resource-preset) | Update existing resource preset |
 
 
@@ -64,6 +66,8 @@ provided config.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--default-credits AMOUNT_ | Default credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 
 
 
@@ -88,8 +92,8 @@ roles: admin, manager or user.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
-| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\) |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\) |
 | _--org ORG_ | org name for org-cluster users |
 
 
@@ -134,6 +138,8 @@ Add org access to specified cluster.
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _--default-credits AMOUNT_ | Default credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 
 
@@ -629,6 +635,54 @@ Show available cluster options.
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _--type \[aws &#124; gcp &#124; azure\]_ |  |
+
+
+
+### update-cluster
+
+Update a cluster
+
+
+#### Usage
+
+```bash
+neuro admin update-cluster [OPTIONS] CLUSTER_NAME
+```
+
+Update a cluster.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--default-credits AMOUNT_ | Default credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+
+
+
+### update-org-cluster
+
+Update org cluster quotas
+
+
+#### Usage
+
+```bash
+neuro admin update-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+Update org cluster quotas.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _--default-credits AMOUNT_ | Default credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 
 
 

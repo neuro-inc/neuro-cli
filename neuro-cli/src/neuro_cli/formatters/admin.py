@@ -1,5 +1,5 @@
 import operator
-from typing import Iterable, List
+from typing import Iterable, List, Mapping, Optional, Tuple
 
 from rich import box
 from rich.console import Group as RichGroup
@@ -9,6 +9,7 @@ from rich.styled import Styled
 from rich.table import Table
 
 from neuro_sdk import (
+    _Cluster,
     _ClusterUserWithInfo,
     _ConfigCluster,
     _NodePool,
@@ -92,6 +93,8 @@ class OrgClusterFormatter:
         table.add_column("Credits")
         table.add_column("Spent credits")
         table.add_column("Max jobs")
+        table.add_column("Default credits")
+        table.add_column("Default max jobs")
         rows = []
 
         for org_cluster in org_clusters:
@@ -102,6 +105,8 @@ class OrgClusterFormatter:
                     format_quota_details(org_cluster.balance.credits),
                     format_quota_details(org_cluster.balance.spent_credits),
                     format_quota_details(org_cluster.quota.total_running_jobs),
+                    format_quota_details(org_cluster.default_credits),
+                    format_quota_details(org_cluster.default_quota.total_running_jobs),
                 )
             )
         rows.sort(key=operator.itemgetter(0))
@@ -112,38 +117,58 @@ class OrgClusterFormatter:
 
 
 class ClustersFormatter:
-    def __call__(self, clusters: Iterable[_ConfigCluster]) -> RenderableType:
+    def __call__(
+        self,
+        clusters: Mapping[str, Tuple[Optional[_Cluster], Optional[_ConfigCluster]]],
+    ) -> RenderableType:
         out: List[RenderableType] = []
-        for cluster in clusters:
+        for cluster_name, (admin_cluster, config_cluster) in clusters.items():
             table = Table(
-                title=cluster.name,
+                title=cluster_name,
                 title_justify="left",
                 title_style="bold italic",
                 box=None,
                 show_header=False,
                 show_edge=False,
-                min_width=len(cluster.name),
+                min_width=len(cluster_name),
             )
             table.add_column()
             table.add_column(style="bold")
-            table.add_row("Status", cluster.status.capitalize())
-            if cluster.cloud_provider:
-                cloud_provider = cluster.cloud_provider
-                if cloud_provider.type != "on_prem":
-                    table.add_row("Cloud", cloud_provider.type)
-                if cloud_provider.region:
-                    table.add_row("Region", cloud_provider.region)
-                if cloud_provider.zones:
-                    table.add_row("Zones", ", ".join(cloud_provider.zones))
-                if cloud_provider.node_pools:
+            if config_cluster:
+                table.add_row("Status", config_cluster.status.capitalize())
+                if config_cluster.cloud_provider:
+                    cloud_provider = config_cluster.cloud_provider
+                    if cloud_provider.type != "on_prem":
+                        table.add_row("Cloud", cloud_provider.type)
+                    if cloud_provider.region:
+                        table.add_row("Region", cloud_provider.region)
+                    if cloud_provider.zones:
+                        table.add_row("Zones", ", ".join(cloud_provider.zones))
+                    if cloud_provider.node_pools:
+                        table.add_row(
+                            "Node pools",
+                            Styled(
+                                _format_node_pools(cloud_provider.node_pools),
+                                style="reset",
+                            ),
+                        )
+                    if cloud_provider.storage:
+                        table.add_row("Storage", cloud_provider.storage.description)
+            else:
+                table.add_row("Status", "Setup failed (not found in platform-config)")
+            if admin_cluster:
+                if admin_cluster.default_credits:
                     table.add_row(
-                        "Node pools",
-                        Styled(
-                            _format_node_pools(cloud_provider.node_pools), style="reset"
+                        "Default credits",
+                        format_quota_details(admin_cluster.default_credits),
+                    )
+                if admin_cluster.default_quota.total_running_jobs:
+                    table.add_row(
+                        "Default max jobs",
+                        format_quota_details(
+                            admin_cluster.default_quota.total_running_jobs
                         ),
                     )
-                if cloud_provider.storage:
-                    table.add_row("Storage", cloud_provider.storage.description)
             out.append(table)
             out.append(Rule())
         return RichGroup(*out)

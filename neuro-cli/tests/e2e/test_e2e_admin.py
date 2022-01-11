@@ -182,6 +182,29 @@ def test_cluster_user_default_unlimited_quota(
 
 
 @pytest.mark.e2e
+def test_cluster_level_defaults(
+    helper: Helper, tmp_test_cluster: str, test_user_names: List[str]
+) -> None:
+    helper.run_cli(
+        [
+            "admin",
+            "update-cluster",
+            "--default-credits",
+            "21",
+            "--default-jobs",
+            "42",
+            tmp_test_cluster,
+        ]
+    )
+    username = test_user_names[0]
+    helper.run_cli(["admin", "add-cluster-user", tmp_test_cluster, username, "user"])
+    helper.run_cli(["admin", "get-cluster-users", tmp_test_cluster])
+    captured = helper.run_cli(["admin", "get-user-quota", tmp_test_cluster, username])
+    assert "Jobs: 42" in captured.out
+    assert "Credits: 21" in captured.out
+
+
+@pytest.mark.e2e
 def test_cluster_user_set_quota_during_add(
     helper: Helper, tmp_test_cluster: str, test_user_names: List[str]
 ) -> None:
