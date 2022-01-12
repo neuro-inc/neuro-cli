@@ -72,7 +72,10 @@ class MockBucketProvider(BucketProvider):
         )
 
     async def put_blob(
-        self, key: str, body: Union[AsyncIterator[bytes], bytes]
+        self,
+        key: str,
+        body: Union[AsyncIterator[bytes], bytes],
+        progress: Optional[Callable[[int], Awaitable[None]]] = None,
     ) -> None:
         if not isinstance(body, bytes):
             body = b"".join([chunk async for chunk in body])

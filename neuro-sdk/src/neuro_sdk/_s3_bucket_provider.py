@@ -1,13 +1,26 @@
 import ssl
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, contextmanager
 from datetime import datetime
 from email.utils import parsedate_to_datetime
-from typing import Any, AsyncIterator, Awaitable, Callable, Mapping, Optional, Union
+from types import SimpleNamespace
+from typing import (
+    Any,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Dict,
+    Iterator,
+    Mapping,
+    Optional,
+    Union,
+)
 
 import aiobotocore.session
+import aiohttp
 import botocore.exceptions
 import certifi
 from aiobotocore.client import AioBaseClient
+from aiobotocore.config import AioConfig
 from aiobotocore.credentials import AioCredentials, AioRefreshableCredentials
 
 from ._bucket_base import (
@@ -21,6 +34,42 @@ from ._bucket_base import (
 )
 from ._errors import ResourceNotFound
 from ._utils import asyncgeneratorcontextmanager
+
+
+class ProgressManager:
+    def __init__(self) -> None:
+        self._callbacks: Dict[str, Callable[[int], Awaitable[None]]] = {}
+
+    @contextmanager
+    def with_progress(
+        self,
+        upload_id: str,
+        progress: Optional[Callable[[int], Awaitable[None]]] = None,
+    ) -> Iterator[None]:
+        if progress is None:
+            yield
+        else:
+            self._callbacks[upload_id] = progress
+            yield
+            self._callbacks.pop(upload_id)
+
+    async def _on_request_chunk_sent(
+        self,
+        session: aiohttp.ClientSession,
+        context: SimpleNamespace,
+        data: aiohttp.TraceRequestChunkSentParams,
+    ) -> None:
+        try:
+            upload_id = data.url.query["uploadId"]
+            await self._callbacks[upload_id](len(data.chunk))
+        except KeyError:
+            pass
+
+    def patch_client(self, client: AioBaseClient) -> None:
+        trace_config = aiohttp.TraceConfig()
+        trace_config.on_request_chunk_sent.append(self._on_request_chunk_sent)
+        trace_config.freeze()
+        client._endpoint.http_session._session.trace_configs.append(trace_config)
 
 
 class S3Provider(MeasureTimeDiffMixin, BucketProvider):
@@ -39,6 +88,9 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
         client._make_api_call = self._wrap_api_call(
             client._make_api_call, _extract_date
         )
+
+        self._progress_manager = ProgressManager()
+        self._progress_manager.patch_client(client)
 
     @classmethod
     @asynccontextmanager
@@ -89,11 +141,13 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
         ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
         ssl_context.load_verify_locations(capath=certifi.where())
         # config = AioConfig(connector_args={"ssl_context": ssl_context})
+        config = AioConfig(max_pool_connections=100)
 
         async with session.create_client(
             "s3",
             endpoint_url=initial_credentials.credentials.get("endpoint_url"),
             region_name=initial_credentials.credentials.get("region_name"),
+            config=config,
         ) as client:
             # Dirty hack to override ssl context in aiobotocore
             # The check exists to make sure that the patch is compatible
@@ -156,6 +210,7 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
         self,
         key: str,
         body: Union[AsyncIterator[bytes], bytes],
+        progress: Optional[Callable[[int], Awaitable[None]]] = None,
     ) -> None:
         if isinstance(body, bytes):
             await self._client.put_object(
@@ -170,47 +225,48 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
                 Key=key,
             )
         )["UploadId"]
-        try:
-            part_id = 1
-            parts_info = []
-            buffer = b""
+        with self._progress_manager.with_progress(upload_id, progress):
+            try:
+                part_id = 1
+                parts_info = []
+                buffer = b""
 
-            async def _upload_chunk() -> None:
-                nonlocal buffer, part_id
-                part = await self._client.upload_part(
+                async def _upload_chunk() -> None:
+                    nonlocal buffer, part_id
+                    part = await self._client.upload_part(
+                        Bucket=self._bucket_name,
+                        Key=key,
+                        UploadId=upload_id,
+                        PartNumber=part_id,
+                        Body=buffer,
+                    )
+                    buffer = b""
+                    parts_info.append({"ETag": part["ETag"], "PartNumber": part_id})
+                    part_id += 1
+
+                async for chunk in body:
+                    buffer += chunk
+                    if len(buffer) > self.MIN_CHUNK_SIZE:
+                        await _upload_chunk()
+                if buffer or len(parts_info) == 0:
+                    # Either there is final part of file or file is zero-length file
+                    await _upload_chunk()
+            except Exception:
+                await self._client.abort_multipart_upload(
                     Bucket=self._bucket_name,
                     Key=key,
                     UploadId=upload_id,
-                    PartNumber=part_id,
-                    Body=buffer,
                 )
-                buffer = b""
-                parts_info.append({"ETag": part["ETag"], "PartNumber": part_id})
-                part_id += 1
-
-            async for chunk in body:
-                buffer += chunk
-                if len(buffer) > self.MIN_CHUNK_SIZE:
-                    await _upload_chunk()
-            if buffer or len(parts_info) == 0:
-                # Either there is final part of file or file is zero-length file
-                await _upload_chunk()
-        except Exception:
-            await self._client.abort_multipart_upload(
-                Bucket=self._bucket_name,
-                Key=key,
-                UploadId=upload_id,
-            )
-            raise
-        else:
-            await self._client.complete_multipart_upload(
-                Bucket=self._bucket_name,
-                Key=key,
-                UploadId=upload_id,
-                MultipartUpload={
-                    "Parts": parts_info,
-                },
-            )
+                raise
+            else:
+                await self._client.complete_multipart_upload(
+                    Bucket=self._bucket_name,
+                    Key=key,
+                    UploadId=upload_id,
+                    MultipartUpload={
+                        "Parts": parts_info,
+                    },
+                )
 
     @asyncgeneratorcontextmanager
     async def fetch_blob(self, key: str, offset: int = 0) -> AsyncIterator[bytes]:
