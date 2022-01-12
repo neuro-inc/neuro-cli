@@ -111,7 +111,7 @@ jobs:
       run: |
         make .test-${{ matrix.cmd }} PYTEST_ARGS=-vvv
     - name: Upload coverage artifact
-      uses: neuro-inc/prepare-coverage@v21.9.1
+      uses: aio-libs/prepare-coverage@v21.9.1
       with:
         key: unit-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.cmd }}
 
@@ -183,7 +183,7 @@ jobs:
       with:
         ref: ${{ github.sha }}
     - name: Upload coverage
-      uses: neuro-inc/upload-coverage@v21.9.4
+      uses: aio-libs/upload-coverage@v21.9.4
 
   deploy:
     name: Deploy
