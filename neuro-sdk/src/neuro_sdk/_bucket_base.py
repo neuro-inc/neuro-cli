@@ -107,6 +107,7 @@ class BucketProvider(abc.ABC):
         self,
         key: str,
         body: Union[AsyncIterator[bytes], bytes],
+        progress: Optional[Callable[[int], Awaitable[None]]] = None,
     ) -> None:
         pass
 

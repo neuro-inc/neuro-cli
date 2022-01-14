@@ -245,7 +245,10 @@ class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
             )
 
     async def put_blob(
-        self, key: str, body: Union[AsyncIterator[bytes], bytes]
+        self,
+        key: str,
+        body: Union[AsyncIterator[bytes], bytes],
+        progress: Optional[Callable[[int], Awaitable[None]]] = None,
     ) -> None:
         # Step 1: initiate multipart upload
         url = f"{self.UPLOAD_BASE_URL}/b/{self._gcs_bucket_name}/o"
@@ -281,6 +284,8 @@ class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
                 headers={"Content-Range": (f"bytes {data_range}/{total}")},
             ):
                 pass
+            if progress:
+                await progress(size)
             uploaded_bytes += size
             buffer = b""
 

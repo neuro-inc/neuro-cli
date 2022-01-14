@@ -6,6 +6,8 @@ from typing import (
     AbstractSet,
     Any,
     AsyncIterator,
+    Awaitable,
+    Callable,
     Dict,
     Iterable,
     Mapping,
@@ -116,10 +118,14 @@ class BucketFS(FileSystem[PurePosixPath]):
                 yield chunk
 
     async def write_chunks(
-        self, path: PurePosixPath, body: AsyncIterator[bytes], offset: int = 0
+        self,
+        path: PurePosixPath,
+        body: AsyncIterator[bytes],
+        offset: int = 0,
+        progress: Optional[Callable[[int], Awaitable[None]]] = None,
     ) -> None:
         assert offset == 0, "Buckets do not support offset write"
-        await self._provider.put_blob(self._as_file_key(path), body)
+        await self._provider.put_blob(self._as_file_key(path), body, progress)
 
     @asyncgeneratorcontextmanager
     async def iter_dir(self, path: PurePosixPath) -> AsyncIterator[PurePosixPath]:

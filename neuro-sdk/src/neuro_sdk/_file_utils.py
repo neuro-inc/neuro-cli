@@ -2,9 +2,19 @@ import abc
 import asyncio
 import errno
 import logging
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import AbstractSet, AsyncIterator, Generic, Optional, Tuple, TypeVar
+from typing import (
+    AbstractSet,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Generic,
+    Optional,
+    Tuple,
+    TypeVar,
+)
 
 from yarl import URL
 
@@ -31,7 +41,7 @@ logger = logging.getLogger(__package__)
 
 
 TIME_THRESHOLD = 1.0
-MAX_OPEN_FILES = 20
+MAX_OPEN_FILES = 10
 READ_SIZE = 2 ** 20  # 1 MiB
 
 
@@ -85,7 +95,11 @@ class FileSystem(Generic[FS_PATH], abc.ABC):
 
     @abc.abstractmethod
     async def write_chunks(
-        self, path: FS_PATH, body: AsyncIterator[bytes], offset: int = 0
+        self,
+        path: FS_PATH,
+        body: AsyncIterator[bytes],
+        offset: int = 0,
+        progress: Optional[Callable[[int], Awaitable[None]]] = None,
     ) -> None:
         pass
 
@@ -153,19 +167,33 @@ class LocalFS(FileSystem[Path]):
             size=stat.st_size,
         )
 
-    @asyncgeneratorcontextmanager
-    async def read_chunks(self, path: Path, offset: int = 0) -> AsyncIterator[bytes]:
+    @asynccontextmanager
+    async def read_chunks(
+        self, path: Path, offset: int = 0
+    ) -> AsyncIterator[AsyncIterator[bytes]]:
         loop = asyncio.get_event_loop()
         async with self._file_sem:
-            with path.open("rb") as stream:
-                stream.seek(offset)
-                chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
-                while chunk:
-                    yield chunk
+
+            async def _gen() -> AsyncIterator[bytes]:
+                with path.open("rb") as stream:
+                    stream.seek(offset)
                     chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
+                    while chunk:
+                        yield chunk
+                        chunk = await loop.run_in_executor(None, stream.read, READ_SIZE)
+
+            gen = _gen()
+            try:
+                yield gen
+            finally:
+                await gen.aclose()  # type: ignore
 
     async def write_chunks(
-        self, path: Path, body: AsyncIterator[bytes], offset: int = 0
+        self,
+        path: Path,
+        body: AsyncIterator[bytes],
+        offset: int = 0,
+        progress: Optional[Callable[[int], Awaitable[None]]] = None,
     ) -> None:
         loop = asyncio.get_event_loop()
         with path.open("rb+" if offset else "wb") as stream:
@@ -173,6 +201,8 @@ class LocalFS(FileSystem[Path]):
                 stream.seek(offset)
             async for chunk in body:
                 await loop.run_in_executor(None, stream.write, chunk)
+                if progress:
+                    await progress(len(chunk))
 
     @asyncgeneratorcontextmanager
     async def iter_dir(self, path: Path) -> AsyncIterator[Path]:
@@ -339,27 +369,6 @@ class FileTransferer(Generic[S_PATH, D_PATH]):
             queue, self._transfer_file(src, dst, offset=offset, progress=async_progress)
         )
 
-    @asyncgeneratorcontextmanager
-    async def _iterate_file_with_progress(
-        self,
-        src: S_PATH,
-        dst: D_PATH,
-        *,
-        offset: int = 0,
-        progress: _AsyncAbstractFileProgress,
-    ) -> AsyncIterator[bytes]:
-        src_url = self.src_fs.to_url(src)
-        dst_url = self.dst_fs.to_url(dst)
-        size = (await self.src_fs.stat(src)).size
-        async with self.src_fs.read_chunks(src, offset) as chunks:
-            await progress.start(StorageProgressStart(src_url, dst_url, size))
-            pos = offset
-            async for chunk in chunks:
-                pos += len(chunk)
-                await progress.step(StorageProgressStep(src_url, dst_url, pos, size))
-                yield chunk
-            await progress.complete(StorageProgressComplete(src_url, dst_url, size))
-
     async def _transfer_file(
         self,
         src: S_PATH,
@@ -368,10 +377,20 @@ class FileTransferer(Generic[S_PATH, D_PATH]):
         offset: int = 0,
         progress: _AsyncAbstractFileProgress,
     ) -> None:
-        async with self._iterate_file_with_progress(
-            src, dst, offset=offset, progress=progress
-        ) as body:
-            await self.dst_fs.write_chunks(dst, body, offset)
+        src_url = self.src_fs.to_url(src)
+        dst_url = self.dst_fs.to_url(dst)
+        size = (await self.src_fs.stat(src)).size
+        async with self.src_fs.read_chunks(src, offset) as chunks:
+            await progress.start(StorageProgressStart(src_url, dst_url, size))
+            pos = offset
+
+            async def _progress(bytes_sent: int) -> None:
+                nonlocal pos
+                pos += bytes_sent
+                await progress.step(StorageProgressStep(src_url, dst_url, pos, size))
+
+            await self.dst_fs.write_chunks(dst, chunks, offset, _progress)
+            await progress.complete(StorageProgressComplete(src_url, dst_url, size))
 
     async def transfer_dir(
         self,

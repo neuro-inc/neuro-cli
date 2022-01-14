@@ -137,7 +137,10 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
             )
 
     async def put_blob(
-        self, key: str, body: Union[AsyncIterator[bytes], bytes]
+        self,
+        key: str,
+        body: Union[AsyncIterator[bytes], bytes],
+        progress: Optional[Callable[[int], Awaitable[None]]] = None,
     ) -> None:
         blob_client = self._client.get_blob_client(key)
         if isinstance(body, bytes):
@@ -147,6 +150,8 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
             async for data in body:
                 block_id = secrets.token_hex(16)
                 await blob_client.stage_block(block_id, data)
+                if progress:
+                    await progress(len(data))
                 blocks.append(BlobBlock(block_id=block_id))
             await blob_client.commit_block_list(blocks)
 
