@@ -1,4 +1,5 @@
 import enum
+import re
 from dataclasses import dataclass
 from typing import Dict, Optional, Tuple
 
@@ -315,8 +316,27 @@ class _ImageNameParser:
             name, tag = image.rsplit(":", 1)
         else:
             raise ValueError("too many tags")
-        if tag and (":" in tag or "/" in tag):
-            raise ValueError("invalid tag")
+        if not re.fullmatch(
+            r"(?:[a-z0-9]+(?:[._-][a-z0-9]+)*/)*[a-z0-9]+(?:[._-][a-z0-9]+)*", name
+        ):
+            raise ValueError(
+                "invalid image name. Docker specifies it to be the following:\n"
+                "Name components may contain lowercase letters, digits and "
+                "separators. A separator is defined as a period, one or two "
+                "underscores, or one or more dashes. A name component may not "
+                "start or end with a separator."
+            )
+        if tag:
+            if len(tag) > 128:
+                raise ValueError("tag is to long")
+            if not re.fullmatch(r"[a-zA-Z0-9_]+[a-zA-Z0-9_.-]*", tag):
+                raise ValueError(
+                    "invalid tag. Docker specifies it to be the following:\n"
+                    "A tag name must be valid ASCII and may contain lowercase "
+                    "and uppercase letters, digits, underscores, periods and "
+                    "dashes. A tag name may not start with a period or a dash "
+                    "and may contain a maximum of 128 characters."
+                )
         return name, tag
 
 
