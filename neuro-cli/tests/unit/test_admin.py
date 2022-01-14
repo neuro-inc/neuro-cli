@@ -56,7 +56,9 @@ def test_add_cluster_user_print_result(run_cli: _RunCli) -> None:
     with mock_create_cluster_user():
         capture = run_cli(["admin", "add-cluster-user", "default", "ivan", "admin"])
     assert not capture.err
-    assert capture.out == "Added ivan to cluster default as manager"
+    assert "Added ivan to cluster default as manager" in capture.out
+    assert "Jobs: unlimited" in capture.out
+    assert "Credits: unlimited" in capture.out
     assert capture.code == 0
 
     # Same with quiet mode

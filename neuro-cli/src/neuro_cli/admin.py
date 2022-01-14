@@ -6,7 +6,7 @@ import os
 import pathlib
 from dataclasses import replace
 from decimal import Decimal, InvalidOperation
-from typing import IO, Any, Mapping, Optional
+from typing import IO, Any, Dict, Mapping, Optional, Tuple
 
 import click
 import yaml
@@ -14,7 +14,16 @@ from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
 from rich.markup import escape as rich_escape
 
-from neuro_sdk import Preset, _Balance, _ClusterUserRoleType, _OrgUserRoleType, _Quota
+from neuro_sdk import (
+    Preset,
+    _Balance,
+    _Cluster,
+    _ClusterUserRoleType,
+    _ConfigCluster,
+    _OrgCluster,
+    _OrgUserRoleType,
+    _Quota,
+)
 
 from neuro_cli.formatters.config import BalanceFormatter
 
@@ -48,9 +57,21 @@ async def get_clusters(root: Root) -> None:
     """
     fmt = ClustersFormatter()
     with root.status("Fetching the list of clusters"):
-        clusters = await root.client._admin.list_config_clusters()
+        config_clusters = await root.client._admin.list_config_clusters()
+        admin_clusters = await root.client._admin.list_clusters()
+    clusters: Dict[str, Tuple[Optional[_Cluster], Optional[_ConfigCluster]]] = {}
+    for config_cluster in config_clusters.values():
+        clusters[config_cluster.name] = (None, config_cluster)
+    for admin_cluster in admin_clusters:
+        if admin_cluster.name in clusters:
+            clusters[admin_cluster.name] = (
+                admin_cluster,
+                clusters[admin_cluster.name][1],
+            )
+        else:
+            clusters[admin_cluster.name] = (admin_cluster, None)
     with root.pager():
-        root.print(fmt(clusters.values()))
+        root.print(fmt(clusters))
 
 
 @command(hidden=True)
@@ -73,10 +94,31 @@ async def get_admin_clusters(root: Root) -> None:
     hidden=True,
     help="Do not provision cluster. Used it tests.",
 )
+@option(
+    "--default-credits",
+    metavar="AMOUNT",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Default credits amount to set (`unlimited' stands for no limit)",
+)
+@option(
+    "--default-jobs",
+    metavar="AMOUNT",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Default maximum running jobs quota (`unlimited' stands for no limit)",
+)
 @argument("cluster_name", required=True, type=str)
 @argument("config", required=True, type=click.File(encoding="utf8", lazy=False))
 async def add_cluster(
-    root: Root, cluster_name: str, config: IO[str], skip_provisioning: bool = False
+    root: Root,
+    cluster_name: str,
+    config: IO[str],
+    default_credits: str,
+    default_jobs: str,
+    skip_provisioning: bool = False,
 ) -> None:
     """
     Create a new cluster.
@@ -85,7 +127,11 @@ async def add_cluster(
     provided config.
     """
     config_dict = yaml.safe_load(config)
-    await root.client._admin.create_cluster(cluster_name)
+    await root.client._admin.create_cluster(
+        cluster_name,
+        default_credits=_parse_credits_value(default_credits),
+        default_quota=_Quota(_parse_jobs_value(default_jobs)),
+    )
     if skip_provisioning:
         return
     await root.client._admin.setup_cluster_cloud_provider(cluster_name, config_dict)
@@ -94,6 +140,44 @@ async def add_cluster(
             f"Cluster {cluster_name} successfully added "
             "and will be set up within 24 hours"
         )
+
+
+@command()
+@option(
+    "--default-credits",
+    metavar="AMOUNT",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Default credits amount to set (`unlimited' stands for no limit)",
+)
+@option(
+    "--default-jobs",
+    metavar="AMOUNT",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Default maximum running jobs quota (`unlimited' stands for no limit)",
+)
+@argument("cluster_name", required=True, type=str)
+async def update_cluster(
+    root: Root,
+    cluster_name: str,
+    default_credits: str,
+    default_jobs: str,
+) -> None:
+    """
+    Update a cluster.
+    """
+    await root.client._admin.update_cluster(
+        _Cluster(
+            name=cluster_name,
+            default_credits=_parse_credits_value(default_credits),
+            default_quota=_Quota(_parse_jobs_value(default_jobs)),
+        )
+    )
+    if not root.quiet:
+        root.print(f"Cluster {cluster_name} successfully updated")
 
 
 @command()
@@ -454,7 +538,7 @@ async def get_cluster_users(
     "--credits",
     metavar="AMOUNT",
     type=str,
-    default=UNLIMITED,
+    default=None,
     show_default=True,
     help="Credits amount to set (`unlimited' stands for no limit)",
 )
@@ -463,7 +547,7 @@ async def get_cluster_users(
     "--jobs",
     metavar="AMOUNT",
     type=str,
-    default=UNLIMITED,
+    default=None,
     show_default=True,
     help="Maximum running jobs quota (`unlimited' stands for no limit)",
 )
@@ -472,8 +556,8 @@ async def add_cluster_user(
     cluster_name: str,
     user_name: str,
     role: str,
-    credits: str,
-    jobs: str,
+    credits: Optional[str],
+    jobs: Optional[str],
     org: Optional[str],
 ) -> None:
     """
@@ -481,13 +565,22 @@ async def add_cluster_user(
 
     The command supports one of 3 user roles: admin, manager or user.
     """
+    # Use cluster defaults credits/quota for "user" role. Unlimited for other roles.
+    if role == "user" and credits is None:
+        balance = None
+    else:
+        balance = _Balance(credits=_parse_credits_value(credits or UNLIMITED))
+    if role == "user" and jobs is None:
+        quota = None
+    else:
+        quota = _Quota(total_running_jobs=_parse_jobs_value(jobs or UNLIMITED))
     user = await root.client._admin.create_cluster_user(
         cluster_name,
         user_name,
         _ClusterUserRoleType(role),
         org_name=org,
-        balance=_Balance(credits=_parse_credits_value(credits)),
-        quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
+        balance=balance,
+        quota=quota,
     )
     if not root.quiet:
         root.print(
@@ -498,9 +591,13 @@ async def add_cluster_user(
                 if org is not None
                 else ""
             )
-            + f"[bold]{rich_escape(user.role)}[/bold]",
+            + f"[bold]{rich_escape(user.role)}[/bold]. Quotas set:",
             markup=True,
         )
+        quota_fmt = AdminQuotaFormatter()
+        balance_fmt = BalanceFormatter()
+        root.print(quota_fmt(user.quota))
+        root.print(balance_fmt(user.balance))
 
 
 def _parse_finite_decimal(value: str) -> Decimal:
@@ -1142,12 +1239,30 @@ async def get_org_clusters(root: Root, cluster_name: str) -> None:
     show_default=True,
     help="Maximum running jobs quota (`unlimited' stands for no limit)",
 )
+@option(
+    "--default-credits",
+    metavar="AMOUNT",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Default credits amount to set (`unlimited' stands for no limit)",
+)
+@option(
+    "--default-jobs",
+    metavar="AMOUNT",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Default maximum running jobs quota (`unlimited' stands for no limit)",
+)
 async def add_org_cluster(
     root: Root,
     cluster_name: str,
     org_name: str,
     credits: str,
     jobs: str,
+    default_credits: str,
+    default_jobs: str,
 ) -> None:
     """
     Add org access to specified cluster.
@@ -1158,6 +1273,76 @@ async def add_org_cluster(
         org_name=org_name,
         balance=_Balance(credits=_parse_credits_value(credits)),
         quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
+        default_credits=_parse_credits_value(default_credits),
+        default_quota=_Quota(_parse_jobs_value(default_jobs)),
+    )
+    if not root.quiet:
+        root.print(
+            f"Added org [bold]{rich_escape(org_name)}[/bold] to "
+            f"[bold]{rich_escape(cluster_name)}[/bold]",
+            markup=True,
+        )
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("org_name", required=True, type=str)
+@option(
+    "-c",
+    "--credits",
+    metavar="AMOUNT",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Credits amount to set (`unlimited' stands for no limit)",
+)
+@option(
+    "-j",
+    "--jobs",
+    metavar="AMOUNT",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Maximum running jobs quota (`unlimited' stands for no limit)",
+)
+@option(
+    "--default-credits",
+    metavar="AMOUNT",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Default credits amount to set (`unlimited' stands for no limit)",
+)
+@option(
+    "--default-jobs",
+    metavar="AMOUNT",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Default maximum running jobs quota (`unlimited' stands for no limit)",
+)
+async def update_org_cluster(
+    root: Root,
+    cluster_name: str,
+    org_name: str,
+    credits: str,
+    jobs: str,
+    default_credits: str,
+    default_jobs: str,
+) -> None:
+    """
+    Update org cluster quotas.
+
+    """
+    await root.client._admin.update_org_cluster(
+        _OrgCluster(
+            cluster_name=cluster_name,
+            org_name=org_name,
+            balance=_Balance(credits=_parse_credits_value(credits)),
+            quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
+            default_credits=_parse_credits_value(default_credits),
+            default_quota=_Quota(_parse_jobs_value(default_jobs)),
+        )
     )
     if not root.quiet:
         root.print(
@@ -1325,6 +1510,7 @@ admin.add_command(get_clusters)
 admin.add_command(get_admin_clusters)
 admin.add_command(generate_cluster_config)
 admin.add_command(add_cluster)
+admin.add_command(update_cluster)
 admin.add_command(remove_cluster)
 admin.add_command(show_cluster_options)
 
@@ -1351,6 +1537,7 @@ admin.add_command(remove_org_user)
 
 admin.add_command(get_org_clusters)
 admin.add_command(add_org_cluster)
+admin.add_command(update_org_cluster)
 admin.add_command(remove_org_cluster)
 
 admin.add_command(get_org_cluster_quota)

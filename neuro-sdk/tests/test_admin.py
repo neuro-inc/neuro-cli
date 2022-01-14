@@ -271,7 +271,7 @@ async def test_add_cluster(
         await client._admin.create_cluster("default")
         await client._admin.setup_cluster_cloud_provider("default", JSON)
 
-    assert create_cluster_json == {"name": "default"}
+    assert create_cluster_json == {"name": "default", "default_quota": {}}
     assert put_cloud_json == JSON
 
 

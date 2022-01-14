@@ -35,6 +35,8 @@
 		* [neuro admin set-user-credits](#neuro-admin-set-user-credits)
 		* [neuro admin set-user-quota](#neuro-admin-set-user-quota)
 		* [neuro admin show-cluster-options](#neuro-admin-show-cluster-options)
+		* [neuro admin update-cluster](#neuro-admin-update-cluster)
+		* [neuro admin update-org-cluster](#neuro-admin-update-org-cluster)
 		* [neuro admin update-resource-preset](#neuro-admin-update-resource-preset)
 	* [neuro blob](#neuro-blob)
 		* [neuro blob cp](#neuro-blob-cp)
@@ -432,6 +434,8 @@ Name | Description|
 | _[neuro admin set\-user-credits](#neuro-admin-set-user-credits)_| Set user credits to given value |
 | _[neuro admin set\-user-quota](#neuro-admin-set-user-quota)_| Set user quota to given values |
 | _[neuro admin show\-cluster-options](#neuro-admin-show-cluster-options)_| Show available cluster options |
+| _[neuro admin update-cluster](#neuro-admin-update-cluster)_| Update a cluster |
+| _[neuro admin update\-org-cluster](#neuro-admin-update-org-cluster)_| Update org cluster quotas |
 | _[neuro admin update\-resource-preset](#neuro-admin-update-resource-preset)_| Update existing resource preset |
 
 
@@ -452,6 +456,8 @@ neuro admin add-cluster [OPTIONS] CLUSTER_NAME CONFIG
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 
 
 
@@ -471,8 +477,8 @@ neuro admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
-|_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)|
+|_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)|
 |_--org ORG_|org name for org-cluster users|
 
 
@@ -513,6 +519,8 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 
 
@@ -957,6 +965,50 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--type \[aws &#124; gcp &#124; azure]_||
+
+
+
+
+### neuro admin update-cluster
+
+Update a cluster.
+
+**Usage:**
+
+```bash
+neuro admin update-cluster [OPTIONS] CLUSTER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+
+
+
+
+### neuro admin update-org-cluster
+
+Update org cluster quotas.
+
+**Usage:**
+
+```bash
+neuro admin update-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 
 
 
