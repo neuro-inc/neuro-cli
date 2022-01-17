@@ -5,6 +5,7 @@
 	* [neuro acl](#neuro-acl)
 		* [neuro acl add-role](#neuro-acl-add-role)
 		* [neuro acl grant](#neuro-acl-grant)
+		* [neuro acl list-roles](#neuro-acl-list-roles)
 		* [neuro acl ls](#neuro-acl-ls)
 		* [neuro acl remove-role](#neuro-acl-remove-role)
 		* [neuro acl revoke](#neuro-acl-revoke)
@@ -235,6 +236,7 @@ Name | Description|
 |---|---|
 | _[neuro acl add-role](#neuro-acl-add-role)_| Add new role |
 | _[neuro acl grant](#neuro-acl-grant)_| Shares resource with another user |
+| _[neuro acl list-roles](#neuro-acl-list-roles)_| List roles |
 | _[neuro acl ls](#neuro-acl-ls)_| List shared resources |
 | _[neuro acl remove-role](#neuro-acl-remove-role)_| Remove existing role |
 | _[neuro acl revoke](#neuro-acl-revoke)_| Revoke user access from another user |
@@ -294,6 +296,35 @@ neuro acl grant job:///my_job_id alice write
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+
+
+
+
+### neuro acl list-roles
+
+List roles.<br/>
+
+**Usage:**
+
+```bash
+neuro acl list-roles [OPTIONS]
+```
+
+**Examples:**
+
+```bash
+
+neuro acl list-roles
+neuro acl list-roles username/projects
+
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_-u TEXT_|Fetch roles of specified user or role.|
 
 
 

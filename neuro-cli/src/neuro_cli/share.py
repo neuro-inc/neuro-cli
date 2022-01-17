@@ -199,6 +199,34 @@ def _fmt_action(action: Action) -> Text:
 
 
 @command()
+@option(
+    "-u",
+    "username",
+    default=None,
+    help="Fetch roles of specified user or role.",
+)
+async def list_roles(root: Root, username: Optional[str]) -> None:
+    """
+    List roles.
+
+    Examples:
+    neuro acl list-roles
+    neuro acl list-roles username/projects
+    """
+    with root.status("Fetching roles"):
+        roles = await root.client.users.get_subroles(
+            username or root.client.config.username
+        )
+
+    table = Table.grid(padding=(0, 2))
+    table.add_column()  # Role
+    for role in sorted(roles):
+        table.add_row(role)
+    with root.pager():
+        root.print(table)
+
+
+@command()
 @argument("role_name")
 async def add_role(root: Root, role_name: str) -> None:
     """
@@ -225,6 +253,7 @@ async def remove_role(root: Root, role_name: str) -> None:
 acl.add_command(grant)
 acl.add_command(revoke)
 acl.add_command(ls)
+acl.add_command(list_roles)
 acl.add_command(add_role)
 acl.add_command(remove_role)
 acl.add_command(alias(ls, "list", help=ls.help, hidden=True))
