@@ -108,7 +108,7 @@ PS_COLUMNS = [
     JobColumnInfo("preset", "PRESET", "left"),
 ]
 
-PS_COLUMNS_DEFAULT_FORMAT = "id/name status/when image owner command"
+PS_COLUMNS_DEFAULT_FORMAT = "id/name status/when image org_name/owner command"
 
 TOP_COLUMNS = PS_COLUMNS + [
     JobColumnInfo("cpu", "CPU", "right", width=15),
