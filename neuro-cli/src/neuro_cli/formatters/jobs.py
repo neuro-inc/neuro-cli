@@ -425,6 +425,7 @@ class TabularJobRow:
     owner: str
     description: str
     cluster_name: str
+    org_name: str
     command: str
     life_span: str
     workdir: str
@@ -451,6 +452,7 @@ class TabularJobRow:
             owner=("YOU" if job.owner == username else job.owner),
             description=job.description if job.description else "",
             cluster_name=job.cluster_name,
+            org_name=job.org_name or "",
             command=job.container.command if job.container.command else "",
             life_span=format_life_span(job.life_span),
             workdir=job.container.working_dir or "",

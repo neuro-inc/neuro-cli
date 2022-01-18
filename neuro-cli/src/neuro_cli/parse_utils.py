@@ -100,6 +100,7 @@ PS_COLUMNS = [
     JobColumnInfo("image", "IMAGE", "left", max_width=40),
     JobColumnInfo("owner", "OWNER", "left", max_width=25),
     JobColumnInfo("cluster_name", "CLUSTER", "left", max_width=15),
+    JobColumnInfo("org_name", "ORG", "left", max_width=15),
     JobColumnInfo("description", "DESCRIPTION", "left", max_width=50),
     JobColumnInfo("command", "COMMAND", "left", max_width=100),
     JobColumnInfo("life_span", "LIFE-SPAN", "left"),
