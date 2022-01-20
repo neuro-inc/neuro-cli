@@ -103,10 +103,10 @@ def run_autocomplete(run_cli: _RunCli, nmrc_path: Path, monkeypatch: Any) -> _Ru
 def test_file_autocomplete(run_autocomplete: _RunAC, tmp_path: Path) -> None:
     base = tmp_path / "base"
     base.mkdir()
-    (base / "folder").mkdir()
     (base / "file.txt").write_bytes(b"")
-    (base / "folder/folder2").mkdir()
+    (base / "folder").mkdir()
     (base / "folder/file2.txt").write_bytes(b"")
+    (base / "folder/folder2").mkdir()
 
     zsh_out, bash_out = run_autocomplete(["storage", "cp", "fi"])
     assert bash_out == "uri,file:,"
