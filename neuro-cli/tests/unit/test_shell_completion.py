@@ -1,6 +1,7 @@
 import logging
 import os
 import shlex
+import sys
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
@@ -100,6 +101,12 @@ def run_autocomplete(run_cli: _RunCli, nmrc_path: Path, monkeypatch: Any) -> _Ru
     return autocompleter
 
 
+skip_on_windows = pytest.mark.skipif(
+    sys.platform == "win32", reason="Autocompletion is not supported on Windows"
+)
+
+
+@skip_on_windows
 def test_file_autocomplete(run_autocomplete: _RunAC, tmp_path: Path) -> None:
     base = tmp_path / "base"
     base.mkdir()
@@ -145,6 +152,7 @@ def test_file_autocomplete(run_autocomplete: _RunAC, tmp_path: Path) -> None:
     )
 
 
+@skip_on_windows
 def test_file_autocomplete_default(run_autocomplete: _RunAC) -> None:
     default = Path.cwd().parent
     default_uri = default.as_uri()
@@ -163,6 +171,7 @@ def test_file_autocomplete_default(run_autocomplete: _RunAC) -> None:
     assert zsh_out == "\n".join(f"uri\n{name}\n_\n{cwd_uri}/" for name in names)
 
 
+@skip_on_windows
 def test_file_autocomplete_root(run_autocomplete: _RunAC) -> None:
     names = [p.name + ("/" if p.is_dir() else "") for p in Path("/").iterdir()]
     zsh_out, bash_out = run_autocomplete(["storage", "cp", "file:/"])
@@ -174,6 +183,7 @@ def test_file_autocomplete_root(run_autocomplete: _RunAC) -> None:
     assert zsh_out == "\n".join(f"uri\n{name}\n_\nfile:////" for name in names)
 
 
+@skip_on_windows
 def test_storage_autocomplete(run_autocomplete: _RunAC) -> None:
     with mock.patch.object(Storage, "stat") as mocked_stat, mock.patch.object(
         Storage, "list"
@@ -265,6 +275,7 @@ def test_storage_autocomplete(run_autocomplete: _RunAC) -> None:
         assert zsh_out == ""
 
 
+@skip_on_windows
 def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
     with mock.patch.object(Buckets, "list") as mocked_list, mock.patch.object(
         Buckets, "blob_is_dir"
@@ -478,6 +489,7 @@ def make_job(
     )
 
 
+@skip_on_windows
 def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
     with mock.patch.object(Jobs, "list") as mocked_list:
         jobs = [
