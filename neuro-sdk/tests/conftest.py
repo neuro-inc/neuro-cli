@@ -1,11 +1,9 @@
-import asyncio
 from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 import aiohttp
-import aiohttp.pytest_plugin
 import pytest
 from jose import jwt
 from yarl import URL
@@ -13,15 +11,6 @@ from yarl import URL
 from neuro_sdk import Client, Cluster, PluginManager, Preset, __version__
 from neuro_sdk._config import _AuthConfig, _AuthToken, _ConfigData, _save
 from neuro_sdk._tracing import _make_trace_config
-
-
-def setup_test_loop(
-    loop_factory: Callable[[], asyncio.AbstractEventLoop] = asyncio.new_event_loop
-) -> asyncio.AbstractEventLoop:
-    return loop_factory()
-
-
-aiohttp.pytest_plugin.setup_test_loop = setup_test_loop
 
 
 @pytest.fixture
