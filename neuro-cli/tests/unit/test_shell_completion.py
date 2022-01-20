@@ -39,13 +39,14 @@ _RunCli = Callable[[Sequence[str]], SysCapWithCode]
 log = logging.getLogger(__name__)
 
 
-def _default_args(verbosity: int, network_timeout: float) -> List[str]:
+def _default_args(verbosity: int, network_timeout: float, nmrc_path: Path) -> List[str]:
     args = [
         "--show-traceback",
         "--disable-pypi-version-check",
         "--color=no",
         f"--network-timeout={network_timeout}",
         "--skip-stats",
+        f"--neuromation-config={nmrc_path}",
     ]
 
     if verbosity < 0:
@@ -58,6 +59,7 @@ def _default_args(verbosity: int, network_timeout: float) -> List[str]:
 
 def autocomplete(
     run_cli: _RunCli,
+    nmrc_path: Path,
     monkeypatch: Any,
     arguments: Sequence[str],
     *,
@@ -70,8 +72,9 @@ def autocomplete(
 
     log.info("Run 'neuro %s'", " ".join(arguments))
 
-    args = _default_args(verbosity, network_timeout)
+    args = _default_args(verbosity, network_timeout, nmrc_path)
     env = dict(os.environ)
+
     env["_PYTEST_COMPLETE"] = f"{shell}_complete"
     env["COMP_WORDS"] = " ".join(shlex.quote(arg) for arg in [*args, *arguments])
     env["COMP_CWORD"] = str(len(args) + len(arguments) - 1)
@@ -88,10 +91,10 @@ _RunAC = Callable[[List[str]], Tuple[str, str]]
 
 
 @pytest.fixture()
-def run_autocomplete(run_cli: _RunCli, monkeypatch: Any) -> _RunAC:
+def run_autocomplete(run_cli: _RunCli, nmrc_path: Path, monkeypatch: Any) -> _RunAC:
     def autocompleter(args: Sequence[str]) -> Tuple[str, str]:
-        zsh_out = autocomplete(run_cli, monkeypatch, args, shell="zsh")
-        bash_out = autocomplete(run_cli, monkeypatch, args, shell="bash")
+        zsh_out = autocomplete(run_cli, nmrc_path, monkeypatch, args, shell="zsh")
+        bash_out = autocomplete(run_cli, nmrc_path, monkeypatch, args, shell="bash")
         return zsh_out, bash_out
 
     return autocompleter
@@ -109,39 +112,66 @@ def test_file_autocomplete(run_autocomplete: _RunAC, tmp_path: Path) -> None:
     assert bash_out == "uri,file:,"
     assert zsh_out == "uri\nfile:\n_"
 
-    zsh_out, bash_out = run_autocomplete(["storage", "cp", base.as_uri() + "/"])
+    base_uri = base.as_uri()
+    base_prefix = base_uri[5:]
+
+    zsh_out, bash_out = run_autocomplete(["storage", "cp", base_uri + "/"])
+    assert bash_out == (f"uri,file.txt,{base_prefix}/\n" f"uri,folder/,{base_prefix}/")
+    assert zsh_out == (
+        f"uri\nfile.txt\n_\n{base_uri}/\n" f"uri\nfolder/\n_\n{base_uri}/"
+    )
+
+    zsh_out, bash_out = run_autocomplete(["storage", "cp", base_uri + "/f"])
+    assert bash_out == (f"uri,file.txt,{base_prefix}/\n" f"uri,folder/,{base_prefix}/")
+    assert zsh_out == (
+        f"uri\nfile.txt\n_\n{base_uri}/\n" f"uri\nfolder/\n_\n{base_uri}/"
+    )
+
+    zsh_out, bash_out = run_autocomplete(["storage", "cp", base_uri + "/fi"])
+    assert bash_out == f"uri,file.txt,{base_prefix}/"
+    assert zsh_out == f"uri\nfile.txt\n_\n{base_uri}/"
+
+    zsh_out, bash_out = run_autocomplete(["storage", "cp", base_uri + "/folder"])
+    assert bash_out == f"uri,folder/,{base_prefix}/"
+    assert zsh_out == f"uri\nfolder/\n_\n{base_uri}/"
+
+    zsh_out, bash_out = run_autocomplete(["storage", "cp", base_uri + "/folder/"])
     assert bash_out == (
-        f"uri,file.txt,{base.as_uri()[5:]}/\n" f"uri,folder/,{base.as_uri()[5:]}/"
+        f"uri,file2.txt,{base_prefix}/folder/\n" f"uri,folder2/,{base_prefix}/folder/"
     )
     assert zsh_out == (
-        f"uri\nfile.txt\n_\n{base.as_uri()}/\n" f"uri\nfolder/\n_\n{base.as_uri()}/"
+        f"uri\nfile2.txt\n_\n{base_uri}/folder/\n"
+        f"uri\nfolder2/\n_\n{base_uri}/folder/"
     )
 
-    zsh_out, bash_out = run_autocomplete(["storage", "cp", base.as_uri() + "/f"])
-    assert bash_out == (
-        f"uri,file.txt,{base.as_uri()[5:]}/\n" f"uri,folder/,{base.as_uri()[5:]}/"
-    )
-    assert zsh_out == (
-        f"uri\nfile.txt\n_\n{base.as_uri()}/\n" f"uri\nfolder/\n_\n{base.as_uri()}/"
-    )
 
-    zsh_out, bash_out = run_autocomplete(["storage", "cp", base.as_uri() + "/fi"])
-    assert bash_out == f"uri,file.txt,{base.as_uri()[5:]}/"
-    assert zsh_out == f"uri\nfile.txt\n_\n{base.as_uri()}/"
+def test_file_autocomplete_default(run_autocomplete: _RunAC) -> None:
+    default = Path.cwd().parent
+    default_uri = default.as_uri()
+    default_prefix = default_uri[5:]
+    names = [p.name + ("/" if p.is_dir() else "") for p in default.iterdir()]
+    zsh_out, bash_out = run_autocomplete(["storage", "cp", "file:"])
+    assert bash_out == "\n".join(f"uri,{name},{default_prefix}/" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\n{default_uri}/" for name in names)
 
-    zsh_out, bash_out = run_autocomplete(["storage", "cp", base.as_uri() + "/folder"])
-    assert bash_out == f"uri,folder/,{base.as_uri()[5:]}/"
-    assert zsh_out == f"uri\nfolder/\n_\n{base.as_uri()}/"
+    cwd = Path.cwd()
+    cwd_uri = cwd.as_uri()
+    cwd_prefix = cwd_uri[5:]
+    names = [p.name + ("/" if p.is_dir() else "") for p in cwd.iterdir()]
+    zsh_out, bash_out = run_autocomplete(["storage", "cp", "file://"])
+    assert bash_out == "\n".join(f"uri,{name},{cwd_prefix}/" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\n{cwd_uri}/" for name in names)
 
-    zsh_out, bash_out = run_autocomplete(["storage", "cp", base.as_uri() + "/folder/"])
-    assert bash_out == (
-        f"uri,file2.txt,{base.as_uri()[5:]}/folder/\n"
-        f"uri,folder2/,{base.as_uri()[5:]}/folder/"
-    )
-    assert zsh_out == (
-        f"uri\nfile2.txt\n_\n{base.as_uri()}/folder/\n"
-        f"uri\nfolder2/\n_\n{base.as_uri()}/folder/"
-    )
+
+def test_file_autocomplete_root(run_autocomplete: _RunAC) -> None:
+    names = [p.name + ("/" if p.is_dir() else "") for p in Path("/").iterdir()]
+    zsh_out, bash_out = run_autocomplete(["storage", "cp", "file:/"])
+    assert bash_out == "\n".join(f"uri,{name},////" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\nfile:////" for name in names)
+
+    zsh_out, bash_out = run_autocomplete(["storage", "cp", "file:///"])
+    assert bash_out == "\n".join(f"uri,{name},////" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\nfile:////" for name in names)
 
 
 def test_storage_autocomplete(run_autocomplete: _RunAC) -> None:
