@@ -76,15 +76,15 @@ class MockForLoginControl:
 async def mock_for_login_factory(
     aiohttp_server: _TestServerFactory,
     token: str,
-    aiohttp_unused_port: Callable[[], int],
+    unused_tcp_port_factory: Callable[[], int],
 ) -> Callable[[MockForLoginControl], Awaitable[_TestServer]]:
     async def _factory(
         control: MockForLoginControl, auth_enabled: bool = True
     ) -> _TestServer:
         callback_urls = [
-            f"http://127.0.0.1:{aiohttp_unused_port()}",
-            f"http://127.0.0.1:{aiohttp_unused_port()}",
-            f"http://127.0.0.1:{aiohttp_unused_port()}",
+            f"http://127.0.0.1:{unused_tcp_port_factory()}",
+            f"http://127.0.0.1:{unused_tcp_port_factory()}",
+            f"http://127.0.0.1:{unused_tcp_port_factory()}",
         ]
 
         async def config_handler(request: web.Request) -> web.Response:
