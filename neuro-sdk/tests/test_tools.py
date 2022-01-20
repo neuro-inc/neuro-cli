@@ -1,4 +1,3 @@
-import asyncio
 import os
 from pathlib import Path
 from typing import Any
@@ -57,7 +56,7 @@ def test_find_root_not_in_project(tmp_path: Path) -> None:
         os.chdir(old_workdir)
 
 
-async def test_queue_calls_saves_args(loop: asyncio.AbstractEventLoop) -> None:
+async def test_queue_calls_saves_args() -> None:
     mock = Mock()
 
     class Foo:
@@ -73,7 +72,7 @@ async def test_queue_calls_saves_args(loop: asyncio.AbstractEventLoop) -> None:
     mock.assert_called_with(*args, **kwargs)
 
 
-async def test_queue_calls_multiple_calls(loop: asyncio.AbstractEventLoop) -> None:
+async def test_queue_calls_multiple_calls() -> None:
     calls_cnt = 5
     mock = Mock()
 

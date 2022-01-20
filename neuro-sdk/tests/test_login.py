@@ -1,4 +1,3 @@
-import asyncio
 from typing import AsyncIterator, Optional
 from unittest import mock
 from urllib.parse import parse_qsl
@@ -89,9 +88,7 @@ class TestAuthToken:
 
 class TestAuthCodeApp:
     @pytest.fixture
-    async def client(
-        self, loop: asyncio.AbstractEventLoop
-    ) -> AsyncIterator[ClientSession]:
+    async def client(self) -> AsyncIterator[ClientSession]:
         async with ClientSession() as client:
             yield client
 

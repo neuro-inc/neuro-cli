@@ -1,11 +1,9 @@
-import asyncio
 from dataclasses import replace
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional
 
 import aiohttp
-import aiohttp.pytest_plugin
 import pytest
 from jose import jwt
 from yarl import URL
@@ -27,15 +25,6 @@ def pytest_addoption(parser: Any, pluginmanager: Any) -> None:
 
 
 setup_child_watcher()
-
-
-def setup_test_loop(
-    loop_factory: Callable[[], asyncio.AbstractEventLoop] = asyncio.new_event_loop
-) -> asyncio.AbstractEventLoop:
-    return loop_factory()
-
-
-aiohttp.pytest_plugin.setup_test_loop = setup_test_loop
 
 
 @pytest.fixture

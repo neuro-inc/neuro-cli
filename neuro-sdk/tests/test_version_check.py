@@ -219,7 +219,7 @@ class FakePyPI:
 
 @pytest.fixture()
 async def fake_pypi(
-    ssl_ctx: ssl.SSLContext, loop: asyncio.AbstractEventLoop
+    ssl_ctx: ssl.SSLContext,
 ) -> AsyncIterator[Tuple[FakePyPI, Dict[str, int]]]:
     fake_pypi = FakePyPI(ssl_ctx)
     info = await fake_pypi.start()
