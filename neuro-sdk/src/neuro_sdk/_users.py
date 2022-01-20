@@ -102,6 +102,16 @@ class Users(metaclass=NoPublicConstructor):
             ret.append(Share(item["user"], Permission(uri, action)))
         return ret
 
+    async def get_subroles(
+        self,
+        user: str,
+    ) -> Sequence[str]:
+        url = self._get_user_url(user) / "subroles"
+        auth = await self._config._api_auth()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            payload = await resp.json()
+        return payload["subroles"]
+
     async def share(self, user: str, permission: Permission) -> Permission:
         url = self._get_user_url(user) / "permissions"
         payload = [_permission_to_api(permission)]
