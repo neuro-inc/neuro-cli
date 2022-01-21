@@ -1128,6 +1128,9 @@ async def remove_org(root: Root, org_name: str, force: bool) -> None:
 
     Completely removes org from the system.
     """
+    orgs = await root.client._admin.list_orgs()
+    if not any(org.name == org_name for org in orgs):
+        raise ValueError(f"Organization '{org_name}' is not found.")
 
     if not force:
         with patch_stdout():
