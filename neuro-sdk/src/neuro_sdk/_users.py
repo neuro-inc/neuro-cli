@@ -64,6 +64,22 @@ class Users(metaclass=NoPublicConstructor):
             total_running_jobs=ret.quota.total_running_jobs,
         )
 
+    async def get_org_quota(self) -> Optional[Quota]:
+        if self._config.org_name is None:
+            return None
+        try:
+            ret = await self._admin.get_org_cluster(
+                cluster_name=self._config.cluster_name,
+                org_name=self._config.org_name,
+            )
+        except NotSupportedError:
+            # FOSS configuration without admin service and limits
+            return Quota(credits=None, total_running_jobs=None)
+        return Quota(
+            credits=ret.balance.credits,
+            total_running_jobs=ret.quota.total_running_jobs,
+        )
+
     async def get_acl(
         self, user: str, scheme: Optional[str] = None, *, uri: Optional[URL] = None
     ) -> Sequence[Permission]:

@@ -41,7 +41,8 @@ async def show(root: Root) -> None:
     except (ClientConnectionError, AuthorizationError):
         jobs_capacity = {}
     quota = await root.client.users.get_quota()
-    root.print(fmt(root.client.config, jobs_capacity, quota))
+    org_quota = await root.client.users.get_org_quota()
+    root.print(fmt(root.client.config, jobs_capacity, quota, org_quota))
 
 
 @command()
