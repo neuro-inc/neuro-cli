@@ -143,13 +143,10 @@ def test_file_autocomplete(run_autocomplete: _RunAC, tmp_path: Path) -> None:
     assert zsh_out == f"uri\nfolder/\n_\n{base_uri}/"
 
     zsh_out, bash_out = run_autocomplete(["storage", "cp", base_uri + "/folder/"])
-    assert bash_out == (
-        f"uri,file2.txt,{base_prefix}/folder/\n" f"uri,folder2/,{base_prefix}/folder/"
-    )
-    assert zsh_out == (
-        f"uri\nfile2.txt\n_\n{base_uri}/folder/\n"
-        f"uri\nfolder2/\n_\n{base_uri}/folder/"
-    )
+    names = os.listdir(base / "folder")
+    names = [name + ("/" if "folder" in name else "") for name in names]
+    assert bash_out == "\n".join(f"uri,{name},{base_prefix}/folder/" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\n{base_uri}/folder/" for name in names)
 
 
 @skip_on_windows
