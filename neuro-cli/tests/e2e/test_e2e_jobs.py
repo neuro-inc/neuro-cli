@@ -1091,43 +1091,6 @@ def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
     helper.assert_job_state(job_id, JobStatus.RUNNING)
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="Autocompletion is not supported on Windows"
-)
-@pytest.mark.e2e
-def test_job_autocomplete(helper: Helper) -> None:
-
-    job_name = f"test-job-{os.urandom(5).hex()}"
-    helper.kill_job(job_name)
-    job_id = helper.run_job_and_wait_state(
-        ALPINE_IMAGE_NAME, "sleep 600", name=job_name
-    )
-
-    out = helper.autocomplete(["kill", "test-job"])
-    assert job_name in out
-    assert job_id not in out
-
-    out = helper.autocomplete(["kill", "job-"])
-    assert job_name in out
-    assert job_id in out
-
-    out = helper.autocomplete(["kill", "job:job-"])
-    assert job_name in out
-    assert job_id in out
-
-    out = helper.autocomplete(["kill", f"job:/{helper.username}/job-"])
-    assert job_name in out
-    assert job_id in out
-
-    out = helper.autocomplete(
-        ["kill", f"job://{helper.cluster_name}/{helper.username}/job-"]
-    )
-    assert job_name in out
-    assert job_id in out
-
-    helper.kill_job(job_id)
-
-
 @pytest.mark.e2e
 def test_job_run_stdout(helper: Helper) -> None:
     command = 'bash -c "sleep 30; for count in {0..3}; do echo $count; sleep 1; done"'
