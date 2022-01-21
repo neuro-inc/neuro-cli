@@ -199,7 +199,6 @@ class Config(metaclass=NoPublicConstructor):
             raise RuntimeError(
                 f"Cluster {name} doesn't exist in "
                 f"a list of available clusters {list(self.clusters)}. "
-                f"Please logout and login again."
             )
         org_name = self.org_name
         if org_name not in self.clusters[name].orgs:
@@ -221,7 +220,6 @@ class Config(metaclass=NoPublicConstructor):
                 f"Org {name or 'NO_ORG'} doesn't exist in "
                 f"a list of available orgs {list(cluster_org_names)} for "
                 f"cluster '{self.cluster_name}'. "
-                f"Please logout and login again."
             )
         self.__config_data = replace(self._config_data, org_name=name)
         _save(self._config_data, self._path)
