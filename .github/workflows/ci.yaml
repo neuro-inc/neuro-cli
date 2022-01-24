@@ -169,7 +169,7 @@ jobs:
       run: |
         make .e2e
     - name: Upload coverage artifact
-      uses: neuro-inc/prepare-coverage@v21.9.1
+      uses: neuro-inc/prepare-coverage@v22.1.2
       with:
         key: e2e-${{ matrix.python-version }}-${{ matrix.os }}
 
