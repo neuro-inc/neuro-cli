@@ -121,18 +121,16 @@ def test_file_autocomplete(run_autocomplete: _RunAC, tmp_path: Path) -> None:
 
     base_uri = base.as_uri()
     base_prefix = base_uri[5:]
+    names = os.listdir(base)
+    names = [name + ("/" if "folder" in name else "") for name in names]
 
     zsh_out, bash_out = run_autocomplete(["storage", "cp", base_uri + "/"])
-    assert bash_out == (f"uri,file.txt,{base_prefix}/\n" f"uri,folder/,{base_prefix}/")
-    assert zsh_out == (
-        f"uri\nfile.txt\n_\n{base_uri}/\n" f"uri\nfolder/\n_\n{base_uri}/"
-    )
+    assert bash_out == "\n".join(f"uri,{name},{base_prefix}/" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\n{base_uri}/" for name in names)
 
     zsh_out, bash_out = run_autocomplete(["storage", "cp", base_uri + "/f"])
-    assert bash_out == (f"uri,file.txt,{base_prefix}/\n" f"uri,folder/,{base_prefix}/")
-    assert zsh_out == (
-        f"uri\nfile.txt\n_\n{base_uri}/\n" f"uri\nfolder/\n_\n{base_uri}/"
-    )
+    assert bash_out == "\n".join(f"uri,{name},{base_prefix}/" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\n{base_uri}/" for name in names)
 
     zsh_out, bash_out = run_autocomplete(["storage", "cp", base_uri + "/fi"])
     assert bash_out == f"uri,file.txt,{base_prefix}/"
