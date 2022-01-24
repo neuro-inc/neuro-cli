@@ -10,6 +10,7 @@ ConfigUpdater==3.0.1
 contextlib2==21.6.0
 humanize==3.13.1
 importlib-metadata==4.8.2; python_version<"3.10"
+multidict<6.0
 packaging==21.3
 python-dateutil==2.8.2
 python-jose==3.3.0
