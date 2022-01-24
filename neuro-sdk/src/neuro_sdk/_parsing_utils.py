@@ -204,7 +204,10 @@ class _ImageNameParser:
     def has_tag(self, image: str) -> bool:
         prefix = "image:"
         if image.startswith(prefix):
-            image = image[len(prefix) :]
+            url = URL(image)
+            image = url.path
+            if image.startswith("/"):
+                image = image[1:]
         _, tag = self._split_image_name(image)
         return bool(tag)
 
@@ -316,8 +319,15 @@ class _ImageNameParser:
             name, tag = image.rsplit(":", 1)
         else:
             raise ValueError("too many tags")
+        if "/" in name:
+            _, name_no_repo = name.split("/", 1)
+        else:
+            name_no_repo = name
+        if not name_no_repo:
+            raise ValueError("no image name specified")
         if not re.fullmatch(
-            r"(?:[a-z0-9]+(?:[._-][a-z0-9]+)*/)*[a-z0-9]+(?:[._-][a-z0-9]+)*", name
+            r"(?:[a-z0-9]+(?:[._-][a-z0-9]+)*/)*[a-z0-9]+(?:[._-][a-z0-9]+)*",
+            name_no_repo,
         ):
             raise ValueError(
                 "invalid image name. Docker specifies it to be the following:\n"

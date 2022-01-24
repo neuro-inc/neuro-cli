@@ -205,12 +205,10 @@ class TestImageParser:
         ):
             self.parser.parse_as_local_image(image)
 
-    def test_parse_as_local_image_with_other_scheme_ok(self) -> None:
+    def test_parse_as_local_image_with_other_scheme_fail(self) -> None:
         image = "http://ubuntu"
-        parsed = self.parser.parse_as_local_image(image)
-        # instead of parser, the docker client will fail
-        assert parsed == LocalImage(name="http://ubuntu", tag="latest")
-        assert self.parser.parse_as_local_image(str(parsed)) == parsed
+        with pytest.raises(ValueError, match="invalid image name"):
+            self.parser.parse_as_local_image(image)
 
     def test_parse_as_local_image_no_tag(self) -> None:
         image = "ubuntu"
@@ -225,9 +223,8 @@ class TestImageParser:
 
     def test_parse_as_local_image_special_chars(self) -> None:
         image = "image#%2d?ß:tag#%2d?ß"
-        parsed = self.parser.parse_as_local_image(image)
-        assert parsed == LocalImage(name="image#%2d?ß", tag="tag#%2d?ß")
-        assert self.parser.parse_as_local_image(str(parsed)) == parsed
+        with pytest.raises(ValueError):
+            self.parser.parse_as_local_image(image)
 
     def test_parse_as_local_image_2_tag_fail(self) -> None:
         image = "ubuntu:v10.04:LTS"
@@ -671,16 +668,8 @@ class TestImageParser:
 
     def test_parse_as_neuro_image_with_scheme_special_chars(self) -> None:
         image = "image://another/bob/ubuntu%23%252d%3F%C3%9F:v10.04%23%252d%3F%C3%9F"
-        parsed = self.parser.parse_as_neuro_image(image)
-        assert parsed == RemoteImage.new_neuro_image(
-            name="ubuntu#%2d?ß",
-            tag="v10.04#%2d?ß",
-            owner="bob",
-            cluster_name="another",
-            registry="example.org",
-            org_name=None,
-        )
-        assert self.parser.parse_as_neuro_image(str(parsed)) == parsed
+        with pytest.raises(ValueError, match="invalid image name"):
+            self.parser.parse_as_neuro_image(image)
 
     def test_parse_as_neuro_image_no_scheme_no_slash_no_tag_fail(self) -> None:
         image = "ubuntu"
@@ -722,18 +711,10 @@ class TestImageParser:
         assert str(image) == "image://default/user/image:tag"
 
     def test_parse_as_neuro_image_with_registry_prefix_special_chars(self) -> None:
-        image = self.parser.parse_as_neuro_image(
-            "reg.neu.ro/user/image%23%252d%3F%C3%9F:tag%23%252d%3F%C3%9F"
-        )
-        assert image == RemoteImage.new_neuro_image(
-            name="image#%2d?ß",
-            tag="tag#%2d?ß",
-            owner="user",
-            cluster_name="default",
-            registry="reg.neu.ro",
-            org_name=None,
-        )
-        assert self.parser.parse_as_neuro_image(str(image)) == image
+        with pytest.raises(ValueError, match="invalid image name"):
+            self.parser.parse_as_neuro_image(
+                "reg.neu.ro/user/image%23%252d%3F%C3%9F:tag%23%252d%3F%C3%9F"
+            )
 
     def test_parse_as_neuro_image_no_scheme_3_slash_with_tag_fail(self) -> None:
         image = "something/docker.io/library/ubuntu:v10.04"
