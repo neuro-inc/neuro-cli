@@ -111,7 +111,7 @@ jobs:
       run: |
         make .test-${{ matrix.cmd }} PYTEST_ARGS=-vvv
     - name: Upload coverage artifact
-      uses: aio-libs/prepare-coverage@v21.9.1
+      uses: aio-libs/prepare-coverage@v22.1.2
       with:
         key: unit-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.cmd }}
 
