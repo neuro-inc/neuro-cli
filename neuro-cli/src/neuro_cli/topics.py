@@ -111,6 +111,7 @@ async def ps_format() -> None:
     * **image** (IMAGE): Job image.
     * **owner** (OWNER): Job owner.
     * **cluster_name** (CLUSTER): Job cluster name.
+    * **org_name** (ORG): Job org name.
     * **description** (DESCRIPTION): Job description.
     * **command** (COMMAND): The command a job executes.
     * **life_span** (LIFE-SPAN): Job lifespan.

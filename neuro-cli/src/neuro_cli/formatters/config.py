@@ -18,7 +18,11 @@ from neuro_cli.utils import format_size
 
 class ConfigFormatter:
     def __call__(
-        self, config: Config, available_jobs_counts: Mapping[str, int], quota: Quota
+        self,
+        config: Config,
+        available_jobs_counts: Mapping[str, int],
+        quota: Quota,
+        org_quota: Optional[Quota],
     ) -> RenderableType:
         table = Table(
             title="User Configuration:",
@@ -34,6 +38,11 @@ class ConfigFormatter:
         table.add_row("Current Org", config.org_name or "<no-org>")
         table.add_row("Credits Quota", format_quota_details(quota.credits))
         table.add_row("Jobs Quota", format_quota_details(quota.total_running_jobs))
+        if org_quota:
+            table.add_row("Org Credits Quota", format_quota_details(org_quota.credits))
+            table.add_row(
+                "Org Jobs Quota", format_quota_details(org_quota.total_running_jobs)
+            )
         table.add_row("API URL", str(config.api_url))
         table.add_row("Docker Registry URL", str(config.registry_url))
 

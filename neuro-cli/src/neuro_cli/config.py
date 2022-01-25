@@ -18,7 +18,7 @@ from neuro_sdk import DEFAULT_API_URL, AuthorizationError, ConfigError
 from neuro_cli.formatters.config import ClustersFormatter
 
 from .alias import list_aliases
-from .click_types import CLUSTER, ORG
+from .click_types import CLUSTER_ALLOW_UNKNOWN, ORG, ORG_ALLOW_UNKNOWN
 from .formatters.config import AliasesFormatter, ConfigFormatter
 from .root import Root
 from .utils import argument, command, group, option
@@ -41,7 +41,8 @@ async def show(root: Root) -> None:
     except (ClientConnectionError, AuthorizationError):
         jobs_capacity = {}
     quota = await root.client.users.get_quota()
-    root.print(fmt(root.client.config, jobs_capacity, quota))
+    org_quota = await root.client.users.get_org_quota()
+    root.print(fmt(root.client.config, jobs_capacity, quota, org_quota))
 
 
 @command()
@@ -226,7 +227,7 @@ async def get_clusters(root: Root) -> None:
 
 
 @command()
-@argument("cluster_name", required=False, default=None, type=CLUSTER)
+@argument("cluster_name", required=False, default=None, type=CLUSTER_ALLOW_UNKNOWN)
 async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
     """Switch the active cluster.
 
@@ -252,7 +253,7 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
 
 
 @command()
-@argument("org_name", required=True, type=ORG)
+@argument("org_name", required=True, type=ORG_ALLOW_UNKNOWN)
 async def switch_org(root: Root, org_name: Optional[str]) -> None:
     """Switch the active organization.
 

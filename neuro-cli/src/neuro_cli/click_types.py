@@ -345,6 +345,9 @@ PRESET = PresetType()
 class ClusterType(AsyncType[str]):
     name = "cluster"
 
+    def __init__(self, allow_unknown: bool = False):
+        self._allow_unknown = allow_unknown
+
     async def async_convert(
         self,
         root: Root,
@@ -352,6 +355,8 @@ class ClusterType(AsyncType[str]):
         param: Optional[click.Parameter],
         ctx: Optional[click.Context],
     ) -> str:
+        if self._allow_unknown:
+            return value
         client = await root.init_client()
         if value not in client.config.clusters:
             raise click.BadParameter(
@@ -373,11 +378,15 @@ class ClusterType(AsyncType[str]):
 
 
 CLUSTER = ClusterType()
+CLUSTER_ALLOW_UNKNOWN = ClusterType(allow_unknown=True)
 
 
 class OrgType(AsyncType[str]):
     name = "org"
     NO_ORG_STR = "NO_ORG"
+
+    def __init__(self, allow_unknown: bool = False):
+        self._allow_unknown = allow_unknown
 
     async def async_convert(
         self,
@@ -386,6 +395,8 @@ class OrgType(AsyncType[str]):
         param: Optional[click.Parameter],
         ctx: Optional[click.Context],
     ) -> str:
+        if self._allow_unknown:
+            return value
         client = await root.init_client()
         org_name = value if value != self.NO_ORG_STR else None
         if org_name not in client.config.clusters[client.config.cluster_name].orgs:
@@ -412,6 +423,7 @@ class OrgType(AsyncType[str]):
 
 
 ORG = OrgType()
+ORG_ALLOW_UNKNOWN = OrgType(allow_unknown=True)
 
 
 class JobType(AsyncType[str]):
@@ -773,7 +785,9 @@ _SOURCE_ZSH = """\
     for type key descr pre in ${response}; do
         if [[ "$type" == "uri" ]]; then
             uris+=("$key")
-            prefix="$pre"
+            if [[ $pre != "_" ]]; then
+                prefix="$pre"
+            fi
         elif [[ "$type" == "plain" ]]; then
             if [[ "$descr" == "_" ]]; then
                 completions+=("$key")
@@ -809,10 +823,7 @@ class NewZshComplete(ZshComplete):
     source_template = _SOURCE_ZSH
 
     def format_completion(self, item: CompletionItem) -> str:
-        return (
-            f"{item.type}\n{item.value}\n{item.help if item.help else '_'}\n"
-            f"{item.prefix}"
-        )
+        return f"{item.type}\n{item.value}\n{item.help or '_'}\n{item.prefix or '_'}"
 
 
 _SOURCE_BASH = """\

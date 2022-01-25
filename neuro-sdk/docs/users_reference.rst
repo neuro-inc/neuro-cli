@@ -57,6 +57,15 @@ Users
       :return: a :class:`typing.Sequence` of :class:`Share` objects.  Consider the
                return type as immutable list.
 
+   .. comethod:: get_subroles(user: str) -> Sequence[str]
+
+      Get subroles of given *user*.
+
+      :param str user: user name of person whom subroles are retrieved.
+
+      :return: a :class:`typing.Sequence` of :class:`str` objects.  Consider the
+               return type as immutable list.
+
    .. comethod:: share(user: str, permission: Permission) -> None
 
       Share a resource specified by *permission* with *user*.

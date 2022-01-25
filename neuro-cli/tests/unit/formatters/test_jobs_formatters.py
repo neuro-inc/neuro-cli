@@ -2221,6 +2221,51 @@ class TestTabularJobsFormatter:
         )
         rich_cmp(formatter(jobs))
 
+    def test_org_name(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
+        items = [None, "org1", "org2"]
+        jobs = [
+            JobDescription(
+                status=JobStatus.FAILED,
+                owner="test-user",
+                cluster_name="default",
+                org_name=org_name,
+                id=f"job-{i}",
+                uri=URL(f"job://default/test-user/job-{i}"),
+                description=None,
+                history=JobStatusHistory(
+                    status=JobStatus.FAILED,
+                    reason="ErrorReason",
+                    description="ErrorDesc",
+                    created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                    started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+                    finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+                ),
+                container=Container(
+                    command="test-command",
+                    image=RemoteImage.new_external_image(name="test-image"),
+                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                ),
+                scheduler_enabled=False,
+                pass_config=True,
+                internal_hostname="host.local",
+                preset_name=None,
+                total_price_credits=Decimal("150"),
+                price_credits_per_hour=Decimal("15"),
+            )
+            for i, org_name in enumerate(items, 1)
+        ]
+
+        columns = parse_ps_columns("id org_name")
+        formatter = TabularJobsFormatter(
+            "test-user",
+            columns,
+            image_formatter=str,
+            datetime_formatter=datetime_formatter,
+        )
+        rich_cmp(formatter(jobs))
+
 
 class TestLifeSpanUpdateFormatter:
     async def test_not_finished(

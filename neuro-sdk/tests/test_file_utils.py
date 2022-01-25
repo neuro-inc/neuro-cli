@@ -34,7 +34,7 @@ def dst_dir(tmp_path_factory: Any) -> Path:
 
 
 @pytest.fixture()
-def transferer(loop: None) -> FileTransferer[Path, Path]:
+def transferer() -> FileTransferer[Path, Path]:
     return FileTransferer(LocalFS(), LocalFS())
 
 
