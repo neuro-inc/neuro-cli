@@ -117,22 +117,20 @@ def test_file_autocomplete(run_autocomplete: _RunAC, tmp_path: Path) -> None:
 
     zsh_out, bash_out = run_autocomplete(["storage", "cp", "fi"])
     assert bash_out == "uri,file:,"
-    assert zsh_out == "uri\nfile:\n_"
+    assert zsh_out == "uri\nfile:\n_\n_"
 
     base_uri = base.as_uri()
     base_prefix = base_uri[5:]
+    names = os.listdir(base)
+    names = [name + ("/" if "folder" in name else "") for name in names]
 
     zsh_out, bash_out = run_autocomplete(["storage", "cp", base_uri + "/"])
-    assert bash_out == (f"uri,file.txt,{base_prefix}/\n" f"uri,folder/,{base_prefix}/")
-    assert zsh_out == (
-        f"uri\nfile.txt\n_\n{base_uri}/\n" f"uri\nfolder/\n_\n{base_uri}/"
-    )
+    assert bash_out == "\n".join(f"uri,{name},{base_prefix}/" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\n{base_uri}/" for name in names)
 
     zsh_out, bash_out = run_autocomplete(["storage", "cp", base_uri + "/f"])
-    assert bash_out == (f"uri,file.txt,{base_prefix}/\n" f"uri,folder/,{base_prefix}/")
-    assert zsh_out == (
-        f"uri\nfile.txt\n_\n{base_uri}/\n" f"uri\nfolder/\n_\n{base_uri}/"
-    )
+    assert bash_out == "\n".join(f"uri,{name},{base_prefix}/" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\n{base_uri}/" for name in names)
 
     zsh_out, bash_out = run_autocomplete(["storage", "cp", base_uri + "/fi"])
     assert bash_out == f"uri,file.txt,{base_prefix}/"
@@ -231,7 +229,7 @@ def test_storage_autocomplete(run_autocomplete: _RunAC) -> None:
 
         zsh_out, bash_out = run_autocomplete(["storage", "cp", "st"])
         assert bash_out == "uri,storage:,"
-        assert zsh_out == "uri\nstorage:\n_"
+        assert zsh_out == "uri\nstorage:\n_\n_"
 
         zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage:"])
         assert bash_out == ("uri,folder/,\n" "uri,file.txt,")
@@ -354,7 +352,7 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
 
         zsh_out, bash_out = run_autocomplete(["blob", "ls", "bl"])
         assert bash_out == "uri,blob:,"
-        assert zsh_out == "uri\nblob:\n_"
+        assert zsh_out == "uri\nblob:\n_\n_"
 
         zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:"])
         assert bash_out == (
@@ -528,23 +526,23 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             "plain,job://other-cluster/test-user/job-89ab-4567,"
         )
         assert zsh_out == (
-            "plain\njob-0123-4567\n_\nNone\n"
-            "plain\njob:job-0123-4567\n_\nNone\n"
-            "plain\njob:/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob://default/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob-89ab-cdef\njeronimo\nNone\n"
-            "plain\njeronimo\njeronimo\nNone\n"
-            "plain\njob:job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob:/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob-0123-cdef\n_\nNone\n"
-            "plain\njob:job-0123-cdef\n_\nNone\n"
-            "plain\njob:/other-user/job-0123-cdef\n_\nNone\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\nNone\n"
-            "plain\njob-89ab-4567\n_\nNone\n"
-            "plain\njob:job-89ab-4567\n_\nNone\n"
-            "plain\njob:/test-user/job-89ab-4567\n_\nNone\n"
-            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\nNone"
+            "plain\njob-0123-4567\n_\n_\n"
+            "plain\njob:job-0123-4567\n_\n_\n"
+            "plain\njob:/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob-89ab-cdef\njeronimo\n_\n"
+            "plain\njeronimo\njeronimo\n_\n"
+            "plain\njob:job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob:/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob-0123-cdef\n_\n_\n"
+            "plain\njob:job-0123-cdef\n_\n_\n"
+            "plain\njob:/other-user/job-0123-cdef\n_\n_\n"
+            "plain\njob://default/other-user/job-0123-cdef\n_\n_\n"
+            "plain\njob-89ab-4567\n_\n_\n"
+            "plain\njob:job-89ab-4567\n_\n_\n"
+            "plain\njob:/test-user/job-89ab-4567\n_\n_\n"
+            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "jo"])
@@ -567,27 +565,27 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             "plain,job://other-cluster/test-user/job-89ab-4567,"
         )
         assert zsh_out == (
-            "plain\njob-0123-4567\n_\nNone\n"
-            "plain\njob:job-0123-4567\n_\nNone\n"
-            "plain\njob:/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob://default/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob:job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob:/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob-0123-cdef\n_\nNone\n"
-            "plain\njob:job-0123-cdef\n_\nNone\n"
-            "plain\njob:/other-user/job-0123-cdef\n_\nNone\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\nNone\n"
-            "plain\njob-89ab-4567\n_\nNone\n"
-            "plain\njob:job-89ab-4567\n_\nNone\n"
-            "plain\njob:/test-user/job-89ab-4567\n_\nNone\n"
-            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\nNone"
+            "plain\njob-0123-4567\n_\n_\n"
+            "plain\njob:job-0123-4567\n_\n_\n"
+            "plain\njob:/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob-89ab-cdef\njeronimo\n_\n"
+            "plain\njob:job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob:/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob-0123-cdef\n_\n_\n"
+            "plain\njob:job-0123-cdef\n_\n_\n"
+            "plain\njob:/other-user/job-0123-cdef\n_\n_\n"
+            "plain\njob://default/other-user/job-0123-cdef\n_\n_\n"
+            "plain\njob-89ab-4567\n_\n_\n"
+            "plain\njob:job-89ab-4567\n_\n_\n"
+            "plain\njob:/test-user/job-89ab-4567\n_\n_\n"
+            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "je"])
         assert bash_out == "plain,jeronimo,"
-        assert zsh_out == "plain\njeronimo\njeronimo\nNone"
+        assert zsh_out == "plain\njeronimo\njeronimo\n_"
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:"])
         assert bash_out == (
@@ -605,18 +603,18 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             "plain,job://other-cluster/test-user/job-89ab-4567,"
         )
         assert zsh_out == (
-            "plain\njob:job-0123-4567\n_\nNone\n"
-            "plain\njob:/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob://default/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob:job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob:/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob:job-0123-cdef\n_\nNone\n"
-            "plain\njob:/other-user/job-0123-cdef\n_\nNone\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\nNone\n"
-            "plain\njob:job-89ab-4567\n_\nNone\n"
-            "plain\njob:/test-user/job-89ab-4567\n_\nNone\n"
-            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\nNone"
+            "plain\njob:job-0123-4567\n_\n_\n"
+            "plain\njob:/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob:job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob:/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob:job-0123-cdef\n_\n_\n"
+            "plain\njob:/other-user/job-0123-cdef\n_\n_\n"
+            "plain\njob://default/other-user/job-0123-cdef\n_\n_\n"
+            "plain\njob:job-89ab-4567\n_\n_\n"
+            "plain\njob:/test-user/job-89ab-4567\n_\n_\n"
+            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:j"])
@@ -627,10 +625,10 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             "plain,job:job-89ab-4567,"
         )
         assert zsh_out == (
-            "plain\njob:job-0123-4567\n_\nNone\n"
-            "plain\njob:job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob:job-0123-cdef\n_\nNone\n"
-            "plain\njob:job-89ab-4567\n_\nNone"
+            "plain\njob:job-0123-4567\n_\n_\n"
+            "plain\njob:job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob:job-0123-cdef\n_\n_\n"
+            "plain\njob:job-89ab-4567\n_\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:je"])
@@ -649,14 +647,14 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             "plain,job://other-cluster/test-user/job-89ab-4567,"
         )
         assert zsh_out == (
-            "plain\njob:/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob://default/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob:/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob:/other-user/job-0123-cdef\n_\nNone\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\nNone\n"
-            "plain\njob:/test-user/job-89ab-4567\n_\nNone\n"
-            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\nNone"
+            "plain\njob:/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob:/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob:/other-user/job-0123-cdef\n_\n_\n"
+            "plain\njob://default/other-user/job-0123-cdef\n_\n_\n"
+            "plain\njob:/test-user/job-89ab-4567\n_\n_\n"
+            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:/t"])
@@ -666,9 +664,9 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             "plain,job:/test-user/job-89ab-4567,"
         )
         assert zsh_out == (
-            "plain\njob:/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob:/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob:/test-user/job-89ab-4567\n_\nNone"
+            "plain\njob:/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob:/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob:/test-user/job-89ab-4567\n_\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:/test-user/j"])
@@ -678,9 +676,9 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             "plain,job:/test-user/job-89ab-4567,"
         )
         assert zsh_out == (
-            "plain\njob:/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob:/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob:/test-user/job-89ab-4567\n_\nNone"
+            "plain\njob:/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob:/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob:/test-user/job-89ab-4567\n_\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job://"])
@@ -691,10 +689,10 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             "plain,job://other-cluster/test-user/job-89ab-4567,"
         )
         assert zsh_out == (
-            "plain\njob://default/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\nNone\n"
-            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\nNone"
+            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob://default/other-user/job-0123-cdef\n_\n_\n"
+            "plain\njob://other-cluster/test-user/job-89ab-4567\n_\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job://d"])
@@ -704,9 +702,9 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             "plain,job://default/other-user/job-0123-cdef,"
         )
         assert zsh_out == (
-            "plain\njob://default/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\nNone"
+            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob://default/other-user/job-0123-cdef\n_\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/"])
@@ -716,7 +714,7 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             "plain,job://default/other-user/job-0123-cdef,"
         )
         assert zsh_out == (
-            "plain\njob://default/test-user/job-0123-4567\n_\nNone\n"
-            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\nNone\n"
-            "plain\njob://default/other-user/job-0123-cdef\n_\nNone"
+            "plain\njob://default/test-user/job-0123-4567\n_\n_\n"
+            "plain\njob://default/test-user/job-89ab-cdef\njeronimo\n_\n"
+            "plain\njob://default/other-user/job-0123-cdef\n_\n_"
         )
