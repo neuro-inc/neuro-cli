@@ -512,6 +512,7 @@ async def get_cluster_users(
             with_user_info=True,
             org_name=org,
         )
+        users = sorted(users, key=lambda user: (user.user_name, user.org_name or ""))
     with root.pager():
         root.print(fmt(users))
 

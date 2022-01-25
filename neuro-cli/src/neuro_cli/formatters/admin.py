@@ -29,19 +29,21 @@ class ClusterUserFormatter:
     ) -> RenderableType:
         table = Table(box=box.MINIMAL_HEAVY_HEAD)
         table.add_column("Name", style="bold")
+        table.add_column("Org")
         table.add_column("Role")
         table.add_column("Email")
         table.add_column("Full name")
         table.add_column("Registered")
-        table.add_column("Credits")
-        table.add_column("Spent credits")
-        table.add_column("Max jobs")
+        table.add_column("Credits", max_width=10, overflow="fold")
+        table.add_column("Spent credits", max_width=14, overflow="fold")
+        table.add_column("Max jobs", max_width=10, overflow="fold")
         rows = []
 
         for user in clusters_users:
             rows.append(
                 (
                     user.user_name,
+                    user.org_name or "",
                     user.role.value,
                     user.user_info.email,
                     user.user_info.full_name,
