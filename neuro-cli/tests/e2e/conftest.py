@@ -86,15 +86,6 @@ JOB_ID_PATTERN: Final = re.compile(
 )
 
 
-@pytest.fixture
-def loop() -> Iterator[asyncio.AbstractEventLoop]:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    yield loop
-    loop.run_until_complete(loop.shutdown_asyncgens())
-    loop.close()
-
-
 SysCap = namedtuple("SysCap", "out err")
 
 
