@@ -82,6 +82,20 @@ class TestClusterUserFormatter:
                     created_at=None,
                 ),
             ),
+            _ClusterUserWithInfo(
+                user_name="alex",
+                cluster_name="default",
+                org_name="some-org",
+                role=_ClusterUserRoleType("user"),
+                quota=_Quota(total_running_jobs=2),
+                balance=_Balance(credits=Decimal(100), spent_credits=Decimal(20)),
+                user_info=_UserInfo(
+                    first_name=None,
+                    last_name=None,
+                    email="alex@domain.name",
+                    created_at=None,
+                ),
+            ),
         ]
         rich_cmp(formatter(users))
 

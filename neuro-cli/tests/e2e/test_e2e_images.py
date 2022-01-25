@@ -45,9 +45,7 @@ async def generate_image(docker: aiodocker.Docker, tag: str) -> str:
 
 
 @pytest.fixture()
-async def image(
-    loop: asyncio.AbstractEventLoop, docker: aiodocker.Docker, tag: str
-) -> AsyncIterator[str]:
+async def image(docker: aiodocker.Docker, tag: str) -> AsyncIterator[str]:
     image = await generate_image(docker, tag)
     yield image
     await docker.images.delete(image, force=True)
@@ -58,7 +56,7 @@ def test_images_complete_lifecycle(
     helper: Helper,
     image: str,
     tag: str,
-    loop: asyncio.AbstractEventLoop,
+    event_loop: asyncio.AbstractEventLoop,
     docker: aiodocker.Docker,
 ) -> None:
     # Let`s push image
@@ -97,8 +95,8 @@ def test_images_complete_lifecycle(
         assert False, f"Not found {image_short_str_no_tag} in {captured.out}"
 
     # delete local
-    loop.run_until_complete(docker.images.delete(image, force=True))
-    docker_ls_output = loop.run_until_complete(docker.images.list())
+    event_loop.run_until_complete(docker.images.delete(image, force=True))
+    docker_ls_output = event_loop.run_until_complete(docker.images.list())
     local_images = parse_docker_ls_output(docker_ls_output)
     assert image not in local_images
 
@@ -109,7 +107,7 @@ def test_images_complete_lifecycle(
     assert captured.out.endswith(image)
 
     # check pulled locally, delete for cleanup
-    docker_ls_output = loop.run_until_complete(docker.images.list())
+    docker_ls_output = event_loop.run_until_complete(docker.images.list())
     local_images = parse_docker_ls_output(docker_ls_output)
     assert image in local_images
 
@@ -197,7 +195,7 @@ async def test_images_push_with_specified_name(
     helper: Helper,
     image: str,
     tag: str,
-    loop: asyncio.AbstractEventLoop,
+    event_loop: asyncio.AbstractEventLoop,
     docker: aiodocker.Docker,
 ) -> None:
     # Let`s push image

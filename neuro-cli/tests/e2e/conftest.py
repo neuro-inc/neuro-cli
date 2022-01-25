@@ -86,15 +86,6 @@ JOB_ID_PATTERN: Final = re.compile(
 )
 
 
-@pytest.fixture
-def loop() -> Iterator[asyncio.AbstractEventLoop]:
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    yield loop
-    loop.run_until_complete(loop.shutdown_asyncgens())
-    loop.close()
-
-
 SysCap = namedtuple("SysCap", "out err")
 
 
@@ -934,7 +925,7 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
 
 
 @pytest.fixture()
-async def docker(loop: asyncio.AbstractEventLoop) -> AsyncIterator[aiodocker.Docker]:
+async def docker() -> AsyncIterator[aiodocker.Docker]:
     if sys.platform == "win32":
         pytest.skip(f"Skip tests for docker on windows")
     try:

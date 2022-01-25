@@ -773,7 +773,9 @@ _SOURCE_ZSH = """\
     for type key descr pre in ${response}; do
         if [[ "$type" == "uri" ]]; then
             uris+=("$key")
-            prefix="$pre"
+            if [[ $pre != "_" ]]; then
+                prefix="$pre"
+            fi
         elif [[ "$type" == "plain" ]]; then
             if [[ "$descr" == "_" ]]; then
                 completions+=("$key")
@@ -809,10 +811,7 @@ class NewZshComplete(ZshComplete):
     source_template = _SOURCE_ZSH
 
     def format_completion(self, item: CompletionItem) -> str:
-        return (
-            f"{item.type}\n{item.value}\n{item.help if item.help else '_'}\n"
-            f"{item.prefix}"
-        )
+        return f"{item.type}\n{item.value}\n{item.help or '_'}\n{item.prefix or '_'}"
 
 
 _SOURCE_BASH = """\

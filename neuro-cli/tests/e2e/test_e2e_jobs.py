@@ -584,9 +584,7 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
 
 
 @pytest.fixture
-async def nginx_job_async(
-    nmrc_path: Path, loop: asyncio.AbstractEventLoop
-) -> AsyncIterator[Tuple[str, str]]:
+async def nginx_job_async(nmrc_path: Path) -> AsyncIterator[Tuple[str, str]]:
     async with api_get(path=nmrc_path) as client:
         secret = uuid4()
         command = (
@@ -974,7 +972,7 @@ def test_e2e_job_top(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_e2e_job_top_filtering(helper: Helper, loop: AbstractEventLoop) -> None:
+def test_e2e_job_top_filtering(helper: Helper, event_loop: AbstractEventLoop) -> None:
     job_name = f"test-job-{str(uuid4())[:8]}"
     description = str(uuid4())
     command = "bash -c 'sleep 1000; echo test_e2e_job_top_filtering'"
@@ -1029,13 +1027,13 @@ def test_e2e_job_top_filtering(helper: Helper, loop: AbstractEventLoop) -> None:
                 break
 
     checks = [
-        loop.run_in_executor(None, _check1),
-        loop.run_in_executor(None, _check2),
-        loop.run_in_executor(None, _check3),
-        loop.run_in_executor(None, _check4),
-        loop.run_in_executor(None, _check5),
+        event_loop.run_in_executor(None, _check1),
+        event_loop.run_in_executor(None, _check2),
+        event_loop.run_in_executor(None, _check3),
+        event_loop.run_in_executor(None, _check4),
+        event_loop.run_in_executor(None, _check5),
     ]
-    loop.run_until_complete(asyncio.gather(*checks))
+    event_loop.run_until_complete(asyncio.gather(*checks))
 
     helper.kill_job(job1_id, wait=True)
     helper.kill_job(job2_id, wait=True)
@@ -1089,43 +1087,6 @@ def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
     helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
     sleep(1)
     helper.assert_job_state(job_id, JobStatus.RUNNING)
-
-
-@pytest.mark.skipif(
-    sys.platform == "win32", reason="Autocompletion is not supported on Windows"
-)
-@pytest.mark.e2e
-def test_job_autocomplete(helper: Helper) -> None:
-
-    job_name = f"test-job-{os.urandom(5).hex()}"
-    helper.kill_job(job_name)
-    job_id = helper.run_job_and_wait_state(
-        ALPINE_IMAGE_NAME, "sleep 600", name=job_name
-    )
-
-    out = helper.autocomplete(["kill", "test-job"])
-    assert job_name in out
-    assert job_id not in out
-
-    out = helper.autocomplete(["kill", "job-"])
-    assert job_name in out
-    assert job_id in out
-
-    out = helper.autocomplete(["kill", "job:job-"])
-    assert job_name in out
-    assert job_id in out
-
-    out = helper.autocomplete(["kill", f"job:/{helper.username}/job-"])
-    assert job_name in out
-    assert job_id in out
-
-    out = helper.autocomplete(
-        ["kill", f"job://{helper.cluster_name}/{helper.username}/job-"]
-    )
-    assert job_name in out
-    assert job_id in out
-
-    helper.kill_job(job_id)
 
 
 @pytest.mark.e2e
