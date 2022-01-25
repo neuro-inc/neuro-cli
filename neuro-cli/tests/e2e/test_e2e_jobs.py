@@ -584,9 +584,7 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
 
 
 @pytest.fixture
-async def nginx_job_async(
-    nmrc_path: Path, loop: asyncio.AbstractEventLoop
-) -> AsyncIterator[Tuple[str, str]]:
+async def nginx_job_async(nmrc_path: Path) -> AsyncIterator[Tuple[str, str]]:
     async with api_get(path=nmrc_path) as client:
         secret = uuid4()
         command = (
@@ -974,7 +972,7 @@ def test_e2e_job_top(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_e2e_job_top_filtering(helper: Helper, loop: AbstractEventLoop) -> None:
+def test_e2e_job_top_filtering(helper: Helper, event_loop: AbstractEventLoop) -> None:
     job_name = f"test-job-{str(uuid4())[:8]}"
     description = str(uuid4())
     command = "bash -c 'sleep 1000; echo test_e2e_job_top_filtering'"
@@ -1029,13 +1027,13 @@ def test_e2e_job_top_filtering(helper: Helper, loop: AbstractEventLoop) -> None:
                 break
 
     checks = [
-        loop.run_in_executor(None, _check1),
-        loop.run_in_executor(None, _check2),
-        loop.run_in_executor(None, _check3),
-        loop.run_in_executor(None, _check4),
-        loop.run_in_executor(None, _check5),
+        event_loop.run_in_executor(None, _check1),
+        event_loop.run_in_executor(None, _check2),
+        event_loop.run_in_executor(None, _check3),
+        event_loop.run_in_executor(None, _check4),
+        event_loop.run_in_executor(None, _check5),
     ]
-    loop.run_until_complete(asyncio.gather(*checks))
+    event_loop.run_until_complete(asyncio.gather(*checks))
 
     helper.kill_job(job1_id, wait=True)
     helper.kill_job(job2_id, wait=True)
