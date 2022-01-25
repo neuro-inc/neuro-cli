@@ -38,7 +38,10 @@ def test_format_quota_details(quota: Union[None, int, Decimal], expected: str) -
 class TestConfigFormatter:
     async def test_output(self, root: Root, rich_cmp: RichCmp) -> None:
         out = ConfigFormatter()(
-            root.client.config, {}, Quota(credits=Decimal("500"), total_running_jobs=10)
+            root.client.config,
+            {},
+            Quota(credits=Decimal("500"), total_running_jobs=10),
+            None,
         )
         rich_cmp(out)
 
@@ -74,7 +77,10 @@ class TestConfigFormatter:
             "https://dev.neu.ro/api/v1", clusters={new_config.name: new_config}
         )
         out = ConfigFormatter()(
-            client.config, {}, Quota(credits=Decimal("500"), total_running_jobs=10)
+            client.config,
+            {},
+            Quota(credits=Decimal("500"), total_running_jobs=10),
+            None,
         )
         rich_cmp(out)
         await client.close()
@@ -90,6 +96,20 @@ class TestConfigFormatter:
             root.client.config,
             available_jobs_counts,
             Quota(credits=Decimal("500"), total_running_jobs=10),
+            None,
+        )
+        rich_cmp(out)
+
+    async def test_output_with_org_quota(self, root: Root, rich_cmp: RichCmp) -> None:
+        available_jobs_counts = {
+            "cpu-small": 1,
+            "cpu-large": 2,
+        }
+        out = ConfigFormatter()(
+            root.client.config,
+            available_jobs_counts,
+            Quota(credits=Decimal("500"), total_running_jobs=10),
+            Quota(credits=Decimal("1000"), total_running_jobs=50),
         )
         rich_cmp(out)
 
