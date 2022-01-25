@@ -1,2 +1,0 @@
-Cluster/org name validness now checked after config re-fetch in `neuro config switch-cluster`
-and `neuro config switch-org` commands.

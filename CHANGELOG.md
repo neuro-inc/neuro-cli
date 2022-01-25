@@ -5,6 +5,25 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 22.1.2 (2022-01-25)
+=================================
+
+Features
+--------
+
+- Added client-side validation of docker image name and tag. ([#2525](https://github.com/neuro-inc/platform-client-python/issues/2525))
+- Added support of column type `org_name` to ps-format. ([#2533](https://github.com/neuro-inc/platform-client-python/issues/2533))
+- Added "ORG" column to get-cluster-users output. ([#2541](https://github.com/neuro-inc/platform-client-python/issues/2541))
+- Added info about org quota to `neuro config show`. ([#2545](https://github.com/neuro-inc/platform-client-python/issues/2545))
+
+
+Bugfixes
+--------
+
+- Cluster/org name validness now checked after config re-fetch in `neuro config switch-cluster`
+  and `neuro config switch-org` commands. ([#2543](https://github.com/neuro-inc/platform-client-python/issues/2543))
+
+
 Neuro SDK/CLI 22.1.1 (2022-01-18)
 =================================
 

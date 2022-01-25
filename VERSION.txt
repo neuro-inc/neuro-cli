@@ -1,4 +1,4 @@
 # Global version number,
 # Update the file and run 'make fmt' to apply it everywhere
 
-22.1.1
+22.1.2
