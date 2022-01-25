@@ -3,6 +3,7 @@ import dataclasses
 import glob as globmodule  # avoid conflict with subcommand "glob"
 import logging
 import sys
+from pathlib import Path
 from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 
 import click
@@ -439,7 +440,7 @@ async def cp(
     errors = False
     for src in srcs:
         if target_directory:
-            destination = target_directory / src.name
+            destination = target_directory / Path(src.path).name
         assert destination
 
         progress_obj = create_storage_progress(root, show_progress)
