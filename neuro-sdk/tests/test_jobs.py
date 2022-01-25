@@ -2642,11 +2642,8 @@ async def test_job_run_working_dir(
 async def test_port_forward(
     aiohttp_server: _TestServerFactory,
     make_client: _MakeClient,
-    aiohttp_unused_port: Callable[[], int],
+    unused_tcp_port: int,
 ) -> None:
-
-    port = aiohttp_unused_port()
-
     async def handler(request: web.Request) -> web.WebSocketResponse:
         resp = web.WebSocketResponse()
         await resp.prepare(request)
@@ -2660,8 +2657,8 @@ async def test_port_forward(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        async with client.jobs.port_forward("job-id", port, 12345):
-            reader, writer = await asyncio.open_connection("127.0.0.1", port)
+        async with client.jobs.port_forward("job-id", unused_tcp_port, 12345):
+            reader, writer = await asyncio.open_connection("127.0.0.1", unused_tcp_port)
             for i in range(5):
                 writer.write(str(i).encode("ascii"))
                 ret = await reader.read(1024)
@@ -2673,12 +2670,9 @@ async def test_port_forward(
 async def test_port_forward_logs_error(
     aiohttp_server: _TestServerFactory,
     make_client: _MakeClient,
-    aiohttp_unused_port: Callable[[], int],
+    unused_tcp_port: int,
     caplog: Any,
 ) -> None:
-
-    port = aiohttp_unused_port()
-
     async def handler(request: web.Request) -> web.WebSocketResponse:
         raise web.HTTPBadRequest(
             text="test",
@@ -2692,8 +2686,8 @@ async def test_port_forward_logs_error(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        async with client.jobs.port_forward("job-id", port, 12345):
-            reader, writer = await asyncio.open_connection("127.0.0.1", port)
+        async with client.jobs.port_forward("job-id", unused_tcp_port, 12345):
+            reader, writer = await asyncio.open_connection("127.0.0.1", unused_tcp_port)
             writer.write(b"boom")
             await writer.drain()
             writer.close()

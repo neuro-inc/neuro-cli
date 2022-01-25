@@ -1,4 +1,3 @@
-import asyncio
 import sys
 from pathlib import Path
 from typing import Any, AsyncIterator, Callable
@@ -16,9 +15,7 @@ from neuro_sdk._url_utils import (
 
 
 @pytest.fixture
-async def client(
-    loop: asyncio.AbstractEventLoop, make_client: Callable[..., Client]
-) -> AsyncIterator[Client]:
+async def client(make_client: Callable[..., Client]) -> AsyncIterator[Client]:
     async with make_client("https://example.com") as client:
         yield client
 
