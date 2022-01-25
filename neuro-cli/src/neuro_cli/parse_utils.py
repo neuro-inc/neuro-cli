@@ -100,6 +100,7 @@ PS_COLUMNS = [
     JobColumnInfo("image", "IMAGE", "left", max_width=40),
     JobColumnInfo("owner", "OWNER", "left", max_width=25),
     JobColumnInfo("cluster_name", "CLUSTER", "left", max_width=15),
+    JobColumnInfo("org_name", "ORG", "left", max_width=15),
     JobColumnInfo("description", "DESCRIPTION", "left", max_width=50),
     JobColumnInfo("command", "COMMAND", "left", max_width=100),
     JobColumnInfo("life_span", "LIFE-SPAN", "left"),
@@ -107,7 +108,7 @@ PS_COLUMNS = [
     JobColumnInfo("preset", "PRESET", "left"),
 ]
 
-PS_COLUMNS_DEFAULT_FORMAT = "id/name status/when image owner command"
+PS_COLUMNS_DEFAULT_FORMAT = "id/name status/when image org_name/owner command"
 
 TOP_COLUMNS = PS_COLUMNS + [
     JobColumnInfo("cpu", "CPU", "right", width=15),
