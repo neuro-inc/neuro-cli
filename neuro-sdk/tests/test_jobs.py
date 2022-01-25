@@ -2232,7 +2232,7 @@ async def test_list_incorrect_image(
 ) -> None:
     jobs = [
         create_job_response("job-id-1", "running"),
-        create_job_response("job-id-2", "pending", image="some.com/path/:tag"),
+        create_job_response("job-id-2", "pending", image="some.com/path:tag"),
         create_job_response(
             "job-id-3", "failed", image="registry-dev.neu.ro/path/:tag"
         ),
