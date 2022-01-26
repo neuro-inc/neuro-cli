@@ -1067,8 +1067,7 @@ def _job_to_api(
         primitive["wait_for_jobs_quota"] = wait_for_jobs_quota
     if privileged:
         primitive["privileged"] = privileged
-    if org_name:
-        primitive["org_name"] = org_name
+    primitive["org_name"] = org_name
     primitive["cluster_name"] = cluster_name
     return primitive
 
