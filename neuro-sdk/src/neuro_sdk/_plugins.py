@@ -108,6 +108,7 @@ class _VersionRecord:
 class VersionChecker:
     def __init__(self) -> None:
         self._records: Dict[str, _VersionRecord] = {}
+        self._has_exclusive: bool = False
 
     def register(
         self,
@@ -118,10 +119,16 @@ class VersionChecker:
         delay: float = 0,
     ) -> None:
         record = _VersionRecord(package, update_text, exclusive, delay)
-        if exclusive and any(rec.exclusive for rec in self._records.values()):
-            pkgs = [rec.package for rec in self._records.values() if rec.exclusive]
-            raise ConfigError(f"Exclusive record for package {pkgs[0]} already exists")
-        self._records[package] = record
+        if exclusive:
+            if self._has_exclusive:
+                package = next(iter(self._records))
+                raise ConfigError(
+                    f"Exclusive record for package {package} already exists"
+                )
+            self._records = {package: record}
+            self._has_exclusive = True
+        elif not self._has_exclusive:
+            self._records[package] = record
 
 
 @rewrite_module
