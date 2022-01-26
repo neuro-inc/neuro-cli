@@ -62,7 +62,6 @@ class _NodePool:
     disk_type: Optional[str] = None
     gpu: int = 0
     gpu_model: Optional[str] = None
-    is_tpu_enabled: bool = False
     is_preemptible: bool = False
     idle_size: int = 0
 
@@ -220,7 +219,6 @@ def _node_pool_from_api(payload: Dict[str, Any]) -> _NodePool:
         disk_size_gb=payload["disk_size_gb"],
         gpu=payload.get("gpu", 0),
         gpu_model=payload.get("gpu_model"),
-        is_tpu_enabled=payload.get("is_tpu_enabled", False),
         is_preemptible=payload.get("is_preemptible", False),
     )
 
@@ -233,9 +231,7 @@ def _storage_from_api(payload: Dict[str, Any]) -> _Storage:
 
 
 def _storage_instance_from_api(payload: Dict[str, Any]) -> _StorageInstance:
-    return _StorageInstance(
-        name=payload.get("description"), size_mb=payload.get("size_mb")
-    )
+    return _StorageInstance(name=payload.get("name"), size_mb=payload.get("size_mb"))
 
 
 def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:

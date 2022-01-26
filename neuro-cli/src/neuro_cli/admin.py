@@ -276,6 +276,8 @@ node_pools:
   max_size: 1
 storage:
   id: generalpurpose_bursting
+  instances:
+  - {}
 """
 
 
@@ -334,6 +336,8 @@ node_pools:
   gpu_model: nvidia-tesla-v100
 storage:
   id: gcs-nfs
+  instances:
+  - {}
 """
 
 
@@ -372,7 +376,8 @@ node_pools:
   max_size: 1
 storage:
   id: premium_lrs
-  file_share_size_gib: {file_share_size_gib}
+  instances:
+  - size_mb: {file_share_size_mb}
 """
 
 
@@ -391,9 +396,10 @@ async def generate_azure(session: PromptSession[str]) -> str:
         "Azure client secret: ", default=os.environ.get("AZURE_CLIENT_SECRET", "")
     )
     args["resource_group"] = await session.prompt_async("Azure resource group: ")
-    args["file_share_size_gib"] = await session.prompt_async(
+    args["file_share_size_gb"] = await session.prompt_async(
         "Azure Files storage size (Gib): "
     )
+    args["file_share_size_mb"] = args["file_share_size_gb"] * 1024
     return AZURE_TEMPLATE.format_map(args)
 
 
@@ -426,7 +432,9 @@ node_pools:
   disk_size_gb: 100
 storage:
   profile_name: {storage_profile_name}
-  size_gib: {storage_size_gib}
+  size_gib: {storage_size_gb}
+  instances:
+  - size_mb: {storage_size_mb}
 """
 
 
@@ -481,7 +489,8 @@ async def generate_vcd(root: Root, session: PromptSession[str]) -> str:
         "Storage profile: ",
         default=(cloud_provider.get("storage_profile_names") or [""])[0],
     )
-    args["storage_size_gib"] = await session.prompt_async("Storage size (Gib): ")
+    args["storage_size_gb"] = await session.prompt_async("Storage size (Gib): ")
+    args["storage_size_mb"] = args["storage_size_gb"] * 1024
     args["kubernetes_node_pool_id"] = cloud_provider["kubernetes_node_pool_id"]
     args["platform_node_pool_id"] = cloud_provider["platform_node_pool_id"]
     return VCD_TEMPLATE.format_map(args)

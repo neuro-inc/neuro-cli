@@ -186,7 +186,6 @@ class ClustersFormatter:
 def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
     is_scalable = _is_scalable(node_pools)
     has_preemptible = _has_preemptible(node_pools)
-    has_tpu = _has_tpu(node_pools)
     has_idle = _has_idle(node_pools)
 
     table = Table(
@@ -200,8 +199,6 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
     if has_preemptible:
         table.add_column("Preemptible", justify="center")
     table.add_column("GPU", justify="right")
-    if has_tpu:
-        table.add_column("TPU", justify="center")
     if is_scalable:
         table.add_column("Min", justify="right")
         table.add_column("Max", justify="right")
@@ -226,8 +223,6 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
         if has_preemptible:
             row.append("√" if node_pool.is_preemptible else "×")
         row.append(_gpu(node_pool))
-        if has_tpu:
-            row.append("√" if node_pool.is_tpu_enabled else "×")
         if is_scalable:
             row.append(str(node_pool.min_size))
         row.append(str(node_pool.max_size))
@@ -273,13 +268,6 @@ def _is_scalable(node_pools: Iterable[_NodePool]) -> bool:
 def _has_preemptible(node_pools: Iterable[_NodePool]) -> bool:
     for node_pool in node_pools:
         if node_pool.is_preemptible:
-            return True
-    return False
-
-
-def _has_tpu(node_pools: Iterable[_NodePool]) -> bool:
-    for node_pool in node_pools:
-        if node_pool.is_tpu_enabled:
             return True
     return False
 

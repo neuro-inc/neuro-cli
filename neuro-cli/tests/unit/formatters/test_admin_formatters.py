@@ -107,7 +107,6 @@ class TestClustersFormatter:
         disk_type: str = "",
         is_scalable: bool = True,
         is_gpu: bool = False,
-        is_tpu_enabled: bool = False,
         is_preemptible: bool = False,
         has_idle: bool = False,
     ) -> _NodePool:
@@ -123,7 +122,6 @@ class TestClustersFormatter:
             gpu=1 if is_gpu else 0,
             gpu_model="nvidia-tesla-k80" if is_gpu else None,
             is_preemptible=is_preemptible,
-            is_tpu_enabled=is_tpu_enabled,
         )
 
     def test_cluster_list(self, rich_cmp: RichCmp) -> None:
@@ -256,9 +254,7 @@ class TestClustersFormatter:
                         region="us-central1",
                         zones=[],
                         node_pools=[
-                            self._create_node_pool(
-                                is_preemptible=True, is_tpu_enabled=True, has_idle=True
-                            ),
+                            self._create_node_pool(is_preemptible=True, has_idle=True),
                             self._create_node_pool(),
                         ],
                         storage=None,
