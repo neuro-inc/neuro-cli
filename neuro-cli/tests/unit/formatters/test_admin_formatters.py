@@ -14,6 +14,7 @@ from neuro_sdk import (
     _NodePool,
     _Quota,
     _Storage,
+    _StorageInstance,
     _UserInfo,
 )
 
@@ -172,7 +173,41 @@ class TestClustersFormatter:
                         region="us-central1",
                         zones=["us-central1-a", "us-central1-c"],
                         node_pools=[],
-                        storage=_Storage(description="Filestore"),
+                        storage=_Storage(
+                            description="Filestore",
+                            instances=[
+                                _StorageInstance(size_mb=1024),
+                                _StorageInstance(name="org", size_mb=2 * 1024),
+                            ],
+                        ),
+                    ),
+                ),
+            )
+        }
+        rich_cmp(formatter(clusters))
+
+    def test_cluster_with_cloud_provider_storage_without_size_list(
+        self, rich_cmp: RichCmp
+    ) -> None:
+        formatter = ClustersFormatter()
+        clusters = {
+            "default": (
+                _Cluster(name="default", default_credits=None, default_quota=_Quota()),
+                _ConfigCluster(
+                    name="default",
+                    status="deployed",
+                    cloud_provider=_CloudProvider(
+                        type="gcp",
+                        region="us-central1",
+                        zones=["us-central1-a", "us-central1-c"],
+                        node_pools=[],
+                        storage=_Storage(
+                            description="Filestore",
+                            instances=[
+                                _StorageInstance(),
+                                _StorageInstance(name="org"),
+                            ],
+                        ),
                     ),
                 ),
             )

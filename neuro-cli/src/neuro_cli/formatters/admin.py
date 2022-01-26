@@ -16,6 +16,7 @@ from neuro_sdk import (
     _Org,
     _OrgCluster,
     _OrgUserWithInfo,
+    _Storage,
 )
 
 from neuro_cli.formatters.config import format_quota_details
@@ -155,7 +156,13 @@ class ClustersFormatter:
                             ),
                         )
                     if cloud_provider.storage:
-                        table.add_row("Storage", cloud_provider.storage.description)
+                        table.add_row(
+                            "Storage",
+                            Styled(
+                                _format_storage(cloud_provider.storage),
+                                style="reset",
+                            ),
+                        )
             else:
                 table.add_row("Status", "Setup failed (not found in platform-config)")
             if admin_cluster:
@@ -228,6 +235,31 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
             row.append(str(node_pool.idle_size))
         table.add_row(*row)
 
+    return table
+
+
+def _format_storage(storage: _Storage) -> Table:
+    table = Table(
+        box=box.SIMPLE_HEAVY,
+        show_edge=True,
+    )
+    table.add_column("Name", style="bold", justify="left")
+    table.add_column("Type", style="bold", justify="left")
+    for instance in storage.instances:
+        if instance.size_mb is not None:
+            table.add_column("Size", style="bold", justify="left")
+            has_size = True
+            break
+    else:
+        has_size = False
+    for instance in storage.instances:
+        row = [instance.name or "<default>", storage.description]
+        if has_size:
+            if instance.size_mb is None:
+                row.append("")
+            else:
+                row.append(format_size(instance.size_mb * 1024 ** 2))
+        table.add_row(*row)
     return table
 
 

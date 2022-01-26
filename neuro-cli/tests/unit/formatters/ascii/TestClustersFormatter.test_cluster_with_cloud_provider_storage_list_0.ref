@@ -1,7 +1,12 @@
-default                                
- Status   Deployed                     
- Cloud    gcp                          
- Region   us-central1                  
- Zones    us-central1-a, us-central1-c 
- Storage  Filestore                    
+default                                    
+ Status   Deployed                         
+ Cloud    gcp                              
+ Region   us-central1                      
+ Zones    us-central1-a, us-central1-c     
+ Storage                                   
+            Name        Type        Size   
+           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  
+            <default>   Filestore   1.0G   
+            org         Filestore   2.0G   
+                                           
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────

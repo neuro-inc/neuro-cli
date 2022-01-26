@@ -1259,6 +1259,12 @@ async def get_org_clusters(root: Root, cluster_name: str) -> None:
     show_default=True,
     help="Default maximum running jobs quota (`unlimited' stands for no limit)",
 )
+@option(
+    "--storage-size",
+    metavar="AMOUNT",
+    type=MEGABYTE,
+    help="Storage size, ignored for storage types with elastic storage size",
+)
 async def add_org_cluster(
     root: Root,
     cluster_name: str,
@@ -1267,6 +1273,7 @@ async def add_org_cluster(
     jobs: str,
     default_credits: str,
     default_jobs: str,
+    storage_size: Optional[int],
 ) -> None:
     """
     Add org access to specified cluster.
@@ -1279,6 +1286,7 @@ async def add_org_cluster(
         quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
         default_credits=_parse_credits_value(default_credits),
         default_quota=_Quota(_parse_jobs_value(default_jobs)),
+        storage_size_mb=storage_size,
     )
     if not root.quiet:
         root.print(

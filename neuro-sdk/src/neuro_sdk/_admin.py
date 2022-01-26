@@ -69,8 +69,16 @@ class _NodePool:
 
 @rewrite_module
 @dataclass(frozen=True)
+class _StorageInstance:
+    name: Optional[str] = None
+    size_mb: Optional[int] = None
+
+
+@rewrite_module
+@dataclass(frozen=True)
 class _Storage:
     description: str
+    instances: List[_StorageInstance]
 
 
 @rewrite_module
@@ -218,7 +226,16 @@ def _node_pool_from_api(payload: Dict[str, Any]) -> _NodePool:
 
 
 def _storage_from_api(payload: Dict[str, Any]) -> _Storage:
-    return _Storage(description=payload["description"])
+    return _Storage(
+        description=payload["description"],
+        instances=[_storage_instance_from_api(p) for p in payload.get("instances", ())],
+    )
+
+
+def _storage_instance_from_api(payload: Dict[str, Any]) -> _StorageInstance:
+    return _StorageInstance(
+        name=payload.get("description"), size_mb=payload.get("size_mb")
+    )
 
 
 def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
