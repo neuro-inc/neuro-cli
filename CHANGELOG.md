@@ -5,6 +5,15 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 22.1.3 (2022-01-27)
+=================================
+
+Features
+--------
+
+- Support organization storage size parameter. ([#2560](https://github.com/neuro-inc/platform-client-python/issues/2560))
+
+
 Neuro SDK/CLI 22.1.2 (2022-01-25)
 =================================
 
