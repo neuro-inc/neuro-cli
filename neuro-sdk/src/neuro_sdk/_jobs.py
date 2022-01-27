@@ -510,7 +510,7 @@ class Jobs(metaclass=NoPublicConstructor):
         separator: Optional[str] = None,
         debug: bool = False,
     ) -> AsyncIterator[bytes]:
-        url = self._get_monitoring_url(cluster_name) / id / "log"
+        url = self._get_monitoring_url(cluster_name) / id / "log_ws"
         if since is not None:
             if since.tzinfo is None:
                 # Interpret naive datetime object as local time.
@@ -524,15 +524,15 @@ class Jobs(metaclass=NoPublicConstructor):
             url = url.update_query(debug="true")
         timeout = attr.evolve(self._core.timeout, sock_read=None)
         auth = await self._config._api_auth()
-        async with self._core.request(
-            "GET",
+        async with self._core.ws_connect(
             url,
-            headers={"Accept-Encoding": "identity"},
-            timeout=timeout,
             auth=auth,
-        ) as resp:
-            async for data in resp.content.iter_any():
-                yield data
+            timeout=timeout,
+            heartbeat=30,
+        ) as ws:
+            async for msg in ws:
+                if msg.data:
+                    yield msg.data
 
     async def status(self, id: str) -> JobDescription:
         url = self._config.api_url / "jobs" / id
