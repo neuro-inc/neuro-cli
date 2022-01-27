@@ -20,7 +20,7 @@ from typing import (
 )
 
 import aiohttp
-from aiohttp import WSMessage
+from aiohttp import ClientWebSocketResponse, WSServerHandshakeError
 from multidict import CIMultiDict
 from yarl import URL
 
@@ -33,7 +33,6 @@ from ._errors import (
     ServerNotAvailable,
 )
 from ._tracing import gen_trace_id
-from ._utils import asyncgeneratorcontextmanager
 
 log = logging.getLogger(__package__)
 
@@ -109,6 +108,23 @@ class _Core:
     async def close(self) -> None:
         pass
 
+    def _raise_error(self, status_code: int, err_text: str) -> None:
+        try:
+            payload = jsonmodule.loads(err_text)
+        except ValueError:
+            # One example would be a HEAD request for application/json
+            payload = {}
+        if "error" in payload:
+            err_text = payload["error"]
+        else:
+            payload = {}
+        if status_code == 400 and "errno" in payload:
+            os_errno: Any = payload["errno"]
+            os_errno = errno.__dict__.get(os_errno, os_errno)
+            raise OSError(os_errno, err_text)
+        err_cls = self._exception_map.get(status_code, IllegalArgumentError)
+        raise err_cls(err_text)
+
     @asynccontextmanager
     async def request(
         self,
@@ -154,31 +170,21 @@ class _Core:
             read_bufsize=2 ** 22,
         ) as resp:
             if 400 <= resp.status:
-                err_text = await resp.text()
-                if resp.content_type.lower() == "application/json":
-                    try:
-                        payload = jsonmodule.loads(err_text)
-                    except ValueError:
-                        # One example would be a HEAD request for application/json
-                        payload = {}
-                    if "error" in payload:
-                        err_text = payload["error"]
-                else:
-                    payload = {}
-                if resp.status == 400 and "errno" in payload:
-                    os_errno: Any = payload["errno"]
-                    os_errno = errno.__dict__.get(os_errno, os_errno)
-                    raise OSError(os_errno, err_text)
-                err_cls = self._exception_map.get(resp.status, IllegalArgumentError)
-                raise err_cls(err_text)
+                self._raise_error(resp.status, await resp.text())
             else:
                 yield resp
 
-    @asyncgeneratorcontextmanager
+    @asynccontextmanager
     async def ws_connect(
-        self, abs_url: URL, auth: str, *, headers: Optional[Dict[str, str]] = None
-    ) -> AsyncIterator[WSMessage]:
-        # TODO: timeout
+        self,
+        abs_url: URL,
+        *,
+        auth: str,
+        headers: Optional[Dict[str, str]] = None,
+        heartbeat: Optional[float] = None,
+        timeout: Optional[float] = 10.0,
+        receive_timeout: Optional[float] = None,
+    ) -> AsyncIterator[ClientWebSocketResponse]:
         assert abs_url.is_absolute(), abs_url
         log.debug("Fetch web socket: %s", abs_url)
 
@@ -187,11 +193,20 @@ class _Core:
         else:
             real_headers = CIMultiDict()
         real_headers["Authorization"] = auth
-
-        async with self._session.ws_connect(abs_url, headers=real_headers) as ws:
-            async for msg in ws:
-                if msg.type == aiohttp.WSMsgType.TEXT:
-                    yield msg
+        try:
+            async with self._session.ws_connect(
+                abs_url,
+                headers=real_headers,
+                heartbeat=heartbeat,
+                timeout=timeout,  # type: ignore
+                receive_timeout=receive_timeout,
+            ) as ws:
+                yield ws
+        except WSServerHandshakeError as e:
+            err_text = str(e)
+            if e.headers:
+                err_text = e.headers.get("X-Error", err_text)
+            self._raise_error(e.status, err_text)
 
 
 def _ensure_schema(db: sqlite3.Connection, *, update: bool) -> bool:
