@@ -553,6 +553,7 @@ Name | Description|
 |_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--storage-size AMOUNT_|Storage size, ignored for storage types with elastic storage size|
 
 
 

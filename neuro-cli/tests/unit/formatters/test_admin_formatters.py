@@ -14,6 +14,7 @@ from neuro_sdk import (
     _NodePool,
     _Quota,
     _Storage,
+    _StorageInstance,
     _UserInfo,
 )
 
@@ -106,7 +107,6 @@ class TestClustersFormatter:
         disk_type: str = "",
         is_scalable: bool = True,
         is_gpu: bool = False,
-        is_tpu_enabled: bool = False,
         is_preemptible: bool = False,
         has_idle: bool = False,
     ) -> _NodePool:
@@ -122,7 +122,6 @@ class TestClustersFormatter:
             gpu=1 if is_gpu else 0,
             gpu_model="nvidia-tesla-k80" if is_gpu else None,
             is_preemptible=is_preemptible,
-            is_tpu_enabled=is_tpu_enabled,
         )
 
     def test_cluster_list(self, rich_cmp: RichCmp) -> None:
@@ -172,7 +171,41 @@ class TestClustersFormatter:
                         region="us-central1",
                         zones=["us-central1-a", "us-central1-c"],
                         node_pools=[],
-                        storage=_Storage(description="Filestore"),
+                        storage=_Storage(
+                            description="Filestore",
+                            instances=[
+                                _StorageInstance(size_mb=1024),
+                                _StorageInstance(name="org", size_mb=2 * 1024),
+                            ],
+                        ),
+                    ),
+                ),
+            )
+        }
+        rich_cmp(formatter(clusters))
+
+    def test_cluster_with_cloud_provider_storage_without_size_list(
+        self, rich_cmp: RichCmp
+    ) -> None:
+        formatter = ClustersFormatter()
+        clusters = {
+            "default": (
+                _Cluster(name="default", default_credits=None, default_quota=_Quota()),
+                _ConfigCluster(
+                    name="default",
+                    status="deployed",
+                    cloud_provider=_CloudProvider(
+                        type="gcp",
+                        region="us-central1",
+                        zones=["us-central1-a", "us-central1-c"],
+                        node_pools=[],
+                        storage=_Storage(
+                            description="Filestore",
+                            instances=[
+                                _StorageInstance(),
+                                _StorageInstance(name="org"),
+                            ],
+                        ),
                     ),
                 ),
             )
@@ -221,9 +254,7 @@ class TestClustersFormatter:
                         region="us-central1",
                         zones=[],
                         node_pools=[
-                            self._create_node_pool(
-                                is_preemptible=True, is_tpu_enabled=True, has_idle=True
-                            ),
+                            self._create_node_pool(is_preemptible=True, has_idle=True),
                             self._create_node_pool(),
                         ],
                         storage=None,

@@ -8,7 +8,13 @@ from aiohttp.web_exceptions import HTTPOk
 from yarl import URL
 
 from neuro_sdk import Client, NotSupportedError
-from neuro_sdk._admin import _CloudProvider, _ConfigCluster, _NodePool, _Storage
+from neuro_sdk._admin import (
+    _CloudProvider,
+    _ConfigCluster,
+    _NodePool,
+    _Storage,
+    _StorageInstance,
+)
 from neuro_sdk._server_cfg import Preset
 
 from tests import _TestServerFactory
@@ -65,7 +71,6 @@ async def test_list_clusters_with_cloud_provider(
                             "disk_size_gb": 150,
                             "gpu": 1,
                             "gpu_model": "nvidia-tesla-k80",
-                            "is_tpu_enabled": True,
                             "is_preemptible": True,
                         },
                         {
@@ -77,7 +82,13 @@ async def test_list_clusters_with_cloud_provider(
                             "disk_size_gb": 150,
                         },
                     ],
-                    "storage": {"description": "Filestore"},
+                    "storage": {
+                        "description": "Filestore",
+                        "instances": [
+                            {"size_mb": 1024},
+                            {"name": "org", "size_mb": 1024},
+                        ],
+                    },
                 },
             },
             {
@@ -95,7 +106,10 @@ async def test_list_clusters_with_cloud_provider(
                             "disk_size_gb": 150,
                         },
                     ],
-                    "storage": {"description": "NFS"},
+                    "storage": {
+                        "description": "NFS",
+                        "instances": [{"size_mb": 1024}],
+                    },
                 },
             },
             {
@@ -142,7 +156,6 @@ async def test_list_clusters_with_cloud_provider(
                             disk_size_gb=150,
                             gpu=1,
                             gpu_model="nvidia-tesla-k80",
-                            is_tpu_enabled=True,
                             is_preemptible=True,
                         ),
                         _NodePool(
@@ -154,7 +167,13 @@ async def test_list_clusters_with_cloud_provider(
                             disk_size_gb=150,
                         ),
                     ],
-                    storage=_Storage(description="Filestore"),
+                    storage=_Storage(
+                        description="Filestore",
+                        instances=[
+                            _StorageInstance(size_mb=1024),
+                            _StorageInstance(name="org", size_mb=1024),
+                        ],
+                    ),
                 ),
             ),
             "on-prem": _ConfigCluster(
@@ -174,7 +193,10 @@ async def test_list_clusters_with_cloud_provider(
                             available_memory_mb=46080,
                         ),
                     ],
-                    storage=_Storage(description="NFS"),
+                    storage=_Storage(
+                        description="NFS",
+                        instances=[_StorageInstance(size_mb=1024)],
+                    ),
                 ),
             ),
             "other1": _ConfigCluster(
@@ -215,6 +237,7 @@ async def test_add_cluster(
         "region": "us-central1",
         "zone": "us-central1-a",
         "project": "project",
+        "tpu_enabled": True,
         "credentials": {
             "type": "service_account",
             "project_id": "project_id",
@@ -232,7 +255,6 @@ async def test_add_cluster(
                 "id": "n1_highmem_8",  # id of the GCP node pool template
                 "min_size": 0,
                 "max_size": 5,
-                "is_tpu_enabled": True,
             },
             {"id": "n1_highmem_32_4x_nvidia_tesla_k80", "min_size": 0, "max_size": 5},
             {
@@ -244,7 +266,7 @@ async def test_add_cluster(
         ],
         "storage": {
             "id": "premium",  # id of the GCP storage template
-            "capacity_tb": 2.5,
+            "instances": [{"size_mb": 1024}],
         },
     }
 

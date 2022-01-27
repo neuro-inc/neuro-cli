@@ -16,6 +16,7 @@ from neuro_sdk import (
     _Org,
     _OrgCluster,
     _OrgUserWithInfo,
+    _Storage,
 )
 
 from neuro_cli.formatters.config import format_quota_details
@@ -155,7 +156,13 @@ class ClustersFormatter:
                             ),
                         )
                     if cloud_provider.storage:
-                        table.add_row("Storage", cloud_provider.storage.description)
+                        table.add_row(
+                            "Storage",
+                            Styled(
+                                _format_storage(cloud_provider.storage),
+                                style="reset",
+                            ),
+                        )
             else:
                 table.add_row("Status", "Setup failed (not found in platform-config)")
             if admin_cluster:
@@ -179,7 +186,6 @@ class ClustersFormatter:
 def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
     is_scalable = _is_scalable(node_pools)
     has_preemptible = _has_preemptible(node_pools)
-    has_tpu = _has_tpu(node_pools)
     has_idle = _has_idle(node_pools)
 
     table = Table(
@@ -193,8 +199,6 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
     if has_preemptible:
         table.add_column("Preemptible", justify="center")
     table.add_column("GPU", justify="right")
-    if has_tpu:
-        table.add_column("TPU", justify="center")
     if is_scalable:
         table.add_column("Min", justify="right")
         table.add_column("Max", justify="right")
@@ -219,8 +223,6 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
         if has_preemptible:
             row.append("√" if node_pool.is_preemptible else "×")
         row.append(_gpu(node_pool))
-        if has_tpu:
-            row.append("√" if node_pool.is_tpu_enabled else "×")
         if is_scalable:
             row.append(str(node_pool.min_size))
         row.append(str(node_pool.max_size))
@@ -228,6 +230,31 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
             row.append(str(node_pool.idle_size))
         table.add_row(*row)
 
+    return table
+
+
+def _format_storage(storage: _Storage) -> Table:
+    table = Table(
+        box=box.SIMPLE_HEAVY,
+        show_edge=True,
+    )
+    table.add_column("Name", style="bold", justify="left")
+    table.add_column("Type", style="bold", justify="left")
+    for instance in storage.instances:
+        if instance.size_mb is not None:
+            table.add_column("Size", style="bold", justify="left")
+            has_size = True
+            break
+    else:
+        has_size = False
+    for instance in storage.instances:
+        row = [instance.name or "<default>", storage.description]
+        if has_size:
+            if instance.size_mb is None:
+                row.append("")
+            else:
+                row.append(format_size(instance.size_mb * 1024 ** 2))
+        table.add_row(*row)
     return table
 
 
@@ -241,13 +268,6 @@ def _is_scalable(node_pools: Iterable[_NodePool]) -> bool:
 def _has_preemptible(node_pools: Iterable[_NodePool]) -> bool:
     for node_pool in node_pools:
         if node_pool.is_preemptible:
-            return True
-    return False
-
-
-def _has_tpu(node_pools: Iterable[_NodePool]) -> bool:
-    for node_pool in node_pools:
-        if node_pool.is_tpu_enabled:
             return True
     return False
 

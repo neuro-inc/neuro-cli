@@ -40,6 +40,7 @@ from ._admin import (
     _OrgUserWithInfo,
     _Quota,
     _Storage,
+    _StorageInstance,
     _UserInfo,
 )
 from ._bucket_base import (
@@ -218,6 +219,7 @@ __all__ = (
     "_OrgUserWithInfo",
     "_Quota",
     "_Storage",
+    "_StorageInstance",
     "_UserInfo",
     "__version__",
     "find_project_root",
