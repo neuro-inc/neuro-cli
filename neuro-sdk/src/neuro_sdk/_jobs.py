@@ -522,12 +522,11 @@ class Jobs(metaclass=NoPublicConstructor):
             url = url.update_query(separator=separator)
         if debug:
             url = url.update_query(debug="true")
-        timeout = attr.evolve(self._core.timeout, sock_read=None)
         auth = await self._config._api_auth()
         async with self._core.ws_connect(
             url,
             auth=auth,
-            timeout=timeout,
+            timeout=None,
             heartbeat=30,
         ) as ws:
             async for msg in ws:

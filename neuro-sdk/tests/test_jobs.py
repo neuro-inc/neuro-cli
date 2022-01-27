@@ -46,19 +46,16 @@ async def test_jobs_monitor(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def log_stream(request: web.Request) -> web.StreamResponse:
-        assert request.headers["Accept-Encoding"] == "identity"
         assert "since" not in request.query
         assert request.query.get("timestamps", "false") == "false"
-        resp = web.StreamResponse()
-        resp.enable_chunked_encoding()
-        resp.enable_compression(web.ContentCoding.identity)
+        resp = web.WebSocketResponse()
         await resp.prepare(request)
         for i in range(10):
-            await resp.write(b"chunk " + str(i).encode("ascii") + b"\n")
+            await resp.send_bytes(b"chunk " + str(i).encode("ascii") + b"\n")
         return resp
 
     app = web.Application()
-    app.router.add_get("/jobs/job-id/log", log_stream)
+    app.router.add_get("/jobs/job-id/log_ws", log_stream)
 
     srv = await aiohttp_server(app)
 
@@ -88,19 +85,16 @@ async def test_jobs_monitor_since(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def log_stream(request: web.Request) -> web.StreamResponse:
-        assert request.headers["Accept-Encoding"] == "identity"
         assert request.query["since"] == "2021-08-17T00:00:00+00:00"
         assert request.query.get("timestamps", "false") == "false"
-        resp = web.StreamResponse()
-        resp.enable_chunked_encoding()
-        resp.enable_compression(web.ContentCoding.identity)
+        resp = web.WebSocketResponse()
         await resp.prepare(request)
         for i in range(5, 10):
-            await resp.write(b"chunk " + str(i).encode("ascii") + b"\n")
+            await resp.send_bytes(b"chunk " + str(i).encode("ascii") + b"\n")
         return resp
 
     app = web.Application()
-    app.router.add_get("/jobs/job-id/log", log_stream)
+    app.router.add_get("/jobs/job-id/log_ws", log_stream)
 
     srv = await aiohttp_server(app)
 
@@ -127,19 +121,18 @@ async def test_jobs_monitor_timestamps(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def log_stream(request: web.Request) -> web.StreamResponse:
-        assert request.headers["Accept-Encoding"] == "identity"
         assert "since" not in request.query
         assert request.query["timestamps"] == "true"
-        resp = web.StreamResponse()
-        resp.enable_chunked_encoding()
-        resp.enable_compression(web.ContentCoding.identity)
+        resp = web.WebSocketResponse()
         await resp.prepare(request)
         for i in range(10):
-            await resp.write(f"2021-08-13T09:23:{i:02}.123456789Z chunk {i}\n".encode())
+            await resp.send_bytes(
+                f"2021-08-13T09:23:{i:02}.123456789Z chunk {i}\n".encode()
+            )
         return resp
 
     app = web.Application()
-    app.router.add_get("/jobs/job-id/log", log_stream)
+    app.router.add_get("/jobs/job-id/log_ws", log_stream)
 
     srv = await aiohttp_server(app)
 
