@@ -113,8 +113,6 @@ jobs:
     - name: Upload coverage artifact
       uses: aio-libs/prepare-coverage@v22.1.2
       if: matrix.os == 'ubuntu'
-      with:
-        key: unit-${{ matrix.python-version }}-${{ matrix.os }}-${{ matrix.cmd }}
 
   e2e:
     name: E2E
@@ -172,8 +170,6 @@ jobs:
     - name: Upload coverage artifact
       uses: neuro-inc/prepare-coverage@v22.1.2
       if: matrix.os == 'ubuntu'
-      with:
-        key: e2e-${{ matrix.python-version }}-${{ matrix.os }}
 
   upload-cov:
     name: Upload coverage
