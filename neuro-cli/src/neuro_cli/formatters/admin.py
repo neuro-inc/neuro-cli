@@ -88,7 +88,7 @@ class OrgUserFormatter:
         return table
 
 
-class OrgClusterFormatter:
+class OrgClustersFormatter:
     def __call__(self, org_clusters: Iterable[_OrgCluster]) -> RenderableType:
         table = Table(box=box.MINIMAL_HEAVY_HEAD)
         table.add_column("Org name", style="bold")
@@ -116,6 +116,33 @@ class OrgClusterFormatter:
 
         for row in rows:
             table.add_row(*row)
+        return table
+
+
+class OrgClusterFormatter:
+    def __call__(
+        self, org_cluster: _OrgCluster, *, skip_cluster_org: bool = False
+    ) -> RenderableType:
+        table = Table(box=None, show_header=False, show_edge=False)
+        table.add_column()
+        table.add_column(style="bold")
+        if not skip_cluster_org:
+            table.add_row("Org name", org_cluster.org_name)
+            table.add_row("Cluster name", org_cluster.cluster_name)
+        table.add_row("Credits", format_quota_details(org_cluster.balance.credits))
+        table.add_row(
+            "Spent credits", format_quota_details(org_cluster.balance.spent_credits)
+        )
+        table.add_row(
+            "Max jobs", format_quota_details(org_cluster.quota.total_running_jobs)
+        )
+        table.add_row(
+            "Default credits", format_quota_details(org_cluster.default_credits)
+        )
+        table.add_row(
+            "Default max jobs",
+            format_quota_details(org_cluster.default_quota.total_running_jobs),
+        )
         return table
 
 
