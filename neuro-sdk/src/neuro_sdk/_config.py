@@ -200,10 +200,16 @@ class Config(metaclass=NoPublicConstructor):
                 f"Cluster {name} doesn't exist in "
                 f"a list of available clusters {list(self.clusters)}. "
             )
+        cluster_orgs = self.clusters[name].orgs
         org_name = self.org_name
-        if org_name not in self.clusters[name].orgs:
-            # Cannot keep using same org, set to first available
-            org_name = self.clusters[name].orgs[0]
+        if org_name not in cluster_orgs:
+            # Cannot keep using same org
+            # If NO_ORG is available - use it
+            # else use first in alphabetical order
+            if None in cluster_orgs:
+                org_name = None
+            else:
+                org_name = sorted(cluster_orgs, key=lambda it: it or "")[0]
         self.__config_data = replace(
             self._config_data, cluster_name=name, org_name=org_name
         )
