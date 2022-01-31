@@ -437,15 +437,11 @@ async def resolve_job_ex(
         )
         assert uri.host
         cluster_name = uri.host
-        parts = uri.path.lstrip("/").split("/")
-        if len(parts) == 2:
-            owner, id_or_name = parts
-        elif len(parts) == 3:
-            _, owner, id_or_name = parts
-        else:
-            raise ValueError(f"Invalid job URI: {uri!s}")
+        owner, _, id_or_name = uri.path.lstrip("/").partition("/")
+        if not owner:
+            raise ValueError("Invalid job URI: missing owner")
         if not id_or_name:
-            raise ValueError(f"Invalid job URI: {uri!s}")
+            raise ValueError("Invalid job URI: missing job-id or job-name")
     else:
         id_or_name = id_or_name_or_uri
         owner = default_user

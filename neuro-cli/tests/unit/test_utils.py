@@ -265,42 +265,6 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
         assert resolved_ex == (job_id, cluster_name)
 
 
-@pytest.mark.parametrize("cluster_name", ["default", "other"])
-async def test_resolve_job_id__from_uri_with_with_org__single_job_found(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient, cluster_name: str
-) -> None:
-    job_owner = "job-owner"
-    job_org = "job-org"
-    job_name = "my-job-name"
-    uri = f"job://{cluster_name}/{job_org}/{job_owner}/{job_name}"
-    job_id = "job-id-1"
-    JSON = {"jobs": [_job_entry(job_id, cluster_name=cluster_name)]}
-
-    async def handler(request: web.Request) -> web.Response:
-        _check_params(
-            request,
-            name=job_name,
-            owner=job_owner,
-            cluster_name=cluster_name,
-            reverse="1",
-            limit="1",
-        )
-        return web.json_response(JSON)
-
-    app = web.Application()
-    app.router.add_get("/jobs", handler)
-
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
-        assert resolved == job_id
-        resolved_ex = await resolve_job_ex(
-            uri, client=client, status={JobStatus.RUNNING}
-        )
-        assert resolved_ex == (job_id, cluster_name)
-
-
 async def test_resolve_job_id__from_uri_without_owner__single_job_found(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -462,64 +426,46 @@ async def test_resolve_job_id__from_uri_without_owner__server_error(
 
 
 @pytest.mark.parametrize(
-    "uri",
-    [
-        "job:",
-        "job:/",
-        "job://",
-        "job:///",
-        "job://default",
-        "job://default/",
-        "job://default/user",
-        "job://default/user/",
-        "job://default/org/user/name/",
-        "job://default/org/user/name/rest",
-        "job:/user/name/",
-        "job:name/",
-    ],
+    "uri", ["job://default/user", "job://default/user/", "job:", "job://"]
 )
-async def test_resolve_job_id__from_uri__invalid(
+async def test_resolve_job_id__from_uri__missing_job_id(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient, uri: str
 ) -> None:
+
     app = web.Application()
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        with pytest.raises(ValueError, match="Invalid job URI: job:"):
+        with pytest.raises(
+            ValueError,
+            match="Invalid job URI: missing job-id or job-name",
+        ):
             await resolve_job(uri, client=client, status={JobStatus.RUNNING})
-        with pytest.raises(ValueError, match="Invalid job URI: job:"):
+        with pytest.raises(
+            ValueError,
+            match="Invalid job URI: missing job-id or job-name",
+        ):
             await resolve_job_ex(uri, client=client, status={JobStatus.RUNNING})
 
 
-@pytest.mark.parametrize(
-    "uri",
-    [
-        "job:/user/name/rest",
-        "job:name/rest",
-    ],
-)
-async def test_resolve_job_id__from_uri__invalid2(
+@pytest.mark.parametrize("uri", ["job://default", "job://default/", "job:/", "job:///"])
+async def test_resolve_job_id__from_uri__missing_owner(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient, uri: str
 ) -> None:
-    async def handler(request: web.Request) -> web.Response:
-        _check_params(
-            request,
-            name="rest",
-            owner="name",
-            cluster_name="default",
-            reverse="1",
-            limit="1",
-        )
-        return web.json_response({"jobs": []})
 
     app = web.Application()
-    app.router.add_get("/jobs", handler)
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        with pytest.raises(ValueError, match=f"Failed to resolve job {uri}"):
+        with pytest.raises(
+            ValueError,
+            match="Invalid job URI: missing owner",
+        ):
             await resolve_job(uri, client=client, status={JobStatus.RUNNING})
-        with pytest.raises(ValueError, match=f"Failed to resolve job {uri}"):
+        with pytest.raises(
+            ValueError,
+            match="Invalid job URI: missing owner",
+        ):
             await resolve_job_ex(uri, client=client, status={JobStatus.RUNNING})
 
 
