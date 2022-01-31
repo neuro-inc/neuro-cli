@@ -151,7 +151,7 @@ class _Core:
             timeout=timeout,
             trace_request_ctx=trace_request_ctx,
             # Use 4mb buffer as sometimes single job response can be huge.
-            read_bufsize=2 ** 22,
+            read_bufsize=2**22,
         ) as resp:
             if 400 <= resp.status:
                 err_text = await resp.text()

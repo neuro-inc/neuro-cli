@@ -121,7 +121,7 @@ class JobStatusFormatter:
         resources.add_column()
         resources.add_column(style="bold", justify="right")
         resources.add_row(
-            "Memory", format_size(job_status.container.resources.memory_mb * 1024 ** 2)
+            "Memory", format_size(job_status.container.resources.memory_mb * 1024**2)
         )
         resources.add_row("CPU", f"{job_status.container.resources.cpu:0.1f}")
         if job_status.container.resources.gpu:

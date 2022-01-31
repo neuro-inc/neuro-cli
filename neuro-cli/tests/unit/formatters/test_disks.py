@@ -18,7 +18,7 @@ def test_disk_formatter(rich_cmp: Any) -> None:
     disk = Disk(
         id="disk",
         name="test-disk",
-        storage=int(11.93 * (1024 ** 3)),
+        storage=int(11.93 * (1024**3)),
         owner="user",
         status=Disk.Status.READY,
         cluster_name="cluster",
@@ -36,7 +36,7 @@ def disks_list() -> List[Disk]:
     return [
         Disk(
             id="disk-1",
-            storage=50 * (1024 ** 3),
+            storage=50 * (1024**3),
             owner="user",
             status=Disk.Status.PENDING,
             cluster_name="cluster",
@@ -46,7 +46,7 @@ def disks_list() -> List[Disk]:
         ),
         Disk(
             id="disk-2",
-            storage=50 * (1024 ** 2),
+            storage=50 * (1024**2),
             owner="user",
             status=Disk.Status.READY,
             cluster_name="cluster",
@@ -56,7 +56,7 @@ def disks_list() -> List[Disk]:
         ),
         Disk(
             id="disk-3",
-            storage=50 * (1024 ** 1),
+            storage=50 * (1024**1),
             owner="user",
             status=Disk.Status.READY,
             cluster_name="cluster",

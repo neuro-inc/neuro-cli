@@ -68,7 +68,7 @@ from ._utils import (
 log = logging.getLogger(__package__)
 
 MAX_OPEN_FILES = 20
-READ_SIZE = 2 ** 20  # 1 MiB
+READ_SIZE = 2**20  # 1 MiB
 TIME_THRESHOLD = 1.0
 
 Printer = Callable[[str], None]

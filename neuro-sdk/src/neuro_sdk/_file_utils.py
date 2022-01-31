@@ -42,7 +42,7 @@ logger = logging.getLogger(__package__)
 
 TIME_THRESHOLD = 1.0
 MAX_OPEN_FILES = 10
-READ_SIZE = 2 ** 20  # 1 MiB
+READ_SIZE = 2**20  # 1 MiB
 
 
 FS_PATH = TypeVar("FS_PATH")
