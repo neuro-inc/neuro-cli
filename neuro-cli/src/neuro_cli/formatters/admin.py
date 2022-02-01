@@ -211,7 +211,7 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
         row = [
             node_pool.machine_type,
             str(node_pool.available_cpu),
-            format_size(node_pool.available_memory_mb * 1024 ** 2),
+            format_size(node_pool.available_memory_mb * 1024**2),
         ]
         if node_pool.disk_type:
             row.append(
@@ -219,7 +219,7 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
                 f"{node_pool.disk_type.upper()}"
             )
         else:
-            row.append(format_size(node_pool.disk_size_gb * 1024 ** 3))
+            row.append(format_size(node_pool.disk_size_gb * 1024**3))
         if has_preemptible:
             row.append("√" if node_pool.is_preemptible else "×")
         row.append(_gpu(node_pool))
@@ -253,7 +253,7 @@ def _format_storage(storage: _Storage) -> Table:
             if instance.size_mb is None:
                 row.append("")
             else:
-                row.append(format_size(instance.size_mb * 1024 ** 2))
+                row.append(format_size(instance.size_mb * 1024**2))
         table.add_row(*row)
     return table
 

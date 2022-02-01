@@ -35,7 +35,7 @@ def generate_data(
         f"which in total: {total_size} bytes."
     )
 
-    buffer_size = min(file_size_bytes, 16 * 2 ** 20)  # 16MB at max
+    buffer_size = min(file_size_bytes, 16 * 2**20)  # 16MB at max
     garbage = os.urandom(buffer_size)
     write_iterations = file_size_bytes // buffer_size
     tail_size = file_size_bytes % buffer_size
@@ -99,7 +99,7 @@ def _parse_args() -> argparse.Namespace:
 
 
 def _parse_size(size: str) -> int:
-    units = {"B": 1, "KB": 2 ** 10, "MB": 2 ** 20, "GB": 2 ** 30, "TB": 2 ** 40}
+    units = {"B": 1, "KB": 2**10, "MB": 2**20, "GB": 2**30, "TB": 2**40}
     size = size.upper()
     # print("parsing size ", size)
     number, unit = re.fullmatch(r"(\d+(?:\.\d*)?)([KMGT]?B)", size.strip()).groups()
