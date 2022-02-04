@@ -1,6 +1,6 @@
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, NoReturn
+from typing import Any, Callable, Dict, List, NoReturn, Optional, Set, Union
 from unittest import mock
 
 import click
@@ -28,12 +28,22 @@ from tests import _TestServerFactory
 _MakeClient = Callable[..., Client]
 
 
-def _job_entry(job_id: str, cluster_name: str = "default") -> Dict[str, Any]:
+def _job_entry(
+    job_id: str,
+    cluster_name: str = "default",
+    owner: str = "user",
+    org_name: Optional[str] = None,
+) -> Dict[str, Any]:
+    if org_name:
+        uri = f"job://{cluster_name}/{org_name}/{owner}/{job_id}"
+    else:
+        uri = f"job://{cluster_name}/{owner}/{job_id}"
     return {
         "id": job_id,
-        "owner": "job-owner",
+        "owner": owner,
         "cluster_name": cluster_name,
-        "uri": f"job://{cluster_name}/job-owner/{job_id}",
+        "org_name": org_name,
+        "uri": uri,
         "status": "running",
         "history": {
             "status": "running",
@@ -53,18 +63,25 @@ def _job_entry(job_id: str, cluster_name: str = "default") -> Dict[str, Any]:
         "scheduler_enabled": True,
         "pass_config": False,
         "name": "my-job-name",
-        "internal_hostname": f"job-id.{cluster_name}",
-        "internal_hostname_named": f"my-job-name--job-owner.{cluster_name}",
+        "internal_hostname": f"{job_id}.{cluster_name}",
+        "internal_hostname_named": f"my-job-name--{owner}.{cluster_name}",
         "total_price_credits": "150",
         "price_credits_per_hour": "15",
     }
 
 
-def _check_params(request: web.Request, **expected: str) -> None:
+def _check_params(
+    request: web.Request, **expected: Union[str, List[str], Set[str]]
+) -> None:
     # Since `resolve_job` excepts any Exception, `assert` will be caught there
     for key, value in expected.items():
-        got = request.query.get(key)
+        got: Union[List[str], Set[str]] = request.query.getall(key)
+        if isinstance(value, set):
+            got = set(got)
+        elif not isinstance(value, list):
+            value = [value]
         if got != value:
+            print(f"received: {key}={got!r} (expected {value!r})")
             pytest.fail(f"received: {key}={got!r} (expected {value!r})")
 
 
@@ -81,7 +98,6 @@ async def test_resolve_job_id__from_string__no_jobs_found(
             owner="user",
             cluster_name="default",
             reverse="1",
-            limit="1",
         )
         return web.json_response(JSON)
 
@@ -115,7 +131,6 @@ async def test_resolve_job_id__from_uri_with_owner_same_user__no_jobs_found(
             owner=job_owner,
             cluster_name=cluster_name,
             reverse="1",
-            limit="1",
         )
         return web.json_response(JSON)
 
@@ -148,7 +163,6 @@ async def test_resolve_job_id__from_uri_with_owner_other_user__no_jobs_found(
             owner=job_owner,
             cluster_name="default",
             reverse="1",
-            limit="1",
         )
         return web.json_response(JSON)
 
@@ -178,7 +192,6 @@ async def test_resolve_job_id__from_uri_without_owner__no_jobs_found(
             owner="user",
             cluster_name="default",
             reverse="1",
-            limit="1",
         )
         return web.json_response(JSON)
 
@@ -201,7 +214,7 @@ async def test_resolve_job_id__from_string__single_job_found(
 ) -> None:
     job_name = "test-job-name-555"
     job_id = "job-id-1"
-    JSON = {"jobs": [_job_entry(job_id)]}
+    JSON = {"jobs": [_job_entry(job_id, owner="user")]}
 
     async def handler(request: web.Request) -> web.Response:
         _check_params(
@@ -210,7 +223,6 @@ async def test_resolve_job_id__from_string__single_job_found(
             owner="user",
             cluster_name="default",
             reverse="1",
-            limit="1",
         )
         return web.json_response(JSON)
 
@@ -238,7 +250,7 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
     job_name = "my-job-name"
     uri = f"job://{cluster_name}/{job_owner}/{job_name}"
     job_id = "job-id-1"
-    JSON = {"jobs": [_job_entry(job_id, cluster_name=cluster_name)]}
+    JSON = {"jobs": [_job_entry(job_id, cluster_name=cluster_name, owner="job-owner")]}
 
     async def handler(request: web.Request) -> web.Response:
         _check_params(
@@ -247,7 +259,6 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
             owner=job_owner,
             cluster_name=cluster_name,
             reverse="1",
-            limit="1",
         )
         return web.json_response(JSON)
 
@@ -266,24 +277,33 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
 
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
-async def test_resolve_job_id__from_uri_with_with_org__single_job_found(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient, cluster_name: str
+@pytest.mark.parametrize("org_name", [None, "test-org"])
+async def test_resolve_job_id__from_uri_with_org__single_job_found(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_name: str,
+    org_name: Optional[str],
 ) -> None:
     job_owner = "job-owner"
     job_org = "job-org"
     job_name = "my-job-name"
     uri = f"job://{cluster_name}/{job_org}/{job_owner}/{job_name}"
     job_id = "job-id-1"
-    JSON = {"jobs": [_job_entry(job_id, cluster_name=cluster_name)]}
+    JSON = {
+        "jobs": [
+            _job_entry(
+                job_id, cluster_name=cluster_name, owner="job-owner", org_name=job_org
+            )
+        ]
+    }
 
     async def handler(request: web.Request) -> web.Response:
         _check_params(
             request,
             name=job_name,
-            owner=job_owner,
+            owner=[f"{job_org}/{job_owner}", job_owner],
             cluster_name=cluster_name,
             reverse="1",
-            limit="1",
         )
         return web.json_response(JSON)
 
@@ -292,7 +312,7 @@ async def test_resolve_job_id__from_uri_with_with_org__single_job_found(
 
     srv = await aiohttp_server(app)
 
-    async with make_client(srv.make_url("/")) as client:
+    async with make_client(srv.make_url("/"), org_name=org_name) as client:
         resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id
         resolved_ex = await resolve_job_ex(
@@ -301,22 +321,30 @@ async def test_resolve_job_id__from_uri_with_with_org__single_job_found(
         assert resolved_ex == (job_id, cluster_name)
 
 
-async def test_resolve_job_id__from_uri_without_owner__single_job_found(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+@pytest.mark.parametrize("cluster_name", ["default", "other"])
+async def test_resolve_job_id__from_uri_with_same_org__single_job_found(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient, cluster_name: str
 ) -> None:
+    job_owner = "job-owner"
+    job_org = "job-org"
     job_name = "my-job-name"
-    uri = f"job:{job_name}"
+    uri = f"job://{cluster_name}/{job_org}/{job_owner}/{job_name}"
     job_id = "job-id-1"
-    JSON = {"jobs": [_job_entry(job_id)]}
+    JSON = {
+        "jobs": [
+            _job_entry(
+                job_id, cluster_name=cluster_name, owner=job_owner, org_name=job_org
+            )
+        ]
+    }
 
     async def handler(request: web.Request) -> web.Response:
         _check_params(
             request,
             name=job_name,
-            owner="user",
-            cluster_name="default",
+            owner=job_owner,
+            cluster_name=cluster_name,
             reverse="1",
-            limit="1",
         )
         return web.json_response(JSON)
 
@@ -325,7 +353,364 @@ async def test_resolve_job_id__from_uri_without_owner__single_job_found(
 
     srv = await aiohttp_server(app)
 
-    async with make_client(srv.make_url("/")) as client:
+    async with make_client(srv.make_url("/"), org_name="job-org") as client:
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
+        assert resolved == job_id
+        resolved_ex = await resolve_job_ex(
+            uri, client=client, status={JobStatus.RUNNING}
+        )
+        assert resolved_ex == (job_id, cluster_name)
+
+
+@pytest.mark.parametrize("cluster_name", ["default", "other"])
+@pytest.mark.parametrize("org_name", [None, "test-org"])
+async def test_resolve_job_id__from_uri_with_service_account__single_job_found(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_name: str,
+    org_name: Optional[str],
+) -> None:
+    service_name = "service"
+    job_owner = f"job-owner/{service_name}"
+    job_name = "my-job-name"
+    uri = f"job://{cluster_name}/{job_owner}/{job_name}"
+    job_id = "job-id-1"
+    JSON = {"jobs": [_job_entry(job_id, cluster_name=cluster_name, owner=job_owner)]}
+
+    async def handler(request: web.Request) -> web.Response:
+        _check_params(
+            request,
+            name=job_name,
+            owner=[job_owner, service_name],
+            cluster_name=cluster_name,
+            reverse="1",
+        )
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/"), org_name=org_name) as client:
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
+        assert resolved == job_id
+        resolved_ex = await resolve_job_ex(
+            uri, client=client, status={JobStatus.RUNNING}
+        )
+        assert resolved_ex == (job_id, cluster_name)
+
+
+@pytest.mark.parametrize("cluster_name", ["default", "other"])
+@pytest.mark.parametrize("org_name", [None, "test-org"])
+async def test_resolve_job_id__from_uri_with_org_with_service_account__single_job_found(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_name: str,
+    org_name: Optional[str],
+) -> None:
+    service_name = "service"
+    job_owner = f"job-owner/{service_name}"
+    job_org = "job-org"
+    job_name = "my-job-name"
+    uri = f"job://{cluster_name}/{job_org}/{job_owner}/{job_name}"
+    job_id = "job-id-1"
+    JSON = {
+        "jobs": [
+            _job_entry(
+                job_id, cluster_name=cluster_name, owner=job_owner, org_name=job_org
+            )
+        ]
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        _check_params(
+            request,
+            name=job_name,
+            owner=[f"{job_org}/{job_owner}", job_owner],
+            cluster_name=cluster_name,
+            reverse="1",
+        )
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/"), org_name=org_name) as client:
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
+        assert resolved == job_id
+        resolved_ex = await resolve_job_ex(
+            uri, client=client, status={JobStatus.RUNNING}
+        )
+        assert resolved_ex == (job_id, cluster_name)
+
+
+@pytest.mark.parametrize("cluster_name", ["default", "other"])
+async def test_resolve_job_id__from_uri_with_same_org_with_serv_acc__single_job_found(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_name: str,
+) -> None:
+    service_name = "service"
+    job_owner = f"job-owner/{service_name}"
+    job_org = "job-org"
+    job_name = "my-job-name"
+    uri = f"job://{cluster_name}/{job_org}/{job_owner}/{job_name}"
+    job_id = "job-id-1"
+    JSON = {
+        "jobs": [
+            _job_entry(
+                job_id, cluster_name=cluster_name, owner=job_owner, org_name=job_org
+            )
+        ]
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        _check_params(
+            request,
+            name=job_name,
+            owner=job_owner,
+            cluster_name=cluster_name,
+            reverse="1",
+        )
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/"), org_name=job_org) as client:
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
+        assert resolved == job_id
+        resolved_ex = await resolve_job_ex(
+            uri, client=client, status={JobStatus.RUNNING}
+        )
+        assert resolved_ex == (job_id, cluster_name)
+
+
+@pytest.mark.parametrize("cluster_name", ["default", "other"])
+@pytest.mark.parametrize("org_name", [None, "test-org"])
+async def test_resolve_job_id__from_uri_with_same_user__single_job_found(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_name: str,
+    org_name: Optional[str],
+) -> None:
+    job_owner = "user"
+    job_name = "my-job-name"
+    uri = f"job://{cluster_name}/{job_owner}/{job_name}"
+    job_id = "job-id-1"
+    JSON = {"jobs": [_job_entry(job_id, cluster_name=cluster_name, owner=job_owner)]}
+
+    async def handler(request: web.Request) -> web.Response:
+        _check_params(
+            request,
+            name=job_name,
+            owner=job_owner,
+            cluster_name=cluster_name,
+            reverse="1",
+        )
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/"), org_name=org_name) as client:
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
+        assert resolved == job_id
+        resolved_ex = await resolve_job_ex(
+            uri, client=client, status={JobStatus.RUNNING}
+        )
+        assert resolved_ex == (job_id, cluster_name)
+
+
+@pytest.mark.parametrize("cluster_name", ["default", "other"])
+@pytest.mark.parametrize("org_name", [None, "test-org"])
+async def test_resolve_job_id__from_uri_with_same_user_serv_acc__single_job_found(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_name: str,
+    org_name: Optional[str],
+) -> None:
+    service_name = "service"
+    job_owner = f"user/{service_name}"
+    job_name = "my-job-name"
+    uri = f"job://{cluster_name}/{job_owner}/{job_name}"
+    job_id = "job-id-1"
+    JSON = {"jobs": [_job_entry(job_id, cluster_name=cluster_name, owner=job_owner)]}
+
+    async def handler(request: web.Request) -> web.Response:
+        _check_params(
+            request,
+            name=job_name,
+            owner=[job_owner, service_name] if org_name else [job_owner],
+            cluster_name=cluster_name,
+            reverse="1",
+        )
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/"), org_name=org_name) as client:
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
+        assert resolved == job_id
+        resolved_ex = await resolve_job_ex(
+            uri, client=client, status={JobStatus.RUNNING}
+        )
+        assert resolved_ex == (job_id, cluster_name)
+
+
+@pytest.mark.parametrize("cluster_name", ["default", "other"])
+@pytest.mark.parametrize("org_name", [None, "test-org"])
+async def test_resolve_job_id__from_uri__multiple_jobs_found(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_name: str,
+    org_name: Optional[str],
+) -> None:
+    job_org = f"job-owner"
+    job_owner = f"job-owner"
+    job_name = "my-job-name"
+    uri = f"job://{cluster_name}/{job_owner}/{job_name}"
+    job_ids = [f"job-id-{i}" for i in range(4)]
+    JSON = {
+        "jobs": [
+            _job_entry(
+                job_ids[0],
+                cluster_name=cluster_name,
+                owner=job_owner,
+                org_name="other-org",
+            ),
+            _job_entry(
+                job_ids[1], cluster_name=cluster_name, owner=job_owner, org_name=job_org
+            ),
+            _job_entry(job_ids[2], cluster_name=cluster_name, owner=job_owner),
+            _job_entry(
+                job_ids[3],
+                cluster_name=cluster_name,
+                owner=job_owner,
+                org_name="other-org",
+            ),
+        ]
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        _check_params(
+            request,
+            name=job_name,
+            owner=job_owner,
+            cluster_name=cluster_name,
+            reverse="1",
+        )
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/"), org_name=org_name) as client:
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
+        assert resolved == job_ids[2]
+        resolved_ex = await resolve_job_ex(
+            uri, client=client, status={JobStatus.RUNNING}
+        )
+        assert resolved_ex == (job_ids[2], cluster_name)
+
+
+@pytest.mark.parametrize("cluster_name", ["default", "other"])
+@pytest.mark.parametrize("org_name", [None, "test-org"])
+async def test_resolve_job_id__from_uri_with_org__multiple_jobs_found(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    cluster_name: str,
+    org_name: Optional[str],
+) -> None:
+    job_org = f"job-owner"
+    job_owner = f"job-owner"
+    job_name = "my-job-name"
+    uri = f"job://{cluster_name}/{job_org}/{job_owner}/{job_name}"
+    job_ids = [f"job-id-{i}" for i in range(4)]
+    JSON = {
+        "jobs": [
+            _job_entry(
+                job_ids[0],
+                cluster_name=cluster_name,
+                owner=job_owner,
+                org_name="other-org",
+            ),
+            _job_entry(job_ids[1], cluster_name=cluster_name, owner=job_owner),
+            _job_entry(
+                job_ids[2], cluster_name=cluster_name, owner=job_owner, org_name=job_org
+            ),
+            _job_entry(
+                job_ids[3],
+                cluster_name=cluster_name,
+                owner=job_owner,
+                org_name="other-org",
+            ),
+        ]
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        _check_params(
+            request,
+            name=job_name,
+            owner=[f"{job_org}/{job_owner}", job_owner],
+            cluster_name=cluster_name,
+            reverse="1",
+        )
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/"), org_name=org_name) as client:
+        resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
+        assert resolved == job_ids[2]
+        resolved_ex = await resolve_job_ex(
+            uri, client=client, status={JobStatus.RUNNING}
+        )
+        assert resolved_ex == (job_ids[2], cluster_name)
+
+
+@pytest.mark.parametrize("org_name", [None, "test-org"])
+async def test_resolve_job_id__from_uri_without_owner__single_job_found(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    org_name: Optional[str],
+) -> None:
+    job_name = "my-job-name"
+    uri = f"job:{job_name}"
+    job_id = "job-id-1"
+    JSON = {"jobs": [_job_entry(job_id, owner="user", org_name=org_name)]}
+
+    async def handler(request: web.Request) -> web.Response:
+        _check_params(
+            request,
+            name=job_name,
+            owner="user",
+            cluster_name="default",
+            reverse="1",
+        )
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/"), org_name=org_name) as client:
         resolved = await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         assert resolved == job_id
         resolved_ex = await resolve_job_ex(
@@ -347,7 +732,6 @@ async def test_resolve_job_id__server_error(
             owner="user",
             cluster_name="default",
             reverse="1",
-            limit="1",
         )
         raise web.HTTPError()
 
@@ -382,7 +766,6 @@ async def test_resolve_job_id__from_uri_with_owner_same_user__server_error(
             owner=job_owner,
             cluster_name=cluster_name,
             reverse="1",
-            limit="1",
         )
         raise web.HTTPError()
 
@@ -414,7 +797,6 @@ async def test_resolve_job_id__from_uri_with_owner_other_user__server_error(
             owner=job_owner,
             cluster_name="default",
             reverse="1",
-            limit="1",
         )
         raise web.HTTPError()
 
@@ -443,7 +825,6 @@ async def test_resolve_job_id__from_uri_without_owner__server_error(
             owner="user",
             cluster_name="default",
             reverse="1",
-            limit="1",
         )
         raise web.HTTPError()
 
@@ -472,8 +853,10 @@ async def test_resolve_job_id__from_uri_without_owner__server_error(
         "job://default/",
         "job://default/user",
         "job://default/user/",
+        "job://default/user/name/",
         "job://default/org/user/name/",
-        "job://default/org/user/name/rest",
+        "job:/user",
+        "job:/user/",
         "job:/user/name/",
         "job:name/",
     ],
@@ -488,38 +871,6 @@ async def test_resolve_job_id__from_uri__invalid(
         with pytest.raises(ValueError, match="Invalid job URI: job:"):
             await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         with pytest.raises(ValueError, match="Invalid job URI: job:"):
-            await resolve_job_ex(uri, client=client, status={JobStatus.RUNNING})
-
-
-@pytest.mark.parametrize(
-    "uri",
-    [
-        "job:/user/name/rest",
-        "job:name/rest",
-    ],
-)
-async def test_resolve_job_id__from_uri__invalid2(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient, uri: str
-) -> None:
-    async def handler(request: web.Request) -> web.Response:
-        _check_params(
-            request,
-            name="rest",
-            owner="name",
-            cluster_name="default",
-            reverse="1",
-            limit="1",
-        )
-        return web.json_response({"jobs": []})
-
-    app = web.Application()
-    app.router.add_get("/jobs", handler)
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        with pytest.raises(ValueError, match=f"Failed to resolve job {uri}"):
-            await resolve_job(uri, client=client, status={JobStatus.RUNNING})
-        with pytest.raises(ValueError, match=f"Failed to resolve job {uri}"):
             await resolve_job_ex(uri, client=client, status={JobStatus.RUNNING})
 
 
