@@ -261,9 +261,7 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
 
     async def handler(request: web.Request) -> web.Response:
         expected_owners = (
-            [job_owner, "service"]
-            if "/service" in job_owner and (org_name or job_owner != "user/service")
-            else [job_owner]
+            [job_owner, "service"] if job_owner == "job-owner/service" else [job_owner]
         )
         _check_params(
             request,

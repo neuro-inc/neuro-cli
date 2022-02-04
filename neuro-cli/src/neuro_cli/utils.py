@@ -445,9 +445,7 @@ async def resolve_job_ex(
         elif default_org and owner.startswith(default_org + "/"):
             org_name, _, owner = owner.partition("/")
             owners[owner] = org_name
-        elif not default_org and (
-            owner == default_user or owner.startswith(default_user + "/")
-        ):
+        elif owner == default_user or owner.startswith(default_user + "/"):
             owners[owner] = None
         else:
             owners[owner] = None
