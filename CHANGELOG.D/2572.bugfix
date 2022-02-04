@@ -1,1 +1,1 @@
-Fix resolving job URIs containing organization name.
+Fix resolving job URIs containing organization name and/or service account name.
