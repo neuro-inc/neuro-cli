@@ -92,6 +92,7 @@ def make_client(
         clusters: Optional[Dict[str, Cluster]] = None,
         token_url: Optional[URL] = None,
         plugin_manager: Optional[PluginManager] = None,
+        org_name: Optional[str] = None,
         **kwargs: Any,
     ) -> Client:
         url = URL(url_str)
@@ -127,7 +128,7 @@ def make_client(
                     ),
                 },
                 name="default",
-                orgs=[None],
+                orgs=[org_name],
             )
             cluster2_config = Cluster(
                 registry_url=(url / "registry2"),

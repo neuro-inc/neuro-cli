@@ -106,6 +106,7 @@ def make_client(
         clusters: Optional[Dict[str, Cluster]] = None,
         token_url: Optional[URL] = None,
         plugin_manager: Optional[PluginManager] = None,
+        org_name: Optional[str] = None,
     ) -> Client:
         url = URL(url_str)
         if clusters is None:
@@ -140,7 +141,7 @@ def make_client(
                     ),
                 },
                 name="default",
-                orgs=[None],
+                orgs=[org_name],
             )
             clusters = {cluster_config.name: cluster_config}
         if token_url is not None:

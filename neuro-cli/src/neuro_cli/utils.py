@@ -430,6 +430,7 @@ async def resolve_job_ex(
 ) -> Tuple[str, str]:
     default_user = client.username
     default_cluster = client.cluster_name
+    default_org = client.config.org_name
     if id_or_name_or_uri.startswith("job:"):
         uri = client.parse.str_to_uri(
             id_or_name_or_uri,
@@ -437,14 +438,26 @@ async def resolve_job_ex(
         )
         assert uri.host
         cluster_name = uri.host
-        owner, _, id_or_name = uri.path.lstrip("/").partition("/")
-        if not owner:
-            raise ValueError("Invalid job URI: missing owner")
-        if not id_or_name:
-            raise ValueError("Invalid job URI: missing job-id or job-name")
+        owner, _, id_or_name = uri.path.lstrip("/").rpartition("/")
+        owners: Dict[str, Optional[str]] = {}
+        if "/" not in owner:
+            owners[owner] = None
+        elif default_org and owner.startswith(default_org + "/"):
+            org_name, _, owner = owner.partition("/")
+            owners[owner] = org_name
+        elif owner == default_user or owner.startswith(default_user + "/"):
+            owners[owner] = None
+        else:
+            owners[owner] = None
+            org_name, _, owner = owner.partition("/")
+            owners[owner] = org_name
+
+        if not id_or_name or not owner:
+            raise ValueError(f"Invalid job URI: {uri!s}")
     else:
         id_or_name = id_or_name_or_uri
         owner = default_user
+        owners = {default_user: default_org}
         cluster_name = default_cluster
 
     # Temporary fast path.
@@ -454,20 +467,20 @@ async def resolve_job_ex(
     try:
         async with client.jobs.list(
             name=id_or_name,
-            owners={owner},
+            owners=owners.keys(),
             reverse=True,
-            limit=1,
             cluster_name=cluster_name,
         ) as it:
             async for job in it:
-                log.debug(f"Job name '{id_or_name}' resolved to job ID '{job.id}'")
-                return job.id, cluster_name
+                if job.owner in owners and job.org_name == owners[job.owner]:
+                    log.debug(f"Job name '{id_or_name}' resolved to job ID '{job.id}'")
+                    return job.id, cluster_name
     except asyncio.CancelledError:
         raise
     except ClientResponseError as e:
         log.error(
             f"Failed to resolve job-name {id_or_name_or_uri} resolved as "
-            f"name={id_or_name}, owner={owner} to a job-ID: {e}"
+            f"name={id_or_name}, owners={owners} to a job-ID: {e}"
         )
 
     if owner != default_user:
