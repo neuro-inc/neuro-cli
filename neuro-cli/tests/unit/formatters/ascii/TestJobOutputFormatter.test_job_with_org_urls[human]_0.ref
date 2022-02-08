@@ -2,7 +2,7 @@ Job                     test-job
  Name                    test-job-name                     
  Owner                   test-user                         
  Cluster                 default                           
- Organisation            test-org                          
+ Organization            test-org                          
  Description             test job description              
  Status                  failed (ErrorReason)              
  Image                   test-image                        

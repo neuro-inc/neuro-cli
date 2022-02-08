@@ -95,7 +95,7 @@ class JobStatusFormatter:
         table.add_row("Owner", job_status.owner or "")
         table.add_row("Cluster", job_status.cluster_name)
         if job_status.org_name:
-            table.add_row("Organisation", job_status.org_name)
+            table.add_row("Organization", job_status.org_name)
         if job_status.description:
             table.add_row("Description", job_status.description)
         status_text = fmt_status(job_status.status)
