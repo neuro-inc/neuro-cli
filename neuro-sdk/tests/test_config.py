@@ -178,7 +178,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
         ),
         "another": Cluster(
             name="another",
-            orgs=[None, "some_org"],
+            orgs=["some-org", None],
             registry_url=URL("https://registry2-dev.neu.ro"),
             storage_url=URL("https://storage2-dev.neu.ro"),
             users_url=URL("https://users2-dev.neu.ro"),
@@ -186,6 +186,22 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
             secrets_url=URL("https://secrets2-dev.neu.ro"),
             disks_url=URL("https://disks2-dev.neu.ro"),
             buckets_url=URL("https://buckets2-dev.neu.ro"),
+            presets={
+                "cpu-large": Preset(
+                    credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+                )
+            },
+        ),
+        "third": Cluster(
+            name="third",
+            orgs=["some-org", "a-org"],
+            registry_url=URL("https://registry3-dev.neu.ro"),
+            storage_url=URL("https://storage3-dev.neu.ro"),
+            users_url=URL("https://users3-dev.neu.ro"),
+            monitoring_url=URL("https://jobs3-dev.neu.ro"),
+            secrets_url=URL("https://secrets3-dev.neu.ro"),
+            disks_url=URL("https://disks3-dev.neu.ro"),
+            buckets_url=URL("https://buckets3-dev.neu.ro"),
             presets={
                 "cpu-large": Preset(
                     credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
@@ -597,6 +613,51 @@ async def test_switch_clusters(
         assert client.config.cluster_name == "default"
         await client.config.switch_cluster("another")
         assert client.config.cluster_name == "another"
+
+
+async def test_switch_cluster_keep_org(
+    make_client: _MakeClient, multiple_clusters_config: Dict[str, Cluster]
+) -> None:
+    async with make_client(
+        "https://example.org", clusters=multiple_clusters_config
+    ) as client:
+        await client.config.switch_cluster("another")
+        await client.config.switch_org("some-org")
+        assert client.config.cluster_name == "another"
+        assert client.config.org_name == "some-org"
+        await client.config.switch_cluster("third")
+        assert client.config.cluster_name == "third"
+        assert client.config.org_name == "some-org"
+
+
+async def test_switch_cluster_cant_keep_org_use_none(
+    make_client: _MakeClient, multiple_clusters_config: Dict[str, Cluster]
+) -> None:
+    async with make_client(
+        "https://example.org", clusters=multiple_clusters_config
+    ) as client:
+        await client.config.switch_cluster("default")
+        await client.config.switch_org("test-org")
+        assert client.config.cluster_name == "default"
+        assert client.config.org_name == "test-org"
+        await client.config.switch_cluster("another")
+        assert client.config.cluster_name == "another"
+        assert client.config.org_name is None
+
+
+async def test_switch_cluster_cant_keep_org_use_alphabetical(
+    make_client: _MakeClient, multiple_clusters_config: Dict[str, Cluster]
+) -> None:
+    async with make_client(
+        "https://example.org", clusters=multiple_clusters_config
+    ) as client:
+        await client.config.switch_cluster("default")
+        await client.config.switch_org("test-org")
+        assert client.config.cluster_name == "default"
+        assert client.config.org_name == "test-org"
+        await client.config.switch_cluster("third")
+        assert client.config.cluster_name == "third"
+        assert client.config.org_name == "a-org"
 
 
 async def test_switch_org(
