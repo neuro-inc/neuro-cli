@@ -254,7 +254,7 @@ async def test_top_nonexisting_job(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        raise web.HTTPBadRequest()
+        raise web.HTTPBadRequest(headers={"X-Error": "job job-id not found"})
 
     app = web.Application()
     app.router.add_get("/jobs/job-id/top", handler)

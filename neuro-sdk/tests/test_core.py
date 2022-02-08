@@ -1,3 +1,4 @@
+import json
 import sqlite3
 import ssl
 from contextlib import asynccontextmanager
@@ -97,10 +98,11 @@ async def test_raise_for_status_no_error_message(
 async def test_raise_for_status_contains_error_message(
     aiohttp_server: _TestServerFactory, api_factory: _ApiFactory
 ) -> None:
-    ERROR_MSG = '{"error": "this is the error message"}'
+    ERROR_MSG = "this is the error message"
+    ERROR_PAYLOAD = json.dumps({"error": ERROR_MSG})
 
     async def handler(request: web.Request) -> web.Response:
-        raise web.HTTPBadRequest(text=ERROR_MSG)
+        raise web.HTTPBadRequest(text=ERROR_PAYLOAD)
 
     app = web.Application()
     app.router.add_get("/test", handler)
@@ -127,6 +129,41 @@ async def test_server_bad_gateway(
         with pytest.raises(ServerNotAvailable, match="^502: Bad Gateway$"):
             async with api.request(method="GET", url=url, auth="auth") as resp:
                 assert resp.status == 200
+
+
+async def test_raise_for_status_no_error_message_ws(
+    aiohttp_server: _TestServerFactory, api_factory: _ApiFactory
+) -> None:
+    async def handler(request: web.Request) -> web.Response:
+        raise web.HTTPBadRequest()
+
+    app = web.Application()
+    app.router.add_get("/test", handler)
+    srv = await aiohttp_server(app)
+
+    async with api_factory(srv.make_url("/")) as api:
+        with pytest.raises(IllegalArgumentError, match="400"):
+            async with api.ws_connect(abs_url=srv.make_url("test"), auth="auth"):
+                pass
+
+
+async def test_raise_for_status_contains_error_message_ws(
+    aiohttp_server: _TestServerFactory, api_factory: _ApiFactory
+) -> None:
+    ERROR_MSG = "this is the error message"
+    ERROR_PAYLOAD = json.dumps({"error": ERROR_MSG})
+
+    async def handler(request: web.Request) -> web.Response:
+        raise web.HTTPBadRequest(text=ERROR_PAYLOAD, headers={"X-Error": ERROR_PAYLOAD})
+
+    app = web.Application()
+    app.router.add_get("/test", handler)
+    srv = await aiohttp_server(app)
+
+    async with api_factory(srv.make_url("/")) as api:
+        with pytest.raises(IllegalArgumentError, match=f"^{ERROR_MSG}$"):
+            async with api.ws_connect(abs_url=srv.make_url("test"), auth="auth"):
+                pass
 
 
 # ### Cookies tests ###
