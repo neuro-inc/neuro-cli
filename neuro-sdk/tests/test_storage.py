@@ -408,6 +408,28 @@ async def test_storage_disk_usage_another_cluster(
     assert res == DiskUsageInfo(total=100, used=20, free=80, cluster_name="another")
 
 
+async def test_storage_disk_usage_another_org(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    async def handler(request: web.Request) -> web.StreamResponse:
+        assert "b3" in request.headers
+        assert request.path == "/storage/org/user"
+        assert request.query == {"op": "GETDISKUSAGE"}
+        return web.json_response({"total": 100, "used": 20, "free": 80})
+
+    app = web.Application()
+    app.router.add_get("/storage/org/user", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        res = await client.storage.disk_usage(org_name="org")
+
+    assert res == DiskUsageInfo(
+        total=100, used=20, free=80, cluster_name="default", org_name="org"
+    )
+
+
 async def test_storage_ls_another_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:

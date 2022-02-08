@@ -865,7 +865,15 @@ class TreeFormatter:
 
 class DiskUsageFormatter:
     def __call__(self, usage: DiskUsageInfo) -> Text:
-        ret = Text.from_markup(f"Disk usage for cluster [b]{usage.cluster_name}[/]:\n")
+        if usage.org_name:
+            ret = Text.from_markup(
+                f"Disk usage for organization [b]{usage.org_name}[/] "
+                f"in cluster [b]{usage.cluster_name}[/]:\n"
+            )
+        else:
+            ret = Text.from_markup(
+                f"Disk usage for cluster [b]{usage.cluster_name}[/]:\n"
+            )
         ret.append(f"Total: {format_size(usage.total)}\n")
         ret.append(f"Used:  {format_size(usage.used)}\n")
         ret.append(f"Free:  {format_size(usage.free)}")

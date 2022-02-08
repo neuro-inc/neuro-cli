@@ -114,6 +114,7 @@ class DiskUsageInfo:
     total: int
     used: int
     free: int
+    org_name: Optional[str] = None
 
 
 @rewrite_module
@@ -350,11 +351,19 @@ class Storage(metaclass=NoPublicConstructor):
             res = await resp.json()
             return _file_status_from_api_stat(uri.host, res["FileStatus"])
 
-    async def disk_usage(self, cluster_name: Optional[str] = None) -> DiskUsageInfo:
+    async def disk_usage(
+        self, cluster_name: Optional[str] = None, org_name: Optional[str] = None
+    ) -> DiskUsageInfo:
         cluster_name = cluster_name or self._config.cluster_name
-        uri = self._normalize_uri(
-            URL(f"storage://{cluster_name}/{self._config.username}")
-        )
+        org_name = org_name or self._config.org_name
+        if org_name:
+            uri = self._normalize_uri(
+                URL(f"storage://{cluster_name}/{org_name}/{self._config.username}")
+            )
+        else:
+            uri = self._normalize_uri(
+                URL(f"storage://{cluster_name}/{self._config.username}")
+            )
         assert uri.host is not None
         url = self._get_storage_url(uri, normalized=True)
         url = url.with_query(op="GETDISKUSAGE")
@@ -364,7 +373,7 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._core.request("GET", url, auth=auth) as resp:
             self._set_time_diff(request_time, resp)
             res = await resp.json()
-            return _disk_usage_from_api(uri.host, res)
+            return _disk_usage_from_api(cluster_name, org_name, res)
 
     @asyncgeneratorcontextmanager
     async def open(
@@ -951,9 +960,12 @@ def _file_status_from_api_stat(cluster_name: str, values: Dict[str, Any]) -> Fil
     )
 
 
-def _disk_usage_from_api(cluster_name: str, values: Dict[str, Any]) -> DiskUsageInfo:
+def _disk_usage_from_api(
+    cluster_name: str, org_name: Optional[str], values: Dict[str, Any]
+) -> DiskUsageInfo:
     return DiskUsageInfo(
         cluster_name=cluster_name,
+        org_name=org_name,
         total=values["total"],
         used=values["used"],
         free=values["free"],
