@@ -84,9 +84,9 @@ class ClustersFormatter:
             name: Union[str, Text] = cluster.name or ""
             pre = "  "
             org_names: List[Text] = [
-                Text(org or OrgType.NO_ORG_STR)
+                Text(org or OrgType.NO_ORG_STR, style="u")
                 if org == default_org and cluster.name == default_cluster
-                else Text(org or OrgType.NO_ORG_STR, style="u")
+                else Text(org or OrgType.NO_ORG_STR)
                 for org in cluster.orgs
             ]
             if cluster.name == default_cluster:
