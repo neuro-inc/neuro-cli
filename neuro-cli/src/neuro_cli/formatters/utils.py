@@ -20,13 +20,18 @@ def uri_formatter(
                 assert uri.path[0] == "/"
                 path = uri.path.lstrip("/")
                 owner_or_org, _, rest = path.partition("/")
-                if owner_or_org == org_name:
-                    owner, _, rest = rest.partition("/")
+                if org_name:
+                    if owner_or_org != org_name:
+                        return str(uri)
+                    path = rest
+                    owner, _, rest = path.partition("/")
                 else:
                     owner = owner_or_org
                 if owner == username:
-                    return f"{uri.scheme}:{rest.lstrip('/')}"
-                return f"{uri.scheme}:/{path}"
+                    path = rest.lstrip("/")
+                else:
+                    path = "/" + path
+                uri = URL.build(scheme=uri.scheme, path=path)
         return str(uri)
 
     return formatter
