@@ -95,7 +95,7 @@ class JobStatusFormatter:
         table.add_row("Owner", job_status.owner or "")
         table.add_row("Cluster", job_status.cluster_name)
         if job_status.org_name:
-            table.add_row("Organisation", job_status.org_name)
+            table.add_row("Organization", job_status.org_name)
         if job_status.description:
             table.add_row("Description", job_status.description)
         status_text = fmt_status(job_status.status)
@@ -121,7 +121,7 @@ class JobStatusFormatter:
         resources.add_column()
         resources.add_column(style="bold", justify="right")
         resources.add_row(
-            "Memory", format_size(job_status.container.resources.memory_mb * 1024 ** 2)
+            "Memory", format_size(job_status.container.resources.memory_mb * 1024**2)
         )
         resources.add_row("CPU", f"{job_status.container.resources.cpu:0.1f}")
         if job_status.container.resources.gpu:

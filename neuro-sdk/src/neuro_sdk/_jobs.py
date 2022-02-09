@@ -37,7 +37,7 @@ from ._abc import (
 )
 from ._config import Config
 from ._core import _Core
-from ._errors import NDJSONError, ResourceNotFound, StdStreamError
+from ._errors import NDJSONError, StdStreamError
 from ._images import (
     _DummyProgress,
     _raise_on_error_chunk,
@@ -550,9 +550,10 @@ class Jobs(metaclass=NoPublicConstructor):
         try:
             received_any = False
             async with self._core.ws_connect(url, auth=auth) as ws:
-                async for resp in ws:
-                    yield _job_telemetry_from_api(resp.json())
-                    received_any = True
+                async for msg in ws:
+                    if msg.type == aiohttp.WSMsgType.TEXT:
+                        yield _job_telemetry_from_api(msg.json())
+                        received_any = True
             if not received_any:
                 raise ValueError(f"Job is not running. Job Id = {id}")
         except WSServerHandshakeError as e:
@@ -639,35 +640,28 @@ class Jobs(metaclass=NoPublicConstructor):
             loop = asyncio.get_event_loop()
             url = self._get_monitoring_url(cluster_name)
             url = url / id / "port_forward" / str(job_port)
-            auth = await self._config._api_auth()
-            ws = await self._core._session.ws_connect(
+            async with self._core.ws_connect(
                 url,
-                headers={"Authorization": auth},
-                timeout=None,  # type: ignore
+                auth=await self._config._api_auth(),
+                timeout=None,
                 receive_timeout=None,
                 heartbeat=30,
-            )
-            tasks = []
-            tasks.append(loop.create_task(self._port_reader(ws, writer)))
-            tasks.append(loop.create_task(self._port_writer(ws, reader)))
-            try:
-                await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            finally:
-                for task in tasks:
-                    if not task.done():
-                        task.cancel()
-                        with suppress(asyncio.CancelledError):
-                            await task
-                writer.close()
-                await writer.wait_closed()
-                await ws.close()
+            ) as ws:
+                tasks = []
+                tasks.append(loop.create_task(self._port_reader(ws, writer)))
+                tasks.append(loop.create_task(self._port_writer(ws, reader)))
+                try:
+                    await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+                finally:
+                    for task in tasks:
+                        if not task.done():
+                            task.cancel()
+                            with suppress(asyncio.CancelledError):
+                                await task
+                    writer.close()
+                    await writer.wait_closed()
         except asyncio.CancelledError:
             raise
-        except WSServerHandshakeError as e:
-            if e.headers and "X-Error" in e.headers:
-                log.error(f"Error during port-forwarding: {e.headers['X-Error']}")
-            log.exception("Unhandled exception during port-forwarding")
-            writer.close()
         except Exception:
             log.exception("Unhandled exception during port-forwarding")
             writer.close()
@@ -712,26 +706,17 @@ class Jobs(metaclass=NoPublicConstructor):
         )
         auth = await self._config._api_auth()
 
-        try:
-            ws = await self._core._session.ws_connect(
-                url,
-                headers={
-                    "Authorization": auth,
-                    aiohttp.hdrs.SEC_WEBSOCKET_PROTOCOL: "v2.channels.neu.ro",
-                },
-                timeout=None,  # type: ignore
-                receive_timeout=None,
-                heartbeat=30,
-            )
-        except aiohttp.ClientResponseError as ex:
-            if ex.status == 404:
-                raise ResourceNotFound(f"Job {id!r} is not running")
-            raise
-
-        try:
+        async with self._core.ws_connect(
+            url,
+            auth=auth,
+            headers={
+                aiohttp.hdrs.SEC_WEBSOCKET_PROTOCOL: "v2.channels.neu.ro",
+            },
+            timeout=None,
+            receive_timeout=None,
+            heartbeat=30,
+        ) as ws:
             yield StdStream(ws)
-        finally:
-            await ws.close()
 
     @asynccontextmanager
     async def exec(
@@ -755,23 +740,17 @@ class Jobs(metaclass=NoPublicConstructor):
         )
         auth = await self._config._api_auth()
 
-        try:
-            ws = await self._core._session.ws_connect(
-                url,
-                headers={"Authorization": auth},
-                timeout=None,  # type: ignore
-                receive_timeout=None,
-                heartbeat=30,
-            )
-        except aiohttp.ClientResponseError as ex:
-            if ex.status == 404:
-                raise ResourceNotFound(f"Job {id!r} is not running")
-            raise
-
-        try:
-            yield StdStream(ws)
-        finally:
-            await ws.close()
+        async with self._core.ws_connect(
+            url,
+            auth=auth,
+            timeout=None,
+            receive_timeout=None,
+            heartbeat=30,
+        ) as ws:
+            try:
+                yield StdStream(ws)
+            finally:
+                await ws.close()
 
     async def send_signal(self, id: str, *, cluster_name: Optional[str] = None) -> None:
         url = self._get_monitoring_url(cluster_name) / id / "kill"

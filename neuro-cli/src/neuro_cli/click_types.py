@@ -170,7 +170,7 @@ class MegabyteType(click.ParamType):
         self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
     ) -> int:
         if isinstance(value, int):
-            return int(value / (1024 ** 2))
+            return int(value / (1024**2))
         return to_megabytes(value)
 
 
@@ -438,29 +438,121 @@ class JobType(AsyncType[str]):
     ) -> str:
         return value
 
+    async def _complete_clusters(
+        self,
+        client: Client,
+        prefix: str,
+        incomplete: str,
+    ) -> List[CompletionItem]:
+        return [
+            CompletionItem(f"{name}/", type="uri", prefix=prefix)
+            for name in client.config.clusters
+            if name.startswith(incomplete)
+        ]
+
+    async def _complete_job_owners(
+        self,
+        client: Client,
+        prefix: str,
+        cluster_name: str,
+        incomplete: str,
+    ) -> List[CompletionItem]:
+        if cluster_name not in client.config.clusters:
+            return []
+        now = datetime.now()
+        limit = int(os.environ.get(JOB_LIMIT_ENV, 100))
+        names = []
+        async with client.jobs.list(
+            since=now - timedelta(days=7),
+            reverse=True,
+            limit=limit,
+            cluster_name=cluster_name,
+        ) as it:
+            async for job in it:
+                name = job.owner
+                if name.startswith(incomplete) and name not in names:
+                    names.append(name)
+        return [CompletionItem(f"{name}/", type="uri", prefix=prefix) for name in names]
+
+    async def _complete_job_names(
+        self,
+        client: Client,
+        prefix: str,
+        cluster_name: str,
+        username: str,
+        incomplete: str,
+    ) -> List[CompletionItem]:
+        if cluster_name not in client.config.clusters:
+            return []
+        now = datetime.now()
+        limit = int(os.environ.get(JOB_LIMIT_ENV, 100))
+        names = {}
+        async with client.jobs.list(
+            since=now - timedelta(days=7),
+            reverse=True,
+            limit=limit,
+            cluster_name=cluster_name,
+            owners=[username],
+        ) as it:
+            async for job in it:
+                id = job.id
+                name = job.name
+                if id.startswith(incomplete):
+                    names[id] = name
+                if name and name.startswith(incomplete):
+                    names[name] = id
+        if prefix:
+            return [CompletionItem(name, type="uri", prefix=prefix) for name in names]
+        else:
+            return [CompletionItem(name, help=help) for name, help in names.items()]
+
     async def async_shell_complete(
         self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
     ) -> List[CompletionItem]:
-        async with await root.init_client() as client:
-            ret: List[CompletionItem] = []
-            now = datetime.now()
-            limit = int(os.environ.get(JOB_LIMIT_ENV, 100))
-            async with client.jobs.list(
-                since=now - timedelta(days=7), reverse=True, limit=limit
-            ) as it:
-                async for job in it:
-                    job_name = job.name or ""
-                    for test in (
-                        job.id,
-                        job_name,
-                        f"job:{job.id}",
-                        f"job:/{job.owner}/{job.id}",
-                        f"job://{job.cluster_name}/{job.owner}/{job.id}",
-                    ):
-                        if test.startswith(incomplete):
-                            ret.append(CompletionItem(test, help=job_name))
+        if "job".startswith(incomplete):
+            return [CompletionItem("job:", type="uri", prefix="")]
 
-            return ret
+        async with await root.init_client() as client:
+            if incomplete.startswith("job:///"):
+                return []
+
+            if incomplete.startswith("job://"):
+                parts = incomplete[len("job://") :].split("/")
+                if len(parts) == 1:
+                    return await self._complete_clusters(client, "job://", *parts)
+                elif len(parts) == 2:
+                    return await self._complete_job_owners(
+                        client, f"job://{parts[0]}/", *parts
+                    )
+                elif len(parts) == 3:
+                    return await self._complete_job_names(
+                        client, f"job://{parts[0]}/{parts[1]}/", *parts
+                    )
+                return []
+
+            if incomplete.startswith("job:/"):
+                parts = incomplete[len("job:/") :].split("/")
+                if len(parts) == 1:
+                    return await self._complete_job_owners(
+                        client, "job:/", client.cluster_name, *parts
+                    )
+                elif len(parts) == 2:
+                    return await self._complete_job_names(
+                        client, f"job:/{parts[0]}/", client.cluster_name, *parts
+                    )
+                return []
+
+            if incomplete.startswith("job:"):
+                parts = incomplete[len("job:") :].split("/")
+                if len(parts) == 1:
+                    return await self._complete_job_names(
+                        client, "job:", client.cluster_name, client.username, *parts
+                    )
+                return []
+
+            return await self._complete_job_names(
+                client, "", client.cluster_name, client.username, incomplete
+            )
 
 
 JOB = JobType()

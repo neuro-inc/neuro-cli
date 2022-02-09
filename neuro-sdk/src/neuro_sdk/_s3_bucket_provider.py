@@ -204,7 +204,7 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
                 )
             raise
 
-    MIN_CHUNK_SIZE = 10 * (2 ** 20)  # 10mb
+    MIN_CHUNK_SIZE = 10 * (2**20)  # 10mb
 
     async def put_blob(
         self,

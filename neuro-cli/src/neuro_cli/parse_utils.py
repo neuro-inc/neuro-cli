@@ -63,11 +63,11 @@ def parse_memory(memory: str) -> int:
     power = 2 + prefixes.index(prefix)
     multiple = 1000 if unit else 1024
 
-    return value * multiple ** power
+    return value * multiple**power
 
 
 def to_megabytes(value: str) -> int:
-    return int(parse_memory(value) / (1024 ** 2))
+    return int(parse_memory(value) / (1024**2))
 
 
 @dataclasses.dataclass(frozen=True)
