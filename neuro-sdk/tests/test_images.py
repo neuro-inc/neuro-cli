@@ -43,6 +43,15 @@ class TestImageParser:
             "another": URL("https://example.org"),
         },
     )
+    parser_with_org = _ImageNameParser(
+        default_user="alice",
+        default_cluster="default",
+        default_org="test-org",
+        registry_urls={
+            "default": URL("https://reg.neu.ro"),
+            "another": URL("https://example.org"),
+        },
+    )
 
     @pytest.mark.parametrize(
         "image",
@@ -316,20 +325,45 @@ class TestImageParser:
         ):
             self.parser.parse_as_neuro_image(image)
 
-    def test_parse_as_neuro_image_with_org(
-        self,
-    ) -> None:
-        image = "image://another/test-org/bob/ubuntu:v10.04"
-        parser = _ImageNameParser(
-            default_user="alice",
-            default_cluster="default",
-            default_org="test-org",
-            registry_urls={
-                "default": URL("https://reg.neu.ro"),
-                "another": URL("https://example.org"),
-            },
+    def test_parse_as_neuro_image_with_default_org_no_org(self) -> None:
+        image = "image://another/bob/ubuntu:v10.04"
+        parsed = self.parser_with_org.parse_as_neuro_image(image)
+        assert parsed == RemoteImage.new_neuro_image(
+            name="ubuntu",
+            tag="v10.04",
+            owner="bob",
+            cluster_name="another",
+            registry="example.org",
+            org_name=None,
         )
-        parsed = parser.parse_as_neuro_image(image)
+
+    def test_parse_as_neuro_image_with_default_org_no_cluster_no_org(self) -> None:
+        image = "image:/bob/ubuntu:v10.04"
+        parsed = self.parser_with_org.parse_as_neuro_image(image)
+        assert parsed == RemoteImage.new_neuro_image(
+            name="ubuntu",
+            tag="v10.04",
+            owner="bob",
+            cluster_name="default",
+            registry="reg.neu.ro",
+            org_name="test-org",
+        )
+
+    def test_parse_as_neuro_image_with_default_org_no_cluster_no_user(self) -> None:
+        image = "image:ubuntu:v10.04"
+        parsed = self.parser_with_org.parse_as_neuro_image(image)
+        assert parsed == RemoteImage.new_neuro_image(
+            name="ubuntu",
+            tag="v10.04",
+            owner="alice",
+            cluster_name="default",
+            registry="reg.neu.ro",
+            org_name="test-org",
+        )
+
+    def test_parse_as_neuro_image_with_default_org_same_org(self) -> None:
+        image = "image://another/test-org/bob/ubuntu:v10.04"
+        parsed = self.parser_with_org.parse_as_neuro_image(image)
         assert parsed == RemoteImage.new_neuro_image(
             name="ubuntu",
             tag="v10.04",
@@ -337,6 +371,32 @@ class TestImageParser:
             cluster_name="another",
             registry="example.org",
             org_name="test-org",
+        )
+
+    # XXX: Ambigious URI
+    def test_parse_as_neuro_image_with_default_org_other_org(self) -> None:
+        image = "image://another/org/bob/ubuntu:v10.04"
+        parsed = self.parser_with_org.parse_as_neuro_image(image)
+        assert parsed == RemoteImage.new_neuro_image(
+            name="bob/ubuntu",
+            tag="v10.04",
+            owner="org",
+            cluster_name="another",
+            registry="example.org",
+            org_name=None,
+        )
+
+    # XXX: Ambigious URI
+    def test_parse_as_neuro_image_without_default_org_with_org(self) -> None:
+        image = "image://another/test-org/bob/ubuntu:v10.04"
+        parsed = self.parser.parse_as_neuro_image(image)
+        assert parsed == RemoteImage.new_neuro_image(
+            name="bob/ubuntu",
+            tag="v10.04",
+            owner="test-org",
+            cluster_name="another",
+            registry="example.org",
+            org_name=None,
         )
 
     def test_parse_as_neuro_image_with_scheme_with_cluster_with_user_with_tag(
@@ -780,16 +840,7 @@ class TestImageParser:
 
     def test_convert_to_neuro_image_with_defualt_org(self) -> None:
         local_image = LocalImage(name="ubuntu", tag="latest")
-        parser = _ImageNameParser(
-            default_user="alice",
-            default_cluster="default",
-            default_org="test-org",
-            registry_urls={
-                "default": URL("https://reg.neu.ro"),
-                "another": URL("https://example.org"),
-            },
-        )
-        neuro_image = parser.convert_to_neuro_image(local_image)
+        neuro_image = self.parser_with_org.convert_to_neuro_image(local_image)
         assert neuro_image == RemoteImage.new_neuro_image(
             name="ubuntu",
             tag="latest",
