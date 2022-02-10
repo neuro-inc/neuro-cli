@@ -33,6 +33,7 @@ from .formatters.admin import (
     ClustersFormatter,
     ClusterUserFormatter,
     OrgClusterFormatter,
+    OrgClustersFormatter,
     OrgsFormatter,
     OrgUserFormatter,
 )
@@ -1222,7 +1223,7 @@ async def get_org_clusters(root: Root, cluster_name: str) -> None:
     """
     Print the list of all orgs in the cluster
     """
-    fmt = OrgClusterFormatter()
+    fmt = OrgClustersFormatter()
     with root.status(f"Fetching the list of orgs of cluster [b]{cluster_name}[/b]"):
         org_clusters = await root.client._admin.list_org_clusters(
             cluster_name=cluster_name
@@ -1288,7 +1289,7 @@ async def add_org_cluster(
     Add org access to specified cluster.
 
     """
-    await root.client._admin.create_org_cluster(
+    org_cluster = await root.client._admin.create_org_cluster(
         cluster_name=cluster_name,
         org_name=org_name,
         balance=_Balance(credits=_parse_credits_value(credits)),
@@ -1300,9 +1301,11 @@ async def add_org_cluster(
     if not root.quiet:
         root.print(
             f"Added org [bold]{rich_escape(org_name)}[/bold] to "
-            f"[bold]{rich_escape(cluster_name)}[/bold]",
+            f"[bold]{rich_escape(cluster_name)}[/bold]. Info:",
             markup=True,
         )
+        fmt = OrgClusterFormatter()
+        root.print(fmt(org_cluster, skip_cluster_org=True))
 
 
 @command()
@@ -1355,22 +1358,24 @@ async def update_org_cluster(
     Update org cluster quotas.
 
     """
-    await root.client._admin.update_org_cluster(
-        _OrgCluster(
-            cluster_name=cluster_name,
-            org_name=org_name,
-            balance=_Balance(credits=_parse_credits_value(credits)),
-            quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
-            default_credits=_parse_credits_value(default_credits),
-            default_quota=_Quota(_parse_jobs_value(default_jobs)),
-        )
+    org_cluster = _OrgCluster(
+        cluster_name=cluster_name,
+        org_name=org_name,
+        balance=_Balance(credits=_parse_credits_value(credits)),
+        quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
+        default_credits=_parse_credits_value(default_credits),
+        default_quota=_Quota(_parse_jobs_value(default_jobs)),
     )
+    await root.client._admin.update_org_cluster(org_cluster)
     if not root.quiet:
         root.print(
-            f"Added org [bold]{rich_escape(org_name)}[/bold] to "
-            f"[bold]{rich_escape(cluster_name)}[/bold]",
+            f"Org [bold]{rich_escape(org_name)}[/bold] info in cluster"
+            f" [bold]{rich_escape(cluster_name)}[/bold] successfully updated. "
+            f"New info:",
             markup=True,
         )
+        fmt = OrgClusterFormatter()
+        root.print(fmt(org_cluster, skip_cluster_org=True))
 
 
 @command(hidden=True)
