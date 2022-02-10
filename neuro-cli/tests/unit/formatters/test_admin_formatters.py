@@ -12,13 +12,18 @@ from neuro_sdk import (
     _ClusterUserWithInfo,
     _ConfigCluster,
     _NodePool,
+    _OrgCluster,
     _Quota,
     _Storage,
     _StorageInstance,
     _UserInfo,
 )
 
-from neuro_cli.formatters.admin import ClustersFormatter, ClusterUserFormatter
+from neuro_cli.formatters.admin import (
+    ClustersFormatter,
+    ClusterUserFormatter,
+    OrgClusterFormatter,
+)
 
 RichCmp = Callable[[RenderableType], None]
 
@@ -263,3 +268,25 @@ class TestClustersFormatter:
             )
         }
         rich_cmp(formatter(clusters))
+
+
+class TestOrgClusterFormatter:
+    def test_org_cluster_formatter(self, rich_cmp: RichCmp) -> None:
+        formatter = OrgClusterFormatter()
+        cluster = _OrgCluster(
+            cluster_name="test",
+            org_name="test-org",
+            quota=_Quota(total_running_jobs=2),
+            balance=_Balance(credits=Decimal(100), spent_credits=Decimal(20)),
+        )
+        rich_cmp(formatter(cluster))
+
+    def test_org_cluster_formatter_no_quota(self, rich_cmp: RichCmp) -> None:
+        formatter = OrgClusterFormatter()
+        cluster = _OrgCluster(
+            cluster_name="test",
+            org_name="test-org",
+            quota=_Quota(),
+            balance=_Balance(),
+        )
+        rich_cmp(formatter(cluster))

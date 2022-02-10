@@ -122,14 +122,19 @@ Storage
 
       :return: data structure for given *uri*, :class:`FileStatus` object.
 
-   .. comethod:: disk_usage(cluster_name: Optional[str] = None) -> DiskUsageInfo
+   .. comethod:: disk_usage(cluster_name: Optional[str] = None, \
+                            org_name: Optional[str] = None \
+                 ) -> DiskUsageInfo
 
-      Return information about disk usage in given cluster.
+      Return information about disk usage in given cluster and organization.
 
       :param str cluster_name: cluster name to retrieve info. If ``None`` current
                                cluster will be used.
 
-      :return: data structure for given cluster, :class:`DiskUsageInfo` object.
+      :param str org_name: Organization name to retrieve info. If ``None`` current
+                               organization will be used.
+
+      :return: data structure for given cluster and organization, :class:`DiskUsageInfo` object.
 
    .. rubric:: File operations
 
