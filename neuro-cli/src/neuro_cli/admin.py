@@ -1378,7 +1378,7 @@ async def update_org_cluster(
         root.print(fmt(org_cluster, skip_cluster_org=True))
 
 
-@command(hidden=True)
+@command()
 @option("--force", default=False, help="Skip prompt", is_flag=True)
 @argument("cluster_name", required=True, type=str)
 @argument("org_name", required=True, type=str)
