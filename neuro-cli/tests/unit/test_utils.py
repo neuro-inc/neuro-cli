@@ -1,6 +1,6 @@
 from datetime import timedelta
 from pathlib import Path
-from typing import Any, Callable, Dict, List, NoReturn, Optional, Set, Union
+from typing import Any, Callable, Dict, List, NoReturn, Optional, Set, Union, cast
 from unittest import mock
 
 import click
@@ -946,7 +946,7 @@ async def test_calc_default_life_span_default_value(
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
         # empty config
-        local_conf.write_text(toml.dumps({}))
+        local_conf.write_text(toml.dumps(cast(Dict[str, Any], {})))
         default = parse_timedelta("1d")
         assert (
             await calc_life_span(client, None, "1d", "job") == default.total_seconds()
