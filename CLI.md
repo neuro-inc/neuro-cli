@@ -32,6 +32,7 @@
 		* [neuro admin remove-org-user](#neuro-admin-remove-org-user)
 		* [neuro admin remove-resource-preset](#neuro-admin-remove-resource-preset)
 		* [neuro admin set-org-cluster-credits](#neuro-admin-set-org-cluster-credits)
+		* [neuro admin set-org-cluster-defaults](#neuro-admin-set-org-cluster-defaults)
 		* [neuro admin set-org-cluster-quota](#neuro-admin-set-org-cluster-quota)
 		* [neuro admin set-user-credits](#neuro-admin-set-user-credits)
 		* [neuro admin set-user-quota](#neuro-admin-set-user-quota)
@@ -461,6 +462,7 @@ Name | Description|
 | _[neuro admin remove\-org-user](#neuro-admin-remove-org-user)_| Remove user access from the org |
 | _[neuro admin remove\-resource-preset](#neuro-admin-remove-resource-preset)_| Remove resource preset |
 | _[neuro admin set\-org-cluster-credits](#neuro-admin-set-org-cluster-credits)_| Set org cluster credits to given value |
+| _[neuro admin set\-org-cluster-defaults](#neuro-admin-set-org-cluster-defaults)_| Set org cluster defaults to given value |
 | _[neuro admin set\-org-cluster-quota](#neuro-admin-set-org-cluster-quota)_| Set org cluster quota to given values |
 | _[neuro admin set\-user-credits](#neuro-admin-set-user-credits)_| Set user credits to given value |
 | _[neuro admin set\-user-quota](#neuro-admin-set-user-quota)_| Set user quota to given values |
@@ -915,6 +917,27 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[required]|
+
+
+
+
+### neuro admin set-org-cluster-defaults
+
+Set org cluster defaults to given value
+
+**Usage:**
+
+```bash
+neuro admin set-org-cluster-defaults [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 
 
 
