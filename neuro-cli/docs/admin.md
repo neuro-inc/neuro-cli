@@ -32,6 +32,7 @@ Cluster administration commands.
 | [_remove-cluster_](admin.md#remove-cluster) | Drop a cluster |
 | [_remove-cluster-user_](admin.md#remove-cluster-user) | Remove user access from the cluster |
 | [_remove-org_](admin.md#remove-org) | Drop a org |
+| [_remove-org-cluster_](admin.md#remove-org-cluster) | Drop an org cluster |
 | [_remove-org-user_](admin.md#remove-org-user) | Remove user access from the org |
 | [_remove-resource-preset_](admin.md#remove-resource-preset) | Remove resource preset |
 | [_set-org-cluster-credits_](admin.md#set-org-cluster-credits) | Set org cluster credits to given value |
@@ -475,6 +476,30 @@ neuro admin remove-org [OPTIONS] ORG_NAME
 Drop a org
 
 Completely removes org from the system.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--force_ | Skip prompt |
+
+
+
+### remove-org-cluster
+
+Drop an org cluster
+
+
+#### Usage
+
+```bash
+neuro admin remove-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+Drop an org cluster
+
+Completely removes org from the cluster.
 
 #### Options
 

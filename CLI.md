@@ -29,6 +29,7 @@
 		* [neuro admin remove-cluster](#neuro-admin-remove-cluster)
 		* [neuro admin remove-cluster-user](#neuro-admin-remove-cluster-user)
 		* [neuro admin remove-org](#neuro-admin-remove-org)
+		* [neuro admin remove-org-cluster](#neuro-admin-remove-org-cluster)
 		* [neuro admin remove-org-user](#neuro-admin-remove-org-user)
 		* [neuro admin remove-resource-preset](#neuro-admin-remove-resource-preset)
 		* [neuro admin set-org-cluster-credits](#neuro-admin-set-org-cluster-credits)
@@ -458,6 +459,7 @@ Name | Description|
 | _[neuro admin remove-cluster](#neuro-admin-remove-cluster)_| Drop a cluster |
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
 | _[neuro admin remove-org](#neuro-admin-remove-org)_| Drop a org |
+| _[neuro admin remove\-org-cluster](#neuro-admin-remove-org-cluster)_| Drop an org cluster |
 | _[neuro admin remove\-org-user](#neuro-admin-remove-org-user)_| Remove user access from the org |
 | _[neuro admin remove\-resource-preset](#neuro-admin-remove-resource-preset)_| Remove resource preset |
 | _[neuro admin set\-org-cluster-credits](#neuro-admin-set-org-cluster-credits)_| Set org cluster credits to given value |
@@ -849,6 +851,26 @@ Drop a org<br/><br/>Completely removes org from the system.
 
 ```bash
 neuro admin remove-org [OPTIONS] ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--force_|Skip prompt|
+
+
+
+
+### neuro admin remove-org-cluster
+
+Drop an org cluster<br/><br/>Completely removes org from the cluster.
+
+**Usage:**
+
+```bash
+neuro admin remove-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
 **Options:**
