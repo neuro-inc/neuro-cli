@@ -36,6 +36,7 @@ Cluster administration commands.
 | [_remove-org-user_](admin.md#remove-org-user) | Remove user access from the org |
 | [_remove-resource-preset_](admin.md#remove-resource-preset) | Remove resource preset |
 | [_set-org-cluster-credits_](admin.md#set-org-cluster-credits) | Set org cluster credits to given value |
+| [_set-org-cluster-defaults_](admin.md#set-org-cluster-defaults) | Set org cluster defaults to given value |
 | [_set-org-cluster-quota_](admin.md#set-org-cluster-quota) | Set org cluster quota to given values |
 | [_set-user-credits_](admin.md#set-user-credits) | Set user credits to given value |
 | [_set-user-quota_](admin.md#set-user-quota) | Set user quota to given values |
@@ -571,6 +572,29 @@ Set org cluster credits to given value
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[required\]_ |
+
+
+
+### set-org-cluster-defaults
+
+Set org cluster defaults to given value
+
+
+#### Usage
+
+```bash
+neuro admin set-org-cluster-defaults [OPTIONS] CLUSTER_NAME ORG_NAME
+```
+
+Set org cluster defaults to given value
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--default-credits AMOUNT_ | Default credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 
 
 

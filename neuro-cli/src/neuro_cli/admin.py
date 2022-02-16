@@ -1405,6 +1405,52 @@ async def remove_org_cluster(
 @command()
 @argument("cluster_name", required=True, type=str)
 @argument("org_name", required=True, type=str)
+@option(
+    "--default-credits",
+    metavar="AMOUNT",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Default credits amount to set (`unlimited' stands for no limit)",
+)
+@option(
+    "--default-jobs",
+    metavar="AMOUNT",
+    type=str,
+    default=UNLIMITED,
+    show_default=True,
+    help="Default maximum running jobs quota (`unlimited' stands for no limit)",
+)
+async def set_org_cluster_defaults(
+    root: Root,
+    cluster_name: str,
+    org_name: str,
+    default_credits: str,
+    default_jobs: str,
+) -> None:
+    """
+    Set org cluster defaults to given value
+    """
+    org_cluster = await root.client._admin.update_org_cluster_defaults(
+        cluster_name=cluster_name,
+        org_name=org_name,
+        default_credits=_parse_credits_value(default_credits),
+        default_quota=_Quota(_parse_jobs_value(default_jobs)),
+    )
+    if not root.quiet:
+        root.print(
+            f"Org [bold]{rich_escape(org_name)}[/bold] info in cluster"
+            f" [bold]{rich_escape(cluster_name)}[/bold] successfully updated. "
+            f"New info:",
+            markup=True,
+        )
+        fmt = OrgClusterFormatter()
+        root.print(fmt(org_cluster, skip_cluster_org=True))
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("org_name", required=True, type=str)
 async def get_org_cluster_quota(
     root: Root,
     cluster_name: str,
@@ -1566,6 +1612,7 @@ admin.add_command(add_org_cluster)
 admin.add_command(update_org_cluster)
 admin.add_command(remove_org_cluster)
 
+admin.add_command(set_org_cluster_defaults)
 admin.add_command(get_org_cluster_quota)
 admin.add_command(set_org_cluster_quota)
 admin.add_command(set_org_cluster_credits)
