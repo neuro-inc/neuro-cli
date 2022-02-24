@@ -168,6 +168,22 @@ class RemoteImageType(AsyncType[RemoteImage]):
                 names.append(incomplete + quote(path[len(prefix) :]))
         return [CompletionItem(name, type="uri", prefix=uri_prefix) for name in names]
 
+    async def _complete_image_tags(
+        self,
+        client: Client,
+        image_str: str,
+        incomplete: str,
+    ) -> List[CompletionItem]:
+        image = client.parse.remote_image(image_str, tag_option=TagOption.DENY)
+        result = []
+        for image_tag in await client.images.tags(image):
+            assert image_tag.tag
+            if image_tag.tag.startswith(incomplete):
+                result.append(
+                    CompletionItem(image_tag.tag, type="uri", prefix=image_str + ":")
+                )
+        return result
+
     async def async_shell_complete(
         self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
     ) -> List[CompletionItem]:
@@ -175,26 +191,32 @@ class RemoteImageType(AsyncType[RemoteImage]):
             return [CompletionItem("image:", type="uri", prefix="")]
 
         async with await root.init_client() as client:
-            if incomplete.startswith("image:///"):
-                return []
-
-            if incomplete.startswith("image://"):
-                incomplete = incomplete[len("image://") :]
-                if "/" not in incomplete:
-                    return _complete_clusters(client, "image://", incomplete)
-                cluster_name, incomplete = incomplete.split("/", 1)
-                return await self._complete_image_names(
-                    client, f"image://{cluster_name}/", "", cluster_name, incomplete
-                )
-
-            if incomplete.startswith("image:/"):
-                incomplete = incomplete[len("image:/") :]
-                return await self._complete_image_names(
-                    client, f"image:/", "", client.cluster_name, incomplete
-                )
-
             if incomplete.startswith("image:"):
                 incomplete = incomplete[len("image:") :]
+                if self.tag_option != TagOption.DENY and ":" in incomplete:
+                    prefix, incomplete = incomplete.split(":", 1)
+                    return await self._complete_image_tags(
+                        client, f"image:{prefix}", incomplete
+                    )
+
+                if incomplete.startswith("///"):
+                    return []
+
+                if incomplete.startswith("//"):
+                    incomplete = incomplete[2:]
+                    if "/" not in incomplete:
+                        return _complete_clusters(client, "image://", incomplete)
+                    cluster_name, incomplete = incomplete.split("/", 1)
+                    return await self._complete_image_names(
+                        client, f"image://{cluster_name}/", "", cluster_name, incomplete
+                    )
+
+                if incomplete.startswith("/"):
+                    incomplete = incomplete[1:]
+                    return await self._complete_image_names(
+                        client, f"image:/", "", client.cluster_name, incomplete
+                    )
+
                 path_prefix = f"{client.username}/"
                 if client.config.org_name:
                     path_prefix = f"{client.config.org_name}/{path_prefix}"
