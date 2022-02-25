@@ -15,6 +15,7 @@ from typing import (
     Union,
     cast,
 )
+from urllib.parse import quote, unquote
 
 import click
 from click import BadParameter
@@ -114,34 +115,121 @@ class LocalImageType(click.ParamType):
         return client.parse.local_image(value)
 
 
-class RemoteTaglessImageType(click.ParamType):
-    name = "image"
+def _complete_clusters(
+    client: Client,
+    prefix: str,
+    incomplete: str,
+) -> List[CompletionItem]:
+    return [
+        CompletionItem(f"{name}/", type="uri", prefix=prefix)
+        for name in client.config.clusters
+        if name.startswith(incomplete)
+    ]
 
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
-    ) -> RemoteImage:
-        assert ctx is not None
-        root = cast(Root, ctx.obj)
-        client = root.run(root.init_client())
-        return client.parse.remote_image(value, tag_option=TagOption.DENY)
 
-
-class RemoteImageType(click.ParamType):
+class RemoteImageType(AsyncType[RemoteImage]):
     name = "image"
 
     def __init__(self, tag_option: TagOption = TagOption.DEFAULT) -> None:
         self.tag_option = tag_option
 
-    def convert(
-        self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
+    async def async_convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
     ) -> RemoteImage:
-        assert ctx is not None
-        root = cast(Root, ctx.obj)
-        cluster_name = ctx.params.get("cluster")
-        client = root.run(root.init_client())
+        client = await root.init_client()
+        cluster_name = client.cluster_name
+        if ctx:
+            cluster_name = ctx.params.get("cluster", client.cluster_name)
         return client.parse.remote_image(
             value, tag_option=self.tag_option, cluster_name=cluster_name
         )
+
+    async def _complete_image_names(
+        self,
+        client: Client,
+        uri_prefix: str,
+        path_prefix: str,
+        cluster_name: str,
+        incomplete: str,
+    ) -> List[CompletionItem]:
+        if cluster_name not in client.config.clusters:
+            return []
+        names = []
+        prefix = f"{path_prefix}{unquote(incomplete)}"
+        for image in await client.images.list(cluster_name):
+            path = f"{image.owner}/{image.name}"
+            if image.org_name:
+                path = f"{image.org_name}/{path}"
+            if path.startswith(prefix):
+                names.append(incomplete + quote(path[len(prefix) :]))
+        return [CompletionItem(name, type="uri", prefix=uri_prefix) for name in names]
+
+    async def _complete_image_tags(
+        self,
+        client: Client,
+        image_str: str,
+        incomplete: str,
+    ) -> List[CompletionItem]:
+        image = client.parse.remote_image(image_str, tag_option=TagOption.DENY)
+        result = []
+        for image_tag in await client.images.tags(image):
+            assert image_tag.tag
+            if image_tag.tag.startswith(incomplete):
+                result.append(
+                    CompletionItem(image_tag.tag, type="uri", prefix=image_str + ":")
+                )
+        return result
+
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
+        if "image".startswith(incomplete):
+            return [CompletionItem("image:", type="uri", prefix="")]
+
+        async with await root.init_client() as client:
+            if incomplete.startswith("image:"):
+                incomplete = incomplete[len("image:") :]
+                if self.tag_option != TagOption.DENY and ":" in incomplete:
+                    prefix, incomplete = incomplete.split(":", 1)
+                    return await self._complete_image_tags(
+                        client, f"image:{prefix}", incomplete
+                    )
+
+                if incomplete.startswith("///"):
+                    return []
+
+                if incomplete.startswith("//"):
+                    incomplete = incomplete[2:]
+                    if "/" not in incomplete:
+                        return _complete_clusters(client, "image://", incomplete)
+                    cluster_name, incomplete = incomplete.split("/", 1)
+                    return await self._complete_image_names(
+                        client, f"image://{cluster_name}/", "", cluster_name, incomplete
+                    )
+
+                if incomplete.startswith("/"):
+                    incomplete = incomplete[1:]
+                    return await self._complete_image_names(
+                        client, "image:/", "", client.cluster_name, incomplete
+                    )
+
+                path_prefix = f"{client.username}/"
+                if client.config.org_name:
+                    path_prefix = f"{client.config.org_name}/{path_prefix}"
+                return await self._complete_image_names(
+                    client, "image:", path_prefix, client.cluster_name, incomplete
+                )
+
+            return []
+
+
+class RemoteTaglessImageType(RemoteImageType):
+    def __init__(self, tag_option: TagOption = TagOption.DENY) -> None:
+        super().__init__(tag_option=TagOption.DENY)
 
 
 class LocalRemotePortParamType(click.ParamType):
@@ -438,18 +526,6 @@ class JobType(AsyncType[str]):
     ) -> str:
         return value
 
-    async def _complete_clusters(
-        self,
-        client: Client,
-        prefix: str,
-        incomplete: str,
-    ) -> List[CompletionItem]:
-        return [
-            CompletionItem(f"{name}/", type="uri", prefix=prefix)
-            for name in client.config.clusters
-            if name.startswith(incomplete)
-        ]
-
     async def _complete_job_owners(
         self,
         client: Client,
@@ -519,7 +595,7 @@ class JobType(AsyncType[str]):
             if incomplete.startswith("job://"):
                 parts = incomplete[len("job://") :].split("/")
                 if len(parts) == 1:
-                    return await self._complete_clusters(client, "job://", *parts)
+                    return _complete_clusters(client, "job://", *parts)
                 elif len(parts) == 2:
                     return await self._complete_job_owners(
                         client, f"job://{parts[0]}/", *parts
