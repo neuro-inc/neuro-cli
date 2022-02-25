@@ -214,7 +214,7 @@ class RemoteImageType(AsyncType[RemoteImage]):
                 if incomplete.startswith("/"):
                     incomplete = incomplete[1:]
                     return await self._complete_image_names(
-                        client, f"image:/", "", client.cluster_name, incomplete
+                        client, "image:/", "", client.cluster_name, incomplete
                     )
 
                 path_prefix = f"{client.username}/"
@@ -223,7 +223,6 @@ class RemoteImageType(AsyncType[RemoteImage]):
                 return await self._complete_image_names(
                     client, "image:", path_prefix, client.cluster_name, incomplete
                 )
-                return []
 
             return []
 
