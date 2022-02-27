@@ -1073,7 +1073,7 @@ def test_disk_autocomplete(run_autocomplete: _RunAC) -> None:
         assert zsh_out == (
             "plain\ndisk-123\n_\n_\n"
             "plain\ndisk-234\ndata-disk\n_\n"
-            "plain\ndata-disk\ndata-disk\n_"
+            "plain\ndata-disk\ndisk-234\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(["disk", "get", "disk-2"])
@@ -1082,12 +1082,12 @@ def test_disk_autocomplete(run_autocomplete: _RunAC) -> None:
 
         zsh_out, bash_out = run_autocomplete(["disk", "get", "da"])
         assert bash_out == ("plain,data-disk,")
-        assert zsh_out == ("plain\ndata-disk\ndata-disk\n_")
+        assert zsh_out == ("plain\ndata-disk\ndisk-234\n_")
 
         zsh_out, bash_out = run_autocomplete(["disk", "get", "--cluster", "other", "d"])
         assert bash_out == ("plain,disk-345,\n" "plain,data-disk2,")
         assert zsh_out == (
-            "plain\ndisk-345\ndata-disk2\n_\n" "plain\ndata-disk2\ndata-disk2\n_"
+            "plain\ndisk-345\ndata-disk2\n_\n" "plain\ndata-disk2\ndisk-345\n_"
         )
 
 
@@ -1181,8 +1181,7 @@ def test_bucket_autocomplete(run_autocomplete: _RunAC) -> None:
         zsh_out, bash_out = run_autocomplete(["blob", "statbucket", "t"])
         assert bash_out == ("plain,test-bucket,\n" "plain,test-bucket-2,")
         assert zsh_out == (
-            "plain\ntest-bucket\ntest-bucket\n_\n"
-            "plain\ntest-bucket-2\ntest-bucket-2\n_"
+            "plain\ntest-bucket\nbucket-1\n_\n" "plain\ntest-bucket-2\nbucket-2\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(
@@ -1228,7 +1227,7 @@ def test_service_account_autocomplete(run_autocomplete: _RunAC) -> None:
 
         zsh_out, bash_out = run_autocomplete(["service-account", "get", "t"])
         assert bash_out == ("plain,test1,\n" "plain,test2,")
-        assert zsh_out == ("plain\ntest1\ntest1\n_\n" "plain\ntest2\ntest2\n_")
+        assert zsh_out == ("plain\ntest1\naccount-1\n_\n" "plain\ntest2\naccount-2\n_")
 
 
 @skip_on_windows
@@ -1359,13 +1358,13 @@ def test_bucket_credential_autocomplete(run_autocomplete: _RunAC) -> None:
             "plain,test-credentials-3,"
         )
         assert zsh_out == (
-            "plain\ntest-credentials-1\ntest-credentials-1\n_\n"
-            "plain\ntest-credentials-2\ntest-credentials-2\n_\n"
-            "plain\ntest-credentials-3\ntest-credentials-3\n_"
+            "plain\ntest-credentials-1\nbucket-credentials-1\n_\n"
+            "plain\ntest-credentials-2\nbucket-credentials-2\n_\n"
+            "plain\ntest-credentials-3\nbucket-credentials-3\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(
             ["blob", "statcredentials", "--cluster", "other", "b"]
         )
-        assert bash_out == "plain,bucket-credentials-4,"
-        assert zsh_out == "plain\nbucket-credentials-4\ntest-credentials-4\n_"
+        assert bash_out == "plain,test-credentials-4,"
+        assert zsh_out == "plain\ntest-credentials-4\nbucket-credentials-4\n_"

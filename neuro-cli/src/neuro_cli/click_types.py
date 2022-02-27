@@ -638,9 +638,10 @@ JOB = JobType()
 def _complete_id_name(
     id: str, name: Optional[str], incomplete: str
 ) -> Iterator[CompletionItem]:
-    for test in (id, name or ""):
-        if test.startswith(incomplete):
-            yield CompletionItem(test, help=name or "")
+    if id.startswith(incomplete):
+        yield CompletionItem(id, help=name or "")
+    if name and name.startswith(incomplete):
+        yield CompletionItem(name, help=id)
 
 
 class DiskType(AsyncType[str]):
