@@ -2928,7 +2928,7 @@ Show current usage of storage.
 **Usage:**
 
 ```bash
-neuro storage df [OPTIONS]
+neuro storage df [OPTIONS] [PATH]
 ```
 
 **Options:**

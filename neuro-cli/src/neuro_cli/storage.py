@@ -222,11 +222,16 @@ async def glob(root: Root, patterns: Sequence[URL]) -> None:
 
 
 @command()
-async def df(root: Root) -> None:
+@argument(
+    "path",
+    required=False,
+    type=PlatformURIType(allowed_schemes=["storage"], complete_file=False),
+)
+async def df(root: Root, path: Optional[URL]) -> None:
     """
     Show current usage of storage.
     """
-    usage = await root.client.storage.disk_usage()
+    usage = await root.client.storage.disk_usage(uri=path)
     root.print(DiskUsageFormatter()(usage))
 
 

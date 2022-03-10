@@ -422,6 +422,18 @@ class TestUsageFormatter:
         formatter = DiskUsageFormatter()
         rich_cmp(formatter(usage))
 
+    def test_path_formatter(self, rich_cmp: Any) -> None:
+        usage = DiskUsageInfo(
+            total=100000,
+            used=80000,
+            free=20000,
+            cluster_name="default",
+            org_name="org",
+            uri=URL("storage://cluster/org"),
+        )
+        formatter = DiskUsageFormatter()
+        rich_cmp(formatter(usage))
+
     def test_org_formatter(self, rich_cmp: Any) -> None:
         usage = DiskUsageInfo(
             total=100000, used=80000, free=20000, cluster_name="default", org_name="org"
