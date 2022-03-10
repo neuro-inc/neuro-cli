@@ -149,7 +149,7 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
     ) -> None:
         blob_client = self._client.get_blob_client(key)
         if isinstance(body, bytes):
-            await blob_client.upload_blob(BytesIO(body))
+            await blob_client.upload_blob(body)
         else:
             blocks = []
             async for data in body:
