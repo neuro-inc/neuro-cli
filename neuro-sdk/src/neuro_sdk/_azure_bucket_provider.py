@@ -3,7 +3,6 @@ import secrets
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
-from io import BytesIO
 from typing import Any, AsyncIterator, Awaitable, Callable, Optional, Tuple, Union
 
 from azure.core.credentials import AzureSasCredential
