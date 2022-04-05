@@ -34,7 +34,7 @@ repos:
   hooks:
   - id: isort
 - repo: https://github.com/psf/black
-  rev: '22.1.0'
+  rev: '22.3.0'
   hooks:
   - id: black
     language_version: python3 # Should be a command that runs python3.6+
@@ -61,7 +61,7 @@ repos:
         neuro-sdk/docs/spelling_wordlist.txt
       )$
 - repo: https://github.com/asottile/pyupgrade
-  rev: 'v2.31.0'
+  rev: 'v2.31.1'
   hooks:
   - id: pyupgrade
     args: ['--py37-plus']
@@ -71,7 +71,7 @@ repos:
   - id: flake8
     exclude: "^neuro-sdk/docs/"
 - repo: https://github.com/rhysd/actionlint
-  rev: v1.6.8
+  rev: v1.6.10
   hooks:
   - id: actionlint-docker
     args:
@@ -82,7 +82,7 @@ repos:
     - -ignore
     - 'SC1004:'
 - repo: https://github.com/sirosen/check-jsonschema
-  rev: 0.11.0
+  rev: 0.14.2
   hooks:
   - id: check-github-actions
 ci:
