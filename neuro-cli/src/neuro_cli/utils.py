@@ -197,6 +197,7 @@ class NeuroClickMixin:
         deprecated = self.deprecated  # type: ignore
         help = self.help  # type: ignore
         if help:
+            help = inspect.cleandoc(help).partition("\f")[0]
             help_text, *examples = split_examples(help)
             if help_text:
                 formatter.write_paragraph()
