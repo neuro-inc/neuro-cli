@@ -3,6 +3,7 @@ import secrets
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
+from io import BytesIO
 from typing import Any, AsyncIterator, Awaitable, Callable, Optional, Tuple, Union
 
 from azure.core.credentials import AzureSasCredential
@@ -144,12 +145,12 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
     ) -> None:
         blob_client = self._client.get_blob_client(key)
         if isinstance(body, bytes):
-            await blob_client.upload_blob(body)
+            await blob_client.upload_blob(BytesIO(body))
         else:
             blocks = []
             async for data in body:
                 block_id = secrets.token_hex(16)
-                await blob_client.stage_block(block_id, data)
+                await blob_client.stage_block(block_id, BytesIO(data))
                 if progress:
                     await progress(len(data))
                 blocks.append(BlobBlock(block_id=block_id))
