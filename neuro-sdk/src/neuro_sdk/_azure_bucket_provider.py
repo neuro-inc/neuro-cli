@@ -105,14 +105,14 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
             if isinstance(item, BlobPrefix):
                 entry: BucketEntry = BlobCommonPrefix(
                     bucket=self.bucket,
-                    key=item.name,
+                    key=item.name or "",
                     size=0,
                 )
             else:
                 entry = BlobObject(
                     bucket=self.bucket,
-                    key=item.name,
-                    size=item.size,
+                    key=item.name or "",
+                    size=item.size or 0,
                     created_at=item.creation_time,
                     modified_at=item.last_modified,
                 )
@@ -126,8 +126,8 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
             blob_info = await self._client.get_blob_client(key).get_blob_properties()
             return BlobObject(
                 bucket=self.bucket,
-                key=blob_info.name,
-                size=blob_info.size,
+                key=blob_info.name or "",
+                size=blob_info.size or 0,
                 created_at=blob_info.creation_time,
                 modified_at=blob_info.last_modified,
             )
