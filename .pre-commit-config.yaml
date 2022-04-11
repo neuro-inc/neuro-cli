@@ -17,7 +17,7 @@ repos:
     entry: make docs
     pass_filenames: false
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: 'v4.1.0'
+  rev: 'v4.2.0'
   hooks:
   - id: check-merge-conflict
     exclude: "rst$"
@@ -39,7 +39,7 @@ repos:
   - id: black
     language_version: python3 # Should be a command that runs python3.6+
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: 'v4.1.0'
+  rev: 'v4.2.0'
   hooks:
   - id: check-case-conflict
   - id: check-json
@@ -61,7 +61,7 @@ repos:
         neuro-sdk/docs/spelling_wordlist.txt
       )$
 - repo: https://github.com/asottile/pyupgrade
-  rev: 'v2.31.1'
+  rev: 'v2.32.0'
   hooks:
   - id: pyupgrade
     args: ['--py37-plus']
@@ -71,7 +71,7 @@ repos:
   - id: flake8
     exclude: "^neuro-sdk/docs/"
 - repo: https://github.com/rhysd/actionlint
-  rev: v1.6.10
+  rev: v1.6.11
   hooks:
   - id: actionlint-docker
     args:
