@@ -102,6 +102,7 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
             it = self._client.walk_blobs(prefix)
         count = 0
         async for item in it:
+            assert item.name is not None
             if isinstance(item, BlobPrefix):
                 entry: BucketEntry = BlobCommonPrefix(
                     bucket=self.bucket,
@@ -109,6 +110,7 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
                     size=0,
                 )
             else:
+                assert item.size is not None
                 entry = BlobObject(
                     bucket=self.bucket,
                     key=item.name,
@@ -124,6 +126,8 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
     async def head_blob(self, key: str) -> BucketEntry:
         try:
             blob_info = await self._client.get_blob_client(key).get_blob_properties()
+            assert blob_info.name is not None
+            assert blob_info.size is not None
             return BlobObject(
                 bucket=self.bucket,
                 key=blob_info.name,
