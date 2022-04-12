@@ -229,7 +229,7 @@ async def glob(root: Root, patterns: Sequence[URL]) -> None:
 )
 async def df(root: Root, path: Optional[URL]) -> None:
     """
-    Show current usage of storage.
+    Show current storage usage or storage usage of which path is a part.
     """
     usage = await root.client.storage.disk_usage(uri=path)
     root.print(DiskUsageFormatter()(usage))

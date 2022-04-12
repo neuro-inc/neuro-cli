@@ -14,7 +14,7 @@ Storage operations.
 | Usage | Description |
 | :--- | :--- |
 | [_cp_](storage.md#cp) | Copy files and directories |
-| [_df_](storage.md#df) | Show current usage of storage |
+| [_df_](storage.md#df) | Show current storage usage or storage... |
 | [_glob_](storage.md#glob) | List resources that match PATTERNS |
 | [_ls_](storage.md#ls) | List directory contents |
 | [_mkdir_](storage.md#mkdir) | Make directories |
@@ -106,7 +106,7 @@ $ neuro cp storage:results/*.out .
 
 ### df
 
-Show current usage of storage
+Show current storage usage or storage...
 
 
 #### Usage
@@ -115,7 +115,7 @@ Show current usage of storage
 neuro storage df [OPTIONS] [PATH]
 ```
 
-Show current usage of storage.
+Show current storage usage or storage usage of which path is a part.
 
 #### Options
 
