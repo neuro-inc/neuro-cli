@@ -160,7 +160,7 @@ def test_file_autocomplete(run_autocomplete: _RunAC, tmp_path: Path) -> None:
 
 @skip_on_windows
 def test_file_autocomplete_default(run_autocomplete: _RunAC) -> None:
-    default = Path.cwd().parent
+    default = Path.cwd()
     default_uri = default.as_uri()
     default_prefix = default_uri[5:]
     names = [p.name + ("/" if p.is_dir() else "") for p in default.iterdir()]
@@ -181,12 +181,12 @@ def test_file_autocomplete_default(run_autocomplete: _RunAC) -> None:
 def test_file_autocomplete_root(run_autocomplete: _RunAC) -> None:
     names = [p.name + ("/" if p.is_dir() else "") for p in Path("/").iterdir()]
     zsh_out, bash_out = run_autocomplete(["storage", "cp", "file:/"])
-    assert bash_out == "\n".join(f"uri,{name},////" for name in names)
-    assert zsh_out == "\n".join(f"uri\n{name}\n_\nfile:////" for name in names)
+    assert bash_out == "\n".join(f"uri,{name},///" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\nfile:///" for name in names)
 
     zsh_out, bash_out = run_autocomplete(["storage", "cp", "file:///"])
-    assert bash_out == "\n".join(f"uri,{name},////" for name in names)
-    assert zsh_out == "\n".join(f"uri\n{name}\n_\nfile:////" for name in names)
+    assert bash_out == "\n".join(f"uri,{name},///" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\nfile:///" for name in names)
 
 
 @skip_on_windows
@@ -198,8 +198,8 @@ def test_storage_autocomplete(run_autocomplete: _RunAC) -> None:
         tree = {
             URL("storage://default"): ["test-user", "other-user"],
             URL("storage://default/test-user"): ["folder", "file.txt"],
-            URL("storage://default/test-user/folder/"): ["folder2", "file2.txt"],
-            URL("storage://default/other-user/"): ["folder3", "file3.txt"],
+            URL("storage://default/test-user/folder"): ["folder2", "file2.txt"],
+            URL("storage://default/other-user"): ["folder3", "file3.txt"],
             URL("storage://other-cluster"): ["test-user"],
         }
 
@@ -261,24 +261,45 @@ def test_storage_autocomplete(run_autocomplete: _RunAC) -> None:
         assert zsh_out == "uri\nfile2.txt\n_\nstorage:folder/"
 
         zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage:/"])
-        assert bash_out == ""
-        assert zsh_out == ""
+        assert bash_out == ("uri,test-user/,//default/\n" "uri,other-user/,//default/")
+        assert zsh_out == (
+            "uri\ntest-user/\n_\nstorage://default/\n"
+            "uri\nother-user/\n_\nstorage://default/"
+        )
+
+        zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage:/t"])
+        assert bash_out == "uri,test-user/,//default/"
+        assert zsh_out == "uri\ntest-user/\n_\nstorage://default/"
 
         zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage:/test-user/"])
-        assert bash_out == ""
-        assert zsh_out == ""
+        assert bash_out == (
+            "uri,folder/,//default/test-user/\n" "uri,file.txt,//default/test-user/"
+        )
+        assert zsh_out == (
+            "uri\nfolder/\n_\nstorage://default/test-user/\n"
+            "uri\nfile.txt\n_\nstorage://default/test-user/"
+        )
 
         zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage://"])
-        assert bash_out == ""
-        assert zsh_out == ""
+        assert bash_out == "uri,default/,//\nuri,other/,//"
+        assert zsh_out == (
+            "uri\ndefault/\n_\nstorage://\n" "uri\nother/\n_\nstorage://"
+        )
 
         zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage://d"])
         assert bash_out == "uri,default/,//"
         assert zsh_out == "uri\ndefault/\n_\nstorage://"
 
         zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage://default/"])
-        assert bash_out == ""
-        assert zsh_out == ""
+        assert bash_out == ("uri,test-user/,//default/\n" "uri,other-user/,//default/")
+        assert zsh_out == (
+            "uri\ntest-user/\n_\nstorage://default/\n"
+            "uri\nother-user/\n_\nstorage://default/"
+        )
+
+        zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage://default/t"])
+        assert bash_out == "uri,test-user/,//default/"
+        assert zsh_out == "uri\ntest-user/\n_\nstorage://default/"
 
 
 @skip_on_windows
