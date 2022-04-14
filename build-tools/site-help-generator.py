@@ -3,6 +3,7 @@
 import re
 import shlex
 import sys
+import textwrap
 from pathlib import Path
 
 import click
@@ -13,6 +14,10 @@ from neuro_cli.topics import topics
 from neuro_cli.utils import split_examples
 
 HERE = Path(sys.argv[0]).resolve().parent
+
+
+def get_help(cmd):
+    return textwrap.dedent(cmd.help).strip()
 
 
 def gen_command(out, cmd, parent_ctx):
@@ -33,7 +38,7 @@ def gen_command(out, cmd, parent_ctx):
         out.append(f"{ctx.command_path} " + " ".join(pieces))
         out.append("```\n")
 
-        help, *examples = split_examples(cmd.help)
+        help, *examples = split_examples(get_help(cmd))
         help2 = click.unstyle(help)
         help3 = re.sub(r"([A-Z0-9\-]{3,60})", r"`\1`", help2)
         out.append(wrap_text(help3))
@@ -141,7 +146,7 @@ def gen_group(group, target_path, parent_ctx):
         out.append("```")
         out.append("")
 
-        out.append(click.unstyle(group.help))
+        out.append(click.unstyle(get_help(group)))
         out.append("")
 
         commands = []
@@ -198,7 +203,7 @@ def gen_shortcuts(commands, target_path, ctx):
 def gen_topics(target_path, ctx):
     for name in topics.list_commands(ctx):
         topic = topics.get_command(ctx, name)
-        out = [topic.help]
+        out = [get_help(topic)]
         fname = target_path / f"topic-{topic.name}.md"
         fname.write_text("\n".join(out))
 

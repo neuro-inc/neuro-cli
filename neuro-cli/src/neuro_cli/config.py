@@ -229,7 +229,8 @@ async def get_clusters(root: Root) -> None:
 @command()
 @argument("cluster_name", required=False, default=None, type=CLUSTER_ALLOW_UNKNOWN)
 async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
-    """Switch the active cluster.
+    """
+    Switch the active cluster.
 
     CLUSTER_NAME is the cluster name to select.  The interactive prompt is used if the
     name is omitted (default).
@@ -255,7 +256,8 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
 @command()
 @argument("org_name", required=True, type=ORG_ALLOW_UNKNOWN)
 async def switch_org(root: Root, org_name: Optional[str]) -> None:
-    """Switch the active organization.
+    """
+    Switch the active organization.
 
     ORG_NAME is the organization name to select. Use literal "NO_ORG" to switch
     to using current cluster directly instead of on behalf of some org.

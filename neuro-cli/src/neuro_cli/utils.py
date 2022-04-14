@@ -8,6 +8,7 @@ import re
 import shlex
 import shutil
 import sys
+import textwrap
 from datetime import timedelta
 from typing import (
     Any,
@@ -196,6 +197,7 @@ class NeuroClickMixin:
         """Writes the help text to the formatter if it exists."""
         deprecated = self.deprecated  # type: ignore
         help = self.help  # type: ignore
+        help = help and textwrap.dedent(help)
         if help:
             help_text, *examples = split_examples(help)
             if help_text:
