@@ -448,7 +448,8 @@ async def aliases() -> None:
 
 @topics.command()
 async def secrets() -> None:
-    """Using secrets
+    """\
+    Using secrets
     =============
 
     A *secret* is a piece of encrypted named data stored in the Neuro Platform Cluster.
@@ -496,7 +497,8 @@ async def secrets() -> None:
 
 @topics.command()
 async def sharing() -> None:
-    """Using the sharing functionality
+    """\
+    Using the sharing functionality
     ===============================
 
     Understanding permissions
