@@ -118,7 +118,7 @@ def make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
         "aid": str(url),               # application id, https://dev.neu.ro/api/v1
     }
     # fmt: on
-    return urlencode(ret, quote_via=urlquote)  # type: ignore
+    return urlencode(ret, quote_via=urlquote)
 
 
 async def send(client: Client, uid: str, data: List[sqlite3.Row]) -> None:
