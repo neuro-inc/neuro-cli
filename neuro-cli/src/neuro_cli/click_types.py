@@ -7,6 +7,7 @@ from typing import (
     AsyncIterator,
     Generic,
     Iterable,
+    Iterator,
     List,
     Mapping,
     Optional,
@@ -634,6 +635,14 @@ class JobType(AsyncType[str]):
 JOB = JobType()
 
 
+def _complete_id_name(
+    id: str, name: Optional[str], incomplete: str
+) -> Iterator[CompletionItem]:
+    for test in (id, name or ""):
+        if test.startswith(incomplete):
+            yield CompletionItem(test, help=name or "")
+
+
 class DiskType(AsyncType[str]):
     name = "disk"
 
@@ -653,13 +662,7 @@ class DiskType(AsyncType[str]):
             ret: List[CompletionItem] = []
             async with client.disks.list(cluster_name=ctx.params.get("cluster")) as it:
                 async for disk in it:
-                    disk_name = disk.name or ""
-                    for test in (
-                        disk.id,
-                        disk_name,
-                    ):
-                        if test.startswith(incomplete):
-                            ret.append(CompletionItem(test, help=disk_name))
+                    ret.extend(_complete_id_name(disk.id, disk.name, incomplete))
 
             return ret
 
@@ -668,7 +671,7 @@ DISK = DiskType()
 
 
 class ServiceAccountType(AsyncType[str]):
-    name = "disk"
+    name = "service_account"
 
     async def async_convert(
         self,
@@ -686,13 +689,7 @@ class ServiceAccountType(AsyncType[str]):
             ret: List[CompletionItem] = []
             async with client.service_accounts.list() as it:
                 async for account in it:
-                    account_name = account.name or ""
-                    for test in (
-                        account.id,
-                        account_name,
-                    ):
-                        if test.startswith(incomplete):
-                            ret.append(CompletionItem(test, help=account_name))
+                    ret.extend(_complete_id_name(account.id, account.name, incomplete))
 
             return ret
 
@@ -1092,13 +1089,7 @@ class BucketType(AsyncType[str]):
                 cluster_name=ctx.params.get("cluster")
             ) as it:
                 async for bucket in it:
-                    bucket_name = bucket.name or ""
-                    for test in (
-                        bucket.id,
-                        bucket_name,
-                    ):
-                        if test.startswith(incomplete):
-                            ret.append(CompletionItem(test, help=bucket_name))
+                    ret.extend(_complete_id_name(bucket.id, bucket.name, incomplete))
 
             return ret
 
@@ -1127,13 +1118,9 @@ class BucketCredentialType(AsyncType[str]):
                 cluster_name=ctx.params.get("cluster")
             ) as it:
                 async for credential in it:
-                    credential_name = credential.name or ""
-                    for test in (
-                        credential.id,
-                        credential_name,
-                    ):
-                        if test.startswith(incomplete):
-                            ret.append(CompletionItem(test, help=credential_name))
+                    ret.extend(
+                        _complete_id_name(credential.id, credential.name, incomplete)
+                    )
 
             return ret
 
