@@ -2517,7 +2517,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
-|_--privileged_|Run job in privileged mode, if it is supported by cluster.  \[default: False]|
+|_--privileged_|Run job in privileged mode, if it is supported by cluster.|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_\--schedule-timeout TIMEDELTA_|Optional job schedule timeout in the format '3m4s' \(some parts may be missing).|
 |_--share USER_|Share job write permissions to user or role.|
@@ -2851,7 +2851,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro storage cp](#neuro-storage-cp)_| Copy files and directories |
-| _[neuro storage df](#neuro-storage-df)_| Show current usage of storage |
+| _[neuro storage df](#neuro-storage-df)_| Show current storage usage |
 | _[neuro storage glob](#neuro-storage-glob)_| List resources that match PATTERNS |
 | _[neuro storage ls](#neuro-storage-ls)_| List directory contents |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
@@ -2923,12 +2923,12 @@ Name | Description|
 
 ### neuro storage df
 
-Show current usage of storage.
+Show current storage usage.<br/><br/>If PATH is specified, show storage usage of which path is a part.
 
 **Usage:**
 
 ```bash
-neuro storage df [OPTIONS]
+neuro storage df [OPTIONS] [PATH]
 ```
 
 **Options:**
@@ -3650,7 +3650,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
-|_--privileged_|Run job in privileged mode, if it is supported by cluster.  \[default: False]|
+|_--privileged_|Run job in privileged mode, if it is supported by cluster.|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_\--schedule-timeout TIMEDELTA_|Optional job schedule timeout in the format '3m4s' \(some parts may be missing).|
 |_--share USER_|Share job write permissions to user or role.|

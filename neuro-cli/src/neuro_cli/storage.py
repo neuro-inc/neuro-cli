@@ -222,11 +222,18 @@ async def glob(root: Root, patterns: Sequence[URL]) -> None:
 
 
 @command()
-async def df(root: Root) -> None:
+@argument(
+    "path",
+    required=False,
+    type=PlatformURIType(allowed_schemes=["storage"], complete_file=False),
+)
+async def df(root: Root, path: Optional[URL]) -> None:
     """
-    Show current usage of storage.
+    Show current storage usage.
+
+    If PATH is specified, show storage usage of which path is a part.
     """
-    usage = await root.client.storage.disk_usage()
+    usage = await root.client.storage.disk_usage(uri=path)
     root.print(DiskUsageFormatter()(usage))
 
 
@@ -689,7 +696,8 @@ async def mv(
 async def tree(
     root: Root, path: URL, size: bool, human_readable: bool, sort: str, show_all: bool
 ) -> None:
-    """List storage in a tree-like format
+    """
+    List storage in a tree-like format
 
     Tree is a recursive directory listing program that produces a depth indented listing
     of files, which is colorized ala dircolors if the LS_COLORS environment variable is
