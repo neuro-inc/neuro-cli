@@ -30,7 +30,7 @@ def command(
 
 
 class Group(click.Group):
-    def command(
+    def command(  # type: ignore
         self, *args: Any, **kwargs: Any
     ) -> Callable[[Callable[..., Any]], Command]:
         def decorator(f: Callable[..., Any]) -> Command:
@@ -40,7 +40,7 @@ class Group(click.Group):
 
         return decorator
 
-    def group(
+    def group(  # type: ignore
         self, *args: Any, **kwargs: Any
     ) -> Callable[[Callable[..., Any]], "Group"]:
         def decorator(f: Callable[..., Any]) -> Group:
