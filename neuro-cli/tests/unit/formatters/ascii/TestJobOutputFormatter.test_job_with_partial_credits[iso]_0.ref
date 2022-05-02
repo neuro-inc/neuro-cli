@@ -6,6 +6,7 @@ Job                     test-job
  Status                  running (ContainerRunning)       
  Image                   test-image                       
  Command                 test-command                     
+ Priority                Normal                           
  Price (credits / hour)  0.0010                           
  Current cost            0.0100                           
  Resources                Memory  16.0M                   

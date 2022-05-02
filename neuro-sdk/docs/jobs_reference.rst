@@ -243,8 +243,7 @@ Jobs
 
                                ``None`` means the current cluster (default).
 
-   .. comethod:: run(container: Container, \
-                     *, \
+   .. comethod:: run(container: Container, *, \
                      name: Optional[str] = None, \
                      tags: Sequence[str] = (), \
                      description: Optional[str] = None, \
@@ -253,6 +252,7 @@ Jobs
                      wait_for_jobs_quota: bool = False, \
                      schedule_timeout: Optional[float] = None, \
                      life_span: Optional[float] = None, \
+                     priority: Optional[JobPriority] = None, \
                  ) -> JobDescription
 
       Start a new job.
@@ -277,7 +277,7 @@ Jobs
                                  from the inside of the job. See
                                  :meth:`Factory.login_with_passed_config` for details.
 
-      :param bool wait_for_jobs_quota: when this flat is set, job will wait for another
+      :param bool wait_for_jobs_quota: when this flag is set, job will wait for another
                                        job to stop instead of failing immediately
                                        because of total running jobs quota.
 
@@ -288,6 +288,11 @@ Jobs
                                      is set to ``True``.
 
       :param float life_span: job run-time limit in seconds. Pass `None` to disable.
+
+      :param JobPriority priority: priority used to specify job's start order.
+                                   Jobs with higher priority will start before
+                                   ones with lower priority. Priority should be
+                                   supported by cluster.
 
       :return: :class:`JobDescription` instance with information about started job.
 
@@ -316,6 +321,7 @@ Jobs
                        restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER, \
                        life_span: Optional[float] = None, \
                        privileged: bool = False, \
+                       priority: Optional[JobPriority] = None, \
                  ) -> JobDescription
 
       Start a new job.
@@ -374,7 +380,7 @@ Jobs
                                from the inside of the job. See
                                :meth:`Factory.login_with_passed_config` for details.
 
-      :param bool wait_for_jobs_quota: when this flat is set, job will wait for another
+      :param bool wait_for_jobs_quota: when this flag is set, job will wait for another
                                        job to stop instead of failing immediately
                                        because of total running jobs quota.
 
@@ -388,6 +394,11 @@ Jobs
 
       :param bool privileged: Run job in privileged mode. This mode should be
                               supported by cluster.
+
+      :param JobPriority priority: priority used to specify job's start order.
+                                   Jobs with higher priority will start before
+                                   ones with lower priority. Priority should be
+                                   supported by cluster. ``None`` by default.
 
       :return: :class:`JobDescription` instance with information about started job.
 
@@ -623,6 +634,12 @@ JobDescription
       cannot be scheduled because the lack of computation
       cluster resources (memory, CPU/GPU etc), :class:`float`
 
+   .. attribute:: priority
+
+      Priority used to specify job's start order.
+      Jobs with higher priority will start before
+      ones with lower priority, :class:`JobPriority`
+
    .. attribute:: _internal
 
       Some internal info about job used by platform. Should not be used.
@@ -648,6 +665,28 @@ JobRestartPolicy
    .. attribute:: ALWAYS
 
       Job will always be restarted after success or failure.
+
+
+JobPriority
+================
+
+.. class:: JobPriority
+
+   *Enumeration* that describes job priority.
+
+   Can be one of the following statues:
+
+   .. attribute:: LOW
+
+      Jobs with LOW priority will start after all other jobs.
+
+   .. attribute:: NORMAL
+
+      Default job priority.
+
+   .. attribute:: HIGH
+
+      Jobs with HIGH priority will start before all other jobs.
 
 
 JobStatus

@@ -112,6 +112,7 @@ class JobStatusFormatter:
             table.add_row("Working dir", job_status.container.working_dir)
         if job_status.preset_name:
             table.add_row("Preset", job_status.preset_name)
+        table.add_row("Priority", f"{job_status.priority.name.capitalize()}")
         table.add_row(
             "Price (credits / hour)", f"{job_status.price_credits_per_hour:.4f}"
         )
