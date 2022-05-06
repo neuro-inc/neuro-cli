@@ -69,7 +69,7 @@ class VersionChecker(metaclass=NoPublicConstructor):
             current = parse_version(version(package))
             pypi = parse_version(record["version"])
             if current < pypi and time.time() - record["uploaded"] > spec.delay:
-                new_text = spec.update_text(str(current), str(pypi))  # type: ignore
+                new_text = spec.update_text(str(current), str(pypi))
                 if spec.exclusive:
                     return {package: new_text}
                 else:
