@@ -148,14 +148,12 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
     ) -> None:
         blob_client = self._client.get_blob_client(key)
         if isinstance(body, bytes):
-            # XXX (S Storchaka 2022-04-14): Incorrect annotation or bug?
-            await blob_client.upload_blob(body)  # type: ignore
+            await blob_client.upload_blob(body)
         else:
             blocks = []
             async for data in body:
                 block_id = secrets.token_hex(16)
-                # XXX (S Storchaka 2022-04-14): Incorrect annotation or bug?
-                await blob_client.stage_block(block_id, data)  # type: ignore
+                await blob_client.stage_block(block_id, data)
                 if progress:
                     await progress(len(data))
                 blocks.append(BlobBlock(block_id=block_id))
