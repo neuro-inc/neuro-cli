@@ -1,6 +1,6 @@
 -e neuro-sdk
 -e neuro-cli
-aiobotocore==2.2.0
+aiobotocore==2.3.0
 aiodocker==0.21.0
 aiohttp==3.8.1
 # upgrade setup.py after pinning certtifi to new version
