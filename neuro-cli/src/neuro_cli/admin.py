@@ -533,7 +533,7 @@ async def get_cluster_users(
 @argument(
     "role",
     required=False,
-    default=_ClusterUserRoleType.USER.value,
+    default=_ClusterUserRoleType.MEMBER.value,
     metavar="[ROLE]",
     type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
 )
@@ -576,6 +576,9 @@ async def add_cluster_user(
 
     The command supports one of 3 user roles: admin, manager or user.
     """
+    if role == "member" and org is not None:
+        # member role is only for org-clusters.
+        role = _ClusterUserRoleType.USER.value
     # Use cluster defaults credits/quota for "user" role. Unlimited for other roles.
     if role == "user" and credits is None:
         balance = None
