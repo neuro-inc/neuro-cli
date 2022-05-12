@@ -115,6 +115,7 @@ class DiskUsageInfo:
     used: int
     free: int
     org_name: Optional[str] = None
+    uri: Optional[URL] = None
 
 
 @rewrite_module
@@ -352,10 +353,31 @@ class Storage(metaclass=NoPublicConstructor):
             return _file_status_from_api_stat(uri.host, res["FileStatus"])
 
     async def disk_usage(
-        self, cluster_name: Optional[str] = None, org_name: Optional[str] = None
+        self,
+        cluster_name: Optional[str] = None,
+        org_name: Optional[str] = None,
+        uri: Optional[URL] = None,
     ) -> DiskUsageInfo:
         cluster_name = cluster_name or self._config.cluster_name
         org_name = org_name or self._config.org_name
+        if uri:
+            url = self._get_storage_url(uri)
+        else:
+            url = self._get_storage_url(
+                self._create_disk_usage_uri(cluster_name, org_name), normalized=True
+            )
+        url = url.with_query(op="GETDISKUSAGE")
+        auth = await self._config._api_auth()
+
+        request_time = time.time()
+        async with self._core.request("GET", url, auth=auth) as resp:
+            self._set_time_diff(request_time, resp)
+            res = await resp.json()
+            return _disk_usage_from_api(cluster_name, org_name, uri, res)
+
+    def _create_disk_usage_uri(
+        self, cluster_name: Optional[str], org_name: Optional[str]
+    ) -> URL:
         if org_name:
             uri = self._normalize_uri(
                 URL(f"storage://{cluster_name}/{org_name}/{self._config.username}")
@@ -365,15 +387,7 @@ class Storage(metaclass=NoPublicConstructor):
                 URL(f"storage://{cluster_name}/{self._config.username}")
             )
         assert uri.host is not None
-        url = self._get_storage_url(uri, normalized=True)
-        url = url.with_query(op="GETDISKUSAGE")
-        auth = await self._config._api_auth()
-
-        request_time = time.time()
-        async with self._core.request("GET", url, auth=auth) as resp:
-            self._set_time_diff(request_time, resp)
-            res = await resp.json()
-            return _disk_usage_from_api(cluster_name, org_name, res)
+        return uri
 
     @asyncgeneratorcontextmanager
     async def open(
@@ -961,11 +975,15 @@ def _file_status_from_api_stat(cluster_name: str, values: Dict[str, Any]) -> Fil
 
 
 def _disk_usage_from_api(
-    cluster_name: str, org_name: Optional[str], values: Dict[str, Any]
+    cluster_name: str,
+    org_name: Optional[str],
+    uri: Optional[URL],
+    values: Dict[str, Any],
 ) -> DiskUsageInfo:
     return DiskUsageInfo(
         cluster_name=cluster_name,
         org_name=org_name,
+        uri=uri,
         total=values["total"],
         used=values["used"],
         free=values["free"],
@@ -1010,7 +1028,7 @@ async def run_progress(
 
 async def run_concurrently(coros: Iterable[Awaitable[Any]]) -> None:
     loop = asyncio.get_event_loop()
-    tasks: "Iterable[asyncio.Future[Any]]" = [loop.create_task(coro) for coro in coros]
+    tasks: "Iterable[asyncio.Future[Any]]" = [loop.create_task(coro) for coro in coros]  # type: ignore  # noqa
     if not tasks:
         return
     try:

@@ -103,6 +103,7 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
             it = self._client.walk_blobs(prefix)
         count = 0
         async for item in it:
+            assert item.name is not None
             if isinstance(item, BlobPrefix):
                 entry: BucketEntry = BlobCommonPrefix(
                     bucket=self.bucket,
@@ -110,6 +111,7 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
                     size=0,
                 )
             else:
+                assert item.size is not None
                 entry = BlobObject(
                     bucket=self.bucket,
                     key=item.name or "",
@@ -125,6 +127,8 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
     async def head_blob(self, key: str) -> BucketEntry:
         try:
             blob_info = await self._client.get_blob_client(key).get_blob_properties()
+            assert blob_info.name is not None
+            assert blob_info.size is not None
             return BlobObject(
                 bucket=self.bucket,
                 key=blob_info.name or "",
@@ -145,11 +149,13 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
     ) -> None:
         blob_client = self._client.get_blob_client(key)
         if isinstance(body, bytes):
+            # XXX (S Storchaka 2022-04-14): Incorrect annotation or bug?
             await blob_client.upload_blob(BytesIO(body))  # type: ignore
         else:
             blocks = []
             async for data in body:
                 block_id = secrets.token_hex(16)
+                # XXX (S Storchaka 2022-04-14): Incorrect annotation or bug?
                 await blob_client.stage_block(block_id, BytesIO(data))  # type: ignore
                 if progress:
                     await progress(len(data))

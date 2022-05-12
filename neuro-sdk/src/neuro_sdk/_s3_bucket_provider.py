@@ -276,7 +276,7 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
             Range=f"bytes={offset}-" if offset else "",
         )
         async with response["Body"] as stream:
-            async for chunk in stream.iter_any():
+            async for chunk in stream.content.iter_any():
                 yield chunk
 
     async def delete_blob(self, key: str) -> None:

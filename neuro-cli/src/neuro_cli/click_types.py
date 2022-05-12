@@ -7,6 +7,7 @@ from typing import (
     AsyncIterator,
     Generic,
     Iterable,
+    Iterator,
     List,
     Mapping,
     Optional,
@@ -634,6 +635,14 @@ class JobType(AsyncType[str]):
 JOB = JobType()
 
 
+def _complete_id_name(
+    id: str, name: Optional[str], incomplete: str
+) -> Iterator[CompletionItem]:
+    for test in (id, name or ""):
+        if test.startswith(incomplete):
+            yield CompletionItem(test, help=name or "")
+
+
 class DiskType(AsyncType[str]):
     name = "disk"
 
@@ -653,13 +662,7 @@ class DiskType(AsyncType[str]):
             ret: List[CompletionItem] = []
             async with client.disks.list(cluster_name=ctx.params.get("cluster")) as it:
                 async for disk in it:
-                    disk_name = disk.name or ""
-                    for test in (
-                        disk.id,
-                        disk_name,
-                    ):
-                        if test.startswith(incomplete):
-                            ret.append(CompletionItem(test, help=disk_name))
+                    ret.extend(_complete_id_name(disk.id, disk.name, incomplete))
 
             return ret
 
@@ -668,7 +671,7 @@ DISK = DiskType()
 
 
 class ServiceAccountType(AsyncType[str]):
-    name = "disk"
+    name = "service_account"
 
     async def async_convert(
         self,
@@ -686,13 +689,7 @@ class ServiceAccountType(AsyncType[str]):
             ret: List[CompletionItem] = []
             async with client.service_accounts.list() as it:
                 async for account in it:
-                    account_name = account.name or ""
-                    for test in (
-                        account.id,
-                        account_name,
-                    ):
-                        if test.startswith(incomplete):
-                            ret.append(CompletionItem(test, help=account_name))
+                    ret.extend(_complete_id_name(account.id, account.name, incomplete))
 
             return ret
 
@@ -728,10 +725,10 @@ class PathURLCompleter(URLCompleter, abc.ABC):
         self._complete_dir = complete_dir
         self._complete_file = complete_file
 
-    def _get_dir_uri(self, uri: URL, incomplete: str) -> URL:
-        if incomplete.endswith("/"):
-            return uri / ""
-        return uri.parent / ""
+    def _split_uri(self, uri: URL, incomplete: str) -> Tuple[URL, str]:
+        if incomplete.endswith("/") or incomplete == uri.scheme + ":":
+            return uri, ""
+        return uri.parent, uri.name
 
     def _make_item(
         self,
@@ -744,7 +741,7 @@ class PathURLCompleter(URLCompleter, abc.ABC):
         return CompletionItem(
             name,
             type="uri",
-            prefix=str(parent) + "/" if parent.path else str(parent),
+            prefix=str(parent / ""),
         )
 
     @abc.abstractmethod
@@ -763,18 +760,18 @@ class PathURLCompleter(URLCompleter, abc.ABC):
         root: Root,
         incomplete: str,
     ) -> AsyncIterator[CompletionItem]:
-        dir_uri = self._get_dir_uri(uri, incomplete)
+        dir_uri, incomplete_name = self._split_uri(uri, incomplete)
         if not await self._is_valid_dir(root, dir_uri):
             return
         async with self._iter_dir(root, dir_uri) as it:
             async for item in it:
-                if str(dir_uri / item.name).startswith(incomplete):
+                if item.name.startswith(incomplete_name):
                     if item.is_dir() and not self._complete_dir:
                         continue
                     if not item.is_dir() and not self._complete_file:
                         continue
                     yield self._make_item(
-                        dir_uri.parent,
+                        dir_uri,
                         item.name,
                         item.is_dir(),
                     )
@@ -903,24 +900,25 @@ class PlatformURIType(AsyncType[URL]):
         else:
             return ret
 
+        if scheme != "file:" and incomplete == scheme + "//":
+            return _complete_clusters(root.client, incomplete, "")
+
         uri = root.client.parse.str_to_uri(
             incomplete,
             allowed_schemes=self._allowed_schemes,
-            short=not ("://" in incomplete),
+            short=not (
+                incomplete.startswith(scheme + "//")
+                and not incomplete.startswith(scheme + "///")
+            ),
         )
-        if uri.host and uri.path == "/" and not incomplete.endswith("/"):
+        if (
+            uri.scheme != "file"
+            and uri.host
+            and uri.path == "/"
+            and not incomplete.endswith("/")
+        ):
             # Cluster name is incomplete
-            for cluster_name in root.client.config.clusters:
-                if cluster_name.startswith(uri.host):
-                    ret.append(
-                        CompletionItem(
-                            f"{cluster_name}/", type="uri", prefix=f"{uri.scheme}://"
-                        )
-                    )
-            return ret
-        if uri.host and uri.path.count("/") == 1:
-            # Username completion not supported
-            return []
+            return _complete_clusters(root.client, f"{uri.scheme}://", uri.host)
         completer = self._completers.get(uri.scheme)
         if completer:
             return [
@@ -1091,13 +1089,7 @@ class BucketType(AsyncType[str]):
                 cluster_name=ctx.params.get("cluster")
             ) as it:
                 async for bucket in it:
-                    bucket_name = bucket.name or ""
-                    for test in (
-                        bucket.id,
-                        bucket_name,
-                    ):
-                        if test.startswith(incomplete):
-                            ret.append(CompletionItem(test, help=bucket_name))
+                    ret.extend(_complete_id_name(bucket.id, bucket.name, incomplete))
 
             return ret
 
@@ -1126,13 +1118,9 @@ class BucketCredentialType(AsyncType[str]):
                 cluster_name=ctx.params.get("cluster")
             ) as it:
                 async for credential in it:
-                    credential_name = credential.name or ""
-                    for test in (
-                        credential.id,
-                        credential_name,
-                    ):
-                        if test.startswith(incomplete):
-                            ret.append(CompletionItem(test, help=credential_name))
+                    ret.extend(
+                        _complete_id_name(credential.id, credential.name, incomplete)
+                    )
 
             return ret
 

@@ -26,7 +26,10 @@ from neuro_sdk import (
     Action,
     BlobObject,
     Bucket,
+    BucketCredentials,
     Container,
+    Disk,
+    Disks,
     FileStatus,
     FileStatusType,
     Images,
@@ -34,8 +37,11 @@ from neuro_sdk import (
     Jobs,
     JobStatus,
     JobStatusHistory,
+    PersistentBucketCredentials,
     RemoteImage,
     Resources,
+    ServiceAccount,
+    ServiceAccounts,
     Storage,
 )
 from neuro_sdk._buckets import Buckets
@@ -160,7 +166,7 @@ def test_file_autocomplete(run_autocomplete: _RunAC, tmp_path: Path) -> None:
 
 @skip_on_windows
 def test_file_autocomplete_default(run_autocomplete: _RunAC) -> None:
-    default = Path.cwd().parent
+    default = Path.cwd()
     default_uri = default.as_uri()
     default_prefix = default_uri[5:]
     names = [p.name + ("/" if p.is_dir() else "") for p in default.iterdir()]
@@ -181,12 +187,12 @@ def test_file_autocomplete_default(run_autocomplete: _RunAC) -> None:
 def test_file_autocomplete_root(run_autocomplete: _RunAC) -> None:
     names = [p.name + ("/" if p.is_dir() else "") for p in Path("/").iterdir()]
     zsh_out, bash_out = run_autocomplete(["storage", "cp", "file:/"])
-    assert bash_out == "\n".join(f"uri,{name},////" for name in names)
-    assert zsh_out == "\n".join(f"uri\n{name}\n_\nfile:////" for name in names)
+    assert bash_out == "\n".join(f"uri,{name},///" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\nfile:///" for name in names)
 
     zsh_out, bash_out = run_autocomplete(["storage", "cp", "file:///"])
-    assert bash_out == "\n".join(f"uri,{name},////" for name in names)
-    assert zsh_out == "\n".join(f"uri\n{name}\n_\nfile:////" for name in names)
+    assert bash_out == "\n".join(f"uri,{name},///" for name in names)
+    assert zsh_out == "\n".join(f"uri\n{name}\n_\nfile:///" for name in names)
 
 
 @skip_on_windows
@@ -198,8 +204,8 @@ def test_storage_autocomplete(run_autocomplete: _RunAC) -> None:
         tree = {
             URL("storage://default"): ["test-user", "other-user"],
             URL("storage://default/test-user"): ["folder", "file.txt"],
-            URL("storage://default/test-user/folder/"): ["folder2", "file2.txt"],
-            URL("storage://default/other-user/"): ["folder3", "file3.txt"],
+            URL("storage://default/test-user/folder"): ["folder2", "file2.txt"],
+            URL("storage://default/other-user"): ["folder3", "file3.txt"],
             URL("storage://other-cluster"): ["test-user"],
         }
 
@@ -261,24 +267,45 @@ def test_storage_autocomplete(run_autocomplete: _RunAC) -> None:
         assert zsh_out == "uri\nfile2.txt\n_\nstorage:folder/"
 
         zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage:/"])
-        assert bash_out == ""
-        assert zsh_out == ""
+        assert bash_out == ("uri,test-user/,//default/\n" "uri,other-user/,//default/")
+        assert zsh_out == (
+            "uri\ntest-user/\n_\nstorage://default/\n"
+            "uri\nother-user/\n_\nstorage://default/"
+        )
+
+        zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage:/t"])
+        assert bash_out == "uri,test-user/,//default/"
+        assert zsh_out == "uri\ntest-user/\n_\nstorage://default/"
 
         zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage:/test-user/"])
-        assert bash_out == ""
-        assert zsh_out == ""
+        assert bash_out == (
+            "uri,folder/,//default/test-user/\n" "uri,file.txt,//default/test-user/"
+        )
+        assert zsh_out == (
+            "uri\nfolder/\n_\nstorage://default/test-user/\n"
+            "uri\nfile.txt\n_\nstorage://default/test-user/"
+        )
 
         zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage://"])
-        assert bash_out == ""
-        assert zsh_out == ""
+        assert bash_out == "uri,default/,//\nuri,other/,//"
+        assert zsh_out == (
+            "uri\ndefault/\n_\nstorage://\n" "uri\nother/\n_\nstorage://"
+        )
 
         zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage://d"])
         assert bash_out == "uri,default/,//"
         assert zsh_out == "uri\ndefault/\n_\nstorage://"
 
         zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage://default/"])
-        assert bash_out == ""
-        assert zsh_out == ""
+        assert bash_out == ("uri,test-user/,//default/\n" "uri,other-user/,//default/")
+        assert zsh_out == (
+            "uri\ntest-user/\n_\nstorage://default/\n"
+            "uri\nother-user/\n_\nstorage://default/"
+        )
+
+        zsh_out, bash_out = run_autocomplete(["storage", "cp", "storage://default/t"])
+        assert bash_out == "uri,test-user/,//default/"
+        assert zsh_out == "uri\ntest-user/\n_\nstorage://default/"
 
 
 @skip_on_windows
@@ -985,3 +1012,360 @@ def test_image_tag_autocomplete(run_autocomplete: _RunAC) -> None:
         )
         assert bash_out == ("uri,beta,")
         assert zsh_out == ("uri\nbeta\n_\nimage://default/user/library/bananas:")
+
+
+@skip_on_windows
+def test_disk_autocomplete(run_autocomplete: _RunAC) -> None:
+    with mock.patch.object(Disks, "list") as mocked_list:
+        created_at = datetime.now() - timedelta(days=1)
+        last_usage = datetime.now()
+        disks = {
+            "default": [
+                Disk(
+                    id="disk-123",
+                    storage=500,
+                    owner="user",
+                    status=Disk.Status.READY,
+                    cluster_name="default",
+                    org_name=None,
+                    created_at=created_at,
+                    timeout_unused=None,
+                    name=None,
+                ),
+                Disk(
+                    id="disk-234",
+                    storage=600,
+                    owner="user",
+                    status=Disk.Status.PENDING,
+                    cluster_name="default",
+                    org_name="test-org",
+                    created_at=created_at,
+                    last_usage=last_usage,
+                    timeout_unused=timedelta(hours=1),
+                    name="data-disk",
+                ),
+            ],
+            "other": [
+                Disk(
+                    id="disk-345",
+                    storage=600,
+                    owner="user",
+                    status=Disk.Status.PENDING,
+                    cluster_name="other",
+                    org_name="test-org",
+                    created_at=created_at,
+                    last_usage=last_usage,
+                    timeout_unused=timedelta(hours=1),
+                    name="data-disk2",
+                ),
+            ],
+        }
+
+        @asyncgeneratorcontextmanager
+        async def list(cluster_name: Optional[str] = None) -> AsyncIterator[Disk]:
+            for disk in disks[cluster_name or "default"]:
+                yield disk
+
+        mocked_list.side_effect = list
+
+        zsh_out, bash_out = run_autocomplete(["disk", "get", "d"])
+        assert bash_out == ("plain,disk-123,\n" "plain,disk-234,\n" "plain,data-disk,")
+        assert zsh_out == (
+            "plain\ndisk-123\n_\n_\n"
+            "plain\ndisk-234\ndata-disk\n_\n"
+            "plain\ndata-disk\ndata-disk\n_"
+        )
+
+        zsh_out, bash_out = run_autocomplete(["disk", "get", "disk-2"])
+        assert bash_out == ("plain,disk-234,")
+        assert zsh_out == ("plain\ndisk-234\ndata-disk\n_")
+
+        zsh_out, bash_out = run_autocomplete(["disk", "get", "da"])
+        assert bash_out == ("plain,data-disk,")
+        assert zsh_out == ("plain\ndata-disk\ndata-disk\n_")
+
+        zsh_out, bash_out = run_autocomplete(["disk", "get", "--cluster", "other", "d"])
+        assert bash_out == ("plain,disk-345,\n" "plain,data-disk2,")
+        assert zsh_out == (
+            "plain\ndisk-345\ndata-disk2\n_\n" "plain\ndata-disk2\ndata-disk2\n_"
+        )
+
+
+@skip_on_windows
+def test_bucket_autocomplete(run_autocomplete: _RunAC) -> None:
+    with mock.patch.object(Buckets, "list") as mocked_list:
+        created_at = datetime.now() - timedelta(days=1)
+        buckets = {
+            "default": [
+                Bucket(
+                    id="bucket-1",
+                    name="test-bucket",
+                    owner="user",
+                    cluster_name="default",
+                    created_at=created_at,
+                    provider=Bucket.Provider.AWS,
+                    imported=False,
+                    org_name=None,
+                ),
+                Bucket(
+                    id="bucket-2",
+                    name="test-bucket-2",
+                    owner="user",
+                    cluster_name="default",
+                    created_at=created_at,
+                    provider=Bucket.Provider.AWS,
+                    imported=False,
+                    org_name=None,
+                ),
+                Bucket(
+                    id="bucket-3",
+                    name=None,
+                    owner="user-2",
+                    cluster_name="default",
+                    created_at=created_at,
+                    provider=Bucket.Provider.AWS,
+                    imported=False,
+                    org_name="test-org",
+                ),
+                Bucket(
+                    id="bucket-4",
+                    name=None,
+                    owner="user",
+                    cluster_name="default",
+                    created_at=created_at,
+                    provider=Bucket.Provider.AWS,
+                    imported=False,
+                    public=True,
+                    org_name="test-org",
+                ),
+            ],
+            "other": [
+                Bucket(
+                    id="bucket-5",
+                    name="test-bucket-3",
+                    owner="user",
+                    cluster_name="other",
+                    created_at=created_at,
+                    provider=Bucket.Provider.AWS,
+                    imported=False,
+                    org_name=None,
+                ),
+            ],
+        }
+
+        @asyncgeneratorcontextmanager
+        async def list(cluster_name: Optional[str] = None) -> AsyncIterator[Bucket]:
+            for bucket in buckets[cluster_name or "default"]:
+                yield bucket
+
+        mocked_list.side_effect = list
+
+        zsh_out, bash_out = run_autocomplete(["blob", "statbucket", "b"])
+        assert bash_out == (
+            "plain,bucket-1,\n"
+            "plain,bucket-2,\n"
+            "plain,bucket-3,\n"
+            "plain,bucket-4,"
+        )
+        assert zsh_out == (
+            "plain\nbucket-1\ntest-bucket\n_\n"
+            "plain\nbucket-2\ntest-bucket-2\n_\n"
+            "plain\nbucket-3\n_\n_\n"
+            "plain\nbucket-4\n_\n_"
+        )
+
+        zsh_out, bash_out = run_autocomplete(["blob", "statbucket", "bucket-2"])
+        assert bash_out == "plain,bucket-2,"
+        assert zsh_out == "plain\nbucket-2\ntest-bucket-2\n_"
+
+        zsh_out, bash_out = run_autocomplete(["blob", "statbucket", "t"])
+        assert bash_out == ("plain,test-bucket,\n" "plain,test-bucket-2,")
+        assert zsh_out == (
+            "plain\ntest-bucket\ntest-bucket\n_\n"
+            "plain\ntest-bucket-2\ntest-bucket-2\n_"
+        )
+
+        zsh_out, bash_out = run_autocomplete(
+            ["blob", "statbucket", "--cluster", "other", "b"]
+        )
+        assert bash_out == "plain,bucket-5,"
+        assert zsh_out == "plain\nbucket-5\ntest-bucket-3\n_"
+
+
+@skip_on_windows
+def test_service_account_autocomplete(run_autocomplete: _RunAC) -> None:
+    with mock.patch.object(ServiceAccounts, "list") as mocked_list:
+        created_at = datetime.now() - timedelta(days=1)
+        accounts = [
+            ServiceAccount(
+                id="account-1",
+                name="test1",
+                role="test-role-1",
+                owner="user",
+                default_cluster="cluster1",
+                created_at=created_at,
+            ),
+            ServiceAccount(
+                id="account-2",
+                name="test2",
+                role="test-role-2",
+                owner="user",
+                default_cluster="cluster2",
+                created_at=created_at,
+            ),
+        ]
+
+        @asyncgeneratorcontextmanager
+        async def list() -> AsyncIterator[ServiceAccount]:
+            for account in accounts:
+                yield account
+
+        mocked_list.side_effect = list
+
+        zsh_out, bash_out = run_autocomplete(["service-account", "get", "a"])
+        assert bash_out == ("plain,account-1,\n" "plain,account-2,")
+        assert zsh_out == ("plain\naccount-1\ntest1\n_\n" "plain\naccount-2\ntest2\n_")
+
+        zsh_out, bash_out = run_autocomplete(["service-account", "get", "t"])
+        assert bash_out == ("plain,test1,\n" "plain,test2,")
+        assert zsh_out == ("plain\ntest1\ntest1\n_\n" "plain\ntest2\ntest2\n_")
+
+
+@skip_on_windows
+def test_bucket_credential_autocomplete(run_autocomplete: _RunAC) -> None:
+    with mock.patch.object(Buckets, "persistent_credentials_list") as mocked_list:
+        credentials = {
+            "default": [
+                PersistentBucketCredentials(
+                    id="bucket-credentials-1",
+                    name="test-credentials-1",
+                    owner="user",
+                    cluster_name="default",
+                    read_only=False,
+                    credentials=[
+                        BucketCredentials(
+                            provider=Bucket.Provider.AWS,
+                            bucket_id="bucket-1",
+                            credentials={
+                                "key1": "value1",
+                                "key2": "value2",
+                            },
+                        ),
+                        BucketCredentials(
+                            provider=Bucket.Provider.AWS,
+                            bucket_id="bucket-2",
+                            credentials={
+                                "key1": "value1",
+                                "key2": "value2",
+                            },
+                        ),
+                    ],
+                ),
+                PersistentBucketCredentials(
+                    id="bucket-credentials-2",
+                    name="test-credentials-2",
+                    owner="user",
+                    cluster_name="default",
+                    read_only=True,
+                    credentials=[
+                        BucketCredentials(
+                            provider=Bucket.Provider.AWS,
+                            bucket_id="bucket-3",
+                            credentials={
+                                "key1": "value1",
+                                "key2": "value2",
+                            },
+                        ),
+                    ],
+                ),
+                PersistentBucketCredentials(
+                    id="bucket-credentials-3",
+                    name="test-credentials-3",
+                    owner="user",
+                    cluster_name="default",
+                    read_only=False,
+                    credentials=[
+                        BucketCredentials(
+                            provider=Bucket.Provider.AWS,
+                            bucket_id="bucket-3",
+                            credentials={
+                                "key1": "value1",
+                                "key2": "value2",
+                            },
+                        ),
+                        BucketCredentials(
+                            provider=Bucket.Provider.AWS,
+                            bucket_id="bucket-4",
+                            credentials={
+                                "key1": "value1",
+                                "key2": "value2",
+                            },
+                        ),
+                    ],
+                ),
+            ],
+            "other": [
+                PersistentBucketCredentials(
+                    id="bucket-credentials-4",
+                    name="test-credentials-4",
+                    owner="user",
+                    cluster_name="other",
+                    read_only=False,
+                    credentials=[
+                        BucketCredentials(
+                            provider=Bucket.Provider.AWS,
+                            bucket_id="bucket-1",
+                            credentials={
+                                "key1": "value1",
+                                "key2": "value2",
+                            },
+                        ),
+                    ],
+                ),
+            ],
+        }
+
+        @asyncgeneratorcontextmanager
+        async def persistent_credentials_list(
+            cluster_name: Optional[str] = None,
+        ) -> AsyncIterator[PersistentBucketCredentials]:
+            for credential in credentials[cluster_name or "default"]:
+                yield credential
+
+        mocked_list.side_effect = persistent_credentials_list
+
+        zsh_out, bash_out = run_autocomplete(["blob", "statcredentials", "b"])
+        assert bash_out == (
+            "plain,bucket-credentials-1,\n"
+            "plain,bucket-credentials-2,\n"
+            "plain,bucket-credentials-3,"
+        )
+        assert zsh_out == (
+            "plain\nbucket-credentials-1\ntest-credentials-1\n_\n"
+            "plain\nbucket-credentials-2\ntest-credentials-2\n_\n"
+            "plain\nbucket-credentials-3\ntest-credentials-3\n_"
+        )
+
+        zsh_out, bash_out = run_autocomplete(
+            ["blob", "statcredentials", "bucket-credentials-2"]
+        )
+        assert bash_out == "plain,bucket-credentials-2,"
+        assert zsh_out == "plain\nbucket-credentials-2\ntest-credentials-2\n_"
+
+        zsh_out, bash_out = run_autocomplete(["blob", "statcredentials", "t"])
+        assert bash_out == (
+            "plain,test-credentials-1,\n"
+            "plain,test-credentials-2,\n"
+            "plain,test-credentials-3,"
+        )
+        assert zsh_out == (
+            "plain\ntest-credentials-1\ntest-credentials-1\n_\n"
+            "plain\ntest-credentials-2\ntest-credentials-2\n_\n"
+            "plain\ntest-credentials-3\ntest-credentials-3\n_"
+        )
+
+        zsh_out, bash_out = run_autocomplete(
+            ["blob", "statcredentials", "--cluster", "other", "b"]
+        )
+        assert bash_out == "plain,bucket-credentials-4,"
+        assert zsh_out == "plain\nbucket-credentials-4\ntest-credentials-4\n_"

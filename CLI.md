@@ -2851,7 +2851,7 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[neuro storage cp](#neuro-storage-cp)_| Copy files and directories |
-| _[neuro storage df](#neuro-storage-df)_| Show current usage of storage |
+| _[neuro storage df](#neuro-storage-df)_| Show current storage usage |
 | _[neuro storage glob](#neuro-storage-glob)_| List resources that match PATTERNS |
 | _[neuro storage ls](#neuro-storage-ls)_| List directory contents |
 | _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
@@ -2923,12 +2923,12 @@ Name | Description|
 
 ### neuro storage df
 
-Show current usage of storage.
+Show current storage usage.<br/><br/>If PATH is specified, show storage usage of which path is a part.
 
 **Usage:**
 
 ```bash
-neuro storage df [OPTIONS]
+neuro storage df [OPTIONS] [PATH]
 ```
 
 **Options:**
