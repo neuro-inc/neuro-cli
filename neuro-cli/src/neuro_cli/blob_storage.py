@@ -664,13 +664,13 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[URL]) -> None:
 @filter_option(
     "--exclude",
     "filters",
-    flag_value=True,
+    is_exclude=True,
     help=("Exclude files and directories that match the specified pattern."),
 )
 @filter_option(
     "--include",
     "filters",
-    flag_value=False,
+    is_exclude=False,
     help=("Don't exclude files and directories that match the specified pattern."),
 )
 @option(

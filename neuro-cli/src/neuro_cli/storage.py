@@ -245,13 +245,17 @@ class FileFilterParserOption(click.parser.Option):
 
 
 class FileFilterOption(Option):
+    def __init__(self, *args: Any, is_exclude: bool, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._is_exclude = is_exclude
+
     def add_to_parser(self, parser: click.parser.OptionParser, ctx: Any) -> None:
         option = FileFilterParserOption(
             opts=self.opts,
             dest=self.name,
             action="append",
             nargs=self.nargs,
-            const=self.flag_value,
+            const=self._is_exclude,
             obj=self,
         )
         parser._opt_prefixes.update(option.prefixes)
@@ -261,12 +265,15 @@ class FileFilterOption(Option):
             parser._long_opt[opt] = option
 
 
-def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], Any]:
+def filter_option(
+    optname: str, varname: str, is_exclude: bool, help: str
+) -> Callable[[Any], Any]:
     return option(
-        *args,
+        optname,
+        varname,
         multiple=True,
         cls=FileFilterOption,
-        flag_value=flag_value,
+        is_exclude=is_exclude,
         type=click.UNPROCESSED,
         help=help,
         secure=True,
@@ -323,13 +330,13 @@ def filter_option(*args: str, flag_value: bool, help: str) -> Callable[[Any], An
 @filter_option(
     "--exclude",
     "filters",
-    flag_value=True,
+    is_exclude=True,
     help=("Exclude files and directories that match the specified pattern."),
 )
 @filter_option(
     "--include",
     "filters",
-    flag_value=False,
+    is_exclude=False,
     help=("Don't exclude files and directories that match the specified pattern."),
 )
 @option(
