@@ -1461,7 +1461,7 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
         res += ["--pass-config"]
     if job.privileged:
         res += ["--privileged"]
-    if job.priority:
+    if job.priority != JobPriority.NORMAL:
         res += ["--priority", job.priority.name.lower()]
     res += [str(job.container.image)]
     if job.container.command:
