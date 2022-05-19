@@ -547,7 +547,7 @@ async def resolve_bucket_credential(
     return credential.id
 
 
-SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret", "disk")
+SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret", "disk", "flow")
 
 
 def parse_resource_for_sharing(uri: str, root: Root) -> URL:

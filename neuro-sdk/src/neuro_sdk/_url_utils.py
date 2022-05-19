@@ -7,7 +7,7 @@ from urllib.parse import quote_from_bytes
 
 from yarl import URL
 
-CLUSTER_SCHEMES = ("storage", "image", "job", "secret", "disk", "blob")
+CLUSTER_SCHEMES = ("storage", "image", "job", "secret", "disk", "blob", "flow")
 
 
 def uri_from_cli(
