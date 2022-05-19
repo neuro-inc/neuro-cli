@@ -2517,6 +2517,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
+|_--priority \[low &#124; normal &#124; high]_|Priority used to specify job's start order. Jobs with higher priority will start before ones with lower priority. Priority should be supported by cluster.|
 |_--privileged_|Run job in privileged mode, if it is supported by cluster.|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_\--schedule-timeout TIMEDELTA_|Optional job schedule timeout in the format '3m4s' \(some parts may be missing).|
@@ -3650,6 +3651,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
+|_--priority \[low &#124; normal &#124; high]_|Priority used to specify job's start order. Jobs with higher priority will start before ones with lower priority. Priority should be supported by cluster.|
 |_--privileged_|Run job in privileged mode, if it is supported by cluster.|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_\--schedule-timeout TIMEDELTA_|Optional job schedule timeout in the format '3m4s' \(some parts may be missing).|
