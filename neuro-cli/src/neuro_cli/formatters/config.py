@@ -1,4 +1,5 @@
 import operator
+import os
 from decimal import Decimal
 from typing import Iterable, List, Mapping, Optional, Union
 
@@ -100,6 +101,13 @@ class ClustersFormatter:
         return RichGroup(*out)
 
 
+def _checkmark_character(value: bool) -> str:
+    if os.getenv("NEURO_EVENT_CATEGORY", "") == "WEB-CLI":
+        return "√" if value else "×"
+    else:
+        return "+" if value else "-"
+
+
 def _format_presets(
     presets: Mapping[str, Preset],
     available_jobs_counts: Optional[Mapping[str, int]],
@@ -136,8 +144,8 @@ def _format_presets(
             name,
             str(preset.cpu),
             format_size(preset.memory_mb * 1024**2),
-            "√" if preset.scheduler_enabled else "×",
-            "√" if preset.preemptible_node else "×",
+            _checkmark_character(preset.scheduler_enabled),
+            _checkmark_character(preset.preemptible_node),
             gpu,
         ]
         if has_tpu:
