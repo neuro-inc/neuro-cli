@@ -27,6 +27,14 @@ import aiohttp
 from ._errors import ConfigError
 from ._rewrite import rewrite_module
 
+
+class OrgNameSentinel:
+    pass
+
+
+org_name_sentinel = OrgNameSentinel()
+
+
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)
 _T_contra = TypeVar("_T_contra", contravariant=True)

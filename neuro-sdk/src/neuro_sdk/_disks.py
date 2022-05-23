@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, AsyncIterator, Mapping, Optional
+from typing import Any, AsyncIterator, Mapping, Optional, Union
 
 from dateutil.parser import isoparse
 from yarl import URL
@@ -10,7 +10,12 @@ from yarl import URL
 from ._config import Config
 from ._core import _Core
 from ._rewrite import rewrite_module
-from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
+from ._utils import (
+    NoPublicConstructor,
+    OrgNameSentinel,
+    asyncgeneratorcontextmanager,
+    org_name_sentinel,
+)
 
 logger = logging.getLogger(__package__)
 
@@ -94,7 +99,7 @@ class Disks(metaclass=NoPublicConstructor):
         timeout_unused: Optional[timedelta] = None,
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
-        org_name: Optional[str] = None,
+        org_name: Union[Optional[str], OrgNameSentinel] = org_name_sentinel,
     ) -> Disk:
         url = self._get_disks_url(cluster_name)
         auth = await self._config._api_auth()
@@ -102,7 +107,9 @@ class Disks(metaclass=NoPublicConstructor):
             "storage": storage,
             "life_span": timeout_unused.total_seconds() if timeout_unused else None,
             "name": name,
-            "org_name": org_name or self._config.org_name,
+            "org_name": org_name
+            if not isinstance(org_name, OrgNameSentinel)
+            else self._config.org_name,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()

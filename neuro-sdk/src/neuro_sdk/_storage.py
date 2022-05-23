@@ -58,9 +58,11 @@ from ._url_utils import (
 from ._users import Action
 from ._utils import (
     NoPublicConstructor,
+    OrgNameSentinel,
     QueuedCall,
     aclosing,
     asyncgeneratorcontextmanager,
+    org_name_sentinel,
     queue_calls,
     retries,
 )
@@ -355,16 +357,20 @@ class Storage(metaclass=NoPublicConstructor):
     async def disk_usage(
         self,
         cluster_name: Optional[str] = None,
-        org_name: Optional[str] = None,
+        org_name: Union[Optional[str], OrgNameSentinel] = org_name_sentinel,
         uri: Optional[URL] = None,
     ) -> DiskUsageInfo:
         cluster_name = cluster_name or self._config.cluster_name
-        org_name = org_name or self._config.org_name
+        org_name_val = (
+            org_name
+            if not isinstance(org_name, OrgNameSentinel)
+            else self._config.org_name
+        )
         if uri:
             url = self._get_storage_url(uri)
         else:
             url = self._get_storage_url(
-                self._create_disk_usage_uri(cluster_name, org_name), normalized=True
+                self._create_disk_usage_uri(cluster_name, org_name_val), normalized=True
             )
         url = url.with_query(op="GETDISKUSAGE")
         auth = await self._config._api_auth()
@@ -373,7 +379,7 @@ class Storage(metaclass=NoPublicConstructor):
         async with self._core.request("GET", url, auth=auth) as resp:
             self._set_time_diff(request_time, resp)
             res = await resp.json()
-            return _disk_usage_from_api(cluster_name, org_name, uri, res)
+            return _disk_usage_from_api(cluster_name, org_name_val, uri, res)
 
     def _create_disk_usage_uri(
         self, cluster_name: Optional[str], org_name: Optional[str]
