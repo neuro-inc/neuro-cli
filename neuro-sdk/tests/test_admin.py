@@ -296,6 +296,7 @@ async def test_add_cluster(
     assert create_cluster_json == {
         "name": "default",
         "default_quota": {},
+        "default_role": "user",
         "maintenance": False,
     }
     assert put_cloud_json == JSON
