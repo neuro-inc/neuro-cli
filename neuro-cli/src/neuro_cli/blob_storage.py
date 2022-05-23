@@ -1048,7 +1048,7 @@ async def mkcredentials(
 
     fmtr = BucketCredentialFormatter(make_bucket_getter(root.client, cluster))
     with root.pager():
-        root.print(await fmtr(credential))
+        root.print(await fmtr(credential), soft_wrap=True)
 
 
 @command()
@@ -1073,7 +1073,7 @@ async def statcredentials(
 
     fmtr = BucketCredentialFormatter(make_bucket_getter(root.client, cluster))
     with root.pager():
-        root.print(await fmtr(credential_obj))
+        root.print(await fmtr(credential_obj), soft_wrap=True)
 
 
 @command()
