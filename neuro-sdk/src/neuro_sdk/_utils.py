@@ -32,7 +32,7 @@ class OrgNameSentinel:
     pass
 
 
-org_name_sentinel = OrgNameSentinel()
+ORG_NAME_SENTINEL = OrgNameSentinel()
 
 
 _T = TypeVar("_T")

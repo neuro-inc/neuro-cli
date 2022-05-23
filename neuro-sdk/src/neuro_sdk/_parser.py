@@ -9,7 +9,7 @@ from ._config import Config
 from ._parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
 from ._rewrite import rewrite_module
 from ._url_utils import _check_scheme, _extract_path, _normalize_uri, uri_from_cli
-from ._utils import NoPublicConstructor, OrgNameSentinel, org_name_sentinel
+from ._utils import ORG_NAME_SENTINEL, NoPublicConstructor, OrgNameSentinel
 
 
 @rewrite_module
@@ -157,7 +157,7 @@ class Parser(metaclass=NoPublicConstructor):
     def _get_image_parser(
         self,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = org_name_sentinel,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
     ) -> _ImageNameParser:
         registry = {
             cluster.name: cluster.registry_url

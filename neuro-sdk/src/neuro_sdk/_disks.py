@@ -11,10 +11,10 @@ from ._config import Config
 from ._core import _Core
 from ._rewrite import rewrite_module
 from ._utils import (
+    ORG_NAME_SENTINEL,
     NoPublicConstructor,
     OrgNameSentinel,
     asyncgeneratorcontextmanager,
-    org_name_sentinel,
 )
 
 logger = logging.getLogger(__package__)
@@ -99,7 +99,7 @@ class Disks(metaclass=NoPublicConstructor):
         timeout_unused: Optional[timedelta] = None,
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = org_name_sentinel,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
     ) -> Disk:
         url = self._get_disks_url(cluster_name)
         auth = await self._config._api_auth()

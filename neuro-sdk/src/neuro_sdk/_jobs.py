@@ -53,10 +53,10 @@ from ._url_utils import (
     normalize_storage_path_uri,
 )
 from ._utils import (
+    ORG_NAME_SENTINEL,
     NoPublicConstructor,
     OrgNameSentinel,
     asyncgeneratorcontextmanager,
-    org_name_sentinel,
 )
 
 log = logging.getLogger(__package__)
@@ -331,7 +331,7 @@ class Jobs(metaclass=NoPublicConstructor):
         schedule_timeout: Optional[float] = None,
         restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
         life_span: Optional[float] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = org_name_sentinel,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
         priority: Optional[JobPriority] = None,
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
@@ -377,7 +377,7 @@ class Jobs(metaclass=NoPublicConstructor):
         image: RemoteImage,
         preset_name: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = org_name_sentinel,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
         entrypoint: Optional[str] = None,
         command: Optional[str] = None,
         working_dir: Optional[str] = None,

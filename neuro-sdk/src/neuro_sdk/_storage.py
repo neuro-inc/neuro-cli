@@ -57,12 +57,12 @@ from ._url_utils import (
 )
 from ._users import Action
 from ._utils import (
+    ORG_NAME_SENTINEL,
     NoPublicConstructor,
     OrgNameSentinel,
     QueuedCall,
     aclosing,
     asyncgeneratorcontextmanager,
-    org_name_sentinel,
     queue_calls,
     retries,
 )
@@ -357,7 +357,7 @@ class Storage(metaclass=NoPublicConstructor):
     async def disk_usage(
         self,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = org_name_sentinel,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
         uri: Optional[URL] = None,
     ) -> DiskUsageInfo:
         cluster_name = cluster_name or self._config.cluster_name

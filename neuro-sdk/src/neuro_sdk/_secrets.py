@@ -8,10 +8,10 @@ from ._config import Config
 from ._core import _Core
 from ._rewrite import rewrite_module
 from ._utils import (
+    ORG_NAME_SENTINEL,
     NoPublicConstructor,
     OrgNameSentinel,
     asyncgeneratorcontextmanager,
-    org_name_sentinel,
 )
 
 
@@ -61,7 +61,7 @@ class Secrets(metaclass=NoPublicConstructor):
         key: str,
         value: bytes,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = org_name_sentinel,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
     ) -> None:
         url = self._get_secrets_url(cluster_name)
         auth = await self._config._api_auth()
@@ -79,7 +79,7 @@ class Secrets(metaclass=NoPublicConstructor):
         self,
         key: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = org_name_sentinel,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
     ) -> None:
         url = self._get_secrets_url(cluster_name) / key
         auth = await self._config._api_auth()

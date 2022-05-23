@@ -48,10 +48,10 @@ from ._parser import Parser
 from ._rewrite import rewrite_module
 from ._url_utils import _extract_path, normalize_local_path_uri
 from ._utils import (
+    ORG_NAME_SENTINEL,
     NoPublicConstructor,
     OrgNameSentinel,
     asyncgeneratorcontextmanager,
-    org_name_sentinel,
 )
 
 
@@ -233,7 +233,7 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = org_name_sentinel,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
     ) -> Bucket:
         url = self._get_buckets_url(cluster_name)
         auth = await self._config._api_auth()
@@ -254,7 +254,7 @@ class Buckets(metaclass=NoPublicConstructor):
         credentials: Mapping[str, str],
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = org_name_sentinel,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
     ) -> Bucket:
         url = self._get_buckets_url(cluster_name) / "import" / "external"
         auth = await self._config._api_auth()
