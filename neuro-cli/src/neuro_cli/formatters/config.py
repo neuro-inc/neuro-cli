@@ -103,9 +103,9 @@ class ClustersFormatter:
 
 def _checkmark_character(value: bool) -> str:
     if os.getenv("NEURO_EVENT_CATEGORY", "") == "WEB-CLI":
-        return "√" if value else "×"
-    else:
         return "+" if value else "-"
+    else:
+        return "√" if value else "×"
 
 
 def _format_presets(
