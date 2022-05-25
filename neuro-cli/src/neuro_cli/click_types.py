@@ -770,6 +770,7 @@ class PathURLCompleter(URLCompleter, abc.ABC):
                         continue
                     if not item.is_dir() and not self._complete_file:
                         continue
+
                     yield self._make_item(
                         dir_uri,
                         item.name,
@@ -810,20 +811,16 @@ class StoragePathURLCompleter(PathURLCompleter):
 
 class BlobPathURLCompleter(PathURLCompleter):
     async def _is_valid_dir(self, root: Root, uri: URL) -> bool:
-        try:
-            return await root.client.buckets.blob_is_dir(uri)
-        except ResourceNotFound:
-            return False
+        # Not used
+        raise NotImplementedError
 
     @asyncgeneratorcontextmanager
     async def _iter_dir(
         self, root: Root, uri: URL
     ) -> AsyncIterator[PathURLCompleter.DirEntry]:
-        async with root.client.buckets.list_blobs(uri) as it:
-            async for blob_entry in it:
-                if blob_entry.uri == uri:
-                    continue  # Directory itself is also listed as it is prefix search
-                yield blob_entry
+        # Not used
+        raise NotImplementedError
+        yield
 
     async def get_completions(
         self,
@@ -845,14 +842,31 @@ class BlobPathURLCompleter(PathURLCompleter):
                     names = [bucket.id] + ([bucket.name] if bucket.name else [])
                     for name in names:
                         if str(prefix / name).startswith(incomplete):
-                            yield self._make_item(
-                                prefix,
-                                name,
-                                True,
-                            )
+                            yield self._make_item(prefix, name, True)
         else:
-            async for item in super().get_completions(uri, root, incomplete):
-                yield item
+            # Generic get_completions() is not used here because we can
+            # benefit from prefix search in list_blobs().
+            if incomplete.endswith("/"):
+                prefix = uri
+                full_uri = full_uri / ""
+                skip_uri_len = len(full_uri.parts)
+            else:
+                prefix = uri.parent
+                skip_uri_len = None
+
+            async with root.client.buckets.list_blobs(full_uri) as it:
+                async for item in it:
+                    if item.is_dir():
+                        if not self._complete_dir:
+                            continue
+                        # Directory itself is also listed as it is prefix search
+                        if len(item.uri.parts) == skip_uri_len:
+                            continue
+                    else:
+                        if not self._complete_file:
+                            continue
+
+                    yield self._make_item(prefix, item.name, item.is_dir())
 
 
 class PlatformURIType(AsyncType[URL]):
