@@ -263,7 +263,9 @@ class Buckets(metaclass=NoPublicConstructor):
             "provider": provider.value,
             "provider_bucket_name": provider_bucket_name,
             "credentials": credentials,
-            "org_name": org_name or self._config.org_name,
+            "org_name": org_name
+            if not isinstance(org_name, OrgNameSentinel)
+            else self._config.org_name,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()
