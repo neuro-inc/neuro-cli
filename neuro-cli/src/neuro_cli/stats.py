@@ -78,7 +78,7 @@ def add_usage(
 
 def select_oldest(
     db: sqlite3.Connection, *, limit: int = GA_CACHE_LIMIT, delay: float = 60
-) -> List[sqlite3.Row]:
+) -> List[sqlite3.Row]:  # type: ignore
     # oldest 20 records
     old = list(
         db.execute(
@@ -96,7 +96,9 @@ def select_oldest(
     return old
 
 
-def delete_oldest(db: sqlite3.Connection, old: List[sqlite3.Row]) -> None:
+def delete_oldest(
+    db: sqlite3.Connection, old: List[sqlite3.Row]  # type: ignore
+) -> None:
     db.executemany("DELETE FROM stats WHERE ROWID = ?", [[row["ROWID"]] for row in old])
 
 
@@ -121,7 +123,11 @@ def make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
     return urlencode(ret, quote_via=urlquote)
 
 
-async def send(client: Client, uid: str, data: List[sqlite3.Row]) -> None:
+async def send(
+    client: Client,
+    uid: str,
+    data: List[sqlite3.Row],  # type: ignore
+) -> None:
     if not data:
         return
     payload = (

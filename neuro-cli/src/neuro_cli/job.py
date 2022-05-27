@@ -1237,7 +1237,7 @@ async def run_job(
     # Replace disk names with disk ids
     async def _force_disk_id(disk_uri: URL) -> URL:
         disk_id = await resolve_disk(
-            disk_uri.parts[-1], client=root.client, cluster_name=cluster_name
+            disk_uri, client=root.client, cluster_name=cluster_name
         )
         return disk_uri / f"../{disk_id}"
 
