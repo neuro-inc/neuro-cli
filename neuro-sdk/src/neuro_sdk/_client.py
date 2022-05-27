@@ -62,6 +62,10 @@ class Client(metaclass=NoPublicConstructor):
             self._core, self._config, plugin_manager
         )
 
+    @property
+    def closed(self) -> bool:
+        return self._closed
+
     async def close(self) -> None:
         if self._closed:
             return

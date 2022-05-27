@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime, timedelta
 from typing import (
+    Any,
     AsyncContextManager,
     AsyncIterator,
     Generic,
@@ -663,7 +664,6 @@ class DiskType(AsyncType[str]):
             async with client.disks.list(cluster_name=ctx.params.get("cluster")) as it:
                 async for disk in it:
                     ret.extend(_complete_id_name(disk.id, disk.name, incomplete))
-
             return ret
 
 
@@ -1126,6 +1126,36 @@ class BucketCredentialType(AsyncType[str]):
 
 
 BUCKET_CREDENTIAL = BucketCredentialType()
+
+
+class UnionType(AsyncType[Any]):
+    def __init__(self, name: str, *types: AsyncType[Any]) -> None:
+        self.name = name
+        self._inner_types = types
+
+    async def async_convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> Any:
+        for inner_type in self._inner_types:
+            try:
+                return await inner_type.async_convert(root, value, param, ctx)
+            except ValueError:
+                pass
+        raise ValueError(f"Cannot parse {value} as {self.name}")
+
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
+        result = []
+        for inner_type in self._inner_types:
+            result += await inner_type.async_shell_complete(
+                root, ctx, param, incomplete
+            )
+        return result
 
 
 def setup_shell_completion() -> None:

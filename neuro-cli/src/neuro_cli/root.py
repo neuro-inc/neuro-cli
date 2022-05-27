@@ -179,7 +179,8 @@ class Root:
 
     async def init_client(self) -> Client:
         if self._client is not None:
-            return self._client
+            if not self._client.closed:
+                return self._client
         client = await self.factory.get(timeout=self.timeout)
 
         self._client = client
