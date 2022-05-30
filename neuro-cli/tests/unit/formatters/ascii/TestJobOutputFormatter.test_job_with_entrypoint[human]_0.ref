@@ -6,6 +6,7 @@ Job                     test-job
  Image                   test-image                 
  Entrypoint              /usr/bin/make              
  Command                 test                       
+ Priority                Normal                     
  Price (credits / hour)  15.0000                    
  Current cost            150.0000                   
  Resources                Memory  16.0M             

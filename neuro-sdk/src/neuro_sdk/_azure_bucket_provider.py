@@ -3,6 +3,7 @@ import secrets
 from contextlib import AsyncExitStack, asynccontextmanager
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
+from io import BytesIO
 from typing import Any, AsyncIterator, Awaitable, Callable, Optional, Tuple, Union
 
 from azure.core.credentials import AzureSasCredential
@@ -106,15 +107,15 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
             if isinstance(item, BlobPrefix):
                 entry: BucketEntry = BlobCommonPrefix(
                     bucket=self.bucket,
-                    key=item.name,
+                    key=item.name or "",
                     size=0,
                 )
             else:
                 assert item.size is not None
                 entry = BlobObject(
                     bucket=self.bucket,
-                    key=item.name,
-                    size=item.size,
+                    key=item.name or "",
+                    size=item.size or 0,
                     created_at=item.creation_time,
                     modified_at=item.last_modified,
                 )
@@ -130,8 +131,8 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
             assert blob_info.size is not None
             return BlobObject(
                 bucket=self.bucket,
-                key=blob_info.name,
-                size=blob_info.size,
+                key=blob_info.name or "",
+                size=blob_info.size or 0,
                 created_at=blob_info.creation_time,
                 modified_at=blob_info.last_modified,
             )
@@ -148,14 +149,12 @@ class AzureProvider(MeasureTimeDiffMixin, BucketProvider):
     ) -> None:
         blob_client = self._client.get_blob_client(key)
         if isinstance(body, bytes):
-            # XXX (S Storchaka 2022-04-14): Incorrect annotation or bug?
-            await blob_client.upload_blob(body)  # type: ignore
+            await blob_client.upload_blob(BytesIO(body))  # type: ignore[arg-type]
         else:
             blocks = []
             async for data in body:
                 block_id = secrets.token_hex(16)
-                # XXX (S Storchaka 2022-04-14): Incorrect annotation or bug?
-                await blob_client.stage_block(block_id, data)  # type: ignore
+                await blob_client.stage_block(block_id, BytesIO(data))
                 if progress:
                     await progress(len(data))
                 blocks.append(BlobBlock(block_id=block_id))

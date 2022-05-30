@@ -5,6 +5,7 @@ Job                     test-job
  Status                  pending (ContainerCreating)      
  Image                   test-image                       
  Command                 test-command                     
+ Priority                Normal                           
  Price (credits / hour)  15.0000                          
  Current cost            150.0000                         
  Resources                Memory  16.0M                   

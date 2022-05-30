@@ -1028,7 +1028,7 @@ async def run_progress(
 
 async def run_concurrently(coros: Iterable[Awaitable[Any]]) -> None:
     loop = asyncio.get_event_loop()
-    tasks: "Iterable[asyncio.Future[Any]]" = [loop.create_task(coro) for coro in coros]
+    tasks: "Iterable[asyncio.Future[Any]]" = [loop.create_task(coro) for coro in coros]  # type: ignore  # noqa
     if not tasks:
         return
     try:

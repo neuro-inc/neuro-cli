@@ -982,7 +982,7 @@ def drop_old_test_images() -> None:
             try:
                 _, time_str, _ = image_name.split(IMAGE_DATETIME_SEP)
                 image_time = datetime.strptime(time_str, IMAGE_DATETIME_FORMAT)
-                if datetime.now() - image_time < timedelta(days=10):
+                if datetime.now() - image_time < timedelta(days=1):
                     continue
                 helper.run_cli(["image", "rm", image_str])
             except Exception:

@@ -14,6 +14,7 @@ from neuro_sdk import (
     Container,
     DiskVolume,
     JobDescription,
+    JobPriority,
     JobRestartPolicy,
     JobStatus,
     JobStatusHistory,
@@ -428,6 +429,7 @@ def test_job_to_args_complex() -> None:
         privileged=True,
         total_price_credits=Decimal("150"),
         price_credits_per_hour=Decimal("15"),
+        priority=JobPriority.HIGH,
     )
     assert _job_to_cli_args(job) == [
         "--preset",
@@ -471,6 +473,8 @@ def test_job_to_args_complex() -> None:
         "2d11h17m12s",
         "--pass-config",
         "--privileged",
+        "--priority",
+        "high",
         "test-image",
         "test-command",
     ]

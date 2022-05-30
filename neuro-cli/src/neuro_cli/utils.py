@@ -199,6 +199,7 @@ class NeuroClickMixin:
         help = self.help  # type: ignore
         help = help and textwrap.dedent(help)
         if help:
+            help = inspect.cleandoc(help).partition("\f")[0]
             help_text, *examples = split_examples(help)
             if help_text:
                 formatter.write_paragraph()
@@ -303,7 +304,7 @@ def command(
 
 
 class Group(NeuroGroupMixin, click.Group):
-    def command(
+    def command(  # type: ignore
         self, *args: Any, **kwargs: Any
     ) -> Callable[[Callable[..., Any]], Command]:
         def decorator(f: Callable[..., Any]) -> Command:
@@ -313,9 +314,9 @@ class Group(NeuroGroupMixin, click.Group):
 
         return decorator
 
-    def group(
+    def group(  # type: ignore
         self, *args: Any, **kwargs: Any
-    ) -> Callable[[Callable[..., Any]], "Group"]:
+    ) -> Callable[[Callable[..., Any]], "Group"]:  # ignore
         def decorator(f: Callable[..., Any]) -> Group:
             cmd = group(*args, **kwargs)(f)
             self.add_command(cmd)
@@ -546,7 +547,7 @@ async def resolve_bucket_credential(
     return credential.id
 
 
-SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret", "disk")
+SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret", "disk", "flow")
 
 
 def parse_resource_for_sharing(uri: str, root: Root) -> URL:

@@ -200,6 +200,13 @@ class JobRestartPolicy(str, enum.Enum):
 
 
 @rewrite_module
+class JobPriority(enum.IntEnum):
+    LOW = enum.auto()
+    NORMAL = enum.auto()
+    HIGH = enum.auto()
+
+
+@rewrite_module
 @dataclass(frozen=True)
 class JobDescriptionInternal:
     materialized: bool = False
@@ -234,6 +241,7 @@ class JobDescription:
     org_name: Optional[str] = None
     preemptible_node: bool = False
     privileged: bool = False
+    priority: JobPriority = JobPriority.NORMAL
     _internal: JobDescriptionInternal = JobDescriptionInternal()
 
 
@@ -318,6 +326,7 @@ class Jobs(metaclass=NoPublicConstructor):
         restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
         life_span: Optional[float] = None,
         org_name: Optional[str] = None,
+        priority: Optional[JobPriority] = None,
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
         payload = _job_to_api(
@@ -331,6 +340,7 @@ class Jobs(metaclass=NoPublicConstructor):
             restart_policy=restart_policy,
             life_span=life_span,
             org_name=org_name,
+            priority=priority,
         )
         payload["container"] = _container_to_api(
             config=self._config,
@@ -380,6 +390,7 @@ class Jobs(metaclass=NoPublicConstructor):
         restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
         life_span: Optional[float] = None,
         privileged: bool = False,
+        priority: Optional[JobPriority] = None,
     ) -> JobDescription:
         url = (self._config.api_url / "jobs").with_query("from_preset")
         container_payload = _container_to_api(
@@ -410,6 +421,7 @@ class Jobs(metaclass=NoPublicConstructor):
             life_span=life_span,
             privileged=privileged,
             org_name=org_name,
+            priority=priority,
         )
         payload.update(**container_payload)
         auth = await self._config._api_auth()
@@ -980,6 +992,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
     # https://github.com/neuro-inc/platform-api/pull/1770 merged
     total_price_credits = Decimal(res["total_price_credits"])
     price_credits_per_hour = Decimal(res["price_credits_per_hour"])
+    priority = JobPriority[res.get("priority", JobPriority.NORMAL.name).upper()]
     return JobDescription(
         status=_calc_status(res["status"]),
         id=res["id"],
@@ -1004,6 +1017,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         preset_name=res.get("preset_name"),
         total_price_credits=total_price_credits,
         price_credits_per_hour=price_credits_per_hour,
+        priority=priority,
         _internal=JobDescriptionInternal(
             materialized=res.get("materialized", False),
             being_dropped=res.get("being_dropped", False),
@@ -1025,6 +1039,7 @@ def _job_to_api(
     life_span: Optional[float] = None,
     privileged: bool = False,
     org_name: Optional[str] = None,
+    priority: Optional[JobPriority] = None,
 ) -> Dict[str, Any]:
     primitive: Dict[str, Any] = {"pass_config": pass_config}
     if name:
@@ -1047,6 +1062,8 @@ def _job_to_api(
         primitive["privileged"] = privileged
     if org_name:
         primitive["org_name"] = org_name
+    if priority:
+        primitive["priority"] = priority.name.lower()
     primitive["cluster_name"] = cluster_name
     return primitive
 

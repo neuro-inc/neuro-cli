@@ -14,6 +14,7 @@ help:
 
 .PHONY: setup init
 setup init: _init-cli-help update-deps ### Setup the project
+	pip install -U pip
 	rm -rf .mypy_cache
 	pre-commit install
 
