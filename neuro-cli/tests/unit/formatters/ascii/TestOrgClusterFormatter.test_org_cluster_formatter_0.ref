@@ -4,4 +4,5 @@ Org name          test-org
  Spent credits     20.00     
  Max jobs          2         
  Default credits   unlimited 
- Default max jobs  unlimited
+ Default max jobs  unlimited 
+ Default role      user

@@ -98,6 +98,7 @@ class OrgClustersFormatter:
         table.add_column("Max jobs")
         table.add_column("Default credits")
         table.add_column("Default max jobs")
+        table.add_column("Default role")
         rows = []
 
         for org_cluster in org_clusters:
@@ -110,6 +111,7 @@ class OrgClustersFormatter:
                     format_quota_details(org_cluster.quota.total_running_jobs),
                     format_quota_details(org_cluster.default_credits),
                     format_quota_details(org_cluster.default_quota.total_running_jobs),
+                    org_cluster.default_role.value,
                 )
             )
         rows.sort(key=operator.itemgetter(0))
@@ -142,6 +144,10 @@ class OrgClusterFormatter:
         table.add_row(
             "Default max jobs",
             format_quota_details(org_cluster.default_quota.total_running_jobs),
+        )
+        table.add_row(
+            "Default role",
+            org_cluster.default_role.value,
         )
         return table
 
@@ -205,6 +211,7 @@ class ClustersFormatter:
                             admin_cluster.default_quota.total_running_jobs
                         ),
                     )
+                table.add_row("Default role", admin_cluster.default_role.value)
             out.append(table)
             out.append(Rule())
         return RichGroup(*out)
