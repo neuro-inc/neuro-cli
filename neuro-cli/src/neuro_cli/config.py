@@ -54,7 +54,12 @@ async def show_token(root: Root) -> None:
 
 
 def _print_welcome(root: Root, url: URL) -> None:
-    root.print(f"Logged into {url}")
+    root.print(
+        f"Logged into {url} as [u]{root.client.config.username}[/u]"
+        f", current cluster is [b]{root.client.config.cluster_name}[/b], "
+        f"org is [b]{root.client.config.org_name or ORG.NO_ORG_STR}[/b]",
+        markup=True,
+    )
     root.print(
         "Read the docs at https://docs.neu.ro or run `neuro --help` "
         "to see the reference"
@@ -86,6 +91,7 @@ async def login(root: Root, url: URL) -> None:
         await root.factory.logout()
         root.print("You were successfully logged out.")
         await root.factory.login(_show_browser, url=url, timeout=root.timeout)
+    await root.init_client()
     _print_welcome(root, url)
 
 
@@ -105,6 +111,7 @@ async def login_with_token(root: Root, token: str, url: URL) -> None:
         await root.factory.logout()
         root.print("You were successfully logged out.")
         await root.factory.login_with_token(token, url=url, timeout=root.timeout)
+    await root.init_client()
     _print_welcome(root, url)
 
 
@@ -140,6 +147,7 @@ async def login_headless(root: Root, url: URL) -> None:
         await root.factory.logout()
         root.print("You were successfully logged out.")
         await root.factory.login_headless(login_callback, url=url, timeout=root.timeout)
+    await root.init_client()
     _print_welcome(root, url)
 
 
