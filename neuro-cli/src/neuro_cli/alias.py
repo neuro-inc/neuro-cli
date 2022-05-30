@@ -202,12 +202,12 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
                 kwargs["default"] = [False]
             else:
                 kwargs["default"] = [default]
+                kwargs["multiple"] = True
         ret.append(
             Option(
                 opts,
                 is_flag=is_flag,
                 flag_value=flag_value,
-                multiple=True,
                 metavar=metavar,
                 help=description,
                 **kwargs,  # type: ignore
