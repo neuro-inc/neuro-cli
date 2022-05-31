@@ -1,13 +1,18 @@
 import base64
 from dataclasses import dataclass
-from typing import AsyncIterator, Optional
+from typing import AsyncIterator, Optional, Union
 
 from yarl import URL
 
 from ._config import Config
 from ._core import _Core
 from ._rewrite import rewrite_module
-from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
+from ._utils import (
+    ORG_NAME_SENTINEL,
+    NoPublicConstructor,
+    OrgNameSentinel,
+    asyncgeneratorcontextmanager,
+)
 
 
 @rewrite_module
@@ -56,14 +61,16 @@ class Secrets(metaclass=NoPublicConstructor):
         key: str,
         value: bytes,
         cluster_name: Optional[str] = None,
-        org_name: Optional[str] = None,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
     ) -> None:
         url = self._get_secrets_url(cluster_name)
         auth = await self._config._api_auth()
         data = {
             "key": key,
             "value": base64.b64encode(value).decode("ascii"),
-            "org_name": org_name or self._config.org_name,
+            "org_name": org_name
+            if not isinstance(org_name, OrgNameSentinel)
+            else self._config.org_name,
         }
         async with self._core.request("POST", url, auth=auth, json=data):
             pass
@@ -72,13 +79,17 @@ class Secrets(metaclass=NoPublicConstructor):
         self,
         key: str,
         cluster_name: Optional[str] = None,
-        org_name: Optional[str] = None,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
     ) -> None:
         url = self._get_secrets_url(cluster_name) / key
         auth = await self._config._api_auth()
         params = {}
-        org_name = org_name or self._config.org_name
-        if org_name:
-            params["org_name"] = org_name
+        org_name_val = (
+            org_name
+            if not isinstance(org_name, OrgNameSentinel)
+            else self._config.org_name
+        )
+        if org_name_val:
+            params["org_name"] = org_name_val
         async with self._core.request("DELETE", url, auth=auth, params=params):
             pass
