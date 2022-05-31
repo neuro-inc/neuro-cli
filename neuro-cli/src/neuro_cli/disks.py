@@ -1,7 +1,14 @@
 from datetime import timedelta
 from typing import Optional, Sequence
 
-from neuro_cli.click_types import CLUSTER, DISK, DISK_NAME, ORG
+from neuro_cli.click_types import (
+    CLUSTER,
+    DISK,
+    DISK_NAME,
+    ORG,
+    PlatformURIType,
+    UnionType,
+)
 from neuro_cli.formatters.utils import get_datetime_formatter
 from neuro_cli.utils import resolve_disk
 
@@ -153,7 +160,9 @@ async def create(
     type=CLUSTER,
     help="Look on a specified cluster (the current cluster by default).",
 )
-@argument("disk", type=DISK)
+@argument(
+    "disk", type=UnionType("disk", PlatformURIType(allowed_schemes=("disk",)), DISK)
+)
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
 async def get(root: Root, cluster: Optional[str], disk: str, full_uri: bool) -> None:
     """
@@ -182,7 +191,12 @@ async def get(root: Root, cluster: Optional[str], disk: str, full_uri: bool) -> 
     type=CLUSTER,
     help="Perform on a specified cluster (the current cluster by default).",
 )
-@argument("disks", type=DISK, nargs=-1, required=True)
+@argument(
+    "disks",
+    type=UnionType("disk", PlatformURIType(allowed_schemes=("disk",)), DISK),
+    nargs=-1,
+    required=True,
+)
 async def rm(root: Root, cluster: Optional[str], disks: Sequence[str]) -> None:
     """
     Remove disk DISK_ID.

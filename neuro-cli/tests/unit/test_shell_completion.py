@@ -1085,8 +1085,11 @@ def test_disk_autocomplete(run_autocomplete: _RunAC) -> None:
         mocked_list.side_effect = list
 
         zsh_out, bash_out = run_autocomplete(["disk", "get", "d"])
-        assert bash_out == ("plain,disk-123,\n" "plain,disk-234,\n" "plain,data-disk,")
+        assert bash_out == (
+            "uri,disk:,\n" "plain,disk-123,\n" "plain,disk-234,\n" "plain,data-disk,"
+        )
         assert zsh_out == (
+            "uri\ndisk:\n_\n_\n"
             "plain\ndisk-123\n_\n_\n"
             "plain\ndisk-234\ndata-disk\n_\n"
             "plain\ndata-disk\ndisk-234\n_"
@@ -1101,9 +1104,11 @@ def test_disk_autocomplete(run_autocomplete: _RunAC) -> None:
         assert zsh_out == ("plain\ndata-disk\ndisk-234\n_")
 
         zsh_out, bash_out = run_autocomplete(["disk", "get", "--cluster", "other", "d"])
-        assert bash_out == ("plain,disk-345,\n" "plain,data-disk2,")
+        assert bash_out == ("uri,disk:,\n" "plain,disk-345,\n" "plain,data-disk2,")
         assert zsh_out == (
-            "plain\ndisk-345\ndata-disk2\n_\n" "plain\ndata-disk2\ndisk-345\n_"
+            "uri\ndisk:\n_\n_\n"
+            "plain\ndisk-345\ndata-disk2\n_\n"
+            "plain\ndata-disk2\ndisk-345\n_"
         )
 
 

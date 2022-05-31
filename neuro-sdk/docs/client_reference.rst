@@ -60,3 +60,7 @@ Client class
       Close Neuro API client, all calls after closing are forbidden.
 
       The method is idempotent.
+
+   .. attribute:: closed
+
+      Is this client instance was closed, :class:`bool`.

@@ -116,18 +116,30 @@ class Disks(metaclass=NoPublicConstructor):
             return self._parse_disk_payload(payload)
 
     async def get(
-        self, disk_id_or_name: str, cluster_name: Optional[str] = None
+        self,
+        disk_id_or_name: str,
+        cluster_name: Optional[str] = None,
+        owner: Optional[str] = None,
     ) -> Disk:
         url = self._get_disks_url(cluster_name) / disk_id_or_name
         auth = await self._config._api_auth()
-        async with self._core.request("GET", url, auth=auth) as resp:
+        params = {}
+        if owner:
+            params["owner"] = owner
+        async with self._core.request("GET", url, auth=auth, params=params) as resp:
             payload = await resp.json()
             return self._parse_disk_payload(payload)
 
     async def rm(
-        self, disk_id_or_name: str, cluster_name: Optional[str] = None
+        self,
+        disk_id_or_name: str,
+        cluster_name: Optional[str] = None,
+        owner: Optional[str] = None,
     ) -> None:
         url = self._get_disks_url(cluster_name) / disk_id_or_name
         auth = await self._config._api_auth()
-        async with self._core.request("DELETE", url, auth=auth):
+        params = {}
+        if owner:
+            params["owner"] = owner
+        async with self._core.request("DELETE", url, auth=auth, params=params):
             pass
