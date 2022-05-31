@@ -111,6 +111,14 @@ async def get_admin_clusters(root: Root) -> None:
     show_default=True,
     help="Default maximum running jobs quota (`unlimited' stands for no limit)",
 )
+@option(
+    "--default-role",
+    default=_ClusterUserRoleType.USER.value,
+    metavar="[ROLE]",
+    type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
+    show_default=True,
+    help="Default role for new users added to cluster",
+)
 @argument("cluster_name", required=True, type=str)
 @argument("config", required=True, type=click.File(encoding="utf8", lazy=False))
 async def add_cluster(
@@ -119,6 +127,7 @@ async def add_cluster(
     config: IO[str],
     default_credits: str,
     default_jobs: str,
+    default_role: str,
     skip_provisioning: bool = False,
 ) -> None:
     """
@@ -132,6 +141,7 @@ async def add_cluster(
         cluster_name,
         default_credits=_parse_credits_value(default_credits),
         default_quota=_Quota(_parse_jobs_value(default_jobs)),
+        default_role=_ClusterUserRoleType(default_role),
     )
     if skip_provisioning:
         return
@@ -160,12 +170,21 @@ async def add_cluster(
     show_default=True,
     help="Default maximum running jobs quota (`unlimited' stands for no limit)",
 )
+@option(
+    "--default-role",
+    default=_ClusterUserRoleType.USER.value,
+    metavar="[ROLE]",
+    type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
+    show_default=True,
+    help="Default role for new users added to cluster",
+)
 @argument("cluster_name", required=True, type=str)
 async def update_cluster(
     root: Root,
     cluster_name: str,
     default_credits: str,
     default_jobs: str,
+    default_role: str,
 ) -> None:
     """
     Update a cluster.
@@ -175,6 +194,7 @@ async def update_cluster(
             name=cluster_name,
             default_credits=_parse_credits_value(default_credits),
             default_quota=_Quota(_parse_jobs_value(default_jobs)),
+            default_role=_ClusterUserRoleType(default_role),
         )
     )
     if not root.quiet:
@@ -533,7 +553,7 @@ async def get_cluster_users(
 @argument(
     "role",
     required=False,
-    default=_ClusterUserRoleType.USER.value,
+    default=None,
     metavar="[ROLE]",
     type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
 )
@@ -566,7 +586,7 @@ async def add_cluster_user(
     root: Root,
     cluster_name: str,
     user_name: str,
-    role: str,
+    role: Optional[str],
     credits: Optional[str],
     jobs: Optional[str],
     org: Optional[str],
@@ -576,12 +596,13 @@ async def add_cluster_user(
 
     The command supports one of 3 user roles: admin, manager or user.
     """
-    # Use cluster defaults credits/quota for "user" role. Unlimited for other roles.
-    if role == "user" and credits is None:
+    # Use cluster defaults credits/quota for "user-like" roles.
+    # Unlimited for other roles.
+    if credits is None and role in (None, "user", "member"):
         balance = None
     else:
         balance = _Balance(credits=_parse_credits_value(credits or UNLIMITED))
-    if role == "user" and jobs is None:
+    if jobs is None and role in (None, "user", "member"):
         quota = None
     else:
         quota = _Quota(total_running_jobs=_parse_jobs_value(jobs or UNLIMITED))
@@ -1270,6 +1291,14 @@ async def get_org_clusters(root: Root, cluster_name: str) -> None:
     help="Default maximum running jobs quota (`unlimited' stands for no limit)",
 )
 @option(
+    "--default-role",
+    default=_ClusterUserRoleType.USER.value,
+    metavar="[ROLE]",
+    type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
+    show_default=True,
+    help="Default role for new users added to org cluster",
+)
+@option(
     "--storage-size",
     metavar="AMOUNT",
     type=MEGABYTE,
@@ -1283,6 +1312,7 @@ async def add_org_cluster(
     jobs: str,
     default_credits: str,
     default_jobs: str,
+    default_role: str,
     storage_size: Optional[int],
 ) -> None:
     """
@@ -1296,6 +1326,7 @@ async def add_org_cluster(
         quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
         default_credits=_parse_credits_value(default_credits),
         default_quota=_Quota(_parse_jobs_value(default_jobs)),
+        default_role=_ClusterUserRoleType(default_role),
         storage_size_mb=storage_size,
     )
     if not root.quiet:
@@ -1345,6 +1376,14 @@ async def add_org_cluster(
     show_default=True,
     help="Default maximum running jobs quota (`unlimited' stands for no limit)",
 )
+@option(
+    "--default-role",
+    default=_ClusterUserRoleType.USER.value,
+    metavar="[ROLE]",
+    type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
+    show_default=True,
+    help="Default role for new users added to org cluster",
+)
 async def update_org_cluster(
     root: Root,
     cluster_name: str,
@@ -1353,6 +1392,7 @@ async def update_org_cluster(
     jobs: str,
     default_credits: str,
     default_jobs: str,
+    default_role: str,
 ) -> None:
     """
     Update org cluster quotas.
@@ -1365,6 +1405,7 @@ async def update_org_cluster(
         quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
         default_credits=_parse_credits_value(default_credits),
         default_quota=_Quota(_parse_jobs_value(default_jobs)),
+        default_role=_ClusterUserRoleType(default_role),
     )
     await root.client._admin.update_org_cluster(org_cluster)
     if not root.quiet:
@@ -1421,12 +1462,21 @@ async def remove_org_cluster(
     show_default=True,
     help="Default maximum running jobs quota (`unlimited' stands for no limit)",
 )
+@option(
+    "--default-role",
+    default=_ClusterUserRoleType.USER.value,
+    metavar="[ROLE]",
+    type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
+    show_default=True,
+    help="Default role for new users added to org cluster",
+)
 async def set_org_cluster_defaults(
     root: Root,
     cluster_name: str,
     org_name: str,
     default_credits: str,
     default_jobs: str,
+    default_role: str,
 ) -> None:
     """
     Set org cluster defaults to given value
@@ -1436,6 +1486,7 @@ async def set_org_cluster_defaults(
         org_name=org_name,
         default_credits=_parse_credits_value(default_credits),
         default_quota=_Quota(_parse_jobs_value(default_jobs)),
+        default_role=_ClusterUserRoleType(default_role),
     )
     if not root.quiet:
         root.print(
