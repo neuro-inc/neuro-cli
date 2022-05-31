@@ -493,6 +493,7 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-role \[ROLE]_|Default role for new users added to cluster  \[default: user]|
 
 
 
@@ -556,6 +557,7 @@ Name | Description|
 |_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-role \[ROLE]_|Default role for new users added to org cluster  \[default: user]|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--storage-size AMOUNT_|Storage size, ignored for storage types with elastic storage size|
 
@@ -960,6 +962,7 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-role \[ROLE]_|Default role for new users added to org cluster  \[default: user]|
 
 
 
@@ -1063,6 +1066,7 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-role \[ROLE]_|Default role for new users added to cluster  \[default: user]|
 
 
 
@@ -1085,6 +1089,7 @@ Name | Description|
 |_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-role \[ROLE]_|Default role for new users added to org cluster  \[default: user]|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 
 
