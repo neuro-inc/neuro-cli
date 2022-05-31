@@ -23,6 +23,7 @@ from typing import (
     Tuple,
     Type,
     TypeVar,
+    Union,
     cast,
 )
 
@@ -31,7 +32,7 @@ import humanize
 from aiohttp import ClientResponseError
 from yarl import URL
 
-from neuro_sdk import Action, Client, JobStatus, Volume
+from neuro_sdk import Action, Client, JobStatus, ResourceNotFound, Volume
 
 from .parse_utils import parse_timedelta
 from .root import Root
@@ -495,13 +496,34 @@ DISK_ID_PATTERN = r"disk-[0-9a-z]{8}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z
 
 
 async def resolve_disk(
-    id_or_name: str, *, client: Client, cluster_name: Optional[str] = None
+    id_or_name_or_uri: Union[str, URL],
+    *,
+    client: Client,
+    cluster_name: Optional[str] = None,
 ) -> str:
+    if isinstance(id_or_name_or_uri, URL):
+        id_or_name = id_or_name_or_uri.parts[-1]
+    else:
+        id_or_name = id_or_name_or_uri
     # Temporary fast path.
     if re.fullmatch(DISK_ID_PATTERN, id_or_name):
         return id_or_name
 
-    disk = await client.disks.get(id_or_name, cluster_name)
+    if isinstance(id_or_name_or_uri, URL):
+        cluster_name = id_or_name_or_uri.host
+        possible_owners = [
+            "/".join(id_or_name_or_uri.parts[1:-1]),
+            "/".join(id_or_name_or_uri.parts[2:-1]),
+        ]
+        for owner in possible_owners:
+            try:
+                disk = await client.disks.get(id_or_name, cluster_name, owner=owner)
+                return disk.id
+            except ResourceNotFound:
+                pass
+        raise ValueError(f"Failed to resolve job {id_or_name_or_uri}")
+    else:
+        disk = await client.disks.get(id_or_name, cluster_name)
     return disk.id
 
 
@@ -547,7 +569,7 @@ async def resolve_bucket_credential(
     return credential.id
 
 
-SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret", "disk")
+SHARE_SCHEMES = ("storage", "image", "job", "blob", "role", "secret", "disk", "flow")
 
 
 def parse_resource_for_sharing(uri: str, root: Root) -> URL:

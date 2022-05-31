@@ -352,6 +352,13 @@ async def statbucket(
     bucket_obj = await root.client.buckets.get(
         bucket, cluster_name=cluster, bucket_owner=owner
     )
+    if bucket_obj.imported:
+        bc = await root.client.buckets.request_tmp_credentials(
+            bucket, cluster_name=cluster, bucket_owner=owner
+        )
+        credentials = bc.credentials
+    else:
+        credentials = None
     if full_uri:
         uri_fmtr: URIFormatter = str
     else:
@@ -364,7 +371,7 @@ async def statbucket(
         uri_fmtr, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
     )
     with root.pager():
-        root.print(bucket_fmtr(bucket_obj))
+        root.print(bucket_fmtr(bucket_obj, credentials))
 
 
 @command()
@@ -1048,7 +1055,7 @@ async def mkcredentials(
 
     fmtr = BucketCredentialFormatter(make_bucket_getter(root.client, cluster))
     with root.pager():
-        root.print(await fmtr(credential))
+        root.print(await fmtr(credential), soft_wrap=True)
 
 
 @command()
@@ -1073,7 +1080,7 @@ async def statcredentials(
 
     fmtr = BucketCredentialFormatter(make_bucket_getter(root.client, cluster))
     with root.pager():
-        root.print(await fmtr(credential_obj))
+        root.print(await fmtr(credential_obj), soft_wrap=True)
 
 
 @command()

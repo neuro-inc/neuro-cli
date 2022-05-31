@@ -70,6 +70,7 @@ provided config.
 | _--help_ | Show this message and exit. |
 | _--default-credits AMOUNT_ | Default credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _--default-role \[ROLE\]_ | Default role for new users added to cluster  _\[default: user\]_ |
 
 
 
@@ -142,6 +143,7 @@ Add org access to specified cluster.
 | _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--default-credits AMOUNT_ | Default credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _--default-role \[ROLE\]_ | Default role for new users added to org cluster  _\[default: user\]_ |
 | _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--storage-size AMOUNT_ | Storage size, ignored for storage types with elastic storage size |
 
@@ -595,6 +597,7 @@ Set org cluster defaults to given value
 | _--help_ | Show this message and exit. |
 | _--default-credits AMOUNT_ | Default credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _--default-role \[ROLE\]_ | Default role for new users added to org cluster  _\[default: user\]_ |
 
 
 
@@ -708,6 +711,7 @@ Update a cluster.
 | _--help_ | Show this message and exit. |
 | _--default-credits AMOUNT_ | Default credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _--default-role \[ROLE\]_ | Default role for new users added to cluster  _\[default: user\]_ |
 
 
 
@@ -732,6 +736,7 @@ Update org cluster quotas.
 | _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--default-credits AMOUNT_ | Default credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+| _--default-role \[ROLE\]_ | Default role for new users added to org cluster  _\[default: user\]_ |
 | _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 
 

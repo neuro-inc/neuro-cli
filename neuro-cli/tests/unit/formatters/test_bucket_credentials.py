@@ -35,7 +35,7 @@ async def test_bucket_credentials_formatter(rich_cmp: Any) -> None:
                 bucket_id=bucket.id,
                 credentials={
                     "key1": "value1",
-                    "key2": "value2",
+                    "key2": "very-long-value-" * 100,
                 },
             )
         ],

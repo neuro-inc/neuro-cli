@@ -1,6 +1,6 @@
 import abc
 import operator
-from typing import Sequence
+from typing import Mapping, Optional, Sequence
 
 from rich import box
 from rich.console import Group as RichGroup
@@ -77,7 +77,9 @@ class BucketFormatter:
         self._datetime_formatter = datetime_formatter
         self._uri_formatter = uri_formatter
 
-    def __call__(self, bucket: Bucket) -> RenderableType:
+    def __call__(
+        self, bucket: Bucket, credentials: Optional[Mapping[str, str]] = None
+    ) -> RenderableType:
         table = Table(
             box=None,
             show_header=False,
@@ -94,4 +96,13 @@ class BucketFormatter:
         table.add_row("Provider", bucket.provider)
         table.add_row("Imported", str(bucket.imported))
         table.add_row("Public", str(bucket.public))
+        if credentials is not None:
+            for key, title in [
+                ("bucket_name", "External name"),
+                ("storage_endpoint", "External endpoint"),
+                ("endpoint_url", "External endpoint"),
+                ("region_name", "External region name"),
+            ]:
+                if key in credentials:
+                    table.add_row(title, credentials[key])
         return table

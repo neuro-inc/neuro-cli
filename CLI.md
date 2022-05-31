@@ -493,6 +493,7 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-role \[ROLE]_|Default role for new users added to cluster  \[default: user]|
 
 
 
@@ -556,6 +557,7 @@ Name | Description|
 |_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-role \[ROLE]_|Default role for new users added to org cluster  \[default: user]|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--storage-size AMOUNT_|Storage size, ignored for storage types with elastic storage size|
 
@@ -960,6 +962,7 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-role \[ROLE]_|Default role for new users added to org cluster  \[default: user]|
 
 
 
@@ -1063,6 +1066,7 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-role \[ROLE]_|Default role for new users added to cluster  \[default: user]|
 
 
 
@@ -1085,6 +1089,7 @@ Name | Description|
 |_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+|_\--default-role \[ROLE]_|Default role for new users added to org cluster  \[default: user]|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 
 
@@ -2517,6 +2522,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
+|_--priority \[low &#124; normal &#124; high]_|Priority used to specify job's start order. Jobs with higher priority will start before ones with lower priority. Priority should be supported by cluster.|
 |_--privileged_|Run job in privileged mode, if it is supported by cluster.|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_\--schedule-timeout TIMEDELTA_|Optional job schedule timeout in the format '3m4s' \(some parts may be missing).|
@@ -3650,6 +3656,7 @@ Name | Description|
 |_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
 |_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
+|_--priority \[low &#124; normal &#124; high]_|Priority used to specify job's start order. Jobs with higher priority will start before ones with lower priority. Priority should be supported by cluster.|
 |_--privileged_|Run job in privileged mode, if it is supported by cluster.|
 |_\--restart \[never &#124; on-failure &#124; always]_|Restart policy to apply when a job exits  \[default: never]|
 |_\--schedule-timeout TIMEDELTA_|Optional job schedule timeout in the format '3m4s' \(some parts may be missing).|

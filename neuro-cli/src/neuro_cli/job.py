@@ -21,6 +21,7 @@ from neuro_sdk import (
     Client,
     HTTPPort,
     JobDescription,
+    JobPriority,
     JobRestartPolicy,
     JobStatus,
     Permission,
@@ -1008,6 +1009,13 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     multiple=True,
     help=("Share job write permissions to user or role."),
 )
+@option(
+    "--priority",
+    type=click.Choice([p.name.lower() for p in JobPriority]),
+    help="Priority used to specify job's start order. "
+    "Jobs with higher priority will start before ones with lower priority. "
+    "Priority should be supported by cluster.",
+)
 @TTY_OPT
 async def run(
     root: Root,
@@ -1040,6 +1048,7 @@ async def run(
     schedule_timeout: Optional[str],
     privileged: bool,
     share: Sequence[str],
+    priority: Optional[str],
 ) -> None:
     """
     Run a job
@@ -1109,6 +1118,7 @@ async def run(
         share=share,
         cluster_name=cluster_name,
         org_name=org_name,
+        priority=priority,
     )
 
 
@@ -1179,6 +1189,7 @@ async def run_job(
     share: Sequence[str],
     cluster_name: str,
     org_name: Optional[str],
+    priority: Optional[str],
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -1226,7 +1237,7 @@ async def run_job(
     # Replace disk names with disk ids
     async def _force_disk_id(disk_uri: URL) -> URL:
         disk_id = await resolve_disk(
-            disk_uri.parts[-1], client=root.client, cluster_name=cluster_name
+            disk_uri, client=root.client, cluster_name=cluster_name
         )
         return disk_uri / f"../{disk_id}"
 
@@ -1247,6 +1258,8 @@ async def run_job(
             "Using volumes: \n"
             + "\n".join(f"  {volume_to_verbose_str(v)}" for v in volumes)
         )
+
+    job_priority = JobPriority[priority.upper()] if priority else None
 
     job = await root.client.jobs.start(
         image=image,
@@ -1273,6 +1286,7 @@ async def run_job(
         life_span=job_life_span,
         schedule_timeout=job_schedule_timeout,
         privileged=privileged,
+        priority=job_priority,
     )
     permission = Permission(job.uri, Action.WRITE)
     for user in share:
@@ -1447,6 +1461,8 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
         res += ["--pass-config"]
     if job.privileged:
         res += ["--privileged"]
+    if job.priority != JobPriority.NORMAL:
+        res += ["--priority", job.priority.name.lower()]
     res += [str(job.container.image)]
     if job.container.command:
         res += [job.container.command]

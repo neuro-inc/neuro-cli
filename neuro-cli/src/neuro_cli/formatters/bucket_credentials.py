@@ -2,10 +2,10 @@ import abc
 import operator
 from typing import Awaitable, Callable, Sequence
 
+import yaml
 from rich import box
 from rich.console import Group as RichGroup
 from rich.console import RenderableType
-from rich.styled import Styled
 from rich.table import Table
 from rich.text import Text
 
@@ -80,15 +80,13 @@ class BucketCredentialFormatter:
 
         table.add_row("Read-only:", str(credential.read_only))
 
+        credential_texts: list[Text] = []
+
         for bucket_credential in credential.credentials:
-            credentials = Table(box=None, show_header=True, show_edge=False)
-            credentials.add_column("Key")
-            credentials.add_column("Value")
-            for key, value in bucket_credential.credentials.items():
-                credentials.add_row(key, value)
             bucket = await self._get_bucket(bucket_credential.bucket_id)
-            table.add_row(
-                f"Credentials for bucket '{bucket.name or bucket.id}'",
-                Styled(credentials, style="reset"),
+            credential_info = (
+                f"Credentials for bucket '{bucket.name or bucket.id}':\n"
+                + yaml.dump(bucket_credential.credentials)
             )
-        return table
+            credential_texts.append(Text(credential_info))
+        return RichGroup(table, *credential_texts)

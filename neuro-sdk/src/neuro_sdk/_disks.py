@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, AsyncIterator, Mapping, Optional
+from typing import Any, AsyncIterator, Mapping, Optional, Union
 
 from dateutil.parser import isoparse
 from yarl import URL
@@ -10,7 +10,12 @@ from yarl import URL
 from ._config import Config
 from ._core import _Core
 from ._rewrite import rewrite_module
-from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
+from ._utils import (
+    ORG_NAME_SENTINEL,
+    NoPublicConstructor,
+    OrgNameSentinel,
+    asyncgeneratorcontextmanager,
+)
 
 logger = logging.getLogger(__package__)
 
@@ -94,7 +99,7 @@ class Disks(metaclass=NoPublicConstructor):
         timeout_unused: Optional[timedelta] = None,
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
-        org_name: Optional[str] = None,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
     ) -> Disk:
         url = self._get_disks_url(cluster_name)
         auth = await self._config._api_auth()
@@ -102,25 +107,39 @@ class Disks(metaclass=NoPublicConstructor):
             "storage": storage,
             "life_span": timeout_unused.total_seconds() if timeout_unused else None,
             "name": name,
-            "org_name": org_name or self._config.org_name,
+            "org_name": org_name
+            if not isinstance(org_name, OrgNameSentinel)
+            else self._config.org_name,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()
             return self._parse_disk_payload(payload)
 
     async def get(
-        self, disk_id_or_name: str, cluster_name: Optional[str] = None
+        self,
+        disk_id_or_name: str,
+        cluster_name: Optional[str] = None,
+        owner: Optional[str] = None,
     ) -> Disk:
         url = self._get_disks_url(cluster_name) / disk_id_or_name
         auth = await self._config._api_auth()
-        async with self._core.request("GET", url, auth=auth) as resp:
+        params = {}
+        if owner:
+            params["owner"] = owner
+        async with self._core.request("GET", url, auth=auth, params=params) as resp:
             payload = await resp.json()
             return self._parse_disk_payload(payload)
 
     async def rm(
-        self, disk_id_or_name: str, cluster_name: Optional[str] = None
+        self,
+        disk_id_or_name: str,
+        cluster_name: Optional[str] = None,
+        owner: Optional[str] = None,
     ) -> None:
         url = self._get_disks_url(cluster_name) / disk_id_or_name
         auth = await self._config._api_auth()
-        async with self._core.request("DELETE", url, auth=auth):
+        params = {}
+        if owner:
+            params["owner"] = owner
+        async with self._core.request("DELETE", url, auth=auth, params=params):
             pass

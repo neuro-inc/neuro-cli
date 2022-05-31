@@ -137,6 +137,7 @@ class TestClustersFormatter:
                     name="default",
                     default_credits=Decimal(20),
                     default_quota=_Quota(total_running_jobs=42),
+                    default_role=_ClusterUserRoleType.USER,
                 ),
                 _ConfigCluster(name="default", status="deployed"),
             )
@@ -147,7 +148,12 @@ class TestClustersFormatter:
         formatter = ClustersFormatter()
         clusters = {
             "on-prem": (
-                _Cluster(name="on-prem", default_credits=None, default_quota=_Quota()),
+                _Cluster(
+                    name="on-prem",
+                    default_credits=None,
+                    default_quota=_Quota(),
+                    default_role=_ClusterUserRoleType.USER,
+                ),
                 _ConfigCluster(
                     name="on-prem",
                     status="deployed",
@@ -167,7 +173,12 @@ class TestClustersFormatter:
         formatter = ClustersFormatter()
         clusters = {
             "default": (
-                _Cluster(name="default", default_credits=None, default_quota=_Quota()),
+                _Cluster(
+                    name="default",
+                    default_credits=None,
+                    default_quota=_Quota(),
+                    default_role=_ClusterUserRoleType.USER,
+                ),
                 _ConfigCluster(
                     name="default",
                     status="deployed",
@@ -195,7 +206,12 @@ class TestClustersFormatter:
         formatter = ClustersFormatter()
         clusters = {
             "default": (
-                _Cluster(name="default", default_credits=None, default_quota=_Quota()),
+                _Cluster(
+                    name="default",
+                    default_credits=None,
+                    default_quota=_Quota(),
+                    default_role=_ClusterUserRoleType.USER,
+                ),
                 _ConfigCluster(
                     name="default",
                     status="deployed",
@@ -223,7 +239,12 @@ class TestClustersFormatter:
         formatter = ClustersFormatter()
         clusters = {
             "default": (
-                _Cluster(name="default", default_credits=None, default_quota=_Quota()),
+                _Cluster(
+                    name="default",
+                    default_credits=None,
+                    default_quota=_Quota(),
+                    default_role=_ClusterUserRoleType.USER,
+                ),
                 _ConfigCluster(
                     name="default",
                     status="deployed",
@@ -250,7 +271,12 @@ class TestClustersFormatter:
         formatter = ClustersFormatter()
         clusters = {
             "default": (
-                _Cluster(name="default", default_credits=None, default_quota=_Quota()),
+                _Cluster(
+                    name="default",
+                    default_credits=None,
+                    default_quota=_Quota(),
+                    default_role=_ClusterUserRoleType.USER,
+                ),
                 _ConfigCluster(
                     name="default",
                     status="deployed",

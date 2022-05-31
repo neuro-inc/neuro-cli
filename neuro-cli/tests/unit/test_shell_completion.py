@@ -322,8 +322,8 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
                 id="bucket-1",
                 name="neuro-my-bucket",
                 created_at=datetime(2018, 1, 1, 3),
-                cluster_name="test-cluster",
-                owner="test-user",
+                cluster_name="default",
+                owner="user",
                 provider=Bucket.Provider.AWS,
                 imported=False,
                 org_name=None,
@@ -332,7 +332,7 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
                 id="bucket-2",
                 name="neuro-public-bucket",
                 created_at=datetime(2018, 1, 1, 17, 2, 4),
-                cluster_name="test-cluster",
+                cluster_name="default",
                 owner="public",
                 provider=Bucket.Provider.AWS,
                 imported=False,
@@ -342,7 +342,7 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
                 id="bucket-3",
                 name="neuro-shared-bucket",
                 created_at=datetime(2018, 1, 1, 13, 1, 5),
-                cluster_name="test-cluster",
+                cluster_name="default",
                 owner="another-user",
                 provider=Bucket.Provider.AWS,
                 imported=False,
@@ -356,33 +356,55 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
         async def list_blobs(uri: URL) -> AsyncIterator[BlobObject]:
             async with list(uri.host) as it:
                 async for bucket in it:
+                    try:
+                        key = bucket.get_key_for_uri(uri)
+                    except ValueError:
+                        continue
                     break
                 else:
                     return
-            yield BlobObject(
-                key="file1024.txt",
-                modified_at=datetime(2018, 1, 1, 14, 0, 0),
-                bucket=bucket,
-                size=1024,
-            )
-            yield BlobObject(
-                key="file_bigger.txt",
-                modified_at=datetime(2018, 1, 1, 14, 0, 0),
-                bucket=bucket,
-                size=1_024_001,
-            )
-            yield BlobObject(
-                key="folder2/info.txt",
-                modified_at=datetime(2018, 1, 1, 14, 0, 0),
-                bucket=bucket,
-                size=240,
-            )
-            yield BlobObject(
-                key="folder2/",
-                modified_at=datetime(2018, 1, 1, 14, 0, 0),
-                bucket=bucket,
-                size=0,
-            )
+            blobs = [
+                BlobObject(
+                    key="file1024.txt",
+                    modified_at=datetime(2018, 1, 1, 14, 0, 0),
+                    bucket=bucket,
+                    size=1024,
+                ),
+                BlobObject(
+                    key="otherfile.txt",
+                    modified_at=datetime(2018, 1, 1, 14, 0, 0),
+                    bucket=bucket,
+                    size=1024,
+                ),
+                BlobObject(
+                    key="file_bigger.txt",
+                    modified_at=datetime(2018, 1, 1, 14, 0, 0),
+                    bucket=bucket,
+                    size=1_024_001,
+                ),
+                BlobObject(
+                    key="folder2/info.txt",
+                    modified_at=datetime(2018, 1, 1, 14, 0, 0),
+                    bucket=bucket,
+                    size=240,
+                ),
+                BlobObject(
+                    key="folder2/",
+                    modified_at=datetime(2018, 1, 1, 14, 0, 0),
+                    bucket=bucket,
+                    size=0,
+                ),
+                BlobObject(
+                    key="folder23/",
+                    modified_at=datetime(2018, 1, 1, 14, 0, 0),
+                    bucket=bucket,
+                    size=0,
+                ),
+            ]
+            for blob in blobs:
+                if blob.key.startswith(key):
+                    if "/" not in blob.key[len(key) :].rstrip("/"):
+                        yield blob
 
         mocked_list.side_effect = list
         mocked_blob_is_dir.side_effect = blob_is_dir
@@ -436,27 +458,31 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
         zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/"])
         assert bash_out == (
             "uri,file1024.txt,bucket-1/\n"
+            "uri,otherfile.txt,bucket-1/\n"
             "uri,file_bigger.txt,bucket-1/\n"
-            "uri,info.txt,bucket-1/\n"
-            "uri,folder2/,bucket-1/"
+            "uri,folder2/,bucket-1/\n"
+            "uri,folder23/,bucket-1/"
         )
         assert zsh_out == (
             "uri\nfile1024.txt\n_\nblob:bucket-1/\n"
+            "uri\notherfile.txt\n_\nblob:bucket-1/\n"
             "uri\nfile_bigger.txt\n_\nblob:bucket-1/\n"
-            "uri\ninfo.txt\n_\nblob:bucket-1/\n"
-            "uri\nfolder2/\n_\nblob:bucket-1/"
+            "uri\nfolder2/\n_\nblob:bucket-1/\n"
+            "uri\nfolder23/\n_\nblob:bucket-1/"
         )
 
         zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/f"])
         assert bash_out == (
             "uri,file1024.txt,bucket-1/\n"
             "uri,file_bigger.txt,bucket-1/\n"
-            "uri,folder2/,bucket-1/"
+            "uri,folder2/,bucket-1/\n"
+            "uri,folder23/,bucket-1/"
         )
         assert zsh_out == (
             "uri\nfile1024.txt\n_\nblob:bucket-1/\n"
             "uri\nfile_bigger.txt\n_\nblob:bucket-1/\n"
-            "uri\nfolder2/\n_\nblob:bucket-1/"
+            "uri\nfolder2/\n_\nblob:bucket-1/\n"
+            "uri\nfolder23/\n_\nblob:bucket-1/"
         )
 
         zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/fi"])
@@ -469,22 +495,14 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
         )
 
         zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/folder2"])
-        assert bash_out == "uri,folder2/,bucket-1/"
-        assert zsh_out == "uri\nfolder2/\n_\nblob:bucket-1/"
+        assert bash_out == ("uri,folder2/,bucket-1/\n" "uri,folder23/,bucket-1/")
+        assert zsh_out == (
+            "uri\nfolder2/\n_\nblob:bucket-1/\n" "uri\nfolder23/\n_\nblob:bucket-1/"
+        )
 
         zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/folder2/"])
-        assert bash_out == (
-            "uri,file1024.txt,bucket-1/folder2/\n"
-            "uri,file_bigger.txt,bucket-1/folder2/\n"
-            "uri,info.txt,bucket-1/folder2/\n"
-            "uri,folder2/,bucket-1/folder2/"
-        )
-        assert zsh_out == (
-            "uri\nfile1024.txt\n_\nblob:bucket-1/folder2/\n"
-            "uri\nfile_bigger.txt\n_\nblob:bucket-1/folder2/\n"
-            "uri\ninfo.txt\n_\nblob:bucket-1/folder2/\n"
-            "uri\nfolder2/\n_\nblob:bucket-1/folder2/"
-        )
+        assert bash_out == "uri,info.txt,bucket-1/folder2/"
+        assert zsh_out == "uri\ninfo.txt\n_\nblob:bucket-1/folder2/"
 
 
 def make_job(
@@ -541,8 +559,6 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             cluster_name: Optional[str] = None,
             owners: Iterable[str] = (),
         ) -> AsyncIterator[JobDescription]:
-            # print(f"cluster_name = {cluster_name}")
-            # print(f"owners = {owners}")
             for job in jobs:
                 if cluster_name and job.cluster_name != cluster_name:
                     continue
@@ -1069,11 +1085,14 @@ def test_disk_autocomplete(run_autocomplete: _RunAC) -> None:
         mocked_list.side_effect = list
 
         zsh_out, bash_out = run_autocomplete(["disk", "get", "d"])
-        assert bash_out == ("plain,disk-123,\n" "plain,disk-234,\n" "plain,data-disk,")
+        assert bash_out == (
+            "uri,disk:,\n" "plain,disk-123,\n" "plain,disk-234,\n" "plain,data-disk,"
+        )
         assert zsh_out == (
+            "uri\ndisk:\n_\n_\n"
             "plain\ndisk-123\n_\n_\n"
             "plain\ndisk-234\ndata-disk\n_\n"
-            "plain\ndata-disk\ndata-disk\n_"
+            "plain\ndata-disk\ndisk-234\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(["disk", "get", "disk-2"])
@@ -1082,12 +1101,14 @@ def test_disk_autocomplete(run_autocomplete: _RunAC) -> None:
 
         zsh_out, bash_out = run_autocomplete(["disk", "get", "da"])
         assert bash_out == ("plain,data-disk,")
-        assert zsh_out == ("plain\ndata-disk\ndata-disk\n_")
+        assert zsh_out == ("plain\ndata-disk\ndisk-234\n_")
 
         zsh_out, bash_out = run_autocomplete(["disk", "get", "--cluster", "other", "d"])
-        assert bash_out == ("plain,disk-345,\n" "plain,data-disk2,")
+        assert bash_out == ("uri,disk:,\n" "plain,disk-345,\n" "plain,data-disk2,")
         assert zsh_out == (
-            "plain\ndisk-345\ndata-disk2\n_\n" "plain\ndata-disk2\ndata-disk2\n_"
+            "uri\ndisk:\n_\n_\n"
+            "plain\ndisk-345\ndata-disk2\n_\n"
+            "plain\ndata-disk2\ndisk-345\n_"
         )
 
 
@@ -1181,8 +1202,7 @@ def test_bucket_autocomplete(run_autocomplete: _RunAC) -> None:
         zsh_out, bash_out = run_autocomplete(["blob", "statbucket", "t"])
         assert bash_out == ("plain,test-bucket,\n" "plain,test-bucket-2,")
         assert zsh_out == (
-            "plain\ntest-bucket\ntest-bucket\n_\n"
-            "plain\ntest-bucket-2\ntest-bucket-2\n_"
+            "plain\ntest-bucket\nbucket-1\n_\n" "plain\ntest-bucket-2\nbucket-2\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(
@@ -1228,7 +1248,7 @@ def test_service_account_autocomplete(run_autocomplete: _RunAC) -> None:
 
         zsh_out, bash_out = run_autocomplete(["service-account", "get", "t"])
         assert bash_out == ("plain,test1,\n" "plain,test2,")
-        assert zsh_out == ("plain\ntest1\ntest1\n_\n" "plain\ntest2\ntest2\n_")
+        assert zsh_out == ("plain\ntest1\naccount-1\n_\n" "plain\ntest2\naccount-2\n_")
 
 
 @skip_on_windows
@@ -1359,9 +1379,9 @@ def test_bucket_credential_autocomplete(run_autocomplete: _RunAC) -> None:
             "plain,test-credentials-3,"
         )
         assert zsh_out == (
-            "plain\ntest-credentials-1\ntest-credentials-1\n_\n"
-            "plain\ntest-credentials-2\ntest-credentials-2\n_\n"
-            "plain\ntest-credentials-3\ntest-credentials-3\n_"
+            "plain\ntest-credentials-1\nbucket-credentials-1\n_\n"
+            "plain\ntest-credentials-2\nbucket-credentials-2\n_\n"
+            "plain\ntest-credentials-3\nbucket-credentials-3\n_"
         )
 
         zsh_out, bash_out = run_autocomplete(
