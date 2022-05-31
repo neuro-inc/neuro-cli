@@ -1382,5 +1382,5 @@ def test_bucket_credential_autocomplete(run_autocomplete: _RunAC) -> None:
         zsh_out, bash_out = run_autocomplete(
             ["blob", "statcredentials", "--cluster", "other", "b"]
         )
-        assert bash_out == "plain,test-credentials-4,"
-        assert zsh_out == "plain\ntest-credentials-4\nbucket-credentials-4\n_"
+        assert bash_out == "plain,bucket-credentials-4,"
+        assert zsh_out == "plain\nbucket-credentials-4\ntest-credentials-4\n_"
