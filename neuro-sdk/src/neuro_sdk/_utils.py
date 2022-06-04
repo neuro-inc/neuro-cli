@@ -43,12 +43,24 @@ _T_contra = TypeVar("_T_contra", contravariant=True)
 if sys.version_info >= (3, 10):
     from contextlib import aclosing
 else:
+    if sys.version_info >= (3, 8):
+        from typing import Protocol
 
-    class aclosing(AsyncContextManager[_T]):
-        def __init__(self, thing: _T):
+        class _SupportsAclose(Protocol):
+            def aclose(self) -> Awaitable[object]:
+                ...
+
+        _SupportsAcloseT = TypeVar("_SupportsAcloseT", bound=_SupportsAclose)
+    else:
+        from typing import AsyncGenerator
+
+        _SupportsAcloseT = TypeVar("_SupportsAcloseT", bound=AsyncGenerator[Any, None])
+
+    class aclosing(AsyncContextManager[_SupportsAcloseT]):
+        def __init__(self, thing: _SupportsAcloseT):
             self.thing = thing
 
-        async def __aenter__(self) -> _T:
+        async def __aenter__(self) -> _SupportsAcloseT:
             return self.thing
 
         async def __aexit__(
@@ -57,7 +69,7 @@ else:
             exc: Optional[BaseException],
             tb: Optional[TracebackType],
         ) -> None:
-            await self.thing.aclose()  # type: ignore
+            await self.thing.aclose()
 
 
 # TODO (S Storchaka 2021-06-01): Methods __aiter__ and __anext__
