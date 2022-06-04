@@ -17,7 +17,6 @@ from typing import (
     Generic,
     Iterator,
     Optional,
-    Protocol,
     Tuple,
     Type,
     TypeVar,
@@ -45,17 +44,11 @@ if sys.version_info >= (3, 10):
     from contextlib import aclosing
 else:
 
-    class _SupportsAclose(Protocol):
-        def aclose(self) -> Awaitable[object]:
-            ...
-
-    _SupportsAcloseT = TypeVar("_SupportsAcloseT", bound=_SupportsAclose)
-
-    class aclosing(AsyncContextManager[_SupportsAcloseT]):
-        def __init__(self, thing: _SupportsAcloseT):
+    class aclosing(AsyncContextManager[_T]):
+        def __init__(self, thing: _T):
             self.thing = thing
 
-        async def __aenter__(self) -> _SupportsAcloseT:
+        async def __aenter__(self) -> _T:
             return self.thing
 
         async def __aexit__(
@@ -64,7 +57,7 @@ else:
             exc: Optional[BaseException],
             tb: Optional[TracebackType],
         ) -> None:
-            await self.thing.aclose()
+            await self.thing.aclose()  # type: ignore
 
 
 # TODO (S Storchaka 2021-06-01): Methods __aiter__ and __anext__

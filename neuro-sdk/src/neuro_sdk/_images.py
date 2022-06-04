@@ -108,7 +108,7 @@ class Images(metaclass=NoPublicConstructor):
         auth = await self._config._docker_auth()
         try:
             async with aclosing(
-                self._docker.images.push(repo, auth=auth, stream=True)  # type: ignore
+                self._docker.images.push(repo, auth=auth, stream=True)
             ) as it:
                 async for obj in it:
                     step = _try_parse_image_progress_step(obj, remote.tag)
@@ -176,12 +176,7 @@ class Images(metaclass=NoPublicConstructor):
         auth = await self._config._docker_auth()
         try:
             async with aclosing(
-                self._docker.pull(  # type: ignore
-                    repo,
-                    auth=auth,
-                    repo=repo,
-                    stream=True,
-                )
+                self._docker.pull(repo, auth=auth, repo=repo, stream=True)
             ) as it:
                 async for obj in it:
                     self._temporary_images.add(repo)

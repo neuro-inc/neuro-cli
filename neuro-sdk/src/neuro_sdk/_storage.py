@@ -14,7 +14,6 @@ from stat import S_ISREG
 from typing import (
     AbstractSet,
     Any,
-    AsyncGenerator,
     AsyncIterator,
     Awaitable,
     Callable,
@@ -223,7 +222,7 @@ class Storage(metaclass=NoPublicConstructor):
             yield uri
             return
         basename = uri.name
-        glob_in_dir: Callable[[URL, str, bool], AsyncGenerator[URL, None]]
+        glob_in_dir: Callable[[URL, str, bool], AsyncIterator[URL]]
         if not _has_magic(basename):
             glob_in_dir = self._glob0
         elif not _isrecursive(basename):
@@ -238,7 +237,7 @@ class Storage(metaclass=NoPublicConstructor):
 
     async def _glob2(
         self, parent: URL, pattern: str, dironly: bool
-    ) -> AsyncGenerator[URL, None]:
+    ) -> AsyncIterator[URL]:
         assert _isrecursive(pattern)
         yield parent
         async with aclosing(self._rlistdir(parent, dironly)) as it:
@@ -247,7 +246,7 @@ class Storage(metaclass=NoPublicConstructor):
 
     async def _glob1(
         self, parent: URL, pattern: str, dironly: bool
-    ) -> AsyncGenerator[URL, None]:
+    ) -> AsyncIterator[URL]:
         allow_hidden = _ishidden(pattern)
         match = re.compile(fnmatch.translate(pattern)).fullmatch
         async with aclosing(self._iterdir(parent, dironly)) as it:
@@ -258,7 +257,7 @@ class Storage(metaclass=NoPublicConstructor):
 
     async def _glob0(
         self, parent: URL, basename: str, dironly: bool
-    ) -> AsyncGenerator[URL, None]:
+    ) -> AsyncIterator[URL]:
         uri = parent / basename
         try:
             await self.stat(uri)
@@ -266,15 +265,13 @@ class Storage(metaclass=NoPublicConstructor):
             return
         yield uri
 
-    async def _iterdir(
-        self, uri: URL, dironly: bool
-    ) -> AsyncGenerator[FileStatus, None]:
+    async def _iterdir(self, uri: URL, dironly: bool) -> AsyncIterator[FileStatus]:
         async with self.list(uri) as it:
             async for stat in it:
                 if not dironly or stat.is_dir():
                     yield stat
 
-    async def _rlistdir(self, uri: URL, dironly: bool) -> AsyncGenerator[URL, None]:
+    async def _rlistdir(self, uri: URL, dironly: bool) -> AsyncIterator[URL]:
         async with aclosing(self._iterdir(uri, dironly)) as it:
             async for stat in it:
                 name = stat.path
