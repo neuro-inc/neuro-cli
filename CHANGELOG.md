@@ -5,6 +5,36 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 22.6.0 (2022-06-07)
+=================================
+
+Features
+--------
+
+- Support organization storage in disk usage command when user switches to organization. ([#2585](https://github.com/neuro-inc/platform-client-python/issues/2585))
+- Added `neuro admin set-org-cluster-defaults` command to allow org cluster manager to modify org cluster defaults. ([#2602](https://github.com/neuro-inc/platform-client-python/issues/2602))
+- Support custom storage path in disk usage command. ([#2622](https://github.com/neuro-inc/platform-client-python/issues/2622))
+- `neuro blob statbucket` now displays some additional information
+  for imported buckets.
+
+  * For AWS: "External name", "External endpoint", "External region name".
+  * For Azure: "External name", "External endpoint".
+  * For GCP: "External name". ([#2706](https://github.com/neuro-inc/platform-client-python/issues/2706))
+
+
+Bugfixes
+--------
+
+- Fix resolving job URIs containing organization name and/or service account name. ([#2572](https://github.com/neuro-inc/platform-client-python/issues/2572))
+- Provide click 8.1.3 support with keeping 8.0+ compatibility. ([#2689](https://github.com/neuro-inc/platform-client-python/issues/2689))
+
+
+Misc
+----
+
+- [#2568](https://github.com/neuro-inc/platform-client-python/issues/2568), [#2569](https://github.com/neuro-inc/platform-client-python/issues/2569), [#2601](https://github.com/neuro-inc/platform-client-python/issues/2601)
+
+
 Neuro SDK/CLI 22.1.3 (2022-01-27)
 =================================
 
