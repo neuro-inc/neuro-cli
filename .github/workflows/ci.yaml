@@ -19,9 +19,6 @@ jobs:
   lint:
     name: Linter
     runs-on: ubuntu-latest
-    if: |
-      (github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]') ||
-      (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]')
     # 5 mins for the linter run, possibly 10 min for pre-commit env reinitialization
     timeout-minutes: 15
     steps:
@@ -118,6 +115,9 @@ jobs:
   e2e:
     name: E2E
     needs: unit
+    if: |
+      (github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]') ||
+      (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]')
     strategy:
       matrix:
         python-version: ['3.7', '3.8', '3.9', '3.10']
