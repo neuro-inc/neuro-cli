@@ -107,7 +107,7 @@ class Images(metaclass=NoPublicConstructor):
                 ) from error
         auth = await self._config._docker_auth()
         try:
-            async with aclosing(
+            async with aclosing(  # type: ignore
                 self._docker.images.push(repo, auth=auth, stream=True)
             ) as it:
                 async for obj in it:
@@ -175,7 +175,7 @@ class Images(metaclass=NoPublicConstructor):
         repo = remote.as_docker_url()
         auth = await self._config._docker_auth()
         try:
-            async with aclosing(
+            async with aclosing(  # type: ignore
                 self._docker.pull(repo, auth=auth, repo=repo, stream=True)
             ) as it:
                 async for obj in it:
