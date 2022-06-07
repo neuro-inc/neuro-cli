@@ -2,7 +2,7 @@ import re
 import shlex
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 import click
 from click.utils import make_default_short_help
@@ -174,8 +174,6 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
         opts = []
         is_flag = True
         metavar = None
-        flag_value: Optional[bool] = True
-        default: Optional[bool] = True
         options, _, description = od.strip().partition("  ")
         options = options.replace(",", " ").replace("=", " ")
         for s in options.split():
@@ -189,28 +187,22 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
                 opts.append(s)
             else:
                 is_flag = False
-                flag_value = None
-                default = None
                 metavar = s
                 metavar = metavar.upper()
                 if not metavar.isidentifier():
                     raise ConfigError(f"Cannot parse option {od}")
         description = description.strip()
         kwargs = {}
-        if default is not None:
-            if is_flag:
-                kwargs["default"] = [False]
-            else:
-                kwargs["default"] = [default]
+        if is_flag:
+            kwargs["count"] = True
+        else:
+            kwargs["multiple"] = True
         ret.append(
             Option(
                 opts,
-                is_flag=is_flag,
-                flag_value=flag_value,
-                multiple=True,
                 metavar=metavar,
                 help=description,
-                **kwargs,  # type: ignore
+                **kwargs,
             )
         )
     return ret  # type: ignore
@@ -340,6 +332,9 @@ def _process_param(
             for isset in val:
                 if isset:
                     vals.append(_longest(param.opts))
+            return vals
+        elif param.count:
+            vals = [_longest(param.opts)] * cast(int, val)
             return vals
         else:
             vals = []

@@ -1181,8 +1181,8 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_--continue_|Continue copying partially-copied files. Only for copying from Blob Storage.|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
-|_--exclude_|Exclude files and directories that match the specified pattern.|
-|_--include_|Don't exclude files and directories that match the specified pattern.|
+|_--exclude TEXT_|Exclude files and directories that match the specified pattern.|
+|_--include TEXT_|Don't exclude files and directories that match the specified pattern.|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: glob]|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default.|
@@ -2915,8 +2915,8 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_--continue_|Continue copying partially-copied files.|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
-|_--exclude_|Exclude files and directories that match the specified pattern.|
-|_--include_|Don't exclude files and directories that match the specified pattern.|
+|_--exclude TEXT_|Exclude files and directories that match the specified pattern.|
+|_--include TEXT_|Don't exclude files and directories that match the specified pattern.|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: glob]|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
@@ -3178,8 +3178,8 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_--continue_|Continue copying partially-copied files.|
 |_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
-|_--exclude_|Exclude files and directories that match the specified pattern.|
-|_--include_|Don't exclude files and directories that match the specified pattern.|
+|_--exclude TEXT_|Exclude files and directories that match the specified pattern.|
+|_--include TEXT_|Don't exclude files and directories that match the specified pattern.|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: glob]|
 |_\-T, --no-target-directory_|Treat DESTINATION as a normal file.|
 |_\-p, --progress / -P, --no-progress_|Show progress, on by default in TTY mode, off otherwise.|
