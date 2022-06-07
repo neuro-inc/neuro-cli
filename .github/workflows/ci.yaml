@@ -22,7 +22,8 @@ jobs:
     if: |
       (github.event_name != 'pull_request_target' && github.actor != 'dependabot[bot]') ||
       (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]')
-    timeout-minutes: 5
+    # 5 mins for the linter run, possibly 10 min for pre-commit env reinitialization
+    timeout-minutes: 15
     steps:
     - name: Checkout
       uses: actions/checkout@v3
