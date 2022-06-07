@@ -235,7 +235,6 @@ jobs:
         name: Neuro SDK/CLI
         github_token: ${{ secrets.GITHUB_TOKEN }}
         pypi_token: ""
-        artifact: ""
         version_file: neuro-sdk/src/neuro_sdk/__init__.py   # CLI has the same version
         start_line: "[comment]: # (towncrier release notes start)"
         head_line: "Neuro SDK/CLI {version}\\s+\\({date}\\)\n====+\n?"
