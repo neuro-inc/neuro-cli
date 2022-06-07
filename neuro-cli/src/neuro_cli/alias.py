@@ -2,7 +2,7 @@ import re
 import shlex
 import subprocess
 import sys
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union, cast
 
 import click
 from click.utils import make_default_short_help
@@ -202,7 +202,7 @@ def _parse_options(descr: List[str]) -> List[click.Parameter]:
                 opts,
                 metavar=metavar,
                 help=description,
-                **kwargs,  # type: ignore
+                **kwargs,
             )
         )
     return ret  # type: ignore
@@ -334,7 +334,7 @@ def _process_param(
                     vals.append(_longest(param.opts))
             return vals
         elif param.count:
-            vals = [_longest(param.opts)] * val
+            vals = [_longest(param.opts)] * cast(int, val)
             return vals
         else:
             vals = []

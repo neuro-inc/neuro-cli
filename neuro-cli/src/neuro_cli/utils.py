@@ -305,7 +305,7 @@ def command(
 
 
 class Group(NeuroGroupMixin, click.Group):
-    def command(  # type: ignore
+    def command(
         self, *args: Any, **kwargs: Any
     ) -> Callable[[Callable[..., Any]], Command]:
         def decorator(f: Callable[..., Any]) -> Command:
@@ -315,7 +315,7 @@ class Group(NeuroGroupMixin, click.Group):
 
         return decorator
 
-    def group(  # type: ignore
+    def group(
         self, *args: Any, **kwargs: Any
     ) -> Callable[[Callable[..., Any]], "Group"]:  # ignore
         def decorator(f: Callable[..., Any]) -> Group:
