@@ -97,7 +97,7 @@ async def process_logs(
         since=since,
         timestamps=timestamps,
         separator=separator,
-        debug=root.verbosity >= 2,
+        debug=True,  # root.verbosity >= 2,
     ) as it:
         async for chunk in it:
             if not chunk:
