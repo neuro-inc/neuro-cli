@@ -123,7 +123,7 @@ async def get_server_config(
         admin_url: Optional[URL] = None
         if "admin_url" in payload:
             admin_url = URL(payload["admin_url"])
-        if headers and not clusters:
+        if headers and not payload.get("authorized", False):
             raise AuthError("Cannot authorize user")
         return _ServerConfig(
             admin_url=admin_url,

@@ -361,6 +361,17 @@ async def test_cluster_name(
         assert client.config.cluster_name == "default"
 
 
+async def test_no_cluster_name(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    app = web.Application()
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/"), clusters={}) as client:
+        with pytest.raises(RuntimeError, match="There are no clusters available"):
+            client.config.cluster_name
+
+
 async def test_clusters(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -415,6 +426,7 @@ async def test_fetch(
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
+        "authorized": True,
         "auth_url": auth_url,
         "token_url": token_url,
         "logout_url": logout_url,
@@ -500,6 +512,7 @@ async def test_fetch_without_admin_url(
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
+        "authorized": True,
         "auth_url": auth_url,
         "token_url": token_url,
         "logout_url": logout_url,
@@ -562,6 +575,7 @@ async def test_fetch_dropped_selected_cluster(
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
+        "authorized": True,
         "admin_url": admin_url,
         "auth_url": auth_url,
         "token_url": token_url,
@@ -784,6 +798,7 @@ async def test_check_server_mismatch_clusters(
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
+        "authorized": True,
         "admin_url": admin_url,
         "auth_url": auth_url,
         "token_url": token_url,
@@ -850,6 +865,7 @@ async def test_check_server_mismatch_auth(
     headless_callback_url = "https://dev.neu.ro/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
+        "authorized": True,
         "admin_url": admin_url,
         "auth_url": auth_url,
         "token_url": token_url,

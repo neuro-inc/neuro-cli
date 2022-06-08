@@ -248,8 +248,12 @@ class Factory:
     ) -> _ConfigData:
         from . import __version__
 
-        cluster_name = next(iter(server_config.clusters))
-        org_name = next(iter(server_config.clusters[cluster_name].orgs))
+        if server_config.clusters:
+            cluster_name = next(iter(server_config.clusters))
+            org_name = server_config.clusters[cluster_name].orgs[0]
+        else:
+            cluster_name = None
+            org_name = None
         config = _ConfigData(
             auth_config=server_config.auth_config,
             auth_token=token,

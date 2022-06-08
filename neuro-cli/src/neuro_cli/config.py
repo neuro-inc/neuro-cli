@@ -54,12 +54,17 @@ async def show_token(root: Root) -> None:
 
 
 def _print_welcome(root: Root, url: URL) -> None:
-    root.print(
-        f"Logged into {url} as [u]{root.client.config.username}[/u]"
-        f", current cluster is [b]{root.client.config.cluster_name}[/b], "
-        f"org is [b]{root.client.config.org_name or ORG.NO_ORG_STR}[/b]",
-        markup=True,
-    )
+    if root.client.config.clusters:
+        root.print(
+            f"Logged into {url} as [u]{root.client.config.username}[/u]"
+            f", current cluster is [b]{root.client.config.cluster_name}[/b], "
+            f"org is [b]{root.client.config.org_name or ORG.NO_ORG_STR}[/b]",
+            markup=True,
+        )
+    else:
+        root.print(
+            f"Logged into {url} as [u]{root.client.config.username}[/u]", markup=True
+        )
     root.print(
         "Read the docs at https://docs.neu.ro or run `neuro --help` "
         "to see the reference"
