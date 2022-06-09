@@ -34,12 +34,18 @@ async def show(root: Root) -> None:
     """
     Print current settings.
     """
+
+    with root.status("Fetching the current config"):
+        await root.client.config.fetch()
     cluster_name = root.client.config.cluster_name
     fmt = ConfigFormatter()
-    try:
-        jobs_capacity = await root.client.jobs.get_capacity(cluster_name=cluster_name)
-    except (ClientConnectionError, AuthorizationError):
-        jobs_capacity = {}
+    with root.status("Fetching the jobs capacity"):
+        try:
+            jobs_capacity = await root.client.jobs.get_capacity(
+                cluster_name=cluster_name
+            )
+        except (ClientConnectionError, AuthorizationError):
+            jobs_capacity = {}
     quota = await root.client.users.get_quota()
     org_quota = await root.client.users.get_org_quota()
     root.print(fmt(root.client.config, jobs_capacity, quota, org_quota))
