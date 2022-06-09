@@ -5,6 +5,15 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 22.6.1 (2022-06-09)
+=================================
+
+Features
+--------
+
+- Re-load clusters config in `neuro config show`. ([#2728](https://github.com/neuro-inc/platform-client-python/issues/2728))
+
+
 Neuro SDK/CLI 22.6.0 (2022-06-07)
 =================================
 
