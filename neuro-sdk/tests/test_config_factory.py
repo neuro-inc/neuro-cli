@@ -146,12 +146,15 @@ async def mock_for_login_factory(
                 }
                 config_json.update(
                     {
+                        "authorized": True,
                         "clusters": [
                             {**cluster_config, "name": "default"},
                             {**cluster_config, "name": "default2"},
-                        ]
+                        ],
                     }
                 )
+            else:
+                config_json["authorized"] = False
             return web.json_response(config_json)
 
         async def show_code(request: web.Request) -> web.Response:

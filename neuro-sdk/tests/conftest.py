@@ -163,7 +163,12 @@ def make_client(
             admin_url = kwargs["admin_url"]
         if plugin_manager is None:
             plugin_manager = PluginManager()
-        cluster_name = next(iter(clusters))
+        if clusters:
+            cluster_name = next(iter(clusters))
+            org_name = clusters[cluster_name].orgs[0]
+        else:
+            cluster_name = None
+            org_name = None
         config = _ConfigData(
             auth_config=real_auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
@@ -171,7 +176,7 @@ def make_client(
             admin_url=admin_url,
             version=__version__,
             cluster_name=cluster_name,
-            org_name=clusters[cluster_name].orgs[0],
+            org_name=org_name,
             clusters=clusters,
         )
         config_dir = tmp_path / ".neuro"

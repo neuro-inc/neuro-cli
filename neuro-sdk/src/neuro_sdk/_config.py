@@ -59,7 +59,7 @@ class _ConfigData:
     url: URL
     admin_url: Optional[URL]
     version: str
-    cluster_name: str
+    cluster_name: Optional[str]
     org_name: Optional[str]
     clusters: Mapping[str, Cluster]
 
@@ -106,9 +106,14 @@ class Config(metaclass=NoPublicConstructor):
 
     @property
     def cluster_name(self) -> str:
+        if not self._config_data.clusters:
+            raise RuntimeError(
+                "There are no clusters available. Please logout and login again."
+            )
         name = self._get_user_cluster_name()
         if name is None:
             name = self._config_data.cluster_name
+        assert name
         return name
 
     def _get_user_cluster_name(self) -> Optional[str]:
