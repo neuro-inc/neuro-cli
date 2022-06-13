@@ -1065,6 +1065,18 @@ def test_e2e_job_top_format(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
+    now = time()
+    exit_after = now + 3600
+    cmd = ";".join(
+        f"""
+          if [[ `date +%s` -gt {exit_after} ]]
+          then
+            echo test_e2e_restart_failing
+            false
+          fi
+    """.strip().splitlines()
+    )
+
     captured = helper.run_cli(
         [
             "-q",
@@ -1075,18 +1087,20 @@ def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
             "--detach",
             UBUNTU_IMAGE_NAME,
             "--",
-            "bash -c 'echo test_e2e_restart_failing; false'",
+            f"bash -c '{cmd}'",
         ]
     )
     job_id = captured.out
-    request.addfinalizer(lambda: helper.kill_job(job_id, wait=False))
 
-    captured = helper.run_cli(["--color", "no", "job", "status", job_id])
-    assert "on-failure" in captured.out
+    try:
+        captured = helper.run_cli(["--color", "no", "job", "status", job_id])
+        assert "on-failure" in captured.out
 
-    helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
-    sleep(1)
-    helper.assert_job_state(job_id, JobStatus.RUNNING)
+        helper.wait_job_change_state_to(job_id, JobStatus.RUNNING)
+        sleep(1)
+        helper.assert_job_state(job_id, JobStatus.RUNNING)
+    finally:
+        helper.kill_job(job_id)
 
 
 @pytest.mark.e2e
