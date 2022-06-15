@@ -5,6 +5,15 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 22.6.2 (2022-06-15)
+=================================
+
+Features
+--------
+
+- Allow user without clusters call neuro-sdk Jobs.status method if they have permissions. ([#2733](https://github.com/neuro-inc/platform-client-python/issues/2733))
+
+
 Neuro SDK/CLI 22.6.1 (2022-06-09)
 =================================
 
