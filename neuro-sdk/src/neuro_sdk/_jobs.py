@@ -874,7 +874,9 @@ def _http_port_from_api(data: Dict[str, Any]) -> HTTPPort:
 
 
 def _container_from_api(
-    data: Dict[str, Any], cluster_name: str, parse: Parser,
+    data: Dict[str, Any],
+    cluster_name: str,
+    parse: Parser,
 ) -> Container:
     try:
         image = parse.remote_image(data["image"], cluster_name=cluster_name)
