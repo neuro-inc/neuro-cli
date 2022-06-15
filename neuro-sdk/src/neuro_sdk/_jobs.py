@@ -873,9 +873,13 @@ def _http_port_from_api(data: Dict[str, Any]) -> HTTPPort:
     )
 
 
-def _container_from_api(data: Dict[str, Any], parse: Parser) -> Container:
+def _container_from_api(
+    data: Dict[str, Any],
+    cluster_name: str,
+    parse: Parser,
+) -> Container:
     try:
-        image = parse.remote_image(data["image"])
+        image = parse.remote_image(data["image"], cluster_name=cluster_name)
     except ValueError:
         image = RemoteImage.new_external_image(name=INVALID_IMAGE_NAME)
 
@@ -967,10 +971,10 @@ def _job_status_item_from_api(res: Dict[str, Any]) -> JobStatusItem:
 
 def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescription:
     # TODO y.s.: maybe, catch KeyErrors and re-raise with an error message like
-    #   "SDK and API has incompatible versions: {key} was not found in the API responce"
-    container = _container_from_api(res["container"], parse)
-    owner = res["owner"]
+    #   "SDK and API has incompatible versions: {key} was not found in the API response"
     cluster_name = res["cluster_name"]
+    container = _container_from_api(res["container"], cluster_name, parse)
+    owner = res["owner"]
     name = res.get("name")
     tags = res.get("tags", ())
     description = res.get("description")
