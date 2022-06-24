@@ -115,7 +115,7 @@ def format_datetime_human(
                 humanize.precisedelta(delta, minimum_unit=min_unit, format="%0.0f")
                 + " ago"
             )
-        return humanize.naturaltime(delta)
+        return humanize.naturaldelta(delta) + " ago"
     else:
         when_local = when.astimezone(timezone)
         result = humanize.naturaldate(when_local)
