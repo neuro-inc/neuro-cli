@@ -137,6 +137,20 @@ class Helper:
         return config.cluster_name
 
     @cached_property
+    def org_name(self) -> Optional[str]:
+        config = self.get_config()
+        return config.org_name
+
+    @cached_property
+    def cluster_uri_base(self) -> Optional[str]:
+        config = self.get_config()
+        result = config.cluster_name
+        if config.org_name is not None:
+            result += "/" + config.org_name
+        result += "/" + config.username
+        return result
+
+    @cached_property
     def token(self) -> str:
         config = self.get_config()
 
@@ -157,7 +171,7 @@ class Helper:
 
     def make_uri(self, path: str, *, fromhome: bool = False) -> URL:
         if fromhome:
-            return URL(f"storage://{self.cluster_name}/{self.username}/{path}")
+            return URL(f"storage://{self.cluster_uri_base}/{path}")
         else:
             return self.tmpstorage / path
 

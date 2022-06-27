@@ -557,12 +557,12 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
 def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
     job_name = f"test-job-save-{uuid4().hex[:6]}"
     image = f"{make_image_name()}:{job_name}"
-    image_neuro_name = f"image://{helper.cluster_name}/{helper.username}/{image}"
+    image_neuro_name = f"image://{helper.cluster_uri_base}/{image}"
     command = "sh -c 'echo -n 123 > /test; sleep 10m'"
     job_id_1 = helper.run_job_and_wait_state(
         ALPINE_IMAGE_NAME, command=command, wait_state=JobStatus.RUNNING
     )
-    img_uri = f"image://{helper.cluster_name}/{helper.username}/{image}"
+    img_uri = f"image://{helper.cluster_uri_base}/{image}"
     captured = helper.run_cli(["job", "save", job_id_1, image_neuro_name])
     out = captured.out
     assert f"Saving job '{job_id_1}' to image '{img_uri}'..." in out
@@ -846,7 +846,7 @@ def test_job_run_share(helper: Helper, fakebrowser: Any) -> None:
     )
     job_id = captured.out.strip()
 
-    uri = f"job://{helper.cluster_name}/{helper.username}/{job_id}"
+    uri = f"job://{helper.cluster_uri_base}/{job_id}"
     captured = helper.run_cli(["acl", "list", "--full-uri", "--shared", uri])
     result = [line.split() for line in captured.out.splitlines()]
     assert [uri, "write", another_test_user] in result

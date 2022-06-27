@@ -65,12 +65,12 @@ def test_images_complete_lifecycle(
     # stderr has "Used image ..." lines
     # assert not captured.err
 
-    image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
+    image_full_str = f"image://{helper.cluster_uri_base}/{image}"
     assert captured.out.endswith(image_full_str)
     image_url = URL(image_full_str)
 
     # Check if image available on registry
-    image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
+    image_full_str = f"image://{helper.cluster_uri_base}/{image}"
     image_short_str = f"image:{image}"
     assert captured.out.endswith(image_full_str)
 
@@ -126,7 +126,7 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     # push image
     captured = helper.run_cli(["image", "push", image])
 
-    image_full_str = f"image://{helper.cluster_name}/{helper.username}/{image}"
+    image_full_str = f"image://{helper.cluster_uri_base}/{image}"
     assert captured.out.endswith(image_full_str)
 
     image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
@@ -209,8 +209,7 @@ async def test_images_push_with_specified_name(
     # assert not captured.err
     async with helper.client() as client:
         image_pushed_full_str = (
-            f"image://{client.config.cluster_name}/"
-            f"{client.config.username}/{pushed_no_tag}:{tag}"
+            f"image://{helper.cluster_uri_base}/{pushed_no_tag}:{tag}"
         )
         assert captured.out.endswith(image_pushed_full_str)
 
@@ -265,7 +264,7 @@ def test_docker_helper(
         not result.returncode
     ), f"Command {push_cmd} failed: {result.stdout!r} {result.stderr!r} "
     # Run image and check output
-    image_url = f"image://{helper.cluster_name}/{username}/{image}"
+    image_url = f"image://{helper.cluster_uri_base}/{image}"
     job_id = helper.run_job_and_wait_state(
         image_url, "", wait_state=JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
     )
