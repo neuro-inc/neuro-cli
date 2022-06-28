@@ -1324,6 +1324,9 @@ async def add_org_cluster(
     Add org access to specified cluster.
 
     """
+    if storage_size:
+        storage_size *= 1000 * 1000
+
     org_cluster = await root.client._admin.create_org_cluster(
         cluster_name=cluster_name,
         org_name=org_name,
@@ -1332,7 +1335,7 @@ async def add_org_cluster(
         default_credits=_parse_credits_value(default_credits),
         default_quota=_Quota(_parse_jobs_value(default_jobs)),
         default_role=_ClusterUserRoleType(default_role),
-        storage_size_mb=storage_size,
+        storage_size=storage_size,
     )
     if not root.quiet:
         root.print(
