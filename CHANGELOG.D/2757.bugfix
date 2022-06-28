@@ -1,0 +1,1 @@
+Pin `neuro-admin-client` to `>=22.6.4`, make SDK future-compatible with next `neuro-admin-client` releases.
