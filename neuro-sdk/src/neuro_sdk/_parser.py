@@ -323,6 +323,7 @@ class Parser(metaclass=NoPublicConstructor):
         ret = uri
         if uri.scheme != "file":
             if ret.host == self._config.cluster_name:
+                prefix: Tuple[str, ...]
                 if self._config.org_name is None:
                     prefix = ("/", self._config.username)
                 else:
