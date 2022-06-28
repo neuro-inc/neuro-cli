@@ -1325,7 +1325,7 @@ async def add_org_cluster(
 
     """
     if storage_size:
-        storage_size *= 1000 * 1000
+        storage_size *= 1024**2
 
     org_cluster = await root.client._admin.create_org_cluster(
         cluster_name=cluster_name,
