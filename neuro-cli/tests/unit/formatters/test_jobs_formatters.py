@@ -108,7 +108,7 @@ def job_descr_no_name() -> JobDescription:
         ),
         container=Container(
             image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
-            resources=Resources(16, 0.1, 0, None, False, None, None),
+            resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
         ),
         scheduler_enabled=True,
         pass_config=True,
@@ -136,7 +136,7 @@ def job_descr() -> JobDescription:
         ),
         container=Container(
             image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
-            resources=Resources(16, 0.1, 0, None, False, None, None),
+            resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
         ),
         scheduler_enabled=True,
         pass_config=True,
@@ -300,7 +300,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -343,7 +343,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
                 volumes=[
                     Volume(
@@ -391,7 +391,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -433,7 +433,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -474,7 +474,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -516,7 +516,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -559,7 +559,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -601,7 +601,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -637,7 +637,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
             ),
             scheduler_enabled=True,
             pass_config=True,
@@ -675,7 +675,7 @@ class TestJobOutputFormatter:
             container=Container(
                 image=RemoteImage.new_external_image(name="test-image"),
                 command="test-command",
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 tty=True,
             ),
             scheduler_enabled=True,
@@ -714,7 +714,7 @@ class TestJobOutputFormatter:
             container=Container(
                 image=RemoteImage.new_external_image(name="test-image"),
                 command="test-command",
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
             ),
             scheduler_enabled=True,
             pass_config=True,
@@ -756,7 +756,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -817,7 +817,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -858,7 +858,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -900,7 +900,7 @@ class TestJobOutputFormatter:
                 entrypoint="/usr/bin/make",
                 command="test",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -949,7 +949,7 @@ class TestJobOutputFormatter:
                     cluster_name="test-cluster",
                     org_name=None,
                 ),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
                 env={"ENV_NAME_1": "__value1__", "ENV_NAME_2": "**value2**"},
             ),
@@ -999,7 +999,7 @@ class TestJobOutputFormatter:
                     cluster_name="test-cluster",
                     org_name=None,
                 ),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
                 volumes=[
                     Volume(
@@ -1065,7 +1065,7 @@ class TestJobOutputFormatter:
                     cluster_name="test-cluster",
                     org_name=None,
                 ),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
                 volumes=[
                     Volume(
@@ -1123,7 +1123,7 @@ class TestJobOutputFormatter:
                     cluster_name="test-cluster",
                     org_name=None,
                 ),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
                 volumes=[
                     Volume(
@@ -1199,7 +1199,7 @@ class TestJobOutputFormatter:
                     cluster_name="test-cluster",
                     org_name=None,
                 ),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
                 disk_volumes=[
                     DiskVolume(
@@ -1266,7 +1266,7 @@ class TestJobOutputFormatter:
                     org_name=None,
                 ),
                 working_dir="/working/dir",
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -1303,7 +1303,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -1341,7 +1341,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
             ),
             scheduler_enabled=True,
             preemptible_node=True,
@@ -1385,7 +1385,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -1425,7 +1425,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -1463,7 +1463,9 @@ class TestJobTelemetryFormatter:
             datetime_formatter=datetime_formatter,
         ) as fmt:
             timestamp = 1_517_248_466.238_723_6
-            telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
+            telemetry = JobTelemetry(
+                cpu=0.12345, memory_bytes=int(256.123 * 2**20), timestamp=timestamp
+            )
             # Use utc timezone in test for stable constant result
             fmt.update(job_descr, telemetry)
             assert fmt.changed
@@ -1488,7 +1490,9 @@ class TestJobTelemetryFormatter:
             datetime_formatter=datetime_formatter,
         ) as fmt:
             timestamp = 1_517_248_466.238_723_6
-            telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
+            telemetry = JobTelemetry(
+                cpu=0.12345, memory_bytes=int(256.123 * 2**20), timestamp=timestamp
+            )
             fmt.update(job_descr, telemetry)
             assert fmt.changed
             fmt.render()
@@ -1496,7 +1500,9 @@ class TestJobTelemetryFormatter:
             rich_cmp(console, index=0)
 
             timestamp = 1_517_248_467.238_723_6
-            telemetry = JobTelemetry(cpu=0.23456, memory=128.123, timestamp=timestamp)
+            telemetry = JobTelemetry(
+                cpu=0.23456, memory_bytes=int(128.123 * 2**20), timestamp=timestamp
+            )
             fmt.update(job_descr, telemetry)
             assert fmt.changed
             fmt.render()
@@ -1521,7 +1527,9 @@ class TestJobTelemetryFormatter:
             datetime_formatter=datetime_formatter,
         ) as fmt:
             timestamp = 1_517_248_466.238_723_6
-            telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
+            telemetry = JobTelemetry(
+                cpu=0.12345, memory_bytes=int(256.123 * 2**20), timestamp=timestamp
+            )
             fmt.update(job_descr, telemetry)
             assert fmt.changed
             fmt.render()
@@ -1529,7 +1537,9 @@ class TestJobTelemetryFormatter:
             rich_cmp(console, index=0)
 
             timestamp = 1_517_248_467.238_723_6
-            telemetry = JobTelemetry(cpu=0.23456, memory=128.123, timestamp=timestamp)
+            telemetry = JobTelemetry(
+                cpu=0.23456, memory_bytes=int(128.123 * 2**20), timestamp=timestamp
+            )
             fmt.update(job_descr2, telemetry)
             assert fmt.changed
             fmt.render()
@@ -1571,7 +1581,9 @@ class TestJobTelemetryFormatter:
             maxrows=1,
         ) as fmt:
             timestamp = 1_517_248_466.238_723_6
-            telemetry = JobTelemetry(cpu=0.12345, memory=256.123, timestamp=timestamp)
+            telemetry = JobTelemetry(
+                cpu=0.12345, memory_bytes=int(256.123 * 2**20), timestamp=timestamp
+            )
             fmt.update(job_descr, telemetry)
             assert fmt.changed
             fmt.render()
@@ -1579,7 +1591,9 @@ class TestJobTelemetryFormatter:
             rich_cmp(console, index=0)
 
             timestamp = 1_517_248_467.238_723_6
-            telemetry = JobTelemetry(cpu=0.23456, memory=128.123, timestamp=timestamp)
+            telemetry = JobTelemetry(
+                cpu=0.23456, memory_bytes=int(128.123 * 2**20), timestamp=timestamp
+            )
             fmt.update(job_descr2, telemetry)
             assert fmt.changed
             fmt.render()
@@ -1605,10 +1619,10 @@ class TestJobTelemetryFormatter:
             timestamp = 1_517_248_466
             telemetry = JobTelemetry(
                 cpu=0.12345,
-                memory=256.1234,
+                memory_bytes=int(256.1234 * 2**20),
                 timestamp=timestamp,
                 gpu_duty_cycle=99,
-                gpu_memory=64.5,
+                gpu_memory_bytes=int(64.5 * 2**20),
             )
             fmt.update(job_descr, telemetry)
             assert fmt.changed
@@ -1676,7 +1690,7 @@ class TestSimpleJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
-                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 ),
                 scheduler_enabled=True,
                 pass_config=True,
@@ -1700,7 +1714,7 @@ class TestSimpleJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
-                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 ),
                 scheduler_enabled=True,
                 pass_config=True,
@@ -1739,7 +1753,7 @@ class TestTabularJobRow:
             ),
             container=Container(
                 image=remote_image,
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 command="ls",
             ),
             scheduler_enabled=True,
@@ -1881,7 +1895,7 @@ class TestTabularJobsFormatter:
             ),
             container=Container(
                 image=RemoteImage.new_external_image(name="i", tag="l"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 command="c",
             ),
             scheduler_enabled=True,
@@ -1932,7 +1946,7 @@ class TestTabularJobsFormatter:
                     image=RemoteImage.new_external_image(
                         name="some-image-name", tag="with-long-tag"
                     ),
-                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                     command="ls -la /some/path",
                 ),
                 scheduler_enabled=True,
@@ -1968,7 +1982,7 @@ class TestTabularJobsFormatter:
                         cluster_name="test-cluster",
                         org_name=None,
                     ),
-                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                     command="ls -la /some/path",
                 ),
                 scheduler_enabled=True,
@@ -2006,7 +2020,7 @@ class TestTabularJobsFormatter:
             ),
             container=Container(
                 image=RemoteImage.new_external_image(name="i", tag="l"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 command="c",
             ),
             scheduler_enabled=True,
@@ -2047,7 +2061,7 @@ class TestTabularJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage.new_external_image(name="i", tag="l"),
-                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                     command="c",
                 ),
                 scheduler_enabled=True,
@@ -2115,7 +2129,7 @@ class TestTabularJobsFormatter:
                 container=Container(
                     command="test-command",
                     image=RemoteImage.new_external_image(name="test-image"),
-                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 ),
                 scheduler_enabled=False,
                 pass_config=True,
@@ -2158,7 +2172,7 @@ class TestTabularJobsFormatter:
                 container=Container(
                     command="test-command",
                     image=RemoteImage.new_external_image(name="test-image"),
-                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                     working_dir=working_dir,
                 ),
                 scheduler_enabled=False,
@@ -2200,7 +2214,7 @@ class TestTabularJobsFormatter:
                 container=Container(
                     command="test-command",
                     image=RemoteImage.new_external_image(name="test-image"),
-                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 ),
                 scheduler_enabled=False,
                 pass_config=True,
@@ -2245,7 +2259,7 @@ class TestTabularJobsFormatter:
                 container=Container(
                     command="test-command",
                     image=RemoteImage.new_external_image(name="test-image"),
-                    resources=Resources(16, 0.1, 0, None, False, None, None),
+                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
                 ),
                 scheduler_enabled=False,
                 pass_config=True,
@@ -2310,7 +2324,7 @@ class TestLifeSpanUpdateFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -2344,7 +2358,7 @@ class TestLifeSpanUpdateFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16, 0.1, 0, None, False, None, None),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
             ),
             scheduler_enabled=False,
             pass_config=True,

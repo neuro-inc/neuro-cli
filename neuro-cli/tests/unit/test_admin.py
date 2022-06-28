@@ -338,7 +338,7 @@ def test_add_resource_preset(run_cli: _RunCli) -> None:
             assert presets["cpu-micro"] == Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=0.1,
-                memory_mb=100,
+                memory=100 * 10**6,
                 gpu=1,
                 gpu_model="nvidia-tesla-k80",
                 tpu_type="v2-8",
@@ -366,7 +366,7 @@ def test_add_resource_preset(run_cli: _RunCli) -> None:
                 "-c",
                 "0.1",
                 "-m",
-                "100M",
+                "100Mb",
                 "-g",
                 "1",
                 "--gpu-model",
@@ -424,7 +424,7 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
             assert cluster_name == "default"
             assert "cpu-small" in presets
             assert presets["cpu-small"] == Preset(
-                credits_per_hour=Decimal("122"), cpu=7, memory_mb=2 * 1024
+                credits_per_hour=Decimal("122"), cpu=7, memory=2 * 2**30
             )
             exit_stack.enter_context(
                 mock.patch.object(Config, "presets", dict(presets))

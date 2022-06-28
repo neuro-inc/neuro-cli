@@ -42,9 +42,9 @@ from neuro_sdk import (
 from .asyncio_utils import asyncgeneratorcontextmanager
 from .parse_utils import (
     JobTableFormat,
+    parse_memory,
     parse_ps_columns,
     parse_top_columns,
-    to_megabytes,
 )
 from .root import Root
 
@@ -253,18 +253,18 @@ class LocalRemotePortParamType(click.ParamType):
 LOCAL_REMOTE_PORT = LocalRemotePortParamType()
 
 
-class MegabyteType(click.ParamType):
-    name = "megabyte"
+class MemoryType(click.ParamType):
+    name = "memory_amount"
 
     def convert(
         self, value: str, param: Optional[click.Parameter], ctx: Optional[click.Context]
     ) -> int:
         if isinstance(value, int):
-            return int(value / (1024**2))
-        return to_megabytes(value)
+            return int(value)
+        return parse_memory(value)
 
 
-MEGABYTE = MegabyteType()
+MEMORY = MemoryType()
 
 
 class JobNameType(click.ParamType):

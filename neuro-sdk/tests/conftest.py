@@ -50,27 +50,27 @@ def cluster_config() -> Cluster:
             "gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
-                memory_mb=30 * 1024,
+                memory=30 * 2**30,
                 gpu=1,
                 gpu_model="nvidia-tesla-k80",
             ),
             "gpu-large": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
-                memory_mb=60 * 1024,
+                memory=60 * 2**30,
                 gpu=1,
                 gpu_model="nvidia-tesla-v100",
             ),
             "cpu-small": Preset(
-                credits_per_hour=Decimal("10"), cpu=7, memory_mb=2 * 1024
+                credits_per_hour=Decimal("10"), cpu=7, memory=2 * 2**30
             ),
             "cpu-large": Preset(
-                credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+                credits_per_hour=Decimal("10"), cpu=7, memory=14 * 2**30
             ),
             "cpu-large-p": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
-                memory_mb=14 * 1024,
+                memory=14 * 2**30,
                 scheduler_enabled=True,
                 preemptible_node=True,
             ),
@@ -109,22 +109,22 @@ def make_client(
                     "gpu-small": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=7,
-                        memory_mb=30 * 1024,
+                        memory=30 * 2**30,
                         gpu=1,
                         gpu_model="nvidia-tesla-k80",
                     ),
                     "gpu-large": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=7,
-                        memory_mb=60 * 1024,
+                        memory=60 * 2**30,
                         gpu=1,
                         gpu_model="nvidia-tesla-v100",
                     ),
                     "cpu-small": Preset(
-                        credits_per_hour=Decimal("10"), cpu=7, memory_mb=2 * 1024
+                        credits_per_hour=Decimal("10"), cpu=7, memory=2 * 2**30
                     ),
                     "cpu-large": Preset(
-                        credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+                        credits_per_hour=Decimal("10"), cpu=7, memory=14 * 2**30
                     ),
                 },
                 name="default",
@@ -140,10 +140,10 @@ def make_client(
                 buckets_url=(url / "buckets2"),
                 presets={
                     "cpu-small": Preset(
-                        credits_per_hour=Decimal("10"), cpu=7, memory_mb=2 * 1024
+                        credits_per_hour=Decimal("10"), cpu=7, memory=2 * 2**30
                     ),
                     "cpu-large": Preset(
-                        credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+                        credits_per_hour=Decimal("10"), cpu=7, memory=14 * 2**30
                     ),
                 },
                 name="another",

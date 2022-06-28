@@ -135,7 +135,7 @@ def _format_presets(
         row = [
             name,
             str(preset.cpu),
-            format_size(preset.memory_mb * 1024**2),
+            format_size(preset.memory),
             "√" if preset.scheduler_enabled else "×",
             "√" if preset.preemptible_node else "×",
             gpu,

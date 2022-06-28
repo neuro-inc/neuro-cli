@@ -18,46 +18,31 @@ from neuro_cli.parse_utils import (
 
 
 def test_parse_memory() -> None:
-    for value in ["1234", "   ", "", "-124", "M", "K", "k", "123B"]:
-        with pytest.raises(ValueError, match=f"Unable parse value: {value}"):
-            parse_memory(value)
+    for bad_value in ["   ", "", "-124", "some_text_here"]:
+        with pytest.raises(ValueError, match=f"Unable parse value: {bad_value}"):
+            parse_memory(bad_value)
 
-    assert parse_memory("1K") == 1024
-    assert parse_memory("2K") == 2048
-    assert parse_memory("1k") == 1024
-    assert parse_memory("2k") == 2048
-    assert parse_memory("1kB") == 1000
-    assert parse_memory("2kB") == 2000
-    assert parse_memory("1kb") == 1000
-    assert parse_memory("2kb") == 2000
-
-    assert parse_memory("42M") == 42 * 1024**2
-    assert parse_memory("42MB") == 42 * 1000**2
-    assert parse_memory("42Mb") == 42 * 1000**2
-
-    assert parse_memory("42G") == 42 * 1024**3
-    assert parse_memory("42GB") == 42 * 1000**3
-    assert parse_memory("42Gb") == 42 * 1000**3
-
-    assert parse_memory("42T") == 42 * 1024**4
-    assert parse_memory("42TB") == 42 * 1000**4
-    assert parse_memory("42Tb") == 42 * 1000**4
-
-    assert parse_memory("42P") == 42 * 1024**5
-    assert parse_memory("42PB") == 42 * 1000**5
-    assert parse_memory("42Pb") == 42 * 1000**5
-
-    assert parse_memory("42E") == 42 * 1024**6
-    assert parse_memory("42EB") == 42 * 1000**6
-    assert parse_memory("42Eb") == 42 * 1000**6
-
-    assert parse_memory("42Z") == 42 * 1024**7
-    assert parse_memory("42ZB") == 42 * 1000**7
-    assert parse_memory("42Zb") == 42 * 1000**7
-
-    assert parse_memory("42Y") == 42 * 1024**8
-    assert parse_memory("42YB") == 42 * 1000**8
-    assert parse_memory("42Yb") == 42 * 1000**8
+    for number in [100, 200, 222, 42, 37]:
+        for (factor, suffix) in [
+            (1, ""),
+            (10**3, "k"),
+            (10**6, "M"),
+            (10**9, "G"),
+            (10**12, "T"),
+            (10**15, "P"),
+            (2**10, "Ki"),
+            (2**20, "Mi"),
+            (2**30, "Gi"),
+            (2**40, "Ti"),
+            (2**50, "Pi"),
+        ]:
+            for byte_suffix in ["B", "b", ""]:
+                assert (
+                    parse_memory(str(number) + suffix + byte_suffix) == number * factor
+                )
+            bad_value = suffix + byte_suffix
+            with pytest.raises(ValueError, match=f"Unable parse value: {bad_value}"):
+                parse_memory(bad_value)
 
 
 def test_parse_ps_columns_default() -> None:

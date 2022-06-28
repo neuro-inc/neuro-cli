@@ -28,7 +28,23 @@ def parse_memory(memory: str) -> int:
     returns value in bytes"""
 
     # Mega, Giga, Tera, etc
-    prefixes = "MGTPEZY"
+
+    prefix_to_factor = {
+        "": 1,
+        # Binary
+        "Ki": 2**10,
+        "Mi": 2**20,
+        "Gi": 2**30,
+        "Ti": 2**40,
+        "Pi": 2**50,
+        # Decimal
+        "k": 10**3,
+        "M": 10**6,
+        "G": 10**9,
+        "T": 10**12,
+        "P": 10**15,
+    }
+
     value_error = ValueError(f"Unable parse value: {memory}")
 
     if not memory:
@@ -36,8 +52,8 @@ def parse_memory(memory: str) -> int:
 
     pattern = rf"""^
                    (?P<value>\d+)
-                   (?P<units>(kB|kb|K|k)|((?P<prefix>[{prefixes}])
-                   (?P<unit>[bB]?)))
+                   (?P<prefix>{"|".join(prefix_to_factor.keys())})?
+                   [bB]?
                 $"""
     regex = re.compile(pattern, re.VERBOSE)
     match = regex.fullmatch(memory)
@@ -48,26 +64,9 @@ def parse_memory(memory: str) -> int:
     groups = match.groupdict()
 
     value = int(groups["value"])
-    unit = groups["unit"]
-    prefix = groups["prefix"]
-    units = groups["units"]
+    prefix = groups["prefix"] or ""
 
-    if units == "kB" or units == "kb":
-        return value * 1000
-
-    if units == "K" or units == "k":
-        return value * 1024
-
-    # Our prefix string starts with Mega
-    # so for index 0 the power should be 2
-    power = 2 + prefixes.index(prefix)
-    multiple = 1000 if unit else 1024
-
-    return value * multiple**power
-
-
-def to_megabytes(value: str) -> int:
-    return int(parse_memory(value) / (1024**2))
+    return value * prefix_to_factor[prefix]
 
 
 @dataclasses.dataclass(frozen=True)

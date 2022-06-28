@@ -524,7 +524,7 @@ def _deserialize_resource_preset(payload: Dict[str, Any]) -> Tuple[str, Preset]:
         Preset(
             credits_per_hour=Decimal(payload["credits_per_hour"]),
             cpu=payload["cpu"],
-            memory_mb=payload["memory_mb"],
+            memory=payload["memory"],
             gpu=payload.get("gpu"),
             gpu_model=payload.get("gpu_model"),
             tpu_type=payload.get("tpu_type", None),
@@ -644,7 +644,7 @@ def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
         "name": name,
         "credits_per_hour": str(preset.credits_per_hour),
         "cpu": preset.cpu,
-        "memory_mb": preset.memory_mb,
+        "memory": preset.memory,
         "gpu": preset.gpu,
         "gpu_model": preset.gpu_model,
         "tpu_type": preset.tpu_type,

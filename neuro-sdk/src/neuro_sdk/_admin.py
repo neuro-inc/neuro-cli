@@ -57,8 +57,8 @@ class _NodePool:
     max_size: int
     machine_type: str
     available_cpu: float
-    available_memory_mb: int
-    disk_size_gb: int
+    available_memory: int
+    disk_size: int
     disk_type: Optional[str] = None
     gpu: int = 0
     gpu_model: Optional[str] = None
@@ -70,7 +70,7 @@ class _NodePool:
 @dataclass(frozen=True)
 class _StorageInstance:
     name: Optional[str] = None
-    size_mb: Optional[int] = None
+    size: Optional[int] = None
 
 
 @rewrite_module
@@ -214,9 +214,9 @@ def _node_pool_from_api(payload: Dict[str, Any]) -> _NodePool:
         idle_size=payload.get("idle_size", 0),
         machine_type=payload["machine_type"],
         available_cpu=payload["available_cpu"],
-        available_memory_mb=payload["available_memory_mb"],
+        available_memory=payload["available_memory"],
         disk_type=payload.get("disk_type"),
-        disk_size_gb=payload["disk_size_gb"],
+        disk_size=payload["disk_size"],
         gpu=payload.get("gpu", 0),
         gpu_model=payload.get("gpu_model"),
         is_preemptible=payload.get("is_preemptible", False),
@@ -231,7 +231,7 @@ def _storage_from_api(payload: Dict[str, Any]) -> _Storage:
 
 
 def _storage_instance_from_api(payload: Dict[str, Any]) -> _StorageInstance:
-    return _StorageInstance(name=payload.get("name"), size_mb=payload.get("size_mb"))
+    return _StorageInstance(name=payload.get("name"), size=payload.get("size"))
 
 
 def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
@@ -239,7 +239,7 @@ def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
         "name": name,
         "credits_per_hour": str(preset.credits_per_hour),
         "cpu": preset.cpu,
-        "memory_mb": preset.memory_mb,
+        "memory": preset.memory,
         "scheduler_enabled": preset.scheduler_enabled,
         "preemptible_node": preset.preemptible_node,
     }

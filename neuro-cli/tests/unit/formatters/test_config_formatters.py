@@ -56,7 +56,7 @@ class TestConfigFormatter:
         presets["tpu-small"] = Preset(
             credits_per_hour=Decimal("10"),
             cpu=2,
-            memory_mb=2048,
+            memory=2 * 2**30,
             scheduler_enabled=False,
             tpu_type="v3-8",
             tpu_software_version="1.14",
@@ -64,7 +64,7 @@ class TestConfigFormatter:
         presets["hybrid"] = Preset(
             credits_per_hour=Decimal("10"),
             cpu=4,
-            memory_mb=30720,
+            memory=30 * 2**30,
             scheduler_enabled=False,
             gpu=2,
             gpu_model="nvidia-tesla-v100",

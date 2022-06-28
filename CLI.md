@@ -622,7 +622,7 @@ Name | Description|
 |_\--credits-per-hour AMOUNT_|Price of running job of this preset for an hour in credits  \[default: 0]|
 |_\-g, --gpu NUMBER_|Number of GPUs|
 |_\--gpu-model MODEL_|GPU model|
-|_\-m, --memory AMOUNT_|Memory amount  \[default: 1G]|
+|_\-m, --memory AMOUNT_|Memory amount  \[default: 1GB]|
 |_\--preemptible-node / --non-preemptible-node_|Use a lower\-cost preemptible instance  \[default: non-preemptible-node]|
 |_\-p, --scheduler / -P, --no-scheduler_|Use round robin scheduler for jobs  \[default: no-scheduler]|
 |_\--tpu-sw-version VERSION_|TPU software version|

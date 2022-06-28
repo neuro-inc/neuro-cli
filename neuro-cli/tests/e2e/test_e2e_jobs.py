@@ -596,7 +596,7 @@ async def nginx_job_async(nmrc_path: Path) -> AsyncIterator[Tuple[str, str]]:
                 name="ghcr.io/neuro-inc/nginx", tag="latest"
             ),
             command=command,
-            resources=Resources(memory_mb=100, cpu=0.1),
+            resources=Resources(memory=100 * 2**20, cpu=0.1),
         )
 
         job = await client.jobs.run(
@@ -1258,7 +1258,7 @@ def test_job_disk_volume(
     helper: Helper, disk_factory: Callable[[str], ContextManager[str]]
 ) -> None:
 
-    with disk_factory("1G") as disk:
+    with disk_factory("1GB") as disk:
         bash_script = 'echo "test data" > /mnt/disk/file && cat /mnt/disk/file'
         command = f"bash -c '{bash_script}'"
         captured = helper.run_cli(

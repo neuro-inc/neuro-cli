@@ -245,15 +245,14 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
         row = [
             node_pool.machine_type,
             str(node_pool.available_cpu),
-            format_size(node_pool.available_memory_mb * 1024**2),
+            format_size(node_pool.available_memory),
         ]
         if node_pool.disk_type:
             row.append(
-                f"{format_size(node_pool.disk_size_gb * 1024 ** 3)} "
-                f"{node_pool.disk_type.upper()}"
+                f"{format_size(node_pool.disk_size)} " f"{node_pool.disk_type.upper()}"
             )
         else:
-            row.append(format_size(node_pool.disk_size_gb * 1024**3))
+            row.append(format_size(node_pool.disk_size))
         if has_preemptible:
             row.append("√" if node_pool.is_preemptible else "×")
         row.append(_gpu(node_pool))
@@ -275,7 +274,7 @@ def _format_storage(storage: _Storage) -> Table:
     table.add_column("Name", style="bold", justify="left")
     table.add_column("Type", style="bold", justify="left")
     for instance in storage.instances:
-        if instance.size_mb is not None:
+        if instance.size is not None:
             table.add_column("Size", style="bold", justify="left")
             has_size = True
             break
@@ -284,10 +283,10 @@ def _format_storage(storage: _Storage) -> Table:
     for instance in storage.instances:
         row = [instance.name or "<default>", storage.description]
         if has_size:
-            if instance.size_mb is None:
+            if instance.size is None:
                 row.append("")
             else:
-                row.append(format_size(instance.size_mb * 1024**2))
+                row.append(format_size(instance.size))
         table.add_row(*row)
     return table
 
