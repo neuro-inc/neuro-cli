@@ -1327,7 +1327,7 @@ async def add_org_cluster(
         default_credits=_parse_credits_value(default_credits),
         default_quota=_Quota(_parse_jobs_value(default_jobs)),
         default_role=_ClusterUserRoleType(default_role),
-        storage_size_mb=storage_size,
+        storage_size=storage_size * 1000 * 1000,
     )
     if not root.quiet:
         root.print(
