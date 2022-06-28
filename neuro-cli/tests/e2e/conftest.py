@@ -142,12 +142,11 @@ class Helper:
         return config.org_name
 
     @cached_property
-    def cluster_uri_base(self) -> Optional[str]:
-        config = self.get_config()
-        result = config.cluster_name
-        if config.org_name is not None:
-            result += "/" + config.org_name
-        result += "/" + config.username
+    def cluster_uri_base(self) -> str:
+        result = self.cluster_name
+        if self.org_name is not None:
+            result += "/" + self.org_name
+        result += "/" + self.username
         return result
 
     @cached_property
@@ -807,6 +806,7 @@ def _get_nmrc_path(tmp_path: Any, require_admin: bool) -> Optional[Path]:
 @pytest.fixture
 def helper(tmp_path: Path, nmrc_path: Path) -> Iterator[Helper]:
     ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path)
+    ret.cluster_uri_base  # get and cache properties outside of the event loop
     yield ret
     with suppress(Exception):
         # ignore exceptions in helper closing

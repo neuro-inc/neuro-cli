@@ -144,10 +144,11 @@ async def mkbucket(
     """
     Create a new bucket.
     """
+    org_name = None if org == ORG.NO_ORG_STR else (org or root.client.config.org_name)
     bucket = await root.client.buckets.create(
         name=name,
         cluster_name=cluster,
-        org_name=org,
+        org_name=org_name,
     )
     bucket_fmtr = BucketFormatter(
         str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
@@ -273,6 +274,7 @@ async def importbucket(
     """
     Import an existing bucket.
     """
+    org_name = None if org == ORG.NO_ORG_STR else (org or root.client.config.org_name)
     provider_type = Bucket.Provider(provider)
     credentials = {}
     if provider_type == Bucket.Provider.AWS:
@@ -317,7 +319,7 @@ async def importbucket(
         credentials=credentials,
         name=name,
         cluster_name=cluster,
-        org_name=org,
+        org_name=org_name,
     )
     bucket_fmtr = BucketFormatter(
         str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)

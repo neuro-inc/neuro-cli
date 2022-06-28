@@ -207,10 +207,8 @@ async def test_images_push_with_specified_name(
     captured = helper.run_cli(["image", "push", image, f"image:{pushed_no_tag}:{tag}"])
     # stderr has "Used image ..." lines
     # assert not captured.err
+    image_pushed_full_str = f"image://{helper.cluster_uri_base}/{pushed_no_tag}:{tag}"
     async with helper.client() as client:
-        image_pushed_full_str = (
-            f"image://{helper.cluster_uri_base}/{pushed_no_tag}:{tag}"
-        )
         assert captured.out.endswith(image_pushed_full_str)
 
     # Check if image available on registry

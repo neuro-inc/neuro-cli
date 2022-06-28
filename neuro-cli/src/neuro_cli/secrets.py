@@ -83,8 +83,9 @@ async def add(
       neuro secret add KEY_NAME VALUE
       neuro secret add KEY_NAME @path/to/file.txt
     """
+    org_name = None if org == ORG.NO_ORG_STR else (org or root.client.config.org_name)
     await root.client.secrets.add(
-        key, read_data(value), cluster_name=cluster, org_name=org
+        key, read_data(value), cluster_name=cluster, org_name=org_name
     )
 
 

@@ -1078,9 +1078,7 @@ async def run(
         http_port = http
     cmd = _fix_cmd("neuro run", "IMAGE -- CMD...", cmd)
     cluster_name = cluster or root.client.cluster_name
-    org_name = org or root.client.config.org_name
-    if org == "NO_ORG":
-        org_name = None
+    org_name = None if org == ORG.NO_ORG_STR else (org or root.client.config.org_name)
     cluster_config = root.client.config.clusters[cluster_name]
     if not preset:
         preset = next(iter(cluster_config.presets.keys()))

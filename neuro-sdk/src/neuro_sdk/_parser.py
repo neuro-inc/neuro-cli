@@ -322,13 +322,17 @@ class Parser(metaclass=NoPublicConstructor):
     def _short(self, uri: URL) -> URL:
         ret = uri
         if uri.scheme != "file":
-            if ret.host == self._config.cluster_name and ret.parts[:2] == (
-                "/",
-                self._config.username,
-            ):
-                ret = URL.build(
-                    scheme=ret.scheme, host="", path="/".join(ret.parts[2:])
-                )
+            if ret.host == self._config.cluster_name:
+                if self._config.org_name is None:
+                    prefix = ("/", self._config.username)
+                else:
+                    prefix = ("/", self._config.org_name, self._config.username)
+                if ret.parts[: len(prefix)] == prefix:
+                    ret = URL.build(
+                        scheme=ret.scheme,
+                        host="",
+                        path="/".join(ret.parts[len(prefix) :]),
+                    )
         else:
             # file scheme doesn't support relative URLs.
             pass
