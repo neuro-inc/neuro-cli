@@ -106,7 +106,8 @@ async def rm(root: Root, key: str, cluster: Optional[str], org: Optional[str]) -
     Remove secret KEY.
     """
 
-    await root.client.secrets.rm(key, cluster_name=cluster, org_name=org)
+    org_name = None if org == ORG.NO_ORG_STR else (org or root.client.config.org_name)
+    await root.client.secrets.rm(key, cluster_name=cluster, org_name=org_name)
     if root.verbosity > 0:
         root.print(f"Secret with key '{key}' was successfully removed")
 
