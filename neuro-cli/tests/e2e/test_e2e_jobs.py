@@ -38,6 +38,8 @@ NGINX_IMAGE_NAME = "ghcr.io/neuro-inc/nginx:latest"
 MIN_PORT = 49152
 MAX_PORT = 65535
 
+DEFAULT_PRESET = "cpu-micro"
+
 ANSI_RE = re.compile(r"\033\[[;?0-9]*[a-zA-Z]")
 OSC_RE = re.compile(r"\x1b]0;.+\x07")
 
@@ -1169,6 +1171,8 @@ def test_job_secret_env(helper: Helper, secret: Tuple[str, str]) -> None:
         [
             "job",
             "run",
+            "-s",
+            DEFAULT_PRESET,
             "-e",
             f"SECRET_VAR=secret:{secret_name}",
             "--no-wait-start",
@@ -1198,6 +1202,8 @@ def test_job_secret_file(helper: Helper, secret: Tuple[str, str]) -> None:
         [
             "job",
             "run",
+            "-s",
+            DEFAULT_PRESET,
             "-v",
             f"secret:{secret_name}:/secrets/secretfile",
             "--no-wait-start",
