@@ -5,6 +5,15 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 22.6.3 (2022-06-30)
+=================================
+
+Bugfixes
+--------
+
+- Pin `neuro-admin-client` to `>=22.6.4`, make SDK future-compatible with next `neuro-admin-client` releases. ([#2757](https://github.com/neuro-inc/platform-client-python/issues/2757))
+
+
 Neuro SDK/CLI 22.6.2 (2022-06-15)
 =================================
 

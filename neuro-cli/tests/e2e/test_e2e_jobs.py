@@ -73,10 +73,8 @@ def test_job_run(helper: Helper) -> None:
     store_out_list = captured.out.split("\n")[1:]
     jobs_orig = [x.split("  ")[0] for x in store_out_list]
 
-    captured = helper.run_cli(
+    captured = helper.run_cli_run_job(
         [
-            "job",
-            "run",
             "--http-port",
             "80",
             "--no-wait-start",
@@ -117,15 +115,9 @@ def test_job_run(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_job_rerun(helper: Helper) -> None:
-    captured = helper.run_cli(
-        [
-            "-q",
-            "job",
-            "run",
-            UBUNTU_IMAGE_NAME,
-            "--",
-            'bash -c "exit 0"',
-        ]
+    captured = helper.run_cli_run_job(
+        [UBUNTU_IMAGE_NAME, "--", 'bash -c "exit 0"'],
+        verbosity=-1,
     )
     job_id = captured.out
 
@@ -155,10 +147,8 @@ def test_job_description(helper: Helper) -> None:
     description = str(uuid4())
     # Run a new job
     command = "bash -c 'sleep 15m; false'"
-    captured = helper.run_cli(
+    captured = helper.run_cli_run_job(
         [
-            "job",
-            "run",
             "--http-port",
             "80",
             "--description",
@@ -193,8 +183,8 @@ def test_job_description(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_job_filter_by_date_range(helper: Helper) -> None:
-    captured = helper.run_cli(
-        ["job", "run", "--no-wait-start", UBUNTU_IMAGE_NAME, "--", "sleep 300"]
+    captured = helper.run_cli_run_job(
+        ["--no-wait-start", UBUNTU_IMAGE_NAME, "--", "sleep 300"]
     )
     match = re.match("Job ID: (.+)", captured.out)
     assert match is not None
@@ -225,16 +215,8 @@ def test_job_filter_by_tag(helper: Helper) -> None:
     tag_options = [key for pair in [("--tag", t) for t in tags] for key in pair]
 
     command = "sleep 10m"
-    captured = helper.run_cli(
-        [
-            "job",
-            "run",
-            *tag_options,
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            "--",
-            command,
-        ]
+    captured = helper.run_cli_run_job(
+        [*tag_options, "--no-wait-start", UBUNTU_IMAGE_NAME, "--", command]
     )
     match = re.match("Job ID: (.+)", captured.out)
     assert match is not None
@@ -271,8 +253,8 @@ def test_job_kill_non_existing(helper: Helper) -> None:
 def test_e2e_no_env(helper: Helper) -> None:
     bash_script = 'echo "begin"$VAR"end"  | grep beginend'
     command = f"bash -c '{bash_script}'"
-    captured = helper.run_cli(
-        ["job", "run", "--no-wait-start", UBUNTU_IMAGE_NAME, "--", command]
+    captured = helper.run_cli_run_job(
+        ["--no-wait-start", UBUNTU_IMAGE_NAME, "--", command]
     )
 
     out = captured.out
@@ -290,17 +272,8 @@ def test_e2e_no_env(helper: Helper) -> None:
 def test_e2e_env(helper: Helper) -> None:
     bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
     command = f"bash -c '{bash_script}'"
-    captured = helper.run_cli(
-        [
-            "job",
-            "run",
-            "-e",
-            "VAR=VAL",
-            "--no-wait-start",
-            UBUNTU_IMAGE_NAME,
-            "--",
-            command,
-        ]
+    captured = helper.run_cli_run_job(
+        ["-e", "VAR=VAL", "--no-wait-start", UBUNTU_IMAGE_NAME, "--", command]
     )
 
     out = captured.out
@@ -319,8 +292,8 @@ def test_e2e_env_from_local(helper: Helper) -> None:
     os.environ["VAR"] = "VAL"
     bash_script = 'echo "begin"$VAR"end"  | grep beginVALend'
     command = f"bash -c '{bash_script}'"
-    captured = helper.run_cli(
-        ["job", "run", "-e", "VAR", "--no-wait-start", UBUNTU_IMAGE_NAME, "--", command]
+    captured = helper.run_cli_run_job(
+        ["-e", "VAR", "--no-wait-start", UBUNTU_IMAGE_NAME, "--", command]
     )
 
     out = captured.out
@@ -338,10 +311,8 @@ def test_e2e_env_from_local(helper: Helper) -> None:
 def test_e2e_multiple_env(helper: Helper) -> None:
     bash_script = 'echo begin"$VAR""$VAR2"end  | grep beginVALVAL2end'
     command = f"bash -c '{bash_script}'"
-    captured = helper.run_cli(
+    captured = helper.run_cli_run_job(
         [
-            "job",
-            "run",
             "-e",
             "VAR=VAL",
             "-e",
@@ -374,11 +345,8 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
         'echo begin"$VAR""$VAR2""$VAR3""$VAR4"end  | grep beginVALVAL2VAL3VAL4end'
     )
     command = f"bash -c '{bash_script}'"
-    captured = helper.run_cli(
+    captured = helper.run_cli_run_job(
         [
-            "-q",
-            "job",
-            "run",
             "-e",
             "VAR=VAL",
             "-e",
@@ -393,7 +361,8 @@ def test_e2e_multiple_env_from_file(helper: Helper, tmp_path: Path) -> None:
             UBUNTU_IMAGE_NAME,
             "--",
             command,
-        ]
+        ],
+        verbosity=-1,
     )
 
     job_id = captured.out
@@ -667,16 +636,18 @@ async def test_run_with_port_forward(helper: Helper) -> None:
         f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
     )
 
-    proc = await helper.acli(
-        [
-            "run",
-            "--port-forward",
-            f"{port}:80",
-            "ghcr.io/neuro-inc/nginx:latest",
-            "--",
-            command,
-        ]
-    )
+    args = [
+        "run",
+        "--port-forward",
+        f"{port}:80",
+        "ghcr.io/neuro-inc/nginx:latest",
+        "--",
+        command,
+    ]
+    if helper.DEFAULT_PRESET:
+        args[1:1] = ["-s", helper.DEFAULT_PRESET]
+
+    proc = await helper.acli(args)
     try:
         await asyncio.sleep(1)
         url = f"http://127.0.0.1:{port}/secret.txt"
@@ -754,8 +725,9 @@ def test_job_submit_http_auth(
 def test_job_run_exit_code(helper: Helper) -> None:
     # Run a new job
     command = 'bash -c "exit 101"'
-    captured = helper.run_cli(
-        ["-q", "job", "run", "--no-wait-start", UBUNTU_IMAGE_NAME, "--", command]
+    captured = helper.run_cli_run_job(
+        ["--no-wait-start", UBUNTU_IMAGE_NAME, "--", command],
+        verbosity=-1,
     )
     job_id = captured.out
 
@@ -770,17 +742,15 @@ def test_job_run_exit_code(helper: Helper) -> None:
 
 @pytest.mark.e2e
 def test_pass_config(helper: Helper) -> None:
-    captured = helper.run_cli(
+    captured = helper.run_cli_run_job(
         [
-            "-q",
-            "job",
-            "run",
             "--no-wait-start",
             "--pass-config",
             UBUNTU_IMAGE_NAME,
             "--",
             'bash -c "sleep 15 && [ ! -z NEURO_PASSED_CONFIG ]"',
-        ]
+        ],
+        verbosity=-1,
     )
     job_id = captured.out
 
@@ -794,8 +764,8 @@ def test_pass_config(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_job_submit_bad_http_auth(helper: Helper, http_auth: str) -> None:
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(
-            ["job", "run", "--http-port=0", http_auth, UBUNTU_IMAGE_NAME, "--", "true"]
+        helper.run_cli_run_job(
+            ["--http-port=0", http_auth, UBUNTU_IMAGE_NAME, "--", "true"]
         )
     assert cm.value.returncode == 2
     assert f"{http_auth} requires --http-port" in cm.value.stderr
@@ -809,8 +779,9 @@ def fakebrowser(monkeypatch: Any) -> None:
 @pytest.mark.e2e
 def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
-    captured = helper.run_cli(
-        ["-q", "job", "run", "--detach", UBUNTU_IMAGE_NAME, "--", "true"]
+    captured = helper.run_cli_run_job(
+        ["--detach", UBUNTU_IMAGE_NAME, "--", "true"],
+        verbosity=-1,
     )
     job_id = captured.out
 
@@ -821,8 +792,9 @@ def test_job_browse(helper: Helper, fakebrowser: Any) -> None:
 @pytest.mark.e2e
 def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
     # Run a new job
-    captured = helper.run_cli(
-        ["-v", "job", "run", "--detach", "--browse", UBUNTU_IMAGE_NAME, "--", "true"]
+    captured = helper.run_cli_run_job(
+        ["--detach", "--browse", UBUNTU_IMAGE_NAME, "--", "true"],
+        verbosity=1,
     )
     assert "Browsing job, please open: https://job-" in captured.out
 
@@ -831,18 +803,16 @@ def test_job_run_browse(helper: Helper, fakebrowser: Any) -> None:
 def test_job_run_share(helper: Helper, fakebrowser: Any) -> None:
     another_test_user = "test2"
     # Run a new job
-    captured = helper.run_cli(
+    captured = helper.run_cli_run_job(
         [
-            "-q",
-            "job",
-            "run",
             "--no-wait-start",
             "--share",
             another_test_user,
             UBUNTU_IMAGE_NAME,
             "--",
             "true",
-        ]
+        ],
+        verbosity=-1,
     )
     job_id = captured.out.strip()
 
@@ -858,17 +828,9 @@ def test_job_run_share(helper: Helper, fakebrowser: Any) -> None:
 def test_job_submit_no_detach_failure(helper: Helper) -> None:
     # Run a new job
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
-        helper.run_cli(
-            [
-                "-v",
-                "job",
-                "run",
-                "--http-port",
-                "80",
-                UBUNTU_IMAGE_NAME,
-                "--",
-                "bash -c 'exit 127'",
-            ]
+        helper.run_cli_run_job(
+            ["--http-port", "80", UBUNTU_IMAGE_NAME, "--", "bash -c 'exit 127'"],
+            verbosity=1,
         )
     assert exc_info.value.returncode == 127
 
@@ -878,17 +840,9 @@ def test_job_run_no_detach_browse_failure(helper: Helper) -> None:
     # Run a new job
     captured = None
     with pytest.raises(subprocess.CalledProcessError) as exc_info:
-        captured = helper.run_cli(
-            [
-                "-v",
-                "job",
-                "run",
-                "--detach",
-                "--browse",
-                UBUNTU_IMAGE_NAME,
-                "--",
-                "bash -c 'exit 127'",
-            ]
+        captured = helper.run_cli_run_job(
+            ["--detach", "--browse", UBUNTU_IMAGE_NAME, "--", "bash -c 'exit 127'"],
+            verbosity=1,
         )
     assert captured is None
     assert exc_info.value.returncode == 127
@@ -909,7 +863,7 @@ def test_job_run_volume_all(helper: Helper) -> None:
     img = UBUNTU_IMAGE_NAME
 
     with pytest.raises(subprocess.CalledProcessError) as cm:
-        helper.run_cli(["run", "-T", "--volume=ALL", img, "--", command])
+        helper.run_cli_run_job(["-T", "--volume=ALL", img, "--", command])
     assert cm.value.returncode == 127
 
 
@@ -917,9 +871,7 @@ def test_job_run_volume_all(helper: Helper) -> None:
 def test_job_run_volume_all_and_another(helper: Helper) -> None:
     with pytest.raises(subprocess.CalledProcessError):
         args = ["--volume", "ALL", "--volume", "storage::/home:ro"]
-        captured = helper.run_cli(
-            ["job", "run", *args, UBUNTU_IMAGE_NAME, "--", "sleep 30"]
-        )
+        captured = helper.run_cli_run_job([*args, UBUNTU_IMAGE_NAME, "--", "sleep 30"])
         msg = "Cannot use `--volume=ALL` together with other `--volume` options"
         assert msg in captured.err
 
@@ -1077,18 +1029,16 @@ def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
     """.strip().splitlines()
     )
 
-    captured = helper.run_cli(
+    captured = helper.run_cli_run_job(
         [
-            "-q",
-            "job",
-            "run",
             "--restart",
             "on-failure",
             "--detach",
             UBUNTU_IMAGE_NAME,
             "--",
             f"bash -c '{cmd}'",
-        ]
+        ],
+        verbosity=-1,
     )
     job_id = captured.out
 
@@ -1108,8 +1058,9 @@ def test_job_run_stdout(helper: Helper) -> None:
     command = 'bash -c "sleep 30; for count in {0..3}; do echo $count; sleep 1; done"'
 
     try:
-        captured = helper.run_cli(
-            ["-q", "job", "run", "--no-tty", UBUNTU_IMAGE_NAME, "--", command]
+        captured = helper.run_cli_run_job(
+            ["--no-tty", UBUNTU_IMAGE_NAME, "--", command],
+            verbosity=-1,
         )
     except subprocess.CalledProcessError as exc:
         # EX_IOERR is returned if the process is not finished in 10 secs after
@@ -1151,8 +1102,9 @@ def test_job_attach_tty(helper: Helper) -> None:
 # @pytest.mark.e2e
 # def test_job_run_non_tty_stdin(helper: Helper) -> None:
 #     command = "wc --chars"
-#     captured = helper.run_cli(
-#         ["-q", "job", "run", UBUNTU_IMAGE_NAME, "--", command], input="abcdef"
+#     captured = helper.run_cli_run_job(
+#         [UBUNTU_IMAGE_NAME, "--", command], input="abcdef",
+#         verbosity=-1,
 #     )
 
 #     assert captured.err == ""
@@ -1165,10 +1117,8 @@ def test_job_secret_env(helper: Helper, secret: Tuple[str, str]) -> None:
 
     bash_script = f'echo "begin"$SECRET_VAR"end" | grep begin{secret_value}end'
     command = f"bash -c '{bash_script}'"
-    captured = helper.run_cli(
+    captured = helper.run_cli_run_job(
         [
-            "job",
-            "run",
             "-e",
             f"SECRET_VAR=secret:{secret_name}",
             "--no-wait-start",
@@ -1194,10 +1144,8 @@ def test_job_secret_file(helper: Helper, secret: Tuple[str, str]) -> None:
         f'test -f /secrets/secretfile && grep "^{secret_value}$" /secrets/secretfile'
     )
     command = f"bash -c '{bash_script}'"
-    captured = helper.run_cli(
+    captured = helper.run_cli_run_job(
         [
-            "job",
-            "run",
             "-v",
             f"secret:{secret_name}:/secrets/secretfile",
             "--no-wait-start",
@@ -1234,18 +1182,16 @@ def secret(helper: Helper) -> Iterator[Tuple[str, str]]:
 def test_job_working_dir(helper: Helper) -> None:
     bash_script = '[ "x$(pwd)" == "x/var/log" ]'
     command = f"bash -c '{bash_script}'"
-    captured = helper.run_cli(
+    captured = helper.run_cli_run_job(
         [
-            "-q",
-            "job",
-            "run",
             "-w",
             "/var/log",
             "--no-wait-start",
             UBUNTU_IMAGE_NAME,
             "--",
             command,
-        ]
+        ],
+        verbosity=-1,
     )
 
     job_id = captured.out
@@ -1261,10 +1207,8 @@ def test_job_disk_volume(
     with disk_factory("1GB") as disk:
         bash_script = 'echo "test data" > /mnt/disk/file && cat /mnt/disk/file'
         command = f"bash -c '{bash_script}'"
-        captured = helper.run_cli(
+        captured = helper.run_cli_run_job(
             [
-                "job",
-                "run",
                 "--life-span",
                 "1m",  # Avoid completed job to block disk from cleanup
                 "-v",
@@ -1293,10 +1237,8 @@ def test_job_disk_volume_named(
     with disk_factory("1G", disk_name):
         bash_script = 'echo "test data" > /mnt/disk/file && cat /mnt/disk/file'
         command = f"bash -c '{bash_script}'"
-        captured = helper.run_cli(
+        captured = helper.run_cli_run_job(
             [
-                "job",
-                "run",
                 "--life-span",
                 "1m",  # Avoid completed job to block disk from cleanup
                 "-v",

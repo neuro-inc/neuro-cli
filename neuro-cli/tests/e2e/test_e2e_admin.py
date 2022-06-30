@@ -274,7 +274,7 @@ def test_cluster_user_default_set_balance_and_quota_to_unlimited(
 @pytest.fixture
 def tmp_test_org(helper: Helper) -> Iterator[str]:
     org_name = "e2e-testing-" + secrets.token_hex(10)
-    helper.run_cli(["admin", "add-org", org_name])
+    helper.run_cli(["admin", "add-org", "--skip-default-tenants", org_name])
     try:
         yield org_name
     finally:

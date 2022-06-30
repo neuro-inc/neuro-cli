@@ -1142,11 +1142,16 @@ async def get_orgs(root: Root) -> None:
 
 @command()
 @argument("org_name", required=True, type=str)
-async def add_org(root: Root, org_name: str) -> None:
+@option("--skip-default-tenants", default=False, hidden=True, is_flag=True)
+async def add_org(
+    root: Root, org_name: str, skip_default_tenants: bool = False
+) -> None:
     """
     Create a new org.
     """
-    await root.client._admin.create_org(org_name)
+    await root.client._admin.create_org(
+        org_name, skip_auto_add_to_clusters=skip_default_tenants
+    )
 
 
 @command()
@@ -1317,6 +1322,9 @@ async def add_org_cluster(
     Add org access to specified cluster.
 
     """
+    if storage_size:
+        storage_size *= 1024**2
+
     org_cluster = await root.client._admin.create_org_cluster(
         cluster_name=cluster_name,
         org_name=org_name,
