@@ -112,7 +112,7 @@ def test_images_complete_lifecycle(
     assert image in local_images
 
     # Execute image and check result
-    captured = helper.run_cli(["-q", "run", "--no-wait-start", str(image_url)])
+    captured = helper.run_cli_run_job(["--no-wait-start", str(image_url)], verbosity=-1)
     assert not captured.err
     job_id = captured.out
     assert job_id.startswith("job-")

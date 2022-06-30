@@ -116,6 +116,7 @@ class Helper:
         self._tmpstorage = URL(f"storage:{self.tmpstoragename}")
         self._closed = False
         self._executed_jobs: List[str] = []
+        self.DEFAULT_PRESET = os.environ.get("E2E_PRESET", "cpu-small")
 
     def close(self) -> None:
         if not self._closed:
@@ -501,6 +502,25 @@ class Helper:
             print(f"neuro stdout: {out}")
             print(f"neuro stderr: {err}")
         return SysCap(out, err)
+
+    def run_cli_run_job(
+        self,
+        arguments: List[Any],
+        *,
+        verbosity: int = 0,
+        network_timeout: float = NETWORK_TIMEOUT,
+        input: Optional[str] = None,
+        timeout: float = 300,
+    ) -> SysCap:
+        if self.DEFAULT_PRESET:
+            arguments = ["-s", self.DEFAULT_PRESET, *arguments]
+        return self.run_cli(
+            ["job", "run", *arguments],
+            verbosity=verbosity,
+            network_timeout=network_timeout,
+            input=input,
+            timeout=timeout,
+        )
 
     def find_job_id(self, arg: str) -> Optional[str]:
         match = JOB_ID_PATTERN.search(arg)
@@ -923,8 +943,9 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
                 if http_auth:
                     description += " with authentication"
         args += ["-d", description]
-        capture = helper.run_cli(
-            ["-q", "job", "run", "--detach", *args, NGINX_IMAGE_NAME, "--", command]
+        capture = helper.run_cli_run_job(
+            ["--detach", *args, NGINX_IMAGE_NAME, "--", command],
+            verbosity=-1,
         )
         http_job_id = capture.out
         status: JobDescription = helper.job_info(http_job_id, wait_start=True)
