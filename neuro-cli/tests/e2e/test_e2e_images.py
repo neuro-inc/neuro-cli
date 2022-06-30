@@ -248,9 +248,11 @@ def test_docker_helper(
 ) -> None:
     monkeypatch.setenv(CONFIG_ENV_NAME, str(nmrc_path or DEFAULT_CONFIG_PATH))
     helper.run_cli(["config", "docker"])
-    registry = helper.registry_url.host
-    username = helper.username
-    full_tag = f"{registry}/{username}/{image}"
+    full_tag = helper.registry_url.host
+    assert full_tag
+    if helper.org_name:
+        full_tag += f"/{helper.org_name}"
+    full_tag += f"/{helper.username}/{image}"
     tag_cmd = f"docker tag {image} {full_tag}"
     result = subprocess.run(tag_cmd, capture_output=True, shell=True)
     assert (

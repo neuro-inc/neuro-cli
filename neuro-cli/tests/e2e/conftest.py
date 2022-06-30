@@ -411,12 +411,15 @@ class Helper:
                 async for chunk in it:
                     if not chunk:
                         break
-                    chunks.append(chunk.decode())
-                    if re.search(expected, "".join(chunks), flags):
+                    chunks.append(chunk)
+                    if re.search(expected, b"".join(chunks).decode(), flags):
                         return
                     if time() - started_at > JOB_OUTPUT_TIMEOUT:
                         break
 
+        print(f"Output of job {job_id}:")
+        for chunk in chunks:
+            print(f"  {chunk!r}")
         raise AssertionError(
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
         )
