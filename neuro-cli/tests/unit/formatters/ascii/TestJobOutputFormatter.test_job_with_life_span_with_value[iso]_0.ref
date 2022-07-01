@@ -8,8 +8,8 @@ Job                     test-job
  Priority                Normal                           
  Price (credits / hour)  15.0000                          
  Current cost            150.0000                         
- Resources                Memory  16.0M                   
-                          CPU       0.1                   
+ Resources                Memory  16.8 MB                 
+                          CPU         0.1                 
  Life span               1d2h3m4s                         
  TTY                     False                            
  Http URL                http://local.host.test/          

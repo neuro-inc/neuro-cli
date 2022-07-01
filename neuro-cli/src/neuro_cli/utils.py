@@ -616,7 +616,7 @@ def parse_permission_action(action: str) -> Action:
 def format_size(value: Optional[float]) -> str:
     if value is None:
         return ""
-    return humanize.naturalsize(value, gnu=True)
+    return humanize.naturalsize(value)
 
 
 def pager_maybe(

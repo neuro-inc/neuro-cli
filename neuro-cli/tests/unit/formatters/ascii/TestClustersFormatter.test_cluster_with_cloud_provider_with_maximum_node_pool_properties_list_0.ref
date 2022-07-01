@@ -1,12 +1,12 @@
-default                                                                                        
- Status        Deployed                                                                        
- Cloud         gcp                                                                             
- Region        us-central1                                                                     
- Node pools                                                                                    
-                 Machine        CPU   Memory     Disk   Preemptible   GPU   Min   Max   Idle   
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  
-                 n1-highmem-8   7.0    45.0G   150.0G        √                1     2      1   
-                 n1-highmem-8   7.0    45.0G   150.0G        ×                1     2      0   
-                                                                                               
- Default role  user                                                                            
+default                                                                                           
+ Status        Deployed                                                                           
+ Cloud         gcp                                                                                
+ Region        us-central1                                                                        
+ Node pools                                                                                       
+                 Machine        CPU    Memory       Disk   Preemptible   GPU   Min   Max   Idle   
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  
+                 n1-highmem-8   7.0   48.3 GB   161.1 GB        √                1     2      1   
+                 n1-highmem-8   7.0   48.3 GB   161.1 GB        ×                1     2      0   
+                                                                                                  
+ Default role  user                                                                               
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
