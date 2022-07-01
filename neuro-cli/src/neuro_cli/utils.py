@@ -613,6 +613,10 @@ def parse_permission_action(action: str) -> Action:
         )
 
 
+def parse_org_name(org: Optional[str], root: Root) -> Optional[str]:
+    return None if org == "NO_ORG" else (org or root.client.config.org_name)
+
+
 def format_size(value: Optional[float]) -> str:
     if value is None:
         return ""

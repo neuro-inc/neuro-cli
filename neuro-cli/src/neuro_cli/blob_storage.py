@@ -42,7 +42,7 @@ from neuro_cli.formatters.utils import (
     uri_formatter,
 )
 from neuro_cli.parse_utils import parse_timedelta
-from neuro_cli.utils import format_size
+from neuro_cli.utils import format_size, parse_org_name
 
 from .const import EX_OSFILE
 from .formatters.blob_storage import (
@@ -144,7 +144,7 @@ async def mkbucket(
     """
     Create a new bucket.
     """
-    org_name = None if org == ORG.NO_ORG_STR else (org or root.client.config.org_name)
+    org_name = parse_org_name(org, root)
     bucket = await root.client.buckets.create(
         name=name,
         cluster_name=cluster,
@@ -274,7 +274,7 @@ async def importbucket(
     """
     Import an existing bucket.
     """
-    org_name = None if org == ORG.NO_ORG_STR else (org or root.client.config.org_name)
+    org_name = parse_org_name(org, root)
     provider_type = Bucket.Provider(provider)
     credentials = {}
     if provider_type == Bucket.Provider.AWS:

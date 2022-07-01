@@ -10,7 +10,7 @@ from neuro_cli.formatters.secrets import (
 from neuro_cli.formatters.utils import URIFormatter, uri_formatter
 
 from .root import Root
-from .utils import argument, command, group, option
+from .utils import argument, command, group, option, parse_org_name
 
 
 @group()
@@ -83,7 +83,7 @@ async def add(
       neuro secret add KEY_NAME VALUE
       neuro secret add KEY_NAME @path/to/file.txt
     """
-    org_name = None if org == ORG.NO_ORG_STR else (org or root.client.config.org_name)
+    org_name = parse_org_name(org, root)
     await root.client.secrets.add(
         key, read_data(value), cluster_name=cluster, org_name=org_name
     )
@@ -106,7 +106,7 @@ async def rm(root: Root, key: str, cluster: Optional[str], org: Optional[str]) -
     Remove secret KEY.
     """
 
-    org_name = None if org == ORG.NO_ORG_STR else (org or root.client.config.org_name)
+    org_name = parse_org_name(org, root)
     await root.client.secrets.rm(key, cluster_name=cluster, org_name=org_name)
     if root.verbosity > 0:
         root.print(f"Secret with key '{key}' was successfully removed")

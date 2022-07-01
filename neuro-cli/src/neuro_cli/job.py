@@ -36,7 +36,7 @@ from neuro_cli.formatters.utils import (
     uri_formatter,
 )
 from neuro_cli.parse_utils import parse_sort_keys
-from neuro_cli.utils import resolve_disk
+from neuro_cli.utils import parse_org_name, resolve_disk
 
 from .ael import process_attach, process_exec, process_logs
 from .click_types import (
@@ -1078,7 +1078,7 @@ async def run(
         http_port = http
     cmd = _fix_cmd("neuro run", "IMAGE -- CMD...", cmd)
     cluster_name = cluster or root.client.cluster_name
-    org_name = None if org == ORG.NO_ORG_STR else (org or root.client.config.org_name)
+    org_name = parse_org_name(org, root)
     cluster_config = root.client.config.clusters[cluster_name]
     if not preset:
         preset = next(iter(cluster_config.presets.keys()))
