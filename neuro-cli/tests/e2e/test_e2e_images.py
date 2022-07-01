@@ -120,6 +120,8 @@ def test_images_complete_lifecycle(
 
     helper.check_job_output(job_id, re.escape(tag))
 
+    helper.run_cli(["image", "rm", image_full_str_no_tag])
+
 
 @pytest.mark.e2e
 def test_image_tags(helper: Helper, image: str, tag: str) -> None:
@@ -162,6 +164,8 @@ def test_image_tags(helper: Helper, image: str, tag: str) -> None:
     result = subprocess.run(cmd, capture_output=True, shell=True)
     assertion_msg = f"Command {cmd} should fail: {result.stdout!r} {result.stderr!r}"
     assert result.returncode, assertion_msg
+
+    helper.run_cli(["image", "rm", image_full_str_no_tag])
 
 
 @pytest.mark.e2e
@@ -241,6 +245,8 @@ async def test_images_push_with_specified_name(
     # delete locally
     await docker.images.delete(pulled, force=True)
 
+    helper.run_cli(["image", "rm", f"image:{pushed_no_tag}"])
+
 
 @pytest.mark.e2e
 def test_docker_helper(
@@ -256,12 +262,12 @@ def test_docker_helper(
     tag_cmd = f"docker tag {image} {full_tag}"
     result = subprocess.run(tag_cmd, capture_output=True, shell=True)
     assert (
-        not result.returncode
+        result.returncode == 0
     ), f"Command {tag_cmd} failed: {result.stdout!r} {result.stderr!r} "
     push_cmd = f"docker push {full_tag}"
     result = subprocess.run(push_cmd, capture_output=True, shell=True)
     assert (
-        not result.returncode
+        result.returncode == 0
     ), f"Command {push_cmd} failed: {result.stdout!r} {result.stderr!r} "
     # Run image and check output
     image_url = f"image://{helper.cluster_uri_base}/{image}"
@@ -269,3 +275,6 @@ def test_docker_helper(
         image_url, "", wait_state=JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
     )
     helper.check_job_output(job_id, re.escape(tag))
+
+    image_full_str_no_tag = image_url.replace(f":{tag}", "")
+    helper.run_cli(["image", "rm", image_full_str_no_tag])
