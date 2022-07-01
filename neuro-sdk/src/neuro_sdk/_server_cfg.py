@@ -15,13 +15,17 @@ from ._rewrite import rewrite_module
 class Preset:
     credits_per_hour: Decimal
     cpu: float
-    memory_mb: int
+    memory: int
     scheduler_enabled: bool = False
     preemptible_node: bool = False
     gpu: Optional[int] = None
     gpu_model: Optional[str] = None
     tpu_type: Optional[str] = None
     tpu_software_version: Optional[str] = None
+
+    @property
+    def memory_mb(self) -> int:
+        return self.memory // 2**20
 
 
 @rewrite_module
@@ -58,7 +62,7 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
             # TODO: make credits_per_hour not optional after server updated
             credits_per_hour=Decimal(data.get("credits_per_hour", "0")),
             cpu=data["cpu"],
-            memory_mb=data["memory_mb"],
+            memory=data["memory"],
             gpu=data.get("gpu"),
             gpu_model=data.get("gpu_model"),
             scheduler_enabled=data.get("scheduler_enabled", False),

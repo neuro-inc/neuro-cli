@@ -67,13 +67,17 @@ INVALID_IMAGE_NAME = "INVALID-IMAGE-NAME"
 @rewrite_module
 @dataclass(frozen=True)
 class Resources:
-    memory_mb: int
+    memory: int
     cpu: float
     gpu: Optional[int] = None
     gpu_model: Optional[str] = None
     shm: bool = True
     tpu_type: Optional[str] = None
     tpu_software_version: Optional[str] = None
+
+    @property
+    def memory_mb(self) -> int:
+        return self.memory // 2**20
 
 
 @rewrite_module
@@ -255,10 +259,20 @@ class JobDescription:
 @dataclass(frozen=True)
 class JobTelemetry:
     cpu: float
-    memory: float
+    memory_bytes: int
     timestamp: float
     gpu_duty_cycle: Optional[int] = None
-    gpu_memory: Optional[float] = None
+    gpu_memory_bytes: Optional[int] = None
+
+    @property
+    def memory(self) -> float:
+        return self.memory_bytes / 2**20
+
+    @property
+    def gpu_memory(self) -> Optional[float]:
+        if self.gpu_memory_bytes is None:
+            return None
+        return self.gpu_memory_bytes / 2**20
 
 
 @rewrite_module
@@ -847,7 +861,7 @@ def _raise_for_invalid_commit_chunk(obj: Dict[str, Any], expect_started: bool) -
 
 def _resources_to_api(resources: Resources) -> Dict[str, Any]:
     value: Dict[str, Any] = {
-        "memory_mb": resources.memory_mb,
+        "memory": resources.memory,
         "cpu": resources.cpu,
         "shm": resources.shm,
     }
@@ -870,7 +884,7 @@ def _resources_from_api(data: Dict[str, Any]) -> Resources:
         tpu_type = tpu["type"]
         tpu_software_version = tpu["software_version"]
     return Resources(
-        memory_mb=data["memory_mb"],
+        memory=data["memory"],
         cpu=data["cpu"],
         shm=data.get("shm", True),
         gpu=data.get("gpu", None),
@@ -1102,10 +1116,10 @@ def _job_to_api(
 def _job_telemetry_from_api(value: Dict[str, Any]) -> JobTelemetry:
     return JobTelemetry(
         cpu=value["cpu"],
-        memory=value["memory"],
+        memory_bytes=value["memory_bytes"],
         timestamp=value["timestamp"],
         gpu_duty_cycle=value.get("gpu_duty_cycle"),
-        gpu_memory=value.get("gpu_memory"),
+        gpu_memory_bytes=value.get("gpu_memory_bytes"),
     )
 
 

@@ -172,7 +172,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
             buckets_url=URL("https://buckets-dev.neu.ro"),
             presets={
                 "cpu-small": Preset(
-                    credits_per_hour=Decimal("10"), cpu=1, memory_mb=2 * 1024
+                    credits_per_hour=Decimal("10"), cpu=1, memory=2 * 2**30
                 )
             },
         ),
@@ -188,7 +188,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
             buckets_url=URL("https://buckets2-dev.neu.ro"),
             presets={
                 "cpu-large": Preset(
-                    credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+                    credits_per_hour=Decimal("10"), cpu=7, memory=14 * 2**30
                 )
             },
         ),
@@ -204,7 +204,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
             buckets_url=URL("https://buckets3-dev.neu.ro"),
             presets={
                 "cpu-large": Preset(
-                    credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+                    credits_per_hour=Decimal("10"), cpu=7, memory=14 * 2**30
                 )
             },
         ),
@@ -237,7 +237,7 @@ async def test_get_cluster_name_from_local(
         assert client.config.bucket_api_url == URL("https://buckets-dev.neu.ro")
         assert client.config.presets == {
             "cpu-small": Preset(
-                credits_per_hour=Decimal("10"), cpu=1, memory_mb=2 * 1024
+                credits_per_hour=Decimal("10"), cpu=1, memory=2 * 2**30
             )
         }
 
@@ -252,7 +252,7 @@ async def test_get_cluster_name_from_local(
         assert client.config.bucket_api_url == URL("https://buckets2-dev.neu.ro")
         assert client.config.presets == {
             "cpu-large": Preset(
-                credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+                credits_per_hour=Decimal("10"), cpu=7, memory=14 * 2**30
             )
         }
 
@@ -311,7 +311,7 @@ async def test_presets(
             "cpu-large": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
-                memory_mb=14336,
+                memory=14336 * 2**20,
                 scheduler_enabled=False,
                 gpu=None,
                 gpu_model=None,
@@ -321,7 +321,7 @@ async def test_presets(
             "cpu-small": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
-                memory_mb=2048,
+                memory=2048 * 2**20,
                 scheduler_enabled=False,
                 gpu=None,
                 gpu_model=None,
@@ -331,7 +331,7 @@ async def test_presets(
             "gpu-large": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
-                memory_mb=61440,
+                memory=61440 * 2**20,
                 scheduler_enabled=False,
                 gpu=1,
                 gpu_model="nvidia-tesla-v100",
@@ -341,7 +341,7 @@ async def test_presets(
             "gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
-                memory_mb=30720,
+                memory=30720 * 2**20,
                 scheduler_enabled=False,
                 gpu=1,
                 gpu_model="nvidia-tesla-k80",
@@ -451,7 +451,7 @@ async def test_fetch(
                         "name": "cpu-small",
                         "credits_per_hour": "10",
                         "cpu": 2,
-                        "memory_mb": 2 * 1024,
+                        "memory": 2 * 2**30,
                     }
                 ],
             }
@@ -482,7 +482,7 @@ async def test_fetch(
                     "cpu-small": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=2,
-                        memory_mb=2048,
+                        memory=2048 * 2**20,
                         scheduler_enabled=False,
                         gpu=None,
                         gpu_model=None,
@@ -536,7 +536,7 @@ async def test_fetch_without_admin_url(
                         "name": "cpu-small",
                         "credits_per_hour": "10",
                         "cpu": 2,
-                        "memory_mb": 2 * 1024,
+                        "memory": 2 * 2**30,
                     }
                 ],
             }
@@ -599,7 +599,7 @@ async def test_fetch_dropped_selected_cluster(
                         "name": "cpu-small",
                         "credits_per_hour": "10",
                         "cpu": 2,
-                        "memory_mb": 2 * 1024,
+                        "memory": 2 * 2**30,
                     }
                 ],
             }
@@ -822,7 +822,7 @@ async def test_check_server_mismatch_clusters(
                         "name": "cpu-small",
                         "credits_per_hour": "10",
                         "cpu": 2,
-                        "memory_mb": 2 * 1024,
+                        "memory": 2 * 2**30,
                     }
                 ],
             }
@@ -889,7 +889,7 @@ async def test_check_server_mismatch_auth(
                         "name": "cpu-small",
                         "credits_per_hour": "10",
                         "cpu": 2,
-                        "memory_mb": 2 * 1024,
+                        "memory": 2 * 2**30,
                     }
                 ],
             }

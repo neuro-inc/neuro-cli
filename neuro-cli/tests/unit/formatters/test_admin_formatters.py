@@ -121,8 +121,8 @@ class TestClustersFormatter:
             idle_size=1 if has_idle else 0,
             machine_type="n1-highmem-8",
             available_cpu=7.0,
-            available_memory_mb=46080,
-            disk_size_gb=150,
+            available_memory=46080 * 2**20,
+            disk_size=150 * 2**30,
             disk_type=disk_type,
             gpu=1 if is_gpu else 0,
             gpu_model="nvidia-tesla-k80" if is_gpu else None,
@@ -190,8 +190,8 @@ class TestClustersFormatter:
                         storage=_Storage(
                             description="Filestore",
                             instances=[
-                                _StorageInstance(size_mb=1024),
-                                _StorageInstance(name="org", size_mb=2 * 1024),
+                                _StorageInstance(size=2**30),
+                                _StorageInstance(name="org", size=2 * 2**30),
                             ],
                         ),
                     ),

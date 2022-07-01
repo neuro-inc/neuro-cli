@@ -40,22 +40,22 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
             "gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
-                memory_mb=30 * 1024,
+                memory=30 * 2**30,
                 gpu=1,
                 gpu_model="nvidia-tesla-k80",
             ),
             "gpu-large": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
-                memory_mb=60 * 1024,
+                memory=60 * 2**30,
                 gpu=1,
                 gpu_model="nvidia-tesla-v100",
             ),
             "cpu-small": Preset(
-                credits_per_hour=Decimal("10"), cpu=7, memory_mb=2 * 1024
+                credits_per_hour=Decimal("10"), cpu=7, memory=2 * 2**30
             ),
             "cpu-large": Preset(
-                credits_per_hour=Decimal("10"), cpu=7, memory_mb=14 * 1024
+                credits_per_hour=Decimal("10"), cpu=7, memory=14 * 2**30
             ),
         },
         name="default",
@@ -71,7 +71,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         buckets_url=URL("https://buckets2-dev.neu.ro"),
         presets={
             "cpu-small": Preset(
-                credits_per_hour=Decimal("10"), cpu=7, memory_mb=2 * 1024
+                credits_per_hour=Decimal("10"), cpu=7, memory=2 * 2**30
             ),
         },
         name="other",

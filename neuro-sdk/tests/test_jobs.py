@@ -33,7 +33,8 @@ _MakeClient = Callable[..., Client]
 
 
 def test_resources_default() -> None:
-    resources = Resources(16, 0.5)
+    resources = Resources(16 * 2**20, 0.5)
+    assert resources.memory == 16 * 2**20
     assert resources.memory_mb == 16
     assert resources.cpu == 0.5
     assert resources.gpu is None
@@ -185,15 +186,19 @@ async def test_job_top(
     def get_data_chunk(index: int) -> Dict[str, Any]:
         return {
             "cpu": 0.5,
-            "memory": 50,
+            "memory_bytes": 50 * 2**20,
             "timestamp": index,
             "gpu_duty_cycle": 50,
-            "gpu_memory": 55.6,
+            "gpu_memory_bytes": int(55.6 * 2**20),
         }
 
     def get_job_telemetry(index: int) -> JobTelemetry:
         return JobTelemetry(
-            cpu=0.5, memory=50, timestamp=index, gpu_duty_cycle=50, gpu_memory=55.6
+            cpu=0.5,
+            memory_bytes=50 * 2**20,
+            timestamp=index,
+            gpu_duty_cycle=50,
+            gpu_memory_bytes=int(55.6 * 2**20),
         )
 
     async def top_stream(request: web.Request) -> web.WebSocketResponse:
@@ -586,7 +591,7 @@ async def test_status_failed(
             "command": "submit-command",
             "http": {"port": 8181},
             "resources": {
-                "memory_mb": "4096",
+                "memory": 4096 * 2**20,
                 "cpu": 7.0,
                 "shm": True,
                 "gpu": 1,
@@ -652,7 +657,7 @@ async def test_status_being_dropped(
             "command": "submit-command",
             "http": {"port": 8181},
             "resources": {
-                "memory_mb": "4096",
+                "memory": 4096 * 2**20,
                 "cpu": 7.0,
                 "shm": True,
                 "gpu": 1,
@@ -716,7 +721,7 @@ async def test_status_with_http(
             "command": "submit-command",
             "http": {"port": 8181},
             "resources": {
-                "memory_mb": "4096",
+                "memory": 4096 * 2**20,
                 "cpu": 7.0,
                 "shm": True,
                 "gpu": 1,
@@ -778,7 +783,7 @@ async def test_status_with_tpu(
             "command": "submit-command",
             "http": {"port": 8181},
             "resources": {
-                "memory_mb": "4096",
+                "memory": 4096 * 2**20,
                 "cpu": 7.0,
                 "shm": True,
                 "gpu": 1,
@@ -840,7 +845,7 @@ async def test_job_start(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -931,7 +936,7 @@ async def test_job_start_with_privileged_flag(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -996,7 +1001,7 @@ async def test_job_start_with_priority(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -1063,7 +1068,7 @@ async def test_job_run(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -1082,7 +1087,7 @@ async def test_job_run(
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": 16384,
+                    "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -1114,7 +1119,7 @@ async def test_job_run(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -1161,7 +1166,7 @@ async def test_job_run_with_wait_for_quota(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -1179,7 +1184,7 @@ async def test_job_run_with_wait_for_quota(
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "resources": {
-                    "memory_mb": 16384,
+                    "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -1200,7 +1205,7 @@ async def test_job_run_with_wait_for_quota(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
@@ -1239,7 +1244,7 @@ async def test_job_run_with_name_and_description(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -1258,7 +1263,7 @@ async def test_job_run_with_name_and_description(
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": 16384,
+                    "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -1292,7 +1297,7 @@ async def test_job_run_with_name_and_description(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -1345,7 +1350,7 @@ async def test_job_run_with_tags(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -1364,7 +1369,7 @@ async def test_job_run_with_tags(
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": 16384,
+                    "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -1397,7 +1402,7 @@ async def test_job_run_with_tags(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -1449,7 +1454,7 @@ async def test_job_run_no_volumes(
             "command": "date",
             "resources": {
                 "cpu": 7,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -1468,7 +1473,7 @@ async def test_job_run_no_volumes(
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": 16384,
+                    "memory": 16384 * 2**20,
                     "cpu": 7,
                     "shm": True,
                     "gpu": 1,
@@ -1490,7 +1495,7 @@ async def test_job_run_no_volumes(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
@@ -1531,7 +1536,7 @@ async def test_job_run_with_relative_volume_uris(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -1550,7 +1555,7 @@ async def test_job_run_with_relative_volume_uris(
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": 16384,
+                    "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -1587,7 +1592,7 @@ async def test_job_run_with_relative_volume_uris(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
         volumes: List[Volume] = [
             Volume(URL("storage:path"), "/container/my_path", False),
             Volume(
@@ -1637,7 +1642,7 @@ async def test_job_run_with_secret_uris(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -1656,7 +1661,7 @@ async def test_job_run_with_secret_uris(
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": 16384,
+                    "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -1691,7 +1696,7 @@ async def test_job_run_with_secret_uris(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
         env = {"VAR": "VAL"}
         secret_env = {"SECRET_VAR": URL("secret:secret")}
         volumes = [Volume(URL("storage:path"), "/container/my_path", False)]
@@ -1737,7 +1742,7 @@ async def test_job_run_with_disk_volume_uris(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -1763,7 +1768,7 @@ async def test_job_run_with_disk_volume_uris(
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": 16384,
+                    "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -1790,7 +1795,7 @@ async def test_job_run_with_disk_volume_uris(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
         disk_volumes = [
             DiskVolume(URL("disk:disk-1"), "/container/my_path"),
         ]
@@ -1831,7 +1836,7 @@ async def test_job_run_preemptible(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -1850,7 +1855,7 @@ async def test_job_run_preemptible(
                 "command": "submit-command",
                 "http": {"port": 8181, "requires_auth": True},
                 "resources": {
-                    "memory_mb": 16384,
+                    "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
                     "gpu": 1,
@@ -1884,7 +1889,7 @@ async def test_job_run_preemptible(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -1936,7 +1941,7 @@ async def test_job_run_schedule_timeout(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -1955,7 +1960,7 @@ async def test_job_run_schedule_timeout(
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "resources": {
-                    "memory_mb": 16384,
+                    "memory": 16384 * 2**20,
                     "cpu": 7,
                     "shm": True,
                     "gpu": 1,
@@ -1976,7 +1981,7 @@ async def test_job_run_schedule_timeout(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
@@ -2011,7 +2016,7 @@ async def test_job_run_tpu(
             "command": "date",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "shm": False,
                 "gpu_model": "nvidia-tesla-p4",
@@ -2030,7 +2035,7 @@ async def test_job_run_tpu(
                 "image": "submit-image-name",
                 "command": "submit-command",
                 "resources": {
-                    "memory_mb": 16384,
+                    "memory": 16384 * 2**20,
                     "cpu": 7,
                     "shm": True,
                     "gpu": 1,
@@ -2052,7 +2057,9 @@ async def test_job_run_tpu(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 7, 1, "test-gpu-model", True, "v3-8", "1.14")
+        resources = Resources(
+            16384 * 2**20, 7, 1, "test-gpu-model", True, "v3-8", "1.14"
+        )
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
@@ -2077,7 +2084,7 @@ async def test_job_run_with_tty(
             "container": {
                 "image": "submit-image-name",
                 "command": "submit-command",
-                "resources": {"memory_mb": 16384, "cpu": 0.5, "shm": True},
+                "resources": {"memory": 16384 * 2**20, "cpu": 0.5, "shm": True},
                 "tty": True,
             },
             "scheduler_enabled": False,
@@ -2093,7 +2100,7 @@ async def test_job_run_with_tty(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384, 0.5)
+        resources = Resources(16384 * 2**20, 0.5)
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
@@ -2133,7 +2140,7 @@ def create_job_response(
             "command": "submit-command",
             "resources": {
                 "cpu": 1.0,
-                "memory_mb": 16384,
+                "memory": 16384 * 2**20,
                 "gpu": 1,
                 "gpu_model": "nvidia-tesla-v100",
             },
@@ -2601,7 +2608,7 @@ async def test_job_run_life_span(
         assert data == {
             "container": {
                 "image": "submit-image-name",
-                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+                "resources": {"memory": 16 * 2**20, "cpu": 0.5, "shm": True},
                 "command": "submit-command",
             },
             "scheduler_enabled": False,
@@ -2617,7 +2624,7 @@ async def test_job_run_life_span(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16, 0.5)
+        resources = Resources(16 * 2**20, 0.5)
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
@@ -2634,7 +2641,7 @@ async def test_job_run_restart_policy(
         assert data == {
             "container": {
                 "image": "submit-image-name",
-                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+                "resources": {"memory": 16 * 2**20, "cpu": 0.5, "shm": True},
                 "command": "submit-command",
             },
             "scheduler_enabled": False,
@@ -2650,7 +2657,7 @@ async def test_job_run_restart_policy(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16, 0.5)
+        resources = Resources(16 * 2**20, 0.5)
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
@@ -2669,7 +2676,7 @@ async def test_job_run_working_dir(
         assert data == {
             "container": {
                 "image": "submit-image-name",
-                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+                "resources": {"memory": 16 * 2**20, "cpu": 0.5, "shm": True},
                 "command": "submit-command",
                 "working_dir": "/working/dir",
             },
@@ -2687,7 +2694,7 @@ async def test_job_run_working_dir(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16, 0.5)
+        resources = Resources(16 * 2**20, 0.5)
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
@@ -2821,7 +2828,7 @@ async def test_job_price_credits(
         assert to_api_request == {
             "container": {
                 "image": "submit-image-name",
-                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+                "resources": {"memory": 16 * 2**20, "cpu": 0.5, "shm": True},
             },
             "scheduler_enabled": False,
             "pass_config": False,
@@ -2843,7 +2850,7 @@ async def test_job_price_credits(
     async with make_client(srv.make_url("/")) as client:
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
-            resources=Resources(16, 0.5),
+            resources=Resources(16 * 2**20, 0.5),
         )
         resp = await client.jobs.run(container=container)
         assert resp.total_price_credits == Decimal(total_price_credits)
@@ -2860,7 +2867,7 @@ async def test_job_with_org_name(
         assert to_api_request == {
             "container": {
                 "image": "submit-image-name",
-                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+                "resources": {"memory": 16 * 2**20, "cpu": 0.5, "shm": True},
             },
             "scheduler_enabled": False,
             "pass_config": False,
@@ -2882,7 +2889,7 @@ async def test_job_with_org_name(
     async with make_client(srv.make_url("/")) as client:
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
-            resources=Resources(16, 0.5),
+            resources=Resources(16 * 2**20, 0.5),
         )
         resp = await client.jobs.run(container=container, org_name=org_name)
         assert resp.org_name == org_name
@@ -2896,7 +2903,7 @@ async def test_job_without_org_name(
         assert to_api_request == {
             "container": {
                 "image": "submit-image-name",
-                "resources": {"memory_mb": 16, "cpu": 0.5, "shm": True},
+                "resources": {"memory": 16 * 2**20, "cpu": 0.5, "shm": True},
             },
             "scheduler_enabled": False,
             "pass_config": False,
@@ -2912,7 +2919,7 @@ async def test_job_without_org_name(
     async with make_client(srv.make_url("/")) as client:
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
-            resources=Resources(16, 0.5),
+            resources=Resources(16 * 2**20, 0.5),
         )
         resp = await client.jobs.run(container=container)
         assert not resp.org_name

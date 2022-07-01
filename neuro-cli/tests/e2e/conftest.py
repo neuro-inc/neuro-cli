@@ -583,7 +583,7 @@ class Helper:
             env = {}
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
             preset = client.presets["cpu-micro"]
-            resources = Resources(memory_mb=preset.memory_mb, cpu=preset.cpu)
+            resources = Resources(memory=preset.memory, cpu=preset.cpu)
             container = Container(
                 image=client.parse.remote_image(image),
                 command=command,

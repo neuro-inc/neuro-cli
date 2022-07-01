@@ -57,7 +57,7 @@ def _job_entry(
             "env": {},
             "volumes": [],
             "command": "sleep 1h",
-            "resources": {"cpu": 0.1, "memory_mb": 1024, "shm": True},
+            "resources": {"cpu": 0.1, "memory": 2**30, "shm": True},
         },
         "ssh_auth_server": "ssh://nobody@ssh-auth-dev.neu.ro:22",
         "scheduler_enabled": True,

@@ -12,7 +12,7 @@ def test_create_get_list_delete(
     cap = helper.run_cli(["disk", "ls"])
     assert cap.err == ""
 
-    with disk_factory("2G") as disk_id:
+    with disk_factory("2GB") as disk_id:
         cap = helper.run_cli(["disk", "ls"])
         assert cap.err == ""
         assert disk_id in cap.out
@@ -24,7 +24,7 @@ def test_create_get_list_delete(
         cap = helper.run_cli(["disk", "get", disk_id])
         assert cap.err == ""
         assert disk_id in cap.out
-        assert "2.0G" in cap.out
+        assert "2.0 GB" in cap.out
 
     cap = helper.run_cli(["disk", "ls"])
     assert cap.err == ""
@@ -38,11 +38,11 @@ def test_delete_multiple_disks(
     disk_id_1: Optional[str] = None
     disk_id_2: Optional[str] = None
     try:
-        cap = helper.run_cli(["disk", "create", "1G"])
+        cap = helper.run_cli(["disk", "create", "1GB"])
         assert cap.err == ""
         disk_id_1 = cap.out.splitlines()[0].split()[1]
 
-        cap = helper.run_cli(["disk", "create", "1G"])
+        cap = helper.run_cli(["disk", "create", "1GB"])
         assert cap.err == ""
         disk_id_2 = cap.out.splitlines()[0].split()[1]
 

@@ -27,7 +27,7 @@ from neuro_sdk import (
 
 from neuro_cli.formatters.config import BalanceFormatter
 
-from .click_types import MEGABYTE
+from .click_types import MEMORY
 from .defaults import JOB_CPU_NUMBER, JOB_MEMORY_AMOUNT, PRESET_PRICE
 from .formatters.admin import (
     ClustersFormatter,
@@ -398,7 +398,7 @@ node_pools:
 storage:
   id: premium_lrs
   instances:
-  - size_mb: {file_share_size_mb}
+  - size: {file_share_size}
 """
 
 
@@ -417,10 +417,8 @@ async def generate_azure(session: PromptSession[str]) -> str:
         "Azure client secret: ", default=os.environ.get("AZURE_CLIENT_SECRET", "")
     )
     args["resource_group"] = await session.prompt_async("Azure resource group: ")
-    args["file_share_size_gb"] = await session.prompt_async(
-        "Azure Files storage size (Gib): "
-    )
-    args["file_share_size_mb"] = args["file_share_size_gb"] * 1024
+    file_share_size_gb = await session.prompt_async("Azure Files storage size (Gb): ")
+    args["file_share_size"] = file_share_size_gb * 10**9
     return AZURE_TEMPLATE.format_map(args)
 
 
@@ -443,19 +441,19 @@ node_pools:
   min_size: 3
   max_size: 3
   disk_type: {storage_profile_name}
-  disk_size_gb: 40
+  disk_size: 40_000_000_000
 - id: {platform_node_pool_id}
   role: platform
   name: platform
   min_size: 3
   max_size: 3
   disk_type: {storage_profile_name}
-  disk_size_gb: 100
+  disk_size: 100_000_000_000
 storage:
   profile_name: {storage_profile_name}
-  size_gib: {storage_size_gb}
+  size: {storage_size}
   instances:
-  - size_mb: {storage_size_mb}
+  - size: {storage_size}
 """
 
 
@@ -510,8 +508,8 @@ async def generate_vcd(root: Root, session: PromptSession[str]) -> str:
         "Storage profile: ",
         default=(cloud_provider.get("storage_profile_names") or [""])[0],
     )
-    args["storage_size_gb"] = await session.prompt_async("Storage size (Gib): ")
-    args["storage_size_mb"] = args["storage_size_gb"] * 1024
+    storage_size_gb = await session.prompt_async("Storage size (Gb): ")
+    args["storage_size"] = storage_size_gb * 10**9
     args["kubernetes_node_pool_id"] = cloud_provider["kubernetes_node_pool_id"]
     args["platform_node_pool_id"] = cloud_provider["platform_node_pool_id"]
     return VCD_TEMPLATE.format_map(args)
@@ -931,7 +929,7 @@ async def _update_presets_and_fetch(root: Root, presets: Mapping[str, Preset]) -
     "-m",
     "--memory",
     metavar="AMOUNT",
-    type=MEGABYTE,
+    type=MEMORY,
     help="Memory amount",
     default=JOB_MEMORY_AMOUNT,
     show_default=True,
@@ -991,7 +989,7 @@ async def add_resource_preset(
     presets[preset_name] = Preset(
         credits_per_hour=_parse_finite_decimal(credits_per_hour),
         cpu=cpu,
-        memory_mb=memory,
+        memory=memory,
         gpu=gpu,
         gpu_model=gpu_model,
         tpu_type=tpu_type,
@@ -1027,7 +1025,7 @@ async def add_resource_preset(
     "-m",
     "--memory",
     metavar="AMOUNT",
-    type=MEGABYTE,
+    type=MEMORY,
     help="Memory amount",
 )
 @option(
@@ -1086,7 +1084,7 @@ async def update_resource_preset(
         if credits_per_hour is not None
         else None,
         "cpu": cpu,
-        "memory_mb": memory,
+        "memory": memory,
         "gpu": gpu,
         "gpu_model": gpu_model,
         "tpu_type": tpu_type,
@@ -1306,7 +1304,7 @@ async def get_org_clusters(root: Root, cluster_name: str) -> None:
 @option(
     "--storage-size",
     metavar="AMOUNT",
-    type=MEGABYTE,
+    type=MEMORY,
     help="Storage size, ignored for storage types with elastic storage size",
 )
 async def add_org_cluster(
