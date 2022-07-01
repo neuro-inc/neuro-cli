@@ -42,7 +42,7 @@ from neuro_cli.formatters.utils import (
     uri_formatter,
 )
 from neuro_cli.parse_utils import parse_timedelta
-from neuro_cli.utils import format_size
+from neuro_cli.utils import format_size, parse_org_name
 
 from .const import EX_OSFILE
 from .formatters.blob_storage import (
@@ -144,10 +144,11 @@ async def mkbucket(
     """
     Create a new bucket.
     """
+    org_name = parse_org_name(org, root)
     bucket = await root.client.buckets.create(
         name=name,
         cluster_name=cluster,
-        org_name=org,
+        org_name=org_name,
     )
     bucket_fmtr = BucketFormatter(
         str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
@@ -273,6 +274,7 @@ async def importbucket(
     """
     Import an existing bucket.
     """
+    org_name = parse_org_name(org, root)
     provider_type = Bucket.Provider(provider)
     credentials = {}
     if provider_type == Bucket.Provider.AWS:
@@ -317,7 +319,7 @@ async def importbucket(
         credentials=credentials,
         name=name,
         cluster_name=cluster,
-        org_name=org,
+        org_name=org_name,
     )
     bucket_fmtr = BucketFormatter(
         str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)

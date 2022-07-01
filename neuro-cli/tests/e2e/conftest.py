@@ -138,6 +138,19 @@ class Helper:
         return config.cluster_name
 
     @cached_property
+    def org_name(self) -> Optional[str]:
+        config = self.get_config()
+        return config.org_name
+
+    @cached_property
+    def cluster_uri_base(self) -> str:
+        result = self.cluster_name
+        if self.org_name is not None:
+            result += "/" + self.org_name
+        result += "/" + self.username
+        return result
+
+    @cached_property
     def token(self) -> str:
         config = self.get_config()
 
@@ -158,7 +171,7 @@ class Helper:
 
     def make_uri(self, path: str, *, fromhome: bool = False) -> URL:
         if fromhome:
-            return URL(f"storage://{self.cluster_name}/{self.username}/{path}")
+            return URL(f"storage://{self.cluster_uri_base}/{path}")
         else:
             return self.tmpstorage / path
 
@@ -398,12 +411,15 @@ class Helper:
                 async for chunk in it:
                     if not chunk:
                         break
-                    chunks.append(chunk.decode())
-                    if re.search(expected, "".join(chunks), flags):
+                    chunks.append(chunk)
+                    if re.search(expected, b"".join(chunks).decode(), flags):
                         return
                     if time() - started_at > JOB_OUTPUT_TIMEOUT:
                         break
 
+        print(f"Output of job {job_id}:")
+        for chunk in chunks:
+            print(f"  {chunk!r}")
         raise AssertionError(
             f"Output of job {job_id} does not satisfy to expected regexp: {expected}"
         )
@@ -813,6 +829,7 @@ def _get_nmrc_path(tmp_path: Any, require_admin: bool) -> Optional[Path]:
 @pytest.fixture
 def helper(tmp_path: Path, nmrc_path: Path) -> Iterator[Helper]:
     ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path)
+    ret.cluster_uri_base  # get and cache properties outside of the event loop
     yield ret
     with suppress(Exception):
         # ignore exceptions in helper closing

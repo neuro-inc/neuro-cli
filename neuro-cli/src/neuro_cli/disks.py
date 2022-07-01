@@ -10,7 +10,7 @@ from neuro_cli.click_types import (
     UnionType,
 )
 from neuro_cli.formatters.utils import get_datetime_formatter
-from neuro_cli.utils import resolve_disk
+from neuro_cli.utils import parse_org_name, resolve_disk
 
 from .formatters.disks import (
     BaseDisksFormatter,
@@ -139,13 +139,14 @@ async def create(
     disk_timeout_unused = None
     if timeout_unused_seconds:
         disk_timeout_unused = timedelta(seconds=timeout_unused_seconds)
+    org_name = parse_org_name(org, root)
 
     disk = await root.client.disks.create(
         parse_memory(storage),
         timeout_unused=disk_timeout_unused,
         name=name,
         cluster_name=cluster,
-        org_name=org,
+        org_name=org_name,
     )
     disk_fmtr = DiskFormatter(
         str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
