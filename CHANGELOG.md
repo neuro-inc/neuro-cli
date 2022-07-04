@@ -5,6 +5,28 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 22.7.0 (2022-07-04)
+=================================
+
+Features
+--------
+
+- Update size formatting: use decimal prefixes ([#2768](https://github.com/neuro-inc/platform-client-python/issues/2768))
+
+
+Bugfixes
+--------
+
+- Fix formatting URIs in short form for users with organization. ([#2749](https://github.com/neuro-inc/platform-client-python/issues/2749))
+- Disks, buckets and secrets are now created with the current organization instead of no organization if `--org` is not explicitly specified. ([#2756](https://github.com/neuro-inc/platform-client-python/issues/2756))
+
+
+Misc
+----
+
+- [#2752](https://github.com/neuro-inc/platform-client-python/issues/2752)
+
+
 Neuro SDK/CLI 22.6.3 (2022-06-30)
 =================================
 
