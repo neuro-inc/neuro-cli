@@ -151,6 +151,15 @@ class Helper:
         return result
 
     @cached_property
+    def registry_name_base(self) -> str:
+        result = self.registry_url.host
+        assert result
+        if self.org_name is not None:
+            result += "/" + self.org_name
+        result += "/" + self.username
+        return result
+
+    @cached_property
     def token(self) -> str:
         config = self.get_config()
 
@@ -830,6 +839,7 @@ def _get_nmrc_path(tmp_path: Any, require_admin: bool) -> Optional[Path]:
 def helper(tmp_path: Path, nmrc_path: Path) -> Iterator[Helper]:
     ret = Helper(nmrc_path=nmrc_path, tmp_path=tmp_path)
     ret.cluster_uri_base  # get and cache properties outside of the event loop
+    ret.registry_name_base  # get and cache properties outside of the event loop
     yield ret
     with suppress(Exception):
         # ignore exceptions in helper closing

@@ -61,6 +61,9 @@ def test_images_complete_lifecycle(
 ) -> None:
     # Let`s push image
     captured = helper.run_cli(["image", "push", image])
+    event_loop.run_until_complete(
+        docker.images.delete(f"{helper.registry_name_base}/{image}", force=True)
+    )
 
     # stderr has "Used image ..." lines
     # assert not captured.err
@@ -124,9 +127,18 @@ def test_images_complete_lifecycle(
 
 
 @pytest.mark.e2e
-def test_image_tags(helper: Helper, image: str, tag: str) -> None:
+def test_image_tags(
+    helper: Helper,
+    image: str,
+    tag: str,
+    event_loop: asyncio.AbstractEventLoop,
+    docker: aiodocker.Docker,
+) -> None:
     # push image
     captured = helper.run_cli(["image", "push", image])
+    event_loop.run_until_complete(
+        docker.images.delete(f"{helper.registry_name_base}/{image}", force=True)
+    )
 
     image_full_str = f"image://{helper.cluster_uri_base}/{image}"
     assert captured.out.endswith(image_full_str)
@@ -177,7 +189,10 @@ async def test_images_delete(
     name, _ = image_ref.split(":")
     img_name = f"image:{name}"
 
-    helper.run_cli(["image", "push", name + ":latest"])
+    helper.run_cli(["image", "push", image_ref])
+
+    await docker.images.delete(image_ref, force=True)
+    await docker.images.delete(f"{helper.registry_name_base}/{image_ref}", force=True)
 
     captured = helper.run_cli(["-q", "image", "ls"])
     assert img_name in captured.out
@@ -254,11 +269,7 @@ def test_docker_helper(
 ) -> None:
     monkeypatch.setenv(CONFIG_ENV_NAME, str(nmrc_path or DEFAULT_CONFIG_PATH))
     helper.run_cli(["config", "docker"])
-    full_tag = helper.registry_url.host
-    assert full_tag
-    if helper.org_name:
-        full_tag += f"/{helper.org_name}"
-    full_tag += f"/{helper.username}/{image}"
+    full_tag = f"{helper.registry_name_base}/{image}"
     tag_cmd = f"docker tag {image} {full_tag}"
     result = subprocess.run(tag_cmd, capture_output=True, shell=True)
     assert (
@@ -275,6 +286,9 @@ def test_docker_helper(
         image_url, "", wait_state=JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
     )
     helper.check_job_output(job_id, re.escape(tag))
+
+    rmi_cmd = f"docker rmi {full_tag}"
+    subprocess.run(rmi_cmd, capture_output=True, shell=True)
 
     image_full_str_no_tag = image_url.replace(f":{tag}", "")
     helper.run_cli(["image", "rm", image_full_str_no_tag])
