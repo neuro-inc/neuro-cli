@@ -299,10 +299,6 @@ class StdStream:
         if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSING, WSMsgType.CLOSED):
             self._closing = True
             return None
-        if msg.type == aiohttp.WSMsgType.ERROR:
-            raise self._ws.exception()  # type: ignore
-        if msg.type != aiohttp.WSMsgType.BINARY:
-            raise RuntimeError(f"Incorrecr WebSocket message: {msg!r}")
         if msg.data[0] == 3:
             try:
                 details = json.loads(msg.data[1:])
@@ -570,13 +566,8 @@ class Jobs(metaclass=NoPublicConstructor):
             heartbeat=30,
         ) as ws:
             async for msg in ws:
-                if msg.type == aiohttp.WSMsgType.BINARY:
-                    if msg.data:
-                        yield msg.data
-                elif msg.type == aiohttp.WSMsgType.ERROR:
-                    raise ws.exception()  # type: ignore
-                else:
-                    raise RuntimeError(f"Incorrecr WebSocket message: {msg!r}")
+                if msg.data:
+                    yield msg.data
 
     async def status(self, id: str) -> JobDescription:
         url = self._config.api_url / "jobs" / id
@@ -598,10 +589,6 @@ class Jobs(metaclass=NoPublicConstructor):
                     if msg.type == aiohttp.WSMsgType.TEXT:
                         yield _job_telemetry_from_api(msg.json())
                         received_any = True
-                    elif msg.type == aiohttp.WSMsgType.ERROR:
-                        raise ws.exception()  # type: ignore
-                    else:
-                        raise RuntimeError(f"Incorrecr WebSocket message: {msg!r}")
             if not received_any:
                 raise ValueError(f"Job is not running. Job Id = {id}")
         except WSServerHandshakeError as e:
@@ -718,13 +705,9 @@ class Jobs(metaclass=NoPublicConstructor):
         self, ws: aiohttp.ClientWebSocketResponse, writer: asyncio.StreamWriter
     ) -> None:
         async for msg in ws:
-            if msg.type == aiohttp.WSMsgType.BINARY:
-                writer.write(msg.data)
-                await writer.drain()
-            elif msg.type == aiohttp.WSMsgType.ERROR:
-                raise ws.exception()  # type: ignore
-            else:
-                raise RuntimeError(f"Incorrecr WebSocket message: {msg!r}")
+            assert msg.type == aiohttp.WSMsgType.BINARY
+            writer.write(msg.data)
+            await writer.drain()
         writer.close()
         await writer.wait_closed()
 
