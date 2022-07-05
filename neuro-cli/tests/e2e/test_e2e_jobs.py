@@ -562,7 +562,7 @@ async def nginx_job_async(nmrc_path: Path) -> AsyncIterator[Tuple[str, str]]:
         secret = uuid4()
         command = (
             f"bash -c \"echo -n '{secret}' > /usr/share/nginx/html/secret.txt; "
-            f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
+            f"timeout -k 1m 15m /usr/sbin/nginx -g 'daemon off;'\""
         )
         container = Container(
             image=RemoteImage.new_external_image(
@@ -637,7 +637,7 @@ async def test_run_with_port_forward(helper: Helper) -> None:
     secret = uuid4()
     command = (
         f"bash -c \"echo -n '{secret}' > /usr/share/nginx/html/secret.txt; "
-        f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
+        f"timeout -k 1m 15m /usr/sbin/nginx -g 'daemon off;'\""
     )
 
     args = [
@@ -1084,7 +1084,7 @@ def test_job_run_stdout(helper: Helper) -> None:
 def test_job_attach_tty(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(
         UBUNTU_IMAGE_NAME,
-        "timeout 1000 bash --norc",
+        "timeout -s KILL 15m bash --norc",
         tty=True,
         env={"PS1": "# "},
     )

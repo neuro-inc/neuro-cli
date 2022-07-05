@@ -940,7 +940,7 @@ def secret_job(helper: Helper) -> Callable[[bool, bool, Optional[str]], Dict[str
         # Run http job
         command = (
             f"bash -c \"echo -n '{secret}' > /usr/share/nginx/html/secret.txt; "
-            f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
+            f"timeout -k 1m 15m /usr/sbin/nginx -g 'daemon off;'\""
         )
         args: List[str] = []
         if http_port:
