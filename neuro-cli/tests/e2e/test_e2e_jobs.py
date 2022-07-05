@@ -1023,16 +1023,14 @@ def test_e2e_job_top_format(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
     now = time()
-    exit_after = now + 3600
-    cmd = ";".join(
-        f"""
-          if [[ `date +%s` -gt {exit_after} ]]
-          then
-            echo test_e2e_restart_failing
+    exit_after = int(now + 5 * 60)
+    cmd = f"""
+        if [[ `date +%s` -lt {exit_after} ]]
+        then echo test_e2e_restart_failing
             false
-          fi
-    """.strip().splitlines()
-    )
+        fi
+        """
+    cmd = "; ".join(line.strip() for line in cmd.strip().splitlines())
 
     captured = helper.run_cli_run_job(
         [
