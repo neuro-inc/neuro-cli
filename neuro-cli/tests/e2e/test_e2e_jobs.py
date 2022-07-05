@@ -523,7 +523,7 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
+def test_job_save(request: Any, helper: Helper, docker: aiodocker.Docker) -> None:
     job_name = f"test-job-save-{uuid4().hex[:6]}"
     image_no_tag = make_image_name()
     image = f"{image_no_tag}:{job_name}"
@@ -532,6 +532,9 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
     command = "sh -c 'echo -n 123 > /test; sleep 10m'"
     job_id_1 = helper.run_job_and_wait_state(
         ALPINE_IMAGE_NAME, command=command, wait_state=JobStatus.RUNNING
+    )
+    request.addfinalizer(
+        lambda: helper.run_cli(["image", "rm", image_neuro_name_no_tag])
     )
     img_uri = f"image://{helper.cluster_uri_base}/{image}"
     captured = helper.run_cli(["job", "save", job_id_1, image_neuro_name])
@@ -553,8 +556,6 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
         image_neuro_name, command=command, wait_state=JobStatus.SUCCEEDED
     )
 
-    helper.run_cli(["image", "rm", image_neuro_name_no_tag])
-
 
 @pytest.fixture
 async def nginx_job_async(nmrc_path: Path) -> AsyncIterator[Tuple[str, str]]:
@@ -562,7 +563,7 @@ async def nginx_job_async(nmrc_path: Path) -> AsyncIterator[Tuple[str, str]]:
         secret = uuid4()
         command = (
             f"bash -c \"echo -n '{secret}' > /usr/share/nginx/html/secret.txt; "
-            f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
+            f"timeout -k 1m 15m /usr/sbin/nginx -g 'daemon off;'\""
         )
         container = Container(
             image=RemoteImage.new_external_image(
@@ -637,7 +638,7 @@ async def test_run_with_port_forward(helper: Helper) -> None:
     secret = uuid4()
     command = (
         f"bash -c \"echo -n '{secret}' > /usr/share/nginx/html/secret.txt; "
-        f"timeout 15m /usr/sbin/nginx -g 'daemon off;'\""
+        f"timeout -k 1m 15m /usr/sbin/nginx -g 'daemon off;'\""
     )
 
     args = [
@@ -1022,16 +1023,14 @@ def test_e2e_job_top_format(helper: Helper) -> None:
 @pytest.mark.e2e
 def test_e2e_restart_failing(request: Any, helper: Helper) -> None:
     now = time()
-    exit_after = now + 3600
-    cmd = ";".join(
-        f"""
-          if [[ `date +%s` -gt {exit_after} ]]
-          then
-            echo test_e2e_restart_failing
+    exit_after = int(now + 5 * 60)
+    cmd = f"""
+        if [[ `date +%s` -lt {exit_after} ]]
+        then echo test_e2e_restart_failing
             false
-          fi
-    """.strip().splitlines()
-    )
+        fi
+        """
+    cmd = "; ".join(line.strip() for line in cmd.strip().splitlines())
 
     captured = helper.run_cli_run_job(
         [
@@ -1084,7 +1083,7 @@ def test_job_run_stdout(helper: Helper) -> None:
 def test_job_attach_tty(helper: Helper) -> None:
     job_id = helper.run_job_and_wait_state(
         UBUNTU_IMAGE_NAME,
-        "timeout 1000 bash --norc",
+        "timeout -s KILL 15m bash --norc",
         tty=True,
         env={"PS1": "# "},
     )
