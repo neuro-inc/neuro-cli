@@ -53,12 +53,16 @@ async def image(docker: aiodocker.Docker, tag: str) -> AsyncIterator[str]:
 
 @pytest.mark.e2e
 def test_images_complete_lifecycle(
+    request: Any,
     helper: Helper,
     image: str,
     tag: str,
     event_loop: asyncio.AbstractEventLoop,
     docker: aiodocker.Docker,
 ) -> None:
+    image_full_str = f"image://{helper.cluster_uri_base}/{image}"
+    image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
+    request.addfinalizer(lambda: helper.run_cli(["image", "rm", image_full_str_no_tag]))
     # Let`s push image
     captured = helper.run_cli(["image", "push", image])
     event_loop.run_until_complete(
@@ -68,7 +72,6 @@ def test_images_complete_lifecycle(
     # stderr has "Used image ..." lines
     # assert not captured.err
 
-    image_full_str = f"image://{helper.cluster_uri_base}/{image}"
     assert captured.out.endswith(image_full_str)
     image_url = URL(image_full_str)
 
@@ -77,7 +80,6 @@ def test_images_complete_lifecycle(
     image_short_str = f"image:{image}"
     assert captured.out.endswith(image_full_str)
 
-    image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
     image_short_str_no_tag = image_short_str.replace(f":{tag}", "")
 
     # check ls short mode
@@ -123,27 +125,26 @@ def test_images_complete_lifecycle(
 
     helper.check_job_output(job_id, re.escape(tag))
 
-    helper.run_cli(["image", "rm", image_full_str_no_tag])
-
 
 @pytest.mark.e2e
 def test_image_tags(
+    request: Any,
     helper: Helper,
     image: str,
     tag: str,
     event_loop: asyncio.AbstractEventLoop,
     docker: aiodocker.Docker,
 ) -> None:
+    image_full_str = f"image://{helper.cluster_uri_base}/{image}"
+    image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
+    request.addfinalizer(lambda: helper.run_cli(["image", "rm", image_full_str_no_tag]))
     # push image
     captured = helper.run_cli(["image", "push", image])
     event_loop.run_until_complete(
         docker.images.delete(f"{helper.registry_name_base}/{image}", force=True)
     )
 
-    image_full_str = f"image://{helper.cluster_uri_base}/{image}"
     assert captured.out.endswith(image_full_str)
-
-    image_full_str_no_tag = image_full_str.replace(f":{tag}", "")
 
     delay = 0
     t0 = time.time()
@@ -177,11 +178,10 @@ def test_image_tags(
     assertion_msg = f"Command {cmd} should fail: {result.stdout!r} {result.stderr!r}"
     assert result.returncode, assertion_msg
 
-    helper.run_cli(["image", "rm", image_full_str_no_tag])
-
 
 @pytest.mark.e2e
 async def test_images_delete(
+    request: Any,
     helper: Helper,
     docker: aiodocker.Docker,
 ) -> None:
@@ -190,14 +190,16 @@ async def test_images_delete(
     img_name = f"image:{name}"
 
     helper.run_cli(["image", "push", image_ref])
+    try:
+        await docker.images.delete(image_ref, force=True)
+        await docker.images.delete(
+            f"{helper.registry_name_base}/{image_ref}", force=True
+        )
 
-    await docker.images.delete(image_ref, force=True)
-    await docker.images.delete(f"{helper.registry_name_base}/{image_ref}", force=True)
-
-    captured = helper.run_cli(["-q", "image", "ls"])
-    assert img_name in captured.out
-
-    helper.run_cli(["image", "rm", img_name])
+        captured = helper.run_cli(["-q", "image", "ls"])
+        assert img_name in captured.out
+    finally:
+        helper.run_cli(["image", "rm", img_name])
 
     for _ in range(10):
         captured = helper.run_cli(["-q", "image", "ls"])
@@ -211,6 +213,7 @@ async def test_images_delete(
 
 @pytest.mark.e2e
 async def test_images_push_with_specified_name(
+    request: Any,
     helper: Helper,
     image: str,
     tag: str,
@@ -222,6 +225,9 @@ async def test_images_push_with_specified_name(
     pushed_no_tag = f"{image_no_tag}-pushed"
     pulled_no_tag = f"{image_no_tag}-pulled"
     pulled = f"{pulled_no_tag}:{tag}"
+    request.addfinalizer(
+        lambda: helper.run_cli(["image", "rm", f"image:{pushed_no_tag}"])
+    )
 
     captured = helper.run_cli(["image", "push", image, f"image:{pushed_no_tag}:{tag}"])
     # stderr has "Used image ..." lines
@@ -248,47 +254,49 @@ async def test_images_push_with_specified_name(
 
     # Pull image as with another name
     captured = helper.run_cli(["image", "pull", f"image:{pushed_no_tag}:{tag}", pulled])
-    # stderr has "Used image ..." lines
-    # assert not captured.err
-    assert captured.out.endswith(pulled)
-    # check locally
-    docker_ls_output = await docker.images.list()
-    local_images = parse_docker_ls_output(docker_ls_output)
-    assert pulled in local_images
-
-    # TODO (A.Yushkovskiy): delete the pushed image in GCR
-    # delete locally
-    await docker.images.delete(pulled, force=True)
-
-    helper.run_cli(["image", "rm", f"image:{pushed_no_tag}"])
+    try:
+        # stderr has "Used image ..." lines
+        # assert not captured.err
+        assert captured.out.endswith(pulled)
+        # check locally
+        docker_ls_output = await docker.images.list()
+        local_images = parse_docker_ls_output(docker_ls_output)
+        assert pulled in local_images
+    finally:
+        await docker.images.delete(pulled, force=True)
 
 
 @pytest.mark.e2e
 def test_docker_helper(
-    helper: Helper, image: str, tag: str, nmrc_path: Path, monkeypatch: Any
+    request: Any,
+    helper: Helper,
+    image: str,
+    tag: str,
+    nmrc_path: Path,
+    monkeypatch: Any,
 ) -> None:
     monkeypatch.setenv(CONFIG_ENV_NAME, str(nmrc_path or DEFAULT_CONFIG_PATH))
     helper.run_cli(["config", "docker"])
     full_tag = f"{helper.registry_name_base}/{image}"
+    rmi_cmd = f"docker rmi {full_tag}"
+    request.addfinalizer(
+        lambda: subprocess.run(rmi_cmd, capture_output=True, shell=True)
+    )
     tag_cmd = f"docker tag {image} {full_tag}"
     result = subprocess.run(tag_cmd, capture_output=True, shell=True)
     assert (
         result.returncode == 0
     ), f"Command {tag_cmd} failed: {result.stdout!r} {result.stderr!r} "
+    image_url = f"image://{helper.cluster_uri_base}/{image}"
+    image_full_str_no_tag = image_url.replace(f":{tag}", "")
+    request.addfinalizer(lambda: helper.run_cli(["image", "rm", image_full_str_no_tag]))
     push_cmd = f"docker push {full_tag}"
     result = subprocess.run(push_cmd, capture_output=True, shell=True)
     assert (
         result.returncode == 0
     ), f"Command {push_cmd} failed: {result.stdout!r} {result.stderr!r} "
     # Run image and check output
-    image_url = f"image://{helper.cluster_uri_base}/{image}"
     job_id = helper.run_job_and_wait_state(
         image_url, "", wait_state=JobStatus.SUCCEEDED, stop_state=JobStatus.FAILED
     )
     helper.check_job_output(job_id, re.escape(tag))
-
-    rmi_cmd = f"docker rmi {full_tag}"
-    subprocess.run(rmi_cmd, capture_output=True, shell=True)
-
-    image_full_str_no_tag = image_url.replace(f":{tag}", "")
-    helper.run_cli(["image", "rm", image_full_str_no_tag])

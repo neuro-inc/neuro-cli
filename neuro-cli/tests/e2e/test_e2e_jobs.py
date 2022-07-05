@@ -523,7 +523,7 @@ def test_e2e_ssh_exec_dead_job(helper: Helper) -> None:
 
 
 @pytest.mark.e2e
-def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
+def test_job_save(request: Any, helper: Helper, docker: aiodocker.Docker) -> None:
     job_name = f"test-job-save-{uuid4().hex[:6]}"
     image_no_tag = make_image_name()
     image = f"{image_no_tag}:{job_name}"
@@ -532,6 +532,9 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
     command = "sh -c 'echo -n 123 > /test; sleep 10m'"
     job_id_1 = helper.run_job_and_wait_state(
         ALPINE_IMAGE_NAME, command=command, wait_state=JobStatus.RUNNING
+    )
+    request.addfinalizer(
+        lambda: helper.run_cli(["image", "rm", image_neuro_name_no_tag])
     )
     img_uri = f"image://{helper.cluster_uri_base}/{image}"
     captured = helper.run_cli(["job", "save", job_id_1, image_neuro_name])
@@ -552,8 +555,6 @@ def test_job_save(helper: Helper, docker: aiodocker.Docker) -> None:
     helper.run_job_and_wait_state(
         image_neuro_name, command=command, wait_state=JobStatus.SUCCEEDED
     )
-
-    helper.run_cli(["image", "rm", image_neuro_name_no_tag])
 
 
 @pytest.fixture
