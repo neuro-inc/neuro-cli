@@ -1052,10 +1052,12 @@ async def add_resource_preset(
     "--scheduler/--no-scheduler",
     "-p/-P",
     help="Use round robin scheduler for jobs",
+    default=None,
 )
 @option(
     "--preemptible-node/--non-preemptible-node",
     help="Use a lower-cost preemptible instance",
+    default=None,
 )
 async def update_resource_preset(
     root: Root,

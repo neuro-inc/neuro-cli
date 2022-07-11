@@ -423,9 +423,8 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
         ) -> None:
             assert cluster_name == "default"
             assert "cpu-small" in presets
-            assert presets["cpu-small"] == Preset(
-                credits_per_hour=Decimal("122"), cpu=7, memory=2 * 2**30
-            )
+            global preset
+            preset = presets["cpu-small"]
             exit_stack.enter_context(
                 mock.patch.object(Config, "presets", dict(presets))
             )
@@ -446,6 +445,65 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
             ]
         )
         assert capture.code == 0, capture.out + capture.err
+        assert preset == Preset(
+            credits_per_hour=Decimal("122.00"), cpu=7, memory=2 * 2**30
+        )
+
+        capture = run_cli(
+            [
+                "admin",
+                "update-resource-preset",
+                "cpu-small",
+                "-c",
+                "0.1",
+                "-m",
+                "100Mb",
+                "-g",
+                "1",
+                "--gpu-model",
+                "nvidia-tesla-k80",
+                "--tpu-type",
+                "v2-8",
+                "--tpu-sw-version",
+                "1.14",
+                "-p",
+                "--preemptible-node",
+            ]
+        )
+        assert capture.code == 0, capture.out + capture.err
+        assert preset == Preset(
+            credits_per_hour=Decimal("122.00"),
+            cpu=0.1,
+            memory=10**8,
+            scheduler_enabled=True,
+            preemptible_node=True,
+            gpu=1,
+            gpu_model="nvidia-tesla-k80",
+            tpu_type="v2-8",
+            tpu_software_version="1.14",
+        )
+
+        capture = run_cli(
+            [
+                "admin",
+                "update-resource-preset",
+                "cpu-small",
+                "--credits-per-hour",
+                "123.00",
+            ]
+        )
+        assert capture.code == 0, capture.out + capture.err
+        assert preset == Preset(
+            credits_per_hour=Decimal("123.00"),
+            cpu=0.1,
+            memory=10**8,
+            scheduler_enabled=True,
+            preemptible_node=True,
+            gpu=1,
+            gpu_model="nvidia-tesla-k80",
+            tpu_type="v2-8",
+            tpu_software_version="1.14",
+        )
 
 
 def test_add_resource_preset_print_result(run_cli: _RunCli) -> None:
