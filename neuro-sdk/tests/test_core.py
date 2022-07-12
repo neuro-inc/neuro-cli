@@ -8,7 +8,7 @@ import aiohttp
 import certifi
 import pytest
 from aiohttp import web
-from typing_extensions import AsyncContextManager
+from typing import AsyncContextManager
 from yarl import URL
 
 from neuro_sdk import IllegalArgumentError, ServerNotAvailable

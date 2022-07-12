@@ -61,7 +61,7 @@ repos:
         neuro-sdk/docs/spelling_wordlist.txt
       )$
 - repo: https://github.com/asottile/pyupgrade
-  rev: 'v2.34.0'
+  rev: 'v2.37.1'
   hooks:
   - id: pyupgrade
     args: ['--py37-plus']
@@ -82,7 +82,7 @@ repos:
     - -ignore
     - 'SC1004:'
 - repo: https://github.com/sirosen/check-jsonschema
-  rev: 0.16.2
+  rev: 0.17.0
   hooks:
   - id: check-github-actions
 ci:
