@@ -2,13 +2,12 @@ import json
 import sqlite3
 import ssl
 from contextlib import asynccontextmanager
-from typing import AsyncIterator, Callable
+from typing import AsyncContextManager, AsyncIterator, Callable
 
 import aiohttp
 import certifi
 import pytest
 from aiohttp import web
-from typing import AsyncContextManager
 from yarl import URL
 
 from neuro_sdk import IllegalArgumentError, ServerNotAvailable
