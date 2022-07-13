@@ -412,6 +412,8 @@ def test_add_existing_resource_preset_not_allowed(run_cli: _RunCli) -> None:
 
 
 def test_update_resource_preset(run_cli: _RunCli) -> None:
+    preset: Optional[Preset] = None
+
     with ExitStack() as exit_stack:
         admin_mocked = exit_stack.enter_context(
             mock.patch.object(_Admin, "update_cluster_resource_presets")
@@ -423,7 +425,7 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
         ) -> None:
             assert cluster_name == "default"
             assert "cpu-small" in presets
-            global preset
+            nonlocal preset
             preset = presets["cpu-small"]
             exit_stack.enter_context(
                 mock.patch.object(Config, "presets", dict(presets))
