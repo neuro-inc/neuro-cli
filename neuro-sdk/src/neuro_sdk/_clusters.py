@@ -57,7 +57,6 @@ __all__ = [
     "_CloudProviderType",
     "_ClusterStatus",
     "_Clusters",
-    "_ConfigClientBase",
     "_ConfigCluster",
     "_EFSPerformanceMode",
     "_EFSThroughputMode",

@@ -366,11 +366,11 @@ class CloudProviderOptionsFormatter:
         out.append(table)
         out.append(Text())
         if options.type == _CloudProviderType.AWS:
-            out.append(self._format_aws_storages(options.storages))  #  type: ignore
+            out.append(self._format_aws_storages(options.storages))  # type: ignore
         elif options.type == _CloudProviderType.GCP:
-            out.append(self._format_google_storages(options.storages))  #  type: ignore
+            out.append(self._format_google_storages(options.storages))  # type: ignore
         elif options.type == _CloudProviderType.AZURE:
-            out.append(self._format_azure_storages(options.storages))  #  type: ignore
+            out.append(self._format_azure_storages(options.storages))  # type: ignore
         else:
             out.pop()
         return RichGroup(*out)
