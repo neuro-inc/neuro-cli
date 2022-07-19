@@ -128,10 +128,7 @@ def _format_presets(
         table.add_column("TPU", justify="left")
     table.add_column("Credits per hour", justify="left")
 
-    sorted_presets = [(name, preset) for name, preset in presets.items()]
-    sorted_presets.sort(key=lambda t: (t[1].cpu, t[1].memory, t[1].gpu_model, t[1].gpu))
-
-    for name, preset in sorted_presets:
+    for name, preset in presets.items():
         gpu = ""
         if preset.gpu:
             gpu = f"{preset.gpu} x {preset.gpu_model}"
