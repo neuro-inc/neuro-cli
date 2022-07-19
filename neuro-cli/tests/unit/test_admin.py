@@ -1,16 +1,24 @@
-import json
 from contextlib import ExitStack, contextmanager
 from decimal import Decimal
-from typing import Any, Callable, Iterator, List, Mapping, Optional
+from typing import Callable, Iterator, List, Mapping, Optional
 from unittest import mock
 
 from neuro_sdk import (
     Preset,
     _Admin,
+    _AWSStorageOptions,
     _Balance,
+    _CloudProviderOptions,
+    _CloudProviderType,
+    _Clusters,
     _ClusterUserRoleType,
     _ClusterUserWithInfo,
+    _EFSPerformanceMode,
+    _EFSThroughputMode,
+    _NodePoolOptions,
     _Quota,
+    _ResourcePreset,
+    _TPUPreset,
     _UserInfo,
 )
 from neuro_sdk._config import Config
@@ -307,12 +315,33 @@ def test_remove_cluster_user_print_result(run_cli: _RunCli) -> None:
 
 
 def test_show_cluster_config_options(run_cli: _RunCli) -> None:
-    with mock.patch.object(_Admin, "get_cloud_provider_options") as mocked:
-        sample_data = {"foo": "bar", "baz": {"t2": 1, "t1": 2}}
+    with mock.patch.object(_Clusters, "get_cloud_provider_options") as mocked:
+        sample_data = _CloudProviderOptions(
+            type=_CloudProviderType.AWS,
+            node_pools=[
+                _NodePoolOptions(
+                    id=" p2_xlarge",
+                    machine_type="p2.xlarge",
+                    cpu=4,
+                    available_cpu=3,
+                    memory=64 * 2**30,
+                    available_memory=60 * 2**30,
+                    gpu=1,
+                    gpu_model="nvidia-tesla-k80",
+                )
+            ],
+            storages=[
+                _AWSStorageOptions(
+                    id="generalpurpose_bursting",
+                    performance_mode=_EFSPerformanceMode.GENERAL_PURPOSE,
+                    throughput_mode=_EFSThroughputMode.BURSTING,
+                )
+            ],
+        )
 
         async def get_cloud_provider_options(
             cloud_provider_name: str,
-        ) -> Mapping[str, Any]:
+        ) -> _CloudProviderOptions:
             assert cloud_provider_name == "aws"
             return sample_data
 
@@ -320,40 +349,37 @@ def test_show_cluster_config_options(run_cli: _RunCli) -> None:
         capture = run_cli(["admin", "show-cluster-options", "--type", "aws"])
         assert not capture.err
 
-        assert json.loads(capture.out) == sample_data
-
 
 def test_add_resource_preset(run_cli: _RunCli) -> None:
     with ExitStack() as exit_stack:
-        admin_mocked = exit_stack.enter_context(
-            mock.patch.object(_Admin, "update_cluster_resource_presets")
+        clusters_mocked = exit_stack.enter_context(
+            mock.patch.object(_Clusters, "add_resource_preset")
         )
         config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
-        async def update_cluster_resource_presets(
-            cluster_name: str, presets: Mapping[str, Preset]
+        async def add_resource_preset(
+            cluster_name: str, preset: _ResourcePreset
         ) -> None:
             assert cluster_name == "default"
-            assert "cpu-micro" in presets
-            assert presets["cpu-micro"] == Preset(
+            assert preset == _ResourcePreset(
+                name="cpu-micro",
                 credits_per_hour=Decimal("10"),
                 cpu=0.1,
                 memory=100 * 10**6,
                 gpu=1,
                 gpu_model="nvidia-tesla-k80",
-                tpu_type="v2-8",
-                tpu_software_version="1.14",
+                tpu=_TPUPreset(
+                    type="v2-8",
+                    software_version="1.14",
+                ),
                 scheduler_enabled=True,
                 preemptible_node=True,
-            )
-            exit_stack.enter_context(
-                mock.patch.object(Config, "presets", dict(presets))
             )
 
         async def fetch() -> None:
             pass
 
-        admin_mocked.side_effect = update_cluster_resource_presets
+        clusters_mocked.side_effect = add_resource_preset
         config_mocked.side_effect = fetch
 
         capture = run_cli(
@@ -384,12 +410,12 @@ def test_add_resource_preset(run_cli: _RunCli) -> None:
 
 def test_add_existing_resource_preset_not_allowed(run_cli: _RunCli) -> None:
     with ExitStack() as exit_stack:
-        admin_mocked = exit_stack.enter_context(
-            mock.patch.object(_Admin, "update_cluster_resource_presets")
+        clusters_mocked = exit_stack.enter_context(
+            mock.patch.object(_Clusters, "add_resource_preset")
         )
         config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
-        async def update_cluster_resource_presets(
+        async def add_resource_preset(
             cluster_name: str, presets: Mapping[str, Preset]
         ) -> None:
             pass
@@ -397,7 +423,7 @@ def test_add_existing_resource_preset_not_allowed(run_cli: _RunCli) -> None:
         async def fetch() -> None:
             pass
 
-        admin_mocked.side_effect = update_cluster_resource_presets
+        clusters_mocked.side_effect = add_resource_preset
         config_mocked.side_effect = fetch
 
         capture = run_cli(
@@ -415,26 +441,31 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
     preset: Optional[Preset] = None
 
     with ExitStack() as exit_stack:
-        admin_mocked = exit_stack.enter_context(
-            mock.patch.object(_Admin, "update_cluster_resource_presets")
+        clusters_mocked = exit_stack.enter_context(
+            mock.patch.object(_Clusters, "put_resource_preset")
         )
         config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
-        async def update_cluster_resource_presets(
-            cluster_name: str, presets: Mapping[str, Preset]
-        ) -> None:
+        async def put_resource_preset(cluster_name: str, p: _ResourcePreset) -> None:
             assert cluster_name == "default"
-            assert "cpu-small" in presets
+            assert p.name == "cpu-small"
             nonlocal preset
-            preset = presets["cpu-small"]
-            exit_stack.enter_context(
-                mock.patch.object(Config, "presets", dict(presets))
+            preset = Preset(
+                credits_per_hour=p.credits_per_hour,
+                cpu=p.cpu,
+                memory=p.memory,
+                gpu=p.gpu,
+                gpu_model=p.gpu_model,
+                tpu_type=p.tpu.type if p.tpu else None,
+                tpu_software_version=p.tpu.software_version if p.tpu else None,
+                preemptible_node=p.preemptible_node,
+                scheduler_enabled=p.scheduler_enabled,
             )
 
         async def fetch() -> None:
             pass
 
-        admin_mocked.side_effect = update_cluster_resource_presets
+        clusters_mocked.side_effect = put_resource_preset
         config_mocked.side_effect = fetch
 
         capture = run_cli(
@@ -456,6 +487,8 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
                 "admin",
                 "update-resource-preset",
                 "cpu-small",
+                "--credits-per-hour",
+                "122.00",
                 "-c",
                 "0.1",
                 "-m",
@@ -485,47 +518,23 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
             tpu_software_version="1.14",
         )
 
-        capture = run_cli(
-            [
-                "admin",
-                "update-resource-preset",
-                "cpu-small",
-                "--credits-per-hour",
-                "123.00",
-            ]
-        )
-        assert capture.code == 0, capture.out + capture.err
-        assert preset == Preset(
-            credits_per_hour=Decimal("123.00"),
-            cpu=0.1,
-            memory=10**8,
-            scheduler_enabled=True,
-            preemptible_node=True,
-            gpu=1,
-            gpu_model="nvidia-tesla-k80",
-            tpu_type="v2-8",
-            tpu_software_version="1.14",
-        )
-
 
 def test_add_resource_preset_print_result(run_cli: _RunCli) -> None:
     with ExitStack() as exit_stack:
-        admin_mocked = exit_stack.enter_context(
-            mock.patch.object(_Admin, "update_cluster_resource_presets")
+        clusters_mocked = exit_stack.enter_context(
+            mock.patch.object(_Clusters, "add_resource_preset")
         )
         config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
-        async def update_cluster_resource_presets(
-            cluster_name: str, presets: Mapping[str, Preset]
+        async def add_resource_preset(
+            cluster_name: str, preset: _ResourcePreset
         ) -> None:
-            exit_stack.enter_context(
-                mock.patch.object(Config, "presets", dict(presets))
-            )
+            pass
 
         async def fetch() -> None:
             pass
 
-        admin_mocked.side_effect = update_cluster_resource_presets
+        clusters_mocked.side_effect = add_resource_preset
         config_mocked.side_effect = fetch
 
         capture = run_cli(["admin", "add-resource-preset", "cpu-micro"])
@@ -540,22 +549,18 @@ def test_add_resource_preset_print_result(run_cli: _RunCli) -> None:
 
 def test_remove_resource_preset_print_result(run_cli: _RunCli) -> None:
     with ExitStack() as exit_stack:
-        admin_mocked = exit_stack.enter_context(
-            mock.patch.object(_Admin, "update_cluster_resource_presets")
+        clusters_mocked = exit_stack.enter_context(
+            mock.patch.object(_Clusters, "delete_resource_preset")
         )
         config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
-        async def update_cluster_resource_presets(
-            cluster_name: str, presets: Mapping[str, Preset]
-        ) -> None:
-            exit_stack.enter_context(
-                mock.patch.object(Config, "presets", dict(presets))
-            )
+        async def delete_resource_preset(cluster_name: str, preset_name: str) -> None:
+            pass
 
         async def fetch() -> None:
             pass
 
-        admin_mocked.side_effect = update_cluster_resource_presets
+        clusters_mocked.side_effect = delete_resource_preset
         config_mocked.side_effect = fetch
 
         capture = run_cli(["admin", "remove-resource-preset", "cpu-small"])
@@ -570,20 +575,18 @@ def test_remove_resource_preset_print_result(run_cli: _RunCli) -> None:
 
 def test_remove_resource_preset_not_exists(run_cli: _RunCli) -> None:
     with ExitStack() as exit_stack:
-        admin_mocked = exit_stack.enter_context(
-            mock.patch.object(_Admin, "update_cluster_resource_presets")
+        clusters_mocked = exit_stack.enter_context(
+            mock.patch.object(_Clusters, "delete_resource_preset")
         )
         config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
-        async def update_cluster_resource_presets(
-            cluster_name: str, presets: Mapping[str, Preset]
-        ) -> None:
+        async def delete_resource_preset(cluster_name: str, preset_name: str) -> None:
             pass
 
         async def fetch() -> None:
             pass
 
-        admin_mocked.side_effect = update_cluster_resource_presets
+        clusters_mocked.side_effect = delete_resource_preset
         config_mocked.side_effect = fetch
 
         capture = run_cli(["admin", "remove-resource-preset", "unknown"])

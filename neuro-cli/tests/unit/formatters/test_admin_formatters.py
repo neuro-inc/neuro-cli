@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from typing import Callable
 
@@ -5,21 +6,35 @@ from dateutil.parser import isoparse
 from rich.console import RenderableType
 
 from neuro_sdk import (
+    _AWSStorageOptions,
+    _AzureReplicationType,
+    _AzureStorageOptions,
+    _AzureStorageTier,
     _Balance,
-    _CloudProvider,
+    _CloudProviderOptions,
+    _CloudProviderType,
     _Cluster,
+    _ClusterStatus,
     _ClusterUserRoleType,
     _ClusterUserWithInfo,
     _ConfigCluster,
+    _EFSPerformanceMode,
+    _EFSThroughputMode,
+    _GoogleCloudProvider,
+    _GoogleFilestoreTier,
+    _GoogleStorage,
+    _GoogleStorageOptions,
     _NodePool,
+    _NodePoolOptions,
+    _OnPremCloudProvider,
     _OrgCluster,
     _Quota,
-    _Storage,
     _StorageInstance,
     _UserInfo,
 )
 
 from neuro_cli.formatters.admin import (
+    CloudProviderOptionsFormatter,
     ClustersFormatter,
     ClusterUserFormatter,
     OrgClusterFormatter,
@@ -109,6 +124,7 @@ class TestClusterUserFormatter:
 class TestClustersFormatter:
     def _create_node_pool(
         self,
+        name: str,
         disk_type: str = "",
         is_scalable: bool = True,
         is_gpu: bool = False,
@@ -116,6 +132,7 @@ class TestClustersFormatter:
         has_idle: bool = False,
     ) -> _NodePool:
         return _NodePool(
+            name=name,
             min_size=1 if is_scalable else 2,
             max_size=2,
             idle_size=1 if has_idle else 0,
@@ -139,7 +156,11 @@ class TestClustersFormatter:
                     default_quota=_Quota(total_running_jobs=42),
                     default_role=_ClusterUserRoleType.USER,
                 ),
-                _ConfigCluster(name="default", status="deployed"),
+                _ConfigCluster(
+                    name="default",
+                    status=_ClusterStatus.DEPLOYED,
+                    created_at=datetime(2022, 12, 3),
+                ),
             )
         }
         rich_cmp(formatter(clusters))
@@ -156,14 +177,12 @@ class TestClustersFormatter:
                 ),
                 _ConfigCluster(
                     name="on-prem",
-                    status="deployed",
-                    cloud_provider=_CloudProvider(
-                        type="on_prem",
-                        region=None,
-                        zones=[],
+                    status=_ClusterStatus.DEPLOYED,
+                    cloud_provider=_OnPremCloudProvider(
                         node_pools=[],
                         storage=None,
                     ),
+                    created_at=datetime(2022, 12, 3),
                 ),
             )
         }
@@ -181,20 +200,24 @@ class TestClustersFormatter:
                 ),
                 _ConfigCluster(
                     name="default",
-                    status="deployed",
-                    cloud_provider=_CloudProvider(
-                        type="gcp",
+                    status=_ClusterStatus.DEPLOYED,
+                    cloud_provider=_GoogleCloudProvider(
                         region="us-central1",
                         zones=["us-central1-a", "us-central1-c"],
+                        project="neuro",
+                        credentials={},
                         node_pools=[],
-                        storage=_Storage(
+                        storage=_GoogleStorage(
+                            id="standard",
                             description="Filestore",
+                            tier=_GoogleFilestoreTier.STANDARD,
                             instances=[
                                 _StorageInstance(size=2**30),
                                 _StorageInstance(name="org", size=2 * 2**30),
                             ],
                         ),
                     ),
+                    created_at=datetime(2022, 12, 3),
                 ),
             )
         }
@@ -214,20 +237,24 @@ class TestClustersFormatter:
                 ),
                 _ConfigCluster(
                     name="default",
-                    status="deployed",
-                    cloud_provider=_CloudProvider(
-                        type="gcp",
+                    status=_ClusterStatus.DEPLOYED,
+                    cloud_provider=_GoogleCloudProvider(
                         region="us-central1",
                         zones=["us-central1-a", "us-central1-c"],
+                        project="neuro",
+                        credentials={},
                         node_pools=[],
-                        storage=_Storage(
+                        storage=_GoogleStorage(
+                            id="standard",
                             description="Filestore",
+                            tier=_GoogleFilestoreTier.STANDARD,
                             instances=[
                                 _StorageInstance(),
                                 _StorageInstance(name="org"),
                             ],
                         ),
                     ),
+                    created_at=datetime(2022, 12, 3),
                 ),
             )
         }
@@ -247,19 +274,22 @@ class TestClustersFormatter:
                 ),
                 _ConfigCluster(
                     name="default",
-                    status="deployed",
-                    cloud_provider=_CloudProvider(
-                        type="on_prem",
-                        region=None,
-                        zones=[],
+                    status=_ClusterStatus.DEPLOYED,
+                    cloud_provider=_OnPremCloudProvider(
                         node_pools=[
-                            self._create_node_pool(disk_type="", is_scalable=False),
                             self._create_node_pool(
-                                disk_type="ssd", is_scalable=False, is_gpu=True
+                                "node-pool-1", disk_type="", is_scalable=False
+                            ),
+                            self._create_node_pool(
+                                "node-pool-2",
+                                disk_type="ssd",
+                                is_scalable=False,
+                                is_gpu=True,
                             ),
                         ],
                         storage=None,
                     ),
+                    created_at=datetime(2022, 12, 3),
                 ),
             )
         }
@@ -279,17 +309,21 @@ class TestClustersFormatter:
                 ),
                 _ConfigCluster(
                     name="default",
-                    status="deployed",
-                    cloud_provider=_CloudProvider(
-                        type="gcp",
+                    status=_ClusterStatus.DEPLOYED,
+                    cloud_provider=_GoogleCloudProvider(
                         region="us-central1",
                         zones=[],
+                        project="neuro",
+                        credentials={},
                         node_pools=[
-                            self._create_node_pool(is_preemptible=True, has_idle=True),
-                            self._create_node_pool(),
+                            self._create_node_pool(
+                                "node-pool-1", is_preemptible=True, has_idle=True
+                            ),
+                            self._create_node_pool("node-pool-2"),
                         ],
                         storage=None,
                     ),
+                    created_at=datetime(2022, 12, 3),
                 ),
             )
         }
@@ -316,3 +350,110 @@ class TestOrgClusterFormatter:
             balance=_Balance(),
         )
         rich_cmp(formatter(cluster))
+
+
+class TestCloudProviderOptionsFormatter:
+    def test_formatter_aws(self, rich_cmp: RichCmp) -> None:
+        formatter = CloudProviderOptionsFormatter()
+        options = _CloudProviderOptions(
+            type=_CloudProviderType.AWS,
+            node_pools=[
+                _NodePoolOptions(
+                    id="m5_xlarge",
+                    machine_type="m5.xlarge",
+                    cpu=4,
+                    available_cpu=3,
+                    memory=16 * 10**3,
+                    available_memory=14 * 2**30,
+                ),
+                _NodePoolOptions(
+                    id="p2_xlarge",
+                    machine_type="p2.xlarge",
+                    cpu=4,
+                    available_cpu=3,
+                    memory=64 * 10**3,
+                    available_memory=60 * 2**30,
+                    gpu=1,
+                    gpu_model="nvidia-tesla-k80",
+                ),
+            ],
+            storages=[
+                _AWSStorageOptions(
+                    id="generalPurpose_bursting",
+                    performance_mode=_EFSPerformanceMode.GENERAL_PURPOSE,
+                    throughput_mode=_EFSThroughputMode.BURSTING,
+                )
+            ],
+        )
+        rich_cmp(formatter(options))
+
+    def test_formatter_gcp(self, rich_cmp: RichCmp) -> None:
+        formatter = CloudProviderOptionsFormatter()
+        options = _CloudProviderOptions(
+            type=_CloudProviderType.GCP,
+            node_pools=[
+                _NodePoolOptions(
+                    id="n1_highmem_4",
+                    machine_type="n1-highmem-4",
+                    cpu=4,
+                    available_cpu=3,
+                    memory=16 * 10**3,
+                    available_memory=14 * 2**30,
+                ),
+                _NodePoolOptions(
+                    id="n1_highmem_4",
+                    machine_type="n1-highmem-4",
+                    cpu=4,
+                    available_cpu=3,
+                    memory=64 * 10**3,
+                    available_memory=60 * 2**30,
+                    gpu=1,
+                    gpu_model="nvidia-tesla-k80",
+                ),
+            ],
+            storages=[
+                _GoogleStorageOptions(
+                    id="standard",
+                    tier=_GoogleFilestoreTier.STANDARD,
+                    min_capacity=1 * 2**40,
+                    max_capacity=60 * 2**40,
+                )
+            ],
+        )
+        rich_cmp(formatter(options))
+
+    def test_formatter_azure(self, rich_cmp: RichCmp) -> None:
+        formatter = CloudProviderOptionsFormatter()
+        options = _CloudProviderOptions(
+            type=_CloudProviderType.AZURE,
+            node_pools=[
+                _NodePoolOptions(
+                    id="Standard_D4_v3",
+                    machine_type="Standard_D4_v3",
+                    cpu=4,
+                    available_cpu=3,
+                    memory=16 * 10**3,
+                    available_memory=14 * 2**30,
+                ),
+                _NodePoolOptions(
+                    id="Standard_NC6",
+                    machine_type="Standard_NC6",
+                    cpu=4,
+                    available_cpu=3,
+                    memory=64 * 10**3,
+                    available_memory=60 * 2**30,
+                    gpu=1,
+                    gpu_model="nvidia-tesla-k80",
+                ),
+            ],
+            storages=[
+                _AzureStorageOptions(
+                    id="standard",
+                    tier=_AzureStorageTier.STANDARD,
+                    replication_type=_AzureReplicationType.LRS,
+                    min_file_share_size=100 * 2**30,
+                    max_file_share_size=100 * 2**40,
+                )
+            ],
+        )
+        rich_cmp(formatter(options))

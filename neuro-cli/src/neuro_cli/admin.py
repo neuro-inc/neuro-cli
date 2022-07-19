@@ -1,4 +1,3 @@
-import asyncio
 import configparser
 import json
 import logging
@@ -6,7 +5,7 @@ import os
 import pathlib
 from dataclasses import replace
 from decimal import Decimal, InvalidOperation
-from typing import IO, Any, Dict, Mapping, Optional, Tuple
+from typing import IO, Dict, Optional, Tuple
 
 import click
 import yaml
@@ -15,14 +14,17 @@ from prompt_toolkit.patch_stdout import patch_stdout
 from rich.markup import escape as rich_escape
 
 from neuro_sdk import (
-    Preset,
     _Balance,
+    _CloudProviderType,
     _Cluster,
     _ClusterUserRoleType,
     _ConfigCluster,
     _OrgCluster,
     _OrgUserRoleType,
     _Quota,
+    _ResourcePreset,
+    _TPUPreset,
+    _VCDCloudProviderOptions,
 )
 
 from neuro_cli.formatters.config import BalanceFormatter
@@ -30,6 +32,7 @@ from neuro_cli.formatters.config import BalanceFormatter
 from .click_types import MEMORY
 from .defaults import JOB_CPU_NUMBER, JOB_MEMORY_AMOUNT, PRESET_PRICE
 from .formatters.admin import (
+    CloudProviderOptionsFormatter,
     ClustersFormatter,
     ClusterUserFormatter,
     OrgClusterFormatter,
@@ -58,10 +61,10 @@ async def get_clusters(root: Root) -> None:
     """
     fmt = ClustersFormatter()
     with root.status("Fetching the list of clusters"):
-        config_clusters = await root.client._admin.list_config_clusters()
+        config_clusters = await root.client._clusters.list_clusters()
         admin_clusters = await root.client._admin.list_clusters()
     clusters: Dict[str, Tuple[Optional[_Cluster], Optional[_ConfigCluster]]] = {}
-    for config_cluster in config_clusters.values():
+    for config_cluster in config_clusters:
         clusters[config_cluster.name] = (None, config_cluster)
     for admin_cluster in admin_clusters:
         if admin_cluster.name in clusters:
@@ -145,7 +148,7 @@ async def add_cluster(
     )
     if skip_provisioning:
         return
-    await root.client._admin.setup_cluster_cloud_provider(cluster_name, config_dict)
+    await root.client._clusters.setup_cluster_cloud_provider(cluster_name, config_dict)
     if not root.quiet:
         root.print(
             f"Cluster {cluster_name} successfully added "
@@ -229,12 +232,11 @@ async def show_cluster_options(root: Root, type: str) -> None:
     """
     Show available cluster options.
     """
-    config_options = await root.client._admin.get_cloud_provider_options(type)
-    root.print(
-        json.dumps(config_options, sort_keys=True, indent=2),
-        crop=False,
-        overflow="ignore",
+    fmt = CloudProviderOptionsFormatter()
+    options = await root.client._clusters.get_cloud_provider_options(
+        _CloudProviderType(type)
     )
+    root.print(fmt(options))
 
 
 @command()
@@ -459,8 +461,12 @@ storage:
 
 async def generate_vcd(root: Root, session: PromptSession[str]) -> str:
     args = {}
-    cloud_providers = await root.client._admin.list_cloud_providers()
-    cloud_providers = {k: v for k, v in cloud_providers.items() if k.startswith("vcd_")}
+    cloud_provider_options = await root.client._clusters.list_cloud_provider_options()
+    cloud_providers = {
+        c.type.value: c
+        for c in cloud_provider_options
+        if isinstance(c, _VCDCloudProviderOptions)
+    }
 
     if len(cloud_providers) == 1:
         args["vcd_provider"] = next(iter(cloud_providers.keys()))[4:]
@@ -472,13 +478,13 @@ async def generate_vcd(root: Root, session: PromptSession[str]) -> str:
 
     args["url"] = await session.prompt_async(
         "Url: ",
-        default=os.environ.get("VCD_URL", cloud_provider.get("url", "")),
+        default=os.environ.get(
+            "VCD_URL", str(cloud_provider.url) if cloud_provider.url else ""
+        ),
     )
     args["organization"] = await session.prompt_async(
         "Organization: ",
-        default=os.environ.get(
-            "VCD_ORGANIZATION", cloud_provider.get("organization", "")
-        ),
+        default=os.environ.get("VCD_ORGANIZATION", cloud_provider.organization or ""),
     )
     args["virtual_data_center"] = await session.prompt_async(
         "Virtual data center: ",
@@ -492,26 +498,26 @@ async def generate_vcd(root: Root, session: PromptSession[str]) -> str:
     )
     args["edge_name"] = await session.prompt_async(
         "Edge name: ",
-        default=cloud_provider.get("edge_name_template", "").format(
+        default=(cloud_provider.edge_name_template or "").format(
             organization=args["organization"], vdc=args["virtual_data_center"]
         ),
     )
     args["edge_ip"] = await session.prompt_async("Edge IP: ")
     args["edge_external_network_name"] = await session.prompt_async(
         "Edge external network: ",
-        default=cloud_provider.get("edge_external_network_name", ""),
+        default=cloud_provider.edge_external_network_name or "",
     )
     args["catalog_name"] = await session.prompt_async(
-        "Catalog: ", default=cloud_provider.get("catalog_name", "")
+        "Catalog: ", default=cloud_provider.catalog_name or ""
     )
     args["storage_profile_name"] = await session.prompt_async(
         "Storage profile: ",
-        default=(cloud_provider.get("storage_profile_names") or [""])[0],
+        default=(cloud_provider.storage_profile_names or [""])[0],
     )
     storage_size_gb = await session.prompt_async("Storage size (Gb): ")
     args["storage_size"] = storage_size_gb * 10**9
-    args["kubernetes_node_pool_id"] = cloud_provider["kubernetes_node_pool_id"]
-    args["platform_node_pool_id"] = cloud_provider["platform_node_pool_id"]
+    args["kubernetes_node_pool_id"] = cloud_provider.kubernetes_node_pool_id
+    args["platform_node_pool_id"] = cloud_provider.platform_node_pool_id
     return VCD_TEMPLATE.format_map(args)
 
 
@@ -874,38 +880,6 @@ async def add_user_credits(
     root.print(fmt(user_with_quota.balance))
 
 
-async def _update_presets_and_fetch(root: Root, presets: Mapping[str, Preset]) -> None:
-    cluster_name = root.client.config.cluster_name
-    await root.client._admin.update_cluster_resource_presets(cluster_name, presets)
-
-    if root.verbosity >= 1:
-        _print = root.print
-    else:
-
-        def _print(*args: Any, **kwargs: Any) -> None:
-            pass
-
-    _print("Requested presets update")
-
-    async def _sync_local_config() -> None:
-        _print("Fetching new server config", end="")
-        try:
-            while dict(root.client.config.presets) != presets:
-                _print(".", end="")
-                await root.client.config.fetch()
-                await asyncio.sleep(0.5)
-        finally:
-            _print("")
-
-    try:
-        await asyncio.wait_for(_sync_local_config(), 10)
-    except asyncio.TimeoutError:
-        log.warning(
-            "Fetched server presets are not same as new values. "
-            "Maybe there was some concurrent update?"
-        )
-
-
 @command()
 @argument("preset_name")
 @option(
@@ -986,18 +960,25 @@ async def add_resource_preset(
     presets = dict(root.client.config.presets)
     if preset_name in presets:
         raise ValueError(f"Preset '{preset_name}' already exists")
-    presets[preset_name] = Preset(
+    if tpu_type and tpu_software_version:
+        tpu_preset = _TPUPreset(type=tpu_type, software_version=tpu_software_version)
+    else:
+        tpu_preset = None
+    preset = _ResourcePreset(
+        name=preset_name,
         credits_per_hour=_parse_finite_decimal(credits_per_hour),
         cpu=cpu,
         memory=memory,
         gpu=gpu,
         gpu_model=gpu_model,
-        tpu_type=tpu_type,
-        tpu_software_version=tpu_software_version,
+        tpu=tpu_preset,
         scheduler_enabled=scheduler,
         preemptible_node=preemptible_node,
     )
-    await _update_presets_and_fetch(root, presets)
+    await root.client._clusters.add_resource_preset(
+        root.client.config.cluster_name, preset
+    )
+    await root.client.config.fetch()
     if not root.quiet:
         root.print(
             f"Added resource preset [b]{rich_escape(preset_name)}[/b] "
@@ -1095,11 +1076,28 @@ async def update_resource_preset(
         "preemptible_node": preemptible_node,
     }
     kwargs = {key: value for key, value in kwargs.items() if value is not None}
-
-    presets[preset_name] = replace(preset, **kwargs)
-
-    await _update_presets_and_fetch(root, presets)
-
+    preset = replace(preset, **kwargs)
+    if preset.tpu_type and preset.tpu_software_version:
+        tpu_preset = _TPUPreset(
+            type=preset.tpu_type, software_version=preset.tpu_software_version
+        )
+    else:
+        tpu_preset = None
+    await root.client._clusters.put_resource_preset(
+        root.client.config.cluster_name,
+        _ResourcePreset(
+            name=preset_name,
+            credits_per_hour=preset.credits_per_hour,
+            cpu=preset.cpu,
+            memory=preset.memory,
+            gpu=preset.gpu,
+            gpu_model=preset.gpu_model,
+            tpu=tpu_preset,
+            scheduler_enabled=preset.scheduler_enabled,
+            preemptible_node=preset.preemptible_node,
+        ),
+    )
+    await root.client.config.fetch()
     if not root.quiet:
         root.print(
             f"Updated resource preset [b]{rich_escape(preset_name)}[/b] "
@@ -1118,7 +1116,10 @@ async def remove_resource_preset(root: Root, preset_name: str) -> None:
     if preset_name not in presets:
         raise ValueError(f"Preset '{preset_name}' not found")
     del presets[preset_name]
-    await _update_presets_and_fetch(root, presets)
+    await root.client._clusters.delete_resource_preset(
+        root.client.config.cluster_name, preset_name
+    )
+    await root.client.config.fetch()
     if not root.quiet:
         root.print(
             f"Removed resource preset [b]{rich_escape(preset_name)}[/b] "

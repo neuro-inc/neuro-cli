@@ -21,4 +21,6 @@ def test_module_for_public_names() -> None:
                 "typing",
                 # We re-export entities from admin client
                 "neuro_admin_client.entities",
+                # We re-export entities from config client
+                "neuro_config_client.entities",
             ), f"{obj}.__module__ == {obj.__module__}, expected neuro_sdk"
