@@ -44,7 +44,6 @@ from ._utils import NoPublicConstructor
 # Explicit __all__ to re-export neuro_config_client entities
 
 __all__ = [
-    "_Clusters",
     "_AWSCloudProvider",
     "_AWSStorage",
     "_AWSStorageOptions",
@@ -57,8 +56,9 @@ __all__ = [
     "_CloudProviderOptions",
     "_CloudProviderType",
     "_ClusterStatus",
-    "_ConfigCluster",
+    "_Clusters",
     "_ConfigClientBase",
+    "_ConfigCluster",
     "_EFSPerformanceMode",
     "_EFSThroughputMode",
     "_GoogleCloudProvider",
