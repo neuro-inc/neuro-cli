@@ -269,7 +269,7 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
             row.append(str(node_pool.min_size))
         row.append(str(node_pool.max_size))
         if has_idle:
-            row.append(str(node_pool.idle_size))
+            row.append(str(node_pool.idle_size or 0))
         table.add_row(*row)
 
     return table
