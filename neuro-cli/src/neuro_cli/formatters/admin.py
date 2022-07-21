@@ -259,7 +259,7 @@ def _format_node_pools(
     for node_pool in node_pools:
         row = [node_pool.name]
         if type != _CloudProviderType.ON_PREM:
-            row.append(node_pool.machine_type)
+            row.append(node_pool.machine_type or "")
         row.append(str(node_pool.available_cpu))
         row.append(format_size(node_pool.available_memory))
         if node_pool.disk_type:

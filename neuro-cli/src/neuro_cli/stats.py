@@ -33,10 +33,7 @@ SCHEMA = {
 }
 DROP = {"stats": "DROP TABLE IF EXISTS stats", "uid": "DROP TABLE IF EXISTS uid"}
 
-if TYPE_CHECKING:
-    sqlite3_Row = sqlite3.Row[Any]
-else:
-    sqlite3_Row = sqlite3.Row
+sqlite3_Row = sqlite3.Row
 
 
 def ensure_schema(db: sqlite3.Connection) -> str:
