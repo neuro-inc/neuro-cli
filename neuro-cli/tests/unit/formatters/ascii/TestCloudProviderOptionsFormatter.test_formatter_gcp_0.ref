@@ -1,0 +1,10 @@
+Available node pools:                                                                          
+ Id             Machine        CPU   CPU Avail   Memory    Memory Avail   GPU                  
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ n1_highmem_4   n1-highmem-4   4     3           16.0 kB   15.0 GB                             
+ n1_highmem_4   n1-highmem-4   4     3           64.0 kB   64.4 GB        1 x nvidia-tesla-k80 
+
+Available storages:                     
+ Id         Tier       Capacity         
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ standard   Standard   1.1 TB - 66.0 TB

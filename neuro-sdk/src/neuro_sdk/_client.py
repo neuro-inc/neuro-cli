@@ -6,6 +6,7 @@ import aiohttp
 
 from ._admin import _Admin
 from ._buckets import Buckets
+from ._clusters import _Clusters
 from ._config import Config
 from ._core import _Core
 from ._disks import Disks
@@ -26,6 +27,7 @@ from ._version_utils import VersionChecker
 @rewrite_module
 class Client(metaclass=NoPublicConstructor):
     _admin: _Admin
+    _clusters: _Clusters
 
     def __init__(
         self,
@@ -50,6 +52,7 @@ class Client(metaclass=NoPublicConstructor):
             )
         self._parser = Parser._create(self._config)
         self._admin = _Admin._create(self._core, self._config)
+        self._clusters = _Clusters._create(self._core, self._config)
         self._jobs = Jobs._create(self._core, self._config, self._parser)
         self._storage = Storage._create(self._core, self._config)
         self._users = Users._create(self._core, self._config, self._admin)

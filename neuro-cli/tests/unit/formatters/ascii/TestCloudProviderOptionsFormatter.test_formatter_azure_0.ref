@@ -1,0 +1,10 @@
+Available node pools:                                                                              
+ Id               Machine          CPU   CPU Avail   Memory    Memory Avail   GPU                  
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ Standard_D4_v3   Standard_D4_v3   4     3           16.0 kB   15.0 GB                             
+ Standard_NC6     Standard_NC6     4     3           64.0 kB   64.4 GB        1 x nvidia-tesla-k80 
+
+Available storages:                                      
+ Id         Tier       Replication   Capacity            
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ standard   Standard   LRS           107.4 GB - 110.0 TB
