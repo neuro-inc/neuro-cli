@@ -186,18 +186,15 @@ class TestUsers:
             )
 
     async def test_correct_revoke(self, mocked_revoke_client: Client) -> None:
-        ret = await mocked_revoke_client.users.revoke(
+        await mocked_revoke_client.users.revoke(
             user="bill", uri=URL("storage://bob/resource")
         )
-        assert ret is None  # at this moment no result
 
     async def test_add_role(self, mocked_add_role_client: Client) -> None:
-        ret = await mocked_add_role_client.users.add("mycompany/team/role")
-        assert ret is None  # at this moment no result
+        await mocked_add_role_client.users.add("mycompany/team/role")
 
     async def test_remove_role(self, mocked_remove_role_client: Client) -> None:
-        ret = await mocked_remove_role_client.users.remove("mycompany/team/role")
-        assert ret is None  # at this moment no result
+        await mocked_remove_role_client.users.remove("mycompany/team/role")
 
     async def test_get_subroles(self, mocked_get_subroles_client: Client) -> None:
         res = await mocked_get_subroles_client.users.get_subroles("test")
