@@ -1,7 +1,7 @@
 # Clusters API is experimental,
 # remove underscore prefix after stabilizing and making public
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Mapping, Optional
+from typing import Any, AsyncIterator, Dict, List, Mapping, Optional
 
 import aiohttp
 from neuro_config_client import AWSCloudProvider as _AWSCloudProvider
@@ -78,8 +78,7 @@ __all__ = [
 ]
 
 
-@rewrite_module
-class _Clusters(ConfigClientBase, metaclass=NoPublicConstructor):
+class _ConfigClient(ConfigClientBase):
     def __init__(self, core: _Core, config: Config) -> None:
         super().__init__()
 
@@ -115,3 +114,39 @@ class _Clusters(ConfigClientBase, metaclass=NoPublicConstructor):
         url = url.with_query(start_deployment="true")
         async with self._core.request("PUT", url, auth=auth, json=config):
             pass
+
+
+@rewrite_module
+class _Clusters(metaclass=NoPublicConstructor):
+    def __init__(self, core: _Core, config: Config) -> None:
+        self._client = _ConfigClient(core, config)
+
+    async def list(self) -> List[_ConfigCluster]:
+        clusters = await self._client.list_clusters()
+        return list(clusters)
+
+    async def list_cloud_provider_options(self) -> List[_CloudProviderOptions]:
+        return await self._client.list_cloud_provider_options()
+
+    async def get_cloud_provider_options(
+        self, type: _CloudProviderType
+    ) -> _CloudProviderOptions:
+        return await self._client.get_cloud_provider_options(type)
+
+    async def add_resource_preset(
+        self, cluster_name: str, preset: _ResourcePreset
+    ) -> None:
+        await self._client.add_resource_preset(cluster_name, preset)
+
+    async def update_resource_preset(
+        self, cluster_name: str, preset: _ResourcePreset
+    ) -> None:
+        await self._client.put_resource_preset(cluster_name, preset)
+
+    async def remove_resource_preset(self, cluster_name: str, preset_name: str) -> None:
+        await self._client.delete_resource_preset(cluster_name, preset_name)
+
+    async def setup_cluster_cloud_provider(
+        self, name: str, config: Dict[str, Any]
+    ) -> None:
+        await self._client.setup_cluster_cloud_provider(name, config)

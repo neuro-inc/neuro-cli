@@ -442,11 +442,11 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
 
     with ExitStack() as exit_stack:
         clusters_mocked = exit_stack.enter_context(
-            mock.patch.object(_Clusters, "put_resource_preset")
+            mock.patch.object(_Clusters, "update_resource_preset")
         )
         config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
-        async def put_resource_preset(cluster_name: str, p: _ResourcePreset) -> None:
+        async def update_resource_preset(cluster_name: str, p: _ResourcePreset) -> None:
             assert cluster_name == "default"
             assert p.name == "cpu-small"
             nonlocal preset
@@ -465,7 +465,7 @@ def test_update_resource_preset(run_cli: _RunCli) -> None:
         async def fetch() -> None:
             pass
 
-        clusters_mocked.side_effect = put_resource_preset
+        clusters_mocked.side_effect = update_resource_preset
         config_mocked.side_effect = fetch
 
         capture = run_cli(
@@ -550,17 +550,17 @@ def test_add_resource_preset_print_result(run_cli: _RunCli) -> None:
 def test_remove_resource_preset_print_result(run_cli: _RunCli) -> None:
     with ExitStack() as exit_stack:
         clusters_mocked = exit_stack.enter_context(
-            mock.patch.object(_Clusters, "delete_resource_preset")
+            mock.patch.object(_Clusters, "remove_resource_preset")
         )
         config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
-        async def delete_resource_preset(cluster_name: str, preset_name: str) -> None:
+        async def remove_resource_preset(cluster_name: str, preset_name: str) -> None:
             pass
 
         async def fetch() -> None:
             pass
 
-        clusters_mocked.side_effect = delete_resource_preset
+        clusters_mocked.side_effect = remove_resource_preset
         config_mocked.side_effect = fetch
 
         capture = run_cli(["admin", "remove-resource-preset", "cpu-small"])
@@ -576,17 +576,17 @@ def test_remove_resource_preset_print_result(run_cli: _RunCli) -> None:
 def test_remove_resource_preset_not_exists(run_cli: _RunCli) -> None:
     with ExitStack() as exit_stack:
         clusters_mocked = exit_stack.enter_context(
-            mock.patch.object(_Clusters, "delete_resource_preset")
+            mock.patch.object(_Clusters, "remove_resource_preset")
         )
         config_mocked = exit_stack.enter_context(mock.patch.object(Config, "fetch"))
 
-        async def delete_resource_preset(cluster_name: str, preset_name: str) -> None:
+        async def remove_resource_preset(cluster_name: str, preset_name: str) -> None:
             pass
 
         async def fetch() -> None:
             pass
 
-        clusters_mocked.side_effect = delete_resource_preset
+        clusters_mocked.side_effect = remove_resource_preset
         config_mocked.side_effect = fetch
 
         capture = run_cli(["admin", "remove-resource-preset", "unknown"])

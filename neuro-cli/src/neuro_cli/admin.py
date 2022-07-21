@@ -61,7 +61,7 @@ async def get_clusters(root: Root) -> None:
     """
     fmt = ClustersFormatter()
     with root.status("Fetching the list of clusters"):
-        config_clusters = await root.client._clusters.list_clusters()
+        config_clusters = await root.client._clusters.list()
         admin_clusters = await root.client._admin.list_clusters()
     clusters: Dict[str, Tuple[Optional[_Cluster], Optional[_ConfigCluster]]] = {}
     for config_cluster in config_clusters:
@@ -1083,7 +1083,7 @@ async def update_resource_preset(
         )
     else:
         tpu_preset = None
-    await root.client._clusters.put_resource_preset(
+    await root.client._clusters.update_resource_preset(
         root.client.config.cluster_name,
         _ResourcePreset(
             name=preset_name,
@@ -1116,7 +1116,7 @@ async def remove_resource_preset(root: Root, preset_name: str) -> None:
     if preset_name not in presets:
         raise ValueError(f"Preset '{preset_name}' not found")
     del presets[preset_name]
-    await root.client._clusters.delete_resource_preset(
+    await root.client._clusters.remove_resource_preset(
         root.client.config.cluster_name, preset_name
     )
     await root.client.config.fetch()
