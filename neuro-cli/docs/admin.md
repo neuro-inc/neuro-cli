@@ -42,6 +42,7 @@ Cluster administration commands.
 | [_set-user-quota_](admin.md#set-user-quota) | Set user quota to given values |
 | [_show-cluster-options_](admin.md#show-cluster-options) | Show available cluster options |
 | [_update-cluster_](admin.md#update-cluster) | Update a cluster |
+| [_update-node-pool_](admin.md#update-node-pool) | Update cluster node pool |
 | [_update-org-cluster_](admin.md#update-org-cluster) | Update org cluster quotas |
 | [_update-resource-preset_](admin.md#update-resource-preset) | Update existing resource preset |
 
@@ -712,6 +713,28 @@ Update a cluster.
 | _--default-credits AMOUNT_ | Default credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--default-role \[ROLE\]_ | Default role for new users added to cluster  _\[default: user\]_ |
+
+
+
+### update-node-pool
+
+Update cluster node pool
+
+
+#### Usage
+
+```bash
+neuro admin update-node-pool [OPTIONS] CLUSTER_NAME NODE_POOL_NAME
+```
+
+Update cluster node pool.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--idle-size NUMBER_ | Number of idle nodes in the node pool. |
 
 
 

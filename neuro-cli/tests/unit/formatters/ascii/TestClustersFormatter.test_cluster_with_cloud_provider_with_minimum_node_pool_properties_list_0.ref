@@ -1,10 +1,10 @@
-default                                                                                      
- Status        Deployed                                                                      
- Node pools                                                                                  
-                 Machine        CPU    Memory           Disk                    GPU   Size   
-                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  
-                 n1-highmem-8   7.0   48.3 GB       161.1 GB                             2   
-                 n1-highmem-8   7.0   48.3 GB   161.1 GB SSD   1 x nvidia-tesla-k80      2   
-                                                                                             
- Default role  user                                                                          
+default                                                                                     
+ Status        Deployed                                                                     
+ Node pools                                                                                 
+                 Name          CPU    Memory           Disk                    GPU   Size   
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  
+                 node-pool-1   7.0   48.3 GB       161.1 GB                             2   
+                 node-pool-2   7.0   48.3 GB   161.1 GB SSD   1 x nvidia-tesla-k80      2   
+                                                                                            
+ Default role  user                                                                         
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
