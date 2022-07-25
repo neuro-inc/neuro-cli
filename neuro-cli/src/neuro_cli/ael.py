@@ -21,7 +21,7 @@ from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.output import Output, create_output
 from prompt_toolkit.shortcuts import PromptSession
-from typing_extensions import NoReturn
+from typing import NoReturn
 
 from neuro_sdk import (
     JobDescription,
