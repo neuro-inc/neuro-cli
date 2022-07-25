@@ -297,9 +297,7 @@ async def test_kill_ok(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        ret = await client.jobs.kill("job-id")
-
-    assert ret is None
+        await client.jobs.kill("job-id")
 
 
 async def test_save_image_not_in_neuro_registry(make_client: _MakeClient) -> None:

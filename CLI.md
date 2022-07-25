@@ -39,6 +39,7 @@
 		* [neuro admin set-user-quota](#neuro-admin-set-user-quota)
 		* [neuro admin show-cluster-options](#neuro-admin-show-cluster-options)
 		* [neuro admin update-cluster](#neuro-admin-update-cluster)
+		* [neuro admin update-node-pool](#neuro-admin-update-node-pool)
 		* [neuro admin update-org-cluster](#neuro-admin-update-org-cluster)
 		* [neuro admin update-resource-preset](#neuro-admin-update-resource-preset)
 	* [neuro blob](#neuro-blob)
@@ -470,6 +471,7 @@ Name | Description|
 | _[neuro admin set\-user-quota](#neuro-admin-set-user-quota)_| Set user quota to given values |
 | _[neuro admin show\-cluster-options](#neuro-admin-show-cluster-options)_| Show available cluster options |
 | _[neuro admin update-cluster](#neuro-admin-update-cluster)_| Update a cluster |
+| _[neuro admin update\-node-pool](#neuro-admin-update-node-pool)_| Update cluster node pool |
 | _[neuro admin update\-org-cluster](#neuro-admin-update-org-cluster)_| Update org cluster quotas |
 | _[neuro admin update\-resource-preset](#neuro-admin-update-resource-preset)_| Update existing resource preset |
 
@@ -1067,6 +1069,26 @@ Name | Description|
 |_\--default-credits AMOUNT_|Default credits amount to set \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-role \[ROLE]_|Default role for new users added to cluster  \[default: user]|
+
+
+
+
+### neuro admin update-node-pool
+
+Update cluster node pool.
+
+**Usage:**
+
+```bash
+neuro admin update-node-pool [OPTIONS] CLUSTER_NAME NODE_POOL_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\--idle-size NUMBER_|Number of idle nodes in the node pool.|
 
 
 

@@ -9,7 +9,7 @@ import sqlite3
 import sys
 import time
 import uuid
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import Dict, List, Optional
 from urllib.parse import quote as urlquote
 from urllib.parse import urlencode
 
@@ -33,10 +33,7 @@ SCHEMA = {
 }
 DROP = {"stats": "DROP TABLE IF EXISTS stats", "uid": "DROP TABLE IF EXISTS uid"}
 
-if TYPE_CHECKING:
-    sqlite3_Row = sqlite3.Row[Any]
-else:
-    sqlite3_Row = sqlite3.Row
+sqlite3_Row = sqlite3.Row
 
 
 def ensure_schema(db: sqlite3.Connection) -> str:

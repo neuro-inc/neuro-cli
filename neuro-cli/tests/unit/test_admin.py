@@ -592,3 +592,32 @@ def test_remove_resource_preset_not_exists(run_cli: _RunCli) -> None:
         capture = run_cli(["admin", "remove-resource-preset", "unknown"])
         assert capture.code
         assert "Preset 'unknown' not found" in capture.err
+
+
+def test_update_node_pool(run_cli: _RunCli) -> None:
+    with ExitStack() as exit_stack:
+        clusters_mocked = exit_stack.enter_context(
+            mock.patch.object(_Clusters, "update_node_pool")
+        )
+
+        async def update_node_pool(
+            cluster_name: str, node_pool_name: str, *, idle_size: Optional[int]
+        ) -> None:
+            assert cluster_name == "default"
+            assert node_pool_name == "cpu"
+            assert idle_size == 1
+
+        clusters_mocked.side_effect = update_node_pool
+
+        capture = run_cli(
+            ["admin", "update-node-pool", "default", "cpu", "--idle-size", "1"]
+        )
+        assert not capture.err
+        assert capture.out == "Cluster default node pool cpu successfully updated"
+
+        # Same with quiet mode
+        capture = run_cli(
+            ["-q", "admin", "update-node-pool", "default", "cpu", "--idle-size", "1"]
+        )
+        assert not capture.err
+        assert not capture.out

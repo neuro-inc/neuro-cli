@@ -78,6 +78,32 @@ async def get_clusters(root: Root) -> None:
         root.print(fmt(clusters))
 
 
+@command()
+@option(
+    "--idle-size",
+    type=int,
+    metavar="NUMBER",
+    help="Number of idle nodes in the node pool.",
+)
+@argument("cluster_name", required=True, type=str)
+@argument("node_pool_name", required=True, type=str)
+async def update_node_pool(
+    root: Root, cluster_name: str, node_pool_name: str, idle_size: Optional[int]
+) -> None:
+    """
+    Update cluster node pool.
+    """
+    await root.client._clusters.update_node_pool(
+        cluster_name, node_pool_name, idle_size=idle_size
+    )
+    if not root.quiet:
+        root.print(
+            f"Cluster [bold]{cluster_name}[/bold] "
+            f"node pool [bold]{node_pool_name}[/bold] successfully updated",
+            markup=True,
+        )
+
+
 @command(hidden=True)
 async def get_admin_clusters(root: Root) -> None:
     """
@@ -1645,6 +1671,7 @@ admin.add_command(add_cluster)
 admin.add_command(update_cluster)
 admin.add_command(remove_cluster)
 admin.add_command(show_cluster_options)
+admin.add_command(update_node_pool)
 
 admin.add_command(get_cluster_users)
 admin.add_command(add_cluster_user)

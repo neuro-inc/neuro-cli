@@ -1,7 +1,6 @@
 import operator
 from typing import Iterable, List, Mapping, Optional, Tuple
 
-from neuro_config_client import CloudProviderOptions
 from rich import box
 from rich.console import Group as RichGroup
 from rich.console import RenderableType
@@ -13,6 +12,7 @@ from rich.text import Text
 from neuro_sdk import (
     _AWSStorageOptions,
     _AzureStorageOptions,
+    _CloudProviderOptions,
     _CloudProviderType,
     _Cluster,
     _ClusterUserWithInfo,
@@ -193,7 +193,9 @@ class ClustersFormatter:
                         table.add_row(
                             "Node pools",
                             Styled(
-                                _format_node_pools(cloud_provider.node_pools),
+                                _format_node_pools(
+                                    cloud_provider.type, cloud_provider.node_pools
+                                ),
                                 style="reset",
                             ),
                         )
@@ -226,7 +228,9 @@ class ClustersFormatter:
         return RichGroup(*out)
 
 
-def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
+def _format_node_pools(
+    type: _CloudProviderType, node_pools: Iterable[_NodePool]
+) -> Table:
     is_scalable = _is_scalable(node_pools)
     has_preemptible = _has_preemptible(node_pools)
     has_idle = _has_idle(node_pools)
@@ -235,7 +239,9 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
         box=box.SIMPLE_HEAVY,
         show_edge=True,
     )
-    table.add_column("Machine", style="bold", justify="left")
+    table.add_column("Name", style="bold", justify="left")
+    if type != _CloudProviderType.ON_PREM:
+        table.add_column("Machine", style="bold", justify="left")
     table.add_column("CPU", justify="right")
     table.add_column("Memory", justify="right")
     table.add_column("Disk", justify="right")
@@ -251,11 +257,11 @@ def _format_node_pools(node_pools: Iterable[_NodePool]) -> Table:
         table.add_column("Idle", justify="right")
 
     for node_pool in node_pools:
-        row = [
-            node_pool.machine_type,
-            str(node_pool.available_cpu),
-            format_size(node_pool.available_memory),
-        ]
+        row = [node_pool.name]
+        if type != _CloudProviderType.ON_PREM:
+            row.append(node_pool.machine_type or "")
+        row.append(str(node_pool.available_cpu))
+        row.append(format_size(node_pool.available_memory))
         if node_pool.disk_type:
             row.append(
                 f"{format_size(node_pool.disk_size)} " f"{node_pool.disk_type.upper()}"
@@ -337,7 +343,7 @@ class OrgsFormatter:
 
 
 class CloudProviderOptionsFormatter:
-    def __call__(self, options: CloudProviderOptions) -> RenderableType:
+    def __call__(self, options: _CloudProviderOptions) -> RenderableType:
         out: list[RenderableType] = []
         table = Table(
             Column("Id"),

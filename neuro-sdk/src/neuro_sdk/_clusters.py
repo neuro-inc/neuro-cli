@@ -133,6 +133,18 @@ class _Clusters(metaclass=NoPublicConstructor):
     ) -> _CloudProviderOptions:
         return await self._client.get_cloud_provider_options(type)
 
+    async def setup_cluster_cloud_provider(
+        self, name: str, config: Dict[str, Any]
+    ) -> None:
+        await self._client.setup_cluster_cloud_provider(name, config)
+
+    async def update_node_pool(
+        self, cluster_name: str, node_pool_name: str, *, idle_size: Optional[int] = None
+    ) -> None:
+        await self._client.patch_node_pool(
+            cluster_name, node_pool_name, idle_size=idle_size
+        )
+
     async def add_resource_preset(
         self, cluster_name: str, preset: _ResourcePreset
     ) -> None:
@@ -145,8 +157,3 @@ class _Clusters(metaclass=NoPublicConstructor):
 
     async def remove_resource_preset(self, cluster_name: str, preset_name: str) -> None:
         await self._client.delete_resource_preset(cluster_name, preset_name)
-
-    async def setup_cluster_cloud_provider(
-        self, name: str, config: Dict[str, Any]
-    ) -> None:
-        await self._client.setup_cluster_cloud_provider(name, config)
