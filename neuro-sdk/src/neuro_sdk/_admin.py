@@ -1,7 +1,7 @@
 # Admin API is experimental,
 # remove underscore prefix after stabilizing and making public
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Mapping, Optional
+from typing import Any, AsyncIterator, Dict, Mapping, Optional, Sequence, Union
 
 import aiohttp
 from neuro_admin_client import AdminClientBase
@@ -15,6 +15,10 @@ from neuro_admin_client import OrgCluster as _OrgCluster
 from neuro_admin_client import OrgUser as _OrgUser
 from neuro_admin_client import OrgUserRoleType as _OrgUserRoleType
 from neuro_admin_client import OrgUserWithInfo as _OrgUserWithInfo
+from neuro_admin_client import Project as _Project
+from neuro_admin_client import ProjectUser as _ProjectUser
+from neuro_admin_client import ProjectUserRoleType as _ProjectUserRoleType
+from neuro_admin_client import ProjectUserWithInfo as _ProjectUserWithInfo
 from neuro_admin_client import Quota as _Quota
 from neuro_admin_client import UserInfo as _UserInfo
 from yarl import URL
@@ -39,6 +43,10 @@ __all__ = [
     "_OrgUser",
     "_OrgUserRoleType",
     "_OrgUserWithInfo",
+    "_Project",
+    "_ProjectUser",
+    "_ProjectUserRoleType",
+    "_ProjectUserWithInfo",
     "_Quota",
     "_UserInfo",
 ]
@@ -64,7 +72,7 @@ class _Admin(AdminClientBase, metaclass=NoPublicConstructor):
         method: str,
         path: str,
         json: Optional[Dict[str, Any]] = None,
-        params: Optional[Mapping[str, str]] = None,
+        params: Union[Sequence[tuple[str, str]], Mapping[str, str], None] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
         url = self._admin_url / path
         auth = await self._config._api_auth()

@@ -19,6 +19,8 @@ Cluster administration commands.
 | [_add-org-cluster_](admin.md#add-org-cluster) | Add org access to specified cluster |
 | [_add-org-cluster-credits_](admin.md#add-org-cluster-credits) | Add given values to org cluster balance |
 | [_add-org-user_](admin.md#add-org-user) | Add user access to specified org |
+| [_add-project_](admin.md#add-project) | Add new project to specified cluster |
+| [_add-project-user_](admin.md#add-project-user) | Add user access to specified project |
 | [_add-resource-preset_](admin.md#add-resource-preset) | Add new resource preset |
 | [_add-user-credits_](admin.md#add-user-credits) | Add given values to user quota |
 | [_generate-cluster-config_](admin.md#generate-cluster-config) | Create a cluster configuration file |
@@ -28,12 +30,15 @@ Cluster administration commands.
 | [_get-org-clusters_](admin.md#get-org-clusters) | Print the list of all orgs in the cluster |
 | [_get-org-users_](admin.md#get-org-users) | List users in specified org |
 | [_get-orgs_](admin.md#get-orgs) | Print the list of available orgs |
+| [_get-project-users_](admin.md#get-project-users) | List users in specified project |
+| [_get-projects_](admin.md#get-projects) | Print the list of all projects in the cluster |
 | [_get-user-quota_](admin.md#get-user-quota) | Get info about user quota in given cluster |
 | [_remove-cluster_](admin.md#remove-cluster) | Drop a cluster |
 | [_remove-cluster-user_](admin.md#remove-cluster-user) | Remove user access from the cluster |
 | [_remove-org_](admin.md#remove-org) | Drop a org |
 | [_remove-org-cluster_](admin.md#remove-org-cluster) | Drop an org cluster |
 | [_remove-org-user_](admin.md#remove-org-user) | Remove user access from the org |
+| [_remove-project-user_](admin.md#remove-project-user) | Remove user access from the project |
 | [_remove-resource-preset_](admin.md#remove-resource-preset) | Remove resource preset |
 | [_set-org-cluster-credits_](admin.md#set-org-cluster-credits) | Set org cluster credits to given value |
 | [_set-org-cluster-defaults_](admin.md#set-org-cluster-defaults) | Set org cluster defaults to given value |
@@ -44,6 +49,8 @@ Cluster administration commands.
 | [_update-cluster_](admin.md#update-cluster) | Update a cluster |
 | [_update-node-pool_](admin.md#update-node-pool) | Update cluster node pool |
 | [_update-org-cluster_](admin.md#update-org-cluster) | Update org cluster quotas |
+| [_update-project_](admin.md#update-project) | Update project settings |
+| [_update-project-user_](admin.md#update-project-user) | Update user access to specified project |
 | [_update-resource-preset_](admin.md#update-resource-preset) | Update existing resource preset |
 
 
@@ -193,6 +200,55 @@ admin, manager or user.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+
+
+
+### add-project
+
+Add new project to specified cluster
+
+
+#### Usage
+
+```bash
+neuro admin add-project [OPTIONS] CLUSTER_NAME NAME
+```
+
+Add new project to specified cluster.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--default_ | Is this project is default, e.g. new cluster users will be automatically added to it |
+| _--default-role \[ROLE\]_ | Default role for new users added to project  _\[default: writer\]_ |
+| _--org ORG_ | org name for org-cluster projects |
+
+
+
+### add-project-user
+
+Add user access to specified project
+
+
+#### Usage
+
+```bash
+neuro admin add-project-user [OPTIONS] CLUSTER_NAME PROJECT_NAME USER_NAME [ROLE]
+```
+
+Add user access to specified project.
+
+The command supports one of 4 user
+roles: reader, writer, manager or admin.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--org ORG_ | org name for org-cluster projects |
 
 
 
@@ -398,6 +454,50 @@ Print the list of available orgs.
 
 
 
+### get-project-users
+
+List users in specified project
+
+
+#### Usage
+
+```bash
+neuro admin get-project-users [OPTIONS] CLUSTER_NAME PROJECT_NAME
+```
+
+List users in specified project
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--org ORG_ | org name for org-cluster projects |
+
+
+
+### get-projects
+
+Print the list of all projects in the cluster
+
+
+#### Usage
+
+```bash
+neuro admin get-projects [OPTIONS] CLUSTER_NAME
+```
+
+Print the list of all projects in the cluster
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--org ORG_ | org name for org-cluster projects |
+
+
+
 ### get-user-quota
 
 Get info about user quota in given cluster
@@ -532,6 +632,28 @@ Remove user access from the org.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+
+
+
+### remove-project-user
+
+Remove user access from the project
+
+
+#### Usage
+
+```bash
+neuro admin remove-project-user [OPTIONS] CLUSTER_NAME PROJECT_NAME USER_NAME
+```
+
+Remove user access from the project.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--org ORG_ | org name for org-cluster projects |
 
 
 
@@ -761,6 +883,55 @@ Update org cluster quotas.
 | _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--default-role \[ROLE\]_ | Default role for new users added to org cluster  _\[default: user\]_ |
 | _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+
+
+
+### update-project
+
+Update project settings
+
+
+#### Usage
+
+```bash
+neuro admin update-project [OPTIONS] CLUSTER_NAME NAME
+```
+
+Update project settings.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--default_ | Is this project is default, e.g. new cluster users will be automatically added to it |
+| _--default-role \[ROLE\]_ | Default role for new users added to project  _\[default: writer\]_ |
+| _--org ORG_ | org name for org-cluster projects |
+
+
+
+### update-project-user
+
+Update user access to specified project
+
+
+#### Usage
+
+```bash
+neuro admin update-project-user [OPTIONS] CLUSTER_NAME PROJECT_NAME USER_NAME [ROLE]
+```
+
+Update user access to specified project.
+
+The command supports one of 4 user
+roles: reader, writer, manager or admin.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--org ORG_ | org name for org-cluster projects |
 
 
 

@@ -21,6 +21,9 @@ from neuro_sdk import (
     _ConfigCluster,
     _OrgCluster,
     _OrgUserRoleType,
+    _Project,
+    _ProjectUser,
+    _ProjectUserRoleType,
     _Quota,
     _ResourcePreset,
     _TPUPreset,
@@ -39,6 +42,9 @@ from .formatters.admin import (
     OrgClustersFormatter,
     OrgsFormatter,
     OrgUserFormatter,
+    ProjectFormatter,
+    ProjectsFormatter,
+    ProjectUserFormatter,
 )
 from .formatters.config import AdminQuotaFormatter
 from .root import Root
@@ -1664,6 +1670,337 @@ async def add_org_cluster_credits(
     root.print(fmt(org.balance))
 
 
+# Projects
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@option(
+    "--org",
+    metavar="ORG",
+    default=None,
+    type=str,
+    help="org name for org-cluster projects",
+)
+async def get_projects(
+    root: Root, cluster_name: str, org: Optional[str] = None
+) -> None:
+    """
+    Print the list of all projects in the cluster
+    """
+    fmt = ProjectsFormatter()
+    with root.status(f"Fetching the list of projects of cluster [b]{cluster_name}[/b]"):
+        org_clusters = await root.client._admin.list_projects(
+            cluster_name=cluster_name, org_name=org
+        )
+    with root.pager():
+        root.print(fmt(org_clusters))
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("name", required=True, type=str)
+@option(
+    "--org",
+    metavar="ORG",
+    default=None,
+    type=str,
+    help="org name for org-cluster projects",
+)
+@option(
+    "--default-role",
+    default=_ProjectUserRoleType.WRITER.value,
+    metavar="[ROLE]",
+    type=click.Choice([str(role) for role in list(_ProjectUserRoleType)]),
+    show_default=True,
+    help="Default role for new users added to project",
+)
+@option(
+    "--default",
+    is_flag=True,
+    help="Is this project is default, e.g. new cluster users will be automatically "
+    "added to it",
+)
+async def add_project(
+    root: Root,
+    name: str,
+    cluster_name: str,
+    org: Optional[str],
+    default_role: str,
+    default: bool = False,
+) -> None:
+    """
+    Add new project to specified cluster.
+
+    """
+
+    project = await root.client._admin.create_project(
+        name=name,
+        cluster_name=cluster_name,
+        org_name=org,
+        default_role=_ProjectUserRoleType(default_role),
+        is_default=default,
+    )
+    if not root.quiet:
+        root.print(
+            f"Added project [bold]{rich_escape(project.name)}[/bold] to cluster "
+            f"[bold]{rich_escape(cluster_name)}[/bold]"
+            f"{f' to org [bold]{rich_escape(org)}[/bold]' if org else ''}. Info:",
+            markup=True,
+        )
+        fmt = ProjectFormatter()
+        root.print(fmt(project, skip_cluster_org=True))
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("name", required=True, type=str)
+@option(
+    "--org",
+    metavar="ORG",
+    default=None,
+    type=str,
+    help="org name for org-cluster projects",
+)
+@option(
+    "--default-role",
+    default=_ProjectUserRoleType.WRITER.value,
+    metavar="[ROLE]",
+    type=click.Choice([str(role) for role in list(_ProjectUserRoleType)]),
+    show_default=True,
+    help="Default role for new users added to project",
+)
+@option(
+    "--default",
+    is_flag=True,
+    help="Is this project is default, e.g. new cluster users will be automatically "
+    "added to it",
+)
+async def update_project(
+    root: Root,
+    name: str,
+    cluster_name: str,
+    org: Optional[str],
+    default_role: str,
+    default: bool = False,
+) -> None:
+    """
+    Update project settings.
+
+    """
+    project = _Project(
+        name=name,
+        cluster_name=cluster_name,
+        org_name=org,
+        default_role=_ProjectUserRoleType(default_role),
+        is_default=default,
+    )
+    await root.client._admin.update_project(project)
+    if not root.quiet:
+        root.print(
+            f"Project [bold]{rich_escape(project.name)}[/bold] in cluster "
+            f"[bold]{rich_escape(cluster_name)}[/bold] "
+            f"{f'in org [bold]{rich_escape(org)}[/bold]' if org else ''} was "
+            f"updated. Info:",
+            markup=True,
+        )
+        fmt = ProjectFormatter()
+        root.print(fmt(project, skip_cluster_org=True))
+
+
+@command(hidden=True)
+@option("--force", default=False, help="Skip prompt", is_flag=True)
+@argument("cluster_name", required=True, type=str)
+@argument("name", required=True, type=str)
+@option(
+    "--org",
+    metavar="ORG",
+    default=None,
+    type=str,
+    help="org name for org-cluster projects",
+)
+async def remove_project(
+    root: Root, name: str, cluster_name: str, org: Optional[str], force: bool
+) -> None:
+    """
+    Drop a project
+
+    Completely removes project from the cluster.
+    """
+
+    if not force:
+        with patch_stdout():
+            answer: str = await PromptSession().prompt_async(
+                f"Are you sure that you want to drop project '{name}' "
+                f"from cluster '{cluster_name}' {f'in org {org}' if org else ''} (y/n)?"
+            )
+        if answer != "y":
+            return
+    await root.client._admin.delete_project(
+        project_name=name, cluster_name=cluster_name, org_name=org
+    )
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("project_name", required=True, type=str)
+@option(
+    "--org",
+    metavar="ORG",
+    default=None,
+    type=str,
+    help="org name for org-cluster projects",
+)
+async def get_project_users(
+    root: Root, cluster_name: str, project_name: str, org: Optional[str]
+) -> None:
+    """
+    List users in specified project
+    """
+    fmt = ProjectUserFormatter()
+    with root.status(
+        f"Fetching the list of project users of project [b]{project_name}[/b]"
+    ):
+        users = await root.client._admin.list_project_users(
+            project_name=project_name,
+            cluster_name=cluster_name,
+            org_name=org,
+            with_user_info=True,
+        )
+    with root.pager():
+        root.print(fmt(users))
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("project_name", required=True, type=str)
+@option(
+    "--org",
+    metavar="ORG",
+    default=None,
+    type=str,
+    help="org name for org-cluster projects",
+)
+@argument("user_name", required=True, type=str)
+@argument(
+    "role",
+    required=False,
+    default=None,
+    metavar="[ROLE]",
+    type=click.Choice([str(role) for role in list(_ProjectUserRoleType)]),
+)
+async def add_project_user(
+    root: Root,
+    cluster_name: str,
+    project_name: str,
+    org: Optional[str],
+    user_name: str,
+    role: Optional[None],
+) -> None:
+    """
+    Add user access to specified project.
+
+    The command supports one of 4 user roles: reader, writer, manager or admin.
+    """
+    user = await root.client._admin.create_project_user(
+        project_name=project_name,
+        cluster_name=cluster_name,
+        org_name=org,
+        user_name=user_name,
+        role=_ProjectUserRoleType(role) if role else None,
+    )
+    if not root.quiet:
+        root.print(
+            f"Added [bold]{rich_escape(user.user_name)}[/bold] to project "
+            f"[bold]{rich_escape(project_name)}[/bold] as "
+            f"[bold]{rich_escape(user.role)}[/bold]",
+            markup=True,
+        )
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("project_name", required=True, type=str)
+@option(
+    "--org",
+    metavar="ORG",
+    default=None,
+    type=str,
+    help="org name for org-cluster projects",
+)
+@argument("user_name", required=True, type=str)
+@argument(
+    "role",
+    required=True,
+    metavar="[ROLE]",
+    type=click.Choice([str(role) for role in list(_ProjectUserRoleType)]),
+)
+async def update_project_user(
+    root: Root,
+    cluster_name: str,
+    project_name: str,
+    org: Optional[str],
+    user_name: str,
+    role: str,
+) -> None:
+    """
+    Update user access to specified project.
+
+    The command supports one of 4 user roles: reader, writer, manager or admin.
+    """
+    user = _ProjectUser(
+        project_name=project_name,
+        cluster_name=cluster_name,
+        org_name=org,
+        user_name=user_name,
+        role=_ProjectUserRoleType(role),
+    )
+
+    await root.client._admin.update_project_user(user)
+    if not root.quiet:
+        root.print(
+            f"Update [bold]{rich_escape(user.user_name)}[/bold] role in project "
+            f"[bold]{rich_escape(project_name)}[/bold] as "
+            f"[bold]{rich_escape(user.role)}[/bold]",
+            markup=True,
+        )
+
+
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("project_name", required=True, type=str)
+@option(
+    "--org",
+    metavar="ORG",
+    default=None,
+    type=str,
+    help="org name for org-cluster projects",
+)
+@argument("user_name", required=True, type=str)
+async def remove_project_user(
+    root: Root,
+    cluster_name: str,
+    project_name: str,
+    org: Optional[str],
+    user_name: str,
+) -> None:
+    """
+    Remove user access from the project.
+    """
+    await root.client._admin.delete_project_user(
+        project_name=project_name,
+        cluster_name=cluster_name,
+        org_name=org,
+        user_name=user_name,
+    )
+    if not root.quiet:
+        root.print(
+            f"Removed [bold]{rich_escape(user_name)}[/bold] from project "
+            f"[bold]{rich_escape(project_name)}[/bold]",
+            markup=True,
+        )
+
+
 admin.add_command(get_clusters)
 admin.add_command(get_admin_clusters)
 admin.add_command(generate_cluster_config)
@@ -1704,3 +2041,13 @@ admin.add_command(get_org_cluster_quota)
 admin.add_command(set_org_cluster_quota)
 admin.add_command(set_org_cluster_credits)
 admin.add_command(add_org_cluster_credits)
+
+admin.add_command(get_projects)
+admin.add_command(add_project)
+admin.add_command(update_project)
+admin.add_command(remove_project)
+
+admin.add_command(get_project_users)
+admin.add_command(add_project_user)
+admin.add_command(update_project_user)
+admin.add_command(remove_project_user)
