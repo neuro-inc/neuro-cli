@@ -5,6 +5,23 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 22.7.1 (2022-07-27)
+=================================
+
+Features
+--------
+
+- Add update-node-pool command. Only idle_size update is available. ([#2740](https://github.com/neuro-inc/platform-client-python/issues/2740))
+- Integrate neuro-config-client package. ([#2791](https://github.com/neuro-inc/platform-client-python/issues/2791))
+- Added project management commands to `neuro admin`. ([#2798](https://github.com/neuro-inc/platform-client-python/issues/2798))
+
+
+Bugfixes
+--------
+
+- Fix `neuro admin update-resource-preset`: previous values are now used for boolean parameters if options `--scheduler/--no-scheduler` or `--preemptible-node/--no-preemptible-node` are not explicitly specified. ([#2761](https://github.com/neuro-inc/platform-client-python/issues/2761))
+
+
 Neuro SDK/CLI 22.7.0 (2022-07-04)
 =================================
 

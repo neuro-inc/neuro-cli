@@ -1,1 +1,0 @@
-Fix `neuro admin update-resource-preset`: previous values are now used for boolean parameters if options `--scheduler/--no-scheduler` or `--preemptible-node/--no-preemptible-node` are not explicitly specified.
