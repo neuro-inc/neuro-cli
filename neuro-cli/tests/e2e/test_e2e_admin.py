@@ -3,7 +3,7 @@ import subprocess
 import tempfile
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Iterator, List, Tuple
+from typing import Any, Dict, Iterator, List, Tuple
 
 import pytest
 
@@ -690,3 +690,156 @@ def test_org_cluster_set_balance_and_quota_to_unlimited(
     )
     assert "Jobs: unlimited" in captured.out
     assert "Credits: unlimited" in captured.out
+
+
+@pytest.mark.e2e
+def test_create_list_update_delete_project(
+    helper: Helper, tmp_test_cluster: str
+) -> None:
+    def _parse_list_out(out: str) -> List[Dict[str, Any]]:
+        res = []
+        for line in out.splitlines():
+            line = line.strip()
+            if line.startswith("e2e-proj"):
+                parts = line.split("│")
+                res.append(
+                    {
+                        "name": parts[0].strip(),
+                        "cluster_name": parts[1].strip(),
+                        "org_name": parts[2].strip(),
+                        "default_role": parts[3].strip(),
+                        "is_default": bool(parts[4].strip()),
+                    }
+                )
+        return res
+
+    proj_name = "e2e-proj-" + secrets.token_hex(10)
+    helper.run_cli(
+        [
+            "admin",
+            "add-project",
+            tmp_test_cluster,
+            proj_name,
+        ]
+    )
+    res = helper.run_cli(
+        [
+            "admin",
+            "get-projects",
+            tmp_test_cluster,
+        ]
+    )
+    data = _parse_list_out(res.out)
+    assert any(it["name"] == proj_name for it in data)
+    helper.run_cli(
+        [
+            "admin",
+            "update-project",
+            tmp_test_cluster,
+            proj_name,
+            "--default",
+            "--default-role",
+            "reader",
+        ]
+    )
+    res = helper.run_cli(
+        [
+            "admin",
+            "get-projects",
+            tmp_test_cluster,
+        ]
+    )
+    data = _parse_list_out(res.out)
+    assert any(
+        it["name"] == proj_name and it["default_role"] == "reader" and it["is_default"]
+        for it in data
+    )
+    helper.run_cli(["admin", "remove-project", "--force", tmp_test_cluster, proj_name])
+    res = helper.run_cli(
+        [
+            "admin",
+            "get-projects",
+            tmp_test_cluster,
+        ]
+    )
+    data = _parse_list_out(res.out)
+    assert all(it["name"] != proj_name for it in data)
+
+
+@pytest.mark.e2e
+def test_create_list_update_delete_project_user(
+    helper: Helper, tmp_test_cluster: str, test_user_names: List[str]
+) -> None:
+    def _parse_list_out(out: str) -> List[Dict[str, Any]]:
+        res = []
+        for line in out.splitlines():
+            line = line.strip()
+            parts = line.split("│")
+            if len(parts) < 2:
+                continue
+            res.append(
+                {
+                    "name": parts[0].strip(),
+                    "role": parts[1].strip(),
+                }
+            )
+        return res
+
+    proj_name = "e2e-proj-" + secrets.token_hex(10)
+    helper.run_cli(
+        [
+            "admin",
+            "add-project",
+            tmp_test_cluster,
+            proj_name,
+        ]
+    )
+    try:
+        test_user = test_user_names[0]
+        res = helper.run_cli(
+            ["admin", "get-project-users", tmp_test_cluster, proj_name]
+        )
+        users = _parse_list_out(res.out)
+        assert all(it["name"] != test_user for it in users)
+
+        helper.run_cli(
+            ["admin", "add-cluster-user", tmp_test_cluster, test_user, "user"]
+        )
+        helper.run_cli(
+            ["admin", "add-project-user", tmp_test_cluster, proj_name, test_user]
+        )
+
+        res = helper.run_cli(
+            ["admin", "get-project-users", tmp_test_cluster, proj_name]
+        )
+        users = _parse_list_out(res.out)
+        assert any(it["name"] == test_user for it in users)
+
+        helper.run_cli(
+            [
+                "admin",
+                "update-project-user",
+                tmp_test_cluster,
+                proj_name,
+                test_user,
+                "manager",
+            ]
+        )
+        res = helper.run_cli(
+            ["admin", "get-project-users", tmp_test_cluster, proj_name]
+        )
+        users = _parse_list_out(res.out)
+        assert any(it["name"] == test_user and it["role"] == "manager" for it in users)
+
+        helper.run_cli(
+            ["admin", "remove-project-user", tmp_test_cluster, proj_name, test_user]
+        )
+        res = helper.run_cli(
+            ["admin", "get-project-users", tmp_test_cluster, proj_name]
+        )
+        users = _parse_list_out(res.out)
+        assert all(it["name"] != test_user for it in users)
+    finally:
+        helper.run_cli(
+            ["admin", "remove-project", "--force", tmp_test_cluster, proj_name]
+        )

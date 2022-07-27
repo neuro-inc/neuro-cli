@@ -23,6 +23,8 @@ from neuro_sdk import (
     _Org,
     _OrgCluster,
     _OrgUserWithInfo,
+    _Project,
+    _ProjectUserWithInfo,
     _Storage,
 )
 
@@ -441,4 +443,80 @@ class CloudProviderOptionsFormatter:
                 s.replication_type,
                 f"{min_capacity} - {max_capacity}",
             )
+        return table
+
+
+class ProjectsFormatter:
+    def __call__(self, projects: Iterable[_Project]) -> RenderableType:
+        table = Table(box=box.MINIMAL_HEAVY_HEAD)
+        table.add_column("Project name", style="bold")
+        table.add_column("Cluster name")
+        table.add_column("Org name")
+        table.add_column("Default role")
+        table.add_column("Is default project")
+        rows = []
+
+        for project in projects:
+            rows.append(
+                (
+                    project.name,
+                    project.cluster_name,
+                    project.org_name,
+                    project.default_role.value,
+                    str(project.is_default),
+                )
+            )
+        rows.sort(key=operator.itemgetter(0))
+
+        for row in rows:
+            table.add_row(*row)
+        return table
+
+
+class ProjectFormatter:
+    def __call__(
+        self, project: _Project, *, skip_cluster_org: bool = False
+    ) -> RenderableType:
+        table = Table(box=None, show_header=False, show_edge=False)
+        table.add_column()
+        table.add_column(style="bold")
+        table.add_row("Name", project.name)
+        if not skip_cluster_org:
+            table.add_row("Cluster name", project.cluster_name)
+            table.add_row("Org name", project.org_name)
+        table.add_row(
+            "Default role",
+            project.default_role.value,
+        )
+        table.add_row(
+            "Is default project",
+            str(project.is_default),
+        )
+        return table
+
+
+class ProjectUserFormatter:
+    def __call__(self, project_users: Iterable[_ProjectUserWithInfo]) -> RenderableType:
+        table = Table(box=box.MINIMAL_HEAVY_HEAD)
+        table.add_column("Name", style="bold")
+        table.add_column("Role")
+        table.add_column("Email")
+        table.add_column("Full name")
+        table.add_column("Registered")
+        rows = []
+
+        for user in project_users:
+            rows.append(
+                (
+                    user.user_name,
+                    user.role.value,
+                    user.user_info.email,
+                    user.user_info.full_name,
+                    format_datetime_iso(user.user_info.created_at),
+                )
+            )
+        rows.sort(key=operator.itemgetter(0))
+
+        for row in rows:
+            table.add_row(*row)
         return table

@@ -16,6 +16,8 @@
 		* [neuro admin add-org-cluster](#neuro-admin-add-org-cluster)
 		* [neuro admin add-org-cluster-credits](#neuro-admin-add-org-cluster-credits)
 		* [neuro admin add-org-user](#neuro-admin-add-org-user)
+		* [neuro admin add-project](#neuro-admin-add-project)
+		* [neuro admin add-project-user](#neuro-admin-add-project-user)
 		* [neuro admin add-resource-preset](#neuro-admin-add-resource-preset)
 		* [neuro admin add-user-credits](#neuro-admin-add-user-credits)
 		* [neuro admin generate-cluster-config](#neuro-admin-generate-cluster-config)
@@ -25,12 +27,15 @@
 		* [neuro admin get-org-clusters](#neuro-admin-get-org-clusters)
 		* [neuro admin get-org-users](#neuro-admin-get-org-users)
 		* [neuro admin get-orgs](#neuro-admin-get-orgs)
+		* [neuro admin get-project-users](#neuro-admin-get-project-users)
+		* [neuro admin get-projects](#neuro-admin-get-projects)
 		* [neuro admin get-user-quota](#neuro-admin-get-user-quota)
 		* [neuro admin remove-cluster](#neuro-admin-remove-cluster)
 		* [neuro admin remove-cluster-user](#neuro-admin-remove-cluster-user)
 		* [neuro admin remove-org](#neuro-admin-remove-org)
 		* [neuro admin remove-org-cluster](#neuro-admin-remove-org-cluster)
 		* [neuro admin remove-org-user](#neuro-admin-remove-org-user)
+		* [neuro admin remove-project-user](#neuro-admin-remove-project-user)
 		* [neuro admin remove-resource-preset](#neuro-admin-remove-resource-preset)
 		* [neuro admin set-org-cluster-credits](#neuro-admin-set-org-cluster-credits)
 		* [neuro admin set-org-cluster-defaults](#neuro-admin-set-org-cluster-defaults)
@@ -41,6 +46,8 @@
 		* [neuro admin update-cluster](#neuro-admin-update-cluster)
 		* [neuro admin update-node-pool](#neuro-admin-update-node-pool)
 		* [neuro admin update-org-cluster](#neuro-admin-update-org-cluster)
+		* [neuro admin update-project](#neuro-admin-update-project)
+		* [neuro admin update-project-user](#neuro-admin-update-project-user)
 		* [neuro admin update-resource-preset](#neuro-admin-update-resource-preset)
 	* [neuro blob](#neuro-blob)
 		* [neuro blob cp](#neuro-blob-cp)
@@ -448,6 +455,8 @@ Name | Description|
 | _[neuro admin add\-org-cluster](#neuro-admin-add-org-cluster)_| Add org access to specified cluster |
 | _[neuro admin add\-org-cluster-credits](#neuro-admin-add-org-cluster-credits)_| Add given values to org cluster balance |
 | _[neuro admin add\-org-user](#neuro-admin-add-org-user)_| Add user access to specified org |
+| _[neuro admin add-project](#neuro-admin-add-project)_| Add new project to specified cluster |
+| _[neuro admin add\-project-user](#neuro-admin-add-project-user)_| Add user access to specified project |
 | _[neuro admin add\-resource-preset](#neuro-admin-add-resource-preset)_| Add new resource preset |
 | _[neuro admin add\-user-credits](#neuro-admin-add-user-credits)_| Add given values to user quota |
 | _[neuro admin generate\-cluster-config](#neuro-admin-generate-cluster-config)_| Create a cluster configuration file |
@@ -457,12 +466,15 @@ Name | Description|
 | _[neuro admin get\-org-clusters](#neuro-admin-get-org-clusters)_| Print the list of all orgs in the cluster |
 | _[neuro admin get\-org-users](#neuro-admin-get-org-users)_| List users in specified org |
 | _[neuro admin get-orgs](#neuro-admin-get-orgs)_| Print the list of available orgs |
+| _[neuro admin get\-project-users](#neuro-admin-get-project-users)_| List users in specified project |
+| _[neuro admin get-projects](#neuro-admin-get-projects)_| Print the list of all projects in the cluster |
 | _[neuro admin get\-user-quota](#neuro-admin-get-user-quota)_| Get info about user quota in given cluster |
 | _[neuro admin remove-cluster](#neuro-admin-remove-cluster)_| Drop a cluster |
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
 | _[neuro admin remove-org](#neuro-admin-remove-org)_| Drop a org |
 | _[neuro admin remove\-org-cluster](#neuro-admin-remove-org-cluster)_| Drop an org cluster |
 | _[neuro admin remove\-org-user](#neuro-admin-remove-org-user)_| Remove user access from the org |
+| _[neuro admin remove\-project-user](#neuro-admin-remove-project-user)_| Remove user access from the project |
 | _[neuro admin remove\-resource-preset](#neuro-admin-remove-resource-preset)_| Remove resource preset |
 | _[neuro admin set\-org-cluster-credits](#neuro-admin-set-org-cluster-credits)_| Set org cluster credits to given value |
 | _[neuro admin set\-org-cluster-defaults](#neuro-admin-set-org-cluster-defaults)_| Set org cluster defaults to given value |
@@ -473,6 +485,8 @@ Name | Description|
 | _[neuro admin update-cluster](#neuro-admin-update-cluster)_| Update a cluster |
 | _[neuro admin update\-node-pool](#neuro-admin-update-node-pool)_| Update cluster node pool |
 | _[neuro admin update\-org-cluster](#neuro-admin-update-org-cluster)_| Update org cluster quotas |
+| _[neuro admin update-project](#neuro-admin-update-project)_| Update project settings |
+| _[neuro admin update\-project-user](#neuro-admin-update-project-user)_| Update user access to specified project |
 | _[neuro admin update\-resource-preset](#neuro-admin-update-resource-preset)_| Update existing resource preset |
 
 
@@ -601,6 +615,49 @@ neuro admin add-org-user [OPTIONS] ORG_NAME USER_NAME [ROLE]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin add-project
+
+Add new project to specified cluster.
+
+**Usage:**
+
+```bash
+neuro admin add-project [OPTIONS] CLUSTER_NAME NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--default_|Is this project is default, e.g. new cluster users will be automatically added to it|
+|_\--default-role \[ROLE]_|Default role for new users added to project  \[default: writer]|
+|_--org ORG_|org name for org-cluster projects|
+
+
+
+
+### neuro admin add-project-user
+
+Add user access to specified project.<br/><br/>The command supports one of 4 user roles: reader, writer, manager or admin.
+
+**Usage:**
+
+```bash
+neuro admin add-project-user [OPTIONS] CLUSTER_NAME PROJECT_NAME
+                                    USER_NAME [ROLE]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--org ORG_|org name for org-cluster projects|
 
 
 
@@ -789,6 +846,46 @@ Name | Description|
 
 
 
+### neuro admin get-project-users
+
+List users in specified project
+
+**Usage:**
+
+```bash
+neuro admin get-project-users [OPTIONS] CLUSTER_NAME PROJECT_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--org ORG_|org name for org-cluster projects|
+
+
+
+
+### neuro admin get-projects
+
+Print the list of all projects in the cluster
+
+**Usage:**
+
+```bash
+neuro admin get-projects [OPTIONS] CLUSTER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--org ORG_|org name for org-cluster projects|
+
+
+
+
 ### neuro admin get-user-quota
 
 Get info about user quota in given cluster
@@ -904,6 +1001,27 @@ neuro admin remove-org-user [OPTIONS] ORG_NAME USER_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin remove-project-user
+
+Remove user access from the project.
+
+**Usage:**
+
+```bash
+neuro admin remove-project-user [OPTIONS] CLUSTER_NAME PROJECT_NAME
+                                       USER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--org ORG_|org name for org-cluster projects|
 
 
 
@@ -1113,6 +1231,49 @@ Name | Description|
 |_\--default-jobs AMOUNT_|Default maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
 |_\--default-role \[ROLE]_|Default role for new users added to org cluster  \[default: user]|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)  \[default: unlimited]|
+
+
+
+
+### neuro admin update-project
+
+Update project settings.
+
+**Usage:**
+
+```bash
+neuro admin update-project [OPTIONS] CLUSTER_NAME NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--default_|Is this project is default, e.g. new cluster users will be automatically added to it|
+|_\--default-role \[ROLE]_|Default role for new users added to project  \[default: writer]|
+|_--org ORG_|org name for org-cluster projects|
+
+
+
+
+### neuro admin update-project-user
+
+Update user access to specified project.<br/><br/>The command supports one of 4 user roles: reader, writer, manager or admin.
+
+**Usage:**
+
+```bash
+neuro admin update-project-user [OPTIONS] CLUSTER_NAME PROJECT_NAME
+                                       USER_NAME [ROLE]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--org ORG_|org name for org-cluster projects|
 
 
 
