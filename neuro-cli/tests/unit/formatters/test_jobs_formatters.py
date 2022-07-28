@@ -248,8 +248,13 @@ class TestJobStartProgress:
     @pytest.mark.skipif(
         sys.platform == "win32", reason="On Windows spinner uses another characters set"
     )
+    @pytest.mark.parametrize("status", sorted(JobStatus.items()))
     def test_tty_step(
-        self, rich_cmp: Any, new_console: _NewConsole, monkeypatch: Any
+        self,
+        rich_cmp: Any,
+        new_console: _NewConsole,
+        monkeypatch: Any,
+        status: JobStatus,
     ) -> None:
         monkeypatch.setattr(
             JobStartProgress, "time_factory", itertools.count(10).__next__
@@ -258,13 +263,16 @@ class TestJobStartProgress:
         with JobStartProgress.create(console, quiet=False) as progress:
             progress.step(self.make_job(JobStatus.PENDING, "Pulling", description=""))
             progress.step(self.make_job(JobStatus.PENDING, "Pulling", description=""))
-            progress.step(self.make_job(JobStatus.RUNNING, "reason", description=""))
+            progress.step(self.make_job(status, "reason", description=""))
             rich_cmp(console)
 
-    def test_tty_end(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+    @pytest.mark.parametrize("status", sorted(JobStatus.items()))
+    def test_tty_end(
+        self, rich_cmp: Any, new_console: _NewConsole, status: JobStatus
+    ) -> None:
         console = new_console(tty=True, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
-            progress.end(self.make_job(JobStatus.RUNNING, ""))
+            progress.end(self.make_job(status, "reason"))
             rich_cmp(console)
 
     def test_tty_end_with_life_span(
