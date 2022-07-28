@@ -137,16 +137,16 @@ jobs:
     timeout-minutes: 90
     continue-on-error: true
     steps:
-    
+
     - uses: act10ns/slack@v1
-      env: 
+      env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       with:
         status: starting
         channel: '#neuro-cli-e2e-tests'
         message: Starting _neuro-cli_ E2E tests...
       if: always()
-    
+
     - name: Checkout
       uses: actions/checkout@v3
     - name: Setup Python ${{ matrix.python-version }}
@@ -181,9 +181,9 @@ jobs:
     - name: Upload coverage artifact
       uses: neuro-inc/prepare-coverage@v22.1.2
       if: matrix.os == 'ubuntu'
-      
+
     - uses: act10ns/slack@v1
-      env: 
+      env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
       with:
         status: ${{ job.status }}
