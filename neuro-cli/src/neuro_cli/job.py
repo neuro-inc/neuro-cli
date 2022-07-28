@@ -38,7 +38,7 @@ from neuro_cli.formatters.utils import (
 from neuro_cli.parse_utils import parse_sort_keys
 from neuro_cli.utils import parse_org_name, resolve_disk
 
-from .ael import process_attach, process_exec, process_logs
+from .ael import print_job_result, process_attach, process_exec, process_logs
 from .click_types import (
     CLUSTER,
     JOB,
@@ -234,6 +234,9 @@ async def logs(root: Root, since: str, job: str, timestamps: bool) -> None:
         since=_parse_date(since),
         timestamps=timestamps,
     )
+    if not root.quiet:
+        status = await root.client.jobs.status(id)
+        print_job_result(root, status)
 
 
 @command()
@@ -258,11 +261,16 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
         status=JobStatus.items(),
     )
     status = await root.client.jobs.status(id)
-    progress = JobStartProgress.create(console=root.console, quiet=root.quiet)
-    while status.status.is_pending:
-        await asyncio.sleep(0.2)
-        status = await root.client.jobs.status(id)
-        progress.step(status)
+    if status.status.is_pending:
+        with JobStartProgress.create(
+            console=root.console, quiet=root.quiet
+        ) as progress:
+            progress.step(status)
+            while status.status.is_pending:
+                await asyncio.sleep(0.2)
+                status = await root.client.jobs.status(id)
+                progress.step(status)
+
     tty = status.container.tty
     _check_tty(root, tty)
 
@@ -1291,7 +1299,7 @@ async def run_job(
         await root.client.users.share(user, permission)
     with JobStartProgress.create(console=root.console, quiet=root.quiet) as progress:
         progress.begin(job)
-        while wait_start and job.status == JobStatus.PENDING:
+        while wait_start and job.status.is_pending:
             await asyncio.sleep(0.2)
             job = await root.client.jobs.status(job.id)
             progress.step(job)
