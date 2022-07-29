@@ -31,6 +31,7 @@ from neuro_sdk import (
 from neuro_cli.formatters.jobs import (
     JobStartProgress,
     JobStatusFormatter,
+    JobStopProgress,
     JobTelemetryFormatter,
     LifeSpanUpdateFormatter,
     SimpleJobsFormatter,
@@ -145,57 +146,57 @@ def job_descr() -> JobDescription:
     )
 
 
-class TestJobStartProgress:
-    def make_job(
-        self,
-        status: JobStatus,
-        reason: str,
-        *,
-        name: Optional[str] = None,
-        life_span: Optional[float] = None,
-        description: str = "ErrorDesc",
-        total_price_credits: Decimal = Decimal("150"),
-        price_credits_per_hour: Decimal = Decimal("15"),
-    ) -> JobDescription:
-        return JobDescription(
-            name=name,
+def make_job(
+    status: JobStatus,
+    reason: str,
+    *,
+    name: Optional[str] = None,
+    life_span: Optional[float] = None,
+    description: str = "ErrorDesc",
+    total_price_credits: Decimal = Decimal("150"),
+    price_credits_per_hour: Decimal = Decimal("15"),
+) -> JobDescription:
+    return JobDescription(
+        name=name,
+        status=status,
+        owner="test-user",
+        cluster_name="default",
+        id="test-job",
+        uri=URL("job://default/test-user/test-job"),
+        description="test job description",
+        http_url=URL("http://local.host.test/"),
+        history=JobStatusHistory(
             status=status,
-            owner="test-user",
-            cluster_name="default",
-            id="test-job",
-            uri=URL("job://default/test-user/test-job"),
-            description="test job description",
-            http_url=URL("http://local.host.test/"),
-            history=JobStatusHistory(
-                status=status,
-                reason=reason,
-                description=description,
-                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
-                started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
-                finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+            reason=reason,
+            description=description,
+            created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+            started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+            finished_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+        ),
+        container=Container(
+            command="test-command",
+            image=RemoteImage.new_external_image(name="test-image"),
+            resources=Resources(
+                16,
+                0.1,
+                4,
+                "nvidia-tesla-p4",
+                True,
+                tpu_type="v2-8",
+                tpu_software_version="1.14",
             ),
-            container=Container(
-                command="test-command",
-                image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(
-                    16,
-                    0.1,
-                    4,
-                    "nvidia-tesla-p4",
-                    True,
-                    tpu_type="v2-8",
-                    tpu_software_version="1.14",
-                ),
-            ),
-            scheduler_enabled=False,
-            pass_config=True,
-            life_span=life_span,
-            total_price_credits=total_price_credits,
-            price_credits_per_hour=price_credits_per_hour,
-        )
+        ),
+        scheduler_enabled=False,
+        pass_config=True,
+        life_span=life_span,
+        total_price_credits=total_price_credits,
+        price_credits_per_hour=price_credits_per_hour,
+    )
 
+
+class TestJobStartProgress:
     def test_quiet(self, rich_cmp: Any, new_console: _NewConsole) -> None:
-        job = self.make_job(JobStatus.PENDING, "")
+        job = make_job(JobStatus.PENDING, "")
         console = new_console(tty=True, color=True)
         with JobStartProgress.create(console, quiet=True) as progress:
             progress.begin(job)
@@ -208,7 +209,7 @@ class TestJobStartProgress:
     def test_no_tty_begin(self, rich_cmp: Any, new_console: _NewConsole) -> None:
         console = new_console(tty=False, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
-            progress.begin(self.make_job(JobStatus.PENDING, ""))
+            progress.begin(make_job(JobStatus.PENDING, ""))
             rich_cmp(console)
 
     def test_no_tty_begin_with_name(
@@ -216,33 +217,33 @@ class TestJobStartProgress:
     ) -> None:
         console = new_console(tty=False, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
-            progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
+            progress.begin(make_job(JobStatus.PENDING, "", name="job-name"))
             rich_cmp(console)
 
     def test_no_tty_step(self, rich_cmp: Any, new_console: _NewConsole) -> None:
         console = new_console(tty=False, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
-            progress.step(self.make_job(JobStatus.PENDING, ""))
-            progress.step(self.make_job(JobStatus.PENDING, ""))
-            progress.step(self.make_job(JobStatus.RUNNING, "reason"))
+            progress.step(make_job(JobStatus.PENDING, ""))
+            progress.step(make_job(JobStatus.PENDING, ""))
+            progress.step(make_job(JobStatus.RUNNING, "reason"))
             rich_cmp(console)
 
     def test_no_tty_end(self, rich_cmp: Any, new_console: _NewConsole) -> None:
         console = new_console(tty=False, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
-            progress.end(self.make_job(JobStatus.RUNNING, ""))
+            progress.end(make_job(JobStatus.RUNNING, ""))
             rich_cmp(console)
 
     def test_tty_begin(self, rich_cmp: Any, new_console: _NewConsole) -> None:
         console = new_console(tty=True, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
-            progress.begin(self.make_job(JobStatus.PENDING, ""))
+            progress.begin(make_job(JobStatus.PENDING, ""))
             rich_cmp(console)
 
     def test_tty_begin_with_name(self, rich_cmp: Any, new_console: _NewConsole) -> None:
         console = new_console(tty=True, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
-            progress.begin(self.make_job(JobStatus.PENDING, "", name="job-name"))
+            progress.begin(make_job(JobStatus.PENDING, "", name="job-name"))
             rich_cmp(console)
 
     @pytest.mark.skipif(
@@ -261,9 +262,9 @@ class TestJobStartProgress:
         )
         console = new_console(tty=True, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
-            progress.step(self.make_job(JobStatus.PENDING, "Pulling", description=""))
-            progress.step(self.make_job(JobStatus.PENDING, "Pulling", description=""))
-            progress.step(self.make_job(status, "reason", description=""))
+            progress.step(make_job(JobStatus.PENDING, "Pulling", description=""))
+            progress.step(make_job(JobStatus.PENDING, "Pulling", description=""))
+            progress.step(make_job(status, "reason", description=""))
             rich_cmp(console)
 
     @pytest.mark.parametrize("status", sorted(JobStatus.items()))
@@ -272,7 +273,7 @@ class TestJobStartProgress:
     ) -> None:
         console = new_console(tty=True, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
-            progress.end(self.make_job(status, "reason"))
+            progress.end(make_job(status, "reason"))
             rich_cmp(console)
 
     def test_tty_end_with_life_span(
@@ -280,7 +281,91 @@ class TestJobStartProgress:
     ) -> None:
         console = new_console(tty=True, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
-            progress.end(self.make_job(JobStatus.RUNNING, "", life_span=24 * 3600))
+            progress.end(make_job(JobStatus.RUNNING, "", life_span=24 * 3600))
+
+
+class TestJobStopProgress:
+    def test_quiet(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        job = make_job(JobStatus.RUNNING, "")
+        console = new_console(tty=True, color=True)
+        with JobStopProgress.create(console, quiet=True) as progress:
+            progress.step(job)
+            rich_cmp(console, index=0)
+            progress.step(job)
+            rich_cmp(console, index=1)
+            progress.end(make_job(JobStatus.FAILED, "OOMKilled"))
+            rich_cmp(console, index=2)
+
+    def test_no_tty_step(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStopProgress.create(console, quiet=False) as progress:
+            progress.step(make_job(JobStatus.RUNNING, ""))
+            progress.step(make_job(JobStatus.RUNNING, ""))
+            progress.step(make_job(JobStatus.RUNNING, ""))
+            rich_cmp(console)
+
+    @pytest.mark.parametrize("status", sorted(JobStatus.finished_items()))
+    def test_no_tty_end(
+        self, rich_cmp: Any, new_console: _NewConsole, status: JobStatus
+    ) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStopProgress.create(console, quiet=False) as progress:
+            progress.end(make_job(status, "reason"))
+            rich_cmp(console)
+
+    @pytest.mark.skipif(
+        sys.platform == "win32", reason="On Windows spinner uses another characters set"
+    )
+    @pytest.mark.parametrize("status", sorted(JobStatus.active_items()))
+    def test_tty_step(
+        self,
+        rich_cmp: Any,
+        new_console: _NewConsole,
+        monkeypatch: Any,
+        status: JobStatus,
+    ) -> None:
+        monkeypatch.setattr(
+            JobStopProgress, "time_factory", itertools.count(10).__next__
+        )
+        console = new_console(tty=True, color=True)
+        with JobStopProgress.create(console, quiet=False) as progress:
+            progress.step(make_job(JobStatus.RUNNING, "", description=""))
+            progress.step(make_job(status, "reason", description=""))
+            rich_cmp(console)
+            progress.step(make_job(JobStatus.RUNNING, "", description=""))
+
+    @pytest.mark.parametrize("status", sorted(JobStatus.finished_items()))
+    def test_tty_end(
+        self, rich_cmp: Any, new_console: _NewConsole, status: JobStatus
+    ) -> None:
+        console = new_console(tty=True, color=True)
+        with JobStopProgress.create(console, quiet=False) as progress:
+            progress.end(make_job(status, "reason"))
+            rich_cmp(console)
+
+    def test_no_tty_detach(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStopProgress.create(console, quiet=False) as progress:
+            progress.detach(make_job(JobStatus.RUNNING, ""))
+            rich_cmp(console)
+
+    def test_tty_detach(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=True, color=True)
+        with JobStopProgress.create(console, quiet=False) as progress:
+            progress.detach(make_job(JobStatus.RUNNING, ""))
+            rich_cmp(console)
+
+    def test_no_tty_kill(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStopProgress.create(console, quiet=False) as progress:
+            progress.kill(make_job(JobStatus.RUNNING, ""))
+            rich_cmp(console)
+
+    def test_tty_kill(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=True, color=True)
+        with JobStopProgress.create(console, quiet=False) as progress:
+            progress.kill(make_job(JobStatus.RUNNING, ""))
+            rich_cmp(console)
 
 
 class TestJobOutputFormatter:

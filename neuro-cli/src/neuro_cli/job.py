@@ -262,9 +262,7 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     )
     status = await root.client.jobs.status(id)
     if status.status.is_pending:
-        with JobStartProgress.create(
-            console=root.console, quiet=root.quiet
-        ) as progress:
+        with JobStartProgress.create(root.console, quiet=root.quiet) as progress:
             progress.step(status)
             while status.status.is_pending:
                 await asyncio.sleep(0.2)

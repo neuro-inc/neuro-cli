@@ -292,17 +292,11 @@ async def _process_attach_single_try(
                 )
 
             if action == InterruptAction.KILL:
-                with JobStopProgress.create(
-                    console=root.console,
-                    quiet=root.quiet,
-                ) as progress:
+                with JobStopProgress.create(root.console, quiet=root.quiet) as progress:
                     progress.kill(job)
                 sys.exit(128 + signal.SIGINT)
             elif action == InterruptAction.DETACH:
-                with JobStopProgress.create(
-                    console=root.console,
-                    quiet=root.quiet,
-                ) as progress:
+                with JobStopProgress.create(root.console, quiet=root.quiet) as progress:
                     progress.detach(job)
                 sys.exit(0)
         except ResourceNotFound:
@@ -332,10 +326,7 @@ async def _process_attach_single_try(
         # The class pins the current time in counstructor,
         # that's why we need to initialize
         # it AFTER the disconnection from attached session.
-        with JobStopProgress.create(
-            console=root.console,
-            quiet=root.quiet,
-        ) as progress:
+        with JobStopProgress.create(root.console, quiet=root.quiet) as progress:
             while not job.status.is_finished:
                 if not progress.step(job):
                     sys.exit(EX_IOERR)
