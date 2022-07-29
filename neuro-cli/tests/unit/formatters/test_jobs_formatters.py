@@ -1,6 +1,5 @@
 import io
 import itertools
-import sys
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -28,6 +27,7 @@ from neuro_sdk import (
     Volume,
 )
 
+import neuro_cli.formatters.jobs
 from neuro_cli.formatters.jobs import (
     JobStartProgress,
     JobStatusFormatter,
@@ -246,10 +246,7 @@ class TestJobStartProgress:
             progress.begin(make_job(JobStatus.PENDING, "", name="job-name"))
             rich_cmp(console)
 
-    @pytest.mark.skipif(
-        sys.platform == "win32", reason="On Windows spinner uses another characters set"
-    )
-    @pytest.mark.parametrize("status", sorted(JobStatus.items()))
+    @pytest.mark.parametrize("status", JobStatus.items())
     def test_tty_step(
         self,
         rich_cmp: Any,
@@ -260,6 +257,9 @@ class TestJobStartProgress:
         monkeypatch.setattr(
             JobStartProgress, "time_factory", itertools.count(10).__next__
         )
+        monkeypatch.setattr(
+            neuro_cli.formatters.jobs, "SPINNER", itertools.cycle("dqpb")
+        )
         console = new_console(tty=True, color=True)
         with JobStartProgress.create(console, quiet=False) as progress:
             progress.step(make_job(JobStatus.PENDING, "Pulling", description=""))
@@ -267,7 +267,7 @@ class TestJobStartProgress:
             progress.step(make_job(status, "reason", description=""))
             rich_cmp(console)
 
-    @pytest.mark.parametrize("status", sorted(JobStatus.items()))
+    @pytest.mark.parametrize("status", JobStatus.items())
     def test_tty_end(
         self, rich_cmp: Any, new_console: _NewConsole, status: JobStatus
     ) -> None:
@@ -304,7 +304,7 @@ class TestJobStopProgress:
             progress.step(make_job(JobStatus.RUNNING, ""))
             rich_cmp(console)
 
-    @pytest.mark.parametrize("status", sorted(JobStatus.finished_items()))
+    @pytest.mark.parametrize("status", JobStatus.finished_items())
     def test_no_tty_end(
         self, rich_cmp: Any, new_console: _NewConsole, status: JobStatus
     ) -> None:
@@ -313,10 +313,7 @@ class TestJobStopProgress:
             progress.end(make_job(status, "reason"))
             rich_cmp(console)
 
-    @pytest.mark.skipif(
-        sys.platform == "win32", reason="On Windows spinner uses another characters set"
-    )
-    @pytest.mark.parametrize("status", sorted(JobStatus.active_items()))
+    @pytest.mark.parametrize("status", JobStatus.active_items())
     def test_tty_step(
         self,
         rich_cmp: Any,
@@ -327,6 +324,9 @@ class TestJobStopProgress:
         monkeypatch.setattr(
             JobStopProgress, "time_factory", itertools.count(10).__next__
         )
+        monkeypatch.setattr(
+            neuro_cli.formatters.jobs, "SPINNER", itertools.cycle("dqpb")
+        )
         console = new_console(tty=True, color=True)
         with JobStopProgress.create(console, quiet=False) as progress:
             progress.step(make_job(JobStatus.RUNNING, "", description=""))
@@ -334,7 +334,7 @@ class TestJobStopProgress:
             rich_cmp(console)
             progress.step(make_job(JobStatus.RUNNING, "", description=""))
 
-    @pytest.mark.parametrize("status", sorted(JobStatus.finished_items()))
+    @pytest.mark.parametrize("status", JobStatus.finished_items())
     def test_tty_end(
         self, rich_cmp: Any, new_console: _NewConsole, status: JobStatus
     ) -> None:
