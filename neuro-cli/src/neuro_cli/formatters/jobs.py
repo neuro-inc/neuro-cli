@@ -542,7 +542,7 @@ class JobStartProgress:
         return ""
 
     def _get_status_description_message(self, job: JobDescription) -> str:
-        description = job.history.description or ""
+        description = job.history.description
         if description:
             return f"({description})"
         return ""
@@ -599,13 +599,13 @@ class DetailedJobStartProgress(JobStartProgress, RenderHook):
     def step(self, job: JobDescription) -> None:
         new_time = self.time_factory()
         dt = new_time - self._time
-        if job.status == JobStatus.PENDING:
+        if job.status.is_pending:
             msg = Text("-", "yellow")
-        elif job.status == JobStatus.FAILED:
-            msg = Text("×", "red")
-        else:
-            # RUNNING or SUCCEDED
+        elif job.status in (JobStatus.RUNNING, JobStatus.SUCCEEDED):
             msg = Text("√", "green")
+        else:
+            # FAILED or CANCELLED or UNKNOWN
+            msg = Text("×", "red")
 
         msg = Text.assemble(msg, " Status: ", fmt_status(job.status))
         reason = self._get_status_reason_message(job)
@@ -635,7 +635,7 @@ class DetailedJobStartProgress(JobStartProgress, RenderHook):
             self._prev = empty
             self._live_render.set_renderable(empty)
 
-        if job.status != JobStatus.FAILED:
+        if not job.status.is_finished:
             http_url = job.http_url
             if http_url:
                 out.append(f"{yes()} [b]Http URL[/b]: {rich_escape(str(http_url))}")
@@ -739,6 +739,9 @@ class JobStopProgress:
     def tick(self, job: JobDescription) -> None:
         pass
 
+    def end(self, job: JobDescription) -> None:
+        pass
+
     def timeout(self, job: JobDescription) -> None:
         pass
 
@@ -790,18 +793,29 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
             ]
         )
 
+    def end(self, job: JobDescription) -> None:
+        if job.status == JobStatus.SUCCEEDED:
+            msg = yes() + f" Job [b]{job.id}[/b] finished successfully"
+        elif job.status == JobStatus.CANCELLED:
+            msg = yes() + f" Job [b]{job.id}[/b] was cancelled"
+            if job.history.reason:
+                msg += f" ({rich_escape(job.history.reason)})"
+        else:
+            msg = no() + f" Job [b]{job.id}[/b] failed"
+            if job.history.reason:
+                msg += f" ({rich_escape(job.history.reason)})"
+
+        self._live_render.set_renderable(Text.from_markup(msg))
+        with self._console:
+            self._console.print(Control())
+
     def tick(self, job: JobDescription) -> None:
         new_time = self.time_factory()
         dt = new_time - self._time
-
-        if job.status == JobStatus.RUNNING:
-            msg = (
-                "[yellow]-[/yellow]"
-                + f" Wait for stop {next(self._spinner)} [{dt:.1f} sec]"
-            )
-        else:
-            msg = yes() + f" Job [b]{job.id}[/b] stopped"
-
+        msg = (
+            "[yellow]-[/yellow]"
+            + f" Wait for stop {next(self._spinner)} [{dt:.1f} sec]"
+        )
         self._live_render.set_renderable(Text.from_markup(msg))
         with self._console:
             self._console.print(Control())
@@ -853,7 +867,7 @@ class StreamJobStopProgress(JobStopProgress):
     def __init__(self, console: Console) -> None:
         super().__init__()
         self._console = console
-        self._console.print("Wait for stopping")
+        self._first = True
 
     def detach(self, job: JobDescription) -> None:
         pass
@@ -861,8 +875,22 @@ class StreamJobStopProgress(JobStopProgress):
     def kill(self, job: JobDescription) -> None:
         self._console.print("Job was killed")
 
+    def end(self, job: JobDescription) -> None:
+        if job.status == JobStatus.CANCELLED:
+            msg = "Job was cancelled"
+            if job.history.reason:
+                msg += f" ({job.history.reason})"
+            self._console.print(msg)
+        if job.status == JobStatus.FAILED:
+            msg = "Job failed"
+            if job.history.reason:
+                msg += f" ({job.history.reason})"
+            self._console.print(msg)
+
     def tick(self, job: JobDescription) -> None:
-        pass
+        if self._first:
+            self._console.print("Wait for stopping")
+            self._first = False
 
     def timeout(self, job: JobDescription) -> None:
         self._console.print("")

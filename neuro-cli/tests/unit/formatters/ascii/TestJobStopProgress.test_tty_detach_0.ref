@@ -1,0 +1,9 @@
+× Terminal was detached but job is still running
+Re-attach to job:
+  neuro attach test-job
+Check job status:
+  neuro status test-job
+Kill job:
+  neuro kill test-job
+Fetch job logs:
+  neuro logs test-job

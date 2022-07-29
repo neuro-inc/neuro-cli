@@ -21,6 +21,7 @@ from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 from prompt_toolkit.keys import Keys
 from prompt_toolkit.output import Output, create_output
 from prompt_toolkit.shortcuts import PromptSession
+from rich.markup import escape as rich_escape
 
 from neuro_sdk import (
     JobDescription,
@@ -37,7 +38,10 @@ from .root import Root
 log = logging.getLogger(__name__)
 
 
-JOB_STARTED = "[dim]===== Job is running, press Ctrl-C to detach/kill =====[/dim]"
+JOB_STARTED_NEURO_HAS_TTY = (
+    "[green]√[/green] "
+    "[dim]===== Job is running, press Ctrl-C to detach/kill =====[/dim]"
+)
 
 JOB_STARTED_NEURO_HAS_NO_TTY = (
     "[dim]===== Job is running, press Ctrl-C to detach =====[/dim]"
@@ -66,6 +70,7 @@ class InterruptAction(enum.Enum):
 class AttachHelper:
     attach_ready: bool
     log_printed: bool
+    job_started_msg: str
     write_sem: asyncio.Semaphore
     quiet: bool
     action: InterruptAction
@@ -73,6 +78,7 @@ class AttachHelper:
     def __init__(self, *, quiet: bool) -> None:
         self.attach_ready = False
         self.log_printed = False
+        self.job_started_msg = ""
         self.write_sem = asyncio.Semaphore()
         self.quiet = quiet
         self.action = InterruptAction.NOTHING
@@ -109,7 +115,10 @@ async def process_logs(
                 if helper.attach_ready:
                     return
                 async with helper.write_sem:
-                    helper.log_printed = True
+                    if not helper.log_printed:
+                        if not root.quiet:
+                            root.print(helper.job_started_msg, markup=True)
+                        helper.log_printed = True
                     sys.stdout.write(txt)
                     sys.stdout.flush()
             else:
@@ -127,6 +136,10 @@ async def process_exec(
             exit_code = await _exec_non_tty(root, job, cmd, cluster_name=cluster_name)
     finally:
         root.soft_reset_tty()
+
+    if not root.quiet:
+        status = await root.client.jobs.status(job)
+        print_job_result(root, status)
 
     sys.exit(exit_code)
 
@@ -278,16 +291,14 @@ async def _process_attach_single_try(
                     root, job.id, logs, cluster_name=job.cluster_name
                 )
 
-            with JobStopProgress.create(
-                console=root.console,
-                quiet=root.quiet,
-            ) as progress:
-                if action == InterruptAction.KILL:
+            if action == InterruptAction.KILL:
+                with JobStopProgress.create(root.console, quiet=root.quiet) as progress:
                     progress.kill(job)
-                    sys.exit(128 + signal.SIGINT)
-                elif action == InterruptAction.DETACH:
+                sys.exit(128 + signal.SIGINT)
+            elif action == InterruptAction.DETACH:
+                with JobStopProgress.create(root.console, quiet=root.quiet) as progress:
                     progress.detach(job)
-                    sys.exit(0)
+                sys.exit(0)
         except ResourceNotFound:
             # Container already stopped, so we can ignore such error.
             pass
@@ -315,28 +326,25 @@ async def _process_attach_single_try(
         # The class pins the current time in counstructor,
         # that's why we need to initialize
         # it AFTER the disconnection from attached session.
-        with JobStopProgress.create(
-            console=root.console,
-            quiet=root.quiet,
-        ) as progress:
-            while job.status == JobStatus.RUNNING:
-                await asyncio.sleep(0.2)
-                job = await root.client.jobs.status(job.id)
+        with JobStopProgress.create(root.console, quiet=root.quiet) as progress:
+            while not job.status.is_finished:
                 if not progress.step(job):
                     sys.exit(EX_IOERR)
-            if job.status == JobStatus.FAILED:
-                sys.exit(job.history.exit_code or EX_PLATFORMERROR)
+                await asyncio.sleep(0.2)
+                job = await root.client.jobs.status(job.id)
+            progress.end(job)
+        if job.status == JobStatus.FAILED:
+            sys.exit(job.history.exit_code or EX_PLATFORMERROR)
+        else:
             sys.exit(job.history.exit_code)
 
 
 async def _attach_tty(
     root: Root, job: str, logs: bool, *, cluster_name: Optional[str]
 ) -> InterruptAction:
-    if not root.quiet:
-        root.print(JOB_STARTED_TTY, markup=True)
-
     loop = asyncio.get_event_loop()
     helper = AttachHelper(quiet=root.quiet)
+    helper.job_started_msg = JOB_STARTED_TTY
 
     stdout = create_output()
     h, w = stdout.get_size()
@@ -357,6 +365,7 @@ async def _attach_tty(
         if status.status is not JobStatus.RUNNING:
             # Job is finished
             await logs_printer
+            print_job_result(root, status)
             if status.status == JobStatus.FAILED:
                 sys.exit(status.history.exit_code or EX_PLATFORMERROR)
             else:
@@ -484,18 +493,9 @@ async def _process_stdout_tty(
         else:
             txt = decoder.decode(chunk.data)
         async with helper.write_sem:
-            if not helper.quiet and not helper.attach_ready:
-                # Print header to stdout only,
-                # logs are printed to stdout and never to
-                # stderr (but logs printing is stopped by
-                # helper.attach_ready = True regardless
-                # what stream had receive text in attached mode.
-                if helper.log_printed:
-                    s = ATTACH_STARTED_AFTER_LOGS
-                    if root.tty:
-                        s = "[green]√[/green] " + s
-                    root.print(s, markup=True)
-            helper.attach_ready = True
+            if not helper.attach_ready:
+                await _print_header(root, helper)
+                helper.attach_ready = True
             stdout.write_raw(txt)
             stdout.flush()
 
@@ -503,14 +503,12 @@ async def _process_stdout_tty(
 async def _attach_non_tty(
     root: Root, job: str, logs: bool, *, cluster_name: Optional[str]
 ) -> InterruptAction:
-    if not root.quiet:
-        s = JOB_STARTED_NEURO_HAS_NO_TTY
-        if root.tty:
-            s = "[green]√[/green] " + JOB_STARTED
-        root.print(s, markup=True)
-
     loop = asyncio.get_event_loop()
     helper = AttachHelper(quiet=root.quiet)
+    if root.tty:
+        helper.job_started_msg = JOB_STARTED_NEURO_HAS_TTY
+    else:
+        helper.job_started_msg = JOB_STARTED_NEURO_HAS_NO_TTY
 
     if logs:
         logs_printer = loop.create_task(
@@ -527,6 +525,7 @@ async def _attach_non_tty(
         if status.history.exit_code is not None:
             # Wait for logs printing finish before exit
             await logs_printer
+            print_job_result(root, status)
             sys.exit(status.history.exit_code)
 
         input_task = None
@@ -580,18 +579,9 @@ async def _process_stdout_non_tty(
     async def _write(fileno: int, txt: str) -> None:
         f = streams[fileno]
         async with helper.write_sem:
-            if not helper.quiet and not helper.attach_ready:
-                # Print header to stdout only,
-                # logs are printed to stdout and never to
-                # stderr (but logs printing is stopped by
-                # helper.attach_ready = True regardless
-                # what stream had receive text in attached mode.
-                if helper.log_printed:
-                    s = ATTACH_STARTED_AFTER_LOGS
-                    if root.tty:
-                        s = "[green]√[/green] " + s
-                    root.print(s, markup=True)
-            helper.attach_ready = True
+            if not helper.attach_ready:
+                await _print_header(root, helper)
+                helper.attach_ready = True
             f.write(txt)
             f.flush()
 
@@ -606,6 +596,23 @@ async def _process_stdout_non_tty(
         else:
             txt = decoders[chunk.fileno].decode(chunk.data)
             await _write(chunk.fileno, txt)
+
+
+async def _print_header(root: Root, helper: AttachHelper) -> None:
+    if not helper.quiet and not helper.attach_ready:
+        # Print header to stdout only,
+        # logs are printed to stdout and never to
+        # stderr (but logs printing is stopped by
+        # helper.attach_ready = True regardless
+        # what stream had receive text in attached mode.
+        if helper.log_printed:
+            s = ATTACH_STARTED_AFTER_LOGS
+            if root.tty:
+                s = "[green]√[/green] " + s
+            root.print(s, markup=True)
+        else:
+            if not root.quiet:
+                root.print(helper.job_started_msg, markup=True)
 
 
 def _create_interruption_dialog() -> PromptSession[InterruptAction]:
@@ -701,3 +708,25 @@ async def _cancel_attach_output(root: Root, output_task: "asyncio.Task[Any]") ->
         if ex and isinstance(ex, StdStreamError):
             return
     await root.cancel_with_logging(output_task)
+
+
+def print_job_result(root: Root, job: JobDescription) -> None:
+    if job.status == JobStatus.SUCCEEDED and root.verbosity > 0:
+        msg = f"Job [b]{job.id}[/b] finished successfully"
+        if root.tty:
+            msg = "[green]√[/green] " + msg
+        root.print(msg, markup=True)
+    if job.status == JobStatus.CANCELLED and root.verbosity >= 0:
+        msg = f"Job [b]{job.id}[/b] was cancelled"
+        if root.tty:
+            msg = "[green]√[/green] " + msg
+        if job.history.reason:
+            msg += f" ({rich_escape(job.history.reason)})"
+        root.print(msg, markup=True)
+    if job.status == JobStatus.FAILED and root.verbosity >= 0:
+        msg = f"Job [b]{job.id}[/b] failed"
+        if root.tty:
+            msg = "[red]×[/red] " + msg
+        if job.history.reason:
+            msg += f" ({rich_escape(job.history.reason)})"
+        root.print(msg, markup=True)
