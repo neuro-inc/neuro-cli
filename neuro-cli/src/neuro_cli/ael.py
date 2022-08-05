@@ -256,8 +256,6 @@ async def process_attach(
                     pass
                 else:
                     break
-        else:
-            break
 
 
 async def _process_attach_single_try(
@@ -270,109 +268,118 @@ async def _process_attach_single_try(
     # Note, the job should be in running/finished state for this call,
     # passing pending job is forbidden
 
-    async with AsyncExitStack() as stack:
-        for local_port, job_port in port_forward:
-            root.print(
-                f"Port localhost:{local_port} will be forwarded to port {job_port}"
-            )
-            await stack.enter_async_context(
-                root.client.jobs.port_forward(
-                    job.id, local_port, job_port, cluster_name=job.cluster_name
+    while True:
+        restarts = job.history.restarts
+        async with AsyncExitStack() as stack:
+            for local_port, job_port in port_forward:
+                root.print(
+                    f"Port localhost:{local_port} will be forwarded to port {job_port}"
                 )
-            )
+                await stack.enter_async_context(
+                    root.client.jobs.port_forward(
+                        job.id, local_port, job_port, cluster_name=job.cluster_name
+                    )
+                )
 
-        try:
+            helper = AttachHelper(quiet=root.quiet)
             if tty:
-                action = await _attach_tty(
-                    root, job.id, logs, cluster_name=job.cluster_name
+                helper.job_started_msg = JOB_STARTED_TTY
+            elif root.tty:
+                helper.job_started_msg = JOB_STARTED_NEURO_HAS_TTY
+            else:
+                helper.job_started_msg = JOB_STARTED_NEURO_HAS_NO_TTY
+            loop = asyncio.get_event_loop()
+            if logs:
+                logs_printer = loop.create_task(
+                    process_logs(root, job.id, helper, cluster_name=job.cluster_name)
                 )
             else:
-                action = await _attach_non_tty(
-                    root, job.id, logs, cluster_name=job.cluster_name
-                )
+                # Placeholder, prints nothing
+                logs_printer = loop.create_task(asyncio.sleep(0))
 
-            if action == InterruptAction.KILL:
-                with JobStopProgress.create(root.console, quiet=root.quiet) as progress:
-                    progress.kill(job)
-                sys.exit(128 + signal.SIGINT)
-            elif action == InterruptAction.DETACH:
-                with JobStopProgress.create(root.console, quiet=root.quiet) as progress:
-                    progress.detach(job)
-                sys.exit(0)
-        except ResourceNotFound:
-            # Container already stopped, so we can ignore such error.
-            pass
-        finally:
-            root.soft_reset_tty()
-
-        # We exited attach function not because of detach or kill,
-        # probably we lost connectivity?
-        try:
-            job = await root.client.jobs.status(job.id)
-        except aiohttp.ClientConnectionError:
-            raise RetryAttach
-        # Maybe it is spurious disconnect, and we should re-attach back?
-        # Check container liveness by calling attach once
-        try:
-            async with root.client.jobs.attach(
-                job.id, stdin=True, cluster_name=job.cluster_name
-            ):
-                raise RetryAttach
-        except (asyncio.CancelledError, RetryAttach):
-            raise
-        except Exception:
-            pass  # Was unable to reconnect, most likely container is dead
-
-        # The class pins the current time in counstructor,
-        # that's why we need to initialize
-        # it AFTER the disconnection from attached session.
-        with JobStopProgress.create(root.console, quiet=root.quiet) as progress:
-            while not job.status.is_finished:
-                if not progress.step(job):
-                    sys.exit(EX_IOERR)
-                await asyncio.sleep(0.2)
+            try:
                 job = await root.client.jobs.status(job.id)
-            progress.end(job)
-        if job.status == JobStatus.FAILED:
-            sys.exit(job.history.exit_code or EX_PLATFORMERROR)
-        else:
-            sys.exit(job.history.exit_code)
+                if job.status.is_finished:
+                    await logs_printer
+                    print_job_result(root, job)
+                    if job.status == JobStatus.FAILED:
+                        sys.exit(job.history.exit_code or EX_PLATFORMERROR)
+                    else:
+                        sys.exit(job.history.exit_code)
+
+                if tty:
+                    action = await _attach_tty(
+                        root, job.id, helper, cluster_name=job.cluster_name
+                    )
+                else:
+                    action = await _attach_non_tty(
+                        root, job.id, helper, cluster_name=job.cluster_name
+                    )
+
+                if action == InterruptAction.KILL:
+                    with JobStopProgress.create(
+                        root.console, quiet=root.quiet
+                    ) as progress:
+                        progress.kill(job)
+                    sys.exit(128 + signal.SIGINT)
+                elif action == InterruptAction.DETACH:
+                    with JobStopProgress.create(
+                        root.console, quiet=root.quiet
+                    ) as progress:
+                        progress.detach(job)
+                    sys.exit(0)
+            except ResourceNotFound:
+                # Container already stopped, so we can ignore such error.
+                pass
+            finally:
+                await root.cancel_with_logging(logs_printer)
+                root.soft_reset_tty()
+
+            # We exited attach function not because of detach or kill,
+            # probably we lost connectivity?
+            try:
+                job = await root.client.jobs.status(job.id)
+            except aiohttp.ClientConnectionError:
+                raise RetryAttach
+            # Maybe it is spurious disconnect, and we should re-attach back?
+            # Check container liveness by calling attach once
+            try:
+                async with root.client.jobs.attach(
+                    job.id, stdin=True, cluster_name=job.cluster_name
+                ):
+                    raise RetryAttach
+            except (asyncio.CancelledError, RetryAttach):
+                raise
+            except Exception:
+                pass  # Was unable to reconnect, most likely container is dead
+
+            # The class pins the current time in counstructor,
+            # that's why we need to initialize
+            # it AFTER the disconnection from attached session.
+            with JobStopProgress.create(root.console, quiet=root.quiet) as progress:
+                while (not job.status.is_finished) and (
+                    job.history.reason == "Restarting"
+                    or job.history.restarts == restarts
+                ):
+                    if not progress.step(job):
+                        sys.exit(EX_IOERR)
+                    await asyncio.sleep(0.2)
+                    job = await root.client.jobs.status(job.id)
+                progress.end(job)
 
 
 async def _attach_tty(
-    root: Root, job: str, logs: bool, *, cluster_name: Optional[str]
+    root: Root, job: str, helper: AttachHelper, *, cluster_name: Optional[str]
 ) -> InterruptAction:
-    loop = asyncio.get_event_loop()
-    helper = AttachHelper(quiet=root.quiet)
-    helper.job_started_msg = JOB_STARTED_TTY
-
     stdout = create_output()
     h, w = stdout.get_size()
-
-    if logs:
-        logs_printer = loop.create_task(
-            process_logs(root, job, helper, cluster_name=cluster_name)
-        )
-    else:
-        # Placeholder, prints nothing
-        logs_printer = loop.create_task(asyncio.sleep(0))
 
     async with root.client.jobs.attach(
         job, tty=True, stdin=True, stdout=True, stderr=False, cluster_name=cluster_name
     ) as stream:
-        status = await root.client.jobs.status(job)
-
-        if status.status is not JobStatus.RUNNING:
-            # Job is finished
-            await logs_printer
-            print_job_result(root, status)
-            if status.status == JobStatus.FAILED:
-                sys.exit(status.history.exit_code or EX_PLATFORMERROR)
-            else:
-                sys.exit(status.history.exit_code)
-
         await stream.resize(h=h, w=w)
 
+        loop = asyncio.get_event_loop()
         resize_task = loop.create_task(_process_resizing(stream.resize, stdout))
         input_task = loop.create_task(_process_stdin_tty(stream, helper))
         output_task = loop.create_task(
@@ -386,7 +393,6 @@ async def _attach_tty(
             await root.cancel_with_logging(resize_task)
             await root.cancel_with_logging(input_task)
             await _cancel_attach_output(root, output_task)
-            await root.cancel_with_logging(logs_printer)
 
         return helper.action
 
@@ -501,34 +507,13 @@ async def _process_stdout_tty(
 
 
 async def _attach_non_tty(
-    root: Root, job: str, logs: bool, *, cluster_name: Optional[str]
+    root: Root, job: str, helper: AttachHelper, *, cluster_name: Optional[str]
 ) -> InterruptAction:
-    loop = asyncio.get_event_loop()
-    helper = AttachHelper(quiet=root.quiet)
-    if root.tty:
-        helper.job_started_msg = JOB_STARTED_NEURO_HAS_TTY
-    else:
-        helper.job_started_msg = JOB_STARTED_NEURO_HAS_NO_TTY
-
-    if logs:
-        logs_printer = loop.create_task(
-            process_logs(root, job, helper, cluster_name=cluster_name)
-        )
-    else:
-        # Placeholder, prints nothing
-        logs_printer = loop.create_task(asyncio.sleep(0))
-
     async with root.client.jobs.attach(
         job, stdin=True, stdout=True, stderr=True, cluster_name=cluster_name
     ) as stream:
-        status = await root.client.jobs.status(job)
-        if status.history.exit_code is not None:
-            # Wait for logs printing finish before exit
-            await logs_printer
-            print_job_result(root, status)
-            sys.exit(status.history.exit_code)
-
         input_task = None
+        loop = asyncio.get_event_loop()
         if root.tty:
             input_task = loop.create_task(_process_stdin_non_tty(root, stream))
         output_task = loop.create_task(_process_stdout_non_tty(root, stream, helper))
@@ -544,7 +529,6 @@ async def _attach_non_tty(
                 await root.cancel_with_logging(input_task)
             await _cancel_attach_output(root, output_task)
             await root.cancel_with_logging(ctrl_c_task)
-            await root.cancel_with_logging(logs_printer)
         return helper.action
 
 

@@ -148,13 +148,14 @@ def job_descr() -> JobDescription:
 
 def make_job(
     status: JobStatus,
-    reason: str,
+    reason: Optional[str],
     *,
     name: Optional[str] = None,
     life_span: Optional[float] = None,
     description: str = "ErrorDesc",
     total_price_credits: Decimal = Decimal("150"),
     price_credits_per_hour: Decimal = Decimal("15"),
+    restarts: int = 0,
 ) -> JobDescription:
     return JobDescription(
         name=name,
@@ -168,6 +169,7 @@ def make_job(
         history=JobStatusHistory(
             status=status,
             reason=reason,
+            restarts=restarts,
             description=description,
             created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
             started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
@@ -365,6 +367,34 @@ class TestJobStopProgress:
         console = new_console(tty=True, color=True)
         with JobStopProgress.create(console, quiet=False) as progress:
             progress.kill(make_job(JobStatus.RUNNING, ""))
+            rich_cmp(console)
+
+    def test_no_tty_restart(self, rich_cmp: Any, new_console: _NewConsole) -> None:
+        console = new_console(tty=False, color=True)
+        with JobStopProgress.create(console, quiet=False) as progress:
+            progress.step(make_job(JobStatus.RUNNING, None, restarts=1))
+            progress.step(make_job(JobStatus.RUNNING, None, restarts=1))
+            progress.step(make_job(JobStatus.RUNNING, "Restarting", restarts=2))
+            progress.step(make_job(JobStatus.RUNNING, "Restarting", restarts=2))
+            progress.end(make_job(JobStatus.RUNNING, None, restarts=2))
+            rich_cmp(console)
+
+    def test_tty_restart(
+        self, rich_cmp: Any, new_console: _NewConsole, monkeypatch: Any
+    ) -> None:
+        monkeypatch.setattr(
+            JobStopProgress, "time_factory", itertools.count(10).__next__
+        )
+        monkeypatch.setattr(
+            neuro_cli.formatters.jobs, "SPINNER", itertools.cycle("dqpb")
+        )
+        console = new_console(tty=True, color=True)
+        with JobStopProgress.create(console, quiet=False) as progress:
+            progress.step(make_job(JobStatus.RUNNING, None, restarts=1))
+            progress.step(make_job(JobStatus.RUNNING, None, restarts=1))
+            progress.step(make_job(JobStatus.RUNNING, "Restarting", restarts=2))
+            progress.step(make_job(JobStatus.RUNNING, "Restarting", restarts=2))
+            progress.end(make_job(JobStatus.RUNNING, None, restarts=2))
             rich_cmp(console)
 
 
