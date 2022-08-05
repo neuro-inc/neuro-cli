@@ -763,6 +763,7 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
         self._console = console
         self._spinner = SPINNER
         self._live_render = LiveRender(Text())
+        self._restarting = False
 
     def _hint(self, hints: Iterable[Tuple[str, str]]) -> None:
         for title, hint in hints:
@@ -794,7 +795,9 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
         )
 
     def end(self, job: JobDescription) -> None:
-        if job.status == JobStatus.SUCCEEDED:
+        if job.status == JobStatus.RUNNING:
+            msg = yes() + f" Job [b]{job.id}[/b] restarted"
+        elif job.status == JobStatus.SUCCEEDED:
             msg = yes() + f" Job [b]{job.id}[/b] finished successfully"
         elif job.status == JobStatus.CANCELLED:
             msg = yes() + f" Job [b]{job.id}[/b] was cancelled"
@@ -810,11 +813,14 @@ class DetailedJobStopProgress(JobStopProgress, RenderHook):
             self._console.print(Control())
 
     def tick(self, job: JobDescription) -> None:
+        if job.history.reason == "Restarting":
+            self._restarting = True
         new_time = self.time_factory()
         dt = new_time - self._time
         msg = (
-            "[yellow]-[/yellow]"
-            + f" Wait for stop {next(self._spinner)} [{dt:.1f} sec]"
+            "[yellow]-[/yellow] "
+            f"Wait for {'restart' if self._restarting else 'stop'}"
+            f" {next(self._spinner)} [{dt:.1f} sec]"
         )
         self._live_render.set_renderable(Text.from_markup(msg))
         with self._console:
@@ -868,6 +874,7 @@ class StreamJobStopProgress(JobStopProgress):
         super().__init__()
         self._console = console
         self._first = True
+        self._restarting = False
 
     def detach(self, job: JobDescription) -> None:
         pass
@@ -876,20 +883,29 @@ class StreamJobStopProgress(JobStopProgress):
         self._console.print("Job was killed")
 
     def end(self, job: JobDescription) -> None:
-        if job.status == JobStatus.CANCELLED:
+        if job.status == JobStatus.RUNNING:
+            msg = "Job restarted"
+            self._console.print(msg)
+        elif job.status == JobStatus.CANCELLED:
             msg = "Job was cancelled"
             if job.history.reason:
                 msg += f" ({job.history.reason})"
             self._console.print(msg)
-        if job.status == JobStatus.FAILED:
+        elif job.status == JobStatus.FAILED:
             msg = "Job failed"
             if job.history.reason:
                 msg += f" ({job.history.reason})"
             self._console.print(msg)
 
     def tick(self, job: JobDescription) -> None:
+        if not self._restarting and job.history.reason == "Restarting":
+            self._restarting = True
+            self._first = False
         if self._first:
-            self._console.print("Wait for stopping")
+            if self._restarting:
+                self._console.print("Wait for restarting")
+            else:
+                self._console.print("Wait for stopping")
             self._first = False
 
     def timeout(self, job: JobDescription) -> None:
