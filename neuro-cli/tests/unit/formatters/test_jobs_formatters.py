@@ -148,7 +148,7 @@ def job_descr() -> JobDescription:
 
 def make_job(
     status: JobStatus,
-    reason: Optional[str],
+    reason: str,
     *,
     name: Optional[str] = None,
     life_span: Optional[float] = None,
@@ -372,11 +372,11 @@ class TestJobStopProgress:
     def test_no_tty_restart(self, rich_cmp: Any, new_console: _NewConsole) -> None:
         console = new_console(tty=False, color=True)
         with JobStopProgress.create(console, quiet=False) as progress:
-            progress.step(make_job(JobStatus.RUNNING, None, restarts=1))
-            progress.step(make_job(JobStatus.RUNNING, None, restarts=1))
+            progress.step(make_job(JobStatus.RUNNING, "", restarts=1))
+            progress.step(make_job(JobStatus.RUNNING, "", restarts=1))
             progress.step(make_job(JobStatus.RUNNING, "Restarting", restarts=2))
             progress.step(make_job(JobStatus.RUNNING, "Restarting", restarts=2))
-            progress.end(make_job(JobStatus.RUNNING, None, restarts=2))
+            progress.end(make_job(JobStatus.RUNNING, "", restarts=2))
             rich_cmp(console)
 
     def test_tty_restart(
@@ -390,11 +390,11 @@ class TestJobStopProgress:
         )
         console = new_console(tty=True, color=True)
         with JobStopProgress.create(console, quiet=False) as progress:
-            progress.step(make_job(JobStatus.RUNNING, None, restarts=1))
-            progress.step(make_job(JobStatus.RUNNING, None, restarts=1))
+            progress.step(make_job(JobStatus.RUNNING, "", restarts=1))
+            progress.step(make_job(JobStatus.RUNNING, "", restarts=1))
             progress.step(make_job(JobStatus.RUNNING, "Restarting", restarts=2))
             progress.step(make_job(JobStatus.RUNNING, "Restarting", restarts=2))
-            progress.end(make_job(JobStatus.RUNNING, None, restarts=2))
+            progress.end(make_job(JobStatus.RUNNING, "", restarts=2))
             rich_cmp(console)
 
 
