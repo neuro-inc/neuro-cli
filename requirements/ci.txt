@@ -11,5 +11,5 @@ pytest-cov==3.0.0
 pytest-timeout==2.1.0
 pytest-xdist==2.5.0
 re-assert==1.1.0
-towncrier==21.9.0
+towncrier==22.8.0
 trustme==0.9.0
