@@ -21,7 +21,7 @@ jobs:
         private_key: ${{ secrets.BOT_PRIVATE_KEY }}
     - name: metadata
       id: metadata
-      uses: dependabot/fetch-metadata@v1.3.3
+      uses: dependabot/fetch-metadata@v1.3.4
       with:
         github-token: ${{ steps.generate_token.outputs.token }}
     - name: Enable auto-merge for bot PRs
