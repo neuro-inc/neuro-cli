@@ -43,7 +43,7 @@ jobs:
         restore-keys: |
           pip-lint-
     - name: Install dependencies
-      uses: py-actions/py-dependency-install@v3
+      uses: py-actions/py-dependency-install@v4
       with:
         path: requirements/ci.txt
     - name: Run linters
@@ -100,7 +100,7 @@ jobs:
         restore-keys: |
           pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
     - name: Install dependencies
-      uses: py-actions/py-dependency-install@v3
+      uses: py-actions/py-dependency-install@v4
       with:
         path: requirements/ci.txt
     - name: Run unittests
@@ -156,7 +156,7 @@ jobs:
         restore-keys: |
           pip-ci-${{ runner.os }}-${{ matrix.python-version }}-
     - name: Install dependencies
-      uses: py-actions/py-dependency-install@v3
+      uses: py-actions/py-dependency-install@v4
       with:
         path: requirements/ci.txt
     - name: Run E2E tests
