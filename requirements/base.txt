@@ -3,7 +3,7 @@
 aiobotocore==2.4.2
 aiodocker==0.21.0
 aiohttp==3.8.3
-azure-core==1.26.1
+azure-core==1.26.2
 azure-storage-blob==12.14.1
 # upgrade setup.py after pinning certtifi to new version
 certifi==2022.12.7
