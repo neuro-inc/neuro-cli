@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import base64
 import json
@@ -5,7 +7,7 @@ import os
 import ssl
 import sys
 from pathlib import Path
-from typing import Any, Awaitable, Callable, List, Mapping, Optional
+from typing import Any, Awaitable, Callable, Mapping
 
 import aiohttp
 import certifi
@@ -41,7 +43,7 @@ DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")
 
 
 def _make_session(
-    timeout: aiohttp.ClientTimeout, trace_configs: Optional[List[aiohttp.TraceConfig]]
+    timeout: aiohttp.ClientTimeout, trace_configs: list[aiohttp.TraceConfig] | None
 ) -> _ContextManager[aiohttp.ClientSession]:
     return _ContextManager[aiohttp.ClientSession](
         __make_session(timeout, trace_configs)
@@ -49,7 +51,7 @@ def _make_session(
 
 
 async def __make_session(
-    timeout: aiohttp.ClientTimeout, trace_configs: Optional[List[aiohttp.TraceConfig]]
+    timeout: aiohttp.ClientTimeout, trace_configs: list[aiohttp.TraceConfig] | None
 ) -> aiohttp.ClientSession:
     from . import __version__
 
@@ -68,10 +70,10 @@ async def __make_session(
 class Factory:
     def __init__(
         self,
-        path: Optional[Path] = None,
-        trace_configs: Optional[List[aiohttp.TraceConfig]] = None,
-        trace_id: Optional[str] = None,
-        trace_sampled: Optional[bool] = None,
+        path: Path | None = None,
+        trace_configs: list[aiohttp.TraceConfig] | None = None,
+        trace_id: str | None = None,
+        trace_sampled: bool | None = None,
     ) -> None:
         if path is None:
             path = Path(os.environ.get(CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH))
@@ -219,7 +221,7 @@ class Factory:
 
     async def login_with_passed_config(
         self,
-        config_data: Optional[str] = None,
+        config_data: str | None = None,
         *,
         timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT,
     ) -> None:
@@ -268,7 +270,7 @@ class Factory:
 
     async def logout(
         self,
-        show_browser_cb: Callable[[URL], Awaitable[None]] = None,
+        show_browser_cb: Callable[[URL], Awaitable[None]] | None = None,
     ) -> None:
         if show_browser_cb is not None:
             try:

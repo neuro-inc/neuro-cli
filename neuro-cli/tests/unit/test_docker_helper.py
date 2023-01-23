@@ -42,7 +42,7 @@ def run_dch(capfd: Any, monkeypatch: Any, tmp_path: Path, nmrc_path: Path) -> _R
                 ctx.setenv(CONFIG_ENV_NAME, str(nmrc_path))
                 dch()
         except SystemExit as e:
-            code = e.code
+            code = e.code  # type: ignore
         out, err = capfd.readouterr()
         return SysCapWithCode(out.strip(), err.strip(), code)
 

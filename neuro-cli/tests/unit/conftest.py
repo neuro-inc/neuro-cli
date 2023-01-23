@@ -158,7 +158,7 @@ def run_cli(
 
             main(default_args + arguments)
         except SystemExit as e:
-            code = e.code
+            code = e.code  # type: ignore
             pass
         out, err = capfd.readouterr()
         return SysCapWithCode(out.strip(), err.strip(), code)
