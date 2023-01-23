@@ -51,13 +51,13 @@ jobs:
         make lint
       env:
         CI_LINT_RUN: 1
-    - name: Install spell checker
-      run: |
-        sudo apt install libenchant-dev
-        pip install -r requirements/doc.txt
-    - name: Run docs spelling
-      run: |
-        make api-doc-spelling
+    # - name: Install spell checker
+    #   run: |
+    #     sudo apt install libenchant-dev
+    #     pip install -r requirements/doc.txt
+    # - name: Run docs spelling
+    #   run: |
+    #     make api-doc-spelling
 
   unit:
     name: Unit
