@@ -1,0 +1,17 @@
+Job                     test-job                         
+ Owner                   owner                            
+ Cluster                 default                          
+ Description             test job description             
+ Status                  pending                          
+ Image                   test-image                       
+ Command                 test-command                     
+ Preset                  cpu-small                        
+ Energy schedule         some-schedule                    
+ Priority                Normal                           
+ Price (credits / hour)  15.0000                          
+ Current cost            150.0000                         
+ Resources                Memory  16.8 MB                 
+                          CPU         0.1                 
+ Round Robin             True                             
+ TTY                     False                            
+ Created                 2018-09-25T12:28:21.298672+00:00

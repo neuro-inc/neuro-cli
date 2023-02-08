@@ -1022,6 +1022,14 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
     "Jobs with higher priority will start before ones with lower priority. "
     "Priority should be supported by cluster.",
 )
+@option(
+    "--energy-schedule",
+    metavar="NAME",
+    help=(
+        "Run job only within a selected energy schedule. "
+        "Selected preset should have scheduler enabled."
+    ),
+)
 @TTY_OPT
 async def run(
     root: Root,
@@ -1055,6 +1063,7 @@ async def run(
     privileged: bool,
     share: Sequence[str],
     priority: Optional[str],
+    energy_schedule: Optional[str],
 ) -> None:
     """
     Run a job
@@ -1123,6 +1132,7 @@ async def run(
         cluster_name=cluster_name,
         org_name=org_name,
         priority=priority,
+        energy_schedule_name=energy_schedule,
     )
 
 
@@ -1194,6 +1204,7 @@ async def run_job(
     cluster_name: str,
     org_name: Optional[str],
     priority: Optional[str],
+    energy_schedule_name: Optional[str],
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -1291,6 +1302,7 @@ async def run_job(
         schedule_timeout=job_schedule_timeout,
         privileged=privileged,
         priority=job_priority,
+        energy_schedule_name=energy_schedule_name,
     )
     permission = Permission(job.uri, Action.WRITE)
     for user in share:
@@ -1467,9 +1479,11 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
         res += ["--privileged"]
     if job.priority != JobPriority.NORMAL:
         res += ["--priority", job.priority.name.lower()]
+    if job.energy_schedule_name:
+        res += ["--energy-schedule", job.energy_schedule_name]
     res += [str(job.container.image)]
     if job.container.command:
-        res += [job.container.command]
+        res += ["--", job.container.command]
     return res
 
 

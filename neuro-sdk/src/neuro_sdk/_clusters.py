@@ -20,6 +20,8 @@ from neuro_config_client import ClusterStatus as _ClusterStatus
 from neuro_config_client import ConfigClientBase
 from neuro_config_client import EFSPerformanceMode as _EFSPerformanceMode
 from neuro_config_client import EFSThroughputMode as _EFSThroughputMode
+from neuro_config_client import EnergyConfig as _EnergyConfig
+from neuro_config_client import EnergySchedule as _EnergySchedule
 from neuro_config_client import GoogleCloudProvider as _GoogleCloudProvider
 from neuro_config_client import GoogleFilestoreTier as _GoogleFilestoreTier
 from neuro_config_client import GoogleStorage as _GoogleStorage
@@ -60,6 +62,8 @@ __all__ = [
     "_ConfigCluster",
     "_EFSPerformanceMode",
     "_EFSThroughputMode",
+    "_EnergyConfig",
+    "_EnergySchedule",
     "_GoogleCloudProvider",
     "_GoogleFilestoreTier",
     "_GoogleStorage",

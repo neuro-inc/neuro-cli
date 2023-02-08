@@ -1565,6 +1565,46 @@ class TestJobOutputFormatter:
             )(description)
         )
 
+    def test_job_with_energy_schedule(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
+        description = JobDescription(
+            status=JobStatus.PENDING,
+            id="test-job",
+            description="test job description",
+            history=JobStatusHistory(
+                status=JobStatus.PENDING,
+                reason="",
+                description="",
+                created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+                started_at=None,
+                finished_at=None,
+            ),
+            preset_name="cpu-small",
+            container=Container(
+                command="test-command",
+                image=RemoteImage.new_external_image(name="test-image"),
+                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+            ),
+            scheduler_enabled=True,
+            energy_schedule_name="some-schedule",
+            pass_config=True,
+            owner="owner",
+            cluster_name="default",
+            uri=URL("job://default/owner/test-job"),
+            total_price_credits=Decimal("150"),
+            price_credits_per_hour=Decimal("15"),
+        )
+
+        uri_fmtr = uri_formatter(
+            username="test-user", cluster_name="test-cluster", org_name=None
+        )
+        rich_cmp(
+            JobStatusFormatter(
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
+            )(description)
+        )
+
 
 class TestJobTelemetryFormatter:
     # Use utc timezone in test for stable constant result

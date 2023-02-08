@@ -345,6 +345,6 @@ async def login_headless(
 async def logout(
     *,
     path: Optional[Path] = None,
-    show_browser_cb: Callable[[URL], Awaitable[None]] = None,
+    show_browser_cb: Optional[Callable[[URL], Awaitable[None]]] = None,
 ) -> None:
     await Factory(path).logout(show_browser_cb)
