@@ -1,4 +1,5 @@
 from dataclasses import replace
+from datetime import datetime, time
 from decimal import Decimal
 from pathlib import Path
 from typing import Callable, Union
@@ -7,7 +8,19 @@ import pytest
 import toml
 from rich.console import RenderableType
 
-from neuro_sdk import Client, Cluster, Preset, Quota, _Balance, _Quota
+from neuro_sdk import (
+    Client,
+    Cluster,
+    Preset,
+    Quota,
+    _Balance,
+    _ClusterStatus,
+    _ConfigCluster,
+    _EnergyConfig,
+    _EnergySchedule,
+    _EnergySchedulePeriod,
+    _Quota,
+)
 
 from neuro_cli.alias import list_aliases
 from neuro_cli.formatters.config import (
@@ -110,6 +123,62 @@ class TestConfigFormatter:
             available_jobs_counts,
             Quota(credits=Decimal("500"), total_running_jobs=10),
             Quota(credits=Decimal("1000"), total_running_jobs=50),
+        )
+        rich_cmp(out)
+
+    @pytest.fixture
+    def _config_cluster_with_energy(self) -> _ConfigCluster:
+        return _ConfigCluster(
+            name="default",
+            status=_ClusterStatus.DEPLOYED,
+            created_at=datetime.now(),
+            energy=_EnergyConfig(
+                g_co2eq_kwh=40.4,
+                schedules=(
+                    _EnergySchedule(
+                        "DEFAULT",
+                        periods=(
+                            _EnergySchedulePeriod(1, time.min, time.max),
+                            _EnergySchedulePeriod(2, time.min, time.max),
+                            _EnergySchedulePeriod(3, time.min, time.max),
+                            _EnergySchedulePeriod(4, time.min, time.max),
+                            _EnergySchedulePeriod(5, time.min, time.max),
+                            _EnergySchedulePeriod(6, time.min, time.max),
+                            _EnergySchedulePeriod(7, time.min, time.max),
+                        ),
+                    ),
+                    _EnergySchedule(
+                        "GREEN",
+                        periods=(
+                            _EnergySchedulePeriod(1, time.min, time(8)),
+                            _EnergySchedulePeriod(2, time.min, time(8)),
+                            _EnergySchedulePeriod(3, time.min, time(8)),
+                            _EnergySchedulePeriod(4, time.min, time(8)),
+                            _EnergySchedulePeriod(5, time.min, time(8)),
+                            _EnergySchedulePeriod(6, time.min, time(8)),
+                            _EnergySchedulePeriod(7, time.min, time(8)),
+                            _EnergySchedulePeriod(1, time(20), time.max),
+                            _EnergySchedulePeriod(2, time(20), time.max),
+                            _EnergySchedulePeriod(3, time(20), time.max),
+                            _EnergySchedulePeriod(4, time(20), time.max),
+                            _EnergySchedulePeriod(5, time(20), time.max),
+                            _EnergySchedulePeriod(6, time(20), time.max),
+                            _EnergySchedulePeriod(7, time(20), time.max),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+    async def test_output_for_energy_schedules(
+        self, root: Root, _config_cluster_with_energy: _ConfigCluster, rich_cmp: RichCmp
+    ) -> None:
+        out = ConfigFormatter()(
+            root.client.config,
+            {},
+            Quota(credits=Decimal("500"), total_running_jobs=10),
+            None,
+            _config_cluster_with_energy,
         )
         rich_cmp(out)
 

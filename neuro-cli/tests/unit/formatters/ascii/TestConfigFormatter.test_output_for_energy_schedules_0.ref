@@ -1,0 +1,41 @@
+User Configuration:                               
+ User Name            user                        
+ Current Cluster      default                     
+ Current Org          <no-org>                    
+ Credits Quota        500.00                      
+ Jobs Quota           10                          
+ API URL              https://dev.neu.ro/api/v1   
+ Docker Registry URL  https://registry-dev.neu.ro 
+Resource Presets:                                                                                       
+ Name        #CPU    Memory   Round Robin   Preemptible Node   GPU                     Credits per hour 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ gpu-small      7   32.2 GB        ×               ×           1 x nvidia-tesla-k80    10               
+ gpu-large      7   64.4 GB        ×               ×           1 x nvidia-tesla-v100   10               
+ cpu-small      7    2.1 GB        ×               ×                                   10               
+ cpu-large      7   15.0 GB        ×               ×                                   10               
+Cluster energy parameters
+CO2 emmitions (g/kWh): 40.4
+Energy schedules                                                        
+ Name      Price (kW/h)   Weekday   Period start time   Period end time 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ DEFAULT        0            1          00:00:00           23:59:59     
+ DEFAULT        0            2          00:00:00           23:59:59     
+ DEFAULT        0            3          00:00:00           23:59:59     
+ DEFAULT        0            4          00:00:00           23:59:59     
+ DEFAULT        0            5          00:00:00           23:59:59     
+ DEFAULT        0            6          00:00:00           23:59:59     
+ DEFAULT        0            7          00:00:00           23:59:59     
+ GREEN          0            1          00:00:00           08:00:00     
+ GREEN          0            2          00:00:00           08:00:00     
+ GREEN          0            3          00:00:00           08:00:00     
+ GREEN          0            4          00:00:00           08:00:00     
+ GREEN          0            5          00:00:00           08:00:00     
+ GREEN          0            6          00:00:00           08:00:00     
+ GREEN          0            7          00:00:00           08:00:00     
+ GREEN          0            1          20:00:00           23:59:59     
+ GREEN          0            2          20:00:00           23:59:59     
+ GREEN          0            3          20:00:00           23:59:59     
+ GREEN          0            4          20:00:00           23:59:59     
+ GREEN          0            5          20:00:00           23:59:59     
+ GREEN          0            6          20:00:00           23:59:59     
+ GREEN          0            7          20:00:00           23:59:59

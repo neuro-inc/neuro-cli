@@ -22,6 +22,7 @@ from neuro_config_client import EFSPerformanceMode as _EFSPerformanceMode
 from neuro_config_client import EFSThroughputMode as _EFSThroughputMode
 from neuro_config_client import EnergyConfig as _EnergyConfig
 from neuro_config_client import EnergySchedule as _EnergySchedule
+from neuro_config_client import EnergySchedulePeriod as _EnergySchedulePeriod
 from neuro_config_client import GoogleCloudProvider as _GoogleCloudProvider
 from neuro_config_client import GoogleFilestoreTier as _GoogleFilestoreTier
 from neuro_config_client import GoogleStorage as _GoogleStorage
@@ -64,6 +65,7 @@ __all__ = [
     "_EFSThroughputMode",
     "_EnergyConfig",
     "_EnergySchedule",
+    "_EnergySchedulePeriod",
     "_GoogleCloudProvider",
     "_GoogleFilestoreTier",
     "_GoogleStorage",
@@ -161,3 +163,6 @@ class _Clusters(metaclass=NoPublicConstructor):
 
     async def remove_resource_preset(self, cluster_name: str, preset_name: str) -> None:
         await self._client.delete_resource_preset(cluster_name, preset_name)
+
+    async def get_cluster(self, cluster_name: str) -> _ConfigCluster:
+        return await self._client.get_cluster(cluster_name)

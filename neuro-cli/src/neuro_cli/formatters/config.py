@@ -1,6 +1,6 @@
 import operator
 from decimal import Decimal
-from typing import Iterable, List, Mapping, Optional, Union
+from typing import Iterable, List, Mapping, Optional, Sequence, Union
 
 import click
 from rich import box
@@ -10,7 +10,7 @@ from rich.padding import Padding
 from rich.table import Table
 from rich.text import Text
 
-from neuro_sdk import Cluster, Config, Preset, Quota, _Balance, _Quota
+from neuro_sdk import Cluster, Config, Preset, Quota, _Balance, _ConfigCluster, _Quota
 
 from neuro_cli.click_types import OrgType
 from neuro_cli.utils import format_size
@@ -23,6 +23,7 @@ class ConfigFormatter:
         available_jobs_counts: Mapping[str, int],
         quota: Quota,
         org_quota: Optional[Quota],
+        config_cluster: Optional[_ConfigCluster] = None,
     ) -> RenderableType:
         table = Table(
             title="User Configuration:",
@@ -46,10 +47,10 @@ class ConfigFormatter:
         table.add_row("API URL", str(config.api_url))
         table.add_row("Docker Registry URL", str(config.registry_url))
 
-        return RichGroup(
-            table,
-            _format_presets(config.presets, available_jobs_counts),
-        )
+        to_render = [table, _format_presets(config.presets, available_jobs_counts)]
+        if config_cluster and config_cluster.energy:
+            to_render.extend(_format_cluster_energy(config_cluster))  # type: ignore
+        return RichGroup(*to_render)
 
 
 class AdminQuotaFormatter:
@@ -156,6 +157,40 @@ def _format_presets(
         table.add_row(*row)
 
     return table
+
+
+def _format_cluster_energy(cluster: _ConfigCluster) -> Sequence[RenderableType]:
+    assert cluster.energy
+
+    summary = [
+        Text("Cluster energy parameters", style="i"),
+        Text.assemble(
+            Text("CO2 emmitions (g/kWh): "),
+            Text(str(cluster.energy.g_co2eq_kwh), style="b"),
+        ),
+    ]
+
+    schedules_tbl = Table(
+        title="Energy schedules",
+        title_justify="left",
+        box=box.SIMPLE_HEAVY,
+        show_edge=False,
+    )
+    schedules_tbl.add_column("Name", style="bold", justify="left")
+    schedules_tbl.add_column("Price (kW/h)", justify="center")
+    schedules_tbl.add_column("Weekday", justify="center")
+    schedules_tbl.add_column("Period start time", justify="center")
+    schedules_tbl.add_column("Period end time", justify="center")
+    for schedule in cluster.energy.schedules:
+        for period in schedule.periods:
+            schedules_tbl.add_row(
+                str(schedule.name),
+                str(schedule.price_kwh),
+                str(period.weekday),
+                period.start_time.strftime("%H:%M:%S"),
+                period.end_time.strftime("%H:%M:%S"),
+            )
+    return *summary, schedules_tbl
 
 
 class AliasesFormatter:
