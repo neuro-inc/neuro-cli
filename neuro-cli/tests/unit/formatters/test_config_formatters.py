@@ -133,10 +133,11 @@ class TestConfigFormatter:
             status=_ClusterStatus.DEPLOYED,
             created_at=datetime.now(),
             energy=_EnergyConfig(
-                g_co2eq_kwh=40.4,
+                co2_grams_eq_per_kwh=40.4,
                 schedules=(
                     _EnergySchedule(
                         "DEFAULT",
+                        price_per_kwh=Decimal("10.4"),
                         periods=(
                             _EnergySchedulePeriod(1, time.min, time.max),
                             _EnergySchedulePeriod(2, time.min, time.max),
@@ -149,6 +150,7 @@ class TestConfigFormatter:
                     ),
                     _EnergySchedule(
                         "GREEN",
+                        price_per_kwh=Decimal("0.5"),
                         periods=(
                             _EnergySchedulePeriod(1, time.min, time(8)),
                             _EnergySchedulePeriod(2, time.min, time(8)),
@@ -164,6 +166,19 @@ class TestConfigFormatter:
                             _EnergySchedulePeriod(5, time(20), time.max),
                             _EnergySchedulePeriod(6, time(20), time.max),
                             _EnergySchedulePeriod(7, time(20), time.max),
+                        ),
+                    ),
+                    _EnergySchedule(
+                        "SCATTERED",
+                        price_per_kwh=Decimal("0.5"),
+                        periods=(
+                            _EnergySchedulePeriod(1, time(5), time(10)),
+                            _EnergySchedulePeriod(2, time(3), time(5)),
+                            _EnergySchedulePeriod(3, time.min, time.max),
+                            _EnergySchedulePeriod(4, time(5), time(10)),
+                            _EnergySchedulePeriod(5, time(2), time(5)),
+                            _EnergySchedulePeriod(6, time.min, time.max),
+                            _EnergySchedulePeriod(7, time.min, time.max),
                         ),
                     ),
                 ),

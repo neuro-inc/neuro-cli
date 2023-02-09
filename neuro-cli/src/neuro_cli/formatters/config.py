@@ -1,4 +1,5 @@
 import operator
+from datetime import time
 from decimal import Decimal
 from typing import Iterable, List, Mapping, Optional, Sequence, Union
 
@@ -166,7 +167,7 @@ def _format_cluster_energy(cluster: _ConfigCluster) -> Sequence[RenderableType]:
         Text("Cluster energy parameters", style="i"),
         Text.assemble(
             Text("CO2 emmitions (g/kWh): "),
-            Text(str(cluster.energy.g_co2eq_kwh), style="b"),
+            Text(str(cluster.energy.co2_grams_eq_per_kwh), style="b"),
         ),
     ]
 
@@ -178,17 +179,24 @@ def _format_cluster_energy(cluster: _ConfigCluster) -> Sequence[RenderableType]:
     )
     schedules_tbl.add_column("Name", style="bold", justify="left")
     schedules_tbl.add_column("Price (kW/h)", justify="center")
+    schedules_tbl.add_column("Start time", justify="center")
+    schedules_tbl.add_column("End time", justify="center")
     schedules_tbl.add_column("Weekday", justify="center")
-    schedules_tbl.add_column("Period start time", justify="center")
-    schedules_tbl.add_column("Period end time", justify="center")
     for schedule in cluster.energy.schedules:
+        joint_periods: dict[tuple[time, time], list[int]] = {}
         for period in schedule.periods:
+            key = (period.start_time, period.end_time)
+            if key not in joint_periods:
+                joint_periods[key] = []
+            joint_periods[key].append(period.weekday)
+
+        for timeslot, days in sorted(joint_periods.items(), key=lambda x: x[1]):
             schedules_tbl.add_row(
                 str(schedule.name),
-                str(schedule.price_kwh),
-                str(period.weekday),
-                period.start_time.strftime("%H:%M:%S"),
-                period.end_time.strftime("%H:%M:%S"),
+                str(schedule.price_per_kwh),
+                timeslot[0].strftime("%H:%M"),
+                timeslot[1].strftime("%H:%M"),
+                ", ".join([str(x) for x in sorted(days)]),
             )
     return *summary, schedules_tbl
 
