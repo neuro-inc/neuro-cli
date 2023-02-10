@@ -311,7 +311,6 @@ def test_job_to_args_simple() -> None:
         "--preset",
         "testing",
         "test-image",
-        "--",
         "test-command",
     ]
 
@@ -351,7 +350,6 @@ def test_job_to_args_drop_env_when_pass_config() -> None:
         "testing",
         "--pass-config",
         "test-image",
-        "--",
         "test-command",
     ]
 
@@ -481,6 +479,5 @@ def test_job_to_args_complex() -> None:
         "--energy-schedule",
         "some-energy-schedule-name",
         "test-image",
-        "--",
         "test-command",
     ]
