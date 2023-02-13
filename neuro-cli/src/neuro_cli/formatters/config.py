@@ -1,3 +1,4 @@
+import calendar
 import operator
 from datetime import time
 from decimal import Decimal
@@ -164,15 +165,15 @@ def _format_cluster_energy(cluster: _ConfigCluster) -> Sequence[RenderableType]:
     assert cluster.energy
 
     summary = [
-        Text("Cluster energy parameters", style="i"),
+        Text("Cluster energy parameters:", style="i"),
         Text.assemble(
-            Text("CO2 emmitions (g/kWh): "),
+            Text("CO2 eq g/kWh: "),
             Text(str(cluster.energy.co2_grams_eq_per_kwh), style="b"),
         ),
     ]
 
     schedules_tbl = Table(
-        title="Energy schedules",
+        title="Energy schedules:",
         title_justify="left",
         box=box.SIMPLE_HEAVY,
         show_edge=False,
@@ -196,7 +197,7 @@ def _format_cluster_energy(cluster: _ConfigCluster) -> Sequence[RenderableType]:
                 str(schedule.price_per_kwh),
                 timeslot[0].strftime("%H:%M"),
                 timeslot[1].strftime("%H:%M"),
-                ", ".join([str(x) for x in sorted(days)]),
+                ", ".join([calendar.day_abbr[x - 1] for x in sorted(days)]),
             )
     return *summary, schedules_tbl
 
