@@ -507,7 +507,7 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
 
 def make_job(
     job_id: str,
-    name: str = None,
+    name: Optional[str] = None,
     owner: str = "test-user",
     cluster_name: str = "default",
 ) -> JobDescription:

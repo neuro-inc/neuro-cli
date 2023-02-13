@@ -268,7 +268,7 @@ class Factory:
 
     async def logout(
         self,
-        show_browser_cb: Callable[[URL], Awaitable[None]] = None,
+        show_browser_cb: Optional[Callable[[URL], Awaitable[None]]] = None,
     ) -> None:
         if show_browser_cb is not None:
             try:

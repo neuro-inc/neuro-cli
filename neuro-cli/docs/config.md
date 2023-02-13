@@ -218,6 +218,7 @@ Print current settings.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--energy_ | Including cluster energy consumption and CO2 emissions information |
 
 
 

@@ -24,7 +24,7 @@ from ._utils import AsyncContextManager
 
 
 @rewrite_module
-@dataclass(frozen=True)  # type: ignore
+@dataclass(frozen=True)
 class BucketEntry(abc.ABC):
     key: str
     bucket: "Bucket"

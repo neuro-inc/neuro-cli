@@ -1964,6 +1964,7 @@ neuro config show [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_--energy_|Including cluster energy consumption and CO2 emissions information|
 
 
 
@@ -2693,6 +2694,7 @@ Name | Description|
 |_--cluster CLUSTER_|Run job in a specified cluster|
 |_\-d, --description DESC_|Optional job description in free format|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
+|_\--energy-schedule NAME_|Run job only within a selected energy schedule. Selected preset should have scheduler enabled.|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables.|
 |_\--env-file PATH_|File with environment variables to pass|
@@ -3827,6 +3829,7 @@ Name | Description|
 |_--cluster CLUSTER_|Run job in a specified cluster|
 |_\-d, --description DESC_|Optional job description in free format|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
+|_\--energy-schedule NAME_|Run job only within a selected energy schedule. Selected preset should have scheduler enabled.|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
 |_\-e, --env VAR=VAL_|Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables.|
 |_\--env-file PATH_|File with environment variables to pass|

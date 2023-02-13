@@ -252,6 +252,7 @@ class JobDescription:
     preemptible_node: bool = False
     privileged: bool = False
     priority: JobPriority = JobPriority.NORMAL
+    energy_schedule_name: Optional[str] = None
     _internal: JobDescriptionInternal = JobDescriptionInternal()
 
 
@@ -417,6 +418,7 @@ class Jobs(metaclass=NoPublicConstructor):
         life_span: Optional[float] = None,
         privileged: bool = False,
         priority: Optional[JobPriority] = None,
+        energy_schedule_name: Optional[str] = None,
     ) -> JobDescription:
         url = (self._config.api_url / "jobs").with_query("from_preset")
         container_payload = _container_to_api(
@@ -450,6 +452,7 @@ class Jobs(metaclass=NoPublicConstructor):
             if not isinstance(org_name, OrgNameSentinel)
             else self._config.org_name,
             priority=priority,
+            energy_schedule_name=energy_schedule_name,
         )
         payload.update(**container_payload)
         auth = await self._config._api_auth()
@@ -1063,6 +1066,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         total_price_credits=total_price_credits,
         price_credits_per_hour=price_credits_per_hour,
         priority=priority,
+        energy_schedule_name=res.get("energy_schedule_name"),
         _internal=JobDescriptionInternal(
             materialized=res.get("materialized", False),
             being_dropped=res.get("being_dropped", False),
@@ -1085,6 +1089,7 @@ def _job_to_api(
     privileged: bool = False,
     org_name: Optional[str] = None,
     priority: Optional[JobPriority] = None,
+    energy_schedule_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     primitive: Dict[str, Any] = {"pass_config": pass_config}
     if name:
@@ -1109,6 +1114,8 @@ def _job_to_api(
         primitive["org_name"] = org_name
     if priority:
         primitive["priority"] = priority.name.lower()
+    if energy_schedule_name:
+        primitive["energy_schedule_name"] = energy_schedule_name
     primitive["cluster_name"] = cluster_name
     return primitive
 

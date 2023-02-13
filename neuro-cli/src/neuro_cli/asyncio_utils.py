@@ -179,7 +179,9 @@ if sys.platform != "win32":
                     source=self,
                 )
 
-        def add_child_handler(self, pid: int, callback: _Callback, *args: Any) -> None:
+        def add_child_handler(  # type: ignore
+            self, pid: int, callback: _Callback, *args: Any
+        ) -> None:
             loop = asyncio.get_event_loop()
             thread = threading.Thread(
                 target=self._do_waitpid,

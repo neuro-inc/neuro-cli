@@ -30,7 +30,12 @@ def config() -> None:
 
 
 @command()
-async def show(root: Root) -> None:
+@option(
+    "--energy",
+    is_flag=True,
+    help="Including cluster energy consumption and CO2 emissions information",
+)
+async def show(root: Root, energy: bool) -> None:
     """
     Print current settings.
     """
@@ -46,9 +51,14 @@ async def show(root: Root) -> None:
             )
         except (ClientConnectionError, AuthorizationError):
             jobs_capacity = {}
-    quota = await root.client.users.get_quota()
-    org_quota = await root.client.users.get_org_quota()
-    root.print(fmt(root.client.config, jobs_capacity, quota, org_quota))
+    with root.status("Fetching user job quota"):
+        quota = await root.client.users.get_quota()
+        org_quota = await root.client.users.get_org_quota()
+    config_cluster = None
+    if energy:
+        with root.status("Fetching cluster energy schedules"):
+            config_cluster = await root.client._clusters.get_cluster(cluster_name)
+    root.print(fmt(root.client.config, jobs_capacity, quota, org_quota, config_cluster))
 
 
 @command()

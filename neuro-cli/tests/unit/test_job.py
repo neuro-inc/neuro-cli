@@ -430,6 +430,7 @@ def test_job_to_args_complex() -> None:
         total_price_credits=Decimal("150"),
         price_credits_per_hour=Decimal("15"),
         priority=JobPriority.HIGH,
+        energy_schedule_name="some-energy-schedule-name",
     )
     assert _job_to_cli_args(job) == [
         "--preset",
@@ -475,6 +476,8 @@ def test_job_to_args_complex() -> None:
         "--privileged",
         "--priority",
         "high",
+        "--energy-schedule",
+        "some-energy-schedule-name",
         "test-image",
         "test-command",
     ]

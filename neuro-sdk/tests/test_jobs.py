@@ -2921,3 +2921,66 @@ async def test_job_without_org_name(
         )
         resp = await client.jobs.run(container=container)
         assert not resp.org_name
+
+
+async def test_job_start_with_energy_schedule_name(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = {
+        "id": "job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "status": "failed",
+        "history": {
+            "status": "failed",
+            "reason": "Error",
+            "description": "Mounted on Avail\\n/dev/shm     " "64M\\n\\nExit code: 1",
+            "created_at": "2018-09-25T12:28:21.298672+00:00",
+            "started_at": "2018-09-25T12:28:59.759433+00:00",
+            "finished_at": "2018-09-25T12:28:59.759433+00:00",
+        },
+        "owner": "owner",
+        "cluster_name": "default",
+        "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
+        "total_price_credits": "10.01",
+        "price_credits_per_hour": "20",
+        "container": {
+            "image": "gcr.io/light-reality-205619/ubuntu:latest",
+            "command": "date",
+            "resources": {
+                "cpu": 7,
+                "memory": 14 * 2**30,
+                "shm": False,
+            },
+        },
+        "http_url": "http://my_host:8889",
+        "scheduler_enabled": True,
+        "pass_config": False,
+        "energy_schedule_name": "some-energy",
+    }
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "image": "submit-image-name",
+            "command": "submit-command",
+            "cluster_name": "default",
+            "preset_name": "cpu-large-p",
+            "energy_schedule_name": "some-schedule",
+            "pass_config": False,
+        }
+
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.start(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            command="submit-command",
+            preset_name="cpu-large-p",
+            energy_schedule_name="some-schedule",
+        )
+
+        assert ret == _job_description_from_api(JSON, client.parse)
