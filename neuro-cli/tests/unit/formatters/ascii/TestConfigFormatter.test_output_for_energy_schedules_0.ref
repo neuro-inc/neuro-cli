@@ -13,15 +13,15 @@ Resource Presets:
  gpu-large      7   64.4 GB        ×               ×           1 x nvidia-tesla-v100   10               
  cpu-small      7    2.1 GB        ×               ×                                   10               
  cpu-large      7   15.0 GB        ×               ×                                   10               
-Cluster energy parameters
-CO2 emmitions (g/kWh): 40.4
-Energy schedules                                                        
- Name        Price (kW/h)   Start time   End time         Weekday       
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
- DEFAULT         10.4         00:00       23:59     1, 2, 3, 4, 5, 6, 7 
- GREEN           0.5          00:00       08:00     1, 2, 3, 4, 5, 6, 7 
- GREEN           0.5          20:00       23:59     1, 2, 3, 4, 5, 6, 7 
- SCATTERED       0.5          05:00       10:00            1, 4         
- SCATTERED       0.5          03:00       05:00              2          
- SCATTERED       0.5          00:00       23:59           3, 6, 7       
- SCATTERED       0.5          02:00       05:00              5
+Cluster energy parameters:
+CO2 eq g/kWh: 40.4
+Energy schedules:                                                                     
+ Name        Price (kW/h)   Start time   End time                Weekday              
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ DEFAULT         10.4         00:00       23:59     Mon, Tue, Wed, Thu, Fri, Sat, Sun 
+ GREEN           0.5          00:00       08:00     Mon, Tue, Wed, Thu, Fri, Sat, Sun 
+ GREEN           0.5          20:00       23:59     Mon, Tue, Wed, Thu, Fri, Sat, Sun 
+ SCATTERED       0.5          05:00       10:00                 Mon, Thu              
+ SCATTERED       0.5          03:00       05:00                    Tue                
+ SCATTERED       0.5          00:00       23:59               Wed, Sat, Sun           
+ SCATTERED       0.5          02:00       05:00                    Fri
