@@ -395,17 +395,17 @@ def _open_db_ro(
                 f"run 'chmod 600 {config_file}' first"
             )
 
-    with sqlite3.connect(str(config_file)) as db:
+    conn = sqlite3.connect(str(config_file))
+    try:
         # forbid access for other users
         os.chmod(config_file, 0o600)
 
         if not skip_schema_check:
-            _check_db(db)
-        db.row_factory = sqlite3.Row
-        try:
-            yield db
-        finally:
-            db.close()
+            _check_db(conn)
+        conn.row_factory = sqlite3.Row
+        yield conn
+    finally:
+        conn.close()
 
 
 def _load(path: Path) -> _ConfigData:
