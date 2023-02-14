@@ -402,7 +402,10 @@ def _open_db_ro(
         if not skip_schema_check:
             _check_db(db)
         db.row_factory = sqlite3.Row
-        yield db
+        try:
+            yield db
+        finally:
+            db.close()
 
 
 def _load(path: Path) -> _ConfigData:
