@@ -346,22 +346,25 @@ def _open_db_rw(
     path.chmod(0o700)  # fix security if config folder already exists
 
     config_file = path / "db"
-    with sqlite3.connect(str(config_file)) as db:
+    conn = sqlite3.connect(str(config_file))
+    try:
         # forbid access to other users
         os.chmod(config_file, 0o600)
 
-        db.row_factory = sqlite3.Row
-        try:
+        conn.row_factory = sqlite3.Row
+        with conn as db:
             db.execute("PRAGMA journal_mode=WAL")
             yield db
-        except sqlite3.DatabaseError as exc:
-            if not suppress_errors:
-                raise
-            msg = "Cannot send the usage statistics: %s"
-            if str(exc) != "database is locked":
-                logger.warning(msg, repr(exc))
-            else:
-                logger.debug(msg, repr(exc))
+    except sqlite3.DatabaseError as exc:
+        if not suppress_errors:
+            raise
+        msg = "Cannot send the usage statistics: %s"
+        if str(exc) != "database is locked":
+            logger.warning(msg, repr(exc))
+        else:
+            logger.debug(msg, repr(exc))
+    finally:
+        conn.close()
 
 
 @contextlib.contextmanager
@@ -403,7 +406,8 @@ def _open_db_ro(
         if not skip_schema_check:
             _check_db(conn)
         conn.row_factory = sqlite3.Row
-        yield conn
+        with conn as db:
+            yield db
     finally:
         conn.close()
 
