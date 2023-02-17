@@ -164,13 +164,17 @@ def _format_presets(
 def _format_cluster_energy(cluster: _ConfigCluster) -> Sequence[RenderableType]:
     assert cluster.energy
 
-    summary = [
-        Text("Cluster energy parameters:", style="i"),
-        Text.assemble(
-            Text("CO2 eq g/kWh: "),
-            Text(str(cluster.energy.co2_grams_eq_per_kwh), style="b"),
-        ),
-    ]
+    summary_tbl = Table(
+        title="Cluster energy parameters:",
+        title_justify="left",
+        box=None,
+        show_header=False,
+        show_edge=False,
+    )
+    summary_tbl.add_column()
+    summary_tbl.add_column(style="bold")
+    summary_tbl.add_row("CO2 eq g/kWh: ", str(cluster.energy.co2_grams_eq_per_kwh))
+    summary_tbl.add_row("Cluster location timezone: ", str(cluster.timezone))
 
     schedules_tbl = Table(
         title="Energy schedules:",
@@ -199,7 +203,7 @@ def _format_cluster_energy(cluster: _ConfigCluster) -> Sequence[RenderableType]:
                 timeslot[1].strftime("%H:%M"),
                 ", ".join([calendar.day_abbr[x - 1] for x in sorted(days)]),
             )
-    return *summary, schedules_tbl
+    return summary_tbl, schedules_tbl
 
 
 class AliasesFormatter:
