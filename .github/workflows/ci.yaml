@@ -65,19 +65,18 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.8', '3.9', '3.10', '3.11']
         os: [ubuntu, macos, windows]
         cmd: [sdk, cli]
         exclude:
-        - os: macos  # temporarily exclude
-        - python-version: '3.8'
-          os: macos
-        - python-version: '3.8'
-          os: windows
         - python-version: '3.9'
           os: macos
         - python-version: '3.9'
           os: windows
+        - python-version: '3.10'
+          os: macos
+        - python-version: '3.10'
+          os: ubuntu
       fail-fast: false
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 15
@@ -121,18 +120,17 @@ jobs:
       (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]')
     strategy:
       matrix:
-        python-version: ['3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.8', '3.9', '3.10', '3.11']
         os: [ubuntu, macos, windows]
         exclude:
-        - os: macos  # temporarily exclude
-        - python-version: '3.8'
-          os: macos
-        - python-version: '3.8'
-          os: windows
         - python-version: '3.9'
           os: macos
         - python-version: '3.9'
           os: windows
+        - python-version: '3.10'
+          os: macos
+        - python-version: '3.10'
+          os: ubuntu
       fail-fast: false
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 90

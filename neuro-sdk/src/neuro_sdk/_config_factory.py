@@ -29,7 +29,7 @@ from ._server_cfg import _ServerConfig, get_server_config
 from ._tracing import _make_trace_config
 from ._utils import _ContextManager
 
-if sys.version_info >= (3, 10):
+if sys.version_info >= (3, 11):
     from importlib.metadata import entry_points
 else:
     from importlib_metadata import entry_points
