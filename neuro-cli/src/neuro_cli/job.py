@@ -1074,12 +1074,12 @@ async def run(
 
     Examples:
 
-    # Starts a container pytorch:latest on a machine with smaller GPU resources
+    # Starts a container pytorch/pytorch:latest on a machine with smaller GPU resources
     # (see exact values in `neuro config show`) and with two volumes mounted:
     #   storage:/<home-directory>   --> /var/storage/home (in read-write mode),
     #   storage:/neuromation/public --> /var/storage/neuromation (in read-only mode).
     neuro run --preset=gpu-small --volume=storage::/var/storage/home:rw \\\\
-        --volume=storage:/neuromation/public:/var/storage/home:ro pytorch:latest
+        --volume=storage:/neuromation/public:/var/storage/home:ro pytorch/pytorch:latest
 
     # Starts a container using the custom image my-ubuntu:latest stored in neuro
     # registry, run /script.sh and pass arg1 and arg2 as its arguments:
