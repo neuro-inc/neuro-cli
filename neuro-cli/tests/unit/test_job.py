@@ -311,6 +311,7 @@ def test_job_to_args_simple() -> None:
         "--preset",
         "testing",
         "test-image",
+        "--",
         "test-command",
     ]
 
@@ -350,6 +351,7 @@ def test_job_to_args_drop_env_when_pass_config() -> None:
         "testing",
         "--pass-config",
         "test-image",
+        "--",
         "test-command",
     ]
 
@@ -479,5 +481,39 @@ def test_job_to_args_complex() -> None:
         "--energy-schedule",
         "some-energy-schedule-name",
         "test-image",
+        "--",
         "test-command",
+    ]
+
+
+def test_job_to_args_no_cmd() -> None:
+    job = JobDescription(
+        status=JobStatus.FAILED,
+        owner="test-user",
+        cluster_name="default",
+        id=f"job",
+        uri=URL(f"job://default/test-user/job"),
+        description=None,
+        history=JobStatusHistory(
+            status=JobStatus.FAILED,
+            reason="ErrorReason",
+            description="ErrorDesc",
+            created_at=isoparse("2018-09-25T12:28:21.298672+00:00"),
+            started_at=isoparse("2018-09-25T12:28:59.759433+00:00"),
+            finished_at=datetime.now(timezone.utc) - timedelta(seconds=1),
+        ),
+        container=Container(
+            image=RemoteImage.new_external_image(name="test-image"),
+            resources=Resources(16, 0.1, 0, None, True, None, None),
+        ),
+        scheduler_enabled=False,
+        pass_config=False,
+        preset_name="testing",
+        total_price_credits=Decimal("150"),
+        price_credits_per_hour=Decimal("15"),
+    )
+    assert _job_to_cli_args(job) == [
+        "--preset",
+        "testing",
+        "test-image",
     ]

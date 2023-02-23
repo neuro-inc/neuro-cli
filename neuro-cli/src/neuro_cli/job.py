@@ -1483,7 +1483,7 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
         res += ["--energy-schedule", job.energy_schedule_name]
     res += [str(job.container.image)]
     if job.container.command:
-        res += [job.container.command]
+        res += ["--", job.container.command]
     return res
 
 
