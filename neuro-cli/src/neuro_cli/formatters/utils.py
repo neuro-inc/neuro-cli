@@ -107,21 +107,21 @@ def format_datetime_human(
     assert when.tzinfo is not None
     delta = datetime.datetime.now(datetime.timezone.utc) - when
     if delta < datetime.timedelta(days=1):
-        preffix = ""
+        prefix = ""
         suffix = " ago"
         if delta != abs(delta):  # negative delta means lifespan ends in future
-            preffix = "in "
+            prefix = "in "
             suffix = ""
         if precise:
             min_unit = "seconds"
             if abs(delta) > datetime.timedelta(hours=1):
                 min_unit = "minutes"
             return (
-                preffix
+                prefix
                 + humanize.precisedelta(delta, minimum_unit=min_unit, format="%0.0f")
                 + suffix
             )
-        return preffix + humanize.naturaldelta(delta) + suffix
+        return prefix + humanize.naturaldelta(delta) + suffix
     else:
         when_local = when.astimezone(timezone)
         result = humanize.naturaldate(when_local)
