@@ -1,3 +1,4 @@
+import datetime as dt_module
 import io
 import itertools
 from dataclasses import replace
@@ -2446,8 +2447,18 @@ class TestTabularJobsFormatter:
 
 class TestLifeSpanUpdateFormatter:
     async def test_not_finished(
-        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+        self,
+        rich_cmp: Any,
+        datetime_formatter: DatetimeFormatter,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
+        class MyDT(dt_module.datetime):
+            @classmethod
+            def now(cls, tz=None) -> datetime:  # type: ignore
+                return datetime(year=2023, month=3, day=21, tzinfo=tz)
+
+        monkeypatch.setattr(dt_module, "datetime", MyDT)
+
         job = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
@@ -2491,6 +2502,7 @@ class TestLifeSpanUpdateFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
+            life_span=360000,
             total_price_credits=Decimal("150"),
             price_credits_per_hour=Decimal("15"),
         )
