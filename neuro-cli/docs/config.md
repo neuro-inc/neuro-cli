@@ -16,6 +16,7 @@ Client configuration.
 | [_aliases_](config.md#aliases) | List available command aliases |
 | [_docker_](config.md#docker) | Configure local docker client |
 | [_get-clusters_](config.md#get-clusters) | List available clusters/org pairs |
+| [_get-projects_](config.md#get-projects) | List available projects |
 | [_login_](config.md#login) | Log into Neuro Platform |
 | [_login-headless_](config.md#login-headless) | Log into Neuro Platform in non-GUI environ |
 | [_login-with-token_](config.md#login-with-token) | Log into Neuro Platform with token |
@@ -24,6 +25,7 @@ Client configuration.
 | [_show-token_](config.md#show-token) | Print current authorization token |
 | [_switch-cluster_](config.md#switch-cluster) | Switch the active cluster |
 | [_switch-org_](config.md#switch-org) | Switch the active organization |
+| [_switch-project_](config.md#switch-project) | Switch the active project |
 
 
 ### aliases
@@ -88,6 +90,31 @@ List available clusters/org pairs.
 This command re-fetches cluster list and
 then displays each
 cluster with available orgs.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### get-projects
+
+List available projects
+
+
+#### Usage
+
+```bash
+neuro config get-projects [OPTIONS]
+```
+
+List available projects.
+
+This command re-fetches project list and then
+displays each
+project.
 
 #### Options
 
@@ -285,6 +312,31 @@ Switch the active organization.
 select. Use literal "NO_`ORG`" to switch
 to using current cluster directly
 instead of on behalf of some org.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### switch-project
+
+Switch the active project
+
+
+#### Usage
+
+```bash
+neuro config switch-project [OPTIONS] [PROJECT_NAME]
+```
+
+Switch the active project.
+
+`PROJECT`_`NAME` is the project name to select.
+The interactive prompt is used if the
+name is omitted (default).
 
 #### Options
 

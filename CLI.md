@@ -73,6 +73,7 @@
 		* [neuro config aliases](#neuro-config-aliases)
 		* [neuro config docker](#neuro-config-docker)
 		* [neuro config get-clusters](#neuro-config-get-clusters)
+		* [neuro config get-projects](#neuro-config-get-projects)
 		* [neuro config login](#neuro-config-login)
 		* [neuro config login-headless](#neuro-config-login-headless)
 		* [neuro config login-with-token](#neuro-config-login-with-token)
@@ -81,6 +82,7 @@
 		* [neuro config show-token](#neuro-config-show-token)
 		* [neuro config switch-cluster](#neuro-config-switch-cluster)
 		* [neuro config switch-org](#neuro-config-switch-org)
+		* [neuro config switch-project](#neuro-config-switch-project)
 	* [neuro disk](#neuro-disk)
 		* [neuro disk create](#neuro-disk-create)
 		* [neuro disk get](#neuro-disk-get)
@@ -1803,6 +1805,7 @@ Name | Description|
 | _[neuro config aliases](#neuro-config-aliases)_| List available command aliases |
 | _[neuro config docker](#neuro-config-docker)_| Configure local docker client |
 | _[neuro config get-clusters](#neuro-config-get-clusters)_| List available clusters/org pairs |
+| _[neuro config get-projects](#neuro-config-get-projects)_| List available projects |
 | _[neuro config login](#neuro-config-login)_| Log into Neuro Platform |
 | _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuro Platform in non-GUI environ |
 | _[neuro config login\-with-token](#neuro-config-login-with-token)_| Log into Neuro Platform with token |
@@ -1811,6 +1814,7 @@ Name | Description|
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config switch-cluster](#neuro-config-switch-cluster)_| Switch the active cluster |
 | _[neuro config switch-org](#neuro-config-switch-org)_| Switch the active organization |
+| _[neuro config switch-project](#neuro-config-switch-project)_| Switch the active project |
 
 
 
@@ -1862,6 +1866,25 @@ List available clusters/org pairs.<br/><br/>This command re-fetches cluster list
 
 ```bash
 neuro config get-clusters [OPTIONS]
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config get-projects
+
+List available projects.<br/><br/>This command re-fetches project list and then displays each project.
+
+**Usage:**
+
+```bash
+neuro config get-projects [OPTIONS]
 ```
 
 **Options:**
@@ -2015,6 +2038,25 @@ Switch the active organization.<br/><br/>ORG\_NAME is the organization name to s
 
 ```bash
 neuro config switch-org [OPTIONS] ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config switch-project
+
+Switch the active project.<br/><br/>PROJECT_NAME is the project name to select. The interactive prompt is used if<br/>the name is omitted \(default).
+
+**Usage:**
+
+```bash
+neuro config switch-project [OPTIONS] [PROJECT_NAME]
 ```
 
 **Options:**
