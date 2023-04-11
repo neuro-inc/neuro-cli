@@ -396,7 +396,7 @@ async def prompt_project(
 ) -> str:
     if session is None:
         session = PromptSession()
-    projects = sorted([p.name for p in root.client.config.cluster_org_projects])
+    projects = sorted(p.name for p in root.client.config.cluster_org_projects)
     while True:
         fmt = ClusterOrgProjectsFormatter()
         root.print(fmt(projects, root.client.config.project_name))
