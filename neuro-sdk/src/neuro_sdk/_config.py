@@ -696,8 +696,9 @@ def _save(config: _ConfigData, path: Path, suppress_errors: bool = True) -> None
         cur.execute(
             """
             INSERT INTO main
-            (auth_config, token, expiration_time, refresh_token,
-             url, admin_url, version, project_name, cluster_name, org_name, clusters, projects, timestamp)
+            (auth_config, token, expiration_time, refresh_token, url, admin_url,
+             version, project_name, cluster_name, org_name, clusters, projects,
+             timestamp)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 auth_config,
