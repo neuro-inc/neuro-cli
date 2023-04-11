@@ -34,6 +34,7 @@ from neuro_sdk import (
     Client,
     LocalImage,
     Preset,
+    Project,
     RemoteImage,
     ResourceNotFound,
     TagOption,
@@ -514,6 +515,54 @@ class OrgType(AsyncType[str]):
 
 ORG = OrgType()
 ORG_ALLOW_UNKNOWN = OrgType(allow_unknown=True)
+
+
+class ProjectType(AsyncType[str]):
+    name = "project"
+
+    def __init__(self, allow_unknown: bool = False):
+        self._allow_unknown = allow_unknown
+
+    async def async_convert(
+        self,
+        root: Root,
+        value: str,
+        param: Optional[click.Parameter],
+        ctx: Optional[click.Context],
+    ) -> str:
+        if self._allow_unknown:
+            return value
+        client = await root.init_client()
+        cluster_name = root.client.config.cluster_name
+        org_name = root.client.config.org_name
+        project_key = Project.Key(
+            cluster_name=cluster_name, org_name=org_name, project_name=value
+        )
+        if project_key not in client.config.projects:
+            raise click.BadParameter(
+                f"Project {value} is not valid, "
+                "run 'neuro config get-projects' to get a list of available projects",
+                ctx,
+                param,
+            )
+        return value
+
+    async def async_shell_complete(
+        self, root: Root, ctx: click.Context, param: click.Parameter, incomplete: str
+    ) -> List[CompletionItem]:
+        # async context manager is used to prevent a message about
+        # unclosed session
+        async with await root.init_client() as client:
+            projects = client.config.cluster_org_projects
+            return [
+                CompletionItem(p.name)
+                for p in projects
+                if p.name.startswith(incomplete)
+            ]
+
+
+PROJECT = ProjectType()
+PROJECT_ALLOW_UNKNOWN = ProjectType(allow_unknown=True)
 
 
 class JobType(AsyncType[str]):

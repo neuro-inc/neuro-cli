@@ -89,6 +89,8 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
             cluster_config.name: cluster_config,
             cluster2_config.name: cluster2_config,
         },
+        projects={},
+        project_name=None,
     )
     Factory(nmrc_path)._save(config)
     return nmrc_path

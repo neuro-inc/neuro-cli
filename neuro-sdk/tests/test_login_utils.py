@@ -5,7 +5,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuro_sdk import AuthError, Cluster, Preset
+from neuro_sdk import AuthError, Cluster, Preset, Project
 from neuro_sdk._login import _AuthConfig
 from neuro_sdk._server_cfg import _ServerConfig, get_server_config
 
@@ -59,6 +59,7 @@ async def test_get_server_config_no_clusters(
             success_redirect_url=URL(success_redirect_url),
         ),
         clusters={},
+        projects={},
         admin_url=None,
     )
 
@@ -66,7 +67,6 @@ async def test_get_server_config_no_clusters(
 async def test_get_server_config_no_callback_urls(
     aiohttp_client: _TestClientFactory,
 ) -> None:
-
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
@@ -104,6 +104,7 @@ async def test_get_server_config_no_callback_urls(
             success_redirect_url=URL(success_redirect_url),
         ),
         clusters={},
+        projects={},
         admin_url=None,
     )
 
@@ -111,7 +112,6 @@ async def test_get_server_config_no_callback_urls(
 async def test_get_server_config_with_token(
     aiohttp_client: _TestClientFactory,
 ) -> None:
-
     admin_url = "https://admin-dev.neu.ro"
     registry_url = "https://registry.dev.neu.ro"
     storage_url = "https://storage.dev.neu.ro"
@@ -187,6 +187,14 @@ async def test_get_server_config_with_token(
                 ],
             }
         ],
+        "projects": [
+            {
+                "cluster_name": "default",
+                "org_name": None,
+                "name": "test-project",
+                "role": "owner",
+            }
+        ],
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -199,6 +207,9 @@ async def test_get_server_config_with_token(
 
     config = await get_server_config(
         client.session, client.make_url("/"), token="bananatoken"
+    )
+    project = Project(
+        cluster_name="default", org_name=None, name="test-project", role="owner"
     )
     assert config == _ServerConfig(
         auth_config=_AuthConfig(
@@ -253,6 +264,7 @@ async def test_get_server_config_with_token(
                 orgs=[None],
             )
         },
+        projects={project.key: project},
     )
 
 
@@ -306,6 +318,7 @@ async def test_get_server_config_with_token_no_clusters(
             success_redirect_url=URL(success_redirect_url),
         ),
         clusters={},
+        projects={},
         admin_url=None,
     )
 

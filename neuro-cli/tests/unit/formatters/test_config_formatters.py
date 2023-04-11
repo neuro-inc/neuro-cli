@@ -12,6 +12,7 @@ from neuro_sdk import (
     Client,
     Cluster,
     Preset,
+    Project,
     Quota,
     _Balance,
     _ClusterStatus,
@@ -27,7 +28,9 @@ from neuro_cli.formatters.config import (
     AdminQuotaFormatter,
     AliasesFormatter,
     BalanceFormatter,
+    ClusterOrgProjectsFormatter,
     ConfigFormatter,
+    ProjectsFormatter,
     format_quota_details,
 )
 from neuro_cli.root import Root
@@ -123,6 +126,29 @@ class TestConfigFormatter:
             available_jobs_counts,
             Quota(credits=Decimal("500"), total_running_jobs=10),
             Quota(credits=Decimal("1000"), total_running_jobs=50),
+        )
+        rich_cmp(out)
+
+    async def test_output_with_project_name(
+        self,
+        make_client: Callable[..., Client],
+        cluster_config: Cluster,
+        rich_cmp: RichCmp,
+    ) -> None:
+        project = Project(
+            name="main", cluster_name=cluster_config.name, org_name=None, role="owner"
+        )
+        client = make_client(
+            "https://dev.neu.ro/api/v1",
+            clusters={cluster_config.name: cluster_config},
+            projects={project.key: project},
+            project_name=project.name,
+        )
+        out = ConfigFormatter()(
+            client.config,
+            {},
+            Quota(credits=Decimal("500"), total_running_jobs=10),
+            None,
         )
         rich_cmp(out)
 
@@ -262,4 +288,42 @@ class TestAliasesFormatter:
         )
         lst = await list_aliases(root)
         out = AliasesFormatter()(lst)
+        rich_cmp(out)
+
+
+class TestProjectsFormatter:
+    async def test_output(self, rich_cmp: RichCmp) -> None:
+        projects = [
+            Project(
+                name="project1", cluster_name="cluster1", org_name=None, role="owner"
+            ),
+            Project(
+                name="project2", cluster_name="cluster2", org_name="org1", role="owner"
+            ),
+        ]
+        out = ProjectsFormatter()(projects, None)
+        rich_cmp(out)
+
+    async def test_output_with_current_project(self, rich_cmp: RichCmp) -> None:
+        projects = [
+            Project(
+                name="project1", cluster_name="cluster1", org_name=None, role="owner"
+            ),
+            Project(
+                name="project2", cluster_name="cluster2", org_name="org1", role="owner"
+            ),
+        ]
+        out = ProjectsFormatter()(projects, "project1")
+        rich_cmp(out)
+
+
+class TestClusterOrgProjectsFormatter:
+    async def test_output(self, rich_cmp: RichCmp) -> None:
+        projects = ["project1", "project2"]
+        out = ClusterOrgProjectsFormatter()(projects, None)
+        rich_cmp(out)
+
+    async def test_output_with_current_project(self, rich_cmp: RichCmp) -> None:
+        projects = ["project1", "project2"]
+        out = ClusterOrgProjectsFormatter()(projects, "project1")
         rich_cmp(out)

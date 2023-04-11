@@ -22,7 +22,7 @@ from ._errors import ConfigError
 from ._login import AuthTokenClient, _AuthConfig, _AuthToken
 from ._plugins import ConfigScope, PluginManager, _ParamType
 from ._rewrite import rewrite_module
-from ._server_cfg import Cluster, Preset, _ServerConfig, get_server_config
+from ._server_cfg import Cluster, Preset, Project, _ServerConfig, get_server_config
 from ._utils import NoPublicConstructor, find_project_root, flat
 
 WIN32 = sys.platform == "win32"
@@ -41,9 +41,11 @@ SCHEMA = {
                            url TEXT,
                            admin_url TEXT,
                            version TEXT,
+                           project_name TEXT,
                            cluster_name TEXT,
                            org_name TEXT,
                            clusters TEXT,
+                           projects TEXT,
                            timestamp REAL)"""
     )
 }
@@ -59,9 +61,11 @@ class _ConfigData:
     url: URL
     admin_url: Optional[URL]
     version: str
+    project_name: Optional[str]
     cluster_name: Optional[str]
     org_name: Optional[str]
     clusters: Mapping[str, Cluster]
+    projects: Mapping[Project.Key, Project]
 
 
 @dataclass(frozen=True)
@@ -105,6 +109,10 @@ class Config(metaclass=NoPublicConstructor):
         return MappingProxyType(self._config_data.clusters)
 
     @property
+    def projects(self) -> Mapping[Project.Key, Project]:
+        return MappingProxyType(self._config_data.projects)
+
+    @property
     def cluster_name(self) -> str:
         if not self._config_data.clusters:
             raise RuntimeError(
@@ -142,6 +150,33 @@ class Config(metaclass=NoPublicConstructor):
         if section is not None:
             return section.get("org-name")
         return None
+
+    @property
+    def project_name(self) -> Optional[str]:
+        name = self._get_user_project_name()
+        if name is None:
+            name = self._config_data.project_name
+        return name
+
+    def _get_user_project_name(self) -> Optional[str]:
+        config = self._get_user_config()
+        section = config.get("job")
+        if section is not None:
+            return section.get("project-name")
+        return None
+
+    @property
+    def cluster_org_projects(self) -> List[Project]:
+        return self._get_cluster_org_projects(self.cluster_name, self.org_name)
+
+    def _get_cluster_org_projects(
+        self, cluster_name: str, org_name: Optional[str]
+    ) -> List[Project]:
+        projects = []
+        for project in self.projects.values():
+            if project.cluster_name == cluster_name and project.org_name == org_name:
+                projects.append(project)
+        return projects
 
     @property
     def _cluster(self) -> Cluster:
@@ -194,6 +229,25 @@ class Config(metaclass=NoPublicConstructor):
         self.__config_data = replace(self._config_data, clusters=server_config.clusters)
         _save(self._config_data, self._path)
 
+    async def switch_project(self, name: str) -> None:
+        if self._get_user_project_name() is not None:
+            raise RuntimeError(
+                "Cannot switch the project. Please edit the '.neuro.toml' file."
+            )
+        cluster_name = self.cluster_name
+        org_name = self.org_name
+        project_key = Project.Key(
+            cluster_name=cluster_name, org_name=org_name, project_name=name
+        )
+        if project_key not in self.projects:
+            projects = [p.name for p in self.cluster_org_projects]
+            raise RuntimeError(
+                f"Project {name} doesn't exist in a list of available "
+                f"tenant projects {projects}. "
+            )
+        self.__config_data = replace(self._config_data, project_name=name)
+        _save(self._config_data, self._path)
+
     async def switch_cluster(self, name: str) -> None:
         if self._get_user_cluster_name() is not None:
             raise RuntimeError(
@@ -216,7 +270,12 @@ class Config(metaclass=NoPublicConstructor):
             else:
                 org_name = sorted(cluster_orgs, key=lambda it: it or "")[0]
         self.__config_data = replace(
-            self._config_data, cluster_name=name, org_name=org_name
+            self._config_data,
+            cluster_name=name,
+            org_name=org_name,
+            project_name=self._get_current_project_for_cluster_org(
+                cluster_name=name, org_name=org_name
+            ),
         )
         _save(self._config_data, self._path)
 
@@ -232,8 +291,38 @@ class Config(metaclass=NoPublicConstructor):
                 f"a list of available orgs {list(cluster_org_names)} for "
                 f"cluster '{self.cluster_name}'. "
             )
-        self.__config_data = replace(self._config_data, org_name=name)
+        self.__config_data = replace(
+            self._config_data,
+            org_name=name,
+            project_name=self._get_current_project_for_cluster_org(
+                cluster_name=self.cluster_name, org_name=name
+            ),
+        )
         _save(self._config_data, self._path)
+
+    def _get_current_project_for_cluster_org(
+        self, cluster_name: str, org_name: Optional[str]
+    ) -> Optional[str]:
+        project_name = self.project_name
+        if not project_name:
+            return None
+
+        project_key = Project.Key(
+            cluster_name=cluster_name, org_name=org_name, project_name=project_name
+        )
+        if project_key not in self.projects:
+            # Use first in alphabetical order if any
+            cluster_org_projects = self._get_cluster_org_projects(
+                cluster_name, org_name
+            )
+            if cluster_org_projects:
+                cluster_org_projects = sorted(
+                    cluster_org_projects, key=lambda it: it.name
+                )
+                project_name = cluster_org_projects[0].name
+            else:
+                project_name = None
+        return project_name
 
     @property
     def api_url(self) -> URL:
@@ -420,7 +509,8 @@ def _load(path: Path) -> _ConfigData:
             cur.execute(
                 """
                 SELECT auth_config, token, expiration_time, refresh_token,
-                       url, admin_url, version, cluster_name, org_name, clusters
+                       url, admin_url, version, project_name, cluster_name,
+                       org_name, clusters, projects
                 FROM main ORDER BY timestamp DESC LIMIT 1"""
             )
             payload = cur.fetchone()
@@ -432,7 +522,9 @@ def _load(path: Path) -> _ConfigData:
             admin_url = URL(payload["admin_url"])
         auth_config = _deserialize_auth_config(payload)
         clusters = _deserialize_clusters(payload)
+        projects = _deserialize_projects(payload)
         version = payload["version"]
+        project_name = payload["project_name"]
         cluster_name = payload["cluster_name"]
         org_name = payload["org_name"]
 
@@ -446,9 +538,11 @@ def _load(path: Path) -> _ConfigData:
             url=api_url,
             admin_url=admin_url,
             version=version,
+            project_name=project_name,
             cluster_name=cluster_name,
             org_name=org_name,
             clusters=clusters,
+            projects=projects,
         )
     except (AttributeError, KeyError, TypeError, ValueError, sqlite3.DatabaseError):
         raise ConfigError(MALFORMED_CONFIG_MSG)
@@ -500,6 +594,20 @@ def _deserialize_auth_config(payload: Dict[str, Any]) -> _AuthConfig:
         success_redirect_url=success_redirect_url,
         callback_urls=tuple(URL(u) for u in auth_config.get("callback_urls", [])),
     )
+
+
+def _deserialize_projects(payload: Dict[str, Any]) -> Dict[Project.Key, Project]:
+    projects = json.loads(payload["projects"])
+    ret: Dict[Project.Key, Project] = {}
+    for project_config in projects:
+        project = Project(
+            name=project_config["name"],
+            cluster_name=project_config["cluster_name"],
+            org_name=project_config["org_name"],
+            role=project_config["role"],
+        )
+        ret[project.key] = project
+    return ret
 
 
 def _deserialize_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
@@ -571,7 +679,9 @@ def _save(config: _ConfigData, path: Path, suppress_errors: bool = True) -> None
             admin_url = str(config.admin_url)
         auth_config = _serialize_auth_config(config.auth_config)
         clusters = _serialize_clusters(config.clusters)
+        projects = _serialize_projects(config.projects)
         version = config.version
+        project_name = config.project_name
         cluster_name = config.cluster_name
         org_name = config.org_name
         token = config.auth_token
@@ -587,8 +697,8 @@ def _save(config: _ConfigData, path: Path, suppress_errors: bool = True) -> None
             """
             INSERT INTO main
             (auth_config, token, expiration_time, refresh_token,
-             url, admin_url, version, cluster_name, org_name, clusters, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+             url, admin_url, version, project_name, cluster_name, org_name, clusters, projects, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (
                 auth_config,
                 token.token,
@@ -597,9 +707,11 @@ def _save(config: _ConfigData, path: Path, suppress_errors: bool = True) -> None
                 url,
                 admin_url,
                 version,
+                project_name,
                 cluster_name,
                 org_name,
                 clusters,
+                projects,
                 time.time(),
             ),
         )
@@ -622,6 +734,19 @@ def _serialize_auth_config(auth_config: _AuthConfig) -> str:
             "callback_urls": [str(u) for u in auth_config.callback_urls],
         }
     )
+
+
+def _serialize_projects(clusters: Mapping[Project.Key, Project]) -> str:
+    ret: List[Dict[str, Any]] = []
+    for project in clusters.values():
+        project_config = {
+            "name": project.name,
+            "cluster_name": project.cluster_name,
+            "org_name": project.org_name,
+            "role": project.role,
+        }
+        ret.append(project_config)
+    return json.dumps(ret)
 
 
 def _serialize_clusters(clusters: Mapping[str, Cluster]) -> str:

@@ -12,7 +12,16 @@ from rich.padding import Padding
 from rich.table import Table
 from rich.text import Text
 
-from neuro_sdk import Cluster, Config, Preset, Quota, _Balance, _ConfigCluster, _Quota
+from neuro_sdk import (
+    Cluster,
+    Config,
+    Preset,
+    Project,
+    Quota,
+    _Balance,
+    _ConfigCluster,
+    _Quota,
+)
 
 from neuro_cli.click_types import OrgType
 from neuro_cli.utils import format_size
@@ -39,6 +48,7 @@ class ConfigFormatter:
         table.add_row("User Name", config.username)
         table.add_row("Current Cluster", config.cluster_name)
         table.add_row("Current Org", config.org_name or "<no-org>")
+        table.add_row("Current Project", config.project_name or "<no-project>")
         table.add_row("Credits Quota", format_quota_details(quota.credits))
         table.add_row("Jobs Quota", format_quota_details(quota.total_running_jobs))
         if org_quota:
@@ -204,6 +214,44 @@ def _format_cluster_energy(cluster: _ConfigCluster) -> Sequence[RenderableType]:
                 ", ".join([calendar.day_abbr[x - 1] for x in sorted(days)]),
             )
     return summary_tbl, schedules_tbl
+
+
+class ProjectsFormatter:
+    def __call__(
+        self, projects: Iterable[Project], current_project: Optional[str]
+    ) -> RenderableType:
+        default_pre = "  " if current_project else ""
+        table = Table(
+            title="Available projects:",
+            title_justify="left",
+            box=box.SIMPLE_HEAVY,
+            show_edge=False,
+        )
+        table.add_column(default_pre + "Cluster", justify="left")
+        table.add_column("Org", justify="left")
+        table.add_column("Project", justify="left")
+        for project in projects:
+            pre = "* " if project.name == current_project else default_pre
+            style = "bold" if project.name == current_project else ""
+            table.add_row(
+                Text(pre + project.cluster_name, style),
+                Text(project.org_name or "<no-org>", style),
+                Text(project.name, style),
+            )
+        return table
+
+
+class ClusterOrgProjectsFormatter:
+    def __call__(
+        self, projects: Iterable[str], current_project: Optional[str]
+    ) -> RenderableType:
+        out: List[RenderableType] = [Text("Available projects:", style="i")]
+        for project in projects:
+            if project == current_project:
+                out.append(Text(f"* {project}", style="bold"))
+            else:
+                out.append(Text(f"  {project}"))
+        return RichGroup(*out)
 
 
 class AliasesFormatter:

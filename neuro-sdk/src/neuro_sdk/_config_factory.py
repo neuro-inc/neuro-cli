@@ -25,7 +25,7 @@ from ._login import (
 )
 from ._plugins import PluginManager
 from ._rewrite import rewrite_module
-from ._server_cfg import _ServerConfig, get_server_config
+from ._server_cfg import Project, _ServerConfig, get_server_config
 from ._tracing import _make_trace_config
 from ._utils import _ContextManager
 
@@ -251,9 +251,13 @@ class Factory:
         if server_config.clusters:
             cluster_name = next(iter(server_config.clusters))
             org_name = server_config.clusters[cluster_name].orgs[0]
+            project_name = self._get_first_project(
+                server_config.projects, cluster_name, org_name
+            )
         else:
             cluster_name = None
             org_name = None
+            project_name = None
         config = _ConfigData(
             auth_config=server_config.auth_config,
             auth_token=token,
@@ -262,9 +266,22 @@ class Factory:
             version=__version__,
             cluster_name=cluster_name,
             org_name=org_name,
+            project_name=project_name,
             clusters=server_config.clusters,
+            projects=server_config.projects,
         )
         return config
+
+    def _get_first_project(
+        self,
+        projects: Mapping[Project.Key, Project],
+        cluster_name: str,
+        org_name: Optional[str],
+    ) -> Optional[str]:
+        for project in projects.values():
+            if project.cluster_name == cluster_name and project.org_name == org_name:
+                return project.name
+        return None
 
     async def logout(
         self,

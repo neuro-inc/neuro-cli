@@ -10,7 +10,15 @@ import toml
 from aiohttp import web
 from yarl import URL
 
-from neuro_sdk import Client, Cluster, ConfigError, ConfigScope, PluginManager, Preset
+from neuro_sdk import (
+    Client,
+    Cluster,
+    ConfigError,
+    ConfigScope,
+    PluginManager,
+    Preset,
+    Project,
+)
 from neuro_sdk._config import (
     _check_sections,
     _merge_user_configs,
@@ -407,6 +415,36 @@ async def test_clusters(
         }
 
 
+async def test_project_name(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    app = web.Application()
+    srv = await aiohttp_server(app)
+    project = Project(
+        cluster_name="default", org_name=None, name="test-project", role="owner"
+    )
+    projects = {project.key: project}
+
+    async with make_client(
+        srv.make_url("/"), projects=projects, project_name=project.name
+    ) as client:
+        assert client.config.project_name == "test-project"
+
+
+async def test_projects(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    app = web.Application()
+    srv = await aiohttp_server(app)
+    project = Project(
+        cluster_name="default", org_name=None, name="test-project", role="owner"
+    )
+    projects = {project.key: project}
+
+    async with make_client(srv.make_url("/"), projects=projects) as client:
+        assert dict(client.config.projects) == {project.key: project}
+
+
 async def test_fetch(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -777,6 +815,53 @@ async def test_no_org_local(
         assert client.config.org_name is None
 
 
+async def test_switch_project(make_client: _MakeClient) -> None:
+    project = Project(
+        cluster_name="default", org_name=None, name="test-project", role="owner"
+    )
+    projects = {project.key: project}
+    async with make_client("https://example.org", projects=projects) as client:
+        assert client.config.project_name is None
+        await client.config.switch_project("test-project")
+        assert client.config.project_name == "test-project"
+
+
+async def test_switch_project_unknown(make_client: _MakeClient) -> None:
+    project = Project(
+        cluster_name="default", org_name=None, name="test-project", role="owner"
+    )
+    projects = {project.key: project}
+    async with make_client("https://example.org", projects=projects) as client:
+        assert client.config.project_name is None
+        with pytest.raises(RuntimeError, match="Project unknown doesn't exist"):
+            await client.config.switch_project("unknown")
+        assert client.config.project_name is None
+
+
+async def test_switch_project_local(
+    monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
+) -> None:
+    plugin_manager = PluginManager()
+    plugin_manager.config.define_str("job", "project-name", scope=ConfigScope.LOCAL)
+    project = Project(
+        cluster_name="default", org_name=None, name="test-project", role="owner"
+    )
+    projects = {project.key: project}
+    async with make_client(
+        "https://example.org", projects=projects, plugin_manager=plugin_manager
+    ) as client:
+        proj_dir = tmp_path / "project"
+        local_dir = proj_dir / "folder"
+        local_dir.mkdir(parents=True, exist_ok=True)
+        monkeypatch.chdir(local_dir)
+        local_conf = proj_dir / ".neuro.toml"
+        local_conf.write_text(toml.dumps({"job": {"project-name": "test-project"}}))
+        assert client.config.project_name == "test-project"
+        with pytest.raises(RuntimeError, match=r"\.neuro\.toml"):
+            await client.config.switch_project("test-project")
+        assert client.config.project_name == "test-project"
+
+
 async def test_check_server_mismatch_clusters(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -837,7 +922,6 @@ async def test_check_server_mismatch_clusters(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-
         # Set expired version
         client.config._config_data.__dict__["version"] = "18.1.1"
 
@@ -904,7 +988,6 @@ async def test_check_server_mismatch_auth(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-
         # Set expired version
         client.config._config_data.__dict__["version"] = "18.1.1"
 
@@ -937,7 +1020,6 @@ async def test_refresh_token(
     async with make_client(
         srv.make_url("/"), token_url=srv.make_url("/oauth/token")
     ) as client:
-
         token1 = await client.config.token()
 
         # Set expired version to far ago

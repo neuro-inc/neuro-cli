@@ -5,7 +5,7 @@ import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict
+from typing import Any, Awaitable, Callable, Dict, Optional
 from unittest import mock
 
 import aiohttp
@@ -21,6 +21,7 @@ from neuro_sdk import (
     Cluster,
     ConfigError,
     Factory,
+    Project,
     __version__,
 )
 from neuro_sdk._config import _AuthConfig, _AuthToken, _ConfigData
@@ -50,7 +51,11 @@ def config_dir(
 
 
 def _create_config(
-    nmrc_path: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster
+    nmrc_path: Path,
+    token: str,
+    auth_config: _AuthConfig,
+    cluster_config: Cluster,
+    project: Optional[Project] = None,
 ) -> str:
     config = _ConfigData(
         auth_config=auth_config,
@@ -61,6 +66,8 @@ def _create_config(
         cluster_name=cluster_config.name,
         org_name=cluster_config.orgs[0],
         clusters={cluster_config.name: cluster_config},
+        projects={project.key: project} if project else {},
+        project_name=project.name if project else None,
     )
     Factory(nmrc_path)._save(config)
     assert nmrc_path.exists()
@@ -144,6 +151,12 @@ async def mock_for_login_factory(
                         },
                     ],
                 }
+                project_config = {
+                    "cluster_name": "default",
+                    "org_name": None,
+                    "name": "default",
+                    "role": "owner",
+                }
                 config_json.update(
                     {
                         "authorized": True,
@@ -151,6 +164,7 @@ async def mock_for_login_factory(
                             {**cluster_config, "name": "default"},
                             {**cluster_config, "name": "default2"},
                         ],
+                        "projects": [project_config],
                     }
                 )
             else:
@@ -231,6 +245,22 @@ class TestConfigFileInteraction:
         assert not client.presets["cpu-large"].preemptible_node
         assert client.presets["cpu-large-p"].scheduler_enabled
         assert client.presets["cpu-large-p"].preemptible_node
+
+    async def test_project_serialization(
+        self,
+        tmp_home: Path,
+        token: str,
+        auth_config: _AuthConfig,
+        cluster_config: Cluster,
+    ) -> None:
+        project = Project(
+            cluster_name="default", org_name=None, name="test-project", role="owner"
+        )
+        _create_config(tmp_home / ".neuro", token, auth_config, cluster_config, project)
+        client = await Factory().get()
+        await client.close()
+        assert client.config.project_name == project.name
+        assert dict(client.config.projects) == {project.key: project}
 
     async def test_shorten_path(
         self,

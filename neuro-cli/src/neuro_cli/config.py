@@ -18,8 +18,18 @@ from neuro_sdk import DEFAULT_API_URL, AuthorizationError, ConfigError
 from neuro_cli.formatters.config import ClustersFormatter
 
 from .alias import list_aliases
-from .click_types import CLUSTER_ALLOW_UNKNOWN, ORG, ORG_ALLOW_UNKNOWN
-from .formatters.config import AliasesFormatter, ConfigFormatter
+from .click_types import (
+    CLUSTER_ALLOW_UNKNOWN,
+    ORG,
+    ORG_ALLOW_UNKNOWN,
+    PROJECT_ALLOW_UNKNOWN,
+)
+from .formatters.config import (
+    AliasesFormatter,
+    ClusterOrgProjectsFormatter,
+    ConfigFormatter,
+    ProjectsFormatter,
+)
 from .root import Root
 from .utils import argument, command, group, option
 
@@ -234,6 +244,26 @@ async def docker(root: Root, docker_config: str) -> None:
 
 
 @command()
+async def get_projects(root: Root) -> None:
+    """
+    List available projects.
+
+    This command re-fetches project list and then displays each
+    project.
+    """
+
+    with root.status("Fetching the list of available projects"):
+        await root.client.config.fetch()
+    fmt = ProjectsFormatter()
+    projects = sorted(
+        root.client.config.projects.values(),
+        key=lambda it: (it.cluster_name, it.org_name or "", it.name),
+    )
+    with root.pager():
+        root.print(fmt(projects, root.client.config.project_name))
+
+
+@command()
 async def get_clusters(root: Root) -> None:
     """
     List available clusters/org pairs.
@@ -302,6 +332,33 @@ async def switch_org(root: Root, org_name: Optional[str]) -> None:
     )
 
 
+@command()
+@argument("project_name", required=False, default=None, type=PROJECT_ALLOW_UNKNOWN)
+async def switch_project(root: Root, project_name: Optional[str]) -> None:
+    """
+    Switch the active project.
+
+    PROJECT_NAME is the project name to select. The interactive prompt is used if the
+    name is omitted (default).
+
+    """
+    with root.status("Fetching the list of available projects"):
+        await root.client.config.fetch()
+    if project_name is None:
+        if not root.tty:
+            raise click.BadArgumentUsage(
+                "Interactive mode is disabled for non-TTY mode, "
+                "please specify the PROJECT_NAME"
+            )
+        real_project_name = await prompt_project(root)
+    else:
+        real_project_name = project_name
+    await root.client.config.switch_project(real_project_name)
+    root.print(
+        f"The current project is [u]{rich_escape(real_project_name)}[/u]", markup=True
+    )
+
+
 async def prompt_cluster(
     root: Root, *, session: Optional[PromptSession[str]] = None
 ) -> str:
@@ -334,13 +391,43 @@ async def prompt_cluster(
             return answer
 
 
+async def prompt_project(
+    root: Root, *, session: Optional[PromptSession[str]] = None
+) -> str:
+    if session is None:
+        session = PromptSession()
+    projects = sorted([p.name for p in root.client.config.cluster_org_projects])
+    while True:
+        fmt = ClusterOrgProjectsFormatter()
+        root.print(fmt(projects, root.client.config.project_name))
+        with patch_stdout():
+            answer = await session.prompt_async(
+                f"Select project to switch [{root.client.config.project_name}]: "
+            )
+        answer = answer.strip()
+        if not answer:
+            if not root.client.config.project_name:
+                continue
+            answer = root.client.config.project_name
+        if answer not in projects:
+            root.print(
+                f"Selected project [u]{rich_escape(answer)}[/u] "
+                f"doesn't exist, please try again.",
+                markup=True,
+            )
+        else:
+            return answer
+
+
 config.add_command(login)
 config.add_command(login_with_token)
 config.add_command(login_headless)
 config.add_command(show)
 config.add_command(show_token)
 config.add_command(aliases)
+config.add_command(get_projects)
 config.add_command(get_clusters)
+config.add_command(switch_project)
 config.add_command(switch_cluster)
 config.add_command(switch_org)
 
