@@ -12,16 +12,7 @@ from rich.padding import Padding
 from rich.table import Table
 from rich.text import Text
 
-from neuro_sdk import (
-    Cluster,
-    Config,
-    Preset,
-    Project,
-    Quota,
-    _Balance,
-    _ConfigCluster,
-    _Quota,
-)
+from neuro_sdk import Cluster, Config, Preset, Quota, _Balance, _ConfigCluster, _Quota
 
 from neuro_cli.click_types import OrgType
 from neuro_cli.utils import format_size
