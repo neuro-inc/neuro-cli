@@ -28,7 +28,6 @@ from .formatters.config import (
     AliasesFormatter,
     ClusterOrgProjectsFormatter,
     ConfigFormatter,
-    ProjectsFormatter,
 )
 from .root import Root
 from .utils import argument, command, group, option
@@ -244,26 +243,6 @@ async def docker(root: Root, docker_config: str) -> None:
 
 
 @command()
-async def get_projects(root: Root) -> None:
-    """
-    List available projects.
-
-    This command re-fetches project list and then displays each
-    project.
-    """
-
-    with root.status("Fetching the list of available projects"):
-        await root.client.config.fetch()
-    fmt = ProjectsFormatter()
-    projects = sorted(
-        root.client.config.projects.values(),
-        key=lambda it: (it.cluster_name, it.org_name or "", it.name),
-    )
-    with root.pager():
-        root.print(fmt(projects, root.client.config.project_name))
-
-
-@command()
 async def get_clusters(root: Root) -> None:
     """
     List available clusters/org pairs.
@@ -425,7 +404,6 @@ config.add_command(login_headless)
 config.add_command(show)
 config.add_command(show_token)
 config.add_command(aliases)
-config.add_command(get_projects)
 config.add_command(get_clusters)
 config.add_command(switch_project)
 config.add_command(switch_cluster)

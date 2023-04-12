@@ -541,7 +541,7 @@ class ProjectType(AsyncType[str]):
         if project_key not in client.config.projects:
             raise click.BadParameter(
                 f"Project {value} is not valid, "
-                "run 'neuro config get-projects' to get a list of available projects",
+                "run 'neuro admin get-projects' to get a list of available projects",
                 ctx,
                 param,
             )

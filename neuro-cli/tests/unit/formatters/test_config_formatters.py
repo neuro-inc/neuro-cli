@@ -30,7 +30,6 @@ from neuro_cli.formatters.config import (
     BalanceFormatter,
     ClusterOrgProjectsFormatter,
     ConfigFormatter,
-    ProjectsFormatter,
     format_quota_details,
 )
 from neuro_cli.root import Root
@@ -288,32 +287,6 @@ class TestAliasesFormatter:
         )
         lst = await list_aliases(root)
         out = AliasesFormatter()(lst)
-        rich_cmp(out)
-
-
-class TestProjectsFormatter:
-    async def test_output(self, rich_cmp: RichCmp) -> None:
-        projects = [
-            Project(
-                name="project1", cluster_name="cluster1", org_name=None, role="owner"
-            ),
-            Project(
-                name="project2", cluster_name="cluster2", org_name="org1", role="owner"
-            ),
-        ]
-        out = ProjectsFormatter()(projects, None)
-        rich_cmp(out)
-
-    async def test_output_with_current_project(self, rich_cmp: RichCmp) -> None:
-        projects = [
-            Project(
-                name="project1", cluster_name="cluster1", org_name=None, role="owner"
-            ),
-            Project(
-                name="project2", cluster_name="cluster2", org_name="org1", role="owner"
-            ),
-        ]
-        out = ProjectsFormatter()(projects, "project1")
         rich_cmp(out)
 
 
