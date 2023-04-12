@@ -278,10 +278,11 @@ class Factory:
         cluster_name: str,
         org_name: Optional[str],
     ) -> Optional[str]:
+        cluster_org_projects = []
         for project in projects.values():
             if project.cluster_name == cluster_name and project.org_name == org_name:
-                return project.name
-        return None
+                cluster_org_projects.append(project.name)
+        return sorted(cluster_org_projects)[0] if cluster_org_projects else None
 
     async def logout(
         self,

@@ -155,6 +155,24 @@ def make_client(
                 cluster_config.name: cluster_config,
                 cluster2_config.name: cluster2_config,
             }
+        if projects is None:
+            projects = {}
+            for cluster in clusters.values():
+                project = Project(
+                    cluster_name=cluster.name,
+                    org_name=cluster.orgs[0],
+                    name="test-project",
+                    role="owner",
+                )
+                project_other = Project(
+                    cluster_name=cluster.name,
+                    org_name=cluster.orgs[0],
+                    name="other-test-project",
+                    role="owner",
+                )
+                projects.update(
+                    {project.key: project, project_other.key: project_other}
+                )
         if token_url is not None:
             real_auth_config = replace(auth_config, token_url=token_url)
         else:
@@ -168,9 +186,11 @@ def make_client(
         if clusters:
             cluster_name = next(iter(clusters))
             org_name = clusters[cluster_name].orgs[0]
+            project_name = "test-project"
         else:
             cluster_name = None
             org_name = None
+            project_name = None
         config = _ConfigData(
             auth_config=real_auth_config,
             auth_token=_AuthToken.create_non_expiring(token),

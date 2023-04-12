@@ -304,13 +304,13 @@ class Config(metaclass=NoPublicConstructor):
         self, cluster_name: str, org_name: Optional[str]
     ) -> Optional[str]:
         project_name = self.project_name
-        if not project_name:
-            return None
-
-        project_key = Project.Key(
-            cluster_name=cluster_name, org_name=org_name, project_name=project_name
-        )
-        if project_key not in self.projects:
+        if project_name:
+            project_key = Project.Key(
+                cluster_name=cluster_name, org_name=org_name, project_name=project_name
+            )
+        else:
+            project_key = None
+        if not project_key or project_key not in self.projects:
             # Use first in alphabetical order if any
             cluster_org_projects = self._get_cluster_org_projects(
                 cluster_name, org_name
@@ -737,9 +737,9 @@ def _serialize_auth_config(auth_config: _AuthConfig) -> str:
     )
 
 
-def _serialize_projects(clusters: Mapping[Project.Key, Project]) -> str:
+def _serialize_projects(projects: Mapping[Project.Key, Project]) -> str:
     ret: List[Dict[str, Any]] = []
-    for project in clusters.values():
+    for project in projects.values():
         project_config = {
             "name": project.name,
             "cluster_name": project.cluster_name,

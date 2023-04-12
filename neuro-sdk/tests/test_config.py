@@ -420,14 +420,8 @@ async def test_project_name(
 ) -> None:
     app = web.Application()
     srv = await aiohttp_server(app)
-    project = Project(
-        cluster_name="default", org_name=None, name="test-project", role="owner"
-    )
-    projects = {project.key: project}
 
-    async with make_client(
-        srv.make_url("/"), projects=projects, project_name=project.name
-    ) as client:
+    async with make_client(srv.make_url("/")) as client:
         assert client.config.project_name == "test-project"
 
 
@@ -436,13 +430,25 @@ async def test_projects(
 ) -> None:
     app = web.Application()
     srv = await aiohttp_server(app)
-    project = Project(
-        cluster_name="default", org_name=None, name="test-project", role="owner"
-    )
-    projects = {project.key: project}
 
-    async with make_client(srv.make_url("/"), projects=projects) as client:
-        assert dict(client.config.projects) == {project.key: project}
+    async with make_client(srv.make_url("/")) as client:
+        projects = {}
+        for cluster in client.config.clusters.values():
+            project = Project(
+                cluster_name=cluster.name,
+                org_name=cluster.orgs[0],
+                name="test-project",
+                role="owner",
+            )
+            project_other = Project(
+                cluster_name=cluster.name,
+                org_name=cluster.orgs[0],
+                name="other-test-project",
+                role="owner",
+            )
+            projects.update({project.key: project, project_other.key: project_other})
+
+        assert dict(client.config.projects) == projects
 
 
 async def test_fetch(
@@ -712,6 +718,43 @@ async def test_switch_cluster_cant_keep_org_use_alphabetical(
         assert client.config.org_name == "a-org"
 
 
+async def test_switch_cluster_keep_project(make_client: _MakeClient) -> None:
+    async with make_client("https://example.org") as client:
+        assert client.config.cluster_name == "default"
+        assert client.config.project_name == "test-project"
+        await client.config.switch_cluster("another")
+        assert client.config.cluster_name == "another"
+        assert client.config.project_name == "test-project"
+
+
+async def test_switch_cluster_cant_keep_project_use_none(
+    make_client: _MakeClient, multiple_clusters_config: Dict[str, Cluster]
+) -> None:
+    async with make_client(
+        "https://example.org", clusters=multiple_clusters_config
+    ) as client:
+        assert client.config.cluster_name == "default"
+        assert client.config.project_name == "test-project"
+        await client.config.switch_cluster("another")
+        assert client.config.cluster_name == "another"
+        assert client.config.project_name is None
+
+
+async def test_switch_cluster_cant_keep_project_use_alphabetical(
+    make_client: _MakeClient,
+) -> None:
+    async with make_client("https://example.org") as client:
+        assert client.config.cluster_name == "default"
+        assert client.config.project_name == "test-project"
+        await client.config.switch_cluster("another")
+        await client.config.switch_org("some_org")
+        assert client.config.cluster_name == "another"
+        assert client.config.project_name is None
+        await client.config.switch_cluster("default")
+        assert client.config.cluster_name == "default"
+        assert client.config.project_name == "other-test-project"
+
+
 async def test_switch_org(
     make_client: _MakeClient, multiple_clusters_config: Dict[str, Cluster]
 ) -> None:
@@ -721,6 +764,29 @@ async def test_switch_org(
         assert client.config.org_name is None
         await client.config.switch_org("test-org")
         assert client.config.org_name == "test-org"
+
+
+async def test_switch_org_keep_project_use_none(make_client: _MakeClient) -> None:
+    async with make_client("https://example.org") as client:
+        await client.config.switch_cluster("another")
+        assert client.config.org_name is None
+        assert client.config.project_name == "test-project"
+        await client.config.switch_org("some_org")
+        assert client.config.org_name == "some_org"
+        assert client.config.project_name is None
+
+
+async def test_switch_org_keep_project_use_alphabetical(
+    make_client: _MakeClient,
+) -> None:
+    async with make_client("https://example.org") as client:
+        await client.config.switch_cluster("another")
+        await client.config.switch_org("some_org")
+        assert client.config.org_name == "some_org"
+        assert client.config.project_name is None
+        await client.config.switch_org(None)
+        assert client.config.org_name is None
+        assert client.config.project_name == "other-test-project"
 
 
 async def test_switch_clusters_unknown(make_client: _MakeClient) -> None:
@@ -816,26 +882,18 @@ async def test_no_org_local(
 
 
 async def test_switch_project(make_client: _MakeClient) -> None:
-    project = Project(
-        cluster_name="default", org_name=None, name="test-project", role="owner"
-    )
-    projects = {project.key: project}
-    async with make_client("https://example.org", projects=projects) as client:
-        assert client.config.project_name is None
-        await client.config.switch_project("test-project")
+    async with make_client("https://example.org") as client:
         assert client.config.project_name == "test-project"
+        await client.config.switch_project("other-test-project")
+        assert client.config.project_name == "other-test-project"
 
 
 async def test_switch_project_unknown(make_client: _MakeClient) -> None:
-    project = Project(
-        cluster_name="default", org_name=None, name="test-project", role="owner"
-    )
-    projects = {project.key: project}
-    async with make_client("https://example.org", projects=projects) as client:
-        assert client.config.project_name is None
+    async with make_client("https://example.org") as client:
+        assert client.config.project_name == "test-project"
         with pytest.raises(RuntimeError, match="Project unknown doesn't exist"):
             await client.config.switch_project("unknown")
-        assert client.config.project_name is None
+        assert client.config.project_name == "test-project"
 
 
 async def test_switch_project_local(
@@ -843,12 +901,8 @@ async def test_switch_project_local(
 ) -> None:
     plugin_manager = PluginManager()
     plugin_manager.config.define_str("job", "project-name", scope=ConfigScope.LOCAL)
-    project = Project(
-        cluster_name="default", org_name=None, name="test-project", role="owner"
-    )
-    projects = {project.key: project}
     async with make_client(
-        "https://example.org", projects=projects, plugin_manager=plugin_manager
+        "https://example.org", plugin_manager=plugin_manager
     ) as client:
         proj_dir = tmp_path / "project"
         local_dir = proj_dir / "folder"
