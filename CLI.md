@@ -73,7 +73,6 @@
 		* [neuro config aliases](#neuro-config-aliases)
 		* [neuro config docker](#neuro-config-docker)
 		* [neuro config get-clusters](#neuro-config-get-clusters)
-		* [neuro config get-projects](#neuro-config-get-projects)
 		* [neuro config login](#neuro-config-login)
 		* [neuro config login-headless](#neuro-config-login-headless)
 		* [neuro config login-with-token](#neuro-config-login-with-token)
@@ -1805,7 +1804,6 @@ Name | Description|
 | _[neuro config aliases](#neuro-config-aliases)_| List available command aliases |
 | _[neuro config docker](#neuro-config-docker)_| Configure local docker client |
 | _[neuro config get-clusters](#neuro-config-get-clusters)_| List available clusters/org pairs |
-| _[neuro config get-projects](#neuro-config-get-projects)_| List available projects |
 | _[neuro config login](#neuro-config-login)_| Log into Neuro Platform |
 | _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuro Platform in non-GUI environ |
 | _[neuro config login\-with-token](#neuro-config-login-with-token)_| Log into Neuro Platform with token |
@@ -1866,25 +1864,6 @@ List available clusters/org pairs.<br/><br/>This command re-fetches cluster list
 
 ```bash
 neuro config get-clusters [OPTIONS]
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro config get-projects
-
-List available projects.<br/><br/>This command re-fetches project list and then displays each project.
-
-**Usage:**
-
-```bash
-neuro config get-projects [OPTIONS]
 ```
 
 **Options:**

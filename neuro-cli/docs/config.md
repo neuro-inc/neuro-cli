@@ -16,7 +16,6 @@ Client configuration.
 | [_aliases_](config.md#aliases) | List available command aliases |
 | [_docker_](config.md#docker) | Configure local docker client |
 | [_get-clusters_](config.md#get-clusters) | List available clusters/org pairs |
-| [_get-projects_](config.md#get-projects) | List available projects |
 | [_login_](config.md#login) | Log into Neuro Platform |
 | [_login-headless_](config.md#login-headless) | Log into Neuro Platform in non-GUI environ |
 | [_login-with-token_](config.md#login-with-token) | Log into Neuro Platform with token |
@@ -90,31 +89,6 @@ List available clusters/org pairs.
 This command re-fetches cluster list and
 then displays each
 cluster with available orgs.
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### get-projects
-
-List available projects
-
-
-#### Usage
-
-```bash
-neuro config get-projects [OPTIONS]
-```
-
-List available projects.
-
-This command re-fetches project list and then
-displays each
-project.
 
 #### Options
 
