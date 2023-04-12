@@ -24,6 +24,7 @@ Client configuration.
 | [_show-token_](config.md#show-token) | Print current authorization token |
 | [_switch-cluster_](config.md#switch-cluster) | Switch the active cluster |
 | [_switch-org_](config.md#switch-org) | Switch the active organization |
+| [_switch-project_](config.md#switch-project) | Switch the active project |
 
 
 ### aliases
@@ -285,6 +286,31 @@ Switch the active organization.
 select. Use literal "NO_`ORG`" to switch
 to using current cluster directly
 instead of on behalf of some org.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
+### switch-project
+
+Switch the active project
+
+
+#### Usage
+
+```bash
+neuro config switch-project [OPTIONS] [PROJECT_NAME]
+```
+
+Switch the active project.
+
+`PROJECT`_`NAME` is the project name to select.
+The interactive prompt is used if the
+name is omitted (default).
 
 #### Options
 

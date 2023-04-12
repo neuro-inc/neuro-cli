@@ -39,6 +39,7 @@ class ConfigFormatter:
         table.add_row("User Name", config.username)
         table.add_row("Current Cluster", config.cluster_name)
         table.add_row("Current Org", config.org_name or "<no-org>")
+        table.add_row("Current Project", config.project_name or "<no-project>")
         table.add_row("Credits Quota", format_quota_details(quota.credits))
         table.add_row("Jobs Quota", format_quota_details(quota.total_running_jobs))
         if org_quota:
@@ -204,6 +205,19 @@ def _format_cluster_energy(cluster: _ConfigCluster) -> Sequence[RenderableType]:
                 ", ".join([calendar.day_abbr[x - 1] for x in sorted(days)]),
             )
     return summary_tbl, schedules_tbl
+
+
+class ClusterOrgProjectsFormatter:
+    def __call__(
+        self, projects: Iterable[str], current_project: Optional[str]
+    ) -> RenderableType:
+        out: List[RenderableType] = [Text("Available projects:", style="i")]
+        for project in projects:
+            if project == current_project:
+                out.append(Text(f"* {project}", style="bold"))
+            else:
+                out.append(Text(f"  {project}"))
+        return RichGroup(*out)
 
 
 class AliasesFormatter:

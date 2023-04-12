@@ -448,7 +448,7 @@ class CloudProviderOptionsFormatter:
 
 class ProjectsFormatter:
     def __call__(self, projects: Iterable[_Project]) -> RenderableType:
-        table = Table(box=box.MINIMAL_HEAVY_HEAD)
+        table = Table(box=box.SIMPLE_HEAVY)
         table.add_column("Project name", style="bold")
         table.add_column("Cluster name")
         table.add_column("Org name")

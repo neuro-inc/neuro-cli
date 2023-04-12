@@ -30,6 +30,29 @@ class Preset:
 
 @rewrite_module
 @dataclass(frozen=True)
+class Project:
+    @dataclass(frozen=True)
+    class Key:
+        cluster_name: str
+        org_name: Optional[str]
+        project_name: str
+
+    cluster_name: str
+    org_name: Optional[str]
+    name: str
+    role: str
+
+    @property
+    def key(self) -> Key:
+        return self.Key(
+            cluster_name=self.cluster_name,
+            org_name=self.org_name,
+            project_name=self.name,
+        )
+
+
+@rewrite_module
+@dataclass(frozen=True)
 class Cluster:
     name: str
     orgs: List[Optional[str]]
@@ -48,6 +71,24 @@ class _ServerConfig:
     admin_url: Optional[URL]
     auth_config: _AuthConfig
     clusters: Mapping[str, Cluster]
+    projects: Mapping[Project.Key, Project]
+
+
+def _parse_project_config(payload: Dict[str, Any]) -> Project:
+    return Project(
+        name=payload["name"],
+        cluster_name=payload["cluster_name"],
+        org_name=payload.get("org_name"),
+        role=payload["role"],
+    )
+
+
+def _parse_projects(payload: Dict[str, Any]) -> Dict[Project.Key, Project]:
+    ret: Dict[Project.Key, Project] = {}
+    for item in payload.get("projects", []):
+        project = _parse_project_config(item)
+        ret[project.key] = project
+    return ret
 
 
 def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
@@ -87,7 +128,7 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
 
 def _parse_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
     ret: Dict[str, Cluster] = {}
-    for item in payload.get("clusters", {}):
+    for item in payload.get("clusters", []):
         cluster = _parse_cluster_config(item)
         ret[cluster.name] = cluster
     return ret
@@ -123,14 +164,16 @@ async def get_server_config(
             callback_urls=callback_urls,
             headless_callback_url=headless_callback_url,
         )
-        clusters = _parse_clusters(payload)
         admin_url: Optional[URL] = None
         if "admin_url" in payload:
             admin_url = URL(payload["admin_url"])
         if headers and not payload.get("authorized", False):
             raise AuthError("Cannot authorize user")
+        clusters = _parse_clusters(payload)
+        projects = _parse_projects(payload)
         return _ServerConfig(
             admin_url=admin_url,
             auth_config=auth_config,
             clusters=clusters,
+            projects=projects,
         )

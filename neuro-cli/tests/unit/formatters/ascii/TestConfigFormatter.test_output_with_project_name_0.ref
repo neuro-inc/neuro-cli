@@ -1,0 +1,17 @@
+User Configuration:                               
+ User Name            user                        
+ Current Cluster      default                     
+ Current Org          <no-org>                    
+ Current Project      main                        
+ Credits Quota        500.00                      
+ Jobs Quota           10                          
+ API URL              https://dev.neu.ro/api/v1   
+ Docker Registry URL  https://registry-dev.neu.ro 
+Resource Presets:                                                                                         
+ Name          #CPU    Memory   Round Robin   Preemptible Node   GPU                     Credits per hour 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ gpu-small        7   32.2 GB        ×               ×           1 x nvidia-tesla-k80    10               
+ gpu-large        7   64.4 GB        ×               ×           1 x nvidia-tesla-v100   10               
+ cpu-small        7    2.1 GB        ×               ×                                   10               
+ cpu-large        7   15.0 GB        ×               ×                                   10               
+ cpu-large-p      7   15.0 GB        √               √                                   10

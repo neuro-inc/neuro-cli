@@ -81,6 +81,7 @@
 		* [neuro config show-token](#neuro-config-show-token)
 		* [neuro config switch-cluster](#neuro-config-switch-cluster)
 		* [neuro config switch-org](#neuro-config-switch-org)
+		* [neuro config switch-project](#neuro-config-switch-project)
 	* [neuro disk](#neuro-disk)
 		* [neuro disk create](#neuro-disk-create)
 		* [neuro disk get](#neuro-disk-get)
@@ -1811,6 +1812,7 @@ Name | Description|
 | _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
 | _[neuro config switch-cluster](#neuro-config-switch-cluster)_| Switch the active cluster |
 | _[neuro config switch-org](#neuro-config-switch-org)_| Switch the active organization |
+| _[neuro config switch-project](#neuro-config-switch-project)_| Switch the active project |
 
 
 
@@ -2015,6 +2017,25 @@ Switch the active organization.<br/><br/>ORG\_NAME is the organization name to s
 
 ```bash
 neuro config switch-org [OPTIONS] ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
+### neuro config switch-project
+
+Switch the active project.<br/><br/>PROJECT_NAME is the project name to select. The interactive prompt is used if<br/>the name is omitted \(default).
+
+**Usage:**
+
+```bash
+neuro config switch-project [OPTIONS] [PROJECT_NAME]
 ```
 
 **Options:**

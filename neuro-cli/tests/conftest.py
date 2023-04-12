@@ -8,7 +8,7 @@ import pytest
 from jose import jwt
 from yarl import URL
 
-from neuro_sdk import Client, Cluster, PluginManager, Preset, __version__
+from neuro_sdk import Client, Cluster, PluginManager, Preset, Project, __version__
 from neuro_sdk._config import _AuthConfig, _AuthToken, _ConfigData, _save
 from neuro_sdk._tracing import _make_trace_config
 
@@ -104,9 +104,11 @@ def make_client(
         registry_url: str = "https://registry-dev.neu.ro",
         trace_id: str = "bd7a977555f6b982",
         clusters: Optional[Dict[str, Cluster]] = None,
+        projects: Optional[Dict[Project.Key, Project]] = None,
         token_url: Optional[URL] = None,
         plugin_manager: Optional[PluginManager] = None,
         org_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> Client:
         url = URL(url_str)
         if clusters is None:
@@ -159,7 +161,9 @@ def make_client(
             version=__version__,
             cluster_name=cluster_name,
             org_name=clusters[cluster_name].orgs[0],
+            project_name=project_name,
             clusters=clusters,
+            projects=projects or {},
         )
         config_dir = tmp_path / ".neuro"
         _save(config, config_dir)
