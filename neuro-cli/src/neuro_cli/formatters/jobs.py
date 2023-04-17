@@ -93,6 +93,7 @@ class JobStatusFormatter:
             text = ", ".join(job_status.tags)
             table.add_row("Tags", text)
         table.add_row("Owner", job_status.owner or "")
+        table.add_row("Project", job_status.project_name or "")
         table.add_row("Cluster", job_status.cluster_name)
         if job_status.org_name:
             table.add_row("Organization", job_status.org_name)
@@ -431,6 +432,7 @@ class TabularJobRow:
     life_span: str
     workdir: str
     preset: str
+    project_name: str
 
     @classmethod
     def from_job(
@@ -458,6 +460,7 @@ class TabularJobRow:
             life_span=format_life_span(job.life_span),
             workdir=job.container.working_dir or "",
             preset=job.preset_name or "",
+            project_name=job.project_name or "",
         )
 
     def to_list(self, columns: JobTableFormat) -> List[TextType]:

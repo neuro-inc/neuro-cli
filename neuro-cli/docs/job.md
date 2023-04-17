@@ -239,6 +239,7 @@ $ neuro ps -t tag1 -t tag2
 | _--full-uri_ | Output full image URI. |
 | _-n, --name NAME_ | Filter out jobs by name. |
 | _-o, --owner TEXT_ | Filter out jobs by owner \(multiple option\). Supports `ME` option to filter by the current user. |
+| _-p, --project PROJECT_ | Filter out jobs by project name \(multiple option\). |
 | _--recent-first / --recent-last_ | Show newer jobs first or last |
 | _--since DATE\_OR\_TIMEDELTA_ | Show jobs created after a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
 | _-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled\]_ | Filter out jobs by status \(multiple option\). |
@@ -347,6 +348,7 @@ $ neuro run -s cpu-small --entrypoint=/script.sh image:my-ubuntu:latest -- arg1 
 | _-s, --preset PRESET_ | Predefined resource configuration \(to see available values, run `neuro config show`\) |
 | _--priority \[low &#124; normal &#124; high\]_ | Priority used to specify job's start order. Jobs with higher priority will start before ones with lower priority. Priority should be supported by cluster. |
 | _--privileged_ | Run job in privileged mode, if it is supported by cluster. |
+| _-p, --project PROJECT_ | Run job in a specified project. |
 | _--restart \[never &#124; on-failure &#124; always\]_ | Restart policy to apply when a job exits  _\[default: never\]_ |
 | _--schedule-timeout TIMEDELTA_ | Optional job schedule timeout in the format '3m4s' \(some parts may be missing\). |
 | _--share USER_ | Share job write permissions to user or role. |
@@ -445,6 +447,7 @@ $ neuro top -t tag1 -t tag2
 | _--full-uri_ | Output full image URI. |
 | _-n, --name NAME_ | Filter out jobs by name. |
 | _-o, --owner TEXT_ | Filter out jobs by owner \(multiple option\). Supports `ME` option to filter by the current user. Specify `ALL` to show jobs of all users. |
+| _-p, --project PROJECT_ | Filter out jobs by project name \(multiple option\). |
 | _--since DATE\_OR\_TIMEDELTA_ | Show jobs created after a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
 | _--sort COLUMNS_ | Sort rows by specified column. Add "-" prefix to revert the sorting order. Multiple columns can be specified \(comma separated\).  _\[default: cpu\]_ |
 | _-t, --tag TAG_ | Filter out jobs by tag \(multiple option\) |

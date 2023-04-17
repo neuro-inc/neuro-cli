@@ -230,6 +230,7 @@ class JobDescription:
     id: str
     owner: str
     cluster_name: str
+    project_name: str
     status: JobStatus
     history: JobStatusHistory
     container: Container
@@ -352,10 +353,13 @@ class Jobs(metaclass=NoPublicConstructor):
         life_span: Optional[float] = None,
         org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
         priority: Optional[JobPriority] = None,
+        project_name: Optional[str] = None,
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
+        cur_project = self._config.username  # TODO: awaiting for the project ctx
         payload = _job_to_api(
             cluster_name=self._config.cluster_name,
+            project_name=project_name or cur_project,
             name=name,
             tags=tags,
             description=description,
@@ -419,6 +423,7 @@ class Jobs(metaclass=NoPublicConstructor):
         privileged: bool = False,
         priority: Optional[JobPriority] = None,
         energy_schedule_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> JobDescription:
         url = (self._config.api_url / "jobs").with_query("from_preset")
         container_payload = _container_to_api(
@@ -436,8 +441,10 @@ class Jobs(metaclass=NoPublicConstructor):
             tty=tty,
             shm=shm,
         )
+        cur_project = self._config.project_name or self._config.username
         payload = _job_to_api(
             cluster_name=cluster_name or self._config.cluster_name,
+            project_name=project_name or cur_project,
             name=name,
             preset_name=preset_name,
             tags=tags,
@@ -473,6 +480,7 @@ class Jobs(metaclass=NoPublicConstructor):
         reverse: bool = False,
         limit: Optional[int] = None,
         cluster_name: Optional[str] = None,
+        project_names: Iterable[str] = (),
         _materialized: Optional[bool] = None,
         _being_dropped: Optional[bool] = False,
         _logs_removed: Optional[bool] = False,
@@ -510,6 +518,8 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("being_dropped", str(_being_dropped))
         if _logs_removed is not None:
             params.add("logs_removed", str(_logs_removed))
+        for project_name in project_names:
+            params.add("project_name", project_name)
         auth = await self._config._api_auth()
         async with self._core.request(
             "GET", url, headers=headers, params=params, auth=auth
@@ -1067,6 +1077,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         price_credits_per_hour=price_credits_per_hour,
         priority=priority,
         energy_schedule_name=res.get("energy_schedule_name"),
+        project_name=res.get("project_name", owner),
         _internal=JobDescriptionInternal(
             materialized=res.get("materialized", False),
             being_dropped=res.get("being_dropped", False),
@@ -1077,6 +1088,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
 
 def _job_to_api(
     cluster_name: str,
+    project_name: str,
     name: Optional[str] = None,
     preset_name: Optional[str] = None,
     tags: Sequence[str] = (),
@@ -1091,7 +1103,10 @@ def _job_to_api(
     priority: Optional[JobPriority] = None,
     energy_schedule_name: Optional[str] = None,
 ) -> Dict[str, Any]:
-    primitive: Dict[str, Any] = {"pass_config": pass_config}
+    primitive: Dict[str, Any] = {
+        "pass_config": pass_config,
+        "project_name": project_name,
+    }
     if name:
         primitive["name"] = name
     if preset_name:
