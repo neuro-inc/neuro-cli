@@ -137,7 +137,7 @@ class JobStatusFormatter:
             resources.add_row(
                 "TPU",
                 f"{job_status.container.resources.tpu_type}/"
-                "{job_status.container.resources.tpu_software_version}",
+                f"{job_status.container.resources.tpu_software_version}",
             )
 
         if job_status.container.resources.shm:

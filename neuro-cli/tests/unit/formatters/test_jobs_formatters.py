@@ -159,12 +159,14 @@ def make_job(
     total_price_credits: Decimal = Decimal("150"),
     price_credits_per_hour: Decimal = Decimal("15"),
     restarts: int = 0,
+    owner: str = "test-user",
+    project_name: str = "myproject",
 ) -> JobDescription:
     return JobDescription(
         name=name,
         status=status,
-        owner="test-user",
-        project_name="myproject",
+        owner=owner,
+        project_name=project_name,
         cluster_name="default",
         id="test-job",
         uri=URL("job://default/test-user/test-job"),
@@ -1635,6 +1637,24 @@ class TestJobOutputFormatter:
             )(description)
         )
 
+    @pytest.mark.parametrize("project", ["", "test-user", "someotherproject"])
+    def test_job_with_project_name(
+        self,
+        rich_cmp: Any,
+        datetime_formatter: DatetimeFormatter,
+        project: str,
+    ) -> None:
+        description = make_job(JobStatus.SUCCEEDED, "", project_name=project)
+
+        uri_fmtr = uri_formatter(
+            username=project, cluster_name="test-cluster", org_name=None
+        )
+        rich_cmp(
+            JobStatusFormatter(
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
+            )(description)
+        )
+
 
 class TestJobTelemetryFormatter:
     # Use utc timezone in test for stable constant result
@@ -2479,6 +2499,28 @@ class TestTabularJobsFormatter:
         ]
 
         columns = parse_ps_columns("id org_name")
+        formatter = TabularJobsFormatter(
+            "test-user",
+            columns,
+            image_formatter=str,
+            datetime_formatter=datetime_formatter,
+        )
+        rich_cmp(formatter(jobs))
+
+    def test_project_name(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
+        projects = ["proj1", "proj2"]
+        owners = ["test-user", "someoneelse"]
+        jobs = []
+        for i, (proj, own) in enumerate(itertools.product(projects, owners)):
+            jobs.append(
+                make_job(
+                    JobStatus.RUNNING, "", name=str(i), project_name=proj, owner=own
+                )
+            )
+
+        columns = parse_ps_columns("id name cluster_name project_name owner image")
         formatter = TabularJobsFormatter(
             "test-user",
             columns,

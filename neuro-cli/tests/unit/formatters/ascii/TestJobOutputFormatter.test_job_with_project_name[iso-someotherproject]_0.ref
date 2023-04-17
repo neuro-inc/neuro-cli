@@ -1,0 +1,22 @@
+Job                     test-job                                    
+ Owner                   test-user                                   
+ Project                 someotherproject                            
+ Cluster                 default                                     
+ Description             test job description                        
+ Status                  succeeded                                   
+ Image                   test-image                                  
+ Command                 test-command                                
+ Priority                Normal                                      
+ Price (credits / hour)  15.0000                                     
+ Current cost            150.0000                                    
+ Resources                Memory                           16 Bytes  
+                          CPU                                   0.1  
+                          GPU                 4.0 x nvidia-tesla-p4  
+                          TPU                             v2-8/1.14  
+                          Extended SHM space                   True  
+ TTY                     False                                       
+ Http URL                http://local.host.test/                     
+ Created                 2018-09-25T12:28:21.298672+00:00            
+ Started                 2018-09-25T12:28:59.759433+00:00            
+ Finished                2018-09-25T12:28:59.759433+00:00            
+ Exit code               None
