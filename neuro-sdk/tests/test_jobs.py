@@ -819,6 +819,25 @@ async def test_status_with_tpu(
         assert ret.container.resources.tpu_software_version == "1.14"
 
 
+async def test_status_wo_project(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = create_job_response("job-id", "running", project_name=None)
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs/job-id", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.status("job-id")
+        assert ret == _job_description_from_api(JSON, client.parse)
+        assert ret.project_name == "owner"
+
+
 async def test_job_start(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -1044,6 +1063,42 @@ async def test_job_start_with_priority(
             priority=JobPriority.HIGH,
         )
 
+        assert ret == _job_description_from_api(JSON, client.parse)
+
+
+@pytest.mark.parametrize(
+    "project_name",
+    [None, "", "test-project", "other-test-project", "non-existing-project"],
+)
+async def test_job_start_with_project(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    project_name: Optional[str],
+) -> None:
+    JSON = create_job_response("qwerty", "running", project_name=project_name)
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "image": "submit-image-name",
+            "pass_config": False,
+            "cluster_name": "default",
+            "preset_name": "cpu-small",
+            # if project_name is not provided, SDK falls back to current project
+            "project_name": project_name or "test-project",
+        }
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.start(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            preset_name="cpu-small",
+            project_name=project_name,
+        )
         assert ret == _job_description_from_api(JSON, client.parse)
 
 
@@ -2140,6 +2195,47 @@ async def test_job_run_with_tty(
         assert ret.container.tty is True
 
 
+@pytest.mark.parametrize(
+    "project_name",
+    [None, "", "test-project", "other-test-project", "non-existing-project"],
+)
+async def test_job_run_with_project(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    project_name: Optional[str],
+) -> None:
+    JSON = create_job_response("qwerty", "running", project_name=project_name)
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "resources": {"memory": 16384 * 2**20, "cpu": 0.5, "shm": True},
+            },
+            "scheduler_enabled": False,
+            "pass_config": False,
+            "cluster_name": "default",
+            "project_name": project_name or "test-project",
+        }
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    container = Container(
+        image=RemoteImage.new_external_image(name="submit-image-name"),
+        resources=Resources(16384 * 2**20, 0.5),
+    )
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.run(
+            container,
+            project_name=project_name,
+        )
+        assert ret == _job_description_from_api(JSON, client.parse)
+
+
 def create_job_response(
     id: str,
     status: str,
@@ -2627,6 +2723,59 @@ async def test_list_filter_by_date_range(
         async with client.jobs.list(until=t2naive) as it:
             ret = [job async for job in it]
         assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
+
+
+async def test_list_filter_by_project(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    proj_1 = "proj-name-1"
+    proj_2 = "proj-name-2"
+    jobs = [
+        create_job_response("job-id-1", "pending", project_name=proj_1),
+        create_job_response("job-id-2", "succeeded", project_name=proj_1),
+        create_job_response("job-id-3", "failed", project_name=proj_1),
+        create_job_response("job-id-4", "running", project_name=proj_2),
+        create_job_response("job-id-5", "succeeded", project_name=proj_2),
+        create_job_response("job-id-6", "failed", project_name=proj_2),
+        create_job_response("job-id-7", "running"),
+        create_job_response("job-id-8", "pending"),
+        create_job_response("job-id-9", "succeeded"),
+        create_job_response("job-id-10", "failed"),
+    ]
+
+    async def handler(request: web.Request) -> web.Response:
+        projects = request.query.getall("project_name", None)
+        if projects:
+            filtered_jobs = [job for job in jobs if job["project_name"] in projects]
+        else:
+            filtered_jobs = jobs
+        JSON = {"jobs": filtered_jobs}
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        # default -- lists all available jobs
+        async with client.jobs.list() as it:
+            ret = [job async for job in it]
+        assert ret == job_descriptions
+        # filter by one project
+        async with client.jobs.list(project_names=(proj_1,)) as it:
+            ret = [job async for job in it]
+        assert ret == job_descriptions[:3]
+        # filter by two projects
+        async with client.jobs.list(project_names=(proj_1, proj_2)) as it:
+            ret = [job async for job in it]
+        assert ret == job_descriptions[:6]
+        # filter by non-existing project
+        async with client.jobs.list(project_names=("non-existing",)) as it:
+            ret = [job async for job in it]
+        assert ret == []
 
 
 async def test_job_run_life_span(
