@@ -834,6 +834,7 @@ async def test_job_start(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -878,6 +879,7 @@ async def test_job_start(
             "pass_config": False,
             "cluster_name": "default",
             "preset_name": "cpu-small",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -925,6 +927,7 @@ async def test_job_start_with_privileged_flag(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -955,6 +958,7 @@ async def test_job_start_with_privileged_flag(
             "cluster_name": "default",
             "preset_name": "cpu-small",
             "privileged": True,
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -990,6 +994,7 @@ async def test_job_start_with_priority(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1021,6 +1026,7 @@ async def test_job_start_with_priority(
             "cluster_name": "default",
             "preset_name": "cpu-small",
             "priority": "high",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1058,6 +1064,7 @@ async def test_job_run(
         "owner": "owner",
         "cluster_name": "default",
         "org_name": "my-test-org",
+        "project_name": "test-project",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
         "price_credits_per_hour": "20",
@@ -1107,6 +1114,7 @@ async def test_job_run(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1156,6 +1164,7 @@ async def test_job_run_with_wait_for_quota(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "project_name": "test-project",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
         "price_credits_per_hour": "20",
@@ -1193,6 +1202,7 @@ async def test_job_run_with_wait_for_quota(
             "wait_for_jobs_quota": True,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1233,6 +1243,7 @@ async def test_job_run_with_name_and_description(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1285,6 +1296,7 @@ async def test_job_run_with_name_and_description(
             "name": "test-job-name",
             "description": "job description",
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1339,6 +1351,7 @@ async def test_job_run_with_tags(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1390,6 +1403,7 @@ async def test_job_run_with_tags(
             "pass_config": False,
             "tags": ["t1", "t2", "t3"],
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1443,6 +1457,7 @@ async def test_job_run_no_volumes(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1483,6 +1498,7 @@ async def test_job_run_no_volumes(
             "name": "test-job-name",
             "description": "job description",
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1525,6 +1541,7 @@ async def test_job_run_with_relative_volume_uris(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1580,6 +1597,7 @@ async def test_job_run_with_relative_volume_uris(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1631,6 +1649,7 @@ async def test_job_run_with_secret_uris(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1684,6 +1703,7 @@ async def test_job_run_with_secret_uris(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1732,6 +1752,7 @@ async def test_job_run_with_disk_volume_uris(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "project_name": "test-project",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
         "price_credits_per_hour": "20",
@@ -1783,6 +1804,7 @@ async def test_job_run_with_disk_volume_uris(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1825,6 +1847,7 @@ async def test_job_run_preemptible(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1877,6 +1900,7 @@ async def test_job_run_preemptible(
             "name": "test-job-name",
             "description": "job description",
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1930,6 +1954,7 @@ async def test_job_run_schedule_timeout(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1969,6 +1994,7 @@ async def test_job_run_schedule_timeout(
             "pass_config": False,
             "schedule_timeout": 5,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -2005,6 +2031,7 @@ async def test_job_run_tpu(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -2045,6 +2072,7 @@ async def test_job_run_tpu(
             "pass_config": False,
             "schedule_timeout": 5,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -2088,6 +2116,7 @@ async def test_job_run_with_tty(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -2121,6 +2150,7 @@ def create_job_response(
     tags: Optional[List[str]] = None,
     total_price_credits: str = "10.01",
     price_credits_per_hour: str = "20",
+    project_name: Optional[str] = "myproject",
 ) -> Dict[str, Any]:
     result = {
         "id": id,
@@ -2157,6 +2187,8 @@ def create_job_response(
         result["tags"] = tags
     if org_name:
         result["org_name"] = org_name
+    if project_name:
+        result["project_name"] = project_name
     return result
 
 
@@ -2612,6 +2644,7 @@ async def test_job_run_life_span(
             "pass_config": False,
             "max_run_time_minutes": 10,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
         return web.json_response(create_job_response("job-id-1", "running"))
 
@@ -2645,6 +2678,7 @@ async def test_job_run_restart_policy(
             "pass_config": False,
             "restart_policy": "always",
             "cluster_name": "default",
+            "project_name": "test-project",
         }
         return web.json_response(create_job_response("job-id-1", "running"))
 
@@ -2680,6 +2714,7 @@ async def test_job_run_working_dir(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
         result = create_job_response("job-id-1", "running")
         result["container"]["working_dir"] = "/working/dir"
@@ -2830,6 +2865,7 @@ async def test_job_price_credits(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
         api_responce = create_job_response(
             "job-id-1",
@@ -2869,6 +2905,7 @@ async def test_job_with_org_name(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
             "org_name": org_name,
         }
         api_responce = create_job_response(
@@ -2905,6 +2942,7 @@ async def test_job_without_org_name(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
         return web.json_response(create_job_response("job-id-1", "running"))
 
@@ -2937,6 +2975,7 @@ async def test_job_start_with_energy_schedule_name(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -2965,6 +3004,7 @@ async def test_job_start_with_energy_schedule_name(
             "preset_name": "cpu-large-p",
             "energy_schedule_name": "some-schedule",
             "pass_config": False,
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)

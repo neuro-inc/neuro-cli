@@ -509,10 +509,12 @@ def make_job(
     name: Optional[str] = None,
     owner: str = "test-user",
     cluster_name: str = "default",
+    project_name: str = "test-project",
 ) -> JobDescription:
     return JobDescription(
         status=JobStatus.FAILED,
         owner=owner,
+        project_name=project_name,
         cluster_name=cluster_name,
         id=job_id,
         name=name,
@@ -547,6 +549,7 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             make_job("job-89ab-cdef", owner="user", name="jeronimo"),
             make_job("job-0123-cdef", owner="other-user"),
             make_job("job-89ab-4567", cluster_name="other", owner="user"),
+            make_job("job-4567-cdef", owner="user", project_name="otherproject"),
         ]
 
         @asyncgeneratorcontextmanager
@@ -557,11 +560,14 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             limit: Optional[int] = None,
             cluster_name: Optional[str] = None,
             owners: Iterable[str] = (),
+            project_names: Iterable[str] = (),
         ) -> AsyncIterator[JobDescription]:
             for job in jobs:
                 if cluster_name and job.cluster_name != cluster_name:
                     continue
                 if owners and job.owner not in owners:
+                    continue
+                if project_names and job.project_name in project_names:
                     continue
                 yield job
 
@@ -668,6 +674,10 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
         zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/user/je"])
         assert bash_out == "uri,jeronimo,//default/user/"
         assert zsh_out == "uri\njeronimo\n_\njob://default/user/"
+
+        zsh_out, bash_out = run_autocomplete(["job", "status", "proj"])
+        assert bash_out == "plain,otherproject,"
+        assert zsh_out == "plain\notherproject\njob-4567-cdef\n_"
 
 
 @skip_on_windows

@@ -356,10 +356,11 @@ class Jobs(metaclass=NoPublicConstructor):
         project_name: Optional[str] = None,
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
-        cur_project = self._config.username  # TODO: awaiting for the project ctx
+        if not project_name:
+            project_name = self._config.project_name or self._config.username
         payload = _job_to_api(
             cluster_name=self._config.cluster_name,
-            project_name=project_name or cur_project,
+            project_name=project_name,
             name=name,
             tags=tags,
             description=description,
