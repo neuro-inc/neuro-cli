@@ -1,6 +1,7 @@
 Job                     test-job                                       
  Tags                    long-tag-1, long-tag-2, long-tag-3, long-tag-4 
  Owner                   test-user                                      
+ Project                 myproject                                      
  Cluster                 default                                        
  Description             test job description                           
  Status                  failed (ErrorReason)                           

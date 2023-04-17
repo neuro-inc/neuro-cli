@@ -577,7 +577,7 @@ class JobType(AsyncType[str]):
     ) -> str:
         return value
 
-    async def _complete_job_owners(
+    async def _complete_job_projects(
         self,
         client: Client,
         prefix: str,
@@ -586,27 +586,24 @@ class JobType(AsyncType[str]):
     ) -> List[CompletionItem]:
         if cluster_name not in client.config.clusters:
             return []
-        now = datetime.now()
-        limit = int(os.environ.get(JOB_LIMIT_ENV, 100))
-        names = []
-        async with client.jobs.list(
-            since=now - timedelta(days=7),
-            reverse=True,
-            limit=limit,
-            cluster_name=cluster_name,
-        ) as it:
-            async for job in it:
-                name = job.owner
-                if name.startswith(incomplete) and name not in names:
-                    names.append(name)
-        return [CompletionItem(f"{name}/", type="uri", prefix=prefix) for name in names]
+        completions = []
+        for project_key in client.config.projects.keys():
+            if project_key.cluster_name != cluster_name:
+                continue
+            if project_key.project_name.startswith(incomplete):
+                completions.append(
+                    CompletionItem(
+                        f"{project_key.project_name}/", type="uri", prefix=prefix
+                    )
+                )
+        return completions
 
     async def _complete_job_names(
         self,
         client: Client,
         prefix: str,
         cluster_name: str,
-        username: str,
+        project_name: Optional[str],
         incomplete: str,
     ) -> List[CompletionItem]:
         if cluster_name not in client.config.clusters:
@@ -619,7 +616,7 @@ class JobType(AsyncType[str]):
             reverse=True,
             limit=limit,
             cluster_name=cluster_name,
-            owners=[username],
+            project_names=(project_name,) if project_name else (),
         ) as it:
             async for job in it:
                 id = job.id
@@ -648,7 +645,7 @@ class JobType(AsyncType[str]):
                 if len(parts) == 1:
                     return _complete_clusters(client, "job://", *parts)
                 elif len(parts) == 2:
-                    return await self._complete_job_owners(
+                    return await self._complete_job_projects(
                         client, f"job://{parts[0]}/", *parts
                     )
                 elif len(parts) == 3:
@@ -660,7 +657,7 @@ class JobType(AsyncType[str]):
             if incomplete.startswith("job:/"):
                 parts = incomplete[len("job:/") :].split("/")
                 if len(parts) == 1:
-                    return await self._complete_job_owners(
+                    return await self._complete_job_projects(
                         client, "job:/", client.cluster_name, *parts
                     )
                 elif len(parts) == 2:
@@ -673,12 +670,16 @@ class JobType(AsyncType[str]):
                 parts = incomplete[len("job:") :].split("/")
                 if len(parts) == 1:
                     return await self._complete_job_names(
-                        client, "job:", client.cluster_name, client.username, *parts
+                        client,
+                        "job:",
+                        client.cluster_name,
+                        client.config.project_name,
+                        *parts,
                     )
                 return []
 
             return await self._complete_job_names(
-                client, "", client.cluster_name, client.username, incomplete
+                client, "", client.cluster_name, client.config.project_name, incomplete
             )
 
 

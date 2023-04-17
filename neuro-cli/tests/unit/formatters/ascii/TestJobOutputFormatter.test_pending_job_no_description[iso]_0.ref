@@ -1,5 +1,6 @@
 Job                     test-job                         
  Owner                   owner                            
+ Project                 myproject                        
  Cluster                 default                          
  Status                  pending (ContainerCreating)      
  Image                   test-image                       

@@ -507,6 +507,7 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
 def make_job(
     job_id: str,
     name: Optional[str] = None,
+    org_name: Optional[str] = None, 
     owner: str = "test-user",
     cluster_name: str = "default",
     project_name: str = "test-project",
@@ -516,6 +517,7 @@ def make_job(
         owner=owner,
         project_name=project_name,
         cluster_name=cluster_name,
+        org_name=org_name,
         id=job_id,
         name=name,
         uri=URL(f"job://{cluster_name}/{owner}/{job_id}"),
@@ -545,10 +547,20 @@ def make_job(
 def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
     with mock.patch.object(Jobs, "list") as mocked_list:
         jobs = [
-            make_job("job-0123-4567", owner="user"),
-            make_job("job-89ab-cdef", owner="user", name="jeronimo"),
-            make_job("job-0123-cdef", owner="other-user"),
-            make_job("job-89ab-4567", cluster_name="other", owner="user"),
+            make_job("job-0123-4567", owner="user", project_name="project"),
+            make_job(
+                "job-89ab-cdef", owner="user", name="jeronimo", project_name="project"
+            ),
+            make_job("job-0123-cdef", owner="other-user", project_name="project"),
+            make_job(
+                "job-0123-4567",
+                owner="other-user",
+                name="oeronimo",
+                project_name="project",
+            ),
+            make_job(
+                "job-89ab-4567", cluster_name="other", owner="user", project_name="project"
+            ),
             make_job("job-4567-cdef", owner="user", project_name="otherproject"),
         ]
 
@@ -567,7 +579,7 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
                     continue
                 if owners and job.owner not in owners:
                     continue
-                if project_names and job.project_name in project_names:
+                if project_names and job.project_name not in project_names:
                     continue
                 yield job
 
@@ -587,22 +599,32 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:"])
         assert bash_out == (
-            "uri,job-0123-4567,\n" "uri,job-89ab-cdef,\n" "uri,jeronimo,"
+            "uri,job-0123-4567,\n"
+            "uri,job-89ab-cdef,\n"
+            "uri,jeronimo,\n"
+            "uri,job-0123-cdef,\n"
+            "uri,oeronimo,"
         )
         assert zsh_out == (
             "uri\njob-0123-4567\n_\njob:\n"
             "uri\njob-89ab-cdef\n_\njob:\n"
-            "uri\njeronimo\n_\njob:"
+            "uri\njeronimo\n_\njob:\n"
+            "uri\njob-0123-cdef\n_\njob:\n"
+            "uri\noeronimo\n_\njob:"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:j"])
         assert bash_out == (
-            "uri,job-0123-4567,\n" "uri,job-89ab-cdef,\n" "uri,jeronimo,"
+            "uri,job-0123-4567,\n"
+            "uri,job-89ab-cdef,\n"
+            "uri,jeronimo,\n"
+            "uri,job-0123-cdef,"
         )
         assert zsh_out == (
             "uri\njob-0123-4567\n_\njob:\n"
             "uri\njob-89ab-cdef\n_\njob:\n"
-            "uri\njeronimo\n_\njob:"
+            "uri\njeronimo\n_\njob:\n"
+            "uri\njob-0123-cdef\n_\njob:"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:je"])
@@ -610,27 +632,33 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
         assert zsh_out == "uri\njeronimo\n_\njob:"
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:/"])
-        assert bash_out == ("uri,user/,/\n" "uri,other-user/,/")
-        assert zsh_out == ("uri\nuser/\n_\njob:/\n" "uri\nother-user/\n_\njob:/")
+        assert bash_out == ("uri,project/,/\nuri,user/,/\n" "uri,otherproject/,/")
+        assert zsh_out == (
+            "uri\nproject/\n_\njob:/\n"
+            "uri\nuser/\n_\njob:/\n"
+            "uri\notherproject/\n_\njob:/"
+        )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:/u"])
         assert bash_out == "uri,user/,/"
         assert zsh_out == "uri\nuser/\n_\njob:/"
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job:/o"])
-        assert bash_out == "uri,other-user/,/"
-        assert zsh_out == "uri\nother-user/\n_\njob:/"
+        assert bash_out == "uri,otherproject/,/"
+        assert zsh_out == "uri\notherproject/\n_\njob:/"
 
-        zsh_out, bash_out = run_autocomplete(["job", "status", "job:/user/j"])
+        zsh_out, bash_out = run_autocomplete(["job", "status", "job:/project/j"])
         assert bash_out == (
-            "uri,job-0123-4567,/user/\n"
-            "uri,job-89ab-cdef,/user/\n"
-            "uri,jeronimo,/user/"
+            "uri,job-0123-4567,/project/\n"
+            "uri,job-89ab-cdef,/project/\n"
+            "uri,jeronimo,/project/\n"
+            "uri,job-0123-cdef,/project/"
         )
         assert zsh_out == (
-            "uri\njob-0123-4567\n_\njob:/user/\n"
-            "uri\njob-89ab-cdef\n_\njob:/user/\n"
-            "uri\njeronimo\n_\njob:/user/"
+            "uri\njob-0123-4567\n_\njob:/project/\n"
+            "uri\njob-89ab-cdef\n_\njob:/project/\n"
+            "uri\njeronimo\n_\njob:/project/\n"
+            "uri\njob-0123-cdef\n_\njob:/project/"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job://"])
@@ -646,9 +674,15 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
         assert zsh_out == "uri\nother/\n_\njob://"
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/"])
-        assert bash_out == ("uri,user/,//default/\n" "uri,other-user/,//default/")
+        assert bash_out == (
+            "uri,project/,//default/\n"
+            "uri,user/,//default/\n"
+            "uri,otherproject/,//default/"
+        )
         assert zsh_out == (
-            "uri\nuser/\n_\njob://default/\n" "uri\nother-user/\n_\njob://default/"
+            "uri\nproject/\n_\njob://default/\n"
+            "uri\nuser/\n_\njob://default/\n"
+            "uri\notherproject/\n_\njob://default/"
         )
 
         zsh_out, bash_out = run_autocomplete(["job", "status", "job://other/"])
@@ -659,25 +693,29 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
         assert bash_out == "uri,user/,//default/"
         assert zsh_out == "uri\nuser/\n_\njob://default/"
 
-        zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/user/"])
+        zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/project/"])
         assert bash_out == (
-            "uri,job-0123-4567,//default/user/\n"
-            "uri,job-89ab-cdef,//default/user/\n"
-            "uri,jeronimo,//default/user/"
+            "uri,job-0123-4567,//default/project/\n"
+            "uri,job-89ab-cdef,//default/project/\n"
+            "uri,jeronimo,//default/project/\n"
+            "uri,job-0123-cdef,//default/project/\n"
+            "uri,oeronimo,//default/project/"
         )
         assert zsh_out == (
-            "uri\njob-0123-4567\n_\njob://default/user/\n"
-            "uri\njob-89ab-cdef\n_\njob://default/user/\n"
-            "uri\njeronimo\n_\njob://default/user/"
+            "uri\njob-0123-4567\n_\njob://default/project/\n"
+            "uri\njob-89ab-cdef\n_\njob://default/project/\n"
+            "uri\njeronimo\n_\njob://default/project/\n"
+            "uri\njob-0123-cdef\n_\njob://default/project/\n"
+            "uri\noeronimo\n_\njob://default/project/"
         )
 
-        zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/user/je"])
-        assert bash_out == "uri,jeronimo,//default/user/"
-        assert zsh_out == "uri\njeronimo\n_\njob://default/user/"
+        zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/project/je"])
+        assert bash_out == "uri,jeronimo,//default/project/"
+        assert zsh_out == "uri\njeronimo\n_\njob://default/project/"
 
-        zsh_out, bash_out = run_autocomplete(["job", "status", "proj"])
-        assert bash_out == "plain,otherproject,"
-        assert zsh_out == "plain\notherproject\njob-4567-cdef\n_"
+        zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/otherpr"])
+        assert bash_out == "uri,otherproject/,//default/"
+        assert zsh_out == "uri\notherproject/\n_\njob://default/"
 
 
 @skip_on_windows

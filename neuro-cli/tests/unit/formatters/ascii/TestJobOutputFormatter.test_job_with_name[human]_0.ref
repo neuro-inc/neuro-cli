@@ -1,6 +1,7 @@
 Job                     test-job                
  Name                    test-job-name           
  Owner                   test-user               
+ Project                 myproject               
  Cluster                 default                 
  Description             test job description    
  Status                  failed (ErrorReason)    

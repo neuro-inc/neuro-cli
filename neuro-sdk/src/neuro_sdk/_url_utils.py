@@ -54,6 +54,7 @@ def uri_from_cli(
     if uri.scheme == "file":
         uri = normalize_local_path_uri(uri)
     else:
+        # TODO (y.s.): replace username to project_name
         uri = _normalize_uri(uri, username, cluster_name, org_name)
     return uri
 

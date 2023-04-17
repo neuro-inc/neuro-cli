@@ -1,6 +1,7 @@
 Job                     test-job                   
  Name                    test-job                   
  Owner                   test-user                  
+ Project                 myproject                  
  Cluster                 default                    
  Organization            test-job-org-name          
  Status                  running (ContainerRunning) 

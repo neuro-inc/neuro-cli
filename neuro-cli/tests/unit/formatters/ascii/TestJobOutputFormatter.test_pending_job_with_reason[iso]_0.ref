@@ -1,5 +1,6 @@
 Job                     test-job                         
  Owner                   owner                            
+ Project                 myproject                        
  Cluster                 default                          
  Description             test job description             
  Status                  pending (ContainerCreating)      

@@ -77,12 +77,6 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         name="other",
         orgs=[None],
     )
-    project = Project(
-        cluster_name=cluster_config.name,
-        org_name=cluster_config.orgs[0],
-        name="project",
-        role="owner",
-    )
     config = _ConfigData(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
@@ -95,8 +89,49 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
             cluster_config.name: cluster_config,
             cluster2_config.name: cluster2_config,
         },
-        projects={project.key: project},
-        project_name=project.name,
+        projects={
+            Project.Key(
+                cluster_name=cluster_config.name,
+                org_name=cluster_config.orgs[0],
+                project_name="project",
+            ): Project(
+                cluster_name=cluster_config.name,
+                org_name=cluster_config.orgs[0],
+                name="project",
+                role="owner",
+            ),
+            Project.Key(
+                cluster_name=cluster_config.name,
+                org_name=None,
+                project_name="user",
+            ): Project(
+                cluster_name=cluster_config.name,
+                org_name=None,
+                name="user",
+                role="admin",
+            ),
+            Project.Key(
+                cluster_name=cluster_config.name,
+                org_name=None,
+                project_name="otherproject",
+            ): Project(
+                cluster_name=cluster_config.name,
+                org_name=None,
+                name="otherproject",
+                role="admin",
+            ),
+            Project.Key(
+                cluster_name=cluster2_config.name,
+                org_name=None,
+                project_name="user",
+            ): Project(
+                cluster_name=cluster2_config.name,
+                org_name=None,
+                name="user",
+                role="admin",
+            ),
+        },
+        project_name="project",
     )
     Factory(nmrc_path)._save(config)
     return nmrc_path
