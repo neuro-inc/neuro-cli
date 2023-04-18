@@ -235,12 +235,17 @@ class Factory:
             token = data["token"]
             cluster = data["cluster"]
             url = URL(data["url"])
+            org_name = data.get("org_name")
+            project_name = data.get("project_name")
         except (ValueError, KeyError):
             raise ConfigError(f"Data in passed config is malformed: {config_data}")
         await self.login_with_token(token, url=url, timeout=timeout)
         client = await self.get(timeout=timeout)
 
         await client.config.switch_cluster(cluster)
+        await client.config.switch_org(org_name)
+        if project_name:
+            await client.config.switch_project(project_name)
         await client.close()
 
     def _gen_config(

@@ -151,7 +151,7 @@ async def mock_for_login_factory(
                         },
                     ],
                 }
-                project_config = {
+                project_config: Dict[str, Any] = {
                     "cluster_name": "default",
                     "org_name": None,
                     "name": "default",
@@ -164,7 +164,10 @@ async def mock_for_login_factory(
                             {**cluster_config, "name": "default"},
                             {**cluster_config, "name": "default2"},
                         ],
-                        "projects": [project_config],
+                        "projects": [
+                            project_config,
+                            {**project_config, "name": "default2"},
+                        ],
                     }
                 )
             else:
@@ -364,12 +367,20 @@ class TestLoginWithToken:
 
 class TestLoginPassedConfig:
     @pytest.fixture()
-    def make_conf_data(self, mock_for_login: _TestServer) -> Callable[[str], str]:
-        def _make_config(token: str) -> str:
+    def make_conf_data(
+        self, mock_for_login: _TestServer
+    ) -> Callable[[str, Optional[str], Optional[str]], str]:
+        def _make_config(
+            token: str,
+            project_name: Optional[str] = "default",
+            org_name: Optional[str] = None,
+        ) -> str:
             data = {
                 "token": token,
                 "cluster": "default",
                 "url": str(mock_for_login.make_url("/")),
+                "org_name": org_name,
+                "project_name": project_name,
             }
             return base64.b64encode(json.dumps(data).encode()).decode()
 
@@ -377,10 +388,12 @@ class TestLoginPassedConfig:
 
     @pytest.fixture()
     def set_conf_to_env(
-        self, monkeypatch: Any, make_conf_data: Callable[[str], str]
+        self,
+        monkeypatch: Any,
+        make_conf_data: Callable[[str, Optional[str], Optional[str]], str],
     ) -> Callable[[str], None]:
         def _set_env(token: str) -> None:
-            config_data = make_conf_data(token)
+            config_data = make_conf_data(token)  # type: ignore
             monkeypatch.setenv(PASS_CONFIG_ENV_NAME, config_data)
 
         return _set_env
@@ -419,9 +432,11 @@ class TestLoginPassedConfig:
         assert Path(nmrc_path).exists(), "Config file not written after login "
 
     async def test_normal_login_direct_token(
-        self, tmp_home: Path, make_conf_data: Callable[[str], str]
+        self,
+        tmp_home: Path,
+        make_conf_data: Callable[[str, Optional[str], Optional[str]], str],
     ) -> None:
-        token_data = make_conf_data("tokenstr")
+        token_data = make_conf_data("tokenstr")  # type: ignore
         await Factory().login_with_passed_config(token_data)
         nmrc_path = tmp_home / ".neuro"
         assert Path(nmrc_path).exists(), "Config file not written after login "
@@ -455,6 +470,21 @@ class TestLoginPassedConfig:
             await Factory().login_with_passed_config()
         nmrc_path = tmp_home / ".neuro"
         assert not Path(nmrc_path).exists(), "Config file written after bad login "
+
+    async def test_login_project_set(
+        self,
+        tmp_home: Path,
+        monkeypatch: Any,
+        make_conf_data: Callable[[str, Optional[str]], str],
+    ) -> None:
+        pass_cfg_data = make_conf_data("tokenstr", "default2")
+        monkeypatch.setenv(PASS_CONFIG_ENV_NAME, pass_cfg_data)
+        client = await Factory().get()
+        await client.close()
+        nmrc_path = tmp_home / ".neuro"
+        assert Path(nmrc_path).exists(), "Config file not written after login "
+        assert client.config.project_name == "default2"
+        assert not client.config.org_name
 
 
 class TestHeadlessLogin:
