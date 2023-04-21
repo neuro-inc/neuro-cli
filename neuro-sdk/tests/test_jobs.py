@@ -1561,17 +1561,17 @@ async def test_job_run_with_relative_volume_uris(
                 },
                 "volumes": [
                     {
-                        "src_storage_uri": "storage://default/user/path",
+                        "src_storage_uri": "storage://default/test-project/path",
                         "dst_path": "/container/my_path",
                         "read_only": False,
                     },
                     {
-                        "src_storage_uri": "storage://default/otheruser/path",
+                        "src_storage_uri": "storage://default/otherproject/path",
                         "dst_path": "/container/other_user_path",
                         "read_only": True,
                     },
                     {
-                        "src_storage_uri": "storage://othercluster/otheruser/path",
+                        "src_storage_uri": "storage://othercluster/otherproject/path",
                         "dst_path": "/container/other_cluster_path",
                         "read_only": True,
                     },
@@ -1594,12 +1594,12 @@ async def test_job_run_with_relative_volume_uris(
         volumes: List[Volume] = [
             Volume(URL("storage:path"), "/container/my_path", False),
             Volume(
-                URL("storage:/otheruser/path"),
+                URL("storage:/otherproject/path"),
                 "/container/other_user_path",
                 True,
             ),
             Volume(
-                URL("storage://othercluster/otheruser/path"),
+                URL("storage://othercluster/otherproject/path"),
                 "/container/other_cluster_path",
                 True,
             ),
@@ -1669,7 +1669,7 @@ async def test_job_run_with_secret_uris(
                 "secret_env": {"SECRET_VAR": "secret://default/user/secret"},
                 "volumes": [
                     {
-                        "src_storage_uri": "storage://default/user/path",
+                        "src_storage_uri": "storage://default/test-project/path",
                         "dst_path": "/container/my_path",
                         "read_only": False,
                     }
