@@ -88,8 +88,9 @@ async def rm(
     Examples:
 
     neuro rm storage:foo/bar
-    neuro rm storage://{username}/foo/bar
-    neuro rm --recursive storage://{username}/foo/
+    neuro rm storage:/{project}/foo/bar
+    neuro rm storage://{cluster}/{project}/foo/bar
+    neuro rm --recursive storage:/{project}/foo/
     neuro rm 'storage:foo/**/*.tmp'
     """
     errors = False
@@ -157,7 +158,7 @@ async def ls(
     """
     List directory contents.
 
-    By default PATH is equal user's home dir (storage:)
+    By default PATH is equal project's dir (storage:)
     """
     if not paths:
         paths = [URL("storage:")]
@@ -406,8 +407,8 @@ async def cp(
     neuro cp storage:foo.txt file:///tmp
     neuro cp storage:foo.txt -t file:///tmp
 
-    # download other user's remote file into the current directory
-    neuro cp storage://{username}/foo.txt .
+    # download other project's remote file into the current directory
+    neuro cp storage:/{project}/foo.txt .
 
     # download only files with extension `.out` into the current directory
     neuro cp storage:results/*.out .
@@ -610,11 +611,11 @@ async def mv(
     # remote directory
     neuro mv -T storage:foo storage:bar
 
-    # move remote file into other user's directory
-    neuro mv storage:foo.txt storage://{username}/bar.dat
+    # move remote file into other project's directory
+    neuro mv storage:foo.txt storage:/{project}/bar.dat
 
-    # move remote file from other user's directory
-    neuro mv storage://{username}/foo.txt storage:bar.dat
+    # move remote file from other project's directory
+    neuro mv storage:/{project}/foo.txt storage:bar.dat
     """
     if target_directory:
         if no_target_directory:
@@ -714,7 +715,7 @@ async def tree(
     all files/directories found, tree returns the total number of files and/or
     directories listed.
 
-    By default PATH is equal user's home dir (storage:)
+    By default PATH is equal project's dir (storage:)
 
     """
     if not path:

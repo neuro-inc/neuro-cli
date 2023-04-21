@@ -66,7 +66,7 @@ def storage_path(tmp_path: Path) -> Path:
 async def storage_server(
     aiohttp_raw_server: _RawTestServerFactory, storage_path: Path
 ) -> Any:
-    PREFIX = "/storage/user"
+    PREFIX = "/storage/test-project"
     PREFIX_LEN = len(PREFIX)
 
     async def handler(request: web.Request) -> web.StreamResponse:
@@ -217,12 +217,12 @@ async def test_storage_ls_legacy(
 
     async def handler(request: web.Request) -> web.Response:
         assert "b3" in request.headers
-        assert request.path == "/storage/user/folder"
+        assert request.path == "/storage/test-project/folder"
         assert request.query == {"op": "LISTSTATUS"}
         return web.json_response(JSON)
 
     app = web.Application()
-    app.router.add_get("/storage/user/folder", handler)
+    app.router.add_get("/storage/test-project/folder", handler)
 
     srv = await aiohttp_server(app)
 
@@ -233,7 +233,7 @@ async def test_storage_ls_legacy(
             type=FileStatusType.FILE,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage://default/user/folder/foo"),
+            uri=URL("storage://default/test-project/folder/foo"),
         ),
         FileStatus(
             path="bar",
@@ -241,7 +241,7 @@ async def test_storage_ls_legacy(
             type=FileStatusType.DIRECTORY,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage://default/user/folder/bar"),
+            uri=URL("storage://default/test-project/folder/bar"),
         ),
         FileStatus(
             path="baz",
@@ -250,7 +250,7 @@ async def test_storage_ls_legacy(
             modification_time=0,
             permission=Action.READ,
             target="foo",
-            uri=URL("storage://default/user/folder/baz"),
+            uri=URL("storage://default/test-project/folder/baz"),
         ),
         FileStatus(
             path="spam",
@@ -258,7 +258,7 @@ async def test_storage_ls_legacy(
             type=FileStatusType.UNKNOWN,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage://default/user/folder/spam"),
+            uri=URL("storage://default/test-project/folder/spam"),
         ),
     ]
 
@@ -318,12 +318,12 @@ async def test_storage_ls(
 
     async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path == "/storage/user/folder"
+        assert request.path == "/storage/test-project/folder"
         assert request.query == {"op": "LISTSTATUS"}
         return await make_listiter_response(request, file_statuses)
 
     app = web.Application()
-    app.router.add_get("/storage/user/folder", handler)
+    app.router.add_get("/storage/test-project/folder", handler)
 
     srv = await aiohttp_server(app)
 
@@ -338,7 +338,7 @@ async def test_storage_ls(
             type=FileStatusType.FILE,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage://default/user/folder/foo"),
+            uri=URL("storage://default/test-project/folder/foo"),
         ),
         FileStatus(
             path="bar",
@@ -346,7 +346,7 @@ async def test_storage_ls(
             type=FileStatusType.DIRECTORY,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage://default/user/folder/bar"),
+            uri=URL("storage://default/test-project/folder/bar"),
         ),
         FileStatus(
             path="baz",
@@ -355,7 +355,7 @@ async def test_storage_ls(
             modification_time=0,
             permission=Action.READ,
             target="foo",
-            uri=URL("storage://default/user/folder/baz"),
+            uri=URL("storage://default/test-project/folder/baz"),
         ),
         FileStatus(
             path="spam",
@@ -363,9 +363,16 @@ async def test_storage_ls(
             type=FileStatusType.UNKNOWN,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage://default/user/folder/spam"),
+            uri=URL("storage://default/test-project/folder/spam"),
         ),
     ]
+
+
+async def test_storage_ls_without_project(make_client: _MakeClient) -> None:
+    async with make_client("https://example.com", projects={}) as client:
+        with pytest.raises(RuntimeError, match="Project is not configured"):
+            async with client.storage.list(URL("storage:folder")) as it:
+                [file async for file in it]
 
 
 async def test_storage_disk_usage(
@@ -435,12 +442,12 @@ async def test_storage_disk_usage_path(
 ) -> None:
     async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path == "/storage/user/dir"
+        assert request.path == "/storage/test-project/dir"
         assert request.query == {"op": "GETDISKUSAGE"}
         return web.json_response({"total": 100, "used": 20, "free": 80})
 
     app = web.Application()
-    app.router.add_get("/storage/user/dir", handler)
+    app.router.add_get("/storage/test-project/dir", handler)
 
     srv = await aiohttp_server(app)
 
@@ -489,17 +496,19 @@ async def test_storage_ls_another_cluster(
 
     async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path == "/storage2/user/folder"
+        assert request.path == "/storage2/test-project/folder"
         assert request.query == {"op": "LISTSTATUS"}
         return await make_listiter_response(request, file_statuses)
 
     app = web.Application()
-    app.router.add_get("/storage2/user/folder", handler)
+    app.router.add_get("/storage2/test-project/folder", handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        async with client.storage.list(URL("storage://another/user/folder")) as it:
+        async with client.storage.list(
+            URL("storage://another/test-project/folder")
+        ) as it:
             ret = [file async for file in it]
 
     assert ret == [
@@ -509,7 +518,7 @@ async def test_storage_ls_another_cluster(
             type=FileStatusType.FILE,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage://another/user/folder/foo"),
+            uri=URL("storage://another/test-project/folder/foo"),
         ),
         FileStatus(
             path="bar",
@@ -517,7 +526,7 @@ async def test_storage_ls_another_cluster(
             type=FileStatusType.DIRECTORY,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage://another/user/folder/bar"),
+            uri=URL("storage://another/test-project/folder/bar"),
         ),
         FileStatus(
             path="baz",
@@ -526,7 +535,7 @@ async def test_storage_ls_another_cluster(
             modification_time=0,
             permission=Action.READ,
             target="foo",
-            uri=URL("storage://another/user/folder/baz"),
+            uri=URL("storage://another/test-project/folder/baz"),
         ),
         FileStatus(
             path="spam",
@@ -534,7 +543,7 @@ async def test_storage_ls_another_cluster(
             type=FileStatusType.UNKNOWN,
             modification_time=0,
             permission=Action.READ,
-            uri=URL("storage://another/user/folder/spam"),
+            uri=URL("storage://another/test-project/folder/spam"),
         ),
     ]
 
@@ -546,7 +555,7 @@ async def test_storage_ls_error_in_server_response(
 
     async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path == "/storage/user/folder"
+        assert request.path == "/storage/test-project/folder"
         assert request.query == {"op": "LISTSTATUS"}
         resp = web.StreamResponse()
         resp.headers["Content-Type"] = "application/x-ndjson"
@@ -555,7 +564,7 @@ async def test_storage_ls_error_in_server_response(
         return resp
 
     app = web.Application()
-    app.router.add_get("/storage/user/folder", handler)
+    app.router.add_get("/storage/test-project/folder", handler)
 
     srv = await aiohttp_server(app)
 
@@ -573,7 +582,7 @@ async def test_storage_glob(
 ) -> None:
     async def handler_home(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path == "/storage/user"
+        assert request.path == "/storage/test-project"
         assert request.query == {"op": "LISTSTATUS"}
         return await make_listiter_response(
             request,
@@ -590,13 +599,13 @@ async def test_storage_glob(
 
     async def handler_folder(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path.rstrip("/") == "/storage/user/folder"
+        assert request.path.rstrip("/") == "/storage/test-project/folder"
         assert request.query["op"] in ("GETFILESTATUS", "LISTSTATUS")
         if request.query["op"] == "GETFILESTATUS":
             return web.json_response(
                 {
                     "FileStatus": {
-                        "path": "/user/folder",
+                        "path": "/test-project/folder",
                         "type": "DIRECTORY",
                         "length": 0,
                         "modificationTime": 0,
@@ -629,12 +638,12 @@ async def test_storage_glob(
 
     async def handler_foo(request: web.Request) -> web.Response:
         assert "b3" in request.headers
-        assert request.path == "/storage/user/folder/foo"
+        assert request.path == "/storage/test-project/folder/foo"
         assert request.query == {"op": "GETFILESTATUS"}
         return web.json_response(
             {
                 "FileStatus": {
-                    "path": "/user/folder/foo",
+                    "path": "/test-project/folder/foo",
                     "length": 1024,
                     "type": "FILE",
                     "modificationTime": 0,
@@ -644,12 +653,12 @@ async def test_storage_glob(
         )
 
     async def handler_bar(request: web.Request) -> web.StreamResponse:
-        assert request.path.rstrip("/") == "/storage/user/folder/bar"
+        assert request.path.rstrip("/") == "/storage/test-project/folder/bar"
         if request.query["op"] == "GETFILESTATUS":
             return web.json_response(
                 {
                     "FileStatus": {
-                        "path": "/user/folder/bar",
+                        "path": "/test-project/folder/bar",
                         "length": 0,
                         "type": "DIRECTORY",
                         "modificationTime": 0,
@@ -674,14 +683,14 @@ async def test_storage_glob(
             raise web.HTTPInternalServerError
 
     app = web.Application()
-    app.router.add_get("/storage/user", handler_home)
-    app.router.add_get("/storage/user/", handler_home)
-    app.router.add_get("/storage/user/folder", handler_folder)
-    app.router.add_get("/storage/user/folder/", handler_folder)
-    app.router.add_get("/storage/user/folder/foo", handler_foo)
-    app.router.add_get("/storage/user/folder/foo/", handler_foo)
-    app.router.add_get("/storage/user/folder/bar", handler_bar)
-    app.router.add_get("/storage/user/folder/bar/", handler_bar)
+    app.router.add_get("/storage/test-project", handler_home)
+    app.router.add_get("/storage/test-project/", handler_home)
+    app.router.add_get("/storage/test-project/folder", handler_folder)
+    app.router.add_get("/storage/test-project/folder/", handler_folder)
+    app.router.add_get("/storage/test-project/folder/foo", handler_foo)
+    app.router.add_get("/storage/test-project/folder/foo/", handler_foo)
+    app.router.add_get("/storage/test-project/folder/bar", handler_bar)
+    app.router.add_get("/storage/test-project/folder/bar/", handler_bar)
 
     srv = await aiohttp_server(app)
 
@@ -726,10 +735,10 @@ async def test_storage_glob(
 async def test_storage_rm_file(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    remove_listing = {"path": "/user/file", "is_dir": False}
+    remove_listing = {"path": "/test-project/file", "is_dir": False}
 
     async def delete_handler(request: web.Request) -> web.StreamResponse:
-        assert request.path == "/storage/user/file"
+        assert request.path == "/storage/test-project/file"
         assert request.query == {"op": "DELETE", "recursive": "false"}
         assert request.headers["Accept"] == "application/x-ndjson"
         resp = web.StreamResponse()
@@ -739,7 +748,7 @@ async def test_storage_rm_file(
         return resp
 
     app = web.Application()
-    app.router.add_delete("/storage/user/file", delete_handler)
+    app.router.add_delete("/storage/test-project/file", delete_handler)
 
     srv = await aiohttp_server(app)
 
@@ -750,10 +759,10 @@ async def test_storage_rm_file(
 async def test_storage_rm_file_another_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    remove_listing = {"path": "/user/file", "is_dir": False}
+    remove_listing = {"path": "/test-project/file", "is_dir": False}
 
     async def delete_handler(request: web.Request) -> web.StreamResponse:
-        assert request.path == "/storage2/user/file"
+        assert request.path == "/storage2/test-project/file"
         assert request.query == {"op": "DELETE", "recursive": "false"}
         assert request.headers["Accept"] == "application/x-ndjson"
         resp = web.StreamResponse()
@@ -763,21 +772,21 @@ async def test_storage_rm_file_another_cluster(
         return resp
 
     app = web.Application()
-    app.router.add_delete("/storage2/user/file", delete_handler)
+    app.router.add_delete("/storage2/test-project/file", delete_handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.rm(URL("storage://another/user/file"))
+        await client.storage.rm(URL("storage://another/test-project/file"))
 
 
 async def test_storage_rm_file_progress(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    remove_listing = {"path": "/user/file", "is_dir": False}
+    remove_listing = {"path": "/test-project/file", "is_dir": False}
 
     async def delete_handler(request: web.Request) -> web.StreamResponse:
-        assert request.path == "/storage/user/file"
+        assert request.path == "/storage/test-project/file"
         assert request.query == {"op": "DELETE", "recursive": "false"}
         assert request.headers["Accept"] == "application/x-ndjson"
         resp = web.StreamResponse()
@@ -787,7 +796,7 @@ async def test_storage_rm_file_progress(
         return resp
 
     app = web.Application()
-    app.router.add_delete("/storage/user/file", delete_handler)
+    app.router.add_delete("/storage/test-project/file", delete_handler)
 
     srv = await aiohttp_server(app)
 
@@ -797,7 +806,7 @@ async def test_storage_rm_file_progress(
 
     progress.delete.assert_called_with(
         StorageProgressDelete(
-            uri=URL("storage://default/user/file"),
+            uri=URL("storage://default/test-project/file"),
             is_dir=False,
         )
     )
@@ -806,10 +815,10 @@ async def test_storage_rm_file_progress(
 async def test_storage_rm_file_progress_another_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    remove_listing = {"path": "/user/file", "is_dir": False}
+    remove_listing = {"path": "/test-project/file", "is_dir": False}
 
     async def delete_handler(request: web.Request) -> web.StreamResponse:
-        assert request.path == "/storage2/user/file"
+        assert request.path == "/storage2/test-project/file"
         assert request.query == {"op": "DELETE", "recursive": "false"}
         assert request.headers["Accept"] == "application/x-ndjson"
         resp = web.StreamResponse()
@@ -819,17 +828,19 @@ async def test_storage_rm_file_progress_another_cluster(
         return resp
 
     app = web.Application()
-    app.router.add_delete("/storage2/user/file", delete_handler)
+    app.router.add_delete("/storage2/test-project/file", delete_handler)
 
     srv = await aiohttp_server(app)
 
     progress = mock.Mock()
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.rm(URL("storage://another/user/file"), progress=progress)
+        await client.storage.rm(
+            URL("storage://another/test-project/file"), progress=progress
+        )
 
     progress.delete.assert_called_with(
         StorageProgressDelete(
-            uri=URL("storage://another/user/file"),
+            uri=URL("storage://another/test-project/file"),
             is_dir=False,
         )
     )
@@ -839,7 +850,7 @@ async def test_storage_rm_directory(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def delete_handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder"
+        assert request.path == "/storage/test-project/folder"
         assert request.query == {"op": "DELETE", "recursive": "false"}
         return web.json_response(
             {"error": "Target is a directory", "errno": "EISDIR"},
@@ -847,7 +858,7 @@ async def test_storage_rm_directory(
         )
 
     app = web.Application()
-    app.router.add_delete("/storage/user/folder", delete_handler)
+    app.router.add_delete("/storage/test-project/folder", delete_handler)
 
     srv = await aiohttp_server(app)
 
@@ -861,12 +872,12 @@ async def test_storage_rm_recursive(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     remove_listing = {
-        "path": "/user/folder",
+        "path": "/test-project/folder",
         "is_dir": True,
     }
 
     async def delete_handler(request: web.Request) -> web.StreamResponse:
-        assert request.path == "/storage/user/folder"
+        assert request.path == "/storage/test-project/folder"
         assert request.query == {"op": "DELETE", "recursive": "true"}
         assert request.headers["Accept"] == "application/x-ndjson"
         resp = web.StreamResponse()
@@ -876,7 +887,7 @@ async def test_storage_rm_recursive(
         return resp
 
     app = web.Application()
-    app.router.add_delete("/storage/user/folder", delete_handler)
+    app.router.add_delete("/storage/test-project/folder", delete_handler)
 
     srv = await aiohttp_server(app)
 
@@ -890,7 +901,7 @@ async def test_storage_rm_oserror_in_the_response_stream(
     error_result = {"error": "Server is to busy", "errno": "EBUSY"}
 
     async def delete_handler(request: web.Request) -> web.StreamResponse:
-        assert request.path == "/storage/user/file"
+        assert request.path == "/storage/test-project/file"
         assert request.query == {"op": "DELETE", "recursive": "false"}
         assert request.headers["Accept"] == "application/x-ndjson"
         resp = web.StreamResponse()
@@ -900,7 +911,7 @@ async def test_storage_rm_oserror_in_the_response_stream(
         return resp
 
     app = web.Application()
-    app.router.add_delete("/storage/user/file", delete_handler)
+    app.router.add_delete("/storage/test-project/file", delete_handler)
 
     srv = await aiohttp_server(app)
 
@@ -917,7 +928,7 @@ async def test_storage_rm_generic_error_in_the_response_stream(
     error_result = {"error": "Server failed", "errno": None}
 
     async def delete_handler(request: web.Request) -> web.StreamResponse:
-        assert request.path == "/storage/user/file"
+        assert request.path == "/storage/test-project/file"
         assert request.query == {"op": "DELETE", "recursive": "false"}
         assert request.headers["Accept"] == "application/x-ndjson"
         resp = web.StreamResponse()
@@ -927,7 +938,7 @@ async def test_storage_rm_generic_error_in_the_response_stream(
         return resp
 
     app = web.Application()
-    app.router.add_delete("/storage/user/file", delete_handler)
+    app.router.add_delete("/storage/test-project/file", delete_handler)
 
     srv = await aiohttp_server(app)
 
@@ -941,12 +952,12 @@ async def test_storage_mv(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder"
-        assert request.query == {"op": "RENAME", "destination": "/user/other"}
+        assert request.path == "/storage/test-project/folder"
+        assert request.query == {"op": "RENAME", "destination": "/test-project/other"}
         return web.Response(status=204)
 
     app = web.Application()
-    app.router.add_post("/storage/user/folder", handler)
+    app.router.add_post("/storage/test-project/folder", handler)
 
     srv = await aiohttp_server(app)
 
@@ -958,18 +969,19 @@ async def test_storage_mv_another_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage2/user/folder"
-        assert request.query == {"op": "RENAME", "destination": "/user/other"}
+        assert request.path == "/storage2/test-project/folder"
+        assert request.query == {"op": "RENAME", "destination": "/test-project/other"}
         return web.Response(status=204)
 
     app = web.Application()
-    app.router.add_post("/storage2/user/folder", handler)
+    app.router.add_post("/storage2/test-project/folder", handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
         await client.storage.mv(
-            URL("storage://another/user/folder"), URL("storage://another/user/other")
+            URL("storage://another/test-project/folder"),
+            URL("storage://another/test-project/other"),
         )
 
 
@@ -977,11 +989,11 @@ async def test_storage_mv_different_clusters(make_client: _MakeClient) -> None:
     async with make_client("https://example.com") as client:
         with pytest.raises(ValueError, match="Cannot move cross-cluster"):
             await client.storage.mv(
-                URL("storage:folder"), URL("storage://another/user/other")
+                URL("storage:folder"), URL("storage://another/test-project/other")
             )
         with pytest.raises(ValueError, match="Cannot move cross-cluster"):
             await client.storage.mv(
-                URL("storage://another/user/folder"), URL("storage:other")
+                URL("storage://another/test-project/folder"), URL("storage:other")
             )
 
 
@@ -992,8 +1004,8 @@ async def test_storage_mv_unknown_cluster(make_client: _MakeClient) -> None:
             match="Cluster unknown doesn't exist in a list of available clusters",
         ):
             await client.storage.mv(
-                URL("storage://unknown/user/folder"),
-                URL("storage://unknown/user/other"),
+                URL("storage://unknown/test-project/folder"),
+                URL("storage://unknown/test-project/other"),
             )
 
 
@@ -1001,12 +1013,12 @@ async def test_storage_mkdir_parents_exist_ok(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder/sub"
+        assert request.path == "/storage/test-project/folder/sub"
         assert request.query == {"op": "MKDIRS"}
         return web.Response(status=204)
 
     app = web.Application()
-    app.router.add_put("/storage/user/folder/sub", handler)
+    app.router.add_put("/storage/test-project/folder/sub", handler)
 
     srv = await aiohttp_server(app)
 
@@ -1020,18 +1032,20 @@ async def test_storage_mkdir_parents_exist_ok_another_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage2/user/folder/sub"
+        assert request.path == "/storage2/test-project/folder/sub"
         assert request.query == {"op": "MKDIRS"}
         return web.Response(status=204)
 
     app = web.Application()
-    app.router.add_put("/storage2/user/folder/sub", handler)
+    app.router.add_put("/storage2/test-project/folder/sub", handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
         await client.storage.mkdir(
-            URL("storage://another/user/folder/sub"), parents=True, exist_ok=True
+            URL("storage://another/test-project/folder/sub"),
+            parents=True,
+            exist_ok=True,
         )
 
 
@@ -1039,18 +1053,18 @@ async def test_storage_mkdir_parents(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def get_handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder/sub"
+        assert request.path == "/storage/test-project/folder/sub"
         assert request.query == {"op": "GETFILESTATUS"}
         return web.Response(status=404)
 
     async def put_handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder/sub"
+        assert request.path == "/storage/test-project/folder/sub"
         assert request.query == {"op": "MKDIRS"}
         return web.Response(status=204)
 
     app = web.Application()
-    app.router.add_get("/storage/user/folder/sub", get_handler)
-    app.router.add_put("/storage/user/folder/sub", put_handler)
+    app.router.add_get("/storage/test-project/folder/sub", get_handler)
+    app.router.add_put("/storage/test-project/folder/sub", put_handler)
 
     srv = await aiohttp_server(app)
 
@@ -1062,12 +1076,12 @@ async def test_storage_mkdir_exist_ok(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def get_handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder"
+        assert request.path == "/storage/test-project/folder"
         assert request.query == {"op": "GETFILESTATUS"}
         return web.json_response(
             {
                 "FileStatus": {
-                    "path": "/user/folder",
+                    "path": "/test-project/folder",
                     "type": "DIRECTORY",
                     "length": 1234,
                     "modificationTime": 3456,
@@ -1077,13 +1091,13 @@ async def test_storage_mkdir_exist_ok(
         )
 
     async def put_handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder/sub"
+        assert request.path == "/storage/test-project/folder/sub"
         assert request.query == {"op": "MKDIRS"}
         return web.Response(status=204)
 
     app = web.Application()
-    app.router.add_get("/storage/user/folder", get_handler)
-    app.router.add_put("/storage/user/folder/sub", put_handler)
+    app.router.add_get("/storage/test-project/folder", get_handler)
+    app.router.add_put("/storage/test-project/folder/sub", put_handler)
 
     srv = await aiohttp_server(app)
 
@@ -1095,17 +1109,17 @@ async def test_storage_mkdir(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def get_handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder/sub"
+        assert request.path == "/storage/test-project/folder/sub"
         assert request.query == {"op": "GETFILESTATUS"}
         return web.Response(status=404)
 
     async def parent_get_handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder"
+        assert request.path == "/storage/test-project/folder"
         assert request.query == {"op": "GETFILESTATUS"}
         return web.json_response(
             {
                 "FileStatus": {
-                    "path": "/user/folder",
+                    "path": "/test-project/folder",
                     "type": "DIRECTORY",
                     "length": 1234,
                     "modificationTime": 3456,
@@ -1115,14 +1129,14 @@ async def test_storage_mkdir(
         )
 
     async def put_handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder/sub"
+        assert request.path == "/storage/test-project/folder/sub"
         assert request.query == {"op": "MKDIRS"}
         return web.Response(status=204)
 
     app = web.Application()
-    app.router.add_get("/storage/user/folder/sub", get_handler)
-    app.router.add_get("/storage/user/folder", parent_get_handler)
-    app.router.add_put("/storage/user/folder/sub", put_handler)
+    app.router.add_get("/storage/test-project/folder/sub", get_handler)
+    app.router.add_get("/storage/test-project/folder", parent_get_handler)
+    app.router.add_put("/storage/test-project/folder/sub", put_handler)
 
     srv = await aiohttp_server(app)
 
@@ -1134,14 +1148,14 @@ async def test_storage_create(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/file"
+        assert request.path == "/storage/test-project/file"
         assert request.query == {"op": "CREATE"}
         content = await request.read()
         assert content == b"01234"
         return web.Response(status=201)
 
     app = web.Application()
-    app.router.add_put("/storage/user/file", handler)
+    app.router.add_put("/storage/test-project/file", handler)
 
     srv = await aiohttp_server(app)
 
@@ -1157,14 +1171,14 @@ async def test_storage_create_another_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage2/user/file"
+        assert request.path == "/storage2/test-project/file"
         assert request.query == {"op": "CREATE"}
         content = await request.read()
         assert content == b"01234"
         return web.Response(status=201)
 
     app = web.Application()
-    app.router.add_put("/storage2/user/file", handler)
+    app.router.add_put("/storage2/test-project/file", handler)
 
     srv = await aiohttp_server(app)
 
@@ -1173,14 +1187,14 @@ async def test_storage_create_another_cluster(
             yield str(i).encode("ascii")
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.create(URL("storage://another/user/file"), gen())
+        await client.storage.create(URL("storage://another/test-project/file"), gen())
 
 
 async def test_storage_write(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/file"
+        assert request.path == "/storage/test-project/file"
         assert request.query == {"op": "WRITE"}
         rng = _parse_content_range(request.headers.get("Content-Range"))
         assert rng == slice(4, 9)
@@ -1189,7 +1203,7 @@ async def test_storage_write(
         return web.Response(status=200)
 
     app = web.Application()
-    app.router.add_patch("/storage/user/file", handler)
+    app.router.add_patch("/storage/test-project/file", handler)
 
     srv = await aiohttp_server(app)
 
@@ -1201,7 +1215,7 @@ async def test_storage_write_another_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage2/user/file"
+        assert request.path == "/storage2/test-project/file"
         assert request.query == {"op": "WRITE"}
         rng = _parse_content_range(request.headers.get("Content-Range"))
         assert rng == slice(4, 9)
@@ -1210,24 +1224,26 @@ async def test_storage_write_another_cluster(
         return web.Response(status=200)
 
     app = web.Application()
-    app.router.add_patch("/storage2/user/file", handler)
+    app.router.add_patch("/storage2/test-project/file", handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        await client.storage.write(URL("storage://another/user/file"), b"01234", 4)
+        await client.storage.write(
+            URL("storage://another/test-project/file"), b"01234", 4
+        )
 
 
 async def test_storage_stats(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder"
+        assert request.path == "/storage/test-project/folder"
         assert request.query == {"op": "GETFILESTATUS"}
         return web.json_response(
             {
                 "FileStatus": {
-                    "path": "/user/folder",
+                    "path": "/test-project/folder",
                     "type": "DIRECTORY",
                     "length": 1234,
                     "modificationTime": 3456,
@@ -1237,19 +1253,19 @@ async def test_storage_stats(
         )
 
     app = web.Application()
-    app.router.add_get("/storage/user/folder", handler)
+    app.router.add_get("/storage/test-project/folder", handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
         stats = await client.storage.stat(URL("storage:folder"))
         assert stats == FileStatus(
-            path="/user/folder",
+            path="/test-project/folder",
             type=FileStatusType.DIRECTORY,
             size=1234,
             modification_time=3456,
             permission=Action.READ,
-            uri=URL("storage://default/user/folder"),
+            uri=URL("storage://default/test-project/folder"),
         )
 
 
@@ -1257,12 +1273,12 @@ async def test_storage_stats_another_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage2/user/folder"
+        assert request.path == "/storage2/test-project/folder"
         assert request.query == {"op": "GETFILESTATUS"}
         return web.json_response(
             {
                 "FileStatus": {
-                    "path": "/user/folder",
+                    "path": "/test-project/folder",
                     "type": "DIRECTORY",
                     "length": 1234,
                     "modificationTime": 3456,
@@ -1272,19 +1288,19 @@ async def test_storage_stats_another_cluster(
         )
 
     app = web.Application()
-    app.router.add_get("/storage2/user/folder", handler)
+    app.router.add_get("/storage2/test-project/folder", handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        stats = await client.storage.stat(URL("storage://another/user/folder"))
+        stats = await client.storage.stat(URL("storage://another/test-project/folder"))
         assert stats == FileStatus(
-            path="/user/folder",
+            path="/test-project/folder",
             type=FileStatusType.DIRECTORY,
             size=1234,
             modification_time=3456,
             permission=Action.READ,
-            uri=URL("storage://another/user/folder"),
+            uri=URL("storage://another/test-project/folder"),
         )
 
 
@@ -1292,12 +1308,12 @@ async def test_storage_stats_symlink(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/link"
+        assert request.path == "/storage/test-project/link"
         assert request.query == {"op": "GETFILESTATUS"}
         return web.json_response(
             {
                 "FileStatus": {
-                    "path": "/user/link",
+                    "path": "/test-project/link",
                     "type": "SYMLINK",
                     "length": 1234,
                     "modificationTime": 3456,
@@ -1308,20 +1324,20 @@ async def test_storage_stats_symlink(
         )
 
     app = web.Application()
-    app.router.add_get("/storage/user/link", handler)
+    app.router.add_get("/storage/test-project/link", handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
         stats = await client.storage.stat(URL("storage:link"))
         assert stats == FileStatus(
-            path="/user/link",
+            path="/test-project/link",
             type=FileStatusType.SYMLINK,
             size=1234,
             modification_time=3456,
             permission=Action.READ,
             target="folder/subfolder/file",
-            uri=URL("storage://default/user/link"),
+            uri=URL("storage://default/test-project/link"),
         )
 
 
@@ -1329,7 +1345,7 @@ async def test_storage_open(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.StreamResponse:
-        assert request.path == "/storage/user/file"
+        assert request.path == "/storage/test-project/file"
         if request.query["op"] == "OPEN":
             resp = web.StreamResponse()
             await resp.prepare(request)
@@ -1340,7 +1356,7 @@ async def test_storage_open(
             raise AssertionError(f"Unknown operation {request.query['op']}")
 
     app = web.Application()
-    app.router.add_get("/storage/user/file", handler)
+    app.router.add_get("/storage/test-project/file", handler)
 
     srv = await aiohttp_server(app)
 
@@ -1356,7 +1372,7 @@ async def test_storage_open_another_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.StreamResponse:
-        assert request.path == "/storage2/user/file"
+        assert request.path == "/storage2/test-project/file"
         if request.query["op"] == "OPEN":
             resp = web.StreamResponse()
             await resp.prepare(request)
@@ -1367,13 +1383,15 @@ async def test_storage_open_another_cluster(
             raise AssertionError(f"Unknown operation {request.query['op']}")
 
     app = web.Application()
-    app.router.add_get("/storage2/user/file", handler)
+    app.router.add_get("/storage2/test-project/file", handler)
 
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
         buf = bytearray()
-        async with client.storage.open(URL("storage://another/user/file")) as it:
+        async with client.storage.open(
+            URL("storage://another/test-project/file")
+        ) as it:
             async for chunk in it:
                 buf.extend(chunk)
         assert buf == b"01234"
@@ -1383,7 +1401,7 @@ async def test_storage_open_partial_read(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.StreamResponse:
-        assert request.path == "/storage/user/file"
+        assert request.path == "/storage/test-project/file"
         if request.query["op"] == "OPEN":
             rng = request.http_range
             data = b"ababahalamaha"
@@ -1397,7 +1415,7 @@ async def test_storage_open_partial_read(
             raise AssertionError(f"Unknown operation {request.query['op']}")
 
     app = web.Application()
-    app.router.add_get("/storage/user/file", handler)
+    app.router.add_get("/storage/test-project/file", handler)
 
     srv = await aiohttp_server(app)
 
@@ -1431,7 +1449,7 @@ async def test_storage_open_unsupported_partial_read(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.StreamResponse:
-        assert request.path == "/storage/user/file"
+        assert request.path == "/storage/test-project/file"
         if request.query["op"] == "OPEN":
             resp = web.StreamResponse()
             await resp.prepare(request)
@@ -1442,7 +1460,7 @@ async def test_storage_open_unsupported_partial_read(
             raise AssertionError(f"Unknown operation {request.query['op']}")
 
     app = web.Application()
-    app.router.add_get("/storage/user/file", handler)
+    app.router.add_get("/storage/test-project/file", handler)
 
     srv = await aiohttp_server(app)
 
@@ -1463,12 +1481,12 @@ async def test_storage_open_directory(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     async def handler(request: web.Request) -> web.Response:
-        assert request.path == "/storage/user/folder"
+        assert request.path == "/storage/test-project/folder"
         assert request.query == {"op": "GETFILESTATUS"}
         return web.json_response(
             {
                 "FileStatus": {
-                    "path": "/user/folder",
+                    "path": "/test-project/folder",
                     "type": "DIRECTORY",
                     "length": 5,
                     "modificationTime": 3456,
@@ -1478,7 +1496,7 @@ async def test_storage_open_directory(
         )
 
     app = web.Application()
-    app.router.add_get("/storage/user/folder", handler)
+    app.router.add_get("/storage/test-project/folder", handler)
 
     srv = await aiohttp_server(app)
 
@@ -1532,7 +1550,7 @@ async def test_storage_upload_not_a_file(
     assert uploaded == b""
 
     src = URL(file_path.as_uri())
-    dst = URL("storage://default/user/file.txt")
+    dst = URL("storage://default/test-project/file.txt")
     progress.start.assert_called_with(StorageProgressStart(src, dst, 0))
     progress.step.assert_not_called()
     progress.complete.assert_called_with(StorageProgressComplete(src, dst, 0))
@@ -1559,7 +1577,7 @@ async def test_storage_upload_regular_file_to_existing_file_target(
     assert uploaded == expected
 
     src = URL(file_path.as_uri())
-    dst = URL("storage://default/user/file.txt")
+    dst = URL("storage://default/test-project/file.txt")
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))
     progress.step.assert_called_with(
         StorageProgressStep(src, dst, file_size, file_size)
@@ -1748,7 +1766,7 @@ async def test_storage_download_regular_file_to_absent_file(
     downloaded = local_file.read_bytes()
     assert downloaded == expected
 
-    src = URL("storage://default/user/file.txt")
+    src = URL("storage://default/test-project/file.txt")
     dst = URL(local_file.as_uri())
     file_size = src_file.stat().st_size
     progress.start.assert_called_with(StorageProgressStart(src, dst, file_size))

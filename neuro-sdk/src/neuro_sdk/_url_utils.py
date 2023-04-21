@@ -75,14 +75,14 @@ def _check_scheme(scheme: str, allowed: Iterable[str]) -> None:
 
 
 def normalize_storage_path_uri(
-    uri: URL, username: str, cluster_name: str, org_name: Optional[str]
+    uri: URL, project_name: str, cluster_name: str, org_name: Optional[str]
 ) -> URL:
     """Normalize storage url."""
     if uri.scheme != "storage":
         raise ValueError(
             f"Invalid storage scheme '{uri.scheme}:' (only 'storage:' is allowed)"
         )
-    return _normalize_uri(uri, username, cluster_name, org_name)
+    return _normalize_uri(uri, project_name, cluster_name, org_name)
 
 
 def normalize_secret_uri(
@@ -108,9 +108,9 @@ def normalize_disk_uri(
 
 
 def _normalize_uri(
-    uri: URL, username: str, cluster_name: str, org_name: Optional[str]
+    uri: URL, project_name: str, cluster_name: str, org_name: Optional[str]
 ) -> URL:
-    """Normalize all other user-bound URI's like jobs, storage, images, etc."""
+    """Normalize all other project-bound URI's like jobs, storage, images, etc."""
     _check_uri(uri)
     path = uri.path
     if (uri.host or path.lstrip("/")).startswith("~"):
@@ -121,7 +121,7 @@ def _normalize_uri(
             if path.startswith("/"):
                 path = path.lstrip("/")
             else:
-                path = f"{username}/{path}" if path else username
+                path = f"{project_name}/{path}" if path else project_name
             if org_name is not None:
                 path = f"{org_name}/{path}"
         else:

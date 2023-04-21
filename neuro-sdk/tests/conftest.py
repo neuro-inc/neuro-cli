@@ -173,6 +173,7 @@ def make_client(
                 projects.update(
                     {project.key: project, project_other.key: project_other}
                 )
+            project_name = "test-project"
         if token_url is not None:
             real_auth_config = replace(auth_config, token_url=token_url)
         else:
@@ -186,11 +187,9 @@ def make_client(
         if clusters:
             cluster_name = next(iter(clusters))
             org_name = clusters[cluster_name].orgs[0]
-            project_name = "test-project"
         else:
             cluster_name = None
             org_name = None
-            project_name = None
         config = _ConfigData(
             auth_config=real_auth_config,
             auth_token=_AuthToken.create_non_expiring(token),
@@ -201,7 +200,7 @@ def make_client(
             org_name=org_name,
             project_name=project_name,
             clusters=clusters,
-            projects=projects or {},
+            projects=projects,
         )
         config_dir = tmp_path / ".neuro"
         _save(config, config_dir)

@@ -1131,8 +1131,9 @@ def _job_telemetry_from_api(value: Dict[str, Any]) -> JobTelemetry:
 
 
 def _volume_to_api(volume: Volume, config: Config) -> Dict[str, Any]:
+    assert config.project_name, "Project is not configured"
     uri = normalize_storage_path_uri(
-        volume.storage_uri, config.username, config.cluster_name, config.org_name
+        volume.storage_uri, config.project_name, config.cluster_name, config.org_name
     )
     resp: Dict[str, Any] = {
         "src_storage_uri": str(uri),
