@@ -131,8 +131,13 @@ class Storage(metaclass=NoPublicConstructor):
         self._max_time_diff = 0.0
 
     def _normalize_uri(self, uri: URL) -> URL:
+        if not self._config.project_name:
+            raise RuntimeError("Project is not configured")
         return normalize_storage_path_uri(
-            uri, self._config.username, self._config.cluster_name, self._config.org_name
+            uri,
+            self._config.project_name,
+            self._config.cluster_name,
+            self._config.org_name,
         )
 
     def _get_storage_url(self, uri: URL, *, normalized: bool = False) -> URL:

@@ -3106,8 +3106,8 @@ neuro cp -T storage:foo.txt file:///tmp/foo.txt
 neuro cp storage:foo.txt file:///tmp
 neuro cp storage:foo.txt -t file:///tmp
 
-# download other user's remote file into the current directory
-neuro cp storage://{username}/foo.txt .
+# download other project's remote file into the current directory
+neuro cp storage:/{project}/foo.txt .
 
 # download only files with extension `.out` into the current directory
 neuro cp storage:results/*.out .
@@ -3173,7 +3173,7 @@ Name | Description|
 
 ### neuro storage ls
 
-List directory contents.<br/><br/>By default PATH is equal user's home dir \(storage:)
+List directory contents.<br/><br/>By default PATH is equal project's dir \(storage:)
 
 **Usage:**
 
@@ -3241,11 +3241,11 @@ neuro mv storage:foo.txt storage:bar/baz.dat -t storage:dst
 # remote directory
 neuro mv -T storage:foo storage:bar
 
-# move remote file into other user's directory
-neuro mv storage:foo.txt storage://{username}/bar.dat
+# move remote file into other project's directory
+neuro mv storage:foo.txt storage:/{project}/bar.dat
 
-# move remote file from other user's directory
-neuro mv storage://{username}/foo.txt storage:bar.dat
+# move remote file from other project's directory
+neuro mv storage:/{project}/foo.txt storage:bar.dat
 
 ```
 
@@ -3276,8 +3276,9 @@ neuro storage rm [OPTIONS] PATHS...
 ```bash
 
 neuro rm storage:foo/bar
-neuro rm storage://{username}/foo/bar
-neuro rm --recursive storage://{username}/foo/
+neuro rm storage:/{project}/foo/bar
+neuro rm storage://{cluster}/{project}/foo/bar
+neuro rm --recursive storage:/{project}/foo/
 neuro rm storage:foo/**/*.tmp
 
 ```
@@ -3296,7 +3297,7 @@ Name | Description|
 
 ### neuro storage tree
 
-List storage in a tree-like format<br/><br/>Tree is a recursive directory listing program that produces a depth indented<br/>listing of files, which is colorized ala dircolors if the LS_COLORS<br/>environment variable is set and output is to tty.  With no arguments, tree<br/>lists the files in the storage: directory.  When directory arguments are<br/>given, tree lists all the files and/or directories found in the given<br/>directories each in turn.  Upon completion of listing all files/directories<br/>found, tree returns the total number of files and/or directories listed.<br/><br/>By default PATH is equal user's home dir \(storage:)
+List storage in a tree-like format<br/><br/>Tree is a recursive directory listing program that produces a depth indented<br/>listing of files, which is colorized ala dircolors if the LS_COLORS<br/>environment variable is set and output is to tty.  With no arguments, tree<br/>lists the files in the storage: directory.  When directory arguments are<br/>given, tree lists all the files and/or directories found in the given<br/>directories each in turn.  Upon completion of listing all files/directories<br/>found, tree returns the total number of files and/or directories listed.<br/><br/>By default PATH is equal project's dir \(storage:)
 
 **Usage:**
 
@@ -3369,8 +3370,8 @@ neuro cp -T storage:foo.txt file:///tmp/foo.txt
 neuro cp storage:foo.txt file:///tmp
 neuro cp storage:foo.txt -t file:///tmp
 
-# download other user's remote file into the current directory
-neuro cp storage://{username}/foo.txt .
+# download other project's remote file into the current directory
+neuro cp storage:/{project}/foo.txt .
 
 # download only files with extension `.out` into the current directory
 neuro cp storage:results/*.out .
@@ -3551,7 +3552,7 @@ Name | Description|
 
 ## neuro ls
 
-List directory contents.<br/><br/>By default PATH is equal user's home dir \(storage:)
+List directory contents.<br/><br/>By default PATH is equal project's dir \(storage:)
 
 **Usage:**
 
@@ -3619,11 +3620,11 @@ neuro mv storage:foo.txt storage:bar/baz.dat -t storage:dst
 # remote directory
 neuro mv -T storage:foo storage:bar
 
-# move remote file into other user's directory
-neuro mv storage:foo.txt storage://{username}/bar.dat
+# move remote file into other project's directory
+neuro mv storage:foo.txt storage:/{project}/bar.dat
 
-# move remote file from other user's directory
-neuro mv storage://{username}/foo.txt storage:bar.dat
+# move remote file from other project's directory
+neuro mv storage:/{project}/foo.txt storage:bar.dat
 
 ```
 
@@ -3796,8 +3797,9 @@ neuro rm [OPTIONS] PATHS...
 ```bash
 
 neuro rm storage:foo/bar
-neuro rm storage://{username}/foo/bar
-neuro rm --recursive storage://{username}/foo/
+neuro rm storage:/{project}/foo/bar
+neuro rm storage://{cluster}/{project}/foo/bar
+neuro rm --recursive storage:/{project}/foo/
 neuro rm storage:foo/**/*.tmp
 
 ```
