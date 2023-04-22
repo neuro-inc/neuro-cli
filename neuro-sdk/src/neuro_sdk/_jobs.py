@@ -357,7 +357,7 @@ class Jobs(metaclass=NoPublicConstructor):
     ) -> JobDescription:
         url = self._config.api_url / "jobs"
         if not project_name:
-            project_name = self._config.project_name or self._config.username
+            project_name = self._config.project_name_or_raise
         payload = _job_to_api(
             cluster_name=self._config.cluster_name,
             project_name=project_name,
@@ -442,10 +442,9 @@ class Jobs(metaclass=NoPublicConstructor):
             tty=tty,
             shm=shm,
         )
-        cur_project = self._config.project_name or self._config.username
         payload = _job_to_api(
             cluster_name=cluster_name or self._config.cluster_name,
-            project_name=project_name or cur_project,
+            project_name=project_name or self._config.project_name_or_raise,
             name=name,
             preset_name=preset_name,
             tags=tags,

@@ -1750,6 +1750,15 @@ async def add_project(
         )
         fmt = ProjectFormatter()
         root.print(fmt(project, skip_cluster_org=True))
+    if (
+        not root.client.config.project_name
+        and root.client.cluster_name == project.cluster_name
+    ):
+        await root.client.config.switch_project(project.name)
+        root.print(
+            f"Selected [bold]{rich_escape(project.name)}[/bold] as current project.",
+            markup=True,
+        )
 
 
 @command()
