@@ -1,11 +1,14 @@
 from datetime import timedelta
-from typing import Optional, Sequence
+from typing import Optional, Sequence, Union
+
+from yarl import URL
 
 from neuro_cli.click_types import (
     CLUSTER,
     DISK,
     DISK_NAME,
     ORG,
+    PROJECT,
     PlatformURIType,
     UnionType,
 )
@@ -39,10 +42,19 @@ def disk() -> None:
     type=CLUSTER,
     help="Look on a specified cluster (the current cluster by default).",
 )
+@option(
+    "--project",
+    type=PROJECT,
+    help="Look on a specified project (all projects in current cluster by default).",
+)
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
 @option("--long-format", is_flag=True, help="Output all info about disk.")
 async def ls(
-    root: Root, full_uri: bool, long_format: bool, cluster: Optional[str]
+    root: Root,
+    full_uri: bool,
+    long_format: bool,
+    cluster: Optional[str],
+    project: Optional[str],
 ) -> None:
     """
     List disks.
@@ -57,6 +69,7 @@ async def ls(
                 username=root.client.username,
                 cluster_name=cluster or root.client.cluster_name,
                 org_name=root.client.config.org_name,
+                project_name=project or root.client.config.project_name,
             )
         disks_fmtr = DisksFormatter(
             uri_fmtr,
@@ -66,7 +79,9 @@ async def ls(
 
     disks = []
     with root.status("Fetching disks") as status:
-        async with root.client.disks.list(cluster_name=cluster) as it:
+        async with root.client.disks.list(
+            cluster_name=cluster, project_name=project
+        ) as it:
             async for disk in it:
                 disks.append(disk)
                 status.update(f"Fetching disks ({len(disks)} loaded)")
@@ -105,6 +120,11 @@ async def ls(
     help="Optional disk name",
     default=None,
 )
+@option(
+    "--project",
+    type=PROJECT,
+    help="Create disk in a specified project (the current project by default).",
+)
 async def create(
     root: Root,
     storage: str,
@@ -112,6 +132,7 @@ async def create(
     name: Optional[str] = None,
     cluster: Optional[str] = None,
     org: Optional[str] = None,
+    project: Optional[str] = None,
 ) -> None:
     """
     Create a disk
@@ -146,6 +167,7 @@ async def create(
         timeout_unused=disk_timeout_unused,
         name=name,
         cluster_name=cluster,
+        project_name=project,
         org_name=org_name,
     )
     disk_fmtr = DiskFormatter(
@@ -165,17 +187,23 @@ async def create(
     "disk", type=UnionType("disk", PlatformURIType(allowed_schemes=("disk",)), DISK)
 )
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
-async def get(root: Root, cluster: Optional[str], disk: str, full_uri: bool) -> None:
+async def get(
+    root: Root, cluster: Optional[str], disk: Union[str, URL], full_uri: bool
+) -> None:
     """
     Get disk DISK_ID.
     """
-    disk_id = await resolve_disk(disk, client=root.client, cluster_name=cluster)
-    disk_obj = await root.client.disks.get(disk_id, cluster_name=cluster)
+    if isinstance(disk, URL):
+        disk_str = disk.parts[-1]
+    else:
+        disk_str = disk
+    disk_obj = await root.client.disks.get(disk_str, cluster_name=cluster)
+
     if full_uri:
         uri_fmtr: URIFormatter = str
     else:
         uri_fmtr = uri_formatter(
-            username=root.client.username,
+            project_name=root.client.config.project_name,
             cluster_name=cluster or root.client.cluster_name,
             org_name=root.client.config.org_name,
         )

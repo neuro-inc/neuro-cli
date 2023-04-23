@@ -1747,7 +1747,7 @@ async def test_job_run_with_disk_volume_uris(
             },
             "disk_volumes": [
                 {
-                    "src_disk_uri": "disk://default/user/disk-1",
+                    "src_disk_uri": "disk://default/test-project/disk-1",
                     "dst_path": "/container/my_path",
                     "read_only": False,
                 }
@@ -1774,7 +1774,7 @@ async def test_job_run_with_disk_volume_uris(
                 },
                 "disk_volumes": [
                     {
-                        "src_disk_uri": "disk://default/user/disk-1",
+                        "src_disk_uri": "disk://default/test-project/disk-1",
                         "dst_path": "/container/my_path",
                         "read_only": False,
                     }

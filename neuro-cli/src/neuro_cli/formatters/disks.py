@@ -103,6 +103,8 @@ class DiskFormatter:
         if disk.name:
             table.add_row("Name", disk.name)
         table.add_row("Org name", disk.org_name or ORG.NO_ORG_STR)
+        table.add_row("Project name", disk.project_name)
+        table.add_row("Owner", disk.owner)
         table.add_row("Status", disk.status.value)
         table.add_row("Created at", self._datetime_formatter(disk.created_at))
         table.add_row("Last used", self._datetime_formatter(disk.last_usage))

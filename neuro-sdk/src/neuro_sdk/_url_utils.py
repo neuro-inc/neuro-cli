@@ -97,14 +97,14 @@ def normalize_secret_uri(
 
 
 def normalize_disk_uri(
-    uri: URL, username: str, cluster_name: str, org_name: Optional[str]
+    uri: URL, project_name: str, cluster_name: str, org_name: Optional[str]
 ) -> URL:
     """Normalize disk url."""
     if uri.scheme != "disk":
         raise ValueError(
             f"Invalid disk scheme '{uri.scheme}:' (only 'disk:' is allowed)"
         )
-    return _normalize_uri(uri, username, cluster_name, org_name)
+    return _normalize_uri(uri, project_name, cluster_name, org_name)
 
 
 def _normalize_uri(

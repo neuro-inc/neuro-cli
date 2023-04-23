@@ -25,6 +25,7 @@ async def test_list(
                     "id": "disk-1",
                     "storage": 500,
                     "owner": "user",
+                    "project_name": "test-project",
                     "status": "Ready",
                     "created_at": created_at.isoformat(),
                     "name": None,
@@ -33,6 +34,7 @@ async def test_list(
                     "id": "disk-2",
                     "storage": 600,
                     "owner": "user",
+                    "project_name": "test-project",
                     "status": "Pending",
                     "org_name": "test-org",
                     "created_at": created_at.isoformat(),
@@ -51,6 +53,7 @@ async def test_list(
     ret = []
 
     async with make_client(srv.make_url("/")) as client:
+        project_name = client.config.project_name_or_raise
         async with client.disks.list() as it:
             async for s in it:
                 ret.append(s)
@@ -62,6 +65,7 @@ async def test_list(
             owner="user",
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
+            project_name=project_name,
             org_name=None,
             created_at=created_at,
             timeout_unused=None,
@@ -73,6 +77,7 @@ async def test_list(
             owner="user",
             status=Disk.Status.PENDING,
             cluster_name=cluster_config.name,
+            project_name=project_name,
             org_name="test-org",
             created_at=created_at,
             last_usage=last_usage,
@@ -96,6 +101,7 @@ async def test_add(
             "life_span": 3600,
             "name": "test-disk",
             "org_name": None,
+            "project_name": "test-project",
         }
         return web.json_response(
             {
@@ -106,6 +112,7 @@ async def test_add(
                 "created_at": created_at.isoformat(),
                 "life_span": 3600,
                 "name": "test-disk",
+                "project_name": "test-project",
             },
         )
 
@@ -122,6 +129,7 @@ async def test_add(
             owner="user",
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
+            project_name=client.config.project_name_or_raise,
             org_name=None,
             created_at=created_at,
             timeout_unused=timedelta(hours=1),
@@ -143,6 +151,7 @@ async def test_add_with_org_name(
             "life_span": 3600,
             "name": "test-disk",
             "org_name": "test-org",
+            "project_name": "test-project",
         }
         return web.json_response(
             {
@@ -154,6 +163,7 @@ async def test_add_with_org_name(
                 "life_span": 3600,
                 "name": "test-disk",
                 "org_name": "test-org",
+                "project_name": "test-project",
             },
         )
 
@@ -173,6 +183,7 @@ async def test_add_with_org_name(
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
             org_name="test-org",
+            project_name="test-project",
             created_at=created_at,
             timeout_unused=timedelta(hours=1),
             name="test-disk",
@@ -194,6 +205,7 @@ async def test_get(
                 "storage": 500,
                 "used_bytes": 150,
                 "owner": "user",
+                "project_name": "some-project",
                 "status": "Ready",
                 "created_at": created_at.isoformat(),
             },
@@ -214,6 +226,7 @@ async def test_get(
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
             org_name=None,
+            project_name="some-project",
             created_at=created_at,
         )
 

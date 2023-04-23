@@ -12,7 +12,10 @@ ImageFormatter = Callable[[RemoteImage], str]
 
 
 def uri_formatter(
-    username: str, cluster_name: str, org_name: Optional[str]
+    cluster_name: str,
+    org_name: Optional[str],
+    username: Optional[str] = None,
+    project_name: Optional[str] = None,
 ) -> URIFormatter:
     def formatter(uri: URL) -> str:
         if uri.scheme in SCHEMES:
@@ -27,7 +30,11 @@ def uri_formatter(
                     owner, _, rest = path.partition("/")
                 else:
                     owner = owner_or_org
-                if owner == username:
+                # TODO (Y.S.): remove this check and use project_name parameter
+                # when the last patch for projects is done
+                project = project_name or username
+                assert project, "Ensure you've set project_name"
+                if owner == project:
                     path = rest.lstrip("/")
                 else:
                     path = "/" + path
