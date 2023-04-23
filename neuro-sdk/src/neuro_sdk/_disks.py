@@ -105,7 +105,6 @@ class Disks(metaclass=NoPublicConstructor):
         async with self._core.request("GET", url, auth=auth, params=params) as resp:
             ret = await resp.json()
             for disk_payload in ret:
-                print(disk_payload)
                 yield self._parse_disk_payload(disk_payload)
 
     async def create(
