@@ -134,9 +134,6 @@ class TestConfigFormatter:
         cluster_config: Cluster,
         rich_cmp: RichCmp,
     ) -> None:
-        project = Project(
-            name="main", cluster_name=cluster_config.name, org_name=None, role="owner"
-        )
         client = make_client(
             "https://dev.neu.ro/api/v1",
             clusters={cluster_config.name: cluster_config},

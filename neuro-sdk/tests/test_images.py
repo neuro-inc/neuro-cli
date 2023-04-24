@@ -584,7 +584,7 @@ class TestImageParser:
             project_name="project",
         )
 
-    def test_parse_as_neuro_image_with_scheme_2_slash_cluster_project_no_name_no_tag_fail(
+    def test_parse_as_neuro_image_with_scheme_2_slash_cluster_proj_no_name_no_tag_fail(
         self,
     ) -> None:
         image = "image://another/ubuntu"
@@ -1064,9 +1064,9 @@ class TestRemoteImage:
             org_name=None,
             project_name="test-project",
         )
-        assert (
-            str(image)
-            == "image://test-cluster/test-project/image%23%252d%3F%C3%9F:tag%23%252d%3F%C3%9F"
+        assert str(image) == (
+            "image://test-cluster/test-project/"
+            "image%23%252d%3F%C3%9F:tag%23%252d%3F%C3%9F"
         )
         assert image.as_docker_url() == "registry.io/test-project/image#%2d?ß:tag#%2d?ß"
 
