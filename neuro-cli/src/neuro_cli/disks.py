@@ -193,11 +193,8 @@ async def get(
     """
     Get disk DISK_ID.
     """
-    if isinstance(disk, URL):
-        disk_str = disk.parts[-1]
-    else:
-        disk_str = disk
-    disk_obj = await root.client.disks.get(disk_str, cluster_name=cluster)
+    disk_id = await resolve_disk(disk, client=root.client, cluster_name=cluster)
+    disk_obj = await root.client.disks.get(disk_id, cluster_name=cluster)
 
     if full_uri:
         uri_fmtr: URIFormatter = str
