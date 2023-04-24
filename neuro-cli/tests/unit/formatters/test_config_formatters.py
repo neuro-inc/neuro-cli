@@ -12,7 +12,6 @@ from neuro_sdk import (
     Client,
     Cluster,
     Preset,
-    Project,
     Quota,
     _Balance,
     _ClusterStatus,
