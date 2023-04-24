@@ -66,10 +66,9 @@ async def ls(
             uri_fmtr: URIFormatter = str
         else:
             uri_fmtr = uri_formatter(
-                username=root.client.username,
+                project_name=root.client.config.project_name_or_raise,
                 cluster_name=cluster or root.client.cluster_name,
                 org_name=root.client.config.org_name,
-                project_name=project or root.client.config.project_name,
             )
         disks_fmtr = DisksFormatter(
             uri_fmtr,
@@ -200,7 +199,7 @@ async def get(
         uri_fmtr: URIFormatter = str
     else:
         uri_fmtr = uri_formatter(
-            project_name=root.client.config.project_name,
+            project_name=root.client.config.project_name_or_raise,
             cluster_name=cluster or root.client.cluster_name,
             org_name=root.client.config.org_name,
         )

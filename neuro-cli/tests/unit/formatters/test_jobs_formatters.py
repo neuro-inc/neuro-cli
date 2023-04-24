@@ -434,7 +434,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -483,7 +483,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="default", org_name="test-org"
+            project_name="test-project", cluster_name="default", org_name="test-org"
         )
         rich_cmp(
             JobStatusFormatter(
@@ -525,7 +525,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -567,7 +567,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -609,7 +609,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -651,7 +651,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -694,7 +694,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -735,7 +735,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -773,7 +773,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -812,7 +812,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -850,7 +850,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -890,7 +890,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -951,7 +951,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -993,7 +993,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1034,7 +1034,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1084,7 +1084,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1150,7 +1150,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1284,7 +1284,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1350,7 +1350,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1400,7 +1400,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1439,7 +1439,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1478,7 +1478,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1518,7 +1518,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1558,7 +1558,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1598,7 +1598,7 @@ class TestJobOutputFormatter:
         )
 
         uri_fmtr = uri_formatter(
-            username="test-user", cluster_name="test-cluster", org_name=None
+            project_name="test-project", cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1977,13 +1977,15 @@ class TestTabularJobRow:
     def test_image_from_registry_parsing_short(
         self, root: Root, datetime_formatter: DatetimeFormatter
     ) -> None:
-        uri_fmtr = uri_formatter(username="bob", cluster_name="default", org_name=None)
+        uri_fmtr = uri_formatter(
+            project_name="test-project", cluster_name="default", org_name=None
+        )
         image_fmtr = image_formatter(uri_formatter=uri_fmtr)
         row = TabularJobRow.from_job(
             self._job_descr_with_status(
                 root,
                 JobStatus.PENDING,
-                "registry-dev.neu.ro/bob/swiss-box:red",
+                "registry-dev.neu.ro/test-project/swiss-box:red",
             ),
             "bob",
             image_formatter=image_fmtr,

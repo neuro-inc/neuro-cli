@@ -411,7 +411,7 @@ async def ls(
         uri_fmtr = str
     else:
         uri_fmtr = uri_formatter(
-            username=root.client.username,
+            project_name=root.client.config.project_name_or_raise,
             cluster_name=root.client.cluster_name,
             org_name=root.client.config.org_name,
         )
@@ -483,7 +483,7 @@ async def status(root: Root, job: str, full_uri: bool) -> None:
         uri_fmtr = str
     else:
         uri_fmtr = uri_formatter(
-            username=root.client.username,
+            project_name=root.client.config.project_name_or_raise,
             cluster_name=root.client.cluster_name,
             org_name=root.client.config.org_name,
         )
@@ -745,7 +745,7 @@ async def top(
         uri_fmtr = str
     else:
         uri_fmtr = uri_formatter(
-            username=root.client.username,
+            project_name=root.client.config.project_name_or_raise,
             cluster_name=root.client.cluster_name,
             org_name=root.client.config.org_name,
         )

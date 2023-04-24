@@ -4,7 +4,7 @@ Job                     test-job
  Cluster                 default                                                     
  Description             test job description                                        
  Status                  failed (ErrorReason)                                        
- Image                   image:test-image:sometag                                    
+ Image                   image:/test-user/test-image:sometag                         
  Command                 test-command                                                
  Priority                Normal                                                      
  Price (credits / hour)  15.0000                                                     
@@ -12,7 +12,7 @@ Job                     test-job
  Resources                Memory  16.8 MB                                            
                           CPU         0.1                                            
  TTY                     False                                                       
- Disk volumes             /mnt/disk1  disk:disk1                           READONLY  
+ Disk volumes             /mnt/disk1  disk:/test-user/disk1                READONLY  
                           /mnt/disk2  disk:/otheruser/disk2                          
                           /mnt/disk3  disk://othercluster/otheruser/disk3            
  Http URL                http://local.host.test/                                     
