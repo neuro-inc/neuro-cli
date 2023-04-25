@@ -507,7 +507,7 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
 def make_job(
     job_id: str,
     name: Optional[str] = None,
-    org_name: Optional[str] = None, 
+    org_name: Optional[str] = None,
     owner: str = "test-user",
     cluster_name: str = "default",
     project_name: str = "test-project",
@@ -559,7 +559,10 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
                 project_name="project",
             ),
             make_job(
-                "job-89ab-4567", cluster_name="other", owner="user", project_name="project"
+                "job-89ab-4567",
+                cluster_name="other",
+                owner="user",
+                project_name="project",
             ),
             make_job("job-4567-cdef", owner="user", project_name="otherproject"),
         ]
@@ -693,7 +696,9 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
         assert bash_out == "uri,user/,//default/"
         assert zsh_out == "uri\nuser/\n_\njob://default/"
 
-        zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/project/"])
+        zsh_out, bash_out = run_autocomplete(
+            ["job", "status", "job://default/project/"]
+        )
         assert bash_out == (
             "uri,job-0123-4567,//default/project/\n"
             "uri,job-89ab-cdef,//default/project/\n"
@@ -709,7 +714,9 @@ def test_job_autocomplete(run_autocomplete: _RunAC) -> None:
             "uri\noeronimo\n_\njob://default/project/"
         )
 
-        zsh_out, bash_out = run_autocomplete(["job", "status", "job://default/project/je"])
+        zsh_out, bash_out = run_autocomplete(
+            ["job", "status", "job://default/project/je"]
+        )
         assert bash_out == "uri,jeronimo,//default/project/"
         assert zsh_out == "uri\njeronimo\n_\njob://default/project/"
 
