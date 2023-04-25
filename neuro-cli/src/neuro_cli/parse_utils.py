@@ -105,6 +105,7 @@ PS_COLUMNS = [
     JobColumnInfo("life_span", "LIFE-SPAN", "left"),
     JobColumnInfo("workdir", "WORKDIR", "left"),
     JobColumnInfo("preset", "PRESET", "left"),
+    JobColumnInfo("project_name", "PROJECT", "left", max_width=25),
 ]
 
 PS_COLUMNS_DEFAULT_FORMAT = "id/name status/when image org_name/owner command"
@@ -326,6 +327,7 @@ SORT_KEY_FUNCS: Dict[str, JobTelemetryKeyFunc] = {
     "life_span": lambda item: item[0].life_span or INF,
     "workdir": lambda item: item[0].container.working_dir or "",
     "preset": lambda item: item[0].preset_name or "",
+    "project_name": lambda item: item[0].project_name or "",
     # JobTelemetry attibutes
     "cpu": lambda item: -item[1].cpu,
     "memory": lambda item: -item[1].memory,

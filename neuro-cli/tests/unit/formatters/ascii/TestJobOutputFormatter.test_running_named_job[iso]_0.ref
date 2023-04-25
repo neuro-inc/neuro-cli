@@ -1,6 +1,7 @@
 Job                      test-job                         
  Name                     test-job                         
  Owner                    test-user                        
+ Project                  myproject                        
  Cluster                  default                          
  Description              test job description             
  Status                   running (ContainerRunning)       

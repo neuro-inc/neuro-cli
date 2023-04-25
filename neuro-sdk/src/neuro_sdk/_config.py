@@ -165,7 +165,7 @@ class Config(metaclass=NoPublicConstructor):
             raise RuntimeError(
                 "The current project is not selected. "
                 "Please create one with 'neuro admin add-project', or "
-                "switch to existing with 'neuro config switch-project'."
+                "switch to the existing one with 'neuro config switch-project'."
             )
         return name
 

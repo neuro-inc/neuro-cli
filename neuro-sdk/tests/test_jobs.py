@@ -819,6 +819,25 @@ async def test_status_with_tpu(
         assert ret.container.resources.tpu_software_version == "1.14"
 
 
+async def test_status_wo_project(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    JSON = create_job_response("job-id", "running", project_name=None)
+
+    async def handler(request: web.Request) -> web.Response:
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs/job-id", handler)
+
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.status("job-id")
+        assert ret == _job_description_from_api(JSON, client.parse)
+        assert ret.project_name == "owner"
+
+
 async def test_job_start(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -834,6 +853,7 @@ async def test_job_start(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -878,6 +898,7 @@ async def test_job_start(
             "pass_config": False,
             "cluster_name": "default",
             "preset_name": "cpu-small",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -925,6 +946,7 @@ async def test_job_start_with_privileged_flag(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -955,6 +977,7 @@ async def test_job_start_with_privileged_flag(
             "cluster_name": "default",
             "preset_name": "cpu-small",
             "privileged": True,
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -990,6 +1013,7 @@ async def test_job_start_with_priority(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1021,6 +1045,7 @@ async def test_job_start_with_priority(
             "cluster_name": "default",
             "preset_name": "cpu-small",
             "priority": "high",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1041,6 +1066,42 @@ async def test_job_start_with_priority(
         assert ret == _job_description_from_api(JSON, client.parse)
 
 
+@pytest.mark.parametrize(
+    "project_name",
+    [None, "", "test-project", "other-test-project", "non-existing-project"],
+)
+async def test_job_start_with_project(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    project_name: Optional[str],
+) -> None:
+    JSON = create_job_response("qwerty", "running", project_name=project_name)
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "image": "submit-image-name",
+            "pass_config": False,
+            "cluster_name": "default",
+            "preset_name": "cpu-small",
+            # if project_name is not provided, SDK falls back to current project
+            "project_name": project_name or "test-project",
+        }
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+
+    srv = await aiohttp_server(app)
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.start(
+            image=RemoteImage.new_external_image(name="submit-image-name"),
+            preset_name="cpu-small",
+            project_name=project_name,
+        )
+        assert ret == _job_description_from_api(JSON, client.parse)
+
+
 async def test_job_run(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -1058,6 +1119,7 @@ async def test_job_run(
         "owner": "owner",
         "cluster_name": "default",
         "org_name": "my-test-org",
+        "project_name": "test-project",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
         "price_credits_per_hour": "20",
@@ -1107,6 +1169,7 @@ async def test_job_run(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1156,6 +1219,7 @@ async def test_job_run_with_wait_for_quota(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "project_name": "test-project",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
         "price_credits_per_hour": "20",
@@ -1193,6 +1257,7 @@ async def test_job_run_with_wait_for_quota(
             "wait_for_jobs_quota": True,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1233,6 +1298,7 @@ async def test_job_run_with_name_and_description(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1285,6 +1351,7 @@ async def test_job_run_with_name_and_description(
             "name": "test-job-name",
             "description": "job description",
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1339,6 +1406,7 @@ async def test_job_run_with_tags(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1390,6 +1458,7 @@ async def test_job_run_with_tags(
             "pass_config": False,
             "tags": ["t1", "t2", "t3"],
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1443,6 +1512,7 @@ async def test_job_run_no_volumes(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1483,6 +1553,7 @@ async def test_job_run_no_volumes(
             "name": "test-job-name",
             "description": "job description",
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1525,6 +1596,7 @@ async def test_job_run_with_relative_volume_uris(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1580,6 +1652,7 @@ async def test_job_run_with_relative_volume_uris(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1631,6 +1704,7 @@ async def test_job_run_with_secret_uris(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1684,6 +1758,7 @@ async def test_job_run_with_secret_uris(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1732,6 +1807,7 @@ async def test_job_run_with_disk_volume_uris(
         },
         "owner": "owner",
         "cluster_name": "default",
+        "project_name": "test-project",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
         "price_credits_per_hour": "20",
@@ -1783,6 +1859,7 @@ async def test_job_run_with_disk_volume_uris(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1825,6 +1902,7 @@ async def test_job_run_preemptible(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1877,6 +1955,7 @@ async def test_job_run_preemptible(
             "name": "test-job-name",
             "description": "job description",
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -1930,6 +2009,7 @@ async def test_job_run_schedule_timeout(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -1969,6 +2049,7 @@ async def test_job_run_schedule_timeout(
             "pass_config": False,
             "schedule_timeout": 5,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -2005,6 +2086,7 @@ async def test_job_run_tpu(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -2045,6 +2127,7 @@ async def test_job_run_tpu(
             "pass_config": False,
             "schedule_timeout": 5,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -2088,6 +2171,7 @@ async def test_job_run_with_tty(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)
@@ -2111,6 +2195,47 @@ async def test_job_run_with_tty(
         assert ret.container.tty is True
 
 
+@pytest.mark.parametrize(
+    "project_name",
+    [None, "", "test-project", "other-test-project", "non-existing-project"],
+)
+async def test_job_run_with_project(
+    aiohttp_server: _TestServerFactory,
+    make_client: _MakeClient,
+    project_name: Optional[str],
+) -> None:
+    JSON = create_job_response("qwerty", "running", project_name=project_name)
+
+    async def handler(request: web.Request) -> web.Response:
+        data = await request.json()
+        assert data == {
+            "container": {
+                "image": "submit-image-name",
+                "resources": {"memory": 16384 * 2**20, "cpu": 0.5, "shm": True},
+            },
+            "scheduler_enabled": False,
+            "pass_config": False,
+            "cluster_name": "default",
+            "project_name": project_name or "test-project",
+        }
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_post("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    container = Container(
+        image=RemoteImage.new_external_image(name="submit-image-name"),
+        resources=Resources(16384 * 2**20, 0.5),
+    )
+    async with make_client(srv.make_url("/")) as client:
+        ret = await client.jobs.run(
+            container,
+            project_name=project_name,
+        )
+        assert ret == _job_description_from_api(JSON, client.parse)
+
+
 def create_job_response(
     id: str,
     status: str,
@@ -2121,6 +2246,7 @@ def create_job_response(
     tags: Optional[List[str]] = None,
     total_price_credits: str = "10.01",
     price_credits_per_hour: str = "20",
+    project_name: Optional[str] = "myproject",
 ) -> Dict[str, Any]:
     result = {
         "id": id,
@@ -2157,6 +2283,8 @@ def create_job_response(
         result["tags"] = tags
     if org_name:
         result["org_name"] = org_name
+    if project_name:
+        result["project_name"] = project_name
     return result
 
 
@@ -2597,6 +2725,59 @@ async def test_list_filter_by_date_range(
         assert {job.id for job in ret} == {"job-id-1", "job-id-2"}
 
 
+async def test_list_filter_by_project(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    proj_1 = "proj-name-1"
+    proj_2 = "proj-name-2"
+    jobs = [
+        create_job_response("job-id-1", "pending", project_name=proj_1),
+        create_job_response("job-id-2", "succeeded", project_name=proj_1),
+        create_job_response("job-id-3", "failed", project_name=proj_1),
+        create_job_response("job-id-4", "running", project_name=proj_2),
+        create_job_response("job-id-5", "succeeded", project_name=proj_2),
+        create_job_response("job-id-6", "failed", project_name=proj_2),
+        create_job_response("job-id-7", "running"),
+        create_job_response("job-id-8", "pending"),
+        create_job_response("job-id-9", "succeeded"),
+        create_job_response("job-id-10", "failed"),
+    ]
+
+    async def handler(request: web.Request) -> web.Response:
+        projects = request.query.getall("project_name", None)
+        if projects:
+            filtered_jobs = [job for job in jobs if job["project_name"] in projects]
+        else:
+            filtered_jobs = jobs
+        JSON = {"jobs": filtered_jobs}
+        return web.json_response(JSON)
+
+    app = web.Application()
+    app.router.add_get("/jobs", handler)
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        job_descriptions = [
+            _job_description_from_api(job, client.parse) for job in jobs
+        ]
+        # default -- lists all available jobs
+        async with client.jobs.list() as it:
+            ret = [job async for job in it]
+        assert ret == job_descriptions
+        # filter by one project
+        async with client.jobs.list(project_names=(proj_1,)) as it:
+            ret = [job async for job in it]
+        assert ret == job_descriptions[:3]
+        # filter by two projects
+        async with client.jobs.list(project_names=(proj_1, proj_2)) as it:
+            ret = [job async for job in it]
+        assert ret == job_descriptions[:6]
+        # filter by non-existing project
+        async with client.jobs.list(project_names=("non-existing",)) as it:
+            ret = [job async for job in it]
+        assert ret == []
+
+
 async def test_job_run_life_span(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
@@ -2612,6 +2793,7 @@ async def test_job_run_life_span(
             "pass_config": False,
             "max_run_time_minutes": 10,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
         return web.json_response(create_job_response("job-id-1", "running"))
 
@@ -2645,6 +2827,7 @@ async def test_job_run_restart_policy(
             "pass_config": False,
             "restart_policy": "always",
             "cluster_name": "default",
+            "project_name": "test-project",
         }
         return web.json_response(create_job_response("job-id-1", "running"))
 
@@ -2680,6 +2863,7 @@ async def test_job_run_working_dir(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
         result = create_job_response("job-id-1", "running")
         result["container"]["working_dir"] = "/working/dir"
@@ -2830,6 +3014,7 @@ async def test_job_price_credits(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
         api_responce = create_job_response(
             "job-id-1",
@@ -2869,6 +3054,7 @@ async def test_job_with_org_name(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
             "org_name": org_name,
         }
         api_responce = create_job_response(
@@ -2905,6 +3091,7 @@ async def test_job_without_org_name(
             "scheduler_enabled": False,
             "pass_config": False,
             "cluster_name": "default",
+            "project_name": "test-project",
         }
         return web.json_response(create_job_response("job-id-1", "running"))
 
@@ -2937,6 +3124,7 @@ async def test_job_start_with_energy_schedule_name(
             "finished_at": "2018-09-25T12:28:59.759433+00:00",
         },
         "owner": "owner",
+        "project_name": "test-project",
         "cluster_name": "default",
         "uri": "job://default/owner/job-cf519ed3-9ea5-48f6-a8c5-492b810eb56f",
         "total_price_credits": "10.01",
@@ -2965,6 +3153,7 @@ async def test_job_start_with_energy_schedule_name(
             "preset_name": "cpu-large-p",
             "energy_schedule_name": "some-schedule",
             "pass_config": False,
+            "project_name": "test-project",
         }
 
         return web.json_response(JSON)

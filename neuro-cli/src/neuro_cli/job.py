@@ -47,6 +47,7 @@ from .click_types import (
     LOCAL_REMOTE_PORT,
     ORG,
     PRESET,
+    PROJECT,
     TOP_COLUMNS,
     RemoteImageType,
 )
@@ -365,6 +366,13 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     default=None,
 )
 @option("--full-uri", is_flag=True, help="Output full image URI.")
+@option(
+    "-p",
+    "--project",
+    type=PROJECT,
+    help="Filter out jobs by project name (multiple option).",
+    multiple=True,
+)
 async def ls(
     root: Root,
     status: Sequence[str],
@@ -381,6 +389,7 @@ async def ls(
     wide: bool,
     format: Optional[JobTableFormat],
     full_uri: bool,
+    project: Sequence[str],
 ) -> None:
     """
     List all jobs.
@@ -435,6 +444,7 @@ async def ls(
         until=_parse_date(until),
         reverse=recent_first,
         cluster_name=cluster,
+        project_names=project,
     ) as jobs:
         # client-side filtering
         if description:
@@ -610,6 +620,13 @@ async def browse(root: Root, job: str) -> None:
     show_default=True,
     help="Maximum allowed time for executing the command, 0 for no timeout",
 )
+@option(
+    "-p",
+    "--project",
+    type=PROJECT,
+    help="Filter out jobs by project name (multiple option).",
+    multiple=True,
+)
 async def top(
     root: Root,
     jobs: Sequence[str],
@@ -624,6 +641,7 @@ async def top(
     format: Optional[JobTableFormat],
     full_uri: bool,
     timeout: float,
+    project: Sequence[str],
 ) -> None:
     """
     Display GPU/CPU/Memory usage.
@@ -652,6 +670,7 @@ async def top(
             ("since", since),
             ("until", until),
             ("description", description),
+            ("project", project),
         ]:
             if val:
                 raise click.UsageError(
@@ -697,6 +716,7 @@ async def top(
                     since=since_dt,
                     until=until_dt,
                     cluster_name=cluster,
+                    project_names=project,
                 ) as jobs:
                     # client-side filtering
                     if description:
@@ -1030,6 +1050,13 @@ async def kill(root: Root, jobs: Sequence[str]) -> None:
         "Selected preset should have scheduler enabled."
     ),
 )
+@option(
+    "-p",
+    "--project",
+    type=PROJECT,
+    help="Run job in a specified project.",
+    default=None,
+)
 @TTY_OPT
 async def run(
     root: Root,
@@ -1064,6 +1091,7 @@ async def run(
     share: Sequence[str],
     priority: Optional[str],
     energy_schedule: Optional[str],
+    project: Optional[str],
 ) -> None:
     """
     Run a job
@@ -1133,6 +1161,7 @@ async def run(
         org_name=org_name,
         priority=priority,
         energy_schedule_name=energy_schedule,
+        project_name=project,
     )
 
 
@@ -1205,6 +1234,7 @@ async def run_job(
     org_name: Optional[str],
     priority: Optional[str],
     energy_schedule_name: Optional[str],
+    project_name: Optional[str],
 ) -> JobDescription:
     if http_auth is None:
         http_auth = True
@@ -1276,6 +1306,9 @@ async def run_job(
 
     job_priority = JobPriority[priority.upper()] if priority else None
 
+    if not project_name:
+        project_name = root.client.config.project_name
+
     job = await root.client.jobs.start(
         image=image,
         preset_name=preset,
@@ -1303,6 +1336,7 @@ async def run_job(
         privileged=privileged,
         priority=job_priority,
         energy_schedule_name=energy_schedule_name,
+        project_name=project_name,
     )
     permission = Permission(job.uri, Action.WRITE)
     for user in share:
@@ -1481,7 +1515,7 @@ def _job_to_cli_args(job: JobDescription) -> List[str]:
         res += ["--priority", job.priority.name.lower()]
     if job.energy_schedule_name:
         res += ["--energy-schedule", job.energy_schedule_name]
-    res += [str(job.container.image)]
+    res += ["--project", job.project_name, str(job.container.image)]
     if job.container.command:
         res += ["--", job.container.command]
     return res

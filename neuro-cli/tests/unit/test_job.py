@@ -284,6 +284,7 @@ def test_job_to_args_simple() -> None:
     job = JobDescription(
         status=JobStatus.FAILED,
         owner="test-user",
+        project_name="myproj",
         cluster_name="default",
         id=f"job",
         uri=URL(f"job://default/test-user/job"),
@@ -310,6 +311,8 @@ def test_job_to_args_simple() -> None:
     assert _job_to_cli_args(job) == [
         "--preset",
         "testing",
+        "--project",
+        "myproj",
         "test-image",
         "--",
         "test-command",
@@ -320,6 +323,7 @@ def test_job_to_args_drop_env_when_pass_config() -> None:
     job = JobDescription(
         status=JobStatus.FAILED,
         owner="test-user",
+        project_name="myproj",
         cluster_name="default",
         id=f"job",
         uri=URL(f"job://default/test-user/job"),
@@ -350,6 +354,8 @@ def test_job_to_args_drop_env_when_pass_config() -> None:
         "--preset",
         "testing",
         "--pass-config",
+        "--project",
+        "myproj",
         "test-image",
         "--",
         "test-command",
@@ -362,6 +368,7 @@ def test_job_to_args_complex() -> None:
         owner="test-user",
         name="test-job",
         tags=["tag-1", "tag-2"],
+        project_name="myproject",
         cluster_name="default",
         id=f"job",
         uri=URL(f"job://default/test-user/job"),
@@ -480,6 +487,8 @@ def test_job_to_args_complex() -> None:
         "high",
         "--energy-schedule",
         "some-energy-schedule-name",
+        "--project",
+        "myproject",
         "test-image",
         "--",
         "test-command",
@@ -490,6 +499,7 @@ def test_job_to_args_no_cmd() -> None:
     job = JobDescription(
         status=JobStatus.FAILED,
         owner="test-user",
+        project_name="proj",
         cluster_name="default",
         id=f"job",
         uri=URL(f"job://default/test-user/job"),
@@ -515,5 +525,7 @@ def test_job_to_args_no_cmd() -> None:
     assert _job_to_cli_args(job) == [
         "--preset",
         "testing",
+        "--project",
+        "proj",
         "test-image",
     ]

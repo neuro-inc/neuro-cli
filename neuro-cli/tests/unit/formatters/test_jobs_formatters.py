@@ -99,6 +99,7 @@ def job_descr_no_name() -> JobDescription:
         id=TEST_JOB_ID,
         owner="owner",
         cluster_name="default",
+        project_name="myproject",
         uri=URL(f"job://default/owner/{TEST_JOB_ID}"),
         history=JobStatusHistory(
             status=JobStatus.PENDING,
@@ -126,6 +127,7 @@ def job_descr() -> JobDescription:
         id=TEST_JOB_ID,
         name=TEST_JOB_NAME,
         owner="owner",
+        project_name="myproject",
         cluster_name="default",
         uri=URL(f"job://default/owner/{TEST_JOB_ID}"),
         history=JobStatusHistory(
@@ -157,11 +159,14 @@ def make_job(
     total_price_credits: Decimal = Decimal("150"),
     price_credits_per_hour: Decimal = Decimal("15"),
     restarts: int = 0,
+    owner: str = "test-user",
+    project_name: str = "myproject",
 ) -> JobDescription:
     return JobDescription(
         name=name,
         status=status,
-        owner="test-user",
+        owner=owner,
+        project_name=project_name,
         cluster_name="default",
         id="test-job",
         uri=URL("job://default/test-user/test-job"),
@@ -406,6 +411,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -449,6 +455,7 @@ class TestJobOutputFormatter:
             status=JobStatus.FAILED,
             owner="test-user",
             cluster_name="default",
+            project_name="myproject",
             org_name="test-org",
             id="test-job",
             uri=URL("job://default/test-org/test-user/test-job"),
@@ -497,6 +504,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -539,6 +547,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -581,6 +590,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -623,6 +633,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -665,6 +676,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -708,6 +720,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -765,6 +778,7 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=True,
             pass_config=True,
+            project_name="myproject",
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
@@ -805,6 +819,7 @@ class TestJobOutputFormatter:
             scheduler_enabled=True,
             pass_config=True,
             owner="owner",
+            project_name="myproject",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
             total_price_credits=Decimal("150"),
@@ -843,6 +858,7 @@ class TestJobOutputFormatter:
             scheduler_enabled=True,
             pass_config=True,
             owner="owner",
+            project_name="myproject",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
             total_price_credits=Decimal("150"),
@@ -863,6 +879,7 @@ class TestJobOutputFormatter:
     ) -> None:
         description = JobDescription(
             status=JobStatus.RUNNING,
+            project_name="myproject",
             owner="test-user",
             cluster_name="default",
             id="test-job",
@@ -904,6 +921,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -965,6 +983,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
+            project_name="myproject",
             name="test-job",
             cluster_name="default",
             id="test-job",
@@ -1007,6 +1026,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -1048,6 +1068,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -1098,6 +1119,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -1164,6 +1186,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -1222,6 +1245,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -1298,6 +1322,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -1364,6 +1389,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.FAILED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id="test-job",
             uri=URL("job://default/test-user/test-job"),
@@ -1431,6 +1457,7 @@ class TestJobOutputFormatter:
             ),
             scheduler_enabled=False,
             pass_config=True,
+            project_name="myproject",
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
@@ -1470,6 +1497,7 @@ class TestJobOutputFormatter:
             scheduler_enabled=True,
             preemptible_node=True,
             pass_config=True,
+            project_name="myproject",
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
@@ -1492,6 +1520,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
+            project_name="myproject",
             name="test-job",
             cluster_name="default",
             org_name="test-job-org-name",
@@ -1532,6 +1561,7 @@ class TestJobOutputFormatter:
         description = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
+            project_name="myproject",
             name="test-job",
             cluster_name="default",
             org_name="test-job-org-name",
@@ -1590,6 +1620,7 @@ class TestJobOutputFormatter:
             scheduler_enabled=True,
             energy_schedule_name="some-schedule",
             pass_config=True,
+            project_name="myproject",
             owner="owner",
             cluster_name="default",
             uri=URL("job://default/owner/test-job"),
@@ -1599,6 +1630,24 @@ class TestJobOutputFormatter:
 
         uri_fmtr = uri_formatter(
             project_name="test-project", cluster_name="test-cluster", org_name=None
+        )
+        rich_cmp(
+            JobStatusFormatter(
+                uri_formatter=uri_fmtr, datetime_formatter=datetime_formatter
+            )(description)
+        )
+
+    @pytest.mark.parametrize("project", ["", "test-user", "someotherproject"])
+    def test_job_with_project_name(
+        self,
+        rich_cmp: Any,
+        datetime_formatter: DatetimeFormatter,
+        project: str,
+    ) -> None:
+        description = make_job(JobStatus.SUCCEEDED, "", project_name=project)
+
+        uri_fmtr = uri_formatter(
+            project_name=project, cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
@@ -1841,6 +1890,7 @@ class TestSimpleJobsFormatter:
             JobDescription(
                 status=JobStatus.PENDING,
                 id="job-42687e7c-6c76-4857-a6a7-1166f8295391",
+                project_name="myproject",
                 owner="owner",
                 cluster_name="default",
                 uri=URL("job://default/owner/job-42687e7c-6c76-4857-a6a7-1166f8295391"),
@@ -1865,6 +1915,7 @@ class TestSimpleJobsFormatter:
                 status=JobStatus.PENDING,
                 id="job-cf33bd55-9e3b-4df7-a894-9c148a908a66",
                 name="this-job-has-a-name",
+                project_name="otherproject",
                 owner="owner",
                 cluster_name="default",
                 uri=URL("job://default/owner/job-cf33bd55-9e3b-4df7-a894-9c148a908a66"),
@@ -1904,6 +1955,7 @@ class TestTabularJobRow:
             id="job-1f5ab792-e534-4bb4-be56-8af1ce722692",
             name=name,
             owner="owner",
+            project_name="myproject",
             cluster_name="default",
             uri=URL("job://default/owner/job-1f5ab792-e534-4bb4-be56-8af1ce722692"),
             description="some",
@@ -2047,6 +2099,7 @@ class TestTabularJobsFormatter:
             status=JobStatus.FAILED,
             id="j",
             owner=owner_name,
+            project_name="myproject",
             cluster_name="dc",
             uri=URL(f"job://dc/{owner_name}/j"),
             name="name",
@@ -2094,6 +2147,7 @@ class TestTabularJobsFormatter:
                 id="job-7ee153a7-249c-4be9-965a-ba3eafb67c82",
                 name="name1",
                 owner=owner_name,
+                project_name="myproject",
                 cluster_name="default",
                 uri=URL(
                     f"job://default/{owner_name}/"
@@ -2125,6 +2179,7 @@ class TestTabularJobsFormatter:
                 id="job-7ee153a7-249c-4be9-965a-ba3eafb67c84",
                 name="name2",
                 owner=owner_name,
+                project_name="myproject",
                 cluster_name="default",
                 uri=URL(
                     f"job://default/{owner_name}/"
@@ -2172,6 +2227,7 @@ class TestTabularJobsFormatter:
             status=JobStatus.FAILED,
             id="j",
             owner="owner",
+            project_name="myproject",
             cluster_name="dc",
             uri=URL("job://dc/owner/j"),
             name="name",
@@ -2213,6 +2269,7 @@ class TestTabularJobsFormatter:
                 status=JobStatus.FAILED,
                 id=f"job-{i}",
                 owner="owner",
+                project_name="myproject",
                 cluster_name="dc",
                 uri=URL("job://dc/owner/j"),
                 name="name",
@@ -2288,6 +2345,7 @@ class TestTabularJobsFormatter:
                 status=item.status,
                 owner="test-user",
                 cluster_name="default",
+                project_name="myproject",
                 id=f"job-{i}",
                 uri=URL(f"job://default/test-user/job-{i}"),
                 description=None,
@@ -2323,6 +2381,7 @@ class TestTabularJobsFormatter:
             JobDescription(
                 status=JobStatus.FAILED,
                 owner="test-user",
+                project_name="myproject",
                 cluster_name="default",
                 id=f"job-{i}",
                 uri=URL(f"job://default/test-user/job-{i}"),
@@ -2365,6 +2424,7 @@ class TestTabularJobsFormatter:
             JobDescription(
                 status=JobStatus.FAILED,
                 owner="test-user",
+                project_name="myproject",
                 cluster_name="default",
                 id=f"job-{i}",
                 uri=URL(f"job://default/test-user/job-{i}"),
@@ -2409,6 +2469,7 @@ class TestTabularJobsFormatter:
             JobDescription(
                 status=JobStatus.FAILED,
                 owner="test-user",
+                project_name="myproject",
                 cluster_name="default",
                 org_name=org_name,
                 id=f"job-{i}",
@@ -2446,6 +2507,28 @@ class TestTabularJobsFormatter:
         )
         rich_cmp(formatter(jobs))
 
+    def test_project_name(
+        self, rich_cmp: Any, datetime_formatter: DatetimeFormatter
+    ) -> None:
+        projects = ["proj1", "proj2"]
+        owners = ["test-user", "someoneelse"]
+        jobs = []
+        for i, (proj, own) in enumerate(itertools.product(projects, owners)):
+            jobs.append(
+                make_job(
+                    JobStatus.RUNNING, "", name=str(i), project_name=proj, owner=own
+                )
+            )
+
+        columns = parse_ps_columns("id name cluster_name project_name owner image")
+        formatter = TabularJobsFormatter(
+            "test-user",
+            columns,
+            image_formatter=str,
+            datetime_formatter=datetime_formatter,
+        )
+        rich_cmp(formatter(jobs))
+
 
 class TestLifeSpanUpdateFormatter:
     async def test_not_finished(
@@ -2464,6 +2547,7 @@ class TestLifeSpanUpdateFormatter:
         job = JobDescription(
             status=JobStatus.RUNNING,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id=f"job-id",
             uri=URL(f"job://default/test-user/job-id"),
@@ -2520,6 +2604,7 @@ class TestLifeSpanUpdateFormatter:
         job = JobDescription(
             status=JobStatus.SUCCEEDED,
             owner="test-user",
+            project_name="myproject",
             cluster_name="default",
             id=f"job-id",
             uri=URL(f"job://default/test-user/job-id"),
