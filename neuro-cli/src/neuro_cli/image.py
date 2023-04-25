@@ -21,7 +21,7 @@ from neuro_cli.formatters.images import (
 )
 from neuro_cli.formatters.utils import ImageFormatter, image_formatter, uri_formatter
 
-from .click_types import CLUSTER, RemoteImageType
+from .click_types import CLUSTER, PROJECT, RemoteImageType
 from .root import Root
 from .utils import argument, command, format_size, group, option
 
@@ -107,12 +107,11 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 @option("-l", "format_long", is_flag=True, help="List in long format.")
 @option("--full-uri", is_flag=True, help="Output full image URI.")
 @option(
-    "-p",
     "--project",
+    type=PROJECT,
     multiple=True,
     help="Filter out images by project "
     "(multiple option, all projects in current cluster by default).",
-    secure=True,
 )
 @option(
     "-n",
