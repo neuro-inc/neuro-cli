@@ -111,7 +111,7 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
     "--project",
     multiple=True,
     help="Filter out images by project "
-    "(multiple option, the current project by default).",
+    "(multiple option, all projects in current cluster by default).",
     secure=True,
 )
 @option(
@@ -140,9 +140,7 @@ async def ls(
 
     if project:
         projects = set(project)
-    else:
-        projects = {root.client.username}
-    images = [image for image in images if image.project_name in projects]
+        images = [image for image in images if image.project_name in projects]
 
     if name:
         name_re = re.compile(name)
