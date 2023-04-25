@@ -521,7 +521,7 @@ async def resolve_disk(
                 return disk.id
             except ResourceNotFound:
                 pass
-        raise ValueError(f"Failed to resolve job {id_or_name_or_uri}")
+        raise ValueError(f"Failed to resolve disk {id_or_name_or_uri}")
     else:
         disk = await client.disks.get(id_or_name, cluster_name)
     return disk.id

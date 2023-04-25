@@ -158,6 +158,17 @@ class Config(metaclass=NoPublicConstructor):
             name = self._config_data.project_name
         return name
 
+    @property
+    def project_name_or_raise(self) -> str:
+        name = self.project_name
+        if not name:
+            raise RuntimeError(
+                "The current project is not selected. "
+                "Please create one with 'neuro admin add-project', or "
+                "switch to existing with 'neuro config switch-project'."
+            )
+        return name
+
     def _get_user_project_name(self) -> Optional[str]:
         config = self._get_user_config()
         section = config.get("job")

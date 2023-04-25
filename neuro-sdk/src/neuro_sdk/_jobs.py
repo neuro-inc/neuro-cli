@@ -1156,7 +1156,10 @@ def _secret_file_to_api(secret_file: SecretFile, config: Config) -> Dict[str, An
 
 def _disk_volume_to_api(volume: DiskVolume, config: Config) -> Dict[str, Any]:
     uri = normalize_disk_uri(
-        volume.disk_uri, config.username, config.cluster_name, config.org_name
+        volume.disk_uri,
+        config.project_name_or_raise,
+        config.cluster_name,
+        config.org_name,
     )
     resp: Dict[str, Any] = {
         "src_disk_uri": str(uri),

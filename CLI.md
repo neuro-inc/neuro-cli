@@ -2103,6 +2103,7 @@ Name | Description|
 |_--cluster CLUSTER_|Perform in a specified cluster \(the current cluster by default).|
 |_--name NAME_|Optional disk name|
 |_--org ORG_|Perform in a specified org \(the current org by default).|
+|_--project PROJECT_|Create disk in a specified project \(the current project by default).|
 |_\--timeout-unused TIMEDELTA_|Optional disk lifetime limit after last usage in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 
 
@@ -2147,6 +2148,7 @@ Name | Description|
 |_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
 |_\--full-uri_|Output full disk URI.|
 |_\--long-format_|Output all info about disk.|
+|_--project PROJECT_|Look on a specified project \(all projects in current cluster by default).|
 
 
 
