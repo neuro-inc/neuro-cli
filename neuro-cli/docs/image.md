@@ -77,7 +77,7 @@ List images.
 | _-l_ | List in long format. |
 | _--full-uri_ | Output full image URI. |
 | _-n, --name PATTERN_ | Filter out images by name regex. |
-| _-p, --project TEXT_ | Filter out images by project \(multiple option, the current project by default\). |
+| _-p, --project TEXT_ | Filter out images by project \(multiple option, all projects in current cluster by default\). |
 
 
 
