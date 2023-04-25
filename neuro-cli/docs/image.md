@@ -43,7 +43,7 @@ Image name must contain tag.
 
 ```bash
 
-$ neuro image digest image://myfriend/alpine:shared
+$ neuro image digest image:/other-project/alpine:shared
 $ neuro image digest image:myimage:latest
 ```
 
@@ -77,7 +77,7 @@ List images.
 | _-l_ | List in long format. |
 | _--full-uri_ | Output full image URI. |
 | _-n, --name PATTERN_ | Filter out images by name regex. |
-| _-o, --owner TEXT_ | Filter out images by owner \(multiple option\). Supports `ME` option to filter by the current user. |
+| _--project PROJECT_ | Filter out images by project \(multiple option, all projects in current cluster by default\). |
 
 
 
@@ -103,8 +103,8 @@ Image names can contain tag.
 ```bash
 
 $ neuro pull image:myimage
-$ neuro pull image://myfriend/alpine:shared
-$ neuro pull image://username/my-alpine:production alpine:from-registry
+$ neuro pull image:/other-project/alpine:shared
+$ neuro pull image:/project/my-alpine:production alpine:from-registry
 ```
 
 #### Options
@@ -140,7 +140,7 @@ used as value.
 
 $ neuro push myimage
 $ neuro push alpine:latest image:my-alpine:production
-$ neuro push alpine image://myfriend/alpine:shared
+$ neuro push alpine image:/other-project/alpine:shared
 ```
 
 #### Options
@@ -172,7 +172,7 @@ Image name must contain tag.
 
 ```bash
 
-$ neuro image rm image://myfriend/alpine:shared
+$ neuro image rm image:/other-project/alpine:shared
 $ neuro image rm image:myimage:latest
 ```
 
@@ -206,7 +206,7 @@ contain tag.
 
 ```bash
 
-$ neuro image size image://myfriend/alpine:shared
+$ neuro image size image:/other-project/alpine:shared
 $ neuro image size image:myimage:latest
 ```
 
@@ -238,7 +238,7 @@ image:// scheme.
 
 ```bash
 
-$ neuro image tags image://myfriend/alpine
+$ neuro image tags image:/other-project/alpine
 $ neuro image tags -l image:myimage
 ```
 

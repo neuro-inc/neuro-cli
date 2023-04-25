@@ -647,7 +647,7 @@ class Jobs(metaclass=NoPublicConstructor):
             progress.commit_finished(data_2)
 
             # then, we expect stream for docker-push
-            src = LocalImage(f"{image.owner}/{image.name}", image.tag)
+            src = LocalImage(f"{image.project_name}/{image.name}", image.tag)
             progress.push(ImageProgressPush(src, dst=image))
             async for chunk in resp.content:
                 obj = _load_chunk(chunk)
@@ -1131,10 +1131,11 @@ def _job_telemetry_from_api(value: Dict[str, Any]) -> JobTelemetry:
 
 
 def _volume_to_api(volume: Volume, config: Config) -> Dict[str, Any]:
-    if not config.project_name:
-        raise RuntimeError("Project is not configured")
     uri = normalize_storage_path_uri(
-        volume.storage_uri, config.project_name, config.cluster_name, config.org_name
+        volume.storage_uri,
+        config.project_name_or_raise,
+        config.cluster_name,
+        config.org_name,
     )
     resp: Dict[str, Any] = {
         "src_storage_uri": str(uri),

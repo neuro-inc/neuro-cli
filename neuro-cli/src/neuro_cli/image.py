@@ -21,7 +21,7 @@ from neuro_cli.formatters.images import (
 )
 from neuro_cli.formatters.utils import ImageFormatter, image_formatter, uri_formatter
 
-from .click_types import CLUSTER, RemoteImageType
+from .click_types import CLUSTER, PROJECT, RemoteImageType
 from .root import Root
 from .utils import argument, command, format_size, group, option
 
@@ -50,7 +50,7 @@ async def push(root: Root, local_image: str, remote_image: Optional[str]) -> Non
 
     neuro push myimage
     neuro push alpine:latest image:my-alpine:production
-    neuro push alpine image://myfriend/alpine:shared
+    neuro push alpine image:/other-project/alpine:shared
 
     """
 
@@ -80,8 +80,8 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
     Examples:
 
     neuro pull image:myimage
-    neuro pull image://myfriend/alpine:shared
-    neuro pull image://username/my-alpine:production alpine:from-registry
+    neuro pull image:/other-project/alpine:shared
+    neuro pull image:/project/my-alpine:production alpine:from-registry
 
     """
 
@@ -107,12 +107,11 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 @option("-l", "format_long", is_flag=True, help="List in long format.")
 @option("--full-uri", is_flag=True, help="Output full image URI.")
 @option(
-    "-o",
-    "--owner",
+    "--project",
+    type=PROJECT,
     multiple=True,
-    help="Filter out images by owner (multiple option). "
-    "Supports `ME` option to filter by the current user.",
-    secure=True,
+    help="Filter out images by project "
+    "(multiple option, all projects in current cluster by default).",
 )
 @option(
     "-n",
@@ -126,7 +125,7 @@ async def ls(
     cluster: str,
     format_long: bool,
     full_uri: bool,
-    owner: Sequence[str],
+    project: Sequence[str],
     name: Optional[str],
 ) -> None:
     """
@@ -138,12 +137,9 @@ async def ls(
     with root.status("Fetching images"):
         images = await root.client.images.list(cluster_name=cluster)
 
-    if owner:
-        owners = set(owner)
-        if "ME" in owners:
-            owners.remove("ME")
-            owners.add(root.client.config.username)
-        images = [image for image in images if image.owner in owners]
+    if project:
+        projects = set(project)
+        images = [image for image in images if image.project_name in projects]
 
     if name:
         name_re = re.compile(name)
@@ -183,7 +179,7 @@ async def tags(root: Root, format_long: bool, image: RemoteImage) -> None:
 
     Examples:
 
-    neuro image tags image://myfriend/alpine
+    neuro image tags image:/other-project/alpine
     neuro image tags -l image:myimage
     """
 
@@ -231,7 +227,7 @@ async def rm(root: Root, force: bool, images: Sequence[RemoteImage]) -> None:
 
     Examples:
 
-    neuro image rm image://myfriend/alpine:shared
+    neuro image rm image:/other-project/alpine:shared
     neuro image rm image:myimage:latest
     """
     for image in images:
@@ -252,7 +248,7 @@ async def size(root: Root, image: RemoteImage) -> None:
 
     Examples:
 
-    neuro image size image://myfriend/alpine:shared
+    neuro image size image:/other-project/alpine:shared
     neuro image size image:myimage:latest
     """
     size = await root.client.images.size(image)
@@ -270,7 +266,7 @@ async def digest(root: Root, image: RemoteImage) -> None:
 
     Examples:
 
-    neuro image digest image://myfriend/alpine:shared
+    neuro image digest image:/other-project/alpine:shared
     neuro image digest image:myimage:latest
     """
     res = await root.client.images.digest(image)

@@ -146,6 +146,17 @@ def make_client(
                 orgs=[org_name],
             )
             clusters = {cluster_config.name: cluster_config}
+        if projects is None:
+            projects = {}
+            for cluster in clusters.values():
+                project = Project(
+                    cluster_name=cluster.name,
+                    org_name=cluster.orgs[0],
+                    name="test-project",
+                    role="owner",
+                )
+                projects[project.key] = project
+            project_name = "test-project"
         if token_url is not None:
             real_auth_config = replace(auth_config, token_url=token_url)
         else:

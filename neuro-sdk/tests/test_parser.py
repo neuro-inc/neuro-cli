@@ -17,16 +17,16 @@ _MakeClient = Callable[..., Client]
         "::::",
         "",
         "storage:///data/:/data/rest:wrong",
-        "storage://cluster/user/path:to:/storage/location",
-        "storage://cluster/user/path/to:/storage/loca:tion",
-        "storage://cluster/user/path/to#fragment:/storage/location",
-        "storage://cluster/user/path/to#:/storage/location",
-        "storage://cluster/user/path/to?key=value:/storage/location",
-        "storage://cluster/user/path/to?:/storage/location",
-        "storage://user@cluster/user/path/to:/storage/location",
-        "storage://:password@cluster/user/path/to:/storage/location",
-        "storage://:@cluster/user/path/to:/storage/location",
-        "storage://cluster:1234/user/path/to:/storage/location",
+        "storage://cluster/project/path:to:/storage/location",
+        "storage://cluster/project/path/to:/storage/loca:tion",
+        "storage://cluster/project/path/to#fragment:/storage/location",
+        "storage://cluster/project/path/to#:/storage/location",
+        "storage://cluster/project/path/to?key=value:/storage/location",
+        "storage://cluster/project/path/to?:/storage/location",
+        "storage://user@cluster/project/path/to:/storage/location",
+        "storage://:password@cluster/project/path/to:/storage/location",
+        "storage://:@cluster/project/path/to:/storage/location",
+        "storage://cluster:1234/project/path/to:/storage/location",
     ],
 )
 async def test_volume_from_str_fail(volume: str, make_client: _MakeClient) -> None:
@@ -39,29 +39,29 @@ async def test_volume_from_str_fail(volume: str, make_client: _MakeClient) -> No
     "volume",
     [
         "disk://",
-        "disk://cluster/user/name:/disk/location:rw:more",
-        "disk://cluster/user/name:/disk/location:rwo",
-        "disk://cluster/user/na:me:/disk/location",
-        "disk://cluster/user/name:/disk/loca:tion",
-        "disk://cluster/user/name#fragment:/disk/location",
-        "disk://cluster/user/name#:/disk/location",
-        "disk://cluster/user/name?key=value:/disk/location",
-        "disk://cluster/user/name?:/disk/location",
-        "disk://user@cluster/user/name:/disk/location",
-        "disk://:password@cluster/user/name:/disk/location",
-        "disk://:@cluster/user/name:/disk/location",
-        "disk://cluster:1234/user/name:/disk/location",
-        "secret://cluster/user/secret:/var/secret:ro",
-        "secret://cluster/user/sec:ret:/secret/location",
-        "secret://cluster/user/secret:/secret/loca:tion",
-        "secret://cluster/user/secret#fragment:/secret/location",
-        "secret://cluster/user/secret#:/secret/location",
-        "secret://cluster/user/secret?key=value:/secret/location",
-        "secret://cluster/user/secret?:/secret/location",
-        "secret://user@cluster/user/secret:/secret/location",
-        "secret://:password@cluster/user/secret:/secret/location",
-        "secret://:@cluster/user/secret:/secret/location",
-        "secret://cluster:1234/user/secret:/secret/location",
+        "disk://cluster/project/name:/disk/location:rw:more",
+        "disk://cluster/project/name:/disk/location:rwo",
+        "disk://cluster/project/na:me:/disk/location",
+        "disk://cluster/project/name:/disk/loca:tion",
+        "disk://cluster/project/name#fragment:/disk/location",
+        "disk://cluster/project/name#:/disk/location",
+        "disk://cluster/project/name?key=value:/disk/location",
+        "disk://cluster/project/name?:/disk/location",
+        "disk://user@cluster/project/name:/disk/location",
+        "disk://:password@cluster/project/name:/disk/location",
+        "disk://:@cluster/project/name:/disk/location",
+        "disk://cluster:1234/project/name:/disk/location",
+        "secret://cluster/project/secret:/var/secret:ro",
+        "secret://cluster/project/sec:ret:/secret/location",
+        "secret://cluster/project/secret:/secret/loca:tion",
+        "secret://cluster/project/secret#fragment:/secret/location",
+        "secret://cluster/project/secret#:/secret/location",
+        "secret://cluster/project/secret?key=value:/secret/location",
+        "secret://cluster/project/secret?:/secret/location",
+        "secret://user@cluster/project/secret:/secret/location",
+        "secret://:password@cluster/project/secret:/secret/location",
+        "secret://:@cluster/project/secret:/secret/location",
+        "secret://cluster:1234/project/secret:/secret/location",
         "dissk://f1/f2/f3:/f1:rw",
     ],
 )
@@ -135,14 +135,14 @@ async def test_parse_local(make_client: _MakeClient) -> None:
 
 async def test_parse_remote(make_client: _MakeClient) -> None:
     async with make_client("https://api.localhost.localdomain") as client:
-        result = client.parse.remote_image("image://default/bob/bananas:latest")
+        result = client.parse.remote_image("image://default/project/bananas:latest")
     assert result == RemoteImage.new_neuro_image(
         name="bananas",
         tag="latest",
-        owner="bob",
         registry="registry-dev.neu.ro",
         cluster_name="default",
         org_name=None,
+        project_name="project",
     )
 
 
@@ -150,14 +150,16 @@ async def test_parse_remote_registry_image(make_client: _MakeClient) -> None:
     async with make_client(
         "https://api.localhost.localdomain", registry_url="http://localhost:5000"
     ) as client:
-        result = client.parse.remote_image("localhost:5000/bob/library/bananas:latest")
+        result = client.parse.remote_image(
+            "localhost:5000/project/library/bananas:latest"
+        )
     assert result == RemoteImage.new_neuro_image(
         name="library/bananas",
         tag="latest",
-        owner="bob",
         registry="localhost:5000",
         cluster_name="default",
         org_name=None,
+        project_name="project",
     )
 
 

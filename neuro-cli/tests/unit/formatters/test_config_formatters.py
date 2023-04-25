@@ -12,7 +12,6 @@ from neuro_sdk import (
     Client,
     Cluster,
     Preset,
-    Project,
     Quota,
     _Balance,
     _ClusterStatus,
@@ -128,20 +127,17 @@ class TestConfigFormatter:
         )
         rich_cmp(out)
 
-    async def test_output_with_project_name(
+    async def test_output_without_project(
         self,
         make_client: Callable[..., Client],
         cluster_config: Cluster,
         rich_cmp: RichCmp,
     ) -> None:
-        project = Project(
-            name="main", cluster_name=cluster_config.name, org_name=None, role="owner"
-        )
         client = make_client(
             "https://dev.neu.ro/api/v1",
             clusters={cluster_config.name: cluster_config},
-            projects={project.key: project},
-            project_name=project.name,
+            projects={},
+            project_name=None,
         )
         out = ConfigFormatter()(
             client.config,

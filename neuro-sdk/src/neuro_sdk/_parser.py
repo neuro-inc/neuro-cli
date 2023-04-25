@@ -9,7 +9,7 @@ from ._config import Config
 from ._parsing_utils import LocalImage, RemoteImage, TagOption, _ImageNameParser
 from ._rewrite import rewrite_module
 from ._url_utils import _check_scheme, _extract_path, _normalize_uri, uri_from_cli
-from ._utils import ORG_NAME_SENTINEL, NoPublicConstructor, OrgNameSentinel
+from ._utils import NoPublicConstructor
 
 
 @rewrite_module
@@ -154,21 +154,15 @@ class Parser(metaclass=NoPublicConstructor):
             allowed_schemes=("disk",),
         )
 
-    def _get_image_parser(
-        self,
-        cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
-    ) -> _ImageNameParser:
+    def _get_image_parser(self, cluster_name: Optional[str] = None) -> _ImageNameParser:
         registry = {
             cluster.name: cluster.registry_url
             for cluster in self._config.clusters.values()
         }
         return _ImageNameParser(
-            default_user=self._config.username,
             default_cluster=cluster_name or self._config.cluster_name,
-            default_org=org_name
-            if not isinstance(org_name, OrgNameSentinel)
-            else self._config.org_name,
+            default_org=self._config.org_name,
+            default_project=self._config.project_name_or_raise,
             registry_urls=registry,
         )
 

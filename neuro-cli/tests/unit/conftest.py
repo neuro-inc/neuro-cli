@@ -12,7 +12,7 @@ import pytest
 from rich.console import Console, RenderableType
 from yarl import URL
 
-from neuro_sdk import Cluster, Factory, Preset
+from neuro_sdk import Cluster, Factory, Preset, Project
 from neuro_sdk._config import _AuthConfig, _AuthToken, _ConfigData
 
 from neuro_cli import __version__
@@ -77,6 +77,12 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         name="other",
         orgs=[None],
     )
+    project = Project(
+        cluster_name=cluster_config.name,
+        org_name=cluster_config.orgs[0],
+        name="project",
+        role="owner",
+    )
     config = _ConfigData(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
@@ -89,8 +95,8 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
             cluster_config.name: cluster_config,
             cluster2_config.name: cluster2_config,
         },
-        projects={},
-        project_name=None,
+        projects={project.key: project},
+        project_name=project.name,
     )
     Factory(nmrc_path)._save(config)
     return nmrc_path
