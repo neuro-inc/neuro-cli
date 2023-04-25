@@ -1647,7 +1647,7 @@ class TestJobOutputFormatter:
         description = make_job(JobStatus.SUCCEEDED, "", project_name=project)
 
         uri_fmtr = uri_formatter(
-            username=project, cluster_name="test-cluster", org_name=None
+            project_name=project, cluster_name="test-cluster", org_name=None
         )
         rich_cmp(
             JobStatusFormatter(
