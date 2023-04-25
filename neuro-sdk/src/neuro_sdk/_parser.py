@@ -159,12 +159,10 @@ class Parser(metaclass=NoPublicConstructor):
             cluster.name: cluster.registry_url
             for cluster in self._config.clusters.values()
         }
-        if not self._config.project_name:
-            raise ValueError("Project is not configured")
         return _ImageNameParser(
             default_cluster=cluster_name or self._config.cluster_name,
             default_org=self._config.org_name,
-            default_project=self._config.project_name,
+            default_project=self._config.project_name_or_raise,
             registry_urls=registry,
         )
 

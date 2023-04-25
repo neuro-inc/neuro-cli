@@ -370,7 +370,7 @@ async def test_storage_ls(
 
 async def test_storage_ls_without_project(make_client: _MakeClient) -> None:
     async with make_client("https://example.com", projects={}) as client:
-        with pytest.raises(RuntimeError, match="Project is not configured"):
+        with pytest.raises(RuntimeError, match="The current project is not selected"):
             async with client.storage.list(URL("storage:folder")) as it:
                 [file async for file in it]
 
