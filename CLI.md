@@ -2219,7 +2219,7 @@ neuro image digest [OPTIONS] IMAGE
 
 ```bash
 
-neuro image digest image://myfriend/alpine:shared
+neuro image digest image:/other-project/alpine:shared
 neuro image digest image:myimage:latest
 
 ```
@@ -2252,7 +2252,7 @@ Name | Description|
 |_-l_|List in long format.|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name PATTERN_|Filter out images by name regex.|
-|_\-o, --owner TEXT_|Filter out images by owner \(multiple option). Supports `ME` option to filter by the current user.|
+|_\-p, --project TEXT_|Filter out images by project \(multiple option, the current project by default).|
 
 
 
@@ -2272,8 +2272,8 @@ neuro image pull [OPTIONS] REMOTE_IMAGE [LOCAL_IMAGE]
 ```bash
 
 neuro pull image:myimage
-neuro pull image://myfriend/alpine:shared
-neuro pull image://username/my-alpine:production alpine:from-registry
+neuro pull image:/other-project/alpine:shared
+neuro pull image:/project/my-alpine:production alpine:from-registry
 
 ```
 
@@ -2302,7 +2302,7 @@ neuro image push [OPTIONS] LOCAL_IMAGE [REMOTE_IMAGE]
 
 neuro push myimage
 neuro push alpine:latest image:my-alpine:production
-neuro push alpine image://myfriend/alpine:shared
+neuro push alpine image:/other-project/alpine:shared
 
 ```
 
@@ -2329,7 +2329,7 @@ neuro image rm [OPTIONS] IMAGES...
 
 ```bash
 
-neuro image rm image://myfriend/alpine:shared
+neuro image rm image:/other-project/alpine:shared
 neuro image rm image:myimage:latest
 
 ```
@@ -2358,7 +2358,7 @@ neuro image size [OPTIONS] IMAGE
 
 ```bash
 
-neuro image size image://myfriend/alpine:shared
+neuro image size image:/other-project/alpine:shared
 neuro image size image:myimage:latest
 
 ```
@@ -2386,7 +2386,7 @@ neuro image tags [OPTIONS] IMAGE
 
 ```bash
 
-neuro image tags image://myfriend/alpine
+neuro image tags image:/other-project/alpine
 neuro image tags -l image:myimage
 
 ```
@@ -3469,7 +3469,7 @@ Name | Description|
 |_-l_|List in long format.|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name PATTERN_|Filter out images by name regex.|
-|_\-o, --owner TEXT_|Filter out images by owner \(multiple option). Supports `ME` option to filter by the current user.|
+|_\-p, --project TEXT_|Filter out images by project \(multiple option, the current project by default).|
 
 
 
@@ -3741,8 +3741,8 @@ neuro pull [OPTIONS] REMOTE_IMAGE [LOCAL_IMAGE]
 ```bash
 
 neuro pull image:myimage
-neuro pull image://myfriend/alpine:shared
-neuro pull image://username/my-alpine:production alpine:from-registry
+neuro pull image:/other-project/alpine:shared
+neuro pull image:/project/my-alpine:production alpine:from-registry
 
 ```
 
@@ -3771,7 +3771,7 @@ neuro push [OPTIONS] LOCAL_IMAGE [REMOTE_IMAGE]
 
 neuro push myimage
 neuro push alpine:latest image:my-alpine:production
-neuro push alpine image://myfriend/alpine:shared
+neuro push alpine image:/other-project/alpine:shared
 
 ```
 

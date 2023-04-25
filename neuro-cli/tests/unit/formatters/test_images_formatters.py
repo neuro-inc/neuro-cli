@@ -78,10 +78,10 @@ class TestDockerImageProgress:
                     RemoteImage.new_neuro_image(
                         name="output",
                         tag="stream",
-                        owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
                         org_name=None,
+                        project_name="test-project",
                     ),
                     LocalImage("input", "latest"),
                 )
@@ -101,10 +101,10 @@ class TestDockerImageProgress:
                     RemoteImage.new_neuro_image(
                         name="output",
                         tag="stream",
-                        owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
                         org_name=None,
+                        project_name="test-project",
                     ),
                 )
             )
@@ -123,10 +123,10 @@ class TestDockerImageProgress:
                     RemoteImage.new_neuro_image(
                         name="output",
                         tag="stream",
-                        owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
                         org_name=None,
+                        project_name="test-project",
                     ),
                 )
             )
@@ -143,10 +143,10 @@ class TestDockerImageProgress:
                     target_image=RemoteImage.new_neuro_image(
                         name="output",
                         tag="stream",
-                        owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
                         org_name=None,
+                        project_name="test-project",
                     ),
                 )
             )
@@ -168,10 +168,10 @@ class TestDockerImageProgress:
                     RemoteImage.new_neuro_image(
                         name="output",
                         tag="stream",
-                        owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
                         org_name=None,
+                        project_name="test-project",
                     ),
                     LocalImage("input", "latest"),
                 )
@@ -193,10 +193,10 @@ class TestDockerImageProgress:
                     RemoteImage.new_neuro_image(
                         name="output",
                         tag="stream",
-                        owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
                         org_name=None,
+                        project_name="test-project",
                     ),
                 )
             )
@@ -217,10 +217,10 @@ class TestDockerImageProgress:
                     RemoteImage.new_neuro_image(
                         name="output",
                         tag="stream",
-                        owner="bob",
                         registry="https://registry-dev.neu.ro",
                         cluster_name="test-cluster",
                         org_name=None,
+                        project_name="test-project",
                     ),
                 )
             )

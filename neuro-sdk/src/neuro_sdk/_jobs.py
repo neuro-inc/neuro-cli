@@ -647,7 +647,7 @@ class Jobs(metaclass=NoPublicConstructor):
             progress.commit_finished(data_2)
 
             # then, we expect stream for docker-push
-            src = LocalImage(f"{image.owner}/{image.name}", image.tag)
+            src = LocalImage(f"{image.project_name}/{image.name}", image.tag)
             progress.push(ImageProgressPush(src, dst=image))
             async for chunk in resp.content:
                 obj = _load_chunk(chunk)

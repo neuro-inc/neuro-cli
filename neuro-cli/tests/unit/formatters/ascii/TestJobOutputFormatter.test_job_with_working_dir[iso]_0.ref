@@ -1,23 +1,23 @@
-Job                     test-job                            
- Name                    test-job-name                       
- Owner                   test-user                           
- Cluster                 default                             
- Description             test job description                
- Status                  failed (ErrorReason)                
- Image                   image:/test-user/test-image:sometag 
- Command                 test-command                        
- Working dir             /working/dir                        
- Priority                Normal                              
- Price (credits / hour)  15.0000                             
- Current cost            150.0000                            
- Resources                Memory  16.8 MB                    
-                          CPU         0.1                    
- TTY                     False                               
- Http URL                http://local.host.test/             
- Http port               80                                  
- Http authentication     True                                
- Created                 2018-09-25T12:28:21.298672+00:00    
- Started                 2018-09-25T12:28:59.759433+00:00    
- Finished                2018-09-25T12:28:59.759433+00:00    
- Exit code               123                                 
+Job                     test-job                         
+ Name                    test-job-name                    
+ Owner                   test-user                        
+ Cluster                 default                          
+ Description             test job description             
+ Status                  failed (ErrorReason)             
+ Image                   image:test-image:sometag         
+ Command                 test-command                     
+ Working dir             /working/dir                     
+ Priority                Normal                           
+ Price (credits / hour)  15.0000                          
+ Current cost            150.0000                         
+ Resources                Memory  16.8 MB                 
+                          CPU         0.1                 
+ TTY                     False                            
+ Http URL                http://local.host.test/          
+ Http port               80                               
+ Http authentication     True                             
+ Created                 2018-09-25T12:28:21.298672+00:00 
+ Started                 2018-09-25T12:28:59.759433+00:00 
+ Finished                2018-09-25T12:28:59.759433+00:00 
+ Exit code               123                              
  Description             ErrorDesc

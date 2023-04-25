@@ -200,7 +200,6 @@ def test_storage_autocomplete(run_autocomplete: _RunAC) -> None:
     with mock.patch.object(Storage, "stat") as mocked_stat, mock.patch.object(
         Storage, "list"
     ) as mocked_list:
-
         tree = {
             URL("storage://default"): ["test-user", "other-user"],
             URL("storage://default/test-user"): ["folder", "file.txt"],
@@ -679,46 +678,46 @@ def test_image_autocomplete(run_autocomplete: _RunAC) -> None:
                 RemoteImage.new_neuro_image(
                     name="bananas",
                     registry="registry-dev.neu.ro",
-                    owner="user",
                     cluster_name="default",
                     org_name=None,
+                    project_name="project",
                 ),
                 RemoteImage.new_neuro_image(
                     name="lemons",
                     registry="registry-dev.neu.ro",
-                    owner="user",
                     cluster_name="default",
                     org_name=None,
+                    project_name="project",
                 ),
                 RemoteImage.new_neuro_image(
                     name="library/bananas",
                     registry="registry-dev.neu.ro",
-                    owner="user",
                     cluster_name="default",
                     org_name=None,
+                    project_name="project",
                 ),
                 RemoteImage.new_neuro_image(
                     name="library/bananas",
                     registry="registry-dev.neu.ro",
-                    owner="other-user",
                     cluster_name="default",
                     org_name=None,
+                    project_name="other-project",
                 ),
                 RemoteImage.new_neuro_image(
                     name="library/bananas",
                     registry="registry-dev.neu.ro",
-                    owner="user",
                     cluster_name="default",
                     org_name="org",
+                    project_name="project",
                 ),
             ],
             "other": [
                 RemoteImage.new_neuro_image(
                     name="library/bananas",
                     registry="registry2-dev.neu.ro",
-                    owner="user",
                     cluster_name="other",
                     org_name=None,
+                    project_name="project",
                 ),
             ],
         }
@@ -750,43 +749,46 @@ def test_image_autocomplete(run_autocomplete: _RunAC) -> None:
 
         zsh_out, bash_out = run_autocomplete(["image", "size", "image:/"])
         assert bash_out == (
-            "uri,user/bananas,/\n"
-            "uri,user/lemons,/\n"
-            "uri,user/library/bananas,/\n"
-            "uri,other-user/library/bananas,/\n"
-            "uri,org/user/library/bananas,/"
+            "uri,project/bananas,/\n"
+            "uri,project/lemons,/\n"
+            "uri,project/library/bananas,/\n"
+            "uri,other-project/library/bananas,/\n"
+            "uri,org/project/library/bananas,/"
         )
         assert zsh_out == (
-            "uri\nuser/bananas\n_\nimage:/\n"
-            "uri\nuser/lemons\n_\nimage:/\n"
-            "uri\nuser/library/bananas\n_\nimage:/\n"
-            "uri\nother-user/library/bananas\n_\nimage:/\n"
-            "uri\norg/user/library/bananas\n_\nimage:/"
+            "uri\nproject/bananas\n_\nimage:/\n"
+            "uri\nproject/lemons\n_\nimage:/\n"
+            "uri\nproject/library/bananas\n_\nimage:/\n"
+            "uri\nother-project/library/bananas\n_\nimage:/\n"
+            "uri\norg/project/library/bananas\n_\nimage:/"
         )
 
-        zsh_out, bash_out = run_autocomplete(["image", "size", "image:/u"])
+        zsh_out, bash_out = run_autocomplete(["image", "size", "image:/p"])
         assert bash_out == (
-            "uri,user/bananas,/\n" "uri,user/lemons,/\n" "uri,user/library/bananas,/"
+            "uri,project/bananas,/\n"
+            "uri,project/lemons,/\n"
+            "uri,project/library/bananas,/"
         )
         assert zsh_out == (
-            "uri\nuser/bananas\n_\nimage:/\n"
-            "uri\nuser/lemons\n_\nimage:/\n"
-            "uri\nuser/library/bananas\n_\nimage:/"
+            "uri\nproject/bananas\n_\nimage:/\n"
+            "uri\nproject/lemons\n_\nimage:/\n"
+            "uri\nproject/library/bananas\n_\nimage:/"
         )
 
         zsh_out, bash_out = run_autocomplete(["image", "size", "image:/o"])
         assert bash_out == (
-            "uri,other-user/library/bananas,/\n" "uri,org/user/library/bananas,/"
+            "uri,other-project/library/bananas,/\n" "uri,org/project/library/bananas,/"
         )
         assert zsh_out == (
-            "uri\nother-user/library/bananas\n_\nimage:/\n"
-            "uri\norg/user/library/bananas\n_\nimage:/"
+            "uri\nother-project/library/bananas\n_\nimage:/\n"
+            "uri\norg/project/library/bananas\n_\nimage:/"
         )
 
-        zsh_out, bash_out = run_autocomplete(["image", "size", "image:/user/l"])
-        assert bash_out == ("uri,user/lemons,/\n" "uri,user/library/bananas,/")
+        zsh_out, bash_out = run_autocomplete(["image", "size", "image:/project/l"])
+        assert bash_out == ("uri,project/lemons,/\n" "uri,project/library/bananas,/")
         assert zsh_out == (
-            "uri\nuser/lemons\n_\nimage:/\n" "uri\nuser/library/bananas\n_\nimage:/"
+            "uri\nproject/lemons\n_\nimage:/\n"
+            "uri\nproject/library/bananas\n_\nimage:/"
         )
 
         zsh_out, bash_out = run_autocomplete(["image", "size", "image://"])
@@ -803,55 +805,57 @@ def test_image_autocomplete(run_autocomplete: _RunAC) -> None:
 
         zsh_out, bash_out = run_autocomplete(["image", "size", "image://default/"])
         assert bash_out == (
-            "uri,user/bananas,//default/\n"
-            "uri,user/lemons,//default/\n"
-            "uri,user/library/bananas,//default/\n"
-            "uri,other-user/library/bananas,//default/\n"
-            "uri,org/user/library/bananas,//default/"
+            "uri,project/bananas,//default/\n"
+            "uri,project/lemons,//default/\n"
+            "uri,project/library/bananas,//default/\n"
+            "uri,other-project/library/bananas,//default/\n"
+            "uri,org/project/library/bananas,//default/"
         )
         assert zsh_out == (
-            "uri\nuser/bananas\n_\nimage://default/\n"
-            "uri\nuser/lemons\n_\nimage://default/\n"
-            "uri\nuser/library/bananas\n_\nimage://default/\n"
-            "uri\nother-user/library/bananas\n_\nimage://default/\n"
-            "uri\norg/user/library/bananas\n_\nimage://default/"
+            "uri\nproject/bananas\n_\nimage://default/\n"
+            "uri\nproject/lemons\n_\nimage://default/\n"
+            "uri\nproject/library/bananas\n_\nimage://default/\n"
+            "uri\nother-project/library/bananas\n_\nimage://default/\n"
+            "uri\norg/project/library/bananas\n_\nimage://default/"
         )
 
         zsh_out, bash_out = run_autocomplete(["image", "size", "image://other/"])
-        assert bash_out == ("uri,user/library/bananas,//other/")
-        assert zsh_out == ("uri\nuser/library/bananas\n_\nimage://other/")
+        assert bash_out == ("uri,project/library/bananas,//other/")
+        assert zsh_out == ("uri\nproject/library/bananas\n_\nimage://other/")
 
         zsh_out, bash_out = run_autocomplete(["image", "size", "image://default/o"])
         assert bash_out == (
-            "uri,other-user/library/bananas,//default/\n"
-            "uri,org/user/library/bananas,//default/"
+            "uri,other-project/library/bananas,//default/\n"
+            "uri,org/project/library/bananas,//default/"
         )
         assert zsh_out == (
-            "uri\nother-user/library/bananas\n_\nimage://default/\n"
-            "uri\norg/user/library/bananas\n_\nimage://default/"
-        )
-
-        zsh_out, bash_out = run_autocomplete(["image", "size", "image://default/user/"])
-        assert bash_out == (
-            "uri,user/bananas,//default/\n"
-            "uri,user/lemons,//default/\n"
-            "uri,user/library/bananas,//default/"
-        )
-        assert zsh_out == (
-            "uri\nuser/bananas\n_\nimage://default/\n"
-            "uri\nuser/lemons\n_\nimage://default/\n"
-            "uri\nuser/library/bananas\n_\nimage://default/"
+            "uri\nother-project/library/bananas\n_\nimage://default/\n"
+            "uri\norg/project/library/bananas\n_\nimage://default/"
         )
 
         zsh_out, bash_out = run_autocomplete(
-            ["image", "size", "image://default/user/l"]
+            ["image", "size", "image://default/project/"]
         )
         assert bash_out == (
-            "uri,user/lemons,//default/\n" "uri,user/library/bananas,//default/"
+            "uri,project/bananas,//default/\n"
+            "uri,project/lemons,//default/\n"
+            "uri,project/library/bananas,//default/"
         )
         assert zsh_out == (
-            "uri\nuser/lemons\n_\nimage://default/\n"
-            "uri\nuser/library/bananas\n_\nimage://default/"
+            "uri\nproject/bananas\n_\nimage://default/\n"
+            "uri\nproject/lemons\n_\nimage://default/\n"
+            "uri\nproject/library/bananas\n_\nimage://default/"
+        )
+
+        zsh_out, bash_out = run_autocomplete(
+            ["image", "size", "image://default/project/l"]
+        )
+        assert bash_out == (
+            "uri,project/lemons,//default/\n" "uri,project/library/bananas,//default/"
+        )
+        assert zsh_out == (
+            "uri\nproject/lemons\n_\nimage://default/\n"
+            "uri\nproject/library/bananas\n_\nimage://default/"
         )
 
 
@@ -862,16 +866,16 @@ def test_nonascii_image_autocomplete(run_autocomplete: _RunAC) -> None:
             RemoteImage.new_neuro_image(
                 name="ima?ge",
                 registry="registry-dev.neu.ro",
-                owner="user",
                 cluster_name="default",
                 org_name=None,
+                project_name="project",
             ),
             RemoteImage.new_neuro_image(
                 name="образ",
                 registry="registry-dev.neu.ro",
-                owner="user",
                 cluster_name="default",
                 org_name=None,
+                project_name="project",
             ),
         ]
 
@@ -903,55 +907,57 @@ def test_nonascii_image_autocomplete(run_autocomplete: _RunAC) -> None:
 
         zsh_out, bash_out = run_autocomplete(["image", "size", "image:/"])
         assert bash_out == (
-            "uri,user/ima%3Fge,/\n" "uri,user/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7,/"
+            "uri,project/ima%3Fge,/\n" "uri,project/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7,/"
         )
         assert zsh_out == (
-            "uri\nuser/ima%3Fge\n_\nimage:/\n"
-            "uri\nuser/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7\n_\nimage:/"
+            "uri\nproject/ima%3Fge\n_\nimage:/\n"
+            "uri\nproject/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7\n_\nimage:/"
         )
 
-        zsh_out, bash_out = run_autocomplete(["image", "size", "image:/user/im"])
-        assert bash_out == ("uri,user/ima%3Fge,/")
-        assert zsh_out == ("uri\nuser/ima%3Fge\n_\nimage:/")
+        zsh_out, bash_out = run_autocomplete(["image", "size", "image:/project/im"])
+        assert bash_out == ("uri,project/ima%3Fge,/")
+        assert zsh_out == ("uri\nproject/ima%3Fge\n_\nimage:/")
 
-        zsh_out, bash_out = run_autocomplete(["image", "size", "image:/user/об"])
-        assert bash_out == ("uri,user/об%D1%80%D0%B0%D0%B7,/")
-        assert zsh_out == ("uri\nuser/об%D1%80%D0%B0%D0%B7\n_\nimage:/")
+        zsh_out, bash_out = run_autocomplete(["image", "size", "image:/project/об"])
+        assert bash_out == ("uri,project/об%D1%80%D0%B0%D0%B7,/")
+        assert zsh_out == ("uri\nproject/об%D1%80%D0%B0%D0%B7\n_\nimage:/")
 
         zsh_out, bash_out = run_autocomplete(
-            ["image", "size", "image:/user/%D0%BE%D0%B1"]
+            ["image", "size", "image:/project/%D0%BE%D0%B1"]
         )
-        assert bash_out == ("uri,user/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7,/")
-        assert zsh_out == ("uri\nuser/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7\n_\nimage:/")
+        assert bash_out == ("uri,project/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7,/")
+        assert zsh_out == ("uri\nproject/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7\n_\nimage:/")
 
-        zsh_out, bash_out = run_autocomplete(["image", "size", "image://default/user/"])
+        zsh_out, bash_out = run_autocomplete(
+            ["image", "size", "image://default/project/"]
+        )
         assert bash_out == (
-            "uri,user/ima%3Fge,//default/\n"
-            "uri,user/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7,//default/"
+            "uri,project/ima%3Fge,//default/\n"
+            "uri,project/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7,//default/"
         )
         assert zsh_out == (
-            "uri\nuser/ima%3Fge\n_\nimage://default/\n"
-            "uri\nuser/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7\n_\nimage://default/"
+            "uri\nproject/ima%3Fge\n_\nimage://default/\n"
+            "uri\nproject/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7\n_\nimage://default/"
         )
 
         zsh_out, bash_out = run_autocomplete(
-            ["image", "size", "image://default/user/im"]
+            ["image", "size", "image://default/project/im"]
         )
-        assert bash_out == ("uri,user/ima%3Fge,//default/")
-        assert zsh_out == ("uri\nuser/ima%3Fge\n_\nimage://default/")
+        assert bash_out == ("uri,project/ima%3Fge,//default/")
+        assert zsh_out == ("uri\nproject/ima%3Fge\n_\nimage://default/")
 
         zsh_out, bash_out = run_autocomplete(
-            ["image", "size", "image://default/user/об"]
+            ["image", "size", "image://default/project/об"]
         )
-        assert bash_out == ("uri,user/об%D1%80%D0%B0%D0%B7,//default/")
-        assert zsh_out == ("uri\nuser/об%D1%80%D0%B0%D0%B7\n_\nimage://default/")
+        assert bash_out == ("uri,project/об%D1%80%D0%B0%D0%B7,//default/")
+        assert zsh_out == ("uri\nproject/об%D1%80%D0%B0%D0%B7\n_\nimage://default/")
 
         zsh_out, bash_out = run_autocomplete(
-            ["image", "size", "image://default/user/%D0%BE%D0%B1"]
+            ["image", "size", "image://default/project/%D0%BE%D0%B1"]
         )
-        assert bash_out == ("uri,user/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7,//default/")
+        assert bash_out == ("uri,project/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7,//default/")
         assert zsh_out == (
-            "uri\nuser/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7\n_\nimage://default/"
+            "uri\nproject/%D0%BE%D0%B1%D1%80%D0%B0%D0%B7\n_\nimage://default/"
         )
 
 
@@ -963,9 +969,9 @@ def test_image_tag_autocomplete(run_autocomplete: _RunAC) -> None:
         image = RemoteImage.new_neuro_image(
             name="library/bananas",
             registry="registry-dev.neu.ro",
-            owner="other-user",
             cluster_name="default",
             org_name=None,
+            project_name="other-project",
         )
 
         async def list(cluster_name: str) -> List[RemoteImage]:
@@ -998,36 +1004,36 @@ def test_image_tag_autocomplete(run_autocomplete: _RunAC) -> None:
         assert zsh_out == ("uri\nbeta\n_\nimage:library/bananas:")
 
         zsh_out, bash_out = run_autocomplete(
-            ["image", "size", "image:/user/library/bananas:"]
+            ["image", "size", "image:/project/library/bananas:"]
         )
         assert bash_out == ("uri,alpha,\n" "uri,beta,\n" "uri,latest,")
         assert zsh_out == (
-            "uri\nalpha\n_\nimage:/user/library/bananas:\n"
-            "uri\nbeta\n_\nimage:/user/library/bananas:\n"
-            "uri\nlatest\n_\nimage:/user/library/bananas:"
+            "uri\nalpha\n_\nimage:/project/library/bananas:\n"
+            "uri\nbeta\n_\nimage:/project/library/bananas:\n"
+            "uri\nlatest\n_\nimage:/project/library/bananas:"
         )
 
         zsh_out, bash_out = run_autocomplete(
-            ["image", "size", "image:/user/library/bananas:b"]
+            ["image", "size", "image:/project/library/bananas:b"]
         )
         assert bash_out == ("uri,beta,")
-        assert zsh_out == ("uri\nbeta\n_\nimage:/user/library/bananas:")
+        assert zsh_out == ("uri\nbeta\n_\nimage:/project/library/bananas:")
 
         zsh_out, bash_out = run_autocomplete(
-            ["image", "size", "image://default/user/library/bananas:"]
+            ["image", "size", "image://default/project/library/bananas:"]
         )
         assert bash_out == ("uri,alpha,\n" "uri,beta,\n" "uri,latest,")
         assert zsh_out == (
-            "uri\nalpha\n_\nimage://default/user/library/bananas:\n"
-            "uri\nbeta\n_\nimage://default/user/library/bananas:\n"
-            "uri\nlatest\n_\nimage://default/user/library/bananas:"
+            "uri\nalpha\n_\nimage://default/project/library/bananas:\n"
+            "uri\nbeta\n_\nimage://default/project/library/bananas:\n"
+            "uri\nlatest\n_\nimage://default/project/library/bananas:"
         )
 
         zsh_out, bash_out = run_autocomplete(
-            ["image", "size", "image://default/user/library/bananas:b"]
+            ["image", "size", "image://default/project/library/bananas:b"]
         )
         assert bash_out == ("uri,beta,")
-        assert zsh_out == ("uri\nbeta\n_\nimage://default/user/library/bananas:")
+        assert zsh_out == ("uri\nbeta\n_\nimage://default/project/library/bananas:")
 
 
 @skip_on_windows

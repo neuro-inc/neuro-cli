@@ -164,7 +164,7 @@ class RemoteImageType(AsyncType[RemoteImage]):
         names = []
         prefix = f"{path_prefix}{unquote(incomplete)}"
         for image in await client.images.list(cluster_name):
-            path = f"{image.owner}/{image.name}"
+            path = f"{image.project_name}/{image.name}"
             if image.org_name:
                 path = f"{image.org_name}/{path}"
             if path.startswith(prefix):
@@ -194,7 +194,7 @@ class RemoteImageType(AsyncType[RemoteImage]):
             return [CompletionItem("image:", type="uri", prefix="")]
 
         async with await root.init_client() as client:
-            if incomplete.startswith("image:"):
+            if incomplete.startswith("image:") and client.config.project_name:
                 incomplete = incomplete[len("image:") :]
                 if self.tag_option != TagOption.DENY and ":" in incomplete:
                     prefix, incomplete = incomplete.split(":", 1)
@@ -220,7 +220,7 @@ class RemoteImageType(AsyncType[RemoteImage]):
                         client, "image:/", "", client.cluster_name, incomplete
                     )
 
-                path_prefix = f"{client.username}/"
+                path_prefix = f"{client.config.project_name}/"
                 if client.config.org_name:
                     path_prefix = f"{client.config.org_name}/{path_prefix}"
                 return await self._complete_image_names(

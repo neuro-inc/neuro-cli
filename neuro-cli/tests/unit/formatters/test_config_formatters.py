@@ -128,7 +128,7 @@ class TestConfigFormatter:
         )
         rich_cmp(out)
 
-    async def test_output_with_project_name(
+    async def test_output_without_project(
         self,
         make_client: Callable[..., Client],
         cluster_config: Cluster,
@@ -140,8 +140,8 @@ class TestConfigFormatter:
         client = make_client(
             "https://dev.neu.ro/api/v1",
             clusters={cluster_config.name: cluster_config},
-            projects={project.key: project},
-            project_name=project.name,
+            projects={},
+            project_name=None,
         )
         out = ConfigFormatter()(
             client.config,

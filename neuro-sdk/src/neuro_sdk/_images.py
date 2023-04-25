@@ -44,7 +44,7 @@ class Images(metaclass=NoPublicConstructor):
     def _get_image_url(self, remote: RemoteImage) -> URL:
         cluster_name = remote.cluster_name
         if cluster_name:
-            assert remote.owner
+            assert remote.project_name
             registry_url = self._config.get_cluster(cluster_name).registry_url
         else:
             registry_url = self._config.registry_url
@@ -52,7 +52,8 @@ class Images(metaclass=NoPublicConstructor):
         if remote.org_name:
             org_prefix = f"{remote.org_name}/"
         return (
-            registry_url.with_path("/v2/") / f"{org_prefix}{remote.owner}/{remote.name}"
+            registry_url.with_path("/v2/")
+            / f"{org_prefix}{remote.project_name}/{remote.name}"
         )
 
     @property
@@ -228,8 +229,8 @@ class Images(metaclass=NoPublicConstructor):
         err = f"Invalid image `{image}`: "
         if image.tag is not None:
             raise ValueError(err + "tag is not allowed")
-        if not image.owner:
-            raise ValueError(err + "missing image owner")
+        if not image.project_name:
+            raise ValueError(err + "missing image project")
         if not image.name:
             raise ValueError(err + "missing image name")
 
