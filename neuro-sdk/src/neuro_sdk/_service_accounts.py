@@ -22,6 +22,8 @@ class ServiceAccount:
     default_cluster: str
     role: str
     created_at: datetime
+    default_project: str
+    default_org: Optional[str] = None
 
 
 @rewrite_module
@@ -38,6 +40,8 @@ class ServiceAccounts(metaclass=NoPublicConstructor):
             default_cluster=payload["default_cluster"],
             role=payload["role"],
             created_at=isoparse(payload["created_at"]),
+            default_project=payload["default_project"],
+            default_org=payload.get("default_org"),
         )
 
     @asyncgeneratorcontextmanager
@@ -53,13 +57,19 @@ class ServiceAccounts(metaclass=NoPublicConstructor):
         self,
         name: Optional[str] = None,
         default_cluster: Optional[str] = None,
+        default_org: Optional[str] = None,
+        default_project: Optional[str] = None,
     ) -> Tuple[ServiceAccount, str]:
         url = self._config.service_accounts_url
         auth = await self._config._api_auth()
         data = {
             "name": name,
             "default_cluster": default_cluster or self._config.cluster_name,
+            "default_project": default_project or self._config.project_name_or_raise,
         }
+        default_org = default_org or self._config.org_name
+        if default_org:
+            data["default_org"] = default_org
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()
             return self._parse_account_payload(payload), payload["token"]

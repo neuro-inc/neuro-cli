@@ -26,6 +26,7 @@ async def test_list(
                     "name": "test1",
                     "role": "test-role-1",
                     "default_cluster": "cluster1",
+                    "default_project": "user",
                     "role_deleted": False,
                     "created_at": created_at.isoformat(),
                 },
@@ -35,7 +36,19 @@ async def test_list(
                     "name": "test2",
                     "role": "test-role-2",
                     "default_cluster": "cluster2",
+                    "default_project": "user",
                     "role_deleted": True,
+                    "created_at": created_at.isoformat(),
+                },
+                {
+                    "id": "account-3",
+                    "owner": "user",
+                    "name": "test3",
+                    "role": "test-role-3",
+                    "default_cluster": "cluster1",
+                    "default_project": "test-project",
+                    "default_org": "test-org",
+                    "role_deleted": False,
                     "created_at": created_at.isoformat(),
                 },
             ]
@@ -60,6 +73,7 @@ async def test_list(
             role="test-role-1",
             owner="user",
             default_cluster="cluster1",
+            default_project="user",
             created_at=created_at,
         ),
         ServiceAccount(
@@ -68,6 +82,17 @@ async def test_list(
             role="test-role-2",
             owner="user",
             default_cluster="cluster2",
+            default_project="user",
+            created_at=created_at,
+        ),
+        ServiceAccount(
+            id="account-3",
+            name="test3",
+            role="test-role-3",
+            owner="user",
+            default_cluster="cluster1",
+            default_project="test-project",
+            default_org="test-org",
             created_at=created_at,
         ),
     ]
@@ -85,6 +110,7 @@ async def test_add(
         assert data == {
             "name": "test-account",
             "default_cluster": "cluster",
+            "default_project": "test-project",
         }
         return web.json_response(
             {
@@ -93,6 +119,7 @@ async def test_add(
                 "name": "test-account",
                 "role": "test-role",
                 "default_cluster": "cluster",
+                "default_project": "test-project",
                 "role_deleted": False,
                 "created_at": created_at.isoformat(),
                 "token": "fake-token",
@@ -114,6 +141,7 @@ async def test_add(
             role="test-role",
             owner="user",
             default_cluster="cluster",
+            default_project="test-project",
             created_at=created_at,
         )
         assert token == "fake-token"
@@ -135,6 +163,7 @@ async def test_get(
                 "name": "test-account",
                 "role": "test-role",
                 "default_cluster": "cluster",
+                "default_project": "test-project",
                 "role_deleted": False,
                 "created_at": created_at.isoformat(),
             },
@@ -153,6 +182,7 @@ async def test_get(
             role="test-role",
             owner="user",
             default_cluster="cluster",
+            default_project="test-project",
             created_at=created_at,
         )
 

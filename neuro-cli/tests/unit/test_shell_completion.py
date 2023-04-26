@@ -1287,6 +1287,7 @@ def test_service_account_autocomplete(run_autocomplete: _RunAC) -> None:
                 role="test-role-1",
                 owner="user",
                 default_cluster="cluster1",
+                default_project="user",
                 created_at=created_at,
             ),
             ServiceAccount(
@@ -1295,6 +1296,7 @@ def test_service_account_autocomplete(run_autocomplete: _RunAC) -> None:
                 role="test-role-2",
                 owner="user",
                 default_cluster="cluster2",
+                default_project="project",
                 created_at=created_at,
             ),
         ]

@@ -13,13 +13,19 @@ from neuro_cli.formatters.service_accounts import (
 from neuro_cli.formatters.utils import format_datetime_human
 
 
-def test_service_account_formatter(rich_cmp: Any) -> None:
+@pytest.mark.parametrize(
+    "org",
+    [None, "some-org"],
+)
+def test_service_account_formatter(rich_cmp: Any, org: Any) -> None:
     account = ServiceAccount(
         id="account",
         name="test1",
         role="test-role",
         owner="user",
         default_cluster="cluster",
+        default_project="some-project",
+        default_org=org,
         created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
     )
     fmtr = ServiceAccountFormatter(datetime_formatter=format_datetime_human)
@@ -35,6 +41,7 @@ def service_accounts_list() -> List[ServiceAccount]:
             role="test-role",
             owner="user",
             default_cluster="cluster",
+            default_project="test-project",
             created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
         ),
         ServiceAccount(
@@ -43,6 +50,7 @@ def service_accounts_list() -> List[ServiceAccount]:
             role="test-role",
             owner="user",
             default_cluster="cluster",
+            default_project="test-project",
             created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
         ),
         ServiceAccount(
@@ -51,6 +59,7 @@ def service_accounts_list() -> List[ServiceAccount]:
             role="test-role",
             owner="user",
             default_cluster="cluster",
+            default_project="test-project",
             created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
         ),
         ServiceAccount(
@@ -59,6 +68,7 @@ def service_accounts_list() -> List[ServiceAccount]:
             role="test-role",
             owner="user",
             default_cluster="cluster",
+            default_project="test-project",
             created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
         ),
     ]

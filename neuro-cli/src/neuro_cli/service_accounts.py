@@ -1,6 +1,6 @@
 from typing import Optional, Sequence
 
-from neuro_cli.click_types import SERVICE_ACCOUNT
+from neuro_cli.click_types import CLUSTER, ORG, PROJECT, SERVICE_ACCOUNT
 from neuro_cli.formatters.service_accounts import (
     BaseServiceAccountsFormatter,
     ServiceAccountFormatter,
@@ -54,8 +54,22 @@ async def ls(root: Root) -> None:
 )
 @option(
     "--default-cluster",
-    metavar="CLUSTER_NAME",
+    type=CLUSTER,
     help="Service account default cluster. Current cluster will"
+    " be used if not specified",
+    default=None,
+)
+@option(
+    "--default-org",
+    type=ORG,
+    help="Service account default organization. Current org will"
+    " be used if not specified",
+    default=None,
+)
+@option(
+    "--default-project",
+    type=PROJECT,
+    help="Service account default project. Current project will"
     " be used if not specified",
     default=None,
 )
@@ -63,6 +77,8 @@ async def create(
     root: Root,
     name: Optional[str],
     default_cluster: Optional[str],
+    default_org: Optional[str],
+    default_project: Optional[str],
 ) -> None:
     """
     Create a service account.
@@ -71,6 +87,8 @@ async def create(
     account, token = await root.client.service_accounts.create(
         name=name,
         default_cluster=default_cluster,
+        default_org=default_org,
+        default_project=default_project,
     )
     fmtr = ServiceAccountFormatter(
         datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
