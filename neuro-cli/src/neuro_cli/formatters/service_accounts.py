@@ -12,6 +12,7 @@ from rich.text import Text
 
 from neuro_sdk import ServiceAccount
 
+from neuro_cli.click_types import ORG
 from neuro_cli.formatters.utils import DatetimeFormatter
 
 
@@ -75,25 +76,46 @@ class ServiceAccountFormatter:
         table.add_row("Role", account.role)
         table.add_row("Owner", account.owner)
         table.add_row("Default cluster", account.default_cluster)
+        table.add_row("Default org", account.default_org or ORG.NO_ORG_STR)
+        table.add_row("Default project", account.default_project)
         table.add_row("Created at", self._datetime_formatter(account.created_at))
         return table
 
 
-def service_account_token_fmtr(token: str) -> RenderableType:
-    token_data = json.loads(base64.b64decode(token.encode()).decode())
+def service_account_token_fmtr(token: str, account: ServiceAccount) -> RenderableType:
+    token_data: dict[str, str] = json.loads(base64.b64decode(token.encode()).decode())
     auth_token = token_data["token"]
 
-    return Text.from_markup(
-        "\n".join(
+    org_name = token_data.get("org_name")
+    share_project_cmd_hint = (
+        f"[b]neuro admin add-project-user {f'--org {org_name}' if org_name else ''}"
+        f" {token_data.get('cluster')} "
+        f" {token_data.get('project_name')}"
+        f" {account.role}"
+        " reader|writer|manager|admin[/b]\n"
+    )
+
+    lines = [
+        "Full token with cluster and API url embedded (this value can "
+        "be used as [b]NEURO_PASSED_CONFIG[/b] environment variable):\n",
+        token,
+        "\nJust auth token (this value can be passed to [b]neuro config"
+        " login-with-token[/b]):\n",
+        auth_token,
+        "\n[b red]Save it to some secure place, you will be unable to "
+        "retrieve it later![/b red]",
+        "\nTo allow access to your current project for this service account, "
+        "perform:\n",
+        share_project_cmd_hint,
+    ]
+    if org_name:
+        lines.extend(
             [
-                "Full token with cluster and API url embedded (this value can "
-                "be used as [b]NEURO_PASSED_CONFIG[/b] environment variable):\n",
-                token,
-                "\nJust auth token (this value can be passed to [b]neuro config"
-                " login-with-token[/b]):\n",
-                auth_token,
-                "\n[b red]Save it to some secure place, you will be unable to "
-                "retrieve it later![/b red]",
+                "\nTo allow access to your current org for this service account, "
+                "perform:\n",
+                f"[b]neuro admin add-org-user {org_name} {account.role}"
+                " reader|writer|manager|admin[/b]\n",
             ]
         )
-    )
+
+    return Text.from_markup("\n".join(lines))

@@ -2983,7 +2983,9 @@ neuro service-account create [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\--default-cluster CLUSTER_NAME_|Service account default cluster. Current cluster will be used if not specified|
+|_\--default-cluster CLUSTER_|Service account default cluster. Current cluster will be used if not specified|
+|_\--default-org ORG_|Service account default organization. Current org will be used if not specified|
+|_\--default-project PROJECT_|Service account default project. Current project will be used if not specified|
 |_--name NAME_|Optional service account name|
 
 

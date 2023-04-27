@@ -84,6 +84,7 @@ def _print_welcome(root: Root, url: URL) -> None:
             f"Logged into {url} as [u]{root.client.config.username}[/u]"
             f", current cluster is [b]{root.client.config.cluster_name}[/b], "
             f"org is [b]{root.client.config.org_name or ORG.NO_ORG_STR}[/b]",
+            f"project is [b]{root.client.config.project_name}[/b]",
             markup=True,
         )
     else:
