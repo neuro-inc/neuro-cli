@@ -977,7 +977,10 @@ def _container_to_api(
         primitive["secret_env"] = {
             k: str(
                 normalize_secret_uri(
-                    v, config.username, config.cluster_name, config.org_name
+                    v,
+                    config.project_name_or_raise,
+                    config.cluster_name,
+                    config.org_name,
                 )
             )
             for k, v in secret_env.items()
@@ -1162,7 +1165,10 @@ def _volume_to_api(volume: Volume, config: Config) -> Dict[str, Any]:
 
 def _secret_file_to_api(secret_file: SecretFile, config: Config) -> Dict[str, Any]:
     uri = normalize_secret_uri(
-        secret_file.secret_uri, config.username, config.cluster_name, config.org_name
+        secret_file.secret_uri,
+        config.project_name_or_raise,
+        config.cluster_name,
+        config.org_name,
     )
     return {
         "src_secret_uri": str(uri),
