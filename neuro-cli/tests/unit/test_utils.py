@@ -755,7 +755,7 @@ def test_parse_resource_for_sharing_user_less(root: Root) -> None:
     )
 
 
-def test_parse_resource_for_sharing_with_user(root: Root) -> None:
+def test_parse_resource_for_sharing_with_project(root: Root) -> None:
     full_permission = parse_resource_for_sharing(
         f"storage://{root.client.cluster_name}"
         f"/{root.client.config.project_name}/resource",
