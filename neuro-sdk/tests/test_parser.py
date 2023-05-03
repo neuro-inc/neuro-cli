@@ -203,9 +203,18 @@ async def test_parse_secret_files_keeps_order(make_client: _MakeClient) -> None:
         volumes_parsed = client.parse.volumes(volumes)
 
     assert volumes_parsed.secret_files == [
-        SecretFile(URL("secret://default/user/first"), "/var/secrets/first"),
-        SecretFile(URL("secret://default/user/second"), "/var/secrets/second"),
-        SecretFile(URL("secret://default/user/third"), "/var/secrets/third"),
+        SecretFile(
+            URL(f"secret://default/{client.config.project_name}/first"),
+            "/var/secrets/first",
+        ),
+        SecretFile(
+            URL(f"secret://default/{client.config.project_name}/second"),
+            "/var/secrets/second",
+        ),
+        SecretFile(
+            URL(f"secret://default/{client.config.project_name}/third"),
+            "/var/secrets/third",
+        ),
     ]
 
 

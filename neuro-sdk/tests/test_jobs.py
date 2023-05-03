@@ -2477,25 +2477,25 @@ class TestVolumeParsing:
         "volume_param,volume",
         [
             (
-                "storage://default/user/dir:/var/www",
+                "storage://default/test-project/dir:/var/www",
                 Volume(
-                    storage_uri=URL("storage://default/user/dir"),
+                    storage_uri=URL("storage://default/test-project/dir"),
                     container_path="/var/www",
                     read_only=False,
                 ),
             ),
             (
-                "storage://default/user/dir:/var/www:rw",
+                "storage://default/test-project/dir:/var/www:rw",
                 Volume(
-                    storage_uri=URL("storage://default/user/dir"),
+                    storage_uri=URL("storage://default/test-project/dir"),
                     container_path="/var/www",
                     read_only=False,
                 ),
             ),
             (
-                "storage://default/user:/var/www:ro",
+                "storage://default/test-project:/var/www:ro",
                 Volume(
-                    storage_uri=URL("storage://default/user"),
+                    storage_uri=URL("storage://default/test-project"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -2503,7 +2503,7 @@ class TestVolumeParsing:
             (
                 "storage::/var/www:ro",
                 Volume(
-                    storage_uri=URL("storage://default/user"),
+                    storage_uri=URL("storage://default/test-project"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -2511,7 +2511,7 @@ class TestVolumeParsing:
             (
                 "storage:dir:/var/www:ro",
                 Volume(
-                    storage_uri=URL("storage://default/user/dir"),
+                    storage_uri=URL("storage://default/test-project/dir"),
                     container_path="/var/www",
                     read_only=True,
                 ),
@@ -2519,7 +2519,7 @@ class TestVolumeParsing:
             (
                 "storage::/var/www:ro",
                 Volume(
-                    storage_uri=URL("storage://default/user"),
+                    storage_uri=URL("storage://default/test-project"),
                     container_path="/var/www",
                     read_only=True,
                 ),

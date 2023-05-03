@@ -659,19 +659,23 @@ def test_parse_file_resource_unsupported_scheme(root: Root) -> None:
         parse_file_resource("image:ubuntu", root)
 
 
-def test_parse_file_resource_user_less(root: Root) -> None:
+def test_parse_file_resource_project_less(root: Root) -> None:
     user_less_permission = parse_file_resource("storage:resource", root)
     assert user_less_permission == URL(
-        f"storage://{root.client.cluster_name}/{root.client.username}/resource"
+        f"storage://{root.client.cluster_name}"
+        f"/{root.client.config.project_name}/resource"
     )
 
 
-def test_parse_file_resource_with_user(root: Root) -> None:
+def test_parse_file_resource_with_project(root: Root) -> None:
     full_permission = parse_file_resource(
-        f"storage://{root.client.cluster_name}/{root.client.username}/resource", root
+        f"storage://{root.client.cluster_name}"
+        f"/{root.client.config.project_name}/resource",
+        root,
     )
     assert full_permission == URL(
-        f"storage://{root.client.cluster_name}/{root.client.username}/resource"
+        f"storage://{root.client.cluster_name}"
+        f"/{root.client.config.project_name}/resource"
     )
     full_permission = parse_file_resource(f"storage://default/alice/resource", root)
     assert full_permission == URL(f"storage://default/alice/resource")
@@ -686,7 +690,8 @@ def test_parse_resource_for_sharing_image_no_tag(root: Root) -> None:
     uri = "image:ubuntu"
     parsed = parse_resource_for_sharing(uri, root)
     assert parsed == URL(
-        f"image://{root.client.cluster_name}/{root.client.username}/ubuntu"
+        f"image://{root.client.cluster_name}"
+        f"/{root.client.config.project_name}/ubuntu"
     )
 
 
@@ -694,18 +699,20 @@ def test_parse_resource_for_sharing_image_non_ascii(root: Root) -> None:
     uri = "image:образ"
     parsed = parse_resource_for_sharing(uri, root)
     assert parsed == URL(
-        f"image://{root.client.cluster_name}/{root.client.username}/образ"
+        f"image://{root.client.cluster_name}"
+        f"/{root.client.config.project_name}/образ"
     )
-    assert parsed.path == f"/{root.client.username}/образ"
+    assert parsed.path == f"/{root.client.config.project_name}/образ"
 
 
 def test_parse_resource_for_sharing_image_percent_encoded(root: Root) -> None:
     uri = "image:%252d%3f%23"
     parsed = parse_resource_for_sharing(uri, root)
     assert parsed == URL(
-        f"image://{root.client.cluster_name}/{root.client.username}/%252d%3f%23"
+        f"image://{root.client.cluster_name}"
+        f"/{root.client.config.project_name}/%252d%3f%23"
     )
-    assert parsed.path == f"/{root.client.username}/%2d?#"
+    assert parsed.path == f"/{root.client.config.project_name}/%2d?#"
 
 
 def test_parse_resource_for_sharing_image_with_tag_fail(root: Root) -> None:
@@ -714,10 +721,10 @@ def test_parse_resource_for_sharing_image_with_tag_fail(root: Root) -> None:
         parse_resource_for_sharing(uri, root)
 
 
-def test_parse_resource_for_sharing_all_user_images(root: Root) -> None:
-    uri = "image:/otheruser"
+def test_parse_resource_for_sharing_all_project_images(root: Root) -> None:
+    uri = "image:/otherproject"
     parsed = parse_resource_for_sharing(uri, root)
-    assert parsed == URL(f"image://{root.client.cluster_name}/otheruser")
+    assert parsed == URL(f"image://{root.client.cluster_name}/otherproject")
 
 
 def _test_parse_resource_for_sharing_all_cluster_images(root: Root) -> None:
@@ -743,16 +750,20 @@ def test_parse_resource_for_sharing_unsupported_scheme(root: Root) -> None:
 def test_parse_resource_for_sharing_user_less(root: Root) -> None:
     user_less_permission = parse_resource_for_sharing("storage:resource", root)
     assert user_less_permission == URL(
-        f"storage://{root.client.cluster_name}/{root.client.username}/resource"
+        f"storage://{root.client.cluster_name}"
+        f"/{root.client.config.project_name}/resource"
     )
 
 
 def test_parse_resource_for_sharing_with_user(root: Root) -> None:
     full_permission = parse_resource_for_sharing(
-        f"storage://{root.client.cluster_name}/{root.client.username}/resource", root
+        f"storage://{root.client.cluster_name}"
+        f"/{root.client.config.project_name}/resource",
+        root,
     )
     assert full_permission == URL(
-        f"storage://{root.client.cluster_name}/{root.client.username}/resource"
+        f"storage://{root.client.cluster_name}"
+        f"/{root.client.config.project_name}/resource"
     )
     full_permission = parse_resource_for_sharing(
         f"storage://default/alice/resource", root
