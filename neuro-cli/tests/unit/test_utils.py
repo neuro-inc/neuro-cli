@@ -118,7 +118,7 @@ async def test_resolve_job_id__from_string__no_jobs_found(
 
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
-async def test_resolve_job_id__from_uri_with_project__no_jobs_found(
+async def test_resolve_job_id__from_uri_with_same_project__no_jobs_found(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient, cluster_name: str
 ) -> None:
     job_project = "test-project"
@@ -246,7 +246,7 @@ async def test_resolve_job_id__from_string__single_job_found(
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
 @pytest.mark.parametrize("org_name", [None, "test-org"])
-async def test_resolve_job_id__from_uri_with_project__single_job_found(
+async def test_resolve_job_id__from_uri_with_same_project__single_job_found(
     aiohttp_server: _TestServerFactory,
     make_client: _MakeClient,
     cluster_name: str,
