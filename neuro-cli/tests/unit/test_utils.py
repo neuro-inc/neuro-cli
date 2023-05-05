@@ -32,17 +32,19 @@ def _job_entry(
     job_id: str,
     cluster_name: str = "default",
     owner: str = "user",
+    project_name: str = "project",
     org_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     if org_name:
-        uri = f"job://{cluster_name}/{org_name}/{owner}/{job_id}"
+        uri = f"job://{cluster_name}/{org_name}/{project_name}/{job_id}"
     else:
-        uri = f"job://{cluster_name}/{owner}/{job_id}"
+        uri = f"job://{cluster_name}/{project_name}/{job_id}"
     return {
         "id": job_id,
         "owner": owner,
         "cluster_name": cluster_name,
         "org_name": org_name,
+        "project_name": project_name,
         "uri": uri,
         "status": "running",
         "history": {
@@ -64,7 +66,7 @@ def _job_entry(
         "pass_config": False,
         "name": "my-job-name",
         "internal_hostname": f"{job_id}.{cluster_name}",
-        "internal_hostname_named": f"my-job-name--{owner}.{cluster_name}",
+        "internal_hostname_named": f"my-job-name--{project_name}.{cluster_name}",
         "total_price_credits": "150",
         "price_credits_per_hour": "15",
     }
@@ -95,7 +97,7 @@ async def test_resolve_job_id__from_string__no_jobs_found(
         _check_params(
             request,
             name=job_id,
-            owner="user",
+            project_name="test-project",
             cluster_name="default",
             reverse="1",
         )
@@ -116,19 +118,19 @@ async def test_resolve_job_id__from_string__no_jobs_found(
 
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
-async def test_resolve_job_id__from_uri_with_owner_same_user__no_jobs_found(
+async def test_resolve_job_id__from_uri_with_project__no_jobs_found(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient, cluster_name: str
 ) -> None:
-    job_owner = "user"
+    job_project = "test-project"
     job_name = "my-job-name"
-    uri = f"job://{cluster_name}/{job_owner}/{job_name}"
+    uri = f"job://{cluster_name}/{job_project}/{job_name}"
     JSON: Dict[str, Any] = {"jobs": []}
 
     async def handler(request: web.Request) -> web.Response:
         _check_params(
             request,
             name=job_name,
-            owner=job_owner,
+            project_name=job_project,
             cluster_name=cluster_name,
             reverse="1",
         )
@@ -148,19 +150,19 @@ async def test_resolve_job_id__from_uri_with_owner_same_user__no_jobs_found(
         assert resolved_ex == (job_name, cluster_name)
 
 
-async def test_resolve_job_id__from_uri_with_owner_other_user__no_jobs_found(
+async def test_resolve_job_id__from_uri_with_other_project__no_jobs_found(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    job_owner = "job-owner"
+    job_project = "other-test-project"
     job_name = "my-job-name"
-    uri = f"job://default/{job_owner}/{job_name}"
+    uri = f"job://default/{job_project}/{job_name}"
     JSON: Dict[str, Any] = {"jobs": []}
 
     async def handler(request: web.Request) -> web.Response:
         _check_params(
             request,
             name=job_name,
-            owner=job_owner,
+            project_name=job_project,
             cluster_name="default",
             reverse="1",
         )
@@ -178,7 +180,7 @@ async def test_resolve_job_id__from_uri_with_owner_other_user__no_jobs_found(
             await resolve_job_ex(uri, client=client, status={JobStatus.RUNNING})
 
 
-async def test_resolve_job_id__from_uri_without_owner__no_jobs_found(
+async def test_resolve_job_id__from_uri_without_project__no_jobs_found(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     job_name = "my-job-name"
@@ -189,7 +191,7 @@ async def test_resolve_job_id__from_uri_without_owner__no_jobs_found(
         _check_params(
             request,
             name=job_name,
-            owner="user",
+            project_name="test-project",
             cluster_name="default",
             reverse="1",
         )
@@ -214,13 +216,13 @@ async def test_resolve_job_id__from_string__single_job_found(
 ) -> None:
     job_name = "test-job-name-555"
     job_id = "job-id-1"
-    JSON = {"jobs": [_job_entry(job_id, owner="user")]}
+    JSON = {"jobs": [_job_entry(job_id, project_name="test-project")]}
 
     async def handler(request: web.Request) -> web.Response:
         _check_params(
             request,
             name=job_name,
-            owner="user",
+            project_name="test-project",
             cluster_name="default",
             reverse="1",
         )
@@ -244,29 +246,27 @@ async def test_resolve_job_id__from_string__single_job_found(
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
 @pytest.mark.parametrize("org_name", [None, "test-org"])
-@pytest.mark.parametrize(
-    "job_owner", ["job-owner", "user", "job-owner/service", "user/service"]
-)
-async def test_resolve_job_id__from_uri_with_owner__single_job_found(
+async def test_resolve_job_id__from_uri_with_project__single_job_found(
     aiohttp_server: _TestServerFactory,
     make_client: _MakeClient,
     cluster_name: str,
     org_name: Optional[str],
-    job_owner: str,
 ) -> None:
+    job_project = "test-project"
     job_name = "my-job-name"
-    uri = f"job://{cluster_name}/{job_owner}/{job_name}"
+    uri = f"job://{cluster_name}/{job_project}/{job_name}"
     job_id = "job-id-1"
-    JSON = {"jobs": [_job_entry(job_id, cluster_name=cluster_name, owner=job_owner)]}
+    JSON = {
+        "jobs": [
+            _job_entry(job_id, cluster_name=cluster_name, project_name=job_project)
+        ]
+    }
 
     async def handler(request: web.Request) -> web.Response:
-        expected_owners = (
-            [job_owner, "service"] if job_owner == "job-owner/service" else [job_owner]
-        )
         _check_params(
             request,
             name=job_name,
-            owner=expected_owners,
+            project_name=job_project,
             cluster_name=cluster_name,
             reverse="1",
         )
@@ -288,38 +288,38 @@ async def test_resolve_job_id__from_uri_with_owner__single_job_found(
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
 @pytest.mark.parametrize("org_name", [None, "test-org", "job-org"])
-@pytest.mark.parametrize(
-    "job_owner", ["job-owner", "user", "job-owner/service", "user/service"]
-)
 async def test_resolve_job_id__from_uri_with_org__single_job_found(
     aiohttp_server: _TestServerFactory,
     make_client: _MakeClient,
     cluster_name: str,
     org_name: Optional[str],
-    job_owner: str,
 ) -> None:
     job_org = "job-org"
+    job_project = "test-project"
     job_name = "my-job-name"
-    uri = f"job://{cluster_name}/{job_org}/{job_owner}/{job_name}"
+    uri = f"job://{cluster_name}/{job_org}/{job_project}/{job_name}"
     job_id = "job-id-1"
     JSON = {
         "jobs": [
             _job_entry(
-                job_id, cluster_name=cluster_name, owner=job_owner, org_name=job_org
+                job_id,
+                cluster_name=cluster_name,
+                org_name=job_org,
+                project_name=job_project,
             )
         ]
     }
 
     async def handler(request: web.Request) -> web.Response:
-        expected_owners = (
-            [f"{job_org}/{job_owner}", job_owner]
+        expected_projects = (
+            [f"{job_org}/{job_project}", job_project]
             if org_name != job_org
-            else [job_owner]
+            else [job_project]
         )
         _check_params(
             request,
             name=job_name,
-            owner=expected_owners,
+            project_name=expected_projects,
             cluster_name=cluster_name,
             reverse="1",
         )
@@ -347,28 +347,31 @@ async def test_resolve_job_id__from_uri__multiple_jobs_found(
     cluster_name: str,
     org_name: Optional[str],
 ) -> None:
-    job_org = f"job-owner"
-    job_owner = f"job-owner"
+    job_org = "job-org"
+    job_project = "test-project"
     job_name = "my-job-name"
-    uri = f"job://{cluster_name}/{job_owner}/{job_name}"
+    uri = f"job://{cluster_name}/{job_project}/{job_name}"
     job_ids = [f"job-id-{i}" for i in range(4)]
     JSON = {
         "jobs": [
             _job_entry(
                 job_ids[0],
                 cluster_name=cluster_name,
-                owner=job_owner,
+                project_name=job_project,
                 org_name="other-org",
             ),
             _job_entry(
-                job_ids[1], cluster_name=cluster_name, owner=job_owner, org_name=job_org
+                job_ids[1],
+                cluster_name=cluster_name,
+                project_name=job_project,
+                org_name=job_org,
             ),
-            _job_entry(job_ids[2], cluster_name=cluster_name, owner=job_owner),
+            _job_entry(job_ids[2], cluster_name=cluster_name, project_name=job_project),
             _job_entry(
                 job_ids[3],
                 cluster_name=cluster_name,
-                owner=job_owner,
                 org_name="other-org",
+                project_name=job_project,
             ),
         ]
     }
@@ -377,7 +380,7 @@ async def test_resolve_job_id__from_uri__multiple_jobs_found(
         _check_params(
             request,
             name=job_name,
-            owner=job_owner,
+            project_name=job_project,
             cluster_name=cluster_name,
             reverse="1",
         )
@@ -405,27 +408,30 @@ async def test_resolve_job_id__from_uri_with_org__multiple_jobs_found(
     cluster_name: str,
     org_name: Optional[str],
 ) -> None:
-    job_org = f"job-owner"
-    job_owner = f"job-owner"
+    job_org = "job-org"
+    job_project = "test-project"
     job_name = "my-job-name"
-    uri = f"job://{cluster_name}/{job_org}/{job_owner}/{job_name}"
+    uri = f"job://{cluster_name}/{job_org}/{job_project}/{job_name}"
     job_ids = [f"job-id-{i}" for i in range(4)]
     JSON = {
         "jobs": [
             _job_entry(
                 job_ids[0],
                 cluster_name=cluster_name,
-                owner=job_owner,
+                project_name=job_project,
                 org_name="other-org",
             ),
-            _job_entry(job_ids[1], cluster_name=cluster_name, owner=job_owner),
+            _job_entry(job_ids[1], cluster_name=cluster_name, project_name=job_project),
             _job_entry(
-                job_ids[2], cluster_name=cluster_name, owner=job_owner, org_name=job_org
+                job_ids[2],
+                cluster_name=cluster_name,
+                project_name=job_project,
+                org_name=job_org,
             ),
             _job_entry(
                 job_ids[3],
                 cluster_name=cluster_name,
-                owner=job_owner,
+                project_name=job_project,
                 org_name="other-org",
             ),
         ]
@@ -435,7 +441,7 @@ async def test_resolve_job_id__from_uri_with_org__multiple_jobs_found(
         _check_params(
             request,
             name=job_name,
-            owner=[f"{job_org}/{job_owner}", job_owner],
+            project_name=[f"{job_org}/{job_project}", job_project],
             cluster_name=cluster_name,
             reverse="1",
         )
@@ -456,7 +462,7 @@ async def test_resolve_job_id__from_uri_with_org__multiple_jobs_found(
 
 
 @pytest.mark.parametrize("org_name", [None, "test-org"])
-async def test_resolve_job_id__from_uri_without_owner__single_job_found(
+async def test_resolve_job_id__from_uri_without_project__single_job_found(
     aiohttp_server: _TestServerFactory,
     make_client: _MakeClient,
     org_name: Optional[str],
@@ -464,13 +470,15 @@ async def test_resolve_job_id__from_uri_without_owner__single_job_found(
     job_name = "my-job-name"
     uri = f"job:{job_name}"
     job_id = "job-id-1"
-    JSON = {"jobs": [_job_entry(job_id, owner="user", org_name=org_name)]}
+    JSON = {
+        "jobs": [_job_entry(job_id, project_name="test-project", org_name=org_name)]
+    }
 
     async def handler(request: web.Request) -> web.Response:
         _check_params(
             request,
             name=job_name,
-            owner="user",
+            project_name="test-project",
             cluster_name="default",
             reverse="1",
         )
@@ -500,7 +508,7 @@ async def test_resolve_job_id__server_error(
         _check_params(
             request,
             name=job_name,
-            owner="user",
+            project_name="test-project",
             cluster_name="default",
             reverse="1",
         )
@@ -523,18 +531,18 @@ async def test_resolve_job_id__server_error(
 
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
-async def test_resolve_job_id__from_uri_with_owner_same_user__server_error(
+async def test_resolve_job_id__from_uri_with_same_project__server_error(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient, cluster_name: str
 ) -> None:
-    job_owner = "user"
+    job_project = "test-project"
     job_name = "my-job-name"
-    uri = f"job://{cluster_name}/{job_owner}/{job_name}"
+    uri = f"job://{cluster_name}/{job_project}/{job_name}"
 
     async def handler(request: web.Request) -> NoReturn:
         _check_params(
             request,
             name=job_name,
-            owner=job_owner,
+            project_name=job_project,
             cluster_name=cluster_name,
             reverse="1",
         )
@@ -554,18 +562,18 @@ async def test_resolve_job_id__from_uri_with_owner_same_user__server_error(
         assert resolved_ex == (job_name, cluster_name)
 
 
-async def test_resolve_job_id__from_uri_with_owner_other_user__server_error(
+async def test_resolve_job_id__from_uri_with_other_project__server_error(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    job_owner = "job-owner"
+    job_project = "other-test-project"
     job_name = "my-job-name"
-    uri = f"job://default/{job_owner}/{job_name}"
+    uri = f"job://default/{job_project}/{job_name}"
 
     async def handler(request: web.Request) -> NoReturn:
         _check_params(
             request,
             name=job_name,
-            owner=job_owner,
+            project_name=job_project,
             cluster_name="default",
             reverse="1",
         )
@@ -583,7 +591,7 @@ async def test_resolve_job_id__from_uri_with_owner_other_user__server_error(
             await resolve_job_ex(uri, client=client, status={JobStatus.RUNNING})
 
 
-async def test_resolve_job_id__from_uri_without_owner__server_error(
+async def test_resolve_job_id__from_uri_without_project__server_error(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     job_name = "my-job-name"
@@ -593,7 +601,7 @@ async def test_resolve_job_id__from_uri_without_owner__server_error(
         _check_params(
             request,
             name=job_name,
-            owner="user",
+            project_name="test-project",
             cluster_name="default",
             reverse="1",
         )

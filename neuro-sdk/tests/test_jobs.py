@@ -1740,7 +1740,7 @@ async def test_job_run_with_secret_uris(
                     "gpu_model": "test-gpu-model",
                 },
                 "env": {"VAR": "VAL"},
-                "secret_env": {"SECRET_VAR": "secret://default/user/secret"},
+                "secret_env": {"SECRET_VAR": "secret://default/test-project/secret"},
                 "volumes": [
                     {
                         "src_storage_uri": "storage://default/test-project/path",
@@ -1750,7 +1750,7 @@ async def test_job_run_with_secret_uris(
                 ],
                 "secret_volumes": [
                     {
-                        "src_secret_uri": "secret://default/user/secret",
+                        "src_secret_uri": "secret://default/test-project/secret",
                         "dst_path": "/secrets/my_path",
                     }
                 ],
