@@ -511,8 +511,21 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
         assert zsh_out == "uri\nproject/\n_\nblob://default/"
 
         zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:/project/"])
-        assert bash_out == "uri,project/,//default/"
-        assert zsh_out == "uri\nproject/\n_\nblob://default/"
+        assert bash_out == (
+            "uri,bucket-1/,\n"
+            "uri,neuro-my-bucket/,\n"
+            "uri,bucket-2/,\n"
+            "uri,neuro-public-bucket/,\n"
+            "uri,bucket-3/,\n"
+            "uri,neuro-shared-bucket/,"
+        )
+        assert zsh_out == (
+            "uri\nbucket-1/\n_\nblob:\nuri\nneuro-my-bucket/\n_\nblob:\n"
+            "uri\nbucket-2/\n_\nblob:\n"
+            "uri\nneuro-public-bucket/\n_\nblob:\n"
+            "uri\nbucket-3/\n_\nblob:\n"
+            "uri\nneuro-shared-bucket/\n_\nblob:"
+        )
 
         zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob://default/"])
         assert bash_out == "uri,project/,//default/\nuri,org/,//default/"
