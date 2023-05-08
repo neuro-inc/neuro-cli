@@ -1248,4 +1248,3 @@ class UnionType(AsyncType[Any]):
 def setup_shell_completion() -> None:
     add_completion_class(NewZshComplete)
     add_completion_class(NewBashComplete)
-    add_completion_class(NewBashComplete)
