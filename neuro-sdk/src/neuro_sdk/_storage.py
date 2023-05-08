@@ -392,11 +392,14 @@ class Storage(metaclass=NoPublicConstructor):
     ) -> URL:
         if org_name:
             uri = self._normalize_uri(
-                URL(f"storage://{cluster_name}/{org_name}/{self._config.username}")
+                URL(
+                    f"storage://{cluster_name}/{org_name}"
+                    f"/{self._config.project_name_or_raise}"
+                )
             )
         else:
             uri = self._normalize_uri(
-                URL(f"storage://{cluster_name}/{self._config.username}")
+                URL(f"storage://{cluster_name}/{self._config.project_name_or_raise}")
             )
         assert uri.host is not None
         return uri

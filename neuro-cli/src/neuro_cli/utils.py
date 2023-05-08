@@ -432,9 +432,9 @@ async def resolve_job(
 async def resolve_job_ex(
     id_or_name_or_uri: str, *, client: Client, status: Set[JobStatus]
 ) -> Tuple[str, str]:
-    default_user = client.username
     default_cluster = client.cluster_name
     default_org = client.config.org_name
+    default_project = client.config.project_name_or_raise
     if id_or_name_or_uri.startswith("job:"):
         uri = client.parse.str_to_uri(
             id_or_name_or_uri,
@@ -442,26 +442,26 @@ async def resolve_job_ex(
         )
         assert uri.host
         cluster_name = uri.host
-        owner, _, id_or_name = uri.path.lstrip("/").rpartition("/")
-        owners: Dict[str, Optional[str]] = {}
-        if "/" not in owner:
-            owners[owner] = None
-        elif default_org and owner.startswith(default_org + "/"):
-            org_name, _, owner = owner.partition("/")
-            owners[owner] = org_name
-        elif owner == default_user or owner.startswith(default_user + "/"):
-            owners[owner] = None
+        project, _, id_or_name = uri.path.lstrip("/").rpartition("/")
+        project_names: Dict[str, Optional[str]] = {}
+        if "/" not in project:
+            project_names[project] = None
+        elif default_org and project.startswith(default_org + "/"):
+            org_name, _, project = project.partition("/")
+            project_names[project] = org_name
+        elif project == default_project or project.startswith(default_project + "/"):
+            project_names[project] = None
         else:
-            owners[owner] = None
-            org_name, _, owner = owner.partition("/")
-            owners[owner] = org_name
+            project_names[project] = None
+            org_name, _, project = project.partition("/")
+            project_names[project] = org_name
 
-        if not id_or_name or not owner:
+        if not id_or_name or not project:
             raise ValueError(f"Invalid job URI: {uri!s}")
     else:
         id_or_name = id_or_name_or_uri
-        owner = default_user
-        owners = {default_user: default_org}
+        project = default_project
+        project_names = {default_project: default_org}
         cluster_name = default_cluster
 
     # Temporary fast path.
@@ -471,12 +471,15 @@ async def resolve_job_ex(
     try:
         async with client.jobs.list(
             name=id_or_name,
-            owners=owners.keys(),
+            project_names=project_names.keys(),
             reverse=True,
             cluster_name=cluster_name,
         ) as it:
             async for job in it:
-                if job.owner in owners and job.org_name == owners[job.owner]:
+                if (
+                    job.project_name in project_names
+                    and job.org_name == project_names[job.project_name]
+                ):
                     log.debug(f"Job name '{id_or_name}' resolved to job ID '{job.id}'")
                     return job.id, cluster_name
     except asyncio.CancelledError:
@@ -484,10 +487,10 @@ async def resolve_job_ex(
     except ClientResponseError as e:
         log.error(
             f"Failed to resolve job-name {id_or_name_or_uri} resolved as "
-            f"name={id_or_name}, owners={owners} to a job-ID: {e}"
+            f"name={id_or_name}, project_names={project_names} to a job-ID: {e}"
         )
 
-    if owner != default_user:
+    if project != default_project:
         raise ValueError(f"Failed to resolve job {id_or_name_or_uri}")
     return id_or_name, cluster_name
 

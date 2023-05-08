@@ -380,12 +380,12 @@ async def test_storage_disk_usage(
 ) -> None:
     async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path == "/storage/user"
+        assert request.path == "/storage/test-project"
         assert request.query == {"op": "GETDISKUSAGE"}
         return web.json_response({"total": 100, "used": 20, "free": 80})
 
     app = web.Application()
-    app.router.add_get("/storage/user", handler)
+    app.router.add_get("/storage/test-project", handler)
 
     srv = await aiohttp_server(app)
 
@@ -400,12 +400,12 @@ async def test_storage_disk_usage_another_cluster(
 ) -> None:
     async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path == "/storage2/user"
+        assert request.path == "/storage2/test-project"
         assert request.query == {"op": "GETDISKUSAGE"}
         return web.json_response({"total": 100, "used": 20, "free": 80})
 
     app = web.Application()
-    app.router.add_get("/storage2/user", handler)
+    app.router.add_get("/storage2/test-project", handler)
 
     srv = await aiohttp_server(app)
 
@@ -420,12 +420,12 @@ async def test_storage_disk_usage_another_org(
 ) -> None:
     async def handler(request: web.Request) -> web.StreamResponse:
         assert "b3" in request.headers
-        assert request.path == "/storage/org/user"
+        assert request.path == "/storage/org/test-project"
         assert request.query == {"op": "GETDISKUSAGE"}
         return web.json_response({"total": 100, "used": 20, "free": 80})
 
     app = web.Application()
-    app.router.add_get("/storage/org/user", handler)
+    app.router.add_get("/storage/org/test-project", handler)
 
     srv = await aiohttp_server(app)
 

@@ -83,7 +83,7 @@ class Parser(metaclass=NoPublicConstructor):
         raw_uri, container_path, read_only = self._parse_generic_volume(volume)
         storage_uri = uri_from_cli(
             raw_uri,
-            self._config.username,
+            self._config.project_name_or_raise,
             cluster_name or self._config.cluster_name,
             org_name if not isinstance(org_name, _Unset) else self._config.org_name,
             allowed_schemes=("storage",),
@@ -122,7 +122,7 @@ class Parser(metaclass=NoPublicConstructor):
     ) -> URL:
         return uri_from_cli(
             uri,
-            self._config.username,
+            self._config.project_name_or_raise,
             cluster_name or self._config.cluster_name,
             org_name if not isinstance(org_name, _Unset) else self._config.org_name,
             allowed_schemes=("secret",),
@@ -148,7 +148,7 @@ class Parser(metaclass=NoPublicConstructor):
     ) -> URL:
         return uri_from_cli(
             uri,
-            self._config.username,
+            self._config.project_name_or_raise,
             cluster_name or self._config.cluster_name,
             org_name if not isinstance(org_name, _Unset) else self._config.org_name,
             allowed_schemes=("disk",),
@@ -265,7 +265,7 @@ class Parser(metaclass=NoPublicConstructor):
     ) -> URL:
         ret = uri_from_cli(
             id_or_name_or_uri,
-            self._config.username,
+            self._config.project_name_or_raise,
             cluster_name or self._config.cluster_name,
             org_name if not isinstance(org_name, _Unset) else self._config.org_name,
             allowed_schemes=allowed_schemes,
@@ -287,7 +287,7 @@ class Parser(metaclass=NoPublicConstructor):
     ) -> URL:
         return uri_from_cli(
             str(path),
-            self._config.username,
+            self._config.project_name_or_raise,
             self._config.cluster_name,
             self._config.org_name,
             allowed_schemes=("file",),
@@ -305,7 +305,7 @@ class Parser(metaclass=NoPublicConstructor):
         _check_scheme(uri.scheme, allowed_schemes)
         ret = _normalize_uri(
             uri,
-            self._config.username,
+            self._config.project_name_or_raise,
             cluster_name or self._config.cluster_name,
             org_name if not isinstance(org_name, _Unset) else self._config.org_name,
         )
@@ -319,9 +319,13 @@ class Parser(metaclass=NoPublicConstructor):
             if ret.host == self._config.cluster_name:
                 prefix: Tuple[str, ...]
                 if self._config.org_name is None:
-                    prefix = ("/", self._config.username)
+                    prefix = ("/", self._config.project_name_or_raise)
                 else:
-                    prefix = ("/", self._config.org_name, self._config.username)
+                    prefix = (
+                        "/",
+                        self._config.org_name,
+                        self._config.project_name_or_raise,
+                    )
                 if ret.parts[: len(prefix)] == prefix:
                     ret = URL.build(
                         scheme=ret.scheme,

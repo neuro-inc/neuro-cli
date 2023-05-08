@@ -190,19 +190,19 @@ def test_build_env_override_different_files(tmp_path: Path, root: Root) -> None:
 
 
 def test_extract_secret_env(root: Root) -> None:
-    username = root.client.username
+    project_name = root.client.config.project_name
     cluster_name = root.client.cluster_name
     env = {
         "ENV_VAR_1": "secret:value1",
         "ENV_VAR_2": "value2",
-        "ENV_VAR_3": "secret:/otheruser/value3",
+        "ENV_VAR_3": "secret:/otherproject/value3",
         "ENV_VAR_4": "value4",
-        "ENV_VAR_5": "secret://othercluster/otheruser/value5",
+        "ENV_VAR_5": "secret://othercluster/otherproject/value5",
     }
     assert root.client.parse._extract_secret_env(env) == {
-        "ENV_VAR_1": URL(f"secret://{cluster_name}/{username}/value1"),
-        "ENV_VAR_3": URL(f"secret://{cluster_name}/otheruser/value3"),
-        "ENV_VAR_5": URL(f"secret://othercluster/otheruser/value5"),
+        "ENV_VAR_1": URL(f"secret://{cluster_name}/{project_name}/value1"),
+        "ENV_VAR_3": URL(f"secret://{cluster_name}/otherproject/value3"),
+        "ENV_VAR_5": URL(f"secret://othercluster/otherproject/value5"),
     }
     assert env == {"ENV_VAR_2": "value2", "ENV_VAR_4": "value4"}
 
