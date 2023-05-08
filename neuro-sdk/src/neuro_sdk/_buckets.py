@@ -196,6 +196,7 @@ class Buckets(metaclass=NoPublicConstructor):
             public=payload.get("public", False),
             cluster_name=self._config.cluster_name,
             org_name=payload.get("org_name"),
+            project_name=payload["project_name"],
         )
 
     def _parse_bucket_credentials_payload(
@@ -212,12 +213,33 @@ class Buckets(metaclass=NoPublicConstructor):
             cluster_name = self._config.cluster_name
         return self._config.get_cluster(cluster_name).buckets_url / "buckets"
 
+    def _get_bucket_url_params(
+        self, org_name: Optional[str], project_name: Optional[str]
+    ) -> Dict[str, str]:
+        params = {
+            "org_name": org_name or self._config.org_name or "NO_ORG",
+            "project_name": project_name or self._config.project_name_or_raise,
+        }
+        return params
+
     @asyncgeneratorcontextmanager
-    async def list(self, cluster_name: Optional[str] = None) -> AsyncIterator[Bucket]:
+    async def list(
+        self,
+        cluster_name: Optional[str] = None,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        project_name: Optional[str] = None,
+    ) -> AsyncIterator[Bucket]:
         url = self._get_buckets_url(cluster_name)
         auth = await self._config._api_auth()
         headers = {"Accept": "application/x-ndjson"}
-        async with self._core.request("GET", url, headers=headers, auth=auth) as resp:
+        params = {}
+        if not isinstance(org_name, OrgNameSentinel):
+            params["org_name"] = org_name or "NO_ORG"
+        if project_name:
+            params["project_name"] = project_name
+        async with self._core.request(
+            "GET", url, headers=headers, auth=auth, params=params
+        ) as resp:
             if resp.headers.get("Content-Type", "").startswith("application/x-ndjson"):
                 async for line in resp.content:
                     server_message = json.loads(line)
@@ -234,6 +256,7 @@ class Buckets(metaclass=NoPublicConstructor):
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
         org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        project_name: Optional[str] = None,
     ) -> Bucket:
         url = self._get_buckets_url(cluster_name)
         auth = await self._config._api_auth()
@@ -242,6 +265,7 @@ class Buckets(metaclass=NoPublicConstructor):
             "org_name": org_name
             if not isinstance(org_name, OrgNameSentinel)
             else self._config.org_name,
+            "project_name": project_name or self._config.project_name_or_raise,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()
@@ -255,6 +279,7 @@ class Buckets(metaclass=NoPublicConstructor):
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
         org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        project_name: Optional[str] = None,
     ) -> Bucket:
         url = self._get_buckets_url(cluster_name) / "import" / "external"
         auth = await self._config._api_auth()
@@ -266,6 +291,7 @@ class Buckets(metaclass=NoPublicConstructor):
             "org_name": org_name
             if not isinstance(org_name, OrgNameSentinel)
             else self._config.org_name,
+            "project_name": project_name or self._config.project_name_or_raise,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()
@@ -275,12 +301,13 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         bucket_id_or_name: str,
         cluster_name: Optional[str] = None,
-        bucket_owner: Optional[str] = None,
+        org_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> Bucket:
         url = self._get_buckets_url(cluster_name) / bucket_id_or_name
-        query = {"owner": bucket_owner} if bucket_owner else {}
+        params = self._get_bucket_url_params(org_name, project_name)
         auth = await self._config._api_auth()
-        async with self._core.request("GET", url, auth=auth, params=query) as resp:
+        async with self._core.request("GET", url, auth=auth, params=params) as resp:
             payload = await resp.json()
             return self._parse_bucket_payload(payload)
 
@@ -288,12 +315,13 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         bucket_id_or_name: str,
         cluster_name: Optional[str] = None,
-        bucket_owner: Optional[str] = None,
+        org_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> None:
         url = self._get_buckets_url(cluster_name) / bucket_id_or_name
-        query = {"owner": bucket_owner} if bucket_owner else {}
+        params = self._get_bucket_url_params(org_name, project_name)
         auth = await self._config._api_auth()
-        async with self._core.request("DELETE", url, auth=auth, params=query):
+        async with self._core.request("DELETE", url, auth=auth, params=params):
             pass
 
     async def set_public_access(
@@ -301,16 +329,17 @@ class Buckets(metaclass=NoPublicConstructor):
         bucket_id_or_name: str,
         public_access: bool,
         cluster_name: Optional[str] = None,
-        bucket_owner: Optional[str] = None,
+        org_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> Bucket:
         url = self._get_buckets_url(cluster_name) / bucket_id_or_name
+        params = self._get_bucket_url_params(org_name, project_name)
         auth = await self._config._api_auth()
         data = {
             "public": public_access,
         }
-        query = {"owner": bucket_owner} if bucket_owner else {}
         async with self._core.request(
-            "PATCH", url, auth=auth, json=data, params=query
+            "PATCH", url, auth=auth, json=data, params=params
         ) as resp:
             payload = await resp.json()
             return self._parse_bucket_payload(payload)
@@ -319,16 +348,17 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         bucket_id_or_name: str,
         cluster_name: Optional[str] = None,
-        bucket_owner: Optional[str] = None,
+        org_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> BucketCredentials:
         url = (
             self._get_buckets_url(cluster_name)
             / bucket_id_or_name
             / "make_tmp_credentials"
         )
+        params = self._get_bucket_url_params(org_name, project_name)
         auth = await self._config._api_auth()
-        query = {"owner": bucket_owner} if bucket_owner else {}
-        async with self._core.request("POST", url, auth=auth, params=query) as resp:
+        async with self._core.request("POST", url, auth=auth, params=params) as resp:
             payload = await resp.json()
             return self._parse_bucket_credentials_payload(payload)
 
@@ -337,12 +367,16 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         bucket_id_or_name: str,
         cluster_name: Optional[str] = None,
-        bucket_owner: Optional[str] = None,
+        org_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> AsyncIterator[BucketUsage]:
         total_bytes = 0
         obj_count = 0
         async with self._get_provider_by_exact(
-            bucket_id_or_name, cluster_name, bucket_owner
+            bucket_id_or_name,
+            cluster_name=cluster_name,
+            org_name=org_name,
+            project_name=project_name,
         ) as provider:
             async with provider.list_blobs("", recursive=True) as it:
                 async for obj in it:
@@ -373,10 +407,14 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         bucket_id_or_name: str,
         cluster_name: Optional[str] = None,
-        bucket_owner: Optional[str] = None,
+        org_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> AsyncIterator[BucketProvider]:
         bucket = await self.get(
-            bucket_id_or_name, cluster_name=cluster_name, bucket_owner=bucket_owner
+            bucket_id_or_name,
+            cluster_name=cluster_name,
+            org_name=org_name,
+            project_name=project_name,
         )
         async with self._get_provider_for_bucket(bucket) as provider:
             yield provider
@@ -424,10 +462,14 @@ class Buckets(metaclass=NoPublicConstructor):
         bucket_id_or_name: str,
         key: str,
         cluster_name: Optional[str] = None,
-        bucket_owner: Optional[str] = None,
+        org_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> BucketEntry:
         async with self._get_provider_by_exact(
-            bucket_id_or_name, cluster_name, bucket_owner
+            bucket_id_or_name,
+            cluster_name=cluster_name,
+            org_name=org_name,
+            project_name=project_name,
         ) as provider:
             return await provider.head_blob(key)
 
@@ -437,10 +479,14 @@ class Buckets(metaclass=NoPublicConstructor):
         key: str,
         body: Union[AsyncIterator[bytes], bytes],
         cluster_name: Optional[str] = None,
-        bucket_owner: Optional[str] = None,
+        org_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> None:
         async with self._get_provider_by_exact(
-            bucket_id_or_name, cluster_name, bucket_owner
+            bucket_id_or_name,
+            cluster_name=cluster_name,
+            org_name=org_name,
+            project_name=project_name,
         ) as provider:
             await provider.put_blob(key, body)
 
@@ -451,10 +497,14 @@ class Buckets(metaclass=NoPublicConstructor):
         key: str,
         offset: int = 0,
         cluster_name: Optional[str] = None,
-        bucket_owner: Optional[str] = None,
+        org_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> AsyncIterator[bytes]:
         async with self._get_provider_by_exact(
-            bucket_id_or_name, cluster_name, bucket_owner
+            bucket_id_or_name,
+            cluster_name=cluster_name,
+            org_name=org_name,
+            project_name=project_name,
         ) as provider:
             async with provider.fetch_blob(key, offset=offset) as it:
                 async for chunk in it:
@@ -465,10 +515,14 @@ class Buckets(metaclass=NoPublicConstructor):
         bucket_id_or_name: str,
         key: str,
         cluster_name: Optional[str] = None,
-        bucket_owner: Optional[str] = None,
+        org_name: Optional[str] = None,
+        project_name: Optional[str] = None,
     ) -> None:
         async with self._get_provider_by_exact(
-            bucket_id_or_name, cluster_name, bucket_owner
+            bucket_id_or_name,
+            cluster_name=cluster_name,
+            org_name=org_name,
+            project_name=project_name,
         ) as provider:
             return await provider.delete_blob(key)
 
@@ -585,7 +639,6 @@ class Buckets(metaclass=NoPublicConstructor):
         src = self._parser.normalize_uri(src, allowed_schemes=("blob",))
         dst = normalize_local_path_uri(dst)
         async with self._get_bucket_fs(src) as bucket_fs:
-
             src_key = bucket_fs.bucket.get_key_for_uri(src)
             transferer = FileTransferer(bucket_fs, LocalFS())
             await transferer.transfer_file(
@@ -609,7 +662,6 @@ class Buckets(metaclass=NoPublicConstructor):
         src = normalize_local_path_uri(src)
         dst = self._parser.normalize_uri(dst, allowed_schemes=("blob",))
         async with self._get_bucket_fs(dst) as bucket_fs:
-
             dst_key = bucket_fs.bucket.get_key_for_uri(dst)
             transferer = FileTransferer(LocalFS(), bucket_fs)
             await transferer.transfer_dir(

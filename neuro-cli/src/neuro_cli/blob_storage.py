@@ -22,6 +22,7 @@ from neuro_cli.click_types import (
     BUCKET_NAME,
     CLUSTER,
     ORG,
+    PROJECT,
     PlatformURIType,
 )
 from neuro_cli.formatters.bucket_credentials import (
@@ -81,10 +82,25 @@ def blob_storage() -> None:
     type=CLUSTER,
     help="Look on a specified cluster (the current cluster by default).",
 )
+@option(
+    "--org",
+    type=ORG,
+    help="Look on a specified org (the current org by default).",
+)
+@option(
+    "--project",
+    type=PROJECT,
+    help="Look on a specified project (the current project by default).",
+)
 @option("--full-uri", is_flag=True, help="Output full bucket URI.")
 @option("--long-format", is_flag=True, help="Output all info about bucket.")
 async def lsbucket(
-    root: Root, full_uri: bool, long_format: bool, cluster: Optional[str]
+    root: Root,
+    full_uri: bool,
+    long_format: bool,
+    cluster: Optional[str],
+    org: Optional[str],
+    project: Optional[str],
 ) -> None:
     """
     List buckets.
@@ -106,9 +122,12 @@ async def lsbucket(
             long_format=long_format,
         )
 
+    org_name = parse_org_name(org, root)
     buckets = []
     with root.status("Fetching buckets") as status:
-        async with root.client.buckets.list(cluster_name=cluster) as it:
+        async with root.client.buckets.list(
+            cluster_name=cluster, org_name=org_name, project_name=project
+        ) as it:
             async for bucket in it:
                 buckets.append(bucket)
                 status.update(f"Fetching buckets ({len(buckets)} loaded)")
@@ -129,6 +148,11 @@ async def lsbucket(
     help="Perform in a specified org (the current org by default).",
 )
 @option(
+    "--project",
+    type=PROJECT,
+    help="Perform in a specified project (the current project by default).",
+)
+@option(
     "--name",
     type=BUCKET_NAME,
     metavar="NAME",
@@ -140,6 +164,7 @@ async def mkbucket(
     name: Optional[str] = None,
     cluster: Optional[str] = None,
     org: Optional[str] = None,
+    project: Optional[str] = None,
 ) -> None:
     """
     Create a new bucket.
@@ -149,6 +174,7 @@ async def mkbucket(
         name=name,
         cluster_name=cluster,
         org_name=org_name,
+        project_name=project,
     )
     bucket_fmtr = BucketFormatter(
         str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
@@ -167,6 +193,11 @@ async def mkbucket(
     "--org",
     type=ORG,
     help="Perform in a specified org (the current org by default).",
+)
+@option(
+    "--project",
+    type=PROJECT,
+    help="Perform in a specified project (the current project by default).",
 )
 @option(
     "--name",
@@ -270,6 +301,7 @@ async def importbucket(
     name: Optional[str] = None,
     cluster: Optional[str] = None,
     org: Optional[str] = None,
+    project: Optional[str] = None,
 ) -> None:
     """
     Import an existing bucket.
@@ -320,6 +352,7 @@ async def importbucket(
         name=name,
         cluster_name=cluster,
         org_name=org_name,
+        project_name=project,
     )
     bucket_fmtr = BucketFormatter(
         str, datetime_formatter=get_datetime_formatter(root.iso_datetime_format)
@@ -335,28 +368,41 @@ async def importbucket(
     help="Look on a specified cluster (the current cluster by default).",
 )
 @option(
-    "--owner",
-    type=str,
-    help="Owner of bucket to assume for named bucket (the current user by default)",
+    "--org",
+    type=ORG,
+    help="Look on a specified org (the current org by default).",
+)
+@option(
+    "--project",
+    type=PROJECT,
+    help="Look on a specified project (the current project by default).",
 )
 @argument("bucket", type=BUCKET)
 @option("--full-uri", is_flag=True, help="Output full bucket URI.")
 async def statbucket(
     root: Root,
     cluster: Optional[str],
-    owner: Optional[str],
+    org: Optional[str],
+    project: Optional[str],
     bucket: str,
     full_uri: bool,
 ) -> None:
     """
     Get bucket BUCKET.
     """
+    org_name = parse_org_name(org, root)
     bucket_obj = await root.client.buckets.get(
-        bucket, cluster_name=cluster, bucket_owner=owner
+        bucket,
+        cluster_name=cluster,
+        org_name=org_name,
+        project_name=project,
     )
     if bucket_obj.imported:
         bc = await root.client.buckets.request_tmp_credentials(
-            bucket, cluster_name=cluster, bucket_owner=owner
+            bucket,
+            cluster_name=bucket_obj.cluster_name,
+            org_name=bucket_obj.org_name,
+            project_name=bucket_obj.project_name,
         )
         credentials = bc.credentials
     else:
@@ -383,19 +429,32 @@ async def statbucket(
     help="Look on a specified cluster (the current cluster by default).",
 )
 @option(
-    "--owner",
-    type=str,
-    help="Owner of bucket to assume for named bucket (the current user by default)",
+    "--org",
+    type=ORG,
+    help="Look on a specified org (the current org by default).",
+)
+@option(
+    "--project",
+    type=PROJECT,
+    help="Look on a specified project (the current project by default).",
 )
 @argument("bucket", type=BUCKET)
 async def du(
-    root: Root, cluster: Optional[str], owner: Optional[str], bucket: str
+    root: Root,
+    cluster: Optional[str],
+    org: Optional[str],
+    project: Optional[str],
+    bucket: str,
 ) -> None:
     """
     Get storage usage for BUCKET.
     """
+    org_name = parse_org_name(org, root)
     bucket_obj = await root.client.buckets.get(
-        bucket, cluster_name=cluster, bucket_owner=owner
+        bucket,
+        cluster_name=cluster,
+        org_name=org_name,
+        project_name=project,
     )
 
     bucket_str = bucket_obj.name or bucket_obj.id
@@ -406,7 +465,10 @@ async def du(
 
     with root.status(base_str) as status:
         async with root.client.buckets.get_disk_usage(
-            bucket_obj.id, cluster_name=cluster, bucket_owner=bucket_obj.owner
+            bucket_obj.id,
+            cluster_name=bucket_obj.cluster_name,
+            org_name=bucket_obj.org_name,
+            project_name=bucket_obj.project_name,
         ) as usage_it:
             async for usage in usage_it:
                 status.update(
@@ -427,44 +489,46 @@ async def du(
     help="Perform on a specified cluster (the current cluster by default).",
 )
 @option(
+    "--org",
+    type=ORG,
+    help="Perform on a specified org (the current org by default).",
+)
+@option(
+    "--project",
+    type=PROJECT,
+    help="Perform on a specified project (the current project by default).",
+)
+@option(
     "-f",
     "--force",
     is_flag=True,
     help="Force removal of all blobs inside bucket",
 )
-@option(
-    "--owner",
-    type=str,
-    help="Owner of bucket to assume for named bucket (the current user by default)",
-)
 @argument("buckets", type=BUCKET, nargs=-1, required=True)
 async def rmbucket(
     root: Root,
     cluster: Optional[str],
+    org: Optional[str],
+    project: Optional[str],
     force: bool,
-    owner: Optional[str],
     buckets: Sequence[str],
 ) -> None:
     """
     Remove bucket BUCKET.
     """
+    org_name = parse_org_name(org, root)
     for bucket in buckets:
         bucket_id = await resolve_bucket(
             bucket,
             client=root.client,
             cluster_name=cluster,
-            bucket_owner=owner,
+            org_name=org_name,
+            project_name=project,
         )
         if force:
-            bucket_obj = await root.client.buckets.get(
-                bucket_id,
-                cluster_name=cluster,
-                bucket_owner=owner,
-            )
+            bucket_obj = await root.client.buckets.get(bucket_id, cluster_name=cluster)
             await root.client.buckets.blob_rm(bucket_obj.uri, recursive=True)
-        await root.client.buckets.rm(
-            bucket_id, cluster_name=cluster, bucket_owner=owner
-        )
+        await root.client.buckets.rm(bucket_id, cluster)
         if root.verbosity >= 0:
             root.print(f"Bucket with id '{bucket_id}' was successfully removed.")
 
@@ -476,9 +540,14 @@ async def rmbucket(
     help="Perform on a specified cluster (the current cluster by default).",
 )
 @option(
-    "--owner",
-    type=str,
-    help="Owner of bucket to assume for named bucket (the current user by default)",
+    "--org",
+    type=ORG,
+    help="Perform on a specified org (the current org by default).",
+)
+@option(
+    "--project",
+    type=PROJECT,
+    help="Perform on a specified project (the current project by default).",
 )
 @argument("bucket", type=BUCKET, required=True)
 @argument(
@@ -489,7 +558,8 @@ async def rmbucket(
 async def set_bucket_publicity(
     root: Root,
     cluster: Optional[str],
-    owner: Optional[str],
+    org: Optional[str],
+    project: Optional[str],
     bucket: str,
     public_level: str,
 ) -> None:
@@ -502,8 +572,13 @@ async def set_bucket_publicity(
       neuro blob set-bucket-publicity my-bucket private
     """
     public = public_level == "public"
+    org_name = parse_org_name(org, root)
     await root.client.buckets.set_public_access(
-        bucket, public, cluster_name=cluster, bucket_owner=owner
+        bucket,
+        public,
+        cluster_name=cluster,
+        org_name=org_name,
+        project_name=project,
     )
     if root.verbosity >= 0:
         root.print(
@@ -611,7 +686,6 @@ async def glob(root: Root, full_uri: bool, patterns: Sequence[URL]) -> None:
             org_name=root.client.config.org_name,
         )
     for pattern in patterns:
-
         if root.verbosity > 0:
             painter = get_painter(root.color)
             uri_text = painter.paint(str(pattern), FileStatusType.FILE)
@@ -1025,6 +1099,16 @@ async def lscredentials(root: Root, cluster: Optional[str]) -> None:
     help="Perform in a specified cluster (the current cluster by default).",
 )
 @option(
+    "--org",
+    type=ORG,
+    help="Perform in a specified org (the current org by default).",
+)
+@option(
+    "--project",
+    type=PROJECT,
+    help="Perform in a specified project (the current project by default).",
+)
+@option(
     "--name",
     type=str,
     metavar="NAME",
@@ -1042,13 +1126,22 @@ async def mkcredentials(
     buckets: Sequence[str],
     name: Optional[str] = None,
     cluster: Optional[str] = None,
+    org: Optional[str] = None,
+    project_name: Optional[str] = None,
     read_only: bool = False,
 ) -> None:
     """
     Create a new bucket credential.
     """
+    org_name = parse_org_name(org, root)
     bucket_ids = [
-        await resolve_bucket(bucket, client=root.client, cluster_name=cluster)
+        await resolve_bucket(
+            bucket,
+            client=root.client,
+            cluster_name=cluster,
+            org_name=org_name,
+            project_name=project_name,
+        )
         for bucket in buckets
     ]
     credential = await root.client.buckets.persistent_credentials_create(

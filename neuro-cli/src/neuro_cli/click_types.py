@@ -880,19 +880,27 @@ class BlobPathURLCompleter(PathURLCompleter):
         incomplete: str,
     ) -> AsyncIterator[CompletionItem]:
         full_uri = root.client.parse.normalize_uri(uri)
-        bucket_id_complete = len(full_uri.parts) > 3 or (
-            len(full_uri.parts) == 3 and incomplete.endswith("/")
-        )
-        if not bucket_id_complete:
+        if not self._is_bucket_uri_complete(full_uri, root, incomplete):
+            prefix = uri.parent
+            full_prefix = full_uri.parent if uri.path else full_uri
+            full_prefix_str = str(full_prefix / "")
+            full_uri_str = str(full_uri if uri.path else full_uri / "")
+            completions = set()
             async with root.client.buckets.list(cluster_name=full_uri.host) as it:
                 async for bucket in it:
-                    if uri.host:
-                        prefix = URL(f"blob://{full_uri.host}/{bucket.owner}")
-                    else:
-                        prefix = URL(f"blob:")
-                    names = [bucket.id] + ([bucket.name] if bucket.name else [])
-                    for name in names:
-                        if str(prefix / name).startswith(incomplete):
+                    bucket_uris = [bucket.uri]
+                    if bucket.name:
+                        bucket_uris = [bucket.uri.parent / bucket.id] + bucket_uris
+                    for bucket_uri in bucket_uris:
+                        bucket_uri_str = str(bucket_uri)
+                        if not bucket_uri_str.startswith(full_uri_str):
+                            continue
+                        path_parts = bucket_uri_str[len(full_prefix_str) :].split("/")
+                        if len(path_parts) == 0:
+                            continue
+                        name = path_parts[0]
+                        if name not in completions:
+                            completions.add(name)
                             yield self._make_item(prefix, name, True)
         else:
             # Generic get_completions() is not used here because we can
@@ -918,6 +926,20 @@ class BlobPathURLCompleter(PathURLCompleter):
                             continue
 
                     yield self._make_item(prefix, item.name, item.is_dir())
+
+    def _is_bucket_uri_complete(self, uri: URL, root: Root, incomplete: str) -> bool:
+        parts = uri.parts
+        if len(parts) > 4:
+            # Check uri has format blob://cluster/org/project/bucket/
+            return True
+        if len(parts) == 4 or (
+            len(parts) == 3 and parts[-1] and incomplete.endswith("/")
+        ):
+            assert uri.host
+            cluster = root.client.config.clusters.get(uri.host)
+            # Check uri has format blob://cluster/project/bucket/
+            return bool(cluster and parts[1] not in cluster.orgs)
+        return False
 
 
 class PlatformURIType(AsyncType[URL]):
@@ -1225,4 +1247,5 @@ class UnionType(AsyncType[Any]):
 
 def setup_shell_completion() -> None:
     add_completion_class(NewZshComplete)
+    add_completion_class(NewBashComplete)
     add_completion_class(NewBashComplete)

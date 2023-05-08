@@ -704,7 +704,12 @@ class Helper:
     async def adelete_bucket(self, bucket: Bucket) -> None:
         __tracebackhide__ = True
         async with api_get(timeout=CLIENT_TIMEOUT, path=self._nmrc_path) as client:
-            await client.buckets.rm(bucket.id, bucket_owner=bucket.owner)
+            await client.buckets.rm(
+                bucket.id,
+                cluster_name=bucket.cluster_name,
+                org_name=bucket.org_name,
+                project_name=bucket.project_name,
+            )
 
     delete_bucket = run_async(adelete_bucket)
 
@@ -724,7 +729,11 @@ class Helper:
                     log.info("Removing %s", blob.uri)
                     tasks.append(
                         client.buckets.delete_blob(
-                            bucket.id, key=blob.key, bucket_owner=bucket.owner
+                            bucket.id,
+                            key=blob.key,
+                            cluster_name=bucket.cluster_name,
+                            org_name=bucket.org_name,
+                            project_name=bucket.project_name,
                         )
                     )
             await asyncio.gather(*tasks)

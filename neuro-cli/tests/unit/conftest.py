@@ -59,7 +59,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
             ),
         },
         name="default",
-        orgs=[None],
+        orgs=[None, "org"],
     )
     cluster2_config = Cluster(
         registry_url=URL("https://registry2-dev.neu.ro"),

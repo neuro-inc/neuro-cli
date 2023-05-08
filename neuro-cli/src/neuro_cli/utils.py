@@ -540,7 +540,8 @@ async def resolve_bucket(
     *,
     client: Client,
     cluster_name: Optional[str] = None,
-    bucket_owner: Optional[str] = None,
+    org_name: Optional[str] = None,
+    project_name: Optional[str] = None,
 ) -> str:
     # Temporary fast path.
     if re.fullmatch(BUCKET_ID_PATTERN, id_or_name):
@@ -549,7 +550,8 @@ async def resolve_bucket(
     bucket = await client.buckets.get(
         id_or_name,
         cluster_name=cluster_name,
-        bucket_owner=bucket_owner,
+        org_name=org_name,
+        project_name=project_name,
     )
     return bucket.id
 
