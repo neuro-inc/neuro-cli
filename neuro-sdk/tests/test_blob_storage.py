@@ -108,6 +108,7 @@ def mock_bucket() -> Bucket:
         provider=Bucket.Provider.AWS,
         imported=False,
         org_name=None,
+        project_name="test-project",
     )
 
 

@@ -28,6 +28,7 @@ async def test_list(
                     "created_at": created_at.isoformat(),
                     "imported": False,
                     "org_name": None,
+                    "project_name": "test-project",
                 },
                 {
                     "id": "bucket-2",
@@ -37,6 +38,7 @@ async def test_list(
                     "created_at": created_at.isoformat(),
                     "imported": True,
                     "org_name": "test-org",
+                    "project_name": "test-project",
                 },
             ]
         )
@@ -63,6 +65,7 @@ async def test_list(
             provider=Bucket.Provider.AWS,
             imported=False,
             org_name=None,
+            project_name="test-project",
         ),
         Bucket(
             id="bucket-2",
@@ -73,6 +76,7 @@ async def test_list(
             provider=Bucket.Provider.AWS,
             imported=True,
             org_name="test-org",
+            project_name="test-project",
         ),
     ]
 
@@ -89,6 +93,7 @@ async def test_add(
         assert data == {
             "name": "test-bucket",
             "org_name": None,
+            "project_name": "test-project",
         }
         return web.json_response(
             {
@@ -97,6 +102,7 @@ async def test_add(
                 "name": "test-bucket",
                 "created_at": created_at.isoformat(),
                 "provider": "aws",
+                "project_name": "test-project",
             }
         )
 
@@ -116,6 +122,7 @@ async def test_add(
             provider=Bucket.Provider.AWS,
             imported=False,
             org_name=None,
+            project_name="test-project",
         )
 
 
@@ -131,6 +138,7 @@ async def test_add_with_org(
         assert data == {
             "name": "test-bucket",
             "org_name": "test-org",
+            "project_name": "test-project",
         }
         return web.json_response(
             {
@@ -140,6 +148,7 @@ async def test_add_with_org(
                 "created_at": created_at.isoformat(),
                 "provider": "aws",
                 "org_name": "test-org",
+                "project_name": "test-project",
             }
         )
 
@@ -159,6 +168,7 @@ async def test_add_with_org(
             provider=Bucket.Provider.AWS,
             imported=False,
             org_name="test-org",
+            project_name="test-project",
         )
 
 
@@ -177,6 +187,7 @@ async def test_import(
             "provider_bucket_name": "test-external",
             "credentials": {"key": "value"},
             "org_name": None,
+            "project_name": "test-project",
         }
         return web.json_response(
             {
@@ -186,6 +197,7 @@ async def test_import(
                 "created_at": created_at.isoformat(),
                 "provider": "aws",
                 "imported": True,
+                "project_name": "test-project",
             }
         )
 
@@ -210,6 +222,7 @@ async def test_import(
             provider=Bucket.Provider.AWS,
             imported=True,
             org_name=None,
+            project_name="test-project",
         )
 
 
@@ -228,6 +241,7 @@ async def test_import_with_org(
             "provider_bucket_name": "test-external",
             "credentials": {"key": "value"},
             "org_name": "test-org",
+            "project_name": "test-project",
         }
         return web.json_response(
             {
@@ -238,6 +252,7 @@ async def test_import_with_org(
                 "provider": "aws",
                 "imported": True,
                 "org_name": "test-org",
+                "project_name": "test-project",
             }
         )
 
@@ -253,6 +268,7 @@ async def test_import_with_org(
             credentials={"key": "value"},
             name="test-bucket",
             org_name="test-org",
+            project_name="test-project",
         )
         assert bucket == Bucket(
             id="bucket-1",
@@ -263,6 +279,7 @@ async def test_import_with_org(
             provider=Bucket.Provider.AWS,
             imported=True,
             org_name="test-org",
+            project_name="test-project",
         )
 
 
@@ -280,6 +297,7 @@ async def test_get(
                 "id": "bucket-1",
                 "owner": "user",
                 "name": "name",
+                "project_name": "test-project",
                 "provider": "aws",
                 "created_at": created_at.isoformat(),
             }
@@ -301,6 +319,7 @@ async def test_get(
             provider=Bucket.Provider.AWS,
             imported=False,
             org_name=None,
+            project_name="test-project",
         )
 
 
@@ -320,6 +339,7 @@ async def test_set_public(
                 "id": "bucket-1",
                 "owner": "user",
                 "name": "name",
+                "project_name": "test-project",
                 "provider": "aws",
                 "created_at": created_at.isoformat(),
                 "public": True,

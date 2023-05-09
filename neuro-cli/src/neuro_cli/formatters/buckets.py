@@ -47,6 +47,7 @@ class BucketsFormatter(BaseBucketsFormatter):
         if self._long_format:
             line += [
                 bucket.org_name or ORG.NO_ORG_STR,
+                bucket.project_name,
                 self._datetime_formatter(bucket.created_at),
                 "√" if bucket.public else "×",
             ]
@@ -63,6 +64,7 @@ class BucketsFormatter(BaseBucketsFormatter):
         table.add_column("Uri")
         if self._long_format:
             table.add_column("Org name")
+            table.add_column("Project name")
             table.add_column("Created at")
             table.add_column("Public")
         for bucket in buckets:
@@ -92,6 +94,7 @@ class BucketFormatter:
         if bucket.name:
             table.add_row("Name", bucket.name)
         table.add_row("Org name", bucket.org_name or ORG.NO_ORG_STR)
+        table.add_row("Project name", bucket.project_name)
         table.add_row("Created at", self._datetime_formatter(bucket.created_at))
         table.add_row("Provider", bucket.provider)
         table.add_row("Imported", str(bucket.imported))

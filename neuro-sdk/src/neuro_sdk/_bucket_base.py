@@ -136,6 +136,7 @@ class Bucket:
     owner: str
     cluster_name: str
     org_name: Optional[str]
+    project_name: str
     provider: "Bucket.Provider"
     created_at: datetime
     imported: bool
@@ -147,7 +148,7 @@ class Bucket:
         base = f"blob://{self.cluster_name}"
         if self.org_name:
             base += f"/{self.org_name}"
-        return URL(f"{base}/{self.owner}/{self.name or self.id}")
+        return URL(f"{base}/{self.project_name}/{self.name or self.id}")
 
     def get_key_for_uri(self, uri: URL) -> str:
         self_uris = [self.uri]

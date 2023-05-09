@@ -13,7 +13,6 @@ from neuro_cli.formatters.blob_storage import (
 
 
 class TestBlobFormatter:
-
     buckets: List[Bucket] = [
         Bucket(
             id="bucket-1",
@@ -24,6 +23,7 @@ class TestBlobFormatter:
             provider=Bucket.Provider.AWS,
             imported=False,
             org_name=None,
+            project_name="test-project",
         ),
         Bucket(
             id="bucket-2",
@@ -34,6 +34,7 @@ class TestBlobFormatter:
             provider=Bucket.Provider.AWS,
             imported=False,
             org_name=None,
+            project_name="test-project",
         ),
         Bucket(
             id="bucket-3",
@@ -44,6 +45,7 @@ class TestBlobFormatter:
             provider=Bucket.Provider.AWS,
             imported=False,
             org_name="test-org",
+            project_name="test-project",
         ),
     ]
 

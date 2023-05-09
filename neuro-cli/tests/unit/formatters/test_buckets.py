@@ -23,6 +23,7 @@ def test_bucket_formatter(rich_cmp: Any) -> None:
         created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
         imported=False,
         org_name=None,
+        project_name="test-project",
     )
     fmtr = BucketFormatter(str, datetime_formatter=format_datetime_human)
     rich_cmp(fmtr(bucket))
@@ -38,6 +39,7 @@ def test_bucket_formatter_with_org(rich_cmp: Any) -> None:
         created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
         imported=False,
         org_name="test-org",
+        project_name="test-project",
     )
     fmtr = BucketFormatter(str, datetime_formatter=format_datetime_human)
     rich_cmp(fmtr(bucket))
@@ -55,6 +57,7 @@ def buckets_list() -> List[Bucket]:
             provider=Bucket.Provider.AWS,
             imported=False,
             org_name=None,
+            project_name="test-project",
         ),
         Bucket(
             id="bucket-2",
@@ -65,6 +68,7 @@ def buckets_list() -> List[Bucket]:
             provider=Bucket.Provider.AWS,
             imported=False,
             org_name=None,
+            project_name="test-project",
         ),
         Bucket(
             id="bucket-3",
@@ -75,6 +79,7 @@ def buckets_list() -> List[Bucket]:
             provider=Bucket.Provider.AWS,
             imported=False,
             org_name="test-org",
+            project_name="test-project",
         ),
         Bucket(
             id="bucket-4",
@@ -86,6 +91,7 @@ def buckets_list() -> List[Bucket]:
             imported=False,
             public=True,
             org_name="test-org",
+            project_name="test-project",
         ),
     ]
 

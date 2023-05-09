@@ -326,6 +326,7 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
                 provider=Bucket.Provider.AWS,
                 imported=False,
                 org_name=None,
+                project_name="project",
             )
             yield Bucket(
                 id="bucket-2",
@@ -336,6 +337,7 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
                 provider=Bucket.Provider.AWS,
                 imported=False,
                 org_name=None,
+                project_name="project",
             )
             yield Bucket(
                 id="bucket-3",
@@ -346,6 +348,40 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
                 provider=Bucket.Provider.AWS,
                 imported=False,
                 org_name=None,
+                project_name="project",
+            )
+            yield Bucket(
+                id="bucket-4",
+                name="neuro-my-org-bucket",
+                created_at=datetime(2018, 1, 1, 3),
+                cluster_name="default",
+                owner="user",
+                provider=Bucket.Provider.AWS,
+                imported=False,
+                org_name="org",
+                project_name="project",
+            )
+            yield Bucket(
+                id="bucket-5",
+                name="neuro-public-org-bucket",
+                created_at=datetime(2018, 1, 1, 17, 2, 4),
+                cluster_name="default",
+                owner="public",
+                provider=Bucket.Provider.AWS,
+                imported=False,
+                org_name="org",
+                project_name="project",
+            )
+            yield Bucket(
+                id="bucket-6",
+                name="neuro-shared-org-bucket",
+                created_at=datetime(2018, 1, 1, 13, 1, 5),
+                cluster_name="default",
+                owner="another-user",
+                provider=Bucket.Provider.AWS,
+                imported=False,
+                org_name="org",
+                project_name="project",
             )
 
         async def blob_is_dir(uri: URL) -> bool:
@@ -454,55 +490,106 @@ def test_blob_autocomplete(run_autocomplete: _RunAC) -> None:
         assert bash_out == "uri,bucket-1/,"
         assert zsh_out == "uri\nbucket-1/\n_\nblob:"
 
-        # TODO: uncomment after projects added to blob storage
-        # zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/"])
-        # assert bash_out == (
-        #     "uri,file1024.txt,bucket-1/\n"
-        #     "uri,otherfile.txt,bucket-1/\n"
-        #     "uri,file_bigger.txt,bucket-1/\n"
-        #     "uri,folder2/,bucket-1/\n"
-        #     "uri,folder23/,bucket-1/"
-        # )
-        # assert zsh_out == (
-        #     "uri\nfile1024.txt\n_\nblob:bucket-1/\n"
-        #     "uri\notherfile.txt\n_\nblob:bucket-1/\n"
-        #     "uri\nfile_bigger.txt\n_\nblob:bucket-1/\n"
-        #     "uri\nfolder2/\n_\nblob:bucket-1/\n"
-        #     "uri\nfolder23/\n_\nblob:bucket-1/"
-        # )
+        zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/"])
+        assert bash_out == (
+            "uri,file1024.txt,bucket-1/\n"
+            "uri,otherfile.txt,bucket-1/\n"
+            "uri,file_bigger.txt,bucket-1/\n"
+            "uri,folder2/,bucket-1/\n"
+            "uri,folder23/,bucket-1/"
+        )
+        assert zsh_out == (
+            "uri\nfile1024.txt\n_\nblob:bucket-1/\n"
+            "uri\notherfile.txt\n_\nblob:bucket-1/\n"
+            "uri\nfile_bigger.txt\n_\nblob:bucket-1/\n"
+            "uri\nfolder2/\n_\nblob:bucket-1/\n"
+            "uri\nfolder23/\n_\nblob:bucket-1/"
+        )
 
-        # zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/f"])
-        # assert bash_out == (
-        #     "uri,file1024.txt,bucket-1/\n"
-        #     "uri,file_bigger.txt,bucket-1/\n"
-        #     "uri,folder2/,bucket-1/\n"
-        #     "uri,folder23/,bucket-1/"
-        # )
-        # assert zsh_out == (
-        #     "uri\nfile1024.txt\n_\nblob:bucket-1/\n"
-        #     "uri\nfile_bigger.txt\n_\nblob:bucket-1/\n"
-        #     "uri\nfolder2/\n_\nblob:bucket-1/\n"
-        #     "uri\nfolder23/\n_\nblob:bucket-1/"
-        # )
+        zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:/p"])
+        assert bash_out == "uri,project/,//default/"
+        assert zsh_out == "uri\nproject/\n_\nblob://default/"
 
-        # zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/fi"])
-        # assert bash_out == (
-        #     "uri,file1024.txt,bucket-1/\n" "uri,file_bigger.txt,bucket-1/"
-        # )
-        # assert zsh_out == (
-        #     "uri\nfile1024.txt\n_\nblob:bucket-1/\n"
-        #     "uri\nfile_bigger.txt\n_\nblob:bucket-1/"
-        # )
+        zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:/project/"])
+        assert bash_out == (
+            "uri,bucket-1/,\n"
+            "uri,neuro-my-bucket/,\n"
+            "uri,bucket-2/,\n"
+            "uri,neuro-public-bucket/,\n"
+            "uri,bucket-3/,\n"
+            "uri,neuro-shared-bucket/,"
+        )
+        assert zsh_out == (
+            "uri\nbucket-1/\n_\nblob:\nuri\nneuro-my-bucket/\n_\nblob:\n"
+            "uri\nbucket-2/\n_\nblob:\n"
+            "uri\nneuro-public-bucket/\n_\nblob:\n"
+            "uri\nbucket-3/\n_\nblob:\n"
+            "uri\nneuro-shared-bucket/\n_\nblob:"
+        )
 
-        # zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/folder2"])
-        # assert bash_out == ("uri,folder2/,bucket-1/\n" "uri,folder23/,bucket-1/")
-        # assert zsh_out == (
-        #     "uri\nfolder2/\n_\nblob:bucket-1/\n" "uri\nfolder23/\n_\nblob:bucket-1/"
-        # )
+        zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob://default/"])
+        assert bash_out == "uri,project/,//default/\nuri,org/,//default/"
+        assert (
+            zsh_out
+            == "uri\nproject/\n_\nblob://default/\nuri\norg/\n_\nblob://default/"
+        )
 
-        # zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/folder2/"])
-        # assert bash_out == "uri,info.txt,bucket-1/folder2/"
-        # assert zsh_out == "uri\ninfo.txt\n_\nblob:bucket-1/folder2/"
+        zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob://default/org/"])
+        assert bash_out == "uri,project/,//default/org/"
+        assert zsh_out == "uri\nproject/\n_\nblob://default/org/"
+
+        zsh_out, bash_out = run_autocomplete(
+            ["blob", "ls", "blob://default/org/project/"]
+        )
+        assert bash_out == (
+            "uri,bucket-4/,//default/org/project/\n"
+            "uri,neuro-my-org-bucket/,//default/org/project/\n"
+            "uri,bucket-5/,//default/org/project/\n"
+            "uri,neuro-public-org-bucket/,//default/org/project/\n"
+            "uri,bucket-6/,//default/org/project/\n"
+            "uri,neuro-shared-org-bucket/,//default/org/project/"
+        )
+        assert zsh_out == (
+            "uri\nbucket-4/\n_\nblob://default/org/project/\n"
+            "uri\nneuro-my-org-bucket/\n_\nblob://default/org/project/\n"
+            "uri\nbucket-5/\n_\nblob://default/org/project/\n"
+            "uri\nneuro-public-org-bucket/\n_\nblob://default/org/project/\n"
+            "uri\nbucket-6/\n_\nblob://default/org/project/\n"
+            "uri\nneuro-shared-org-bucket/\n_\nblob://default/org/project/"
+        )
+
+        zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/f"])
+        assert bash_out == (
+            "uri,file1024.txt,bucket-1/\n"
+            "uri,file_bigger.txt,bucket-1/\n"
+            "uri,folder2/,bucket-1/\n"
+            "uri,folder23/,bucket-1/"
+        )
+        assert zsh_out == (
+            "uri\nfile1024.txt\n_\nblob:bucket-1/\n"
+            "uri\nfile_bigger.txt\n_\nblob:bucket-1/\n"
+            "uri\nfolder2/\n_\nblob:bucket-1/\n"
+            "uri\nfolder23/\n_\nblob:bucket-1/"
+        )
+
+        zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/fi"])
+        assert bash_out == (
+            "uri,file1024.txt,bucket-1/\n" "uri,file_bigger.txt,bucket-1/"
+        )
+        assert zsh_out == (
+            "uri\nfile1024.txt\n_\nblob:bucket-1/\n"
+            "uri\nfile_bigger.txt\n_\nblob:bucket-1/"
+        )
+
+        zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/folder2"])
+        assert bash_out == ("uri,folder2/,bucket-1/\n" "uri,folder23/,bucket-1/")
+        assert zsh_out == (
+            "uri\nfolder2/\n_\nblob:bucket-1/\n" "uri\nfolder23/\n_\nblob:bucket-1/"
+        )
+
+        zsh_out, bash_out = run_autocomplete(["blob", "ls", "blob:bucket-1/folder2/"])
+        assert bash_out == "uri,info.txt,bucket-1/folder2/"
+        assert zsh_out == "uri\ninfo.txt\n_\nblob:bucket-1/folder2/"
 
 
 def make_job(
@@ -1192,6 +1279,7 @@ def test_bucket_autocomplete(run_autocomplete: _RunAC) -> None:
                     provider=Bucket.Provider.AWS,
                     imported=False,
                     org_name=None,
+                    project_name="test-project",
                 ),
                 Bucket(
                     id="bucket-2",
@@ -1202,6 +1290,7 @@ def test_bucket_autocomplete(run_autocomplete: _RunAC) -> None:
                     provider=Bucket.Provider.AWS,
                     imported=False,
                     org_name=None,
+                    project_name="test-project",
                 ),
                 Bucket(
                     id="bucket-3",
@@ -1212,6 +1301,7 @@ def test_bucket_autocomplete(run_autocomplete: _RunAC) -> None:
                     provider=Bucket.Provider.AWS,
                     imported=False,
                     org_name="test-org",
+                    project_name="test-project",
                 ),
                 Bucket(
                     id="bucket-4",
@@ -1223,6 +1313,7 @@ def test_bucket_autocomplete(run_autocomplete: _RunAC) -> None:
                     imported=False,
                     public=True,
                     org_name="test-org",
+                    project_name="test-project",
                 ),
             ],
             "other": [
@@ -1235,6 +1326,7 @@ def test_bucket_autocomplete(run_autocomplete: _RunAC) -> None:
                     provider=Bucket.Provider.AWS,
                     imported=False,
                     org_name=None,
+                    project_name="test-project",
                 ),
             ],
         }
