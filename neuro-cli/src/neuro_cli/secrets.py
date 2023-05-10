@@ -1,7 +1,7 @@
 import pathlib
 from typing import Optional
 
-from neuro_cli.click_types import CLUSTER, ORG
+from neuro_cli.click_types import CLUSTER, ORG, PROJECT
 from neuro_cli.formatters.secrets import (
     BaseSecretsFormatter,
     SecretsFormatter,
@@ -26,11 +26,28 @@ def secret() -> None:
     type=CLUSTER,
     help="Look on a specified cluster (the current cluster by default).",
 )
+@option(
+    "--org",
+    type=ORG,
+    help="Look on a specified org (the current org by default).",
+)
+@option(
+    "--project",
+    type=PROJECT,
+    help="Look on a specified project (the current project by default).",
+)
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
-async def ls(root: Root, full_uri: bool, cluster: Optional[str]) -> None:
+async def ls(
+    root: Root,
+    full_uri: bool,
+    cluster: Optional[str],
+    org: Optional[str],
+    project: Optional[str],
+) -> None:
     """
     List secrets.
     """
+    org_name = parse_org_name(org, root)
     if root.quiet:
         secrets_fmtr: BaseSecretsFormatter = SimpleSecretsFormatter()
     else:
@@ -38,9 +55,9 @@ async def ls(root: Root, full_uri: bool, cluster: Optional[str]) -> None:
             uri_fmtr: URIFormatter = str
         else:
             uri_fmtr = uri_formatter(
-                project_name=root.client.config.project_name_or_raise,
                 cluster_name=cluster or root.client.cluster_name,
-                org_name=root.client.config.org_name,
+                org_name=org_name,
+                project_name=root.client.config.project_name_or_raise,
             )
         secrets_fmtr = SecretsFormatter(
             uri_fmtr,
@@ -48,7 +65,11 @@ async def ls(root: Root, full_uri: bool, cluster: Optional[str]) -> None:
 
     secrets = []
     with root.status("Fetching secrets") as status:
-        async with root.client.secrets.list(cluster_name=cluster) as it:
+        async with root.client.secrets.list(
+            cluster_name=cluster,
+            org_name=org_name,
+            project_name=project or root.client.config.project_name_or_raise,
+        ) as it:
             async for secret in it:
                 secrets.append(secret)
                 status.update(f"Fetching secrets ({len(secrets)} loaded)")
@@ -68,10 +89,20 @@ async def ls(root: Root, full_uri: bool, cluster: Optional[str]) -> None:
     type=ORG,
     help="Look on a specified org (the current org by default).",
 )
+@option(
+    "--project",
+    type=PROJECT,
+    help="Look on a specified project (the current project by default).",
+)
 @argument("key")
 @argument("value")
 async def add(
-    root: Root, key: str, value: str, cluster: Optional[str], org: Optional[str]
+    root: Root,
+    key: str,
+    value: str,
+    cluster: Optional[str],
+    org: Optional[str],
+    project: Optional[str],
 ) -> None:
     """
     Add secret KEY with data VALUE.
@@ -85,7 +116,11 @@ async def add(
     """
     org_name = parse_org_name(org, root)
     await root.client.secrets.add(
-        key, read_data(value), cluster_name=cluster, org_name=org_name
+        key,
+        read_data(value),
+        cluster_name=cluster,
+        org_name=org_name,
+        project_name=project,
     )
 
 
@@ -100,14 +135,27 @@ async def add(
     type=ORG,
     help="Look on a specified org (the current org by default).",
 )
+@option(
+    "--project",
+    type=PROJECT,
+    help="Look on a specified project (the current project by default).",
+)
 @argument("key")
-async def rm(root: Root, key: str, cluster: Optional[str], org: Optional[str]) -> None:
+async def rm(
+    root: Root,
+    key: str,
+    cluster: Optional[str],
+    org: Optional[str],
+    project: Optional[str],
+) -> None:
     """
     Remove secret KEY.
     """
 
     org_name = parse_org_name(org, root)
-    await root.client.secrets.rm(key, cluster_name=cluster, org_name=org_name)
+    await root.client.secrets.rm(
+        key, cluster_name=cluster, org_name=org_name, project_name=project
+    )
     if root.verbosity > 0:
         root.print(f"Secret with key '{key}' was successfully removed")
 

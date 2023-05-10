@@ -36,6 +36,7 @@ class SecretsFormatter(BaseSecretsFormatter):
         line = [
             self._uri_formatter(secret.uri),
             secret.org_name or ORG.NO_ORG_STR,
+            secret.project_name,
         ]
         return line
 
@@ -44,6 +45,7 @@ class SecretsFormatter(BaseSecretsFormatter):
         table = Table(box=box.SIMPLE_HEAVY)
         table.add_column("Key", style="bold")
         table.add_column("Org")
+        table.add_column("Project")
 
         for secret in secrets:
             table.add_row(*self._secret_to_table_row(secret))
