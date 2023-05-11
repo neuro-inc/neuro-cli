@@ -1194,7 +1194,7 @@ async def add_org(
 @argument("org_name", required=True, type=str)
 async def remove_org(root: Root, org_name: str, force: bool) -> None:
     """
-    Drop a org
+    Drop an org
 
     Completely removes org from the system.
     """
@@ -1817,7 +1817,7 @@ async def update_project(
         root.print(fmt(project, skip_cluster_org=True))
 
 
-@command(hidden=True)
+@command()
 @option("--force", default=False, help="Skip prompt", is_flag=True)
 @argument("cluster_name", required=True, type=str)
 @argument("name", required=True, type=str)

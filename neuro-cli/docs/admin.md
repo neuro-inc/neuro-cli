@@ -35,9 +35,10 @@ Cluster administration commands.
 | [_get-user-quota_](admin.md#get-user-quota) | Get info about user quota in given cluster |
 | [_remove-cluster_](admin.md#remove-cluster) | Drop a cluster |
 | [_remove-cluster-user_](admin.md#remove-cluster-user) | Remove user access from the cluster |
-| [_remove-org_](admin.md#remove-org) | Drop a org |
+| [_remove-org_](admin.md#remove-org) | Drop an org |
 | [_remove-org-cluster_](admin.md#remove-org-cluster) | Drop an org cluster |
 | [_remove-org-user_](admin.md#remove-org-user) | Remove user access from the org |
+| [_remove-project_](admin.md#remove-project) | Drop a project |
 | [_remove-project-user_](admin.md#remove-project-user) | Remove user access from the project |
 | [_remove-resource-preset_](admin.md#remove-resource-preset) | Remove resource preset |
 | [_set-org-cluster-credits_](admin.md#set-org-cluster-credits) | Set org cluster credits to given value |
@@ -568,7 +569,7 @@ Remove user access from the cluster.
 
 ### remove-org
 
-Drop a org
+Drop an org
 
 
 #### Usage
@@ -577,7 +578,7 @@ Drop a org
 neuro admin remove-org [OPTIONS] ORG_NAME
 ```
 
-Drop a org
+Drop an org
 
 Completely removes org from the system.
 
@@ -632,6 +633,31 @@ Remove user access from the org.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+
+
+
+### remove-project
+
+Drop a project
+
+
+#### Usage
+
+```bash
+neuro admin remove-project [OPTIONS] CLUSTER_NAME NAME
+```
+
+Drop a project
+
+Completely removes project from the cluster.
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--force_ | Skip prompt |
+| _--org ORG_ | org name for org-cluster projects |
 
 
 
