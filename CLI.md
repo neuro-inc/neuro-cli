@@ -35,6 +35,7 @@
 		* [neuro admin remove-org](#neuro-admin-remove-org)
 		* [neuro admin remove-org-cluster](#neuro-admin-remove-org-cluster)
 		* [neuro admin remove-org-user](#neuro-admin-remove-org-user)
+		* [neuro admin remove-project](#neuro-admin-remove-project)
 		* [neuro admin remove-project-user](#neuro-admin-remove-project-user)
 		* [neuro admin remove-resource-preset](#neuro-admin-remove-resource-preset)
 		* [neuro admin set-org-cluster-credits](#neuro-admin-set-org-cluster-credits)
@@ -472,9 +473,10 @@ Name | Description|
 | _[neuro admin get\-user-quota](#neuro-admin-get-user-quota)_| Get info about user quota in given cluster |
 | _[neuro admin remove-cluster](#neuro-admin-remove-cluster)_| Drop a cluster |
 | _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
-| _[neuro admin remove-org](#neuro-admin-remove-org)_| Drop a org |
+| _[neuro admin remove-org](#neuro-admin-remove-org)_| Drop an org |
 | _[neuro admin remove\-org-cluster](#neuro-admin-remove-org-cluster)_| Drop an org cluster |
 | _[neuro admin remove\-org-user](#neuro-admin-remove-org-user)_| Remove user access from the org |
+| _[neuro admin remove-project](#neuro-admin-remove-project)_| Drop a project |
 | _[neuro admin remove\-project-user](#neuro-admin-remove-project-user)_| Remove user access from the project |
 | _[neuro admin remove\-resource-preset](#neuro-admin-remove-resource-preset)_| Remove resource preset |
 | _[neuro admin set\-org-cluster-credits](#neuro-admin-set-org-cluster-credits)_| Set org cluster credits to given value |
@@ -949,7 +951,7 @@ Name | Description|
 
 ### neuro admin remove-org
 
-Drop a org<br/><br/>Completely removes org from the system.
+Drop an org<br/><br/>Completely removes org from the system.
 
 **Usage:**
 
@@ -1002,6 +1004,27 @@ neuro admin remove-org-user [OPTIONS] ORG_NAME USER_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+
+
+
+
+### neuro admin remove-project
+
+Drop a project<br/><br/>Completely removes project from the cluster.
+
+**Usage:**
+
+```bash
+neuro admin remove-project [OPTIONS] CLUSTER_NAME NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_--force_|Skip prompt|
+|_--org ORG_|org name for org-cluster projects|
 
 
 

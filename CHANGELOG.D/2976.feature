@@ -1,0 +1,1 @@
+Unhide remove-project command.
