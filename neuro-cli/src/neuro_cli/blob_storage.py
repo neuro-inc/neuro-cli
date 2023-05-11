@@ -126,7 +126,9 @@ async def lsbucket(
     buckets = []
     with root.status("Fetching buckets") as status:
         async with root.client.buckets.list(
-            cluster_name=cluster, org_name=org_name, project_name=project
+            cluster_name=cluster,
+            org_name=org_name,
+            project_name=project or root.client.config.project_name_or_raise,
         ) as it:
             async for bucket in it:
                 buckets.append(bucket)
