@@ -15,6 +15,7 @@ from neuro_sdk import (
     _CloudProviderType,
     _Cluster,
     _ClusterStatus,
+    _ClusterUser,
     _ClusterUserRoleType,
     _ClusterUserWithInfo,
     _ConfigCluster,
@@ -37,6 +38,7 @@ from neuro_cli.formatters.admin import (
     CloudProviderOptionsFormatter,
     ClustersFormatter,
     ClusterUserFormatter,
+    ClusterUserWithInfoFormatter,
     OrgClusterFormatter,
 )
 
@@ -44,8 +46,8 @@ RichCmp = Callable[[RenderableType], None]
 
 
 class TestClusterUserFormatter:
-    def test_cluster_list(self, rich_cmp: RichCmp) -> None:
-        formatter = ClusterUserFormatter()
+    def test_list_users_with_user_info(self, rich_cmp: RichCmp) -> None:
+        formatter = ClusterUserWithInfoFormatter()
         users = [
             _ClusterUserWithInfo(
                 user_name="denis",
@@ -117,6 +119,16 @@ class TestClusterUserFormatter:
                     created_at=None,
                 ),
             ),
+        ]
+        rich_cmp(formatter(users))
+
+    def test_list_users_no_user_info(self, rich_cmp: RichCmp) -> None:
+        formatter = ClusterUserFormatter()
+        users = [
+            _ClusterUser("default", "denis", None, _Quota(), _Balance(), None),
+            _ClusterUser("default", "denis", None, _Quota(), _Balance(), "Org"),
+            _ClusterUser("default", "andrew", None, _Quota(), _Balance(), None),
+            _ClusterUser("default", "andrew", None, _Quota(), _Balance(), "Org"),
         ]
         rich_cmp(formatter(users))
 

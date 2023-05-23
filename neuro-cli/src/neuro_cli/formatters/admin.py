@@ -15,6 +15,7 @@ from neuro_sdk import (
     _CloudProviderOptions,
     _CloudProviderType,
     _Cluster,
+    _ClusterUser,
     _ClusterUserWithInfo,
     _ConfigCluster,
     _GoogleStorageOptions,
@@ -33,7 +34,7 @@ from neuro_cli.formatters.utils import format_datetime_iso
 from neuro_cli.utils import format_size
 
 
-class ClusterUserFormatter:
+class ClusterUserWithInfoFormatter:
     def __call__(
         self, clusters_users: Iterable[_ClusterUserWithInfo]
     ) -> RenderableType:
@@ -54,7 +55,7 @@ class ClusterUserFormatter:
                 (
                     user.user_name,
                     user.org_name or "",
-                    user.role.value,
+                    user.role.value if user.role else "",
                     user.user_info.email,
                     user.user_info.full_name,
                     format_datetime_iso(user.user_info.created_at),
@@ -63,6 +64,22 @@ class ClusterUserFormatter:
                     format_quota_details(user.quota.total_running_jobs),
                 )
             )
+        rows.sort(key=operator.itemgetter(0))
+
+        for row in rows:
+            table.add_row(*row)
+        return table
+
+
+class ClusterUserFormatter:
+    def __call__(self, clusters_users: Iterable[_ClusterUser]) -> RenderableType:
+        table = Table(box=box.MINIMAL_HEAVY_HEAD)
+        table.add_column("Name", style="bold")
+        table.add_column("Org")
+        rows = []
+
+        for user in clusters_users:
+            rows.append((user.user_name, user.org_name or ""))
         rows.sort(key=operator.itemgetter(0))
 
         for row in rows:

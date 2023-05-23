@@ -346,6 +346,7 @@ List users in specified cluster
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--details / --no-details_ | Include detailed user info |
 | _--org ORG_ | org name for org-cluster users |
 
 

@@ -38,6 +38,7 @@ from .formatters.admin import (
     CloudProviderOptionsFormatter,
     ClustersFormatter,
     ClusterUserFormatter,
+    ClusterUserWithInfoFormatter,
     OrgClusterFormatter,
     OrgClustersFormatter,
     OrgsFormatter,
@@ -561,26 +562,37 @@ async def generate_vcd(root: Root, session: PromptSession[str]) -> str:
     type=str,
     help="org name for org-cluster users",
 )
+@option(
+    "--details/--no-details",
+    default=False,
+    help="Include detailed user info",
+    is_flag=True,
+)
 @argument("cluster_name", required=False, default=None, type=str)
 async def get_cluster_users(
-    root: Root, org: Optional[str], cluster_name: Optional[str]
+    root: Root,
+    org: Optional[str],
+    details: bool,
+    cluster_name: Optional[str],
 ) -> None:
     """
     List users in specified cluster
     """
-    fmt = ClusterUserFormatter()
     cluster_name = cluster_name or root.client.config.cluster_name
     with root.status(
         f"Fetching the list of cluster users of cluster [b]{cluster_name}[/b]"
     ):
-        users = await root.client._admin.list_cluster_users(
+        users = await root.client._admin.list_cluster_users(  # type: ignore
             cluster_name=cluster_name,
-            with_user_info=True,
+            with_user_info=details,
             org_name=org,
         )
         users = sorted(users, key=lambda user: (user.user_name, user.org_name or ""))
     with root.pager():
-        root.print(fmt(users))
+        if details:
+            root.print(ClusterUserWithInfoFormatter()(users))
+        else:
+            root.print(ClusterUserFormatter()(users))
 
 
 @command()
@@ -650,6 +662,7 @@ async def add_cluster_user(
         balance=balance,
         quota=quota,
     )
+    assert user.role
     if not root.quiet:
         root.print(
             f"Added [bold]{rich_escape(user.user_name)}[/bold] to cluster "
