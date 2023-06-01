@@ -500,6 +500,14 @@ async def test_fetch(
                 ],
             }
         ],
+        "projects": [
+            {
+                "name": "some-project",
+                "cluster_name": "default",
+                "org_name": None,
+                "role": "admin",
+            }
+        ],
     }
 
     async def handler(request: web.Request) -> web.Response:
@@ -536,6 +544,14 @@ async def test_fetch(
                 },
             )
         }
+
+        project = Project(
+            name="some-project",
+            cluster_name="default",
+            org_name=None,
+            role="admin",
+        )
+        assert client.config.projects == {project.key: project}
 
 
 async def test_fetch_without_admin_url(
