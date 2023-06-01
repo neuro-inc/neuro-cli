@@ -237,7 +237,11 @@ class Config(metaclass=NoPublicConstructor):
                 f"{list(server_config.clusters)}. "
                 f"Please logout and login again."
             )
-        self.__config_data = replace(self._config_data, clusters=server_config.clusters)
+        self.__config_data = replace(
+            self._config_data,
+            clusters=server_config.clusters,
+            projects=server_config.projects,
+        )
         _save(self._config_data, self._path)
 
     async def switch_project(self, name: str) -> None:
