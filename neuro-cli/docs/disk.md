@@ -110,10 +110,13 @@ List disks.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--all-orgs_ | Show disks in all orgs. |
+| _--all-projects_ | Show disks in all projects. |
 | _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
 | _--full-uri_ | Output full disk URI. |
 | _--long-format_ | Output all info about disk. |
-| _--project PROJECT_ | Look on a specified project \(all projects in current cluster by default\). |
+| _--org ORG_ | Look on a specified org \(the current org by default\). |
+| _--project PROJECT_ | Look on a specified project \(the current project by default\). |
 
 
 

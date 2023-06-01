@@ -71,8 +71,10 @@ List secrets.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--all-orgs_ | Show secrets in all orgs. |
+| _--all-projects_ | Show secrets in all projects. |
 | _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
-| _--full-uri_ | Output full disk URI. |
+| _--full-uri_ | Output full secret URI. |
 | _--org ORG_ | Look on a specified org \(the current org by default\). |
 | _--project PROJECT_ | Look on a specified project \(the current project by default\). |
 

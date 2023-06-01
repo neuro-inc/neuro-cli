@@ -232,14 +232,17 @@ $ neuro ps -t tag1 -t tag2
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _-a, --all_ | Show all jobs regardless the status. |
+| _--all-orgs_ | Show jobs in all orgs. |
+| _--all-projects_ | Show jobs in all projects. |
 | _--cluster CLUSTER_ | Show jobs on a specified cluster \(the current cluster by default\). |
 | _-d, --description DESCRIPTION_ | Filter out jobs by description \(exact match\). |
 | _--distinct_ | Show only first job if names are same. |
 | _--format COLUMNS_ | Output table format, see "neuro help ps-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config" |
 | _--full-uri_ | Output full image URI. |
 | _-n, --name NAME_ | Filter out jobs by name. |
+| _--org ORG_ | Filter out jobs by org name \(multiple option, the current org by default\). |
 | _-o, --owner TEXT_ | Filter out jobs by owner \(multiple option\). Supports `ME` option to filter by the current user. |
-| _-p, --project PROJECT_ | Filter out jobs by project name \(multiple option\). |
+| _-p, --project PROJECT_ | Filter out jobs by project name \(multiple option, the current project by default\). |
 | _--recent-first / --recent-last_ | Show newer jobs first or last |
 | _--since DATE\_OR\_TIMEDELTA_ | Show jobs created after a specific date \(including\). Use value of format '1d2h3m4s' to specify moment in past relatively to current time. |
 | _-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled\]_ | Filter out jobs by status \(multiple option\). |
