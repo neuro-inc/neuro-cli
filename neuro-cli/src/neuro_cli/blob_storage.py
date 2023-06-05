@@ -1129,7 +1129,7 @@ async def mkcredentials(
     name: Optional[str] = None,
     cluster: Optional[str] = None,
     org: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project: Optional[str] = None,
     read_only: bool = False,
 ) -> None:
     """
@@ -1142,7 +1142,7 @@ async def mkcredentials(
             client=root.client,
             cluster_name=cluster,
             org_name=org_name,
-            project_name=project_name,
+            project_name=project,
         )
         for bucket in buckets
     ]
