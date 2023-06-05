@@ -266,8 +266,3 @@ disk.add_command(ls)
 disk.add_command(create)
 disk.add_command(get)
 disk.add_command(rm)
-
-disk.add_command(ls)
-disk.add_command(create)
-disk.add_command(get)
-disk.add_command(rm)

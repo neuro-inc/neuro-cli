@@ -107,7 +107,7 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
     "--org",
     type=ORG,
     multiple=True,
-    help="Filter out images by org " "(multiple option, the current org by default).",
+    help="Filter out images by org (multiple option, the current org by default).",
 )
 @option("--all-orgs", is_flag=True, default=False, help="Show images in all orgs.")
 @option(
