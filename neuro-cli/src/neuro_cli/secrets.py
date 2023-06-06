@@ -1,14 +1,15 @@
 import pathlib
 from typing import Optional
 
-from neuro_cli.click_types import CLUSTER, ORG, PROJECT
-from neuro_cli.formatters.secrets import (
+from neuro_sdk import ORG_NAME_SENTINEL
+
+from .click_types import CLUSTER, ORG, PROJECT
+from .formatters.secrets import (
     BaseSecretsFormatter,
     SecretsFormatter,
     SimpleSecretsFormatter,
 )
-from neuro_cli.formatters.utils import URIFormatter, uri_formatter
-
+from .formatters.utils import URIFormatter, uri_formatter
 from .root import Root
 from .utils import argument, command, group, option, parse_org_name
 
@@ -31,23 +32,28 @@ def secret() -> None:
     type=ORG,
     help="Look on a specified org (the current org by default).",
 )
+@option("--all-orgs", is_flag=True, default=False, help="Show secrets in all orgs.")
 @option(
     "--project",
     type=PROJECT,
     help="Look on a specified project (the current project by default).",
 )
-@option("--full-uri", is_flag=True, help="Output full disk URI.")
+@option(
+    "--all-projects", is_flag=True, default=False, help="Show secrets in all projects."
+)
+@option("--full-uri", is_flag=True, help="Output full secret URI.")
 async def ls(
     root: Root,
     full_uri: bool,
     cluster: Optional[str],
     org: Optional[str],
+    all_orgs: bool,
     project: Optional[str],
+    all_projects: bool,
 ) -> None:
     """
     List secrets.
     """
-    org_name = parse_org_name(org, root)
     if root.quiet:
         secrets_fmtr: BaseSecretsFormatter = SimpleSecretsFormatter()
     else:
@@ -55,20 +61,28 @@ async def ls(
             uri_fmtr: URIFormatter = str
         else:
             uri_fmtr = uri_formatter(
-                cluster_name=cluster or root.client.cluster_name,
-                org_name=org_name,
+                cluster_name=root.client.cluster_name,
+                org_name=root.client.config.org_name,
                 project_name=root.client.config.project_name_or_raise,
             )
         secrets_fmtr = SecretsFormatter(
             uri_fmtr,
         )
 
+    if all_orgs:
+        org_name = ORG_NAME_SENTINEL
+    else:
+        org_name = parse_org_name(org, root)  # type: ignore
+
+    if all_projects:
+        project_name = None
+    else:
+        project_name = project or root.client.config.project_name_or_raise
+
     secrets = []
     with root.status("Fetching secrets") as status:
         async with root.client.secrets.list(
-            cluster_name=cluster,
-            org_name=org_name,
-            project_name=project or root.client.config.project_name_or_raise,
+            cluster_name=cluster, org_name=org_name, project_name=project_name
         ) as it:
             async for secret in it:
                 secrets.append(secret)

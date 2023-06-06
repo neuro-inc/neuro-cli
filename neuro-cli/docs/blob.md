@@ -213,6 +213,8 @@ List buckets.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--all-orgs_ | Show buckets in all orgs. |
+| _--all-projects_ | Show buckets in all projects. |
 | _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
 | _--full-uri_ | Output full bucket URI. |
 | _--long-format_ | Output all info about bucket. |

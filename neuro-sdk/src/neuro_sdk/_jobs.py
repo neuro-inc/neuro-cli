@@ -480,6 +480,7 @@ class Jobs(metaclass=NoPublicConstructor):
         reverse: bool = False,
         limit: Optional[int] = None,
         cluster_name: Optional[str] = None,
+        org_names: Iterable[Optional[str]] = (),
         project_names: Iterable[str] = (),
         _materialized: Optional[bool] = None,
         _being_dropped: Optional[bool] = False,
@@ -518,6 +519,8 @@ class Jobs(metaclass=NoPublicConstructor):
             params.add("being_dropped", str(_being_dropped))
         if _logs_removed is not None:
             params.add("logs_removed", str(_logs_removed))
+        for org_name in org_names:
+            params.add("org_name", org_name or "NO_ORG")
         for project_name in project_names:
             params.add("project_name", project_name)
         auth = await self._config._api_auth()

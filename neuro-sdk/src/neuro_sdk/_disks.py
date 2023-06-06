@@ -90,14 +90,13 @@ class Disks(metaclass=NoPublicConstructor):
     async def list(
         self,
         cluster_name: Optional[str] = None,
-        org_name: Optional[str] = None,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
         project_name: Optional[str] = None,
     ) -> AsyncIterator[Disk]:
         url = self._get_disks_url(cluster_name)
         params = {}
-        org = org_name or self._config.org_name
-        if org:
-            params["org_name"] = org
+        if not isinstance(org_name, OrgNameSentinel):
+            params["org_name"] = org_name or "NO_ORG"
         if project_name:
             params["project_name"] = project_name
 

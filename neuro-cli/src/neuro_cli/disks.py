@@ -3,7 +3,9 @@ from typing import Optional, Sequence, Union
 
 from yarl import URL
 
-from neuro_cli.click_types import (
+from neuro_sdk import ORG_NAME_SENTINEL
+
+from .click_types import (
     CLUSTER,
     DISK,
     DISK_NAME,
@@ -12,19 +14,24 @@ from neuro_cli.click_types import (
     PlatformURIType,
     UnionType,
 )
-from neuro_cli.formatters.utils import get_datetime_formatter
-from neuro_cli.utils import parse_org_name, resolve_disk
-
 from .formatters.disks import (
     BaseDisksFormatter,
     DiskFormatter,
     DisksFormatter,
     SimpleDisksFormatter,
 )
-from .formatters.utils import URIFormatter, uri_formatter
+from .formatters.utils import URIFormatter, get_datetime_formatter, uri_formatter
 from .parse_utils import parse_memory
 from .root import Root
-from .utils import argument, calc_timeout_unused, command, group, option
+from .utils import (
+    argument,
+    calc_timeout_unused,
+    command,
+    group,
+    option,
+    parse_org_name,
+    resolve_disk,
+)
 
 DEFAULT_DISK_LIFE_SPAN = "1d"
 
@@ -43,9 +50,18 @@ def disk() -> None:
     help="Look on a specified cluster (the current cluster by default).",
 )
 @option(
+    "--org",
+    type=ORG,
+    help="Look on a specified org (the current org by default).",
+)
+@option("--all-orgs", is_flag=True, default=False, help="Show disks in all orgs.")
+@option(
     "--project",
     type=PROJECT,
-    help="Look on a specified project (all projects in current cluster by default).",
+    help="Look on a specified project (the current project by default).",
+)
+@option(
+    "--all-projects", is_flag=True, default=False, help="Show disks in all projects."
 )
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
 @option("--long-format", is_flag=True, help="Output all info about disk.")
@@ -54,7 +70,10 @@ async def ls(
     full_uri: bool,
     long_format: bool,
     cluster: Optional[str],
+    org: Optional[str],
+    all_orgs: bool,
     project: Optional[str],
+    all_projects: bool,
 ) -> None:
     """
     List disks.
@@ -67,7 +86,7 @@ async def ls(
         else:
             uri_fmtr = uri_formatter(
                 project_name=root.client.config.project_name_or_raise,
-                cluster_name=cluster or root.client.cluster_name,
+                cluster_name=root.client.cluster_name,
                 org_name=root.client.config.org_name,
             )
         disks_fmtr = DisksFormatter(
@@ -76,10 +95,20 @@ async def ls(
             datetime_formatter=get_datetime_formatter(root.iso_datetime_format),
         )
 
+    if all_orgs:
+        org_name = ORG_NAME_SENTINEL
+    else:
+        org_name = parse_org_name(org, root)  # type: ignore
+
+    if all_projects:
+        project_name = None
+    else:
+        project_name = project or root.client.config.project_name_or_raise
+
     disks = []
     with root.status("Fetching disks") as status:
         async with root.client.disks.list(
-            cluster_name=cluster, project_name=project
+            cluster_name=cluster, org_name=org_name, project_name=project_name
         ) as it:
             async for disk in it:
                 disks.append(disk)
