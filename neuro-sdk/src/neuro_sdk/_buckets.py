@@ -218,10 +218,13 @@ class Buckets(metaclass=NoPublicConstructor):
         org_name: Union[Optional[str], OrgNameSentinel],
         project_name: Optional[str],
     ) -> Dict[str, Any]:
-        params = {
-            "org_name": (org_name or "NO_ORG")
+        org_name_val = (
+            org_name
             if not isinstance(org_name, OrgNameSentinel)
-            else self._config.org_name,
+            else self._config.org_name
+        )
+        params = {
+            "org_name": org_name_val or "NO_ORG",
             "project_name": project_name or self._config.project_name_or_raise,
         }
         return params
