@@ -1211,7 +1211,7 @@ async def generate_run_command(root: Root, job: str) -> None:
     )
     job_description = await root.client.jobs.status(id)
     args = _job_to_cli_args(job_description)
-    root.print(f"neuro run " + " ".join(args), soft_wrap=True)
+    root.print("neuro run " + " ".join(args), soft_wrap=True)
 
 
 job.add_command(run)

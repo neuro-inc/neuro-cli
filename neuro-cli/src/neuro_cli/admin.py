@@ -1763,6 +1763,7 @@ async def add_project(
         )
         fmt = ProjectFormatter()
         root.print(fmt(project, skip_cluster_org=True))
+    await root.client.config.fetch()
     if (
         not root.client.config.project_name
         and root.client.cluster_name == project.cluster_name

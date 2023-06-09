@@ -54,6 +54,7 @@ class DisksFormatter(BaseDisksFormatter):
         if self._long_format:
             line += [
                 disk.org_name or ORG.NO_ORG_STR,
+                disk.project_name,
                 self._datetime_formatter(disk.created_at),
                 self._datetime_formatter(disk.last_usage),
                 format_disk_timeout_unused(disk.timeout_unused),
@@ -73,6 +74,7 @@ class DisksFormatter(BaseDisksFormatter):
         table.add_column("Status")
         if self._long_format:
             table.add_column("Org name")
+            table.add_column("Project name")
             table.add_column("Created at")
             table.add_column("Last used")
             table.add_column("Timeout unused")

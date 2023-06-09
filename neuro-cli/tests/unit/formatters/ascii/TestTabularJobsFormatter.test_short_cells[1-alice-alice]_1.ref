@@ -1,4 +1,4 @@
-ID/NAME                                    STATUS/WHEN     IMAGE   ORG/OWNER   COMMAND  
- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
-  j                                          failed          i:l                 c        
-   name                                       a second ago            alice
+ID/NAME                                    STATUS/WHEN     IMAGE   ORG/PROJECT   COMMAND  
+ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
+  j                                          failed          i:l                   c        
+   name                                       a second ago            myproject

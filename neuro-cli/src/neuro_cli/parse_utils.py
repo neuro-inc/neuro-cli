@@ -108,7 +108,7 @@ PS_COLUMNS = [
     JobColumnInfo("project_name", "PROJECT", "left", max_width=25),
 ]
 
-PS_COLUMNS_DEFAULT_FORMAT = "id/name status/when image org_name/owner command"
+PS_COLUMNS_DEFAULT_FORMAT = "id/name status/when image org_name/project_name command"
 
 TOP_COLUMNS = PS_COLUMNS + [
     JobColumnInfo("cpu", "CPU", "right", width=15),

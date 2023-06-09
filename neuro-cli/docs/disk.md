@@ -89,6 +89,8 @@ Get disk `DISK`_ID.
 | _--help_ | Show this message and exit. |
 | _--cluster CLUSTER_ | Look on a specified cluster \(the current cluster by default\). |
 | _--full-uri_ | Output full disk URI. |
+| _--org ORG_ | Look on a specified org \(the current org by default\). |
+| _--project PROJECT_ | Look on a specified project \(the current project by default\). |
 
 
 
@@ -139,5 +141,7 @@ Remove disk `DISK`_ID.
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _--cluster CLUSTER_ | Perform on a specified cluster \(the current cluster by default\). |
+| _--org ORG_ | Perform on a specified org \(the current org by default\). |
+| _--project PROJECT_ | Perform on a specified project \(the current project by default\). |
 
 

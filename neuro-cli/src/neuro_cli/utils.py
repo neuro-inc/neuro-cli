@@ -32,7 +32,15 @@ import humanize
 from aiohttp import ClientResponseError
 from yarl import URL
 
-from neuro_sdk import Action, Client, JobStatus, ResourceNotFound, Volume
+from neuro_sdk import (
+    ORG_NAME_SENTINEL,
+    Action,
+    Client,
+    JobStatus,
+    OrgNameSentinel,
+    ResourceNotFound,
+    Volume,
+)
 
 from .parse_utils import parse_timedelta
 from .root import Root
@@ -503,6 +511,8 @@ async def resolve_disk(
     *,
     client: Client,
     cluster_name: Optional[str] = None,
+    org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+    project_name: Optional[str] = None,
 ) -> str:
     if isinstance(id_or_name_or_uri, URL):
         id_or_name = id_or_name_or_uri.parts[-1]
@@ -514,19 +524,34 @@ async def resolve_disk(
 
     if isinstance(id_or_name_or_uri, URL):
         cluster_name = id_or_name_or_uri.host
-        possible_owners = [
-            "/".join(id_or_name_or_uri.parts[1:-1]),
-            "/".join(id_or_name_or_uri.parts[2:-1]),
-        ]
-        for owner in possible_owners:
-            try:
-                disk = await client.disks.get(id_or_name, cluster_name, owner=owner)
-                return disk.id
-            except ResourceNotFound:
-                pass
+        if cluster_name:
+            possible_org = id_or_name_or_uri.parts[1]
+            cluster = client.config.clusters[cluster_name]
+            org_name = possible_org if possible_org in cluster.orgs else None
+        else:
+            org_name = ORG_NAME_SENTINEL
+        if cluster_name and org_name:
+            project_name = "/".join(id_or_name_or_uri.parts[2:-1])
+        else:
+            project_name = "/".join(id_or_name_or_uri.parts[1:-1])
+        try:
+            disk = await client.disks.get(
+                id_or_name,
+                cluster_name=cluster_name,
+                org_name=org_name,
+                project_name=project_name,
+            )
+            return disk.id
+        except ResourceNotFound:
+            pass
         raise ValueError(f"Failed to resolve disk {id_or_name_or_uri}")
     else:
-        disk = await client.disks.get(id_or_name, cluster_name)
+        disk = await client.disks.get(
+            id_or_name,
+            cluster_name=cluster_name,
+            org_name=org_name,
+            project_name=project_name,
+        )
     return disk.id
 
 
@@ -540,7 +565,7 @@ async def resolve_bucket(
     *,
     client: Client,
     cluster_name: Optional[str] = None,
-    org_name: Optional[str] = None,
+    org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
     project_name: Optional[str] = None,
 ) -> str:
     # Temporary fast path.
