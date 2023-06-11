@@ -1063,7 +1063,7 @@ async def sign_url(
         path, int(expires_delta.total_seconds())
     )
 
-    root.print(signed_url)
+    root.print(signed_url, soft_wrap=True)
 
 
 # Bucket credentials commands

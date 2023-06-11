@@ -86,13 +86,14 @@ def service_account_token_fmtr(token: str, account: ServiceAccount) -> Renderabl
     token_data: dict[str, str] = json.loads(base64.b64decode(token.encode()).decode())
     auth_token = token_data["token"]
 
-    org_name = token_data.get("org_name")
-    share_project_cmd_hint = (
-        f"[b]neuro admin add-project-user {f'--org {org_name}' if org_name else ''}"
-        f" {token_data.get('cluster')} "
-        f" {token_data.get('project_name')}"
-        f" {account.role}"
-        " reader|writer|manager|admin[/b]\n"
+    cluster_p = "//" + token_data.get("cluster") if token_data.get("cluster") else ""
+    org_p = "/" + token_data.get("org_name") if token_data.get("org_name") else ""
+    project = token_data.get("project_name")
+    project_p = f"/{project}" if cluster_p or org_p else str(project)
+
+    res_example = f"scheme:{cluster_p}{org_p}{project_p}"
+    share_resource_cmd_hint = (
+        f"[b]neuro acl grant {res_example} {account.role} {{read|write|manage}}[/b]\n"
     )
 
     lines = [
@@ -104,18 +105,10 @@ def service_account_token_fmtr(token: str, account: ServiceAccount) -> Renderabl
         auth_token,
         "\n[b red]Save it to some secure place, you will be unable to "
         "retrieve it later![/b red]",
-        "\nTo allow access to your current project for this service account, "
+        "\nTo allow access to your project resources for this service account, "
         "perform:\n",
-        share_project_cmd_hint,
+        share_resource_cmd_hint,
+        "",
     ]
-    if org_name:
-        lines.extend(
-            [
-                "\nTo allow access to your current org for this service account, "
-                "perform:\n",
-                f"[b]neuro admin add-org-user {org_name} {account.role}"
-                " reader|writer|manager|admin[/b]\n",
-            ]
-        )
 
     return Text.from_markup("\n".join(lines))
