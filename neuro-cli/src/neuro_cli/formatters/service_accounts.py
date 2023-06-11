@@ -86,12 +86,9 @@ def service_account_token_fmtr(token: str, account: ServiceAccount) -> Renderabl
     token_data: dict[str, str] = json.loads(base64.b64decode(token.encode()).decode())
     auth_token = token_data["token"]
 
-    cluster_p = "//" + token_data.get("cluster") if token_data.get("cluster") else ""
-    org_p = "/" + token_data.get("org_name") if token_data.get("org_name") else ""
-    project = token_data.get("project_name")
-    project_p = f"/{project}" if cluster_p or org_p else str(project)
+    org = "/" + token_data.get("org_name", "") if token_data.get("org_name") else ""
 
-    res_example = f"scheme:{cluster_p}{org_p}{project_p}"
+    res_example = f"scheme://{token_data['cluster']}{org}/{token_data['project_name']}"
     share_resource_cmd_hint = (
         f"[b]neuro acl grant {res_example} {account.role} {{read|write|manage}}[/b]\n"
     )
