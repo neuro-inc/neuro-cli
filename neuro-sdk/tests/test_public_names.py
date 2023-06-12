@@ -1,6 +1,7 @@
 from yarl import URL
 
 import neuro_sdk
+from neuro_sdk._utils import OrgNameSentinel
 
 
 def test_public_version() -> None:
@@ -12,6 +13,10 @@ def test_module_for_public_names() -> None:
         obj = getattr(neuro_sdk, name)
         if isinstance(obj, URL):
             # Default API url
+            continue
+        if obj == OrgNameSentinel:
+            continue
+        if isinstance(obj, OrgNameSentinel):
             continue
         if hasattr(obj, "__module__"):
             assert obj.__module__ in (

@@ -73,11 +73,14 @@ List images.
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--all-orgs_ | Show images in all orgs. |
+| _--all-projects_ | Show images in all projects. |
 | _--cluster CLUSTER_ | Show images on a specified cluster \(the current cluster by default\). |
 | _-l_ | List in long format. |
 | _--full-uri_ | Output full image URI. |
 | _-n, --name PATTERN_ | Filter out images by name regex. |
-| _--project PROJECT_ | Filter out images by project \(multiple option, all projects in current cluster by default\). |
+| _--org ORG_ | Filter out images by org \(multiple option, the current org by default\). |
+| _--project PROJECT_ | Filter out images by project \(multiple option, the current project by default\). |
 
 
 

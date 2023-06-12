@@ -1514,6 +1514,8 @@ neuro blob lsbucket [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--all-orgs_|Show buckets in all orgs.|
+|_\--all-projects_|Show buckets in all projects.|
 |_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
 |_\--full-uri_|Output full bucket URI.|
 |_\--long-format_|Output all info about bucket.|
@@ -2160,6 +2162,8 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
 |_\--full-uri_|Output full disk URI.|
+|_--org ORG_|Look on a specified org \(the current org by default).|
+|_--project PROJECT_|Look on a specified project \(the current project by default).|
 
 
 
@@ -2179,10 +2183,13 @@ neuro disk ls [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--all-orgs_|Show disks in all orgs.|
+|_\--all-projects_|Show disks in all projects.|
 |_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
 |_\--full-uri_|Output full disk URI.|
 |_\--long-format_|Output all info about disk.|
-|_--project PROJECT_|Look on a specified project \(all projects in current cluster by default).|
+|_--org ORG_|Look on a specified org \(the current org by default).|
+|_--project PROJECT_|Look on a specified project \(the current project by default).|
 
 
 
@@ -2203,6 +2210,8 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--cluster CLUSTER_|Perform on a specified cluster \(the current cluster by default).|
+|_--org ORG_|Perform on a specified org \(the current org by default).|
+|_--project PROJECT_|Perform on a specified project \(the current project by default).|
 
 
 
@@ -2282,11 +2291,14 @@ neuro image ls [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--all-orgs_|Show images in all orgs.|
+|_\--all-projects_|Show images in all projects.|
 |_--cluster CLUSTER_|Show images on a specified cluster \(the current cluster by default).|
 |_-l_|List in long format.|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name PATTERN_|Filter out images by name regex.|
-|_--project PROJECT_|Filter out images by project \(multiple option, all projects in current cluster by default).|
+|_--org ORG_|Filter out images by org \(multiple option, the current org by default).|
+|_--project PROJECT_|Filter out images by project \(multiple option, the current project by default).|
 
 
 
@@ -2660,14 +2672,17 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-a, --all_|Show all jobs regardless the status.|
+|_\--all-orgs_|Show jobs in all orgs.|
+|_\--all-projects_|Show jobs in all projects.|
 |_--cluster CLUSTER_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--distinct_|Show only first job if names are same.|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
+|_--org ORG_|Filter out jobs by org name \(multiple option, the current org by default).|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
-|_\-p, --project PROJECT_|Filter out jobs by project name \(multiple option).|
+|_\-p, --project PROJECT_|Filter out jobs by project name \(multiple option, the current project by default).|
 |_\--recent-first / --recent-last_|Show newer jobs first or last|
 |_--since DATE\_OR_TIMEDELTA_|Show jobs created after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_\-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled]_|Filter out jobs by status \(multiple option).|
@@ -2947,8 +2962,10 @@ neuro secret ls [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--all-orgs_|Show secrets in all orgs.|
+|_\--all-projects_|Show secrets in all projects.|
 |_--cluster CLUSTER_|Look on a specified cluster \(the current cluster by default).|
-|_\--full-uri_|Output full disk URI.|
+|_\--full-uri_|Output full secret URI.|
 |_--org ORG_|Look on a specified org \(the current org by default).|
 |_--project PROJECT_|Look on a specified project \(the current project by default).|
 
@@ -3508,11 +3525,14 @@ neuro images [OPTIONS]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--all-orgs_|Show images in all orgs.|
+|_\--all-projects_|Show images in all projects.|
 |_--cluster CLUSTER_|Show images on a specified cluster \(the current cluster by default).|
 |_-l_|List in long format.|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name PATTERN_|Filter out images by name regex.|
-|_--project PROJECT_|Filter out images by project \(multiple option, all projects in current cluster by default).|
+|_--org ORG_|Filter out images by org \(multiple option, the current org by default).|
+|_--project PROJECT_|Filter out images by project \(multiple option, the current project by default).|
 
 
 
@@ -3752,14 +3772,17 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-a, --all_|Show all jobs regardless the status.|
+|_\--all-orgs_|Show jobs in all orgs.|
+|_\--all-projects_|Show jobs in all projects.|
 |_--cluster CLUSTER_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--distinct_|Show only first job if names are same.|
 |_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
+|_--org ORG_|Filter out jobs by org name \(multiple option, the current org by default).|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user.|
-|_\-p, --project PROJECT_|Filter out jobs by project name \(multiple option).|
+|_\-p, --project PROJECT_|Filter out jobs by project name \(multiple option, the current project by default).|
 |_\--recent-first / --recent-last_|Show newer jobs first or last|
 |_--since DATE\_OR_TIMEDELTA_|Show jobs created after a specific date \(including). Use value of format '1d2h3m4s' to specify moment in past relatively to current time.|
 |_\-s, --status \[pending &#124; suspended &#124; running &#124; succeeded &#124; failed &#124; cancelled]_|Filter out jobs by status \(multiple option).|

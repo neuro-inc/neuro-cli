@@ -28,16 +28,6 @@ from neuro_sdk import (
     RemoteImage,
 )
 
-from neuro_cli.formatters.images import DockerImageProgress
-from neuro_cli.formatters.utils import (
-    URIFormatter,
-    get_datetime_formatter,
-    image_formatter,
-    uri_formatter,
-)
-from neuro_cli.parse_utils import parse_sort_keys
-from neuro_cli.utils import parse_org_name, resolve_disk
-
 from .ael import print_job_result, process_attach, process_exec, process_logs
 from .click_types import (
     CLUSTER,
@@ -52,6 +42,7 @@ from .click_types import (
     RemoteImageType,
 )
 from .const import EX_PLATFORMERROR
+from .formatters.images import DockerImageProgress
 from .formatters.jobs import (
     BaseJobsFormatter,
     JobStartProgress,
@@ -61,11 +52,18 @@ from .formatters.jobs import (
     SimpleJobsFormatter,
     TabularJobsFormatter,
 )
+from .formatters.utils import (
+    URIFormatter,
+    get_datetime_formatter,
+    image_formatter,
+    uri_formatter,
+)
 from .parse_utils import (
     JobTableFormat,
     get_default_ps_columns,
     get_default_top_columns,
     parse_ps_columns,
+    parse_sort_keys,
     parse_timedelta,
     parse_top_columns,
     serialize_timedelta,
@@ -77,6 +75,8 @@ from .utils import (
     command,
     group,
     option,
+    parse_org_name,
+    resolve_disk,
     resolve_job,
     resolve_job_ex,
     volume_to_verbose_str,
@@ -296,6 +296,25 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     help="Show jobs on a specified cluster (the current cluster by default).",
 )
 @option(
+    "--org",
+    type=ORG,
+    help="Filter out jobs by org name "
+    "(multiple option, the current org by default).",
+    multiple=True,
+)
+@option("--all-orgs", is_flag=True, default=False, help="Show jobs in all orgs.")
+@option(
+    "-p",
+    "--project",
+    type=PROJECT,
+    help="Filter out jobs by project name "
+    "(multiple option, the current project by default).",
+    multiple=True,
+)
+@option(
+    "--all-projects", is_flag=True, default=False, help="Show jobs in all projects."
+)
+@option(
     "-o",
     "--owner",
     multiple=True,
@@ -366,18 +385,15 @@ async def attach(root: Root, job: str, port_forward: List[Tuple[int, int]]) -> N
     default=None,
 )
 @option("--full-uri", is_flag=True, help="Output full image URI.")
-@option(
-    "-p",
-    "--project",
-    type=PROJECT,
-    help="Filter out jobs by project name (multiple option).",
-    multiple=True,
-)
 async def ls(
     root: Root,
     status: Sequence[str],
     all: bool,
     cluster: str,
+    org: Sequence[str],
+    all_orgs: bool,
+    project: Sequence[str],
+    all_projects: bool,
     name: str,
     distinct: bool,
     recent_first: bool,
@@ -389,7 +405,6 @@ async def ls(
     wide: bool,
     format: Optional[JobTableFormat],
     full_uri: bool,
-    project: Sequence[str],
 ) -> None:
     """
     List all jobs.
@@ -414,6 +429,18 @@ async def ls(
     tags = set(tag)
     if not cluster:
         cluster = root.client.config.cluster_name
+
+    if all_orgs:
+        org_names = []
+    elif org:
+        org_names = [parse_org_name(o, root) for o in org]
+    else:
+        org_names = [root.client.config.org_name]
+
+    if all_projects:
+        project_names: Sequence[str] = []
+    else:
+        project_names = project or [root.client.config.project_name_or_raise]
 
     uri_fmtr: URIFormatter
     if full_uri:
@@ -444,7 +471,8 @@ async def ls(
         until=_parse_date(until),
         reverse=recent_first,
         cluster_name=cluster,
-        project_names=project,
+        org_names=org_names,
+        project_names=project_names,
     ) as jobs:
         # client-side filtering
         if description:
@@ -1183,7 +1211,7 @@ async def generate_run_command(root: Root, job: str) -> None:
     )
     job_description = await root.client.jobs.status(id)
     args = _job_to_cli_args(job_description)
-    root.print(f"neuro run " + " ".join(args), soft_wrap=True)
+    root.print("neuro run " + " ".join(args), soft_wrap=True)
 
 
 job.add_command(run)

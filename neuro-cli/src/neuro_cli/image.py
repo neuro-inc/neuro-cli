@@ -9,7 +9,8 @@ from rich.progress import Progress
 
 from neuro_sdk import LocalImage, RemoteImage, Tag, TagOption
 
-from neuro_cli.formatters.images import (
+from .click_types import CLUSTER, ORG, PROJECT, RemoteImageType
+from .formatters.images import (
     BaseImagesFormatter,
     BaseTagsFormatter,
     DockerImageProgress,
@@ -19,11 +20,9 @@ from neuro_cli.formatters.images import (
     ShortImagesFormatter,
     ShortTagsFormatter,
 )
-from neuro_cli.formatters.utils import ImageFormatter, image_formatter, uri_formatter
-
-from .click_types import CLUSTER, PROJECT, RemoteImageType
+from .formatters.utils import ImageFormatter, image_formatter, uri_formatter
 from .root import Root
-from .utils import argument, command, format_size, group, option
+from .utils import argument, command, format_size, group, option, parse_org_name
 
 log = logging.getLogger(__name__)
 
@@ -104,15 +103,25 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
     type=CLUSTER,
     help="Show images on a specified cluster (the current cluster by default).",
 )
-@option("-l", "format_long", is_flag=True, help="List in long format.")
-@option("--full-uri", is_flag=True, help="Output full image URI.")
+@option(
+    "--org",
+    type=ORG,
+    multiple=True,
+    help="Filter out images by org (multiple option, the current org by default).",
+)
+@option("--all-orgs", is_flag=True, default=False, help="Show images in all orgs.")
 @option(
     "--project",
     type=PROJECT,
     multiple=True,
     help="Filter out images by project "
-    "(multiple option, all projects in current cluster by default).",
+    "(multiple option, the current project by default).",
 )
+@option(
+    "--all-projects", is_flag=True, default=False, help="Show images in all projects."
+)
+@option("-l", "format_long", is_flag=True, help="List in long format.")
+@option("--full-uri", is_flag=True, help="Output full image URI.")
 @option(
     "-n",
     "--name",
@@ -123,9 +132,12 @@ async def pull(root: Root, remote_image: str, local_image: Optional[str]) -> Non
 async def ls(
     root: Root,
     cluster: str,
+    org: Sequence[str],
+    all_orgs: bool,
+    project: Sequence[str],
+    all_projects: bool,
     format_long: bool,
     full_uri: bool,
-    project: Sequence[str],
     name: Optional[str],
 ) -> None:
     """
@@ -137,9 +149,21 @@ async def ls(
     with root.status("Fetching images"):
         images = await root.client.images.list(cluster_name=cluster)
 
-    if project:
-        projects = set(project)
-        images = [image for image in images if image.project_name in projects]
+    if all_orgs:
+        org_names = None
+    elif org:
+        org_names = {parse_org_name(o, root) for o in org}
+    else:
+        org_names = {root.client.config.org_name}
+    if org_names:
+        images = [image for image in images if image.org_name in org_names]
+
+    if all_projects:
+        project_names = None
+    else:
+        project_names = set(project or [root.client.config.project_name_or_raise])
+    if project_names:
+        images = [image for image in images if image.project_name in project_names]
 
     if name:
         name_re = re.compile(name)

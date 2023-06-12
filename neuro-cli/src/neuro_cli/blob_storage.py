@@ -8,6 +8,7 @@ from rich.text import Text
 from yarl import URL
 
 from neuro_sdk import (
+    ORG_NAME_SENTINEL,
     Bucket,
     Client,
     FileFilter,
@@ -16,7 +17,7 @@ from neuro_sdk import (
     ResourceNotFound,
 )
 
-from neuro_cli.click_types import (
+from .click_types import (
     BUCKET,
     BUCKET_CREDENTIAL,
     BUCKET_NAME,
@@ -25,40 +26,36 @@ from neuro_cli.click_types import (
     PROJECT,
     PlatformURIType,
 )
-from neuro_cli.formatters.bucket_credentials import (
-    BaseBucketCredentialsFormatter,
-    BucketCredentialFormatter,
-    BucketCredentialsFormatter,
-    SimpleBucketCredentialsFormatter,
-)
-from neuro_cli.formatters.buckets import (
-    BaseBucketsFormatter,
-    BucketFormatter,
-    BucketsFormatter,
-    SimpleBucketsFormatter,
-)
-from neuro_cli.formatters.utils import (
-    URIFormatter,
-    get_datetime_formatter,
-    uri_formatter,
-)
-from neuro_cli.parse_utils import parse_timedelta
-from neuro_cli.utils import format_size, parse_org_name
-
 from .const import EX_OSFILE
 from .formatters.blob_storage import (
     BaseBlobFormatter,
     LongBlobFormatter,
     SimpleBlobFormatter,
 )
+from .formatters.bucket_credentials import (
+    BaseBucketCredentialsFormatter,
+    BucketCredentialFormatter,
+    BucketCredentialsFormatter,
+    SimpleBucketCredentialsFormatter,
+)
+from .formatters.buckets import (
+    BaseBucketsFormatter,
+    BucketFormatter,
+    BucketsFormatter,
+    SimpleBucketsFormatter,
+)
 from .formatters.storage import DeleteProgress, create_storage_progress, get_painter
+from .formatters.utils import URIFormatter, get_datetime_formatter, uri_formatter
+from .parse_utils import parse_timedelta
 from .root import Root
 from .storage import calc_filters, calc_ignore_file_names, filter_option
 from .utils import (
     argument,
     command,
+    format_size,
     group,
     option,
+    parse_org_name,
     resolve_bucket,
     resolve_bucket_credential,
 )
@@ -87,10 +84,14 @@ def blob_storage() -> None:
     type=ORG,
     help="Look on a specified org (the current org by default).",
 )
+@option("--all-orgs", is_flag=True, default=False, help="Show buckets in all orgs.")
 @option(
     "--project",
     type=PROJECT,
     help="Look on a specified project (the current project by default).",
+)
+@option(
+    "--all-projects", is_flag=True, default=False, help="Show buckets in all projects."
 )
 @option("--full-uri", is_flag=True, help="Output full bucket URI.")
 @option("--long-format", is_flag=True, help="Output all info about bucket.")
@@ -100,7 +101,9 @@ async def lsbucket(
     long_format: bool,
     cluster: Optional[str],
     org: Optional[str],
+    all_orgs: bool,
     project: Optional[str],
+    all_projects: bool,
 ) -> None:
     """
     List buckets.
@@ -113,7 +116,7 @@ async def lsbucket(
         else:
             uri_fmtr = uri_formatter(
                 project_name=root.client.config.project_name_or_raise,
-                cluster_name=cluster or root.client.cluster_name,
+                cluster_name=root.client.cluster_name,
                 org_name=root.client.config.org_name,
             )
         buckets_fmtr = BucketsFormatter(
@@ -122,13 +125,22 @@ async def lsbucket(
             long_format=long_format,
         )
 
-    org_name = parse_org_name(org, root)
+    if all_orgs:
+        org_name = ORG_NAME_SENTINEL
+    else:
+        org_name = parse_org_name(org, root)  # type: ignore
+
+    if all_projects:
+        project_name = None
+    else:
+        project_name = project or root.client.config.project_name_or_raise
+
     buckets = []
     with root.status("Fetching buckets") as status:
         async with root.client.buckets.list(
             cluster_name=cluster,
             org_name=org_name,
-            project_name=project or root.client.config.project_name_or_raise,
+            project_name=project_name,
         ) as it:
             async for bucket in it:
                 buckets.append(bucket)
@@ -1051,7 +1063,7 @@ async def sign_url(
         path, int(expires_delta.total_seconds())
     )
 
-    root.print(signed_url)
+    root.print(signed_url, soft_wrap=True)
 
 
 # Bucket credentials commands
@@ -1129,7 +1141,7 @@ async def mkcredentials(
     name: Optional[str] = None,
     cluster: Optional[str] = None,
     org: Optional[str] = None,
-    project_name: Optional[str] = None,
+    project: Optional[str] = None,
     read_only: bool = False,
 ) -> None:
     """
@@ -1142,7 +1154,7 @@ async def mkcredentials(
             client=root.client,
             cluster_name=cluster,
             org_name=org_name,
-            project_name=project_name,
+            project_name=project,
         )
         for bucket in buckets
     ]
