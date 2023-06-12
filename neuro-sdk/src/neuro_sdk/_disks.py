@@ -2,7 +2,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, AsyncIterator, Mapping, Optional, Union
+from typing import Any, AsyncIterator, Dict, Mapping, Optional, Union
 
 from dateutil.parser import isoparse
 from yarl import URL
@@ -134,13 +134,12 @@ class Disks(metaclass=NoPublicConstructor):
         self,
         disk_id_or_name: str,
         cluster_name: Optional[str] = None,
-        owner: Optional[str] = None,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        project_name: Optional[str] = None,
     ) -> Disk:
         url = self._get_disks_url(cluster_name) / disk_id_or_name
         auth = await self._config._api_auth()
-        params = {}
-        if owner:
-            params["owner"] = owner
+        params = self._get_url_params(org_name, project_name)
         async with self._core.request("GET", url, auth=auth, params=params) as resp:
             payload = await resp.json()
             return self._parse_disk_payload(payload)
@@ -149,12 +148,28 @@ class Disks(metaclass=NoPublicConstructor):
         self,
         disk_id_or_name: str,
         cluster_name: Optional[str] = None,
-        owner: Optional[str] = None,
+        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        project_name: Optional[str] = None,
     ) -> None:
         url = self._get_disks_url(cluster_name) / disk_id_or_name
         auth = await self._config._api_auth()
-        params = {}
-        if owner:
-            params["owner"] = owner
+        params = self._get_url_params(org_name, project_name)
         async with self._core.request("DELETE", url, auth=auth, params=params):
             pass
+
+    def _get_url_params(
+        self,
+        org_name: Union[Optional[str], OrgNameSentinel],
+        project_name: Optional[str],
+    ) -> Dict[str, str]:
+        params = {
+            "project_name": project_name or self._config.project_name_or_raise,
+        }
+        org_name_val = (
+            org_name
+            if not isinstance(org_name, OrgNameSentinel)
+            else self._config.org_name
+        )
+        if org_name_val:
+            params["org_name"] = org_name_val
+        return params

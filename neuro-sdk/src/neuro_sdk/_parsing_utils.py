@@ -215,7 +215,7 @@ class _ImageNameParser:
         if not image:
             raise ValueError("empty image name")
         if image.startswith("-"):
-            raise ValueError(f"image cannot start with dash")
+            raise ValueError("image cannot start with dash")
         if image == "image:latest":
             raise ValueError(
                 "ambiguous value: valid as both local and remote image name"
@@ -259,7 +259,7 @@ class _ImageNameParser:
 
         name, tag = self._split_image_name(url.path.lstrip("/"), default_tag)
         if url.host is None:
-            # This is short url, either image:name or image:/username/name
+            # This is short url, either image:name or image:/project/name
             cluster_name = self._default_cluster
             org_name = self._default_org_name
         else:
@@ -268,7 +268,7 @@ class _ImageNameParser:
         if url.path.startswith("/"):
             project_name, _, name = name.partition("/")
             if project_name == self._default_org_name and url.host:
-                # Long form with explicit org name (image://cluster/org/user/image)
+                # Long form with explicit org name (image://cluster/org/project/image)
                 org_name = project_name
                 project_name, _, name = name.partition("/")
             if not name:

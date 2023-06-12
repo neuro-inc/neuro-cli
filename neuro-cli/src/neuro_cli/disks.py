@@ -211,17 +211,39 @@ async def create(
     type=CLUSTER,
     help="Look on a specified cluster (the current cluster by default).",
 )
+@option(
+    "--org",
+    type=ORG,
+    help="Look on a specified org (the current org by default).",
+)
+@option(
+    "--project",
+    type=PROJECT,
+    help="Look on a specified project (the current project by default).",
+)
 @argument(
     "disk", type=UnionType("disk", PlatformURIType(allowed_schemes=("disk",)), DISK)
 )
 @option("--full-uri", is_flag=True, help="Output full disk URI.")
 async def get(
-    root: Root, cluster: Optional[str], disk: Union[str, URL], full_uri: bool
+    root: Root,
+    cluster: Optional[str],
+    org: Optional[str],
+    project: Optional[str],
+    disk: Union[str, URL],
+    full_uri: bool,
 ) -> None:
     """
     Get disk DISK_ID.
     """
-    disk_id = await resolve_disk(disk, client=root.client, cluster_name=cluster)
+    org_name = parse_org_name(org, root)
+    disk_id = await resolve_disk(
+        disk,
+        client=root.client,
+        cluster_name=cluster,
+        org_name=org_name,
+        project_name=project,
+    )
     disk_obj = await root.client.disks.get(disk_id, cluster_name=cluster)
 
     if full_uri:
@@ -229,7 +251,7 @@ async def get(
     else:
         uri_fmtr = uri_formatter(
             project_name=root.client.config.project_name_or_raise,
-            cluster_name=cluster or root.client.cluster_name,
+            cluster_name=root.client.cluster_name,
             org_name=root.client.config.org_name,
         )
     disk_fmtr = DiskFormatter(
@@ -245,18 +267,41 @@ async def get(
     type=CLUSTER,
     help="Perform on a specified cluster (the current cluster by default).",
 )
+@option(
+    "--org",
+    type=ORG,
+    help="Perform on a specified org (the current org by default).",
+)
+@option(
+    "--project",
+    type=PROJECT,
+    help="Perform on a specified project (the current project by default).",
+)
 @argument(
     "disks",
     type=UnionType("disk", PlatformURIType(allowed_schemes=("disk",)), DISK),
     nargs=-1,
     required=True,
 )
-async def rm(root: Root, cluster: Optional[str], disks: Sequence[str]) -> None:
+async def rm(
+    root: Root,
+    cluster: Optional[str],
+    org: Optional[str],
+    project: Optional[str],
+    disks: Sequence[str],
+) -> None:
     """
     Remove disk DISK_ID.
     """
+    org_name = parse_org_name(org, root)
     for disk in disks:
-        disk_id = await resolve_disk(disk, client=root.client, cluster_name=cluster)
+        disk_id = await resolve_disk(
+            disk,
+            client=root.client,
+            cluster_name=cluster,
+            org_name=org_name,
+            project_name=project,
+        )
         await root.client.disks.rm(disk_id, cluster_name=cluster)
         if root.verbosity >= 0:
             root.print(f"Disk with id '{disk_id}' was successfully removed.")

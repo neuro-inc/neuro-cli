@@ -14,6 +14,8 @@ def test_module_for_public_names() -> None:
         if isinstance(obj, URL):
             # Default API url
             continue
+        if obj == OrgNameSentinel:
+            continue
         if isinstance(obj, OrgNameSentinel):
             continue
         if hasattr(obj, "__module__"):
