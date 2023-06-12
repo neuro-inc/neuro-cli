@@ -24,10 +24,10 @@ Cluster administration commands.
 | [_add-resource-preset_](admin.md#add-resource-preset) | Add new resource preset |
 | [_add-user-credits_](admin.md#add-user-credits) | Add given values to user quota |
 | [_generate-cluster-config_](admin.md#generate-cluster-config) | Create a cluster configuration file |
+| [_get-cluster-orgs_](admin.md#get-cluster-orgs) | Print the list of all orgs in the cluster |
 | [_get-cluster-users_](admin.md#get-cluster-users) | List users in specified cluster |
 | [_get-clusters_](admin.md#get-clusters) | Print the list of available clusters |
 | [_get-org-cluster-quota_](admin.md#get-org-cluster-quota) | Get info about org quota in given cluster |
-| [_get-org-clusters_](admin.md#get-org-clusters) | Print the list of all orgs in the cluster |
 | [_get-org-users_](admin.md#get-org-users) | List users in specified org |
 | [_get-orgs_](admin.md#get-orgs) | Print the list of available orgs |
 | [_get-project-users_](admin.md#get-project-users) | List users in specified project |
@@ -328,6 +328,27 @@ Create a cluster configuration file.
 
 
 
+### get-cluster-orgs
+
+Print the list of all orgs in the cluster
+
+
+#### Usage
+
+```bash
+neuro admin get-cluster-orgs [OPTIONS] CLUSTER_NAME
+```
+
+Print the list of all orgs in the cluster
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+
+
+
 ### get-cluster-users
 
 List users in specified cluster
@@ -384,27 +405,6 @@ neuro admin get-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
 Get info about org quota in given cluster
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-
-
-
-### get-org-clusters
-
-Print the list of all orgs in the cluster
-
-
-#### Usage
-
-```bash
-neuro admin get-org-clusters [OPTIONS] CLUSTER_NAME
-```
-
-Print the list of all orgs in the cluster
 
 #### Options
 

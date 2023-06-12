@@ -381,7 +381,7 @@ def test_list_org_clusters(
     helper: Helper, tmp_test_org: str, tmp_test_cluster: str
 ) -> None:
     helper.run_cli(["admin", "add-org-cluster", tmp_test_cluster, tmp_test_org])
-    captured = helper.run_cli(["admin", "get-org-clusters", tmp_test_cluster])
+    captured = helper.run_cli(["admin", "get-cluster-orgs", tmp_test_cluster])
     org_cluster_lines = captured.out.split("\n")[3:]
     assert any(
         tmp_test_org in line and tmp_test_cluster in line for line in org_cluster_lines
@@ -397,7 +397,7 @@ def test_remove_org_cluster(
     helper.run_cli(
         ["admin", "remove-org-cluster", "--force", tmp_test_cluster, tmp_test_org]
     )
-    captured = helper.run_cli(["admin", "get-org-clusters", tmp_test_cluster])
+    captured = helper.run_cli(["admin", "get-cluster-orgs", tmp_test_cluster])
     assert tmp_test_org not in captured.out
 
 
