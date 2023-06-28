@@ -21,10 +21,10 @@
 		* [neuro admin add-resource-preset](#neuro-admin-add-resource-preset)
 		* [neuro admin add-user-credits](#neuro-admin-add-user-credits)
 		* [neuro admin generate-cluster-config](#neuro-admin-generate-cluster-config)
+		* [neuro admin get-cluster-orgs](#neuro-admin-get-cluster-orgs)
 		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
 		* [neuro admin get-clusters](#neuro-admin-get-clusters)
 		* [neuro admin get-org-cluster-quota](#neuro-admin-get-org-cluster-quota)
-		* [neuro admin get-org-clusters](#neuro-admin-get-org-clusters)
 		* [neuro admin get-org-users](#neuro-admin-get-org-users)
 		* [neuro admin get-orgs](#neuro-admin-get-orgs)
 		* [neuro admin get-project-users](#neuro-admin-get-project-users)
@@ -462,10 +462,10 @@ Name | Description|
 | _[neuro admin add\-resource-preset](#neuro-admin-add-resource-preset)_| Add new resource preset |
 | _[neuro admin add\-user-credits](#neuro-admin-add-user-credits)_| Add given values to user quota |
 | _[neuro admin generate\-cluster-config](#neuro-admin-generate-cluster-config)_| Create a cluster configuration file |
+| _[neuro admin get\-cluster-orgs](#neuro-admin-get-cluster-orgs)_| Print the list of all orgs in the cluster |
 | _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| List users in specified cluster |
 | _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
 | _[neuro admin get\-org-cluster-quota](#neuro-admin-get-org-cluster-quota)_| Get info about org quota in given cluster |
-| _[neuro admin get\-org-clusters](#neuro-admin-get-org-clusters)_| Print the list of all orgs in the cluster |
 | _[neuro admin get\-org-users](#neuro-admin-get-org-users)_| List users in specified org |
 | _[neuro admin get-orgs](#neuro-admin-get-orgs)_| Print the list of available orgs |
 | _[neuro admin get\-project-users](#neuro-admin-get-project-users)_| List users in specified project |
@@ -734,6 +734,25 @@ Name | Description|
 
 
 
+### neuro admin get-cluster-orgs
+
+Print the list of all orgs in the cluster
+
+**Usage:**
+
+```bash
+neuro admin get-cluster-orgs [OPTIONS] CLUSTER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+
+
+
+
 ### neuro admin get-cluster-users
 
 List users in specified cluster
@@ -782,25 +801,6 @@ Get info about org quota in given cluster
 
 ```bash
 neuro admin get-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-
-
-
-
-### neuro admin get-org-clusters
-
-Print the list of all orgs in the cluster
-
-**Usage:**
-
-```bash
-neuro admin get-org-clusters [OPTIONS] CLUSTER_NAME
 ```
 
 **Options:**

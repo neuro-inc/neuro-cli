@@ -1291,7 +1291,7 @@ async def remove_org_user(root: Root, org_name: str, user_name: str) -> None:
 
 @command()
 @argument("cluster_name", required=True, type=str)
-async def get_org_clusters(root: Root, cluster_name: str) -> None:
+async def get_cluster_orgs(root: Root, cluster_name: str) -> None:
     """
     Print the list of all orgs in the cluster
     """
@@ -2054,7 +2054,7 @@ admin.add_command(get_org_users)
 admin.add_command(add_org_user)
 admin.add_command(remove_org_user)
 
-admin.add_command(get_org_clusters)
+admin.add_command(get_cluster_orgs)
 admin.add_command(add_org_cluster)
 admin.add_command(update_org_cluster)
 admin.add_command(remove_org_cluster)
