@@ -5,6 +5,38 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 23.7.0 (2023-07-03)
+=================================
+
+Features
+--------
+
+- Commands `neuro run`, `neuro logs`, `neuro attach` and `neuro exec` in non-quiet mode now prints details for cancelled and failed jobs. Also improved other indications of the job status. ([#2800](https://github.com/neuro-inc/platform-client-python/issues/2800))
+- Commands `neuro run` and `neuro attach` now re-attach to restarted jobs. Previously they waited until the job finished. ([#2802](https://github.com/neuro-inc/platform-client-python/issues/2802))
+- Added support of cluster energy schedules.
+  `neuro config show --energy` will display awailable energy schedule periods.
+  `neuro run --schedule-name <energy-schedule-name>` will run the job within the specified <energy-schedule-name>. Note - the selected preset should have an enabled scheduler.
+  `neuro status <job-id>` will include the energy schedule name if one was used for running the job. ([#2903](https://github.com/neuro-inc/platform-client-python/issues/2903))
+- Added Python 3.11 support. ([#2908](https://github.com/neuro-inc/platform-client-python/issues/2908))
+- Add `neuro config switch-project` command. ([#2940](https://github.com/neuro-inc/platform-client-python/issues/2940))
+- Support projects in storage commands, make project directory default instead of user home directory. ([#2949](https://github.com/neuro-inc/platform-client-python/issues/2949))
+- Support projects in image commands. ([#2950](https://github.com/neuro-inc/platform-client-python/issues/2950))
+- Support projects in `neuro secret` cli. ([#2952](https://github.com/neuro-inc/platform-client-python/issues/2952))
+- Support projects in `neuro blob` cli commands and `neuro-sdk`. ([#2954](https://github.com/neuro-inc/platform-client-python/issues/2954))
+- Add project support in `neuro job` commands. ([#2955](https://github.com/neuro-inc/platform-client-python/issues/2955))
+- Support projects in disk CLI commands and SDK methods. ([#2960](https://github.com/neuro-inc/platform-client-python/issues/2960))
+- Support projects in service account CLI commands and SDK methods. ([#2965](https://github.com/neuro-inc/platform-client-python/issues/2965))
+- Unhide remove-project command. ([#2976](https://github.com/neuro-inc/platform-client-python/issues/2976))
+- Align all `ls` command options. ([#2995](https://github.com/neuro-inc/platform-client-python/issues/2995))
+
+
+Bugfixes
+--------
+
+- Fix human-readable datetime formatter to correctly report jobs lifespan ending in future ([#2933](https://github.com/neuro-inc/platform-client-python/issues/2933))
+- Update projects after fetching config from server. ([#2992](https://github.com/neuro-inc/platform-client-python/issues/2992))
+
+
 Neuro SDK/CLI 22.7.1 (2022-07-27)
 =================================
 
