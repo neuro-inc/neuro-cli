@@ -259,13 +259,14 @@ class Parser(metaclass=NoPublicConstructor):
         id_or_name_or_uri: str,
         *,
         allowed_schemes: Iterable[str] = (),
+        project_name: Optional[str] = None,
         cluster_name: Optional[str] = None,
         org_name: Union[None, str, _Unset] = _Unset(),
         short: bool = False,
     ) -> URL:
         ret = uri_from_cli(
             id_or_name_or_uri,
-            self._config.project_name_or_raise,
+            project_name or self._config.project_name_or_raise,
             cluster_name or self._config.cluster_name,
             org_name if not isinstance(org_name, _Unset) else self._config.org_name,
             allowed_schemes=allowed_schemes,
@@ -298,6 +299,7 @@ class Parser(metaclass=NoPublicConstructor):
         uri: URL,
         *,
         allowed_schemes: Iterable[str] = (),
+        project_name: Optional[str] = None,
         cluster_name: Optional[str] = None,
         org_name: Union[None, str, _Unset] = _Unset(),
         short: bool = False,
@@ -305,7 +307,7 @@ class Parser(metaclass=NoPublicConstructor):
         _check_scheme(uri.scheme, allowed_schemes)
         ret = _normalize_uri(
             uri,
-            self._config.project_name_or_raise,
+            project_name or self._config.project_name_or_raise,
             cluster_name or self._config.cluster_name,
             org_name if not isinstance(org_name, _Unset) else self._config.org_name,
         )
