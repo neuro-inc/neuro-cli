@@ -5,6 +5,12 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 23.10.0 (2023-10-26)
+==================================
+
+No significant changes.
+
+
 Neuro SDK/CLI 23.7.0 (2023-07-03)
 =================================
 
