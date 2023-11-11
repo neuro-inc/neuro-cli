@@ -51,9 +51,19 @@ def _make_session(
 async def __make_session(
     timeout: aiohttp.ClientTimeout, trace_configs: Optional[List[aiohttp.TraceConfig]]
 ) -> aiohttp.ClientSession:
+    import warnings
+
     from . import __version__
 
-    ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+    with warnings.catch_warnings():
+        # TODO (A.K., 2023-03-15): Use PROTOCOL_TLS_CLIENT
+        # Starting from 3.10, ssl.PROTOCOL_TLS
+        # is deprecated in favor of PROTOCOL_TLS_CLIENT/SERVER
+        # Simply changing to CLIENT caused more errors with CAs,
+        # this (temporary) fix will allow some failing tests in platform services
+        # (that depend on neuro-sdk) to pass, e.g. platform-monitoring
+        warnings.filterwarnings("ignore", category=DeprecationWarning)
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
     ssl_context.load_verify_locations(capath=certifi.where())
     connector = aiohttp.TCPConnector(ssl=ssl_context)
     return aiohttp.ClientSession(
