@@ -10,7 +10,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuro_sdk import IllegalArgumentError, ServerNotAvailable
+from neuro_sdk import BadGateway, IllegalArgumentError
 from neuro_sdk._core import (
     _Core,
     _ensure_schema,
@@ -125,7 +125,7 @@ async def test_server_bad_gateway(
 
     async with api_factory(srv.make_url("/")) as api:
         url = srv.make_url("test")
-        with pytest.raises(ServerNotAvailable, match="^502: Bad Gateway$"):
+        with pytest.raises(BadGateway, match="^502: Bad Gateway$"):
             async with api.request(method="GET", url=url, auth="auth") as resp:
                 assert resp.status == 200
 

@@ -591,7 +591,7 @@ def main(args: Optional[List[str]] = None) -> None:
         log.exception(f"Application error ({_err_to_str(error)})")
         sys.exit(EX_SOFTWARE)
 
-    except neuro_sdk.ServerNotAvailable as error:
+    except neuro_sdk.BadGateway as error:
         log.exception(f"Application error ({_err_to_str(error)})")
         sys.exit(EX_PLATFORMERROR)
 
