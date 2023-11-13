@@ -42,6 +42,11 @@ class ServerNotAvailable(ValueError):
 
 
 @rewrite_module
+class BadGateway(ValueError):
+    pass
+
+
+@rewrite_module
 class ConfigLoadException(Exception):
     pass
 

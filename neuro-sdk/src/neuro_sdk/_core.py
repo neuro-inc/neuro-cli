@@ -27,6 +27,7 @@ from yarl import URL
 from ._errors import (
     AuthenticationError,
     AuthorizationError,
+    BadGateway,
     ClientError,
     IllegalArgumentError,
     ResourceNotFound,
@@ -77,7 +78,8 @@ class _Core:
             403: AuthorizationError,
             404: ResourceNotFound,
             405: ClientError,
-            502: ServerNotAvailable,
+            502: BadGateway,
+            503: ServerNotAvailable,
         }
         self._prev_cookie: Optional[Morsel[str]] = None
 
