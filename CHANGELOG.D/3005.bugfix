@@ -1,0 +1,1 @@
+Do not perform terminal settings reset in PyCharm while it causes screen cleanup.
