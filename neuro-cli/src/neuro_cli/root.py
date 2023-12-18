@@ -142,7 +142,10 @@ class Root:
         finally:
             sys.stderr = sys.__stderr__
 
-        self.soft_reset_tty()
+        if os.environ.get("TERMINAL_EMULATOR") not in (
+            "JetBrains-JediTerm",  # https://github.com/JetBrains/jediterm/issues/273
+        ):
+            self.soft_reset_tty()
 
     def run(self, main: Awaitable[_T]) -> _T:
         return self._runner.run(main)
