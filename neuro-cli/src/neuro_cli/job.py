@@ -9,10 +9,14 @@ from contextlib import AsyncExitStack
 from datetime import datetime, timedelta, timezone
 from typing import AsyncIterator, List, Optional, Sequence, Set, Tuple
 
-import async_timeout
 import click
 from dateutil.parser import isoparse
 from yarl import URL
+
+if sys.version_info >= (3, 11):
+    import asyncio as async_timeout
+else:
+    import async_timeout
 
 from neuro_sdk import (
     PASS_CONFIG_ENV_NAME,
