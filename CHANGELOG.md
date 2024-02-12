@@ -5,6 +5,12 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 24.2.0 (2024-02-12)
+=================================
+
+No significant changes.
+
+
 Neuro SDK/CLI 24.1.0 (2024-01-02)
 =================================
 
