@@ -369,9 +369,11 @@ class Jobs(metaclass=NoPublicConstructor):
             schedule_timeout=schedule_timeout,
             restart_policy=restart_policy,
             life_span=life_span,
-            org_name=org_name
-            if not isinstance(org_name, OrgNameSentinel)
-            else self._config.org_name,
+            org_name=(
+                org_name
+                if not isinstance(org_name, OrgNameSentinel)
+                else self._config.org_name
+            ),
             priority=priority,
         )
         payload["container"] = _container_to_api(
@@ -455,9 +457,11 @@ class Jobs(metaclass=NoPublicConstructor):
             restart_policy=restart_policy,
             life_span=life_span,
             privileged=privileged,
-            org_name=org_name
-            if not isinstance(org_name, OrgNameSentinel)
-            else self._config.org_name,
+            org_name=(
+                org_name
+                if not isinstance(org_name, OrgNameSentinel)
+                else self._config.org_name
+            ),
             priority=priority,
             energy_schedule_name=energy_schedule_name,
         )
@@ -1217,13 +1221,11 @@ def _disk_volume_from_api(data: Dict[str, Any]) -> DiskVolume:
 
 
 @overload
-def _parse_datetime(dt: str) -> datetime:
-    ...
+def _parse_datetime(dt: str) -> datetime: ...
 
 
 @overload
-def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:
-    ...
+def _parse_datetime(dt: Optional[str]) -> Optional[datetime]: ...
 
 
 def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:

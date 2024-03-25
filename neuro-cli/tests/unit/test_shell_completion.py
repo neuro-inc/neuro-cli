@@ -231,9 +231,11 @@ def test_storage_autocomplete(run_autocomplete: _RunAC) -> None:
                 child = uri / name
                 yield FileStatus(
                     path=name,
-                    type=FileStatusType.DIRECTORY
-                    if is_dir(child)
-                    else FileStatusType.FILE,
+                    type=(
+                        FileStatusType.DIRECTORY
+                        if is_dir(child)
+                        else FileStatusType.FILE
+                    ),
                     size=0,
                     modification_time=1234567890,
                     permission=Action.WRITE,
