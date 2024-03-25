@@ -132,17 +132,14 @@ def format_datetime_human(
 
 class DatetimeFormatter(Protocol):
     @overload
-    def __call__(self, when: Optional[datetime.datetime]) -> str:
-        ...
+    def __call__(self, when: Optional[datetime.datetime]) -> str: ...
 
     @overload
-    def __call__(self, when: Optional[datetime.datetime], *, precise: bool) -> str:
-        ...
+    def __call__(self, when: Optional[datetime.datetime], *, precise: bool) -> str: ...
 
     def __call__(
         self, when: Optional[datetime.datetime], *, precise: bool = True
-    ) -> str:
-        ...
+    ) -> str: ...
 
 
 def get_datetime_formatter(use_iso_format: bool) -> DatetimeFormatter:

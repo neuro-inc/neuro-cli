@@ -33,9 +33,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
             disks_url=URL("https://disks-dev.neu.ro"),
             buckets_url=URL("https://buckets-dev.neu.ro"),
             presets={
-                "cpu-small": Preset(
-                    credits_per_hour=Decimal("10"), cpu=1, memory=2**30
-                )
+                "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=1, memory=2**30)
             },
             name="first",
             orgs=[None],
@@ -49,9 +47,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
             disks_url=URL("https://disks2-dev.neu.ro"),
             buckets_url=URL("https://buckets2-dev.neu.ro"),
             presets={
-                "cpu-small": Preset(
-                    credits_per_hour=Decimal("10"), cpu=2, memory=2**30
-                )
+                "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=2, memory=2**30)
             },
             name="second",
             orgs=[None],
@@ -107,9 +103,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
             disks_url=URL("https://disks-dev.neu.ro"),
             buckets_url=URL("https://buckets-dev.neu.ro"),
             presets={
-                "cpu-small": Preset(
-                    credits_per_hour=Decimal("10"), cpu=1, memory=2**30
-                )
+                "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=1, memory=2**30)
             },
             name="first",
             orgs=[None],
@@ -123,9 +117,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
             disks_url=URL("https://disks2-dev.neu.ro"),
             buckets_url=URL("https://disks2-dev.neu.ro"),
             presets={
-                "cpu-small": Preset(
-                    credits_per_hour=Decimal("10"), cpu=2, memory=2**30
-                )
+                "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=2, memory=2**30)
             },
             name="second",
             orgs=[None],
@@ -183,9 +175,7 @@ def test_prompt_project(make_client: Callable[..., Client]) -> None:
             disks_url=URL("https://disks-dev.neu.ro"),
             buckets_url=URL("https://buckets-dev.neu.ro"),
             presets={
-                "cpu-small": Preset(
-                    credits_per_hour=Decimal("10"), cpu=1, memory=2**30
-                )
+                "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=1, memory=2**30)
             },
             orgs=[None],
         ),
@@ -243,9 +233,7 @@ def test_prompt_project_default(make_client: Callable[..., Client]) -> None:
             disks_url=URL("https://disks-dev.neu.ro"),
             buckets_url=URL("https://buckets-dev.neu.ro"),
             presets={
-                "cpu-small": Preset(
-                    credits_per_hour=Decimal("10"), cpu=1, memory=2**30
-                )
+                "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=1, memory=2**30)
             },
             orgs=[None],
         ),

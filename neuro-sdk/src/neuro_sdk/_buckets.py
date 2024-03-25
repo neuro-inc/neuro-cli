@@ -109,9 +109,9 @@ class BucketFS(FileSystem[PurePosixPath]):
             name=path.name,
             path=path,
             size=blob.size,
-            modification_time=blob.modified_at.timestamp()
-            if blob.modified_at
-            else None,
+            modification_time=(
+                blob.modified_at.timestamp() if blob.modified_at else None
+            ),
         )
 
     @asyncgeneratorcontextmanager
@@ -269,9 +269,11 @@ class Buckets(metaclass=NoPublicConstructor):
         auth = await self._config._api_auth()
         data = {
             "name": name,
-            "org_name": org_name
-            if not isinstance(org_name, OrgNameSentinel)
-            else self._config.org_name,
+            "org_name": (
+                org_name
+                if not isinstance(org_name, OrgNameSentinel)
+                else self._config.org_name
+            ),
             "project_name": project_name or self._config.project_name_or_raise,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
@@ -295,9 +297,11 @@ class Buckets(metaclass=NoPublicConstructor):
             "provider": provider.value,
             "provider_bucket_name": provider_bucket_name,
             "credentials": credentials,
-            "org_name": org_name
-            if not isinstance(org_name, OrgNameSentinel)
-            else self._config.org_name,
+            "org_name": (
+                org_name
+                if not isinstance(org_name, OrgNameSentinel)
+                else self._config.org_name
+            ),
             "project_name": project_name or self._config.project_name_or_raise,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:

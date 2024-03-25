@@ -244,9 +244,7 @@ async def test_get_cluster_name_from_local(
         assert client.config.disk_api_url == URL("https://disks-dev.neu.ro")
         assert client.config.bucket_api_url == URL("https://buckets-dev.neu.ro")
         assert client.config.presets == {
-            "cpu-small": Preset(
-                credits_per_hour=Decimal("10"), cpu=1, memory=2 * 2**30
-            )
+            "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=1, memory=2 * 2**30)
         }
 
         local_conf = proj_dir / ".neuro.toml"

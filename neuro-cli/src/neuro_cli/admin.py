@@ -1108,9 +1108,11 @@ async def update_resource_preset(
         raise ValueError(f"Preset '{preset_name}' does not exists")
 
     kwargs = {
-        "credits_per_hour": _parse_finite_decimal(credits_per_hour)
-        if credits_per_hour is not None
-        else None,
+        "credits_per_hour": (
+            _parse_finite_decimal(credits_per_hour)
+            if credits_per_hour is not None
+            else None
+        ),
         "cpu": cpu,
         "memory": memory,
         "gpu": gpu,

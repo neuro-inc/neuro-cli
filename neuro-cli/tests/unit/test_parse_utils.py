@@ -23,7 +23,7 @@ def test_parse_memory() -> None:
             parse_memory(bad_value)
 
     for number in [100, 200, 222, 42, 37]:
-        for (factor, suffix) in [
+        for factor, suffix in [
             (1, ""),
             (10**3, "k"),
             (10**6, "M"),
