@@ -22,7 +22,15 @@ from ._errors import ConfigError
 from ._login import AuthTokenClient, _AuthConfig, _AuthToken
 from ._plugins import ConfigScope, PluginManager, _ParamType
 from ._rewrite import rewrite_module
-from ._server_cfg import Cluster, Preset, Project, _ServerConfig, get_server_config
+from ._server_cfg import (
+    Cluster,
+    Preset,
+    Project,
+    ResourcePool,
+    TPUResource,
+    _ServerConfig,
+    get_server_config,
+)
 from ._utils import NoPublicConstructor, find_project_root, flat
 
 WIN32 = sys.platform == "win32"
@@ -99,6 +107,10 @@ class Config(metaclass=NoPublicConstructor):
     @property
     def username(self) -> str:
         return self._config_data.auth_token.username
+
+    @property
+    def resource_pools(self) -> Mapping[str, ResourcePool]:
+        return MappingProxyType(self._cluster.resource_pools)
 
     @property
     def presets(self) -> Mapping[str, Preset]:
@@ -639,6 +651,10 @@ def _deserialize_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
             secrets_url=URL(cluster_config["secrets_url"]),
             disks_url=URL(cluster_config["disks_url"]),
             buckets_url=URL(cluster_config["buckets_url"]),
+            resource_pools=dict(
+                _deserialize_resource_pool(data)
+                for data in cluster_config.get("resource_pools", [])
+            ),
             presets=dict(
                 _deserialize_resource_preset(data)
                 for data in cluster_config.get("presets", [])
@@ -648,6 +664,29 @@ def _deserialize_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
     return ret
 
 
+def _deserialize_resource_pool(payload: Dict[str, Any]) -> Tuple[str, ResourcePool]:
+    tpu = None
+    if "tpu" in payload:
+        tpu = TPUResource(
+            types=payload["tpu"]["types"],
+            software_versions=payload["tpu"]["software_versions"],
+            ipv4_cidr_block=payload["tpu"]["ipv4_cidr_block"],
+        )
+    resource_pool = ResourcePool(
+        min_size=payload["min_size"],
+        max_size=payload["max_size"],
+        cpu=payload["cpu"],
+        memory=payload["memory"],
+        disk_size=payload["disk_size"],
+        nvidia_gpu=payload.get("nvidia_gpu"),
+        amd_gpu=payload.get("amd_gpu"),
+        intel_gpu=payload.get("intel_gpu"),
+        tpu=tpu,
+        is_preemptible=payload.get("is_preemptible", False),
+    )
+    return (payload["name"], resource_pool)
+
+
 def _deserialize_resource_preset(payload: Dict[str, Any]) -> Tuple[str, Preset]:
     return (
         payload["name"],
@@ -655,12 +694,14 @@ def _deserialize_resource_preset(payload: Dict[str, Any]) -> Tuple[str, Preset]:
             credits_per_hour=Decimal(payload["credits_per_hour"]),
             cpu=payload["cpu"],
             memory=payload["memory"],
-            gpu=payload.get("gpu"),
-            gpu_model=payload.get("gpu_model"),
+            nvidia_gpu=payload.get("nvidia_gpu"),
+            amd_gpu=payload.get("amd_gpu"),
+            intel_gpu=payload.get("intel_gpu"),
             tpu_type=payload.get("tpu_type", None),
             tpu_software_version=payload.get("tpu_software_version", None),
             scheduler_enabled=payload.get("scheduler_enabled", False),
             preemptible_node=payload.get("preemptible_node", False),
+            resource_pool_names=payload.get("resource_pool_names", ()),
         ),
     )
 
@@ -778,6 +819,10 @@ def _serialize_clusters(clusters: Mapping[str, Cluster]) -> str:
             "secrets_url": str(cluster.secrets_url),
             "disks_url": str(cluster.disks_url),
             "buckets_url": str(cluster.buckets_url),
+            "resource_pools": [
+                _serialize_resource_pool(name, resource_pool)
+                for name, resource_pool in cluster.resource_pools.items()
+            ],
             "presets": [
                 _serialize_resource_preset(name, preset)
                 for name, preset in cluster.presets.items()
@@ -787,18 +832,42 @@ def _serialize_clusters(clusters: Mapping[str, Cluster]) -> str:
     return json.dumps(ret)
 
 
+def _serialize_resource_pool(name: str, resource_pool: ResourcePool) -> Dict[str, Any]:
+    result = {
+        "name": name,
+        "min_size": resource_pool.min_size,
+        "max_size": resource_pool.max_size,
+        "cpu": resource_pool.cpu,
+        "memory": resource_pool.memory,
+        "disk_size": resource_pool.disk_size,
+        "nvidia_gpu": resource_pool.nvidia_gpu,
+        "amd_gpu": resource_pool.amd_gpu,
+        "intel_gpu": resource_pool.intel_gpu,
+        "is_preemptible": resource_pool.is_preemptible,
+    }
+    if resource_pool.tpu:
+        result["tpu"] = {
+            "types": resource_pool.tpu.types,
+            "software_versions": resource_pool.tpu.software_versions,
+            "ipv4_cidr_block": resource_pool.tpu.ipv4_cidr_block,
+        }
+    return result
+
+
 def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
     return {
         "name": name,
         "credits_per_hour": str(preset.credits_per_hour),
         "cpu": preset.cpu,
         "memory": preset.memory,
-        "gpu": preset.gpu,
-        "gpu_model": preset.gpu_model,
+        "nvidia_gpu": preset.nvidia_gpu,
+        "amd_gpu": preset.amd_gpu,
+        "intel_gpu": preset.intel_gpu,
         "tpu_type": preset.tpu_type,
         "tpu_software_version": preset.tpu_software_version,
         "scheduler_enabled": preset.scheduler_enabled,
         "preemptible_node": preset.preemptible_node,
+        "resource_pool_names": preset.resource_pool_names,
     }
 
 

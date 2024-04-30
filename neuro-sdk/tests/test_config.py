@@ -18,6 +18,7 @@ from neuro_sdk import (
     PluginManager,
     Preset,
     Project,
+    ResourcePool,
 )
 from neuro_sdk._config import (
     _check_sections,
@@ -178,9 +179,20 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
             secrets_url=URL("https://secrets-dev.neu.ro"),
             disks_url=URL("https://disks-dev.neu.ro"),
             buckets_url=URL("https://buckets-dev.neu.ro"),
+            resource_pools={
+                "cpu": ResourcePool(
+                    min_size=1,
+                    max_size=2,
+                    cpu=7,
+                    memory=14 * 2**30,
+                    disk_size=150 * 2**30,
+                )
+            },
             presets={
                 "cpu-small": Preset(
-                    credits_per_hour=Decimal("10"), cpu=1, memory=2 * 2**30
+                    credits_per_hour=Decimal("10"),
+                    cpu=1,
+                    memory=2 * 2**30,
                 )
             },
         ),
@@ -194,9 +206,20 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
             secrets_url=URL("https://secrets2-dev.neu.ro"),
             disks_url=URL("https://disks2-dev.neu.ro"),
             buckets_url=URL("https://buckets2-dev.neu.ro"),
+            resource_pools={
+                "cpu": ResourcePool(
+                    min_size=1,
+                    max_size=2,
+                    cpu=7,
+                    memory=14 * 2**30,
+                    disk_size=150 * 2**30,
+                )
+            },
             presets={
                 "cpu-large": Preset(
-                    credits_per_hour=Decimal("10"), cpu=7, memory=14 * 2**30
+                    credits_per_hour=Decimal("10"),
+                    cpu=7,
+                    memory=14 * 2**30,
                 )
             },
         ),
@@ -210,9 +233,20 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
             secrets_url=URL("https://secrets3-dev.neu.ro"),
             disks_url=URL("https://disks3-dev.neu.ro"),
             buckets_url=URL("https://buckets3-dev.neu.ro"),
+            resource_pools={
+                "cpu": ResourcePool(
+                    min_size=1,
+                    max_size=2,
+                    cpu=7,
+                    memory=14 * 2**30,
+                    disk_size=150 * 2**30,
+                )
+            },
             presets={
                 "cpu-large": Preset(
-                    credits_per_hour=Decimal("10"), cpu=7, memory=14 * 2**30
+                    credits_per_hour=Decimal("10"),
+                    cpu=7,
+                    memory=14 * 2**30,
                 )
             },
         ),
@@ -245,7 +279,10 @@ async def test_get_cluster_name_from_local(
         assert client.config.bucket_api_url == URL("https://buckets-dev.neu.ro")
         assert client.config.presets == {
             "cpu-small": Preset(
-                credits_per_hour=Decimal("10"), cpu=1, memory=2 * 2**30
+                credits_per_hour=Decimal("10"),
+                cpu=1,
+                memory=2 * 2**30,
+                resource_pool_names=[],
             )
         }
 
@@ -260,7 +297,10 @@ async def test_get_cluster_name_from_local(
         assert client.config.bucket_api_url == URL("https://buckets2-dev.neu.ro")
         assert client.config.presets == {
             "cpu-large": Preset(
-                credits_per_hour=Decimal("10"), cpu=7, memory=14 * 2**30
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory=14 * 2**30,
+                resource_pool_names=[],
             )
         }
 
@@ -321,40 +361,74 @@ async def test_presets(
                 cpu=7,
                 memory=14336 * 2**20,
                 scheduler_enabled=False,
-                gpu=None,
-                gpu_model=None,
-                tpu_type=None,
-                tpu_software_version=None,
+                resource_pool_names=[],
             ),
             "cpu-small": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory=2048 * 2**20,
                 scheduler_enabled=False,
-                gpu=None,
-                gpu_model=None,
-                tpu_type=None,
-                tpu_software_version=None,
+                resource_pool_names=[],
             ),
-            "gpu-large": Preset(
+            "nvidia-gpu-large": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory=61440 * 2**20,
                 scheduler_enabled=False,
-                gpu=1,
-                gpu_model="nvidia-tesla-v100",
+                nvidia_gpu=1,
                 tpu_type=None,
                 tpu_software_version=None,
+                resource_pool_names=["nvidia-gpu"],
             ),
-            "gpu-small": Preset(
+            "nvidia-gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory=30720 * 2**20,
                 scheduler_enabled=False,
-                gpu=1,
-                gpu_model="nvidia-tesla-k80",
+                nvidia_gpu=1,
                 tpu_type=None,
                 tpu_software_version=None,
+                resource_pool_names=["nvidia-gpu"],
+            ),
+            "amd-gpu-large": Preset(
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory=61440 * 2**20,
+                scheduler_enabled=False,
+                amd_gpu=1,
+                tpu_type=None,
+                tpu_software_version=None,
+                resource_pool_names=["amd-gpu"],
+            ),
+            "amd-gpu-small": Preset(
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory=30720 * 2**20,
+                scheduler_enabled=False,
+                amd_gpu=1,
+                tpu_type=None,
+                tpu_software_version=None,
+                resource_pool_names=["amd-gpu"],
+            ),
+            "intel-gpu-large": Preset(
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory=61440 * 2**20,
+                scheduler_enabled=False,
+                intel_gpu=1,
+                tpu_type=None,
+                tpu_software_version=None,
+                resource_pool_names=["intel-gpu"],
+            ),
+            "intel-gpu-small": Preset(
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory=30720 * 2**20,
+                scheduler_enabled=False,
+                intel_gpu=1,
+                tpu_type=None,
+                tpu_software_version=None,
+                resource_pool_names=["intel-gpu"],
             ),
         }
 
@@ -398,6 +472,7 @@ async def test_clusters(
                 secrets_url=srv.make_url("/secrets"),
                 disks_url=srv.make_url("/disk"),
                 buckets_url=srv.make_url("/buckets"),
+                resource_pools=mock.ANY,
                 presets=mock.ANY,
             ),
             "another": Cluster(
@@ -410,6 +485,7 @@ async def test_clusters(
                 secrets_url=srv.make_url("/secrets2"),
                 disks_url=srv.make_url("/disk2"),
                 buckets_url=srv.make_url("/buckets2"),
+                resource_pools=mock.ANY,
                 presets=mock.ANY,
             ),
         }
@@ -490,6 +566,16 @@ async def test_fetch(
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
                 "buckets_url": buckets_url,
+                "resource_pool_types": [
+                    {
+                        "name": "cpu",
+                        "min_size": 1,
+                        "max_size": 2,
+                        "cpu": 7,
+                        "memory": 14 * 2**30,
+                        "disk_size": 150 * 2**30,
+                    }
+                ],
                 "resource_presets": [
                     {
                         "name": "cpu-small",
@@ -530,16 +616,21 @@ async def test_fetch(
                 secrets_url=URL(secrets_url),
                 disks_url=URL(disks_url),
                 buckets_url=URL(buckets_url),
+                resource_pools={
+                    "cpu": ResourcePool(
+                        min_size=1,
+                        max_size=2,
+                        cpu=7,
+                        memory=14 * 2**30,
+                        disk_size=150 * 2**30,
+                    )
+                },
                 presets={
                     "cpu-small": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=2,
                         memory=2048 * 2**20,
                         scheduler_enabled=False,
-                        gpu=None,
-                        gpu_model=None,
-                        tpu_type=None,
-                        tpu_software_version=None,
                     )
                 },
             )
@@ -591,6 +682,16 @@ async def test_fetch_without_admin_url(
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
                 "buckets_url": buckets_url,
+                "resource_pool_types": [
+                    {
+                        "name": "cpu",
+                        "min_size": 1,
+                        "max_size": 2,
+                        "cpu": 7,
+                        "memory": 14 * 2**30,
+                        "disk_size": 150 * 2**30,
+                    }
+                ],
                 "resource_presets": [
                     {
                         "name": "cpu-small",
@@ -654,6 +755,16 @@ async def test_fetch_dropped_selected_cluster(
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
                 "buckets_url": buckets_url,
+                "resource_pool_types": [
+                    {
+                        "name": "cpu",
+                        "min_size": 1,
+                        "max_size": 2,
+                        "cpu": 7,
+                        "memory": 14 * 2**30,
+                        "disk_size": 150 * 2**30,
+                    }
+                ],
                 "resource_presets": [
                     {
                         "name": "cpu-small",
@@ -972,6 +1083,16 @@ async def test_check_server_mismatch_clusters(
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
                 "buckets_url": buckets_url,
+                "resource_pool_types": [
+                    {
+                        "name": "cpu",
+                        "min_size": 1,
+                        "max_size": 2,
+                        "cpu": 7,
+                        "memory": 14 * 2**30,
+                        "disk_size": 150 * 2**30,
+                    }
+                ],
                 "resource_presets": [
                     {
                         "name": "cpu-small",
@@ -1038,6 +1159,16 @@ async def test_check_server_mismatch_auth(
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
                 "buckets_url": buckets_url,
+                "resource_pool_types": [
+                    {
+                        "name": "cpu",
+                        "min_size": 1,
+                        "max_size": 2,
+                        "cpu": 7,
+                        "memory": 14 * 2**30,
+                        "disk_size": 150 * 2**30,
+                    }
+                ],
                 "resource_presets": [
                     {
                         "name": "cpu-small",

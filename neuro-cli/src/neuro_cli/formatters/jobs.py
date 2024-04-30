@@ -126,11 +126,17 @@ class JobStatusFormatter:
         resources.add_column(style="bold", justify="right")
         resources.add_row("Memory", format_size(job_status.container.resources.memory))
         resources.add_row("CPU", f"{job_status.container.resources.cpu:0.1f}")
-        if job_status.container.resources.gpu:
+        if job_status.container.resources.nvidia_gpu:
             resources.add_row(
-                "GPU",
-                f"{job_status.container.resources.gpu:0.1f} x "
-                f"{job_status.container.resources.gpu_model}",
+                "Nvidia GPU", f"{job_status.container.resources.nvidia_gpu:0.1f}"
+            )
+        if job_status.container.resources.amd_gpu:
+            resources.add_row(
+                "AMD GPU", f"{job_status.container.resources.amd_gpu:0.1f}"
+            )
+        if job_status.container.resources.intel_gpu:
+            resources.add_row(
+                "Intel GPU", f"{job_status.container.resources.intel_gpu:0.1f}"
             )
 
         if job_status.container.resources.tpu_type:

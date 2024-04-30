@@ -111,7 +111,7 @@ def job_descr_no_name() -> JobDescription:
         ),
         container=Container(
             image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
-            resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+            resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
         ),
         scheduler_enabled=True,
         pass_config=True,
@@ -140,7 +140,7 @@ def job_descr() -> JobDescription:
         ),
         container=Container(
             image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
-            resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+            resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
         ),
         scheduler_enabled=True,
         pass_config=True,
@@ -185,11 +185,12 @@ def make_job(
             command="test-command",
             image=RemoteImage.new_external_image(name="test-image"),
             resources=Resources(
-                16,
-                0.1,
-                4,
-                "nvidia-tesla-p4",
-                True,
+                memory=16,
+                cpu=0.1,
+                nvidia_gpu=4,
+                amd_gpu=5,
+                intel_gpu=6,
+                shm=True,
                 tpu_type="v2-8",
                 tpu_software_version="1.14",
             ),
@@ -430,7 +431,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -474,7 +475,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
                 volumes=[
                     Volume(
@@ -523,7 +524,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -566,7 +567,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -608,7 +609,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -651,7 +652,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -695,7 +696,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -738,7 +739,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -774,7 +775,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=True,
             pass_config=True,
@@ -813,7 +814,7 @@ class TestJobOutputFormatter:
             container=Container(
                 image=RemoteImage.new_external_image(name="test-image"),
                 command="test-command",
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 tty=True,
             ),
             scheduler_enabled=True,
@@ -853,7 +854,7 @@ class TestJobOutputFormatter:
             container=Container(
                 image=RemoteImage.new_external_image(name="test-image"),
                 command="test-command",
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=True,
             pass_config=True,
@@ -897,7 +898,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -959,7 +960,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -1001,7 +1002,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -1044,7 +1045,7 @@ class TestJobOutputFormatter:
                 entrypoint="/usr/bin/make",
                 command="test",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -1094,7 +1095,7 @@ class TestJobOutputFormatter:
                     org_name=None,
                     project_name="test-project",
                 ),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
                 env={"ENV_NAME_1": "__value1__", "ENV_NAME_2": "**value2**"},
             ),
@@ -1145,7 +1146,7 @@ class TestJobOutputFormatter:
                     org_name=None,
                     project_name="test-project",
                 ),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
                 volumes=[
                     Volume(
@@ -1212,7 +1213,7 @@ class TestJobOutputFormatter:
                     org_name=None,
                     project_name="test-project",
                 ),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
                 volumes=[
                     Volume(
@@ -1271,7 +1272,7 @@ class TestJobOutputFormatter:
                     org_name=None,
                     project_name="test-project",
                 ),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
                 volumes=[
                     Volume(
@@ -1348,7 +1349,7 @@ class TestJobOutputFormatter:
                     org_name=None,
                     project_name="test-project",
                 ),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
                 disk_volumes=[
                     DiskVolume(
@@ -1416,7 +1417,7 @@ class TestJobOutputFormatter:
                     project_name="test-project",
                 ),
                 working_dir="/working/dir",
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 http=HTTPPort(port=80, requires_auth=True),
             ),
             scheduler_enabled=False,
@@ -1453,7 +1454,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -1492,7 +1493,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=True,
             preemptible_node=True,
@@ -1538,7 +1539,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -1579,7 +1580,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -1615,7 +1616,7 @@ class TestJobOutputFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=True,
             energy_schedule_name="some-schedule",
@@ -1904,7 +1905,7 @@ class TestSimpleJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
-                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                    resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 ),
                 scheduler_enabled=True,
                 pass_config=True,
@@ -1929,7 +1930,7 @@ class TestSimpleJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage.new_external_image(name="ubuntu", tag="latest"),
-                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                    resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 ),
                 scheduler_enabled=True,
                 pass_config=True,
@@ -1969,7 +1970,7 @@ class TestTabularJobRow:
             ),
             container=Container(
                 image=remote_image,
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 command="ls",
             ),
             scheduler_enabled=True,
@@ -2114,7 +2115,7 @@ class TestTabularJobsFormatter:
             ),
             container=Container(
                 image=RemoteImage.new_external_image(name="i", tag="l"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 command="c",
             ),
             scheduler_enabled=True,
@@ -2166,7 +2167,7 @@ class TestTabularJobsFormatter:
                     image=RemoteImage.new_external_image(
                         name="some-image-name", tag="with-long-tag"
                     ),
-                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                    resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                     command="ls -la /some/path",
                 ),
                 scheduler_enabled=True,
@@ -2203,7 +2204,7 @@ class TestTabularJobsFormatter:
                         org_name=None,
                         project_name="test-project",
                     ),
-                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                    resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                     command="ls -la /some/path",
                 ),
                 scheduler_enabled=True,
@@ -2242,7 +2243,7 @@ class TestTabularJobsFormatter:
             ),
             container=Container(
                 image=RemoteImage.new_external_image(name="i", tag="l"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 command="c",
             ),
             scheduler_enabled=True,
@@ -2284,7 +2285,7 @@ class TestTabularJobsFormatter:
                 ),
                 container=Container(
                     image=RemoteImage.new_external_image(name="i", tag="l"),
-                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                    resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                     command="c",
                 ),
                 scheduler_enabled=True,
@@ -2353,7 +2354,7 @@ class TestTabularJobsFormatter:
                 container=Container(
                     command="test-command",
                     image=RemoteImage.new_external_image(name="test-image"),
-                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                    resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 ),
                 scheduler_enabled=False,
                 pass_config=True,
@@ -2397,7 +2398,7 @@ class TestTabularJobsFormatter:
                 container=Container(
                     command="test-command",
                     image=RemoteImage.new_external_image(name="test-image"),
-                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                    resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                     working_dir=working_dir,
                 ),
                 scheduler_enabled=False,
@@ -2440,7 +2441,7 @@ class TestTabularJobsFormatter:
                 container=Container(
                     command="test-command",
                     image=RemoteImage.new_external_image(name="test-image"),
-                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                    resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 ),
                 scheduler_enabled=False,
                 pass_config=True,
@@ -2486,7 +2487,7 @@ class TestTabularJobsFormatter:
                 container=Container(
                     command="test-command",
                     image=RemoteImage.new_external_image(name="test-image"),
-                    resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                    resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
                 ),
                 scheduler_enabled=False,
                 pass_config=True,
@@ -2584,7 +2585,7 @@ class TestLifeSpanUpdateFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=False,
             pass_config=True,
@@ -2620,7 +2621,7 @@ class TestLifeSpanUpdateFormatter:
             container=Container(
                 command="test-command",
                 image=RemoteImage.new_external_image(name="test-image"),
-                resources=Resources(16 * 2**20, 0.1, 0, None, False, None, None),
+                resources=Resources(memory=16 * 2**20, cpu=0.1, shm=False),
             ),
             scheduler_enabled=False,
             pass_config=True,

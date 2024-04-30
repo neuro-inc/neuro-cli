@@ -12,7 +12,7 @@ import pytest
 from rich.console import Console, RenderableType
 from yarl import URL
 
-from neuro_sdk import Cluster, Factory, Preset, Project
+from neuro_sdk import Cluster, Factory, Preset, Project, ResourcePool
 from neuro_sdk._config import _AuthConfig, _AuthToken, _ConfigData
 
 from neuro_cli import __version__
@@ -36,26 +36,91 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         secrets_url=URL("https://secrets-dev.neu.ro"),
         disks_url=URL("https://disks-dev.neu.ro"),
         buckets_url=URL("https://buckets-dev.neu.ro"),
+        resource_pools={
+            "cpu": ResourcePool(
+                min_size=1,
+                max_size=2,
+                cpu=7,
+                memory=14 * 2**30,
+                disk_size=150 * 2**30,
+            ),
+            "nvidia-gpu": ResourcePool(
+                min_size=0,
+                max_size=1,
+                cpu=7,
+                memory=60 * 2**30,
+                disk_size=150 * 2**30,
+                nvidia_gpu=1,
+            ),
+            "amd-gpu": ResourcePool(
+                min_size=0,
+                max_size=1,
+                cpu=7,
+                memory=60 * 2**30,
+                disk_size=150 * 2**30,
+                amd_gpu=1,
+            ),
+            "intel-gpu": ResourcePool(
+                min_size=0,
+                max_size=1,
+                cpu=7,
+                memory=60 * 2**30,
+                disk_size=150 * 2**30,
+                intel_gpu=1,
+            ),
+        },
         presets={
-            "gpu-small": Preset(
+            "nvidia-gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory=30 * 2**30,
-                gpu=1,
-                gpu_model="nvidia-tesla-k80",
+                nvidia_gpu=1,
+                resource_pool_names=["nvidia-gpu"],
             ),
-            "gpu-large": Preset(
+            "nvidia-gpu-large": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory=60 * 2**30,
-                gpu=1,
-                gpu_model="nvidia-tesla-v100",
+                nvidia_gpu=1,
+                resource_pool_names=["nvidia-gpu"],
+            ),
+            "amd-gpu-small": Preset(
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory=30 * 2**30,
+                amd_gpu=1,
+                resource_pool_names=["amd-gpu"],
+            ),
+            "amd-gpu-large": Preset(
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory=60 * 2**30,
+                amd_gpu=1,
+                resource_pool_names=["amd-gpu"],
+            ),
+            "intel-gpu-small": Preset(
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory=30 * 2**30,
+                intel_gpu=1,
+                resource_pool_names=["intel-gpu"],
+            ),
+            "intel-gpu-large": Preset(
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory=60 * 2**30,
+                intel_gpu=1,
+                resource_pool_names=["intel-gpu"],
             ),
             "cpu-small": Preset(
-                credits_per_hour=Decimal("10"), cpu=7, memory=2 * 2**30
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory=2 * 2**30,
             ),
             "cpu-large": Preset(
-                credits_per_hour=Decimal("10"), cpu=7, memory=14 * 2**30
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory=14 * 2**30,
             ),
         },
         name="default",
@@ -69,9 +134,20 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         secrets_url=URL("https://secrets2-dev.neu.ro"),
         disks_url=URL("https://disks2-dev.neu.ro"),
         buckets_url=URL("https://buckets2-dev.neu.ro"),
+        resource_pools={
+            "cpu": ResourcePool(
+                min_size=1,
+                max_size=2,
+                cpu=7,
+                memory=14 * 2**30,
+                disk_size=150 * 2**30,
+            ),
+        },
         presets={
             "cpu-small": Preset(
-                credits_per_hour=Decimal("10"), cpu=7, memory=2 * 2**30
+                credits_per_hour=Decimal("10"),
+                cpu=7,
+                memory=2 * 2**30,
             ),
         },
         name="other",

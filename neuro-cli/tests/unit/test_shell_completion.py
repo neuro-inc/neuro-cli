@@ -231,9 +231,11 @@ def test_storage_autocomplete(run_autocomplete: _RunAC) -> None:
                 child = uri / name
                 yield FileStatus(
                     path=name,
-                    type=FileStatusType.DIRECTORY
-                    if is_dir(child)
-                    else FileStatusType.FILE,
+                    type=(
+                        FileStatusType.DIRECTORY
+                        if is_dir(child)
+                        else FileStatusType.FILE
+                    ),
                     size=0,
                     modification_time=1234567890,
                     permission=Action.WRITE,
@@ -621,7 +623,7 @@ def make_job(
         container=Container(
             command="test-command",
             image=RemoteImage.new_external_image(name="test-image"),
-            resources=Resources(16, 0.1, 0, None, True, None, None),
+            resources=Resources(memory=16, cpu=0.1, shm=True),
         ),
         scheduler_enabled=False,
         pass_config=False,

@@ -69,8 +69,9 @@ INVALID_IMAGE_NAME = "INVALID-IMAGE-NAME"
 class Resources:
     memory: int
     cpu: float
-    gpu: Optional[int] = None
-    gpu_model: Optional[str] = None
+    nvidia_gpu: Optional[int] = None
+    amd_gpu: Optional[int] = None
+    intel_gpu: Optional[int] = None
     shm: bool = True
     tpu_type: Optional[str] = None
     tpu_software_version: Optional[str] = None
@@ -881,9 +882,12 @@ def _resources_to_api(resources: Resources) -> Dict[str, Any]:
         "cpu": resources.cpu,
         "shm": resources.shm,
     }
-    if resources.gpu:
-        value["gpu"] = resources.gpu
-        value["gpu_model"] = resources.gpu_model
+    if resources.nvidia_gpu:
+        value["nvidia_gpu"] = resources.nvidia_gpu
+    if resources.amd_gpu:
+        value["amd_gpu"] = resources.amd_gpu
+    if resources.intel_gpu:
+        value["intel_gpu"] = resources.intel_gpu
     if resources.tpu_type:
         assert resources.tpu_software_version
         value["tpu"] = {
@@ -903,8 +907,9 @@ def _resources_from_api(data: Dict[str, Any]) -> Resources:
         memory=data["memory"],
         cpu=data["cpu"],
         shm=data.get("shm", True),
-        gpu=data.get("gpu", None),
-        gpu_model=data.get("gpu_model", None),
+        nvidia_gpu=data.get("nvidia_gpu", None),
+        amd_gpu=data.get("amd_gpu", None),
+        intel_gpu=data.get("intel_gpu", None),
         tpu_type=tpu_type,
         tpu_software_version=tpu_software_version,
     )
