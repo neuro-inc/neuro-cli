@@ -37,8 +37,9 @@ def test_resources_default() -> None:
     assert resources.memory == 16 * 2**20
     assert resources.memory_mb == 16
     assert resources.cpu == 0.5
-    assert resources.gpu is None
-    assert resources.gpu_model is None
+    assert resources.nvidia_gpu is None
+    assert resources.amd_gpu is None
+    assert resources.intel_gpu is None
     assert resources.shm is True
     assert resources.tpu_type is None
     assert resources.tpu_software_version is None
@@ -592,8 +593,7 @@ async def test_status_failed(
                 "memory": 4096 * 2**20,
                 "cpu": 7.0,
                 "shm": True,
-                "gpu": 1,
-                "gpu_model": "test-gpu-model",
+                "nvidia_gpu": 1,
             },
             "volumes": [
                 {
@@ -658,8 +658,7 @@ async def test_status_being_dropped(
                 "memory": 4096 * 2**20,
                 "cpu": 7.0,
                 "shm": True,
-                "gpu": 1,
-                "gpu_model": "test-gpu-model",
+                "nvidia_gpu": 1,
             },
             "volumes": [
                 {
@@ -722,8 +721,7 @@ async def test_status_with_http(
                 "memory": 4096 * 2**20,
                 "cpu": 7.0,
                 "shm": True,
-                "gpu": 1,
-                "gpu_model": "test-gpu-model",
+                "nvidia_gpu": 1,
             },
             "volumes": [
                 {
@@ -784,8 +782,7 @@ async def test_status_with_tpu(
                 "memory": 4096 * 2**20,
                 "cpu": 7.0,
                 "shm": True,
-                "gpu": 1,
-                "gpu_model": "test-gpu-model",
+                "nvidia_gpu": 1,
                 "tpu": {"type": "v3-8", "software_version": "1.14"},
             },
             "volumes": [
@@ -864,9 +861,8 @@ async def test_job_start(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
         },
         "http_url": "http://my_host:8889",
@@ -957,9 +953,8 @@ async def test_job_start_with_privileged_flag(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
         },
         "http_url": "http://my_host:8889",
@@ -1024,9 +1019,8 @@ async def test_job_start_with_priority(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
         },
         "http_url": "http://my_host:8889",
@@ -1129,9 +1123,10 @@ async def test_job_run(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
+                "amd_gpu": 2,
+                "intel_gpu": 3,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
         },
         "http_url": "http://my_host:8889",
@@ -1150,8 +1145,9 @@ async def test_job_run(
                     "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
-                    "gpu": 1,
-                    "gpu_model": "test-gpu-model",
+                    "nvidia_gpu": 1,
+                    "amd_gpu": 2,
+                    "intel_gpu": 3,
                 },
                 "volumes": [
                     {
@@ -1180,7 +1176,14 @@ async def test_job_run(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(
+            memory=16384 * 2**20,
+            cpu=7,
+            nvidia_gpu=1,
+            amd_gpu=2,
+            intel_gpu=3,
+            shm=True,
+        )
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -1229,9 +1232,8 @@ async def test_job_run_with_wait_for_quota(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
         },
         "http_url": "http://my_host:8889",
@@ -1249,8 +1251,7 @@ async def test_job_run_with_wait_for_quota(
                     "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
-                    "gpu": 1,
-                    "gpu_model": "test-gpu-model",
+                    "nvidia_gpu": 1,
                 },
             },
             "scheduler_enabled": False,
@@ -1268,7 +1269,7 @@ async def test_job_run_with_wait_for_quota(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(memory=16384 * 2**20, cpu=7, nvidia_gpu=1, shm=True)
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
@@ -1309,9 +1310,8 @@ async def test_job_run_with_name_and_description(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
         },
         "http_url": "http://my_host:8889",
@@ -1330,8 +1330,7 @@ async def test_job_run_with_name_and_description(
                     "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
-                    "gpu": 1,
-                    "gpu_model": "test-gpu-model",
+                    "nvidia_gpu": 1,
                 },
                 "volumes": [
                     {
@@ -1362,7 +1361,7 @@ async def test_job_run_with_name_and_description(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(memory=16384 * 2**20, cpu=7, nvidia_gpu=1, shm=True)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -1417,9 +1416,8 @@ async def test_job_run_with_tags(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
         },
         "http_url": "http://my_host:8889",
@@ -1438,8 +1436,7 @@ async def test_job_run_with_tags(
                     "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
-                    "gpu": 1,
-                    "gpu_model": "test-gpu-model",
+                    "nvidia_gpu": 1,
                 },
                 "volumes": [
                     {
@@ -1469,7 +1466,7 @@ async def test_job_run_with_tags(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(memory=16384 * 2**20, cpu=7, nvidia_gpu=1, shm=True)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -1523,9 +1520,8 @@ async def test_job_run_no_volumes(
             "resources": {
                 "cpu": 7,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
         },
         "http_url": "http://my_host:8889",
@@ -1544,8 +1540,7 @@ async def test_job_run_no_volumes(
                     "memory": 16384 * 2**20,
                     "cpu": 7,
                     "shm": True,
-                    "gpu": 1,
-                    "gpu_model": "test-gpu-model",
+                    "nvidia_gpu": 1,
                 },
             },
             "scheduler_enabled": False,
@@ -1564,7 +1559,7 @@ async def test_job_run_no_volumes(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(memory=16384 * 2**20, cpu=7, nvidia_gpu=1, shm=True)
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
@@ -1607,9 +1602,8 @@ async def test_job_run_with_relative_volume_uris(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
         },
         "http_url": "http://my_host:8889",
@@ -1628,8 +1622,7 @@ async def test_job_run_with_relative_volume_uris(
                     "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
-                    "gpu": 1,
-                    "gpu_model": "test-gpu-model",
+                    "nvidia_gpu": 1,
                 },
                 "volumes": [
                     {
@@ -1663,7 +1656,7 @@ async def test_job_run_with_relative_volume_uris(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(memory=16384 * 2**20, cpu=7, nvidia_gpu=1, shm=True)
         volumes: List[Volume] = [
             Volume(URL("storage:path"), "/container/my_path", False),
             Volume(
@@ -1715,9 +1708,8 @@ async def test_job_run_with_secret_uris(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
         },
         "http_url": "http://my_host:8889",
@@ -1736,8 +1728,7 @@ async def test_job_run_with_secret_uris(
                     "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
-                    "gpu": 1,
-                    "gpu_model": "test-gpu-model",
+                    "nvidia_gpu": 1,
                 },
                 "env": {"VAR": "VAL"},
                 "secret_env": {"SECRET_VAR": "secret://default/test-project/secret"},
@@ -1769,7 +1760,7 @@ async def test_job_run_with_secret_uris(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(memory=16384 * 2**20, cpu=7, nvidia_gpu=1, shm=True)
         env = {"VAR": "VAL"}
         secret_env = {"SECRET_VAR": URL("secret:secret")}
         volumes = [Volume(URL("storage:path"), "/container/my_path", False)]
@@ -1817,9 +1808,8 @@ async def test_job_run_with_disk_volume_uris(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
             "disk_volumes": [
                 {
@@ -1845,8 +1835,7 @@ async def test_job_run_with_disk_volume_uris(
                     "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
-                    "gpu": 1,
-                    "gpu_model": "test-gpu-model",
+                    "nvidia_gpu": 1,
                 },
                 "disk_volumes": [
                     {
@@ -1870,7 +1859,7 @@ async def test_job_run_with_disk_volume_uris(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(memory=16384 * 2**20, cpu=7, nvidia_gpu=1, shm=True)
         disk_volumes = [
             DiskVolume(URL("disk:disk-1"), "/container/my_path"),
         ]
@@ -1913,9 +1902,8 @@ async def test_job_run_preemptible(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
         },
         "scheduler_enabled": True,
@@ -1934,8 +1922,7 @@ async def test_job_run_preemptible(
                     "memory": 16384 * 2**20,
                     "cpu": 7.0,
                     "shm": True,
-                    "gpu": 1,
-                    "gpu_model": "test-gpu-model",
+                    "nvidia_gpu": 1,
                 },
                 "volumes": [
                     {
@@ -1966,7 +1953,7 @@ async def test_job_run_preemptible(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(memory=16384 * 2**20, cpu=7, nvidia_gpu=1, shm=True)
         volumes: List[Volume] = [
             Volume(
                 URL("storage://test-user/path_read_only"), "/container/read_only", True
@@ -2020,9 +2007,8 @@ async def test_job_run_schedule_timeout(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
             },
         },
         "http_url": "http://my_host:8889",
@@ -2041,8 +2027,7 @@ async def test_job_run_schedule_timeout(
                     "memory": 16384 * 2**20,
                     "cpu": 7,
                     "shm": True,
-                    "gpu": 1,
-                    "gpu_model": "test-gpu-model",
+                    "nvidia_gpu": 1,
                 },
             },
             "scheduler_enabled": False,
@@ -2060,7 +2045,7 @@ async def test_job_run_schedule_timeout(
     srv = await aiohttp_server(app)
 
     async with make_client(srv.make_url("/")) as client:
-        resources = Resources(16384 * 2**20, 7, 1, "test-gpu-model", True, None, None)
+        resources = Resources(memory=16384 * 2**20, cpu=7, nvidia_gpu=1, shm=True)
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
             command="submit-command",
@@ -2097,9 +2082,8 @@ async def test_job_run_tpu(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
+                "nvidia_gpu": 1,
                 "shm": False,
-                "gpu_model": "nvidia-tesla-p4",
                 "tpu": {"type": "v3-8", "software_version": "1.14"},
             },
         },
@@ -2118,8 +2102,7 @@ async def test_job_run_tpu(
                     "memory": 16384 * 2**20,
                     "cpu": 7,
                     "shm": True,
-                    "gpu": 1,
-                    "gpu_model": "test-gpu-model",
+                    "nvidia_gpu": 1,
                     "tpu": {"type": "v3-8", "software_version": "1.14"},
                 },
             },
@@ -2139,7 +2122,12 @@ async def test_job_run_tpu(
 
     async with make_client(srv.make_url("/")) as client:
         resources = Resources(
-            16384 * 2**20, 7, 1, "test-gpu-model", True, "v3-8", "1.14"
+            memory=16384 * 2**20,
+            cpu=7,
+            nvidia_gpu=1,
+            shm=True,
+            tpu_type="v3-8",
+            tpu_software_version="1.14",
         )
         container = Container(
             image=RemoteImage.new_external_image(name="submit-image-name"),
@@ -2265,8 +2253,7 @@ def create_job_response(
             "resources": {
                 "cpu": 1.0,
                 "memory": 16384 * 2**20,
-                "gpu": 1,
-                "gpu_model": "nvidia-tesla-v100",
+                "nvidia_gpu": 1,
             },
         },
         "scheduler_enabled": True,

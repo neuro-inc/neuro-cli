@@ -5,7 +5,7 @@ import pytest
 from aiohttp import web
 from yarl import URL
 
-from neuro_sdk import AuthError, Cluster, Preset, Project
+from neuro_sdk import AuthError, Cluster, Preset, Project, ResourcePool
 from neuro_sdk._login import _AuthConfig
 from neuro_sdk._server_cfg import _ServerConfig, get_server_config
 
@@ -147,34 +147,111 @@ async def test_get_server_config_with_token(
                 "secrets_url": secrets_url,
                 "disks_url": disks_url,
                 "buckets_url": buckets_url,
+                "resource_pool_types": [
+                    {
+                        "name": "cpu",
+                        "min_size": 1,
+                        "max_size": 2,
+                        "cpu": 7,
+                        "memory": 14 * 2**30,
+                        "disk_size": 150 * 2**30,
+                    },
+                    {
+                        "name": "nvidia-gpu",
+                        "min_size": 0,
+                        "max_size": 1,
+                        "cpu": 7,
+                        "memory": 60 * 2**30,
+                        "disk_size": 150 * 2**30,
+                        "nvidia_gpu": 1,
+                    },
+                    {
+                        "name": "amd-gpu",
+                        "min_size": 0,
+                        "max_size": 1,
+                        "cpu": 7,
+                        "memory": 60 * 2**30,
+                        "disk_size": 150 * 2**30,
+                        "amd_gpu": 1,
+                    },
+                    {
+                        "name": "intel-gpu",
+                        "min_size": 0,
+                        "max_size": 1,
+                        "cpu": 7,
+                        "memory": 60 * 2**30,
+                        "disk_size": 150 * 2**30,
+                        "intel_gpu": 1,
+                    },
+                ],
                 "resource_presets": [
                     {
-                        "name": "gpu-small",
+                        "name": "nvidia-gpu-small",
                         "credits_per_hour": "10",
                         "cpu": 7,
                         "memory": 30 * 2**30,
-                        "gpu": 1,
-                        "gpu_model": "nvidia-tesla-k80",
+                        "nvidia_gpu": 1,
+                        "resource_pool_names": ["nvidia-gpu"],
+                        "available_resource_pool_names": ["nvidia-gpu"],
                     },
                     {
-                        "name": "gpu-large",
+                        "name": "nvidia-gpu-large",
                         "credits_per_hour": "10",
                         "cpu": 7,
                         "memory": 60 * 2**30,
-                        "gpu": 1,
-                        "gpu_model": "nvidia-tesla-v100",
+                        "nvidia_gpu": 1,
+                        "resource_pool_names": ["nvidia-gpu"],
+                        "available_resource_pool_names": ["nvidia-gpu"],
+                    },
+                    {
+                        "name": "amd-gpu-small",
+                        "credits_per_hour": "10",
+                        "cpu": 7,
+                        "memory": 30 * 2**30,
+                        "amd_gpu": 1,
+                        "resource_pool_names": ["amd-gpu"],
+                        "available_resource_pool_names": ["amd-gpu"],
+                    },
+                    {
+                        "name": "amd-gpu-large",
+                        "credits_per_hour": "10",
+                        "cpu": 7,
+                        "memory": 60 * 2**30,
+                        "amd_gpu": 1,
+                        "resource_pool_names": ["amd-gpu"],
+                        "available_resource_pool_names": ["amd-gpu"],
+                    },
+                    {
+                        "name": "intel-gpu-small",
+                        "credits_per_hour": "10",
+                        "cpu": 7,
+                        "memory": 30 * 2**30,
+                        "intel_gpu": 1,
+                        "resource_pool_names": ["intel-gpu"],
+                        "available_resource_pool_names": ["intel-gpu"],
+                    },
+                    {
+                        "name": "intel-gpu-large",
+                        "credits_per_hour": "10",
+                        "cpu": 7,
+                        "memory": 60 * 2**30,
+                        "intel_gpu": 1,
+                        "resource_pool_names": ["intel-gpu"],
+                        "available_resource_pool_names": ["intel-gpu"],
                     },
                     {
                         "name": "cpu-small",
                         "credits_per_hour": "10",
                         "cpu": 2,
                         "memory": 2 * 2**30,
+                        "available_resource_pool_names": ["cpu"],
                     },
                     {
                         "name": "cpu-large",
                         "credits_per_hour": "10",
                         "cpu": 3,
                         "memory": 14 * 2**30,
+                        "available_resource_pool_names": ["cpu"],
                     },
                     {
                         "name": "cpu-large-p",
@@ -231,26 +308,91 @@ async def test_get_server_config_with_token(
                 secrets_url=URL(secrets_url),
                 disks_url=URL(disks_url),
                 buckets_url=URL(buckets_url),
+                resource_pools={
+                    "cpu": ResourcePool(
+                        min_size=1,
+                        max_size=2,
+                        cpu=7,
+                        memory=14 * 2**30,
+                        disk_size=150 * 2**30,
+                    ),
+                    "nvidia-gpu": ResourcePool(
+                        min_size=0,
+                        max_size=1,
+                        cpu=7,
+                        memory=60 * 2**30,
+                        disk_size=150 * 2**30,
+                        nvidia_gpu=1,
+                    ),
+                    "amd-gpu": ResourcePool(
+                        min_size=0,
+                        max_size=1,
+                        cpu=7,
+                        memory=60 * 2**30,
+                        disk_size=150 * 2**30,
+                        amd_gpu=1,
+                    ),
+                    "intel-gpu": ResourcePool(
+                        min_size=0,
+                        max_size=1,
+                        cpu=7,
+                        memory=60 * 2**30,
+                        disk_size=150 * 2**30,
+                        intel_gpu=1,
+                    ),
+                },
                 presets={
-                    "gpu-small": Preset(
+                    "nvidia-gpu-small": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=7,
                         memory=30 * 2**30,
-                        gpu=1,
-                        gpu_model="nvidia-tesla-k80",
+                        nvidia_gpu=1,
+                        resource_pool_names=["nvidia-gpu"],
                     ),
-                    "gpu-large": Preset(
+                    "nvidia-gpu-large": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=7,
                         memory=60 * 2**30,
-                        gpu=1,
-                        gpu_model="nvidia-tesla-v100",
+                        nvidia_gpu=1,
+                        resource_pool_names=["nvidia-gpu"],
+                    ),
+                    "amd-gpu-small": Preset(
+                        credits_per_hour=Decimal("10"),
+                        cpu=7,
+                        memory=30 * 2**30,
+                        amd_gpu=1,
+                        resource_pool_names=["amd-gpu"],
+                    ),
+                    "amd-gpu-large": Preset(
+                        credits_per_hour=Decimal("10"),
+                        cpu=7,
+                        memory=60 * 2**30,
+                        amd_gpu=1,
+                        resource_pool_names=["amd-gpu"],
+                    ),
+                    "intel-gpu-small": Preset(
+                        credits_per_hour=Decimal("10"),
+                        cpu=7,
+                        memory=30 * 2**30,
+                        intel_gpu=1,
+                        resource_pool_names=["intel-gpu"],
+                    ),
+                    "intel-gpu-large": Preset(
+                        credits_per_hour=Decimal("10"),
+                        cpu=7,
+                        memory=60 * 2**30,
+                        intel_gpu=1,
+                        resource_pool_names=["intel-gpu"],
                     ),
                     "cpu-small": Preset(
-                        credits_per_hour=Decimal("10"), cpu=2, memory=2 * 2**30
+                        credits_per_hour=Decimal("10"),
+                        cpu=2,
+                        memory=2 * 2**30,
                     ),
                     "cpu-large": Preset(
-                        credits_per_hour=Decimal("10"), cpu=3, memory=14 * 2**30
+                        credits_per_hour=Decimal("10"),
+                        cpu=3,
+                        memory=14 * 2**30,
                     ),
                     "cpu-large-p": Preset(
                         credits_per_hour=Decimal("10"),

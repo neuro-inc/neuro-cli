@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Dict, List, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional, Sequence
 
 import aiohttp
 from yarl import URL
@@ -16,16 +16,40 @@ class Preset:
     credits_per_hour: Decimal
     cpu: float
     memory: int
+    nvidia_gpu: Optional[int] = None
+    amd_gpu: Optional[int] = None
+    intel_gpu: Optional[int] = None
     scheduler_enabled: bool = False
     preemptible_node: bool = False
-    gpu: Optional[int] = None
-    gpu_model: Optional[str] = None
     tpu_type: Optional[str] = None
     tpu_software_version: Optional[str] = None
+    resource_pool_names: Sequence[str] = ()
 
     @property
     def memory_mb(self) -> int:
         return self.memory // 2**20
+
+
+@dataclass(frozen=True)
+class TPUResource:
+    ipv4_cidr_block: str
+    types: Sequence[str] = ()
+    software_versions: Sequence[str] = ()
+
+
+@rewrite_module
+@dataclass(frozen=True)
+class ResourcePool:
+    min_size: int
+    max_size: int
+    cpu: float
+    memory: int
+    disk_size: int
+    nvidia_gpu: Optional[int] = None
+    amd_gpu: Optional[int] = None
+    intel_gpu: Optional[int] = None
+    tpu: Optional[TPUResource] = None
+    is_preemptible: bool = False
 
 
 @rewrite_module
@@ -63,6 +87,7 @@ class Cluster:
     secrets_url: URL
     disks_url: URL
     buckets_url: URL
+    resource_pools: Mapping[str, ResourcePool]
     presets: Mapping[str, Preset]
 
 
@@ -92,6 +117,27 @@ def _parse_projects(payload: Dict[str, Any]) -> Dict[Project.Key, Project]:
 
 
 def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
+    resource_pools = {}
+    for data in payload["resource_pool_types"]:
+        tpu = None
+        if "tpu" in data:
+            tpu = TPUResource(
+                types=data["tpu"]["types"],
+                software_versions=data["tpu"]["software_versions"],
+                ipv4_cidr_block=data["tpu"]["ipv4_cidr_block"],
+            )
+        resource_pools[data["name"]] = ResourcePool(
+            min_size=data["min_size"],
+            max_size=data["max_size"],
+            cpu=data["cpu"],
+            memory=data["memory"],
+            disk_size=data["disk_size"],
+            nvidia_gpu=data.get("nvidia_gpu"),
+            amd_gpu=data.get("amd_gpu"),
+            intel_gpu=data.get("intel_gpu"),
+            tpu=tpu,
+            is_preemptible=data.get("is_preemptible", False),
+        )
     presets: Dict[str, Preset] = {}
     for data in payload["resource_presets"]:
         tpu_type = tpu_software_version = None
@@ -100,16 +146,17 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
             tpu_type = tpu_payload["type"]
             tpu_software_version = tpu_payload["software_version"]
         presets[data["name"]] = Preset(
-            # TODO: make credits_per_hour not optional after server updated
-            credits_per_hour=Decimal(data.get("credits_per_hour", "0")),
+            credits_per_hour=Decimal(data["credits_per_hour"]),
             cpu=data["cpu"],
             memory=data["memory"],
-            gpu=data.get("gpu"),
-            gpu_model=data.get("gpu_model"),
+            nvidia_gpu=data.get("nvidia_gpu"),
+            amd_gpu=data.get("amd_gpu"),
+            intel_gpu=data.get("intel_gpu"),
             scheduler_enabled=data.get("scheduler_enabled", False),
             preemptible_node=data.get("preemptible_node", False),
             tpu_type=tpu_type,
             tpu_software_version=tpu_software_version,
+            resource_pool_names=data.get("resource_pool_names", ()),
         )
     cluster_config = Cluster(
         name=payload["name"],
@@ -121,6 +168,7 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
         secrets_url=URL(payload["secrets_url"]),
         disks_url=URL(payload["disks_url"]),
         buckets_url=URL(payload["buckets_url"]),
+        resource_pools=resource_pools,
         presets=presets,
     )
     return cluster_config

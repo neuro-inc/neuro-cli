@@ -680,12 +680,14 @@ neuro admin add-resource-preset [OPTIONS] PRESET_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--amd-gpu NUMBER_|Number of AMD GPUs|
 |_\-c, --cpu NUMBER_|Number of CPUs  \[default: 0.1]|
 |_\--credits-per-hour AMOUNT_|Price of running job of this preset for an hour in credits  \[default: 0]|
-|_\-g, --gpu NUMBER_|Number of GPUs|
-|_\--gpu-model MODEL_|GPU model|
+|_\--intel-gpu NUMBER_|Number of Intel GPUs|
 |_\-m, --memory AMOUNT_|Memory amount  \[default: 1GB]|
+|_\-g, --nvidia-gpu NUMBER_|Number of Nvidia GPUs|
 |_\--preemptible-node / --non-preemptible-node_|Use a lower\-cost preemptible instance  \[default: non-preemptible-node]|
+|_\-r, --resource-pool TEXT_|Name of the resource pool where job will be scheduled \(multiple values are supported)|
 |_\-p, --scheduler / -P, --no-scheduler_|Use round robin scheduler for jobs  \[default: no-scheduler]|
 |_\--tpu-sw-version VERSION_|TPU software version|
 |_\--tpu-type TYPE_|TPU type|
@@ -1318,12 +1320,14 @@ neuro admin update-resource-preset [OPTIONS] PRESET_NAME
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\--amd-gpu NUMBER_|Number of AMD GPUs|
 |_\-c, --cpu NUMBER_|Number of CPUs|
 |_\--credits-per-hour AMOUNT_|Price of running job of this preset for an hour in credits|
-|_\-g, --gpu NUMBER_|Number of GPUs|
-|_\--gpu-model MODEL_|GPU model|
+|_\--intel-gpu NUMBER_|Number of Intel GPUs|
 |_\-m, --memory AMOUNT_|Memory amount|
+|_\-g, --nvidia-gpu NUMBER_|Number of Nvidia GPUs|
 |_\--preemptible-node / --non-preemptible-node_|Use a lower-cost preemptible instance|
+|_\-r, --resource-pool TEXT_|Name of the resource pool where job will be scheduled \(multiple values are supported)|
 |_\-p, --scheduler / -P, --no-scheduler_|Use round robin scheduler for jobs|
 |_\--tpu-sw-version VERSION_|TPU software version|
 |_\--tpu-type TYPE_|TPU type|

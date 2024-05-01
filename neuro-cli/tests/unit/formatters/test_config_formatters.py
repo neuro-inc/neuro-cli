@@ -74,16 +74,19 @@ class TestConfigFormatter:
             scheduler_enabled=False,
             tpu_type="v3-8",
             tpu_software_version="1.14",
+            resource_pool_names=["tpu"],
         )
         presets["hybrid"] = Preset(
             credits_per_hour=Decimal("10"),
             cpu=4,
             memory=30 * 2**30,
             scheduler_enabled=False,
-            gpu=2,
-            gpu_model="nvidia-tesla-v100",
+            nvidia_gpu=1,
+            amd_gpu=2,
+            intel_gpu=3,
             tpu_type="v3-64",
             tpu_software_version="1.14",
+            resource_pool_names=["gpu-small", "gpu-large"],
         )
         new_config = replace(cluster_config, presets=presets)
 

@@ -5,7 +5,7 @@ import os
 import pathlib
 from dataclasses import replace
 from decimal import Decimal, InvalidOperation
-from typing import IO, Dict, Optional, Tuple
+from typing import IO, Any, Dict, Optional, Sequence, Tuple
 
 import click
 import yaml
@@ -955,15 +955,22 @@ async def add_user_credits(
 )
 @option(
     "-g",
-    "--gpu",
+    "--nvidia-gpu",
     metavar="NUMBER",
     type=int,
-    help="Number of GPUs",
+    help="Number of Nvidia GPUs",
 )
 @option(
-    "--gpu-model",
-    metavar="MODEL",
-    help="GPU model",
+    "--amd-gpu",
+    metavar="NUMBER",
+    type=int,
+    help="Number of AMD GPUs",
+)
+@option(
+    "--intel-gpu",
+    metavar="NUMBER",
+    type=int,
+    help="Number of Intel GPUs",
 )
 @option("--tpu-type", metavar="TYPE", type=str, help="TPU type")
 @option(
@@ -986,18 +993,30 @@ async def add_user_credits(
     default=False,
     show_default=True,
 )
+@option(
+    "resource_pool_names",
+    "-r",
+    "--resource-pool",
+    help=(
+        "Name of the resource pool where job will be scheduled "
+        "(multiple values are supported)"
+    ),
+    multiple=True,
+)
 async def add_resource_preset(
     root: Root,
     preset_name: str,
     credits_per_hour: str,
     cpu: float,
     memory: int,
-    gpu: Optional[int],
-    gpu_model: Optional[str],
+    nvidia_gpu: Optional[int],
+    amd_gpu: Optional[int],
+    intel_gpu: Optional[int],
     tpu_type: Optional[str],
     tpu_software_version: Optional[str],
     scheduler: bool,
     preemptible_node: bool,
+    resource_pool_names: Sequence[str],
 ) -> None:
     """
     Add new resource preset
@@ -1014,11 +1033,13 @@ async def add_resource_preset(
         credits_per_hour=_parse_finite_decimal(credits_per_hour),
         cpu=cpu,
         memory=memory,
-        gpu=gpu,
-        gpu_model=gpu_model,
+        nvidia_gpu=nvidia_gpu,
+        amd_gpu=amd_gpu,
+        intel_gpu=intel_gpu,
         tpu=tpu_preset,
         scheduler_enabled=scheduler,
         preemptible_node=preemptible_node,
+        resource_pool_names=resource_pool_names,
     )
     await root.client._clusters.add_resource_preset(
         root.client.config.cluster_name, preset
@@ -1056,15 +1077,22 @@ async def add_resource_preset(
 )
 @option(
     "-g",
-    "--gpu",
+    "--nvidia-gpu",
     metavar="NUMBER",
     type=int,
-    help="Number of GPUs",
+    help="Number of Nvidia GPUs",
 )
 @option(
-    "--gpu-model",
-    metavar="MODEL",
-    help="GPU model",
+    "--amd-gpu",
+    metavar="NUMBER",
+    type=int,
+    help="Number of AMD GPUs",
+)
+@option(
+    "--intel-gpu",
+    metavar="NUMBER",
+    type=int,
+    help="Number of Intel GPUs",
 )
 @option("--tpu-type", metavar="TYPE", type=str, help="TPU type")
 @option(
@@ -1085,18 +1113,30 @@ async def add_resource_preset(
     help="Use a lower-cost preemptible instance",
     default=None,
 )
+@option(
+    "resource_pool_names",
+    "-r",
+    "--resource-pool",
+    help=(
+        "Name of the resource pool where job will be scheduled "
+        "(multiple values are supported)"
+    ),
+    multiple=True,
+)
 async def update_resource_preset(
     root: Root,
     preset_name: str,
     credits_per_hour: Optional[str],
     cpu: Optional[float],
     memory: Optional[int],
-    gpu: Optional[int],
-    gpu_model: Optional[str],
+    nvidia_gpu: Optional[int],
+    amd_gpu: Optional[int],
+    intel_gpu: Optional[int],
     tpu_type: Optional[str],
     tpu_software_version: Optional[str],
     scheduler: Optional[bool],
     preemptible_node: Optional[bool],
+    resource_pool_names: Sequence[str],
 ) -> None:
     """
     Update existing resource preset
@@ -1107,18 +1147,20 @@ async def update_resource_preset(
     except KeyError:
         raise ValueError(f"Preset '{preset_name}' does not exists")
 
-    kwargs = {
+    kwargs: Dict[str, Any] = {
         "credits_per_hour": _parse_finite_decimal(credits_per_hour)
         if credits_per_hour is not None
         else None,
         "cpu": cpu,
         "memory": memory,
-        "gpu": gpu,
-        "gpu_model": gpu_model,
+        "nvidia_gpu": nvidia_gpu,
+        "amd_gpu": amd_gpu,
+        "intel_gpu": intel_gpu,
         "tpu_type": tpu_type,
         "tpu_software_version": tpu_software_version,
         "scheduler_enabled": scheduler,
         "preemptible_node": preemptible_node,
+        "resource_pool_names": resource_pool_names,
     }
     kwargs = {key: value for key, value in kwargs.items() if value is not None}
     preset = replace(preset, **kwargs)
@@ -1135,11 +1177,13 @@ async def update_resource_preset(
             credits_per_hour=preset.credits_per_hour,
             cpu=preset.cpu,
             memory=preset.memory,
-            gpu=preset.gpu,
-            gpu_model=preset.gpu_model,
+            nvidia_gpu=preset.nvidia_gpu,
+            amd_gpu=preset.amd_gpu,
+            intel_gpu=preset.intel_gpu,
             tpu=tpu_preset,
             scheduler_enabled=preset.scheduler_enabled,
             preemptible_node=preset.preemptible_node,
+            resource_pool_names=preset.resource_pool_names,
         ),
     )
     await root.client.config.fetch()

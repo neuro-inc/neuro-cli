@@ -210,7 +210,6 @@ def test_extract_secret_env(root: Root) -> None:
 async def test_calc_ps_columns_section_doesnt_exist(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
-
     async with make_client("https://example.com") as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
@@ -222,7 +221,6 @@ async def test_calc_ps_columns_section_doesnt_exist(
 async def test_calc_top_columns_section_doesnt_exist(
     monkeypatch: Any, tmp_path: Path, make_client: _MakeClient
 ) -> None:
-
     async with make_client("https://example.com") as client:
         monkeypatch.chdir(tmp_path)
         local_conf = tmp_path / ".neuro.toml"
@@ -300,7 +298,7 @@ def test_job_to_args_simple() -> None:
         container=Container(
             command="test-command",
             image=RemoteImage.new_external_image(name="test-image"),
-            resources=Resources(16, 0.1, 0, None, True, None, None),
+            resources=Resources(memory=16, cpu=0.1, shm=True),
         ),
         scheduler_enabled=False,
         pass_config=False,
@@ -339,7 +337,7 @@ def test_job_to_args_drop_env_when_pass_config() -> None:
         container=Container(
             command="test-command",
             image=RemoteImage.new_external_image(name="test-image"),
-            resources=Resources(16, 0.1, 0, None, True, None, None),
+            resources=Resources(memory=16, cpu=0.1, shm=True),
             env={
                 "NEURO_PASSED_CONFIG": "base64 data here",
             },
@@ -385,7 +383,7 @@ def test_job_to_args_complex() -> None:
         container=Container(
             command="test-command",
             image=RemoteImage.new_external_image(name="test-image"),
-            resources=Resources(16, 0.1, 0, None, False, None, None),
+            resources=Resources(memory=16, cpu=0.1, shm=False),
             working_dir="/mnt/test",
             volumes=[
                 Volume(
@@ -514,7 +512,7 @@ def test_job_to_args_no_cmd() -> None:
         ),
         container=Container(
             image=RemoteImage.new_external_image(name="test-image"),
-            resources=Resources(16, 0.1, 0, None, True, None, None),
+            resources=Resources(memory=16, cpu=0.1, shm=True),
         ),
         scheduler_enabled=False,
         pass_config=False,

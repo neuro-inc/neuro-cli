@@ -88,9 +88,11 @@ class ClustersFormatter:
             name: Union[str, Text] = cluster.name or ""
             pre = "  "
             org_names: List[Text] = [
-                Text(org or OrgType.NO_ORG_STR, style="u")
-                if org == default_org and cluster.name == default_cluster
-                else Text(org or OrgType.NO_ORG_STR)
+                (
+                    Text(org or OrgType.NO_ORG_STR, style="u")
+                    if org == default_org and cluster.name == default_cluster
+                    else Text(org or OrgType.NO_ORG_STR)
+                )
                 for org in cluster.orgs
             ]
             if cluster.name == default_cluster:
@@ -108,11 +110,10 @@ def _format_presets(
     presets: Mapping[str, Preset],
     available_jobs_counts: Optional[Mapping[str, int]],
 ) -> Table:
-    has_tpu = False
-    for preset in presets.values():
-        if preset.tpu_type:
-            has_tpu = True
-            break
+    has_nvidia_gpu = any(p.nvidia_gpu for p in presets.values())
+    has_amd_gpu = any(p.amd_gpu for p in presets.values())
+    has_intel_gpu = any(p.intel_gpu for p in presets.values())
+    has_tpu = any(p.tpu_type for p in presets.values())
 
     table = Table(
         title="Resource Presets:",
@@ -123,27 +124,29 @@ def _format_presets(
     table.add_column("Name", style="bold", justify="left")
     table.add_column("#CPU", justify="right")
     table.add_column("Memory", justify="right")
-    table.add_column("Round Robin", justify="center")
-    table.add_column("Preemptible Node", justify="center")
-    table.add_column("GPU", justify="left")
-    if available_jobs_counts:
-        table.add_column("Jobs Avail", justify="right")
+    if has_nvidia_gpu:
+        table.add_column("Nvidia GPU", justify="center")
+    if has_amd_gpu:
+        table.add_column("AMD GPU", justify="center")
+    if has_intel_gpu:
+        table.add_column("Intel GPU", justify="center")
     if has_tpu:
         table.add_column("TPU", justify="left")
+    table.add_column("Resource Pools", justify="left")
+    table.add_column("Round Robin", justify="center")
+    table.add_column("Preemptible Node", justify="center")
+    if available_jobs_counts:
+        table.add_column("Jobs Avail", justify="right")
     table.add_column("Credits per hour", justify="left")
 
     for name, preset in presets.items():
-        gpu = ""
-        if preset.gpu:
-            gpu = f"{preset.gpu} x {preset.gpu_model}"
-        row = [
-            name,
-            str(preset.cpu),
-            format_size(preset.memory),
-            "√" if preset.scheduler_enabled else "×",
-            "√" if preset.preemptible_node else "×",
-            gpu,
-        ]
+        row = [name, str(preset.cpu), format_size(preset.memory)]
+        if has_nvidia_gpu:
+            row.append(str(preset.nvidia_gpu) if preset.nvidia_gpu else "")
+        if has_amd_gpu:
+            row.append(str(preset.amd_gpu) if preset.amd_gpu else "")
+        if has_intel_gpu:
+            row.append(str(preset.intel_gpu) if preset.intel_gpu else "")
         if has_tpu:
             tpu = (
                 f"{preset.tpu_type}/{preset.tpu_software_version}"
@@ -151,11 +154,17 @@ def _format_presets(
                 else ""
             )
             row.append(tpu)
+        row.append("\n".join(preset.resource_pool_names))
+        row.append("√" if preset.scheduler_enabled else "×")
+        row.append(
+            "√" if preset.preemptible_node else "×",
+        )
         if available_jobs_counts:
-            if name in available_jobs_counts:
-                row.append(str(available_jobs_counts[name]))
-            else:
-                row.append("")
+            row.append(
+                str(available_jobs_counts[name])
+                if name in available_jobs_counts
+                else ""
+            )
         row.append(str(preset.credits_per_hour))
         table.add_row(*row)
 
