@@ -5,6 +5,15 @@
 
 [comment]: # (towncrier release notes start)
 
+Neuro SDK/CLI 24.5.0 (2024-05-21)
+=================================
+
+Features
+--------
+
+- Support AMD, Intel GPUs ([#3007](https://github.com/neuro-inc/neuro-cli/issues/3007))
+
+
 Neuro SDK/CLI 24.2.0 (2024-02-12)
 =================================
 

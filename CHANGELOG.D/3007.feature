@@ -1,1 +1,0 @@
-Support AMD, Intel GPUs
