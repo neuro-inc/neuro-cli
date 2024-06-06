@@ -22,3 +22,4 @@ neuro-sdk/build
 neuro-sdk/dist
 neuro-sdk/docs/_build
 pip-wheel-metadata
+venv
