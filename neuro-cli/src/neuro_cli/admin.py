@@ -681,6 +681,32 @@ async def add_cluster_user(
         root.print(balance_fmt(user.balance))
 
 
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("user_name", required=True, type=str)
+@argument(
+    "role",
+    required=True,
+    metavar="[ROLE]",
+    type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
+)
+async def update_cluster_user(
+    root: Root,
+    cluster_name: str,
+    user_name: str,
+    role: str,
+):
+    cluster_user = await root.client._admin.get_cluster_user(cluster_name, user_name)
+    cluster_user.role = _ClusterUserRoleType(role)
+    updated_user = await root.client._admin.update_cluster_user(cluster_user)
+
+    if not root.quiet:
+        root.print(
+            f"Updated [bold]{rich_escape(updated_user.user_name)}[/bold]"
+            f"New role [bold]{rich_escape(updated_user.role)}[/bold]"
+        )
+
+
 def _parse_finite_decimal(value: str) -> Decimal:
     try:
         result = Decimal(value)
