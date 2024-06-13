@@ -1,4 +1,5 @@
 import configparser
+import dataclasses
 import json
 import logging
 import os
@@ -697,13 +698,13 @@ async def update_cluster_user(
     role: str,
 ):
     cluster_user = await root.client._admin.get_cluster_user(cluster_name, user_name)
-    cluster_user.role = _ClusterUserRoleType(role)
-    updated_user = await root.client._admin.update_cluster_user(cluster_user)
+    dataclasses.replace(cluster_user, role=role)
+    await root.client._admin.update_cluster_user(cluster_user)
 
     if not root.quiet:
         root.print(
-            f"Updated [bold]{rich_escape(updated_user.user_name)}[/bold]"
-            f"New role [bold]{rich_escape(updated_user.role)}[/bold]"
+            f"Updated [bold]{rich_escape(cluster_user.user_name)}[/bold]"
+            f"New role [bold]{rich_escape(role)}[/bold]"
         )
 
 
@@ -2105,6 +2106,7 @@ admin.add_command(update_node_pool)
 
 admin.add_command(get_cluster_users)
 admin.add_command(add_cluster_user)
+admin.add_command(update_cluster_user)
 admin.add_command(remove_cluster_user)
 
 admin.add_command(get_user_quota)

@@ -147,6 +147,26 @@ def test_add_cluster_user_with_jobs(run_cli: _RunCli) -> None:
         assert capture.code == 2
 
 
+def test_update_cluster_user_role(run_cli: _RunCli) -> None:
+
+    with mock_create_cluster_user():
+        capture = run_cli(
+            [
+                "admin",
+                "add-cluster-user",
+                "default",
+                "ivan",
+                "admin",
+            ]
+        )
+
+        assert capture.code == 0
+
+        capture = run_cli(["admin", "update-cluster-user", "default", "ivan", "admin"])
+
+        assert capture.code == 0
+
+
 def test_set_user_credits(run_cli: _RunCli) -> None:
     with mock.patch.object(_Admin, "update_cluster_user_balance") as mocked:
 
