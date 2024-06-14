@@ -98,7 +98,7 @@ class ServiceAccountRefreshingGCSToken(AutoRefreshingGCSToken):
 
     async def _do_refresh(self) -> None:
         await self._credential.refresh(self._request)
-        self._token = self._credential.token
+        self._token = self._credential.token  # type: ignore
 
     def _refresh_required(self) -> bool:
         return not self._token or not self._credential.valid

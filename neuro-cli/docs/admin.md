@@ -886,6 +886,7 @@ neuro admin update-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _--org ORG_ | org name for org-cluster users |
 
 
 

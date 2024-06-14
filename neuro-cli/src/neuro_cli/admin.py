@@ -1,5 +1,4 @@
 import configparser
-import dataclasses
 import json
 import logging
 import os
@@ -691,20 +690,31 @@ async def add_cluster_user(
     metavar="[ROLE]",
     type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
 )
+@option(
+    "--org",
+    metavar="ORG",
+    default=None,
+    type=str,
+    help="org name for org-cluster users",
+)
 async def update_cluster_user(
     root: Root,
     cluster_name: str,
     user_name: str,
     role: str,
-):
-    cluster_user = await root.client._admin.get_cluster_user(cluster_name, user_name)
-    dataclasses.replace(cluster_user, role=role)
+    org: Optional[str],
+) -> None:
+    cluster_user = await root.client._admin.get_cluster_user(
+        cluster_name, user_name, org_name=org
+    )
+    old_role = str(cluster_user.role)
+    cluster_user = replace(cluster_user, role=_ClusterUserRoleType(role))
     await root.client._admin.update_cluster_user(cluster_user)
 
     if not root.quiet:
         root.print(
-            f"Updated [bold]{rich_escape(cluster_user.user_name)}[/bold]"
-            f"New role [bold]{rich_escape(role)}[/bold]"
+            f"Changed user [bold]{rich_escape(cluster_user.user_name)}[/bold]"
+            f"role from {rich_escape(old_role)} to [bold]{rich_escape(role)}[/bold]"
         )
 
 
@@ -1175,9 +1185,11 @@ async def update_resource_preset(
         raise ValueError(f"Preset '{preset_name}' does not exists")
 
     kwargs: Dict[str, Any] = {
-        "credits_per_hour": _parse_finite_decimal(credits_per_hour)
-        if credits_per_hour is not None
-        else None,
+        "credits_per_hour": (
+            _parse_finite_decimal(credits_per_hour)
+            if credits_per_hour is not None
+            else None
+        ),
         "cpu": cpu,
         "memory": memory,
         "nvidia_gpu": nvidia_gpu,
