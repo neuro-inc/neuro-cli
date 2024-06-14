@@ -11,6 +11,7 @@ from neuro_sdk import (
     _CloudProviderOptions,
     _CloudProviderType,
     _Clusters,
+    _ClusterUser,
     _ClusterUserRoleType,
     _ClusterUserWithInfo,
     _EFSPerformanceMode,
@@ -145,6 +146,65 @@ def test_add_cluster_user_with_jobs(run_cli: _RunCli) -> None:
             )
         assert f"jobs quota should be non-negative integer" in capture.err, capture
         assert capture.code == 2
+
+
+def test_update_cluster_user(run_cli: _RunCli) -> None:
+    with ExitStack() as exit_stack:
+
+        async def get_cluster_user(
+            cluster_name: str,
+            user_name: str,
+            org_name: Optional[str] = None,
+        ) -> _ClusterUserWithInfo:
+            return _ClusterUserWithInfo(
+                cluster_name=cluster_name,
+                user_name=user_name,
+                role=_ClusterUserRoleType.USER,
+                quota=_Quota(),
+                balance=_Balance(),
+                org_name=org_name,
+                user_info=_UserInfo(email=f"{user_name}@example.org"),
+            )
+
+        mocked_get = exit_stack.enter_context(
+            mock.patch.object(_Admin, "get_cluster_user")
+        )
+        mocked_get.side_effect = get_cluster_user
+
+        async def update_cluster_user(
+            cluster_user: _ClusterUser, with_user_info: bool = False
+        ) -> _ClusterUser:
+            return cluster_user
+
+        mocked_update = exit_stack.enter_context(
+            mock.patch.object(_Admin, "update_cluster_user")
+        )
+        mocked_update.side_effect = update_cluster_user
+
+        capture = run_cli(
+            ["admin", "update-cluster-user", "default", "test-user", "manager"]
+        )
+
+        assert capture.code == 0
+        assert capture.out == "New role for user test-user on cluster default: manager"
+
+        capture = run_cli(
+            [
+                "admin",
+                "update-cluster-user",
+                "default",
+                "test-user",
+                "manager",
+                "--org",
+                "test-org",
+            ]
+        )
+
+        assert capture.code == 0
+        assert capture.out == (
+            "New role for user test-user as member of org test-org "
+            "on cluster default: manager"
+        )
 
 
 def test_set_user_credits(run_cli: _RunCli) -> None:

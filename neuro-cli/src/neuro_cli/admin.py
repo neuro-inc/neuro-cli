@@ -681,6 +681,50 @@ async def add_cluster_user(
         root.print(balance_fmt(user.balance))
 
 
+@command()
+@argument("cluster_name", required=True, type=str)
+@argument("user_name", required=True, type=str)
+@argument(
+    "role",
+    required=True,
+    metavar="[ROLE]",
+    type=click.Choice([str(role) for role in list(_ClusterUserRoleType)]),
+)
+@option(
+    "--org",
+    metavar="ORG",
+    default=None,
+    type=str,
+    help="org name for org-cluster users",
+)
+async def update_cluster_user(
+    root: Root,
+    cluster_name: str,
+    user_name: str,
+    role: str,
+    org: Optional[str],
+) -> None:
+    cluster_user = await root.client._admin.get_cluster_user(
+        cluster_name, user_name, org_name=org
+    )
+    cluster_user = replace(cluster_user, role=_ClusterUserRoleType(role))
+    await root.client._admin.update_cluster_user(cluster_user)
+
+    if not root.quiet:
+        root.print(
+            f"New role for user [bold]{rich_escape(cluster_user.user_name)}[/bold] "
+            + (
+                f"as member of org [bold]{rich_escape(org)}[/bold] "
+                if org is not None
+                else ""
+            )
+            + f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
+            markup=True,
+            end=" ",
+        )
+        root.print(str(cluster_user.role))
+
+
 def _parse_finite_decimal(value: str) -> Decimal:
     try:
         result = Decimal(value)
@@ -1148,9 +1192,11 @@ async def update_resource_preset(
         raise ValueError(f"Preset '{preset_name}' does not exists")
 
     kwargs: Dict[str, Any] = {
-        "credits_per_hour": _parse_finite_decimal(credits_per_hour)
-        if credits_per_hour is not None
-        else None,
+        "credits_per_hour": (
+            _parse_finite_decimal(credits_per_hour)
+            if credits_per_hour is not None
+            else None
+        ),
         "cpu": cpu,
         "memory": memory,
         "nvidia_gpu": nvidia_gpu,
@@ -2079,6 +2125,7 @@ admin.add_command(update_node_pool)
 
 admin.add_command(get_cluster_users)
 admin.add_command(add_cluster_user)
+admin.add_command(update_cluster_user)
 admin.add_command(remove_cluster_user)
 
 admin.add_command(get_user_quota)

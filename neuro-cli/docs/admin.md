@@ -48,6 +48,7 @@ Cluster administration commands.
 | [_set-user-quota_](admin.md#set-user-quota) | Set user quota to given values |
 | [_show-cluster-options_](admin.md#show-cluster-options) | Show available cluster options |
 | [_update-cluster_](admin.md#update-cluster) | Update a cluster |
+| [_update-cluster-user_](admin.md#update-cluster-user) |  |
 | [_update-node-pool_](admin.md#update-node-pool) | Update cluster node pool |
 | [_update-org-cluster_](admin.md#update-org-cluster) | Update org cluster quotas |
 | [_update-project_](admin.md#update-project) | Update project settings |
@@ -864,6 +865,28 @@ Update a cluster.
 | _--default-credits AMOUNT_ | Default credits amount to set \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--default-jobs AMOUNT_ | Default maximum running jobs quota \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
 | _--default-role \[ROLE\]_ | Default role for new users added to cluster  _\[default: user\]_ |
+
+
+
+### update-cluster-user
+
+
+
+
+#### Usage
+
+```bash
+neuro admin update-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
+```
+
+
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--org ORG_ | org name for org-cluster users |
 
 
 

@@ -103,7 +103,7 @@ async def storage_server(
                 response.set_status(web.HTTPPartialContent.status_code)
                 response.headers[
                     "Content-Range"
-                ] = f"bytes {start}-{stop-1}/{len(content)}"
+                ] = f"bytes {start}-{stop - 1}/{len(content)}"
                 response.content_length = stop - start
             await response.prepare(request)
             chunk_size = 200
@@ -1408,7 +1408,7 @@ async def test_storage_open_partial_read(
             start, stop, _ = rng.indices(len(data))
             return web.Response(
                 status=web.HTTPPartialContent.status_code,
-                headers={"Content-Range": f"bytes {start}-{stop-1}/{len(data)}"},
+                headers={"Content-Range": f"bytes {start}-{stop - 1}/{len(data)}"},
                 body=data[start:stop],
             )
         else:

@@ -98,7 +98,7 @@ class ServiceAccountRefreshingGCSToken(AutoRefreshingGCSToken):
 
     async def _do_refresh(self) -> None:
         await self._credential.refresh(self._request)
-        self._token = self._credential.token
+        self._token = self._credential.token  # type: ignore
 
     def _refresh_required(self) -> bool:
         return not self._token or not self._credential.valid
@@ -276,7 +276,7 @@ class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
             if size == 0:
                 data_range = "*"
             else:
-                data_range = f"{uploaded_bytes}-{uploaded_bytes+size-1}"
+                data_range = f"{uploaded_bytes}-{uploaded_bytes + size - 1}"
             async with self._request(
                 "PUT",
                 url=str(session_url),
