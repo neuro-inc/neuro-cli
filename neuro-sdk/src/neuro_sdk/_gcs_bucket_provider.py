@@ -276,7 +276,7 @@ class GCSProvider(MeasureTimeDiffMixin, BucketProvider):
             if size == 0:
                 data_range = "*"
             else:
-                data_range = f"{uploaded_bytes}-{uploaded_bytes+size-1}"
+                data_range = f"{uploaded_bytes}-{uploaded_bytes + size - 1}"
             async with self._request(
                 "PUT",
                 url=str(session_url),
