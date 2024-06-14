@@ -707,15 +707,22 @@ async def update_cluster_user(
     cluster_user = await root.client._admin.get_cluster_user(
         cluster_name, user_name, org_name=org
     )
-    old_role = str(cluster_user.role)
     cluster_user = replace(cluster_user, role=_ClusterUserRoleType(role))
     await root.client._admin.update_cluster_user(cluster_user)
 
     if not root.quiet:
         root.print(
-            f"Changed user [bold]{rich_escape(cluster_user.user_name)}[/bold]"
-            f"role from {rich_escape(old_role)} to [bold]{rich_escape(role)}[/bold]"
+            f"New role for user [bold]{rich_escape(cluster_user.user_name)}[/bold] "
+            + (
+                f"as member of org [bold]{rich_escape(org)}[/bold] "
+                if org is not None
+                else ""
+            )
+            + f"on cluster [u]{rich_escape(cluster_name)}[/u]:",
+            markup=True,
+            end=" ",
         )
+        root.print(str(cluster_user.role))
 
 
 def _parse_finite_decimal(value: str) -> Decimal:
