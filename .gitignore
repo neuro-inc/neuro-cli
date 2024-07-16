@@ -15,11 +15,11 @@
 .update-deps
 .venv
 .vscode
+apolo-cli/build
+apolo-cli/dist
+apolo-sdk/build
+apolo-sdk/dist
+apolo-sdk/docs/_build
 coverage.xml
-neuro-cli/build
-neuro-cli/dist
-neuro-sdk/build
-neuro-sdk/dist
-neuro-sdk/docs/_build
 pip-wheel-metadata
 venv

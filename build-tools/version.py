@@ -59,22 +59,22 @@ class SetupVP(VersionProcessor):
         updater["metadata"]["version"] = version
         if self._replace_sdk:
             requires = updater["options"]["install_requires"]
-            old_dep = f"neuro-sdk>={old_version}"
+            old_dep = f"apolo-sdk>={old_version}"
             if old_dep not in requires.value:
                 raise click.ClickException(
-                    f"Unable to find neuro-sdk dependency in {fname}."
+                    f"Unable to find apolo-sdk dependency in {fname}."
                 )
-            new_dep = f"neuro-sdk>={version}"
+            new_dep = f"apolo-sdk>={version}"
             new_txt = requires.value.replace(old_dep, new_dep).strip()
             requires.set_values([line.strip() for line in new_txt.splitlines()])
         updater.update_file()
 
 
 FILES = {
-    "neuro-sdk/src/neuro_sdk/__init__.py": InitVP(),
-    "neuro-sdk/setup.cfg": SetupVP(False),
-    "neuro-cli/src/neuro_cli/__init__.py": InitVP(),
-    "neuro-cli/setup.cfg": SetupVP(True),
+    "apolo-sdk/src/apolo_sdk/__init__.py": InitVP(),
+    "apolo-sdk/setup.cfg": SetupVP(False),
+    "apolo-cli/src/apolo_cli/__init__.py": InitVP(),
+    "apolo-cli/setup.cfg": SetupVP(True),
 }
 
 

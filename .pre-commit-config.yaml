@@ -58,7 +58,7 @@ repos:
     files: |
       (?x)^(
         .gitignore|
-        neuro-sdk/docs/spelling_wordlist.txt
+        apolo-sdk/docs/spelling_wordlist.txt
       )$
 - repo: https://github.com/asottile/pyupgrade
   rev: 'v2.37.2'
@@ -69,7 +69,7 @@ repos:
   rev: '7.0.0'
   hooks:
   - id: flake8
-    exclude: "^neuro-sdk/docs/"
+    exclude: "^apolo-sdk/docs/"
 - repo: https://github.com/rhysd/actionlint
   rev: v1.6.15
   hooks:

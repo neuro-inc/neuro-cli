@@ -5,7 +5,7 @@ Cluster administration commands
 ## Usage
 
 ```bash
-neuro admin [OPTIONS] COMMAND [ARGS]...
+apolo admin [OPTIONS] COMMAND [ARGS]...
 ```
 
 Cluster administration commands.
@@ -33,7 +33,7 @@ Print the list of available clusters
 #### Usage
 
 ```bash
-neuro admin get-clusters [OPTIONS]
+apolo admin get-clusters [OPTIONS]
 ```
 
 Print the list of available clusters.
@@ -51,7 +51,7 @@ Create a cluster configuration file
 #### Usage
 
 ```bash
-neuro admin generate-cluster-config [OPTIONS] [CONFIG]
+apolo admin generate-cluster-config [OPTIONS] [CONFIG]
 ```
 
 Create a cluster configuration file.
@@ -70,7 +70,7 @@ Create a new cluster and start its...
 #### Usage
 
 ```bash
-neuro admin add-cluster [OPTIONS] CLUSTER_NAME CONFIG
+apolo admin add-cluster [OPTIONS] CLUSTER_NAME CONFIG
 ```
 
 Create a new cluster and start its provisioning.
@@ -88,7 +88,7 @@ Create a cluster configuration file
 #### Usage
 
 ```bash
-neuro admin show-cluster-options [OPTIONS]
+apolo admin show-cluster-options [OPTIONS]
 ```
 
 Create a cluster configuration file.
@@ -107,7 +107,7 @@ Print the list of all users in the cluster...
 #### Usage
 
 ```bash
-neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
+apolo admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
 ```
 
 Print the list of all users in the cluster with their assigned role.
@@ -125,7 +125,7 @@ Add user access to specified cluster
 #### Usage
 
 ```bash
-neuro admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
+apolo admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
 ```
 
 Add user access to specified cluster.
@@ -145,7 +145,7 @@ Remove user access from the cluster
 #### Usage
 
 ```bash
-neuro admin remove-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME
+apolo admin remove-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
 Remove user access from the cluster.
@@ -163,7 +163,7 @@ Set user quota to given values
 #### Usage
 
 ```bash
-neuro admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+apolo admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
 Set user quota to given values
@@ -184,7 +184,7 @@ Add given values to user quota
 #### Usage
 
 ```bash
-neuro admin add-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+apolo admin add-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
 Add given values to user quota
@@ -204,7 +204,7 @@ Add/update resource preset
 #### Usage
 
 ```bash
-neuro admin update-resource-preset [OPTIONS] CLUSTER_NAME PRESET_NAME
+apolo admin update-resource-preset [OPTIONS] CLUSTER_NAME PRESET_NAME
 ```
 
 Add/update resource preset
@@ -230,7 +230,7 @@ Remove resource preset
 #### Usage
 
 ```bash
-neuro admin remove-resource-preset [OPTIONS] CLUSTER_NAME PRESET_NAME
+apolo admin remove-resource-preset [OPTIONS] CLUSTER_NAME PRESET_NAME
 ```
 
 Remove resource preset

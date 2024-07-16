@@ -5,7 +5,7 @@ Operations with disks
 ## Usage
 
 ```bash
-neuro disk [OPTIONS] COMMAND [ARGS]...
+apolo disk [OPTIONS] COMMAND [ARGS]...
 ```
 
 Operations with disks.
@@ -26,7 +26,7 @@ List disks
 #### Usage
 
 ```bash
-neuro disk ls [OPTIONS]
+apolo disk ls [OPTIONS]
 ```
 
 List disks.
@@ -46,7 +46,7 @@ Create a disk with at least storage amount...
 #### Usage
 
 ```bash
-neuro disk create [OPTIONS] STORAGE
+apolo disk create [OPTIONS] STORAGE
 ```
 
 Create a disk with at least storage amount `STORAGE`.
@@ -68,8 +68,8 @@ Note that server can have big granularity \(for example, 1G\) so it will possibl
 #### Examples
 
 ```bash
-$ neuro disk create 10G
-$ neuro disk create 500M
+$ apolo disk create 10G
+$ apolo disk create 500M
 ```
 
 #### Options
@@ -86,7 +86,7 @@ Get disk DISK\_ID
 #### Usage
 
 ```bash
-neuro disk get [OPTIONS] DISK_ID
+apolo disk get [OPTIONS] DISK_ID
 ```
 
 Get disk `DISK`\_ID.
@@ -105,7 +105,7 @@ Remove disk DISK\_ID
 #### Usage
 
 ```bash
-neuro disk rm [OPTIONS] DISK_IDS...
+apolo disk rm [OPTIONS] DISK_IDS...
 ```
 
 Remove disk `DISK`\_ID.

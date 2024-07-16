@@ -1,0 +1,17 @@
+× Terminal was detached but job is still running
+
+Re-attach to job:
+
+  apolo attach test-job
+
+Check job status:
+
+  apolo status test-job
+
+Kill job:
+
+  apolo kill test-job
+
+Fetch job logs:
+
+  apolo logs test-job

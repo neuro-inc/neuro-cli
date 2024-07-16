@@ -5,7 +5,7 @@ Operations with secrets
 ## Usage
 
 ```bash
-neuro secret [OPTIONS] COMMAND [ARGS]...
+apolo secret [OPTIONS] COMMAND [ARGS]...
 ```
 
 Operations with secrets.
@@ -25,7 +25,7 @@ List secrets
 #### Usage
 
 ```bash
-neuro secret ls [OPTIONS]
+apolo secret ls [OPTIONS]
 ```
 
 List secrets.
@@ -43,7 +43,7 @@ Add secret KEY with data VALUE
 #### Usage
 
 ```bash
-neuro secret add [OPTIONS] KEY VALUE
+apolo secret add [OPTIONS] KEY VALUE
 ```
 
 Add secret `KEY` with data `VALUE`.
@@ -53,8 +53,8 @@ If `VALUE` starts with @ it points to a file with secrets content.
 #### Examples
 
 ```bash
-$ neuro secret add KEY_NAME VALUE
-$ neuro secret add KEY_NAME @path/to/file.txt
+$ apolo secret add KEY_NAME VALUE
+$ apolo secret add KEY_NAME @path/to/file.txt
 ```
 
 #### Options
@@ -70,7 +70,7 @@ Remove secret KEY
 #### Usage
 
 ```bash
-neuro secret rm [OPTIONS] KEY
+apolo secret rm [OPTIONS] KEY
 ```
 
 Remove secret `KEY`.

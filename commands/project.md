@@ -5,7 +5,7 @@ Project operations
 ## Usage
 
 ```bash
-neuro project [OPTIONS] COMMAND [ARGS]...
+apolo project [OPTIONS] COMMAND [ARGS]...
 ```
 
 Project operations.
@@ -23,7 +23,7 @@ Initialize an empty project
 #### Usage
 
 ```bash
-neuro project init [OPTIONS] [SLUG]
+apolo project init [OPTIONS] [SLUG]
 ```
 
 Initialize an empty project.
@@ -33,11 +33,11 @@ Initialize an empty project.
 ```bash
 # Initializes a scaffolding for the new project with the recommended project
 # structure (see http://github.com/neuro-inc/cookiecutter-neuro-project)
-$ neuro project init
+$ apolo project init
 
 # Initializes a scaffolding for the new project with the recommended project
 # structure and sets default project folder name to "example"
-$ neuro project init my-project-id
+$ apolo project init my-project-id
 ```
 
 #### Options

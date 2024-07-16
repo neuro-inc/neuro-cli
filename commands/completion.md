@@ -5,7 +5,7 @@ Output shell completion code
 ## Usage
 
 ```bash
-neuro completion [OPTIONS] COMMAND [ARGS]...
+apolo completion [OPTIONS] COMMAND [ARGS]...
 ```
 
 Output shell completion code.
@@ -24,7 +24,7 @@ Provide an instruction for shell completion...
 #### Usage
 
 ```bash
-neuro completion generate [OPTIONS] [bash|zsh]
+apolo completion generate [OPTIONS] [bash|zsh]
 ```
 
 Provide an instruction for shell completion generation.
@@ -42,7 +42,7 @@ Automatically patch shell configuration...
 #### Usage
 
 ```bash
-neuro completion patch [OPTIONS] [bash|zsh]
+apolo completion patch [OPTIONS] [bash|zsh]
 ```
 
 Automatically patch shell configuration profile to enable completion

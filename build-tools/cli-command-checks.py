@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 
 import click
 
-from neuro_cli.main import cli
+from apolo_cli.main import cli
 
 SHORT_LEN_LIMIT = 45
 
@@ -102,7 +102,7 @@ def main():
     check_commands_tree(
         None,
         cli,
-        ["neuro"],
+        ["apolo"],
         [
             ShortDocLen(SHORT_LEN_LIMIT, errors),
             UniqueShortDocInGroup(errors),

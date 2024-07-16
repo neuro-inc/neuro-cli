@@ -1,5 +1,0 @@
-× Job was killed
-Get job status:
-  neuro status test-job
-Fetch job logs:
-  neuro logs test-job

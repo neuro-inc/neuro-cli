@@ -1,163 +1,163 @@
 
 
 # Table of Contents
-* [neuro](#neuro)
-	* [neuro acl](#neuro-acl)
-		* [neuro acl add-role](#neuro-acl-add-role)
-		* [neuro acl grant](#neuro-acl-grant)
-		* [neuro acl list-roles](#neuro-acl-list-roles)
-		* [neuro acl ls](#neuro-acl-ls)
-		* [neuro acl remove-role](#neuro-acl-remove-role)
-		* [neuro acl revoke](#neuro-acl-revoke)
-	* [neuro admin](#neuro-admin)
-		* [neuro admin add-cluster](#neuro-admin-add-cluster)
-		* [neuro admin add-cluster-user](#neuro-admin-add-cluster-user)
-		* [neuro admin add-org](#neuro-admin-add-org)
-		* [neuro admin add-org-cluster](#neuro-admin-add-org-cluster)
-		* [neuro admin add-org-cluster-credits](#neuro-admin-add-org-cluster-credits)
-		* [neuro admin add-org-user](#neuro-admin-add-org-user)
-		* [neuro admin add-project](#neuro-admin-add-project)
-		* [neuro admin add-project-user](#neuro-admin-add-project-user)
-		* [neuro admin add-resource-preset](#neuro-admin-add-resource-preset)
-		* [neuro admin add-user-credits](#neuro-admin-add-user-credits)
-		* [neuro admin generate-cluster-config](#neuro-admin-generate-cluster-config)
-		* [neuro admin get-cluster-orgs](#neuro-admin-get-cluster-orgs)
-		* [neuro admin get-cluster-users](#neuro-admin-get-cluster-users)
-		* [neuro admin get-clusters](#neuro-admin-get-clusters)
-		* [neuro admin get-org-cluster-quota](#neuro-admin-get-org-cluster-quota)
-		* [neuro admin get-org-users](#neuro-admin-get-org-users)
-		* [neuro admin get-orgs](#neuro-admin-get-orgs)
-		* [neuro admin get-project-users](#neuro-admin-get-project-users)
-		* [neuro admin get-projects](#neuro-admin-get-projects)
-		* [neuro admin get-user-quota](#neuro-admin-get-user-quota)
-		* [neuro admin remove-cluster](#neuro-admin-remove-cluster)
-		* [neuro admin remove-cluster-user](#neuro-admin-remove-cluster-user)
-		* [neuro admin remove-org](#neuro-admin-remove-org)
-		* [neuro admin remove-org-cluster](#neuro-admin-remove-org-cluster)
-		* [neuro admin remove-org-user](#neuro-admin-remove-org-user)
-		* [neuro admin remove-project](#neuro-admin-remove-project)
-		* [neuro admin remove-project-user](#neuro-admin-remove-project-user)
-		* [neuro admin remove-resource-preset](#neuro-admin-remove-resource-preset)
-		* [neuro admin set-org-cluster-credits](#neuro-admin-set-org-cluster-credits)
-		* [neuro admin set-org-cluster-defaults](#neuro-admin-set-org-cluster-defaults)
-		* [neuro admin set-org-cluster-quota](#neuro-admin-set-org-cluster-quota)
-		* [neuro admin set-user-credits](#neuro-admin-set-user-credits)
-		* [neuro admin set-user-quota](#neuro-admin-set-user-quota)
-		* [neuro admin show-cluster-options](#neuro-admin-show-cluster-options)
-		* [neuro admin update-cluster](#neuro-admin-update-cluster)
-		* [neuro admin update-cluster-user](#neuro-admin-update-cluster-user)
-		* [neuro admin update-node-pool](#neuro-admin-update-node-pool)
-		* [neuro admin update-org-cluster](#neuro-admin-update-org-cluster)
-		* [neuro admin update-project](#neuro-admin-update-project)
-		* [neuro admin update-project-user](#neuro-admin-update-project-user)
-		* [neuro admin update-resource-preset](#neuro-admin-update-resource-preset)
-	* [neuro blob](#neuro-blob)
-		* [neuro blob cp](#neuro-blob-cp)
-		* [neuro blob du](#neuro-blob-du)
-		* [neuro blob glob](#neuro-blob-glob)
-		* [neuro blob importbucket](#neuro-blob-importbucket)
-		* [neuro blob ls](#neuro-blob-ls)
-		* [neuro blob lsbucket](#neuro-blob-lsbucket)
-		* [neuro blob lscredentials](#neuro-blob-lscredentials)
-		* [neuro blob mkbucket](#neuro-blob-mkbucket)
-		* [neuro blob mkcredentials](#neuro-blob-mkcredentials)
-		* [neuro blob rm](#neuro-blob-rm)
-		* [neuro blob rmbucket](#neuro-blob-rmbucket)
-		* [neuro blob rmcredentials](#neuro-blob-rmcredentials)
-		* [neuro blob set-bucket-publicity](#neuro-blob-set-bucket-publicity)
-		* [neuro blob sign-url](#neuro-blob-sign-url)
-		* [neuro blob statbucket](#neuro-blob-statbucket)
-		* [neuro blob statcredentials](#neuro-blob-statcredentials)
-	* [neuro completion](#neuro-completion)
-		* [neuro completion generate](#neuro-completion-generate)
-		* [neuro completion patch](#neuro-completion-patch)
-	* [neuro config](#neuro-config)
-		* [neuro config aliases](#neuro-config-aliases)
-		* [neuro config docker](#neuro-config-docker)
-		* [neuro config get-clusters](#neuro-config-get-clusters)
-		* [neuro config login](#neuro-config-login)
-		* [neuro config login-headless](#neuro-config-login-headless)
-		* [neuro config login-with-token](#neuro-config-login-with-token)
-		* [neuro config logout](#neuro-config-logout)
-		* [neuro config show](#neuro-config-show)
-		* [neuro config show-token](#neuro-config-show-token)
-		* [neuro config switch-cluster](#neuro-config-switch-cluster)
-		* [neuro config switch-org](#neuro-config-switch-org)
-		* [neuro config switch-project](#neuro-config-switch-project)
-	* [neuro disk](#neuro-disk)
-		* [neuro disk create](#neuro-disk-create)
-		* [neuro disk get](#neuro-disk-get)
-		* [neuro disk ls](#neuro-disk-ls)
-		* [neuro disk rm](#neuro-disk-rm)
-	* [neuro image](#neuro-image)
-		* [neuro image digest](#neuro-image-digest)
-		* [neuro image ls](#neuro-image-ls)
-		* [neuro image pull](#neuro-image-pull)
-		* [neuro image push](#neuro-image-push)
-		* [neuro image rm](#neuro-image-rm)
-		* [neuro image size](#neuro-image-size)
-		* [neuro image tags](#neuro-image-tags)
-	* [neuro job](#neuro-job)
-		* [neuro job attach](#neuro-job-attach)
-		* [neuro job browse](#neuro-job-browse)
-		* [neuro job bump-life-span](#neuro-job-bump-life-span)
-		* [neuro job exec](#neuro-job-exec)
-		* [neuro job generate-run-command](#neuro-job-generate-run-command)
-		* [neuro job kill](#neuro-job-kill)
-		* [neuro job logs](#neuro-job-logs)
-		* [neuro job ls](#neuro-job-ls)
-		* [neuro job port-forward](#neuro-job-port-forward)
-		* [neuro job run](#neuro-job-run)
-		* [neuro job save](#neuro-job-save)
-		* [neuro job status](#neuro-job-status)
-		* [neuro job top](#neuro-job-top)
-	* [neuro secret](#neuro-secret)
-		* [neuro secret add](#neuro-secret-add)
-		* [neuro secret ls](#neuro-secret-ls)
-		* [neuro secret rm](#neuro-secret-rm)
-	* [neuro service-account](#neuro-service-account)
-		* [neuro service-account create](#neuro-service-account-create)
-		* [neuro service-account get](#neuro-service-account-get)
-		* [neuro service-account ls](#neuro-service-account-ls)
-		* [neuro service-account rm](#neuro-service-account-rm)
-	* [neuro storage](#neuro-storage)
-		* [neuro storage cp](#neuro-storage-cp)
-		* [neuro storage df](#neuro-storage-df)
-		* [neuro storage glob](#neuro-storage-glob)
-		* [neuro storage ls](#neuro-storage-ls)
-		* [neuro storage mkdir](#neuro-storage-mkdir)
-		* [neuro storage mv](#neuro-storage-mv)
-		* [neuro storage rm](#neuro-storage-rm)
-		* [neuro storage tree](#neuro-storage-tree)
-	* [neuro attach](#neuro-attach)
-	* [neuro cp](#neuro-cp)
-	* [neuro exec](#neuro-exec)
-	* [neuro help](#neuro-help)
-	* [neuro images](#neuro-images)
-	* [neuro kill](#neuro-kill)
-	* [neuro login](#neuro-login)
-	* [neuro logout](#neuro-logout)
-	* [neuro logs](#neuro-logs)
-	* [neuro ls](#neuro-ls)
-	* [neuro mkdir](#neuro-mkdir)
-	* [neuro mv](#neuro-mv)
-	* [neuro port-forward](#neuro-port-forward)
-	* [neuro ps](#neuro-ps)
-	* [neuro pull](#neuro-pull)
-	* [neuro push](#neuro-push)
-	* [neuro rm](#neuro-rm)
-	* [neuro run](#neuro-run)
-	* [neuro save](#neuro-save)
-	* [neuro share](#neuro-share)
-	* [neuro status](#neuro-status)
-	* [neuro top](#neuro-top)
+* [apolo](#apolo)
+	* [apolo acl](#apolo-acl)
+		* [apolo acl add-role](#apolo-acl-add-role)
+		* [apolo acl grant](#apolo-acl-grant)
+		* [apolo acl list-roles](#apolo-acl-list-roles)
+		* [apolo acl ls](#apolo-acl-ls)
+		* [apolo acl remove-role](#apolo-acl-remove-role)
+		* [apolo acl revoke](#apolo-acl-revoke)
+	* [apolo admin](#apolo-admin)
+		* [apolo admin add-cluster](#apolo-admin-add-cluster)
+		* [apolo admin add-cluster-user](#apolo-admin-add-cluster-user)
+		* [apolo admin add-org](#apolo-admin-add-org)
+		* [apolo admin add-org-cluster](#apolo-admin-add-org-cluster)
+		* [apolo admin add-org-cluster-credits](#apolo-admin-add-org-cluster-credits)
+		* [apolo admin add-org-user](#apolo-admin-add-org-user)
+		* [apolo admin add-project](#apolo-admin-add-project)
+		* [apolo admin add-project-user](#apolo-admin-add-project-user)
+		* [apolo admin add-resource-preset](#apolo-admin-add-resource-preset)
+		* [apolo admin add-user-credits](#apolo-admin-add-user-credits)
+		* [apolo admin generate-cluster-config](#apolo-admin-generate-cluster-config)
+		* [apolo admin get-cluster-orgs](#apolo-admin-get-cluster-orgs)
+		* [apolo admin get-cluster-users](#apolo-admin-get-cluster-users)
+		* [apolo admin get-clusters](#apolo-admin-get-clusters)
+		* [apolo admin get-org-cluster-quota](#apolo-admin-get-org-cluster-quota)
+		* [apolo admin get-org-users](#apolo-admin-get-org-users)
+		* [apolo admin get-orgs](#apolo-admin-get-orgs)
+		* [apolo admin get-project-users](#apolo-admin-get-project-users)
+		* [apolo admin get-projects](#apolo-admin-get-projects)
+		* [apolo admin get-user-quota](#apolo-admin-get-user-quota)
+		* [apolo admin remove-cluster](#apolo-admin-remove-cluster)
+		* [apolo admin remove-cluster-user](#apolo-admin-remove-cluster-user)
+		* [apolo admin remove-org](#apolo-admin-remove-org)
+		* [apolo admin remove-org-cluster](#apolo-admin-remove-org-cluster)
+		* [apolo admin remove-org-user](#apolo-admin-remove-org-user)
+		* [apolo admin remove-project](#apolo-admin-remove-project)
+		* [apolo admin remove-project-user](#apolo-admin-remove-project-user)
+		* [apolo admin remove-resource-preset](#apolo-admin-remove-resource-preset)
+		* [apolo admin set-org-cluster-credits](#apolo-admin-set-org-cluster-credits)
+		* [apolo admin set-org-cluster-defaults](#apolo-admin-set-org-cluster-defaults)
+		* [apolo admin set-org-cluster-quota](#apolo-admin-set-org-cluster-quota)
+		* [apolo admin set-user-credits](#apolo-admin-set-user-credits)
+		* [apolo admin set-user-quota](#apolo-admin-set-user-quota)
+		* [apolo admin show-cluster-options](#apolo-admin-show-cluster-options)
+		* [apolo admin update-cluster](#apolo-admin-update-cluster)
+		* [apolo admin update-cluster-user](#apolo-admin-update-cluster-user)
+		* [apolo admin update-node-pool](#apolo-admin-update-node-pool)
+		* [apolo admin update-org-cluster](#apolo-admin-update-org-cluster)
+		* [apolo admin update-project](#apolo-admin-update-project)
+		* [apolo admin update-project-user](#apolo-admin-update-project-user)
+		* [apolo admin update-resource-preset](#apolo-admin-update-resource-preset)
+	* [apolo blob](#apolo-blob)
+		* [apolo blob cp](#apolo-blob-cp)
+		* [apolo blob du](#apolo-blob-du)
+		* [apolo blob glob](#apolo-blob-glob)
+		* [apolo blob importbucket](#apolo-blob-importbucket)
+		* [apolo blob ls](#apolo-blob-ls)
+		* [apolo blob lsbucket](#apolo-blob-lsbucket)
+		* [apolo blob lscredentials](#apolo-blob-lscredentials)
+		* [apolo blob mkbucket](#apolo-blob-mkbucket)
+		* [apolo blob mkcredentials](#apolo-blob-mkcredentials)
+		* [apolo blob rm](#apolo-blob-rm)
+		* [apolo blob rmbucket](#apolo-blob-rmbucket)
+		* [apolo blob rmcredentials](#apolo-blob-rmcredentials)
+		* [apolo blob set-bucket-publicity](#apolo-blob-set-bucket-publicity)
+		* [apolo blob sign-url](#apolo-blob-sign-url)
+		* [apolo blob statbucket](#apolo-blob-statbucket)
+		* [apolo blob statcredentials](#apolo-blob-statcredentials)
+	* [apolo completion](#apolo-completion)
+		* [apolo completion generate](#apolo-completion-generate)
+		* [apolo completion patch](#apolo-completion-patch)
+	* [apolo config](#apolo-config)
+		* [apolo config aliases](#apolo-config-aliases)
+		* [apolo config docker](#apolo-config-docker)
+		* [apolo config get-clusters](#apolo-config-get-clusters)
+		* [apolo config login](#apolo-config-login)
+		* [apolo config login-headless](#apolo-config-login-headless)
+		* [apolo config login-with-token](#apolo-config-login-with-token)
+		* [apolo config logout](#apolo-config-logout)
+		* [apolo config show](#apolo-config-show)
+		* [apolo config show-token](#apolo-config-show-token)
+		* [apolo config switch-cluster](#apolo-config-switch-cluster)
+		* [apolo config switch-org](#apolo-config-switch-org)
+		* [apolo config switch-project](#apolo-config-switch-project)
+	* [apolo disk](#apolo-disk)
+		* [apolo disk create](#apolo-disk-create)
+		* [apolo disk get](#apolo-disk-get)
+		* [apolo disk ls](#apolo-disk-ls)
+		* [apolo disk rm](#apolo-disk-rm)
+	* [apolo image](#apolo-image)
+		* [apolo image digest](#apolo-image-digest)
+		* [apolo image ls](#apolo-image-ls)
+		* [apolo image pull](#apolo-image-pull)
+		* [apolo image push](#apolo-image-push)
+		* [apolo image rm](#apolo-image-rm)
+		* [apolo image size](#apolo-image-size)
+		* [apolo image tags](#apolo-image-tags)
+	* [apolo job](#apolo-job)
+		* [apolo job attach](#apolo-job-attach)
+		* [apolo job browse](#apolo-job-browse)
+		* [apolo job bump-life-span](#apolo-job-bump-life-span)
+		* [apolo job exec](#apolo-job-exec)
+		* [apolo job generate-run-command](#apolo-job-generate-run-command)
+		* [apolo job kill](#apolo-job-kill)
+		* [apolo job logs](#apolo-job-logs)
+		* [apolo job ls](#apolo-job-ls)
+		* [apolo job port-forward](#apolo-job-port-forward)
+		* [apolo job run](#apolo-job-run)
+		* [apolo job save](#apolo-job-save)
+		* [apolo job status](#apolo-job-status)
+		* [apolo job top](#apolo-job-top)
+	* [apolo secret](#apolo-secret)
+		* [apolo secret add](#apolo-secret-add)
+		* [apolo secret ls](#apolo-secret-ls)
+		* [apolo secret rm](#apolo-secret-rm)
+	* [apolo service-account](#apolo-service-account)
+		* [apolo service-account create](#apolo-service-account-create)
+		* [apolo service-account get](#apolo-service-account-get)
+		* [apolo service-account ls](#apolo-service-account-ls)
+		* [apolo service-account rm](#apolo-service-account-rm)
+	* [apolo storage](#apolo-storage)
+		* [apolo storage cp](#apolo-storage-cp)
+		* [apolo storage df](#apolo-storage-df)
+		* [apolo storage glob](#apolo-storage-glob)
+		* [apolo storage ls](#apolo-storage-ls)
+		* [apolo storage mkdir](#apolo-storage-mkdir)
+		* [apolo storage mv](#apolo-storage-mv)
+		* [apolo storage rm](#apolo-storage-rm)
+		* [apolo storage tree](#apolo-storage-tree)
+	* [apolo attach](#apolo-attach)
+	* [apolo cp](#apolo-cp)
+	* [apolo exec](#apolo-exec)
+	* [apolo help](#apolo-help)
+	* [apolo images](#apolo-images)
+	* [apolo kill](#apolo-kill)
+	* [apolo login](#apolo-login)
+	* [apolo logout](#apolo-logout)
+	* [apolo logs](#apolo-logs)
+	* [apolo ls](#apolo-ls)
+	* [apolo mkdir](#apolo-mkdir)
+	* [apolo mv](#apolo-mv)
+	* [apolo port-forward](#apolo-port-forward)
+	* [apolo ps](#apolo-ps)
+	* [apolo pull](#apolo-pull)
+	* [apolo push](#apolo-push)
+	* [apolo rm](#apolo-rm)
+	* [apolo run](#apolo-run)
+	* [apolo save](#apolo-save)
+	* [apolo share](#apolo-share)
+	* [apolo status](#apolo-status)
+	* [apolo top](#apolo-top)
 
-# neuro
+# apolo
 
 **Usage:**
 
 ```bash
-neuro [OPTIONS] COMMAND [ARGS]...
+apolo [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -166,14 +166,14 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--color \[yes &#124; no &#124; auto]_|Color mode.|
-|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Neuro Platform CLI is available for download.  \[env var: NEURO\_CLI_DISABLE_PYPI_VERSION_CHECK]|
+|_\--disable-pypi-version-check_|Don't periodically check PyPI to determine whether a new version of Apolo Platform CLI is available for download.  \[env var: NEURO\_CLI_DISABLE_PYPI_VERSION_CHECK]|
 |_\--hide-token / --no-hide-token_|Prevent user's token sent in HTTP headers from being printed out to stderr during HTTP tracing. Can be used only together with option '--trace'. On by default.|
 |_\--iso-datetime-format / --no-iso-datetime-format_|Use ISO 8601 format for printing date and time|
 |_\--network-timeout FLOAT_|Network read timeout, seconds.|
 |_\--neuromation-config PATH_|Path to config directory.|
 |_\-q, --quiet_|Give less output. Option is additive, and can be used up to 2 times.|
 |_\--show-traceback_|Show python traceback on error, useful for debugging the tool.|
-|_\--skip-stats / --no-skip-stats_|Skip sending usage statistics to Neuro servers. Note: the statistics has no sensitive data, e.g. file, job, image, or user names, executed command lines, environment variables, etc.|
+|_\--skip-stats / --no-skip-stats_|Skip sending usage statistics to apolo servers. Note: the statistics has no sensitive data, e.g. file, job, image, or user names, executed command lines, environment variables, etc.|
 |_--trace_|Trace sent HTTP requests and received replies to stderr.|
 |_\-v, --verbose_|Give more output. Option is additive, and can be used up to 2 times.|
 |_--version_|Show the version and exit.|
@@ -183,57 +183,57 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro acl](#neuro-acl)_| Access Control List management |
-| _[neuro admin](#neuro-admin)_| Cluster administration commands |
-| _[neuro blob](#neuro-blob)_| Blob storage operations |
-| _[neuro completion](#neuro-completion)_| Output shell completion code |
-| _[neuro config](#neuro-config)_| Client configuration |
-| _[neuro disk](#neuro-disk)_| Operations with disks |
-| _[neuro image](#neuro-image)_| Container image operations |
-| _[neuro job](#neuro-job)_| Job operations |
-| _[neuro secret](#neuro-secret)_| Operations with secrets |
-| _[neuro service-account](#neuro-service-account)_| Operations with service accounts |
-| _[neuro storage](#neuro-storage)_| Storage operations |
+| _[apolo acl](#apolo-acl)_| Access Control List management |
+| _[apolo admin](#apolo-admin)_| Cluster administration commands |
+| _[apolo blob](#apolo-blob)_| Blob storage operations |
+| _[apolo completion](#apolo-completion)_| Output shell completion code |
+| _[apolo config](#apolo-config)_| Client configuration |
+| _[apolo disk](#apolo-disk)_| Operations with disks |
+| _[apolo image](#apolo-image)_| Container image operations |
+| _[apolo job](#apolo-job)_| Job operations |
+| _[apolo secret](#apolo-secret)_| Operations with secrets |
+| _[apolo service-account](#apolo-service-account)_| Operations with service accounts |
+| _[apolo storage](#apolo-storage)_| Storage operations |
 
 
 **Commands:**
 
 |Usage|Description|
 |---|---|
-| _[neuro attach](#neuro-attach)_| Attach terminal to a job |
-| _[neuro cp](#neuro-cp)_| Copy files and directories |
-| _[neuro exec](#neuro-exec)_| Execute command in a running job |
-| _[neuro help](#neuro-help)_| Get help on a command |
-| _[neuro images](#neuro-images)_| List images |
-| _[neuro kill](#neuro-kill)_| Kill job\(s) |
-| _[neuro login](#neuro-login)_| Log into Neuro Platform |
-| _[neuro logout](#neuro-logout)_| Log out |
-| _[neuro logs](#neuro-logs)_| Print the logs for a job |
-| _[neuro ls](#neuro-ls)_| List directory contents |
-| _[neuro mkdir](#neuro-mkdir)_| Make directories |
-| _[neuro mv](#neuro-mv)_| Move or rename files and directories |
-| _[neuro port-forward](#neuro-port-forward)_| Forward port\(s) of a job |
-| _[neuro ps](#neuro-ps)_| List all jobs |
-| _[neuro pull](#neuro-pull)_| Pull an image from platform registry |
-| _[neuro push](#neuro-push)_| Push an image to platform registry |
-| _[neuro rm](#neuro-rm)_| Remove files or directories |
-| _[neuro run](#neuro-run)_| Run a job |
-| _[neuro save](#neuro-save)_| Save job's state to an image |
-| _[neuro share](#neuro-share)_| Shares resource with another user |
-| _[neuro status](#neuro-status)_| Display status of a job |
-| _[neuro top](#neuro-top)_| Display GPU/CPU/Memory usage |
+| _[apolo attach](#apolo-attach)_| Attach terminal to a job |
+| _[apolo cp](#apolo-cp)_| Copy files and directories |
+| _[apolo exec](#apolo-exec)_| Execute command in a running job |
+| _[apolo help](#apolo-help)_| Get help on a command |
+| _[apolo images](#apolo-images)_| List images |
+| _[apolo kill](#apolo-kill)_| Kill job\(s) |
+| _[apolo login](#apolo-login)_| Log into Apolo Platform |
+| _[apolo logout](#apolo-logout)_| Log out |
+| _[apolo logs](#apolo-logs)_| Print the logs for a job |
+| _[apolo ls](#apolo-ls)_| List directory contents |
+| _[apolo mkdir](#apolo-mkdir)_| Make directories |
+| _[apolo mv](#apolo-mv)_| Move or rename files and directories |
+| _[apolo port-forward](#apolo-port-forward)_| Forward port\(s) of a job |
+| _[apolo ps](#apolo-ps)_| List all jobs |
+| _[apolo pull](#apolo-pull)_| Pull an image from platform registry |
+| _[apolo push](#apolo-push)_| Push an image to platform registry |
+| _[apolo rm](#apolo-rm)_| Remove files or directories |
+| _[apolo run](#apolo-run)_| Run a job |
+| _[apolo save](#apolo-save)_| Save job's state to an image |
+| _[apolo share](#apolo-share)_| Shares resource with another user |
+| _[apolo status](#apolo-status)_| Display status of a job |
+| _[apolo top](#apolo-top)_| Display GPU/CPU/Memory usage |
 
 
 
 
-## neuro acl
+## apolo acl
 
 Access Control List management.
 
 **Usage:**
 
 ```bash
-neuro acl [OPTIONS] COMMAND [ARGS]...
+apolo acl [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -247,31 +247,31 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro acl add-role](#neuro-acl-add-role)_| Add new role |
-| _[neuro acl grant](#neuro-acl-grant)_| Shares resource with another user |
-| _[neuro acl list-roles](#neuro-acl-list-roles)_| List roles |
-| _[neuro acl ls](#neuro-acl-ls)_| List shared resources |
-| _[neuro acl remove-role](#neuro-acl-remove-role)_| Remove existing role |
-| _[neuro acl revoke](#neuro-acl-revoke)_| Revoke user access from another user |
+| _[apolo acl add-role](#apolo-acl-add-role)_| Add new role |
+| _[apolo acl grant](#apolo-acl-grant)_| Shares resource with another user |
+| _[apolo acl list-roles](#apolo-acl-list-roles)_| List roles |
+| _[apolo acl ls](#apolo-acl-ls)_| List shared resources |
+| _[apolo acl remove-role](#apolo-acl-remove-role)_| Remove existing role |
+| _[apolo acl revoke](#apolo-acl-revoke)_| Revoke user access from another user |
 
 
 
 
-### neuro acl add-role
+### apolo acl add-role
 
 Add new role.<br/>
 
 **Usage:**
 
 ```bash
-neuro acl add-role [OPTIONS] ROLE_NAME
+apolo acl add-role [OPTIONS] ROLE_NAME
 ```
 
 **Examples:**
 
 ```bash
 
-neuro acl add-role mycompany/subdivision
+apolo acl add-role mycompany/subdivision
 
 ```
 
@@ -284,23 +284,23 @@ Name | Description|
 
 
 
-### neuro acl grant
+### apolo acl grant
 
 Shares resource with another user.<br/><br/>URI shared resource.<br/><br/>USER username to share resource with.<br/><br/>PERMISSION sharing access right: read, write, or manage.<br/>
 
 **Usage:**
 
 ```bash
-neuro acl grant [OPTIONS] URI USER {read|write|manage}
+apolo acl grant [OPTIONS] URI USER {read|write|manage}
 ```
 
 **Examples:**
 
 ```bash
 
-neuro acl grant storage:///sample_data/ alice manage
-neuro acl grant image:resnet50 bob read
-neuro acl grant job:///my_job_id alice write
+apolo acl grant storage:///sample_data/ alice manage
+apolo acl grant image:resnet50 bob read
+apolo acl grant job:///my_job_id alice write
 
 ```
 
@@ -313,22 +313,22 @@ Name | Description|
 
 
 
-### neuro acl list-roles
+### apolo acl list-roles
 
 List roles.<br/>
 
 **Usage:**
 
 ```bash
-neuro acl list-roles [OPTIONS]
+apolo acl list-roles [OPTIONS]
 ```
 
 **Examples:**
 
 ```bash
 
-neuro acl list-roles
-neuro acl list-roles username/projects
+apolo acl list-roles
+apolo acl list-roles username/projects
 
 ```
 
@@ -342,24 +342,24 @@ Name | Description|
 
 
 
-### neuro acl ls
+### apolo acl ls
 
 List shared resources.<br/><br/>The command displays a list of resources shared BY current user \(default).<br/><br/>To display a list of resources shared WITH current user apply --shared option.<br/>
 
 **Usage:**
 
 ```bash
-neuro acl ls [OPTIONS] [URI]
+apolo acl ls [OPTIONS] [URI]
 ```
 
 **Examples:**
 
 ```bash
 
-neuro acl list
-neuro acl list storage://
-neuro acl list --shared
-neuro acl list --shared image://
+apolo acl list
+apolo acl list storage://
+apolo acl list --shared
+apolo acl list --shared image://
 
 ```
 
@@ -375,21 +375,21 @@ Name | Description|
 
 
 
-### neuro acl remove-role
+### apolo acl remove-role
 
 Remove existing role.<br/>
 
 **Usage:**
 
 ```bash
-neuro acl remove-role [OPTIONS] ROLE_NAME
+apolo acl remove-role [OPTIONS] ROLE_NAME
 ```
 
 **Examples:**
 
 ```bash
 
-neuro acl remove-role mycompany/subdivision
+apolo acl remove-role mycompany/subdivision
 
 ```
 
@@ -402,23 +402,23 @@ Name | Description|
 
 
 
-### neuro acl revoke
+### apolo acl revoke
 
 Revoke user access from another user.<br/><br/>URI previously shared resource to revoke.<br/><br/>USER to revoke URI resource from.<br/>
 
 **Usage:**
 
 ```bash
-neuro acl revoke [OPTIONS] URI USER
+apolo acl revoke [OPTIONS] URI USER
 ```
 
 **Examples:**
 
 ```bash
 
-neuro acl revoke storage:///sample_data/ alice
-neuro acl revoke image:resnet50 bob
-neuro acl revoke job:///my_job_id alice
+apolo acl revoke storage:///sample_data/ alice
+apolo acl revoke image:resnet50 bob
+apolo acl revoke job:///my_job_id alice
 
 ```
 
@@ -431,14 +431,14 @@ Name | Description|
 
 
 
-## neuro admin
+## apolo admin
 
 Cluster administration commands.
 
 **Usage:**
 
 ```bash
-neuro admin [OPTIONS] COMMAND [ARGS]...
+apolo admin [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -452,59 +452,59 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro admin add-cluster](#neuro-admin-add-cluster)_| Create a new cluster |
-| _[neuro admin add\-cluster-user](#neuro-admin-add-cluster-user)_| Add user access to specified cluster |
-| _[neuro admin add-org](#neuro-admin-add-org)_| Create a new org |
-| _[neuro admin add\-org-cluster](#neuro-admin-add-org-cluster)_| Add org access to specified cluster |
-| _[neuro admin add\-org-cluster-credits](#neuro-admin-add-org-cluster-credits)_| Add given values to org cluster balance |
-| _[neuro admin add\-org-user](#neuro-admin-add-org-user)_| Add user access to specified org |
-| _[neuro admin add-project](#neuro-admin-add-project)_| Add new project to specified cluster |
-| _[neuro admin add\-project-user](#neuro-admin-add-project-user)_| Add user access to specified project |
-| _[neuro admin add\-resource-preset](#neuro-admin-add-resource-preset)_| Add new resource preset |
-| _[neuro admin add\-user-credits](#neuro-admin-add-user-credits)_| Add given values to user quota |
-| _[neuro admin generate\-cluster-config](#neuro-admin-generate-cluster-config)_| Create a cluster configuration file |
-| _[neuro admin get\-cluster-orgs](#neuro-admin-get-cluster-orgs)_| Print the list of all orgs in the cluster |
-| _[neuro admin get\-cluster-users](#neuro-admin-get-cluster-users)_| List users in specified cluster |
-| _[neuro admin get-clusters](#neuro-admin-get-clusters)_| Print the list of available clusters |
-| _[neuro admin get\-org-cluster-quota](#neuro-admin-get-org-cluster-quota)_| Get info about org quota in given cluster |
-| _[neuro admin get\-org-users](#neuro-admin-get-org-users)_| List users in specified org |
-| _[neuro admin get-orgs](#neuro-admin-get-orgs)_| Print the list of available orgs |
-| _[neuro admin get\-project-users](#neuro-admin-get-project-users)_| List users in specified project |
-| _[neuro admin get-projects](#neuro-admin-get-projects)_| Print the list of all projects in the cluster |
-| _[neuro admin get\-user-quota](#neuro-admin-get-user-quota)_| Get info about user quota in given cluster |
-| _[neuro admin remove-cluster](#neuro-admin-remove-cluster)_| Drop a cluster |
-| _[neuro admin remove\-cluster-user](#neuro-admin-remove-cluster-user)_| Remove user access from the cluster |
-| _[neuro admin remove-org](#neuro-admin-remove-org)_| Drop an org |
-| _[neuro admin remove\-org-cluster](#neuro-admin-remove-org-cluster)_| Drop an org cluster |
-| _[neuro admin remove\-org-user](#neuro-admin-remove-org-user)_| Remove user access from the org |
-| _[neuro admin remove-project](#neuro-admin-remove-project)_| Drop a project |
-| _[neuro admin remove\-project-user](#neuro-admin-remove-project-user)_| Remove user access from the project |
-| _[neuro admin remove\-resource-preset](#neuro-admin-remove-resource-preset)_| Remove resource preset |
-| _[neuro admin set\-org-cluster-credits](#neuro-admin-set-org-cluster-credits)_| Set org cluster credits to given value |
-| _[neuro admin set\-org-cluster-defaults](#neuro-admin-set-org-cluster-defaults)_| Set org cluster defaults to given value |
-| _[neuro admin set\-org-cluster-quota](#neuro-admin-set-org-cluster-quota)_| Set org cluster quota to given values |
-| _[neuro admin set\-user-credits](#neuro-admin-set-user-credits)_| Set user credits to given value |
-| _[neuro admin set\-user-quota](#neuro-admin-set-user-quota)_| Set user quota to given values |
-| _[neuro admin show\-cluster-options](#neuro-admin-show-cluster-options)_| Show available cluster options |
-| _[neuro admin update-cluster](#neuro-admin-update-cluster)_| Update a cluster |
-| _[neuro admin update\-cluster-user](#neuro-admin-update-cluster-user)_|  |
-| _[neuro admin update\-node-pool](#neuro-admin-update-node-pool)_| Update cluster node pool |
-| _[neuro admin update\-org-cluster](#neuro-admin-update-org-cluster)_| Update org cluster quotas |
-| _[neuro admin update-project](#neuro-admin-update-project)_| Update project settings |
-| _[neuro admin update\-project-user](#neuro-admin-update-project-user)_| Update user access to specified project |
-| _[neuro admin update\-resource-preset](#neuro-admin-update-resource-preset)_| Update existing resource preset |
+| _[apolo admin add-cluster](#apolo-admin-add-cluster)_| Create a new cluster |
+| _[apolo admin add\-cluster-user](#apolo-admin-add-cluster-user)_| Add user access to specified cluster |
+| _[apolo admin add-org](#apolo-admin-add-org)_| Create a new org |
+| _[apolo admin add\-org-cluster](#apolo-admin-add-org-cluster)_| Add org access to specified cluster |
+| _[apolo admin add\-org-cluster-credits](#apolo-admin-add-org-cluster-credits)_| Add given values to org cluster balance |
+| _[apolo admin add\-org-user](#apolo-admin-add-org-user)_| Add user access to specified org |
+| _[apolo admin add-project](#apolo-admin-add-project)_| Add new project to specified cluster |
+| _[apolo admin add\-project-user](#apolo-admin-add-project-user)_| Add user access to specified project |
+| _[apolo admin add\-resource-preset](#apolo-admin-add-resource-preset)_| Add new resource preset |
+| _[apolo admin add\-user-credits](#apolo-admin-add-user-credits)_| Add given values to user quota |
+| _[apolo admin generate\-cluster-config](#apolo-admin-generate-cluster-config)_| Create a cluster configuration file |
+| _[apolo admin get\-cluster-orgs](#apolo-admin-get-cluster-orgs)_| Print the list of all orgs in the cluster |
+| _[apolo admin get\-cluster-users](#apolo-admin-get-cluster-users)_| List users in specified cluster |
+| _[apolo admin get-clusters](#apolo-admin-get-clusters)_| Print the list of available clusters |
+| _[apolo admin get\-org-cluster-quota](#apolo-admin-get-org-cluster-quota)_| Get info about org quota in given cluster |
+| _[apolo admin get\-org-users](#apolo-admin-get-org-users)_| List users in specified org |
+| _[apolo admin get-orgs](#apolo-admin-get-orgs)_| Print the list of available orgs |
+| _[apolo admin get\-project-users](#apolo-admin-get-project-users)_| List users in specified project |
+| _[apolo admin get-projects](#apolo-admin-get-projects)_| Print the list of all projects in the cluster |
+| _[apolo admin get\-user-quota](#apolo-admin-get-user-quota)_| Get info about user quota in given cluster |
+| _[apolo admin remove-cluster](#apolo-admin-remove-cluster)_| Drop a cluster |
+| _[apolo admin remove\-cluster-user](#apolo-admin-remove-cluster-user)_| Remove user access from the cluster |
+| _[apolo admin remove-org](#apolo-admin-remove-org)_| Drop an org |
+| _[apolo admin remove\-org-cluster](#apolo-admin-remove-org-cluster)_| Drop an org cluster |
+| _[apolo admin remove\-org-user](#apolo-admin-remove-org-user)_| Remove user access from the org |
+| _[apolo admin remove-project](#apolo-admin-remove-project)_| Drop a project |
+| _[apolo admin remove\-project-user](#apolo-admin-remove-project-user)_| Remove user access from the project |
+| _[apolo admin remove\-resource-preset](#apolo-admin-remove-resource-preset)_| Remove resource preset |
+| _[apolo admin set\-org-cluster-credits](#apolo-admin-set-org-cluster-credits)_| Set org cluster credits to given value |
+| _[apolo admin set\-org-cluster-defaults](#apolo-admin-set-org-cluster-defaults)_| Set org cluster defaults to given value |
+| _[apolo admin set\-org-cluster-quota](#apolo-admin-set-org-cluster-quota)_| Set org cluster quota to given values |
+| _[apolo admin set\-user-credits](#apolo-admin-set-user-credits)_| Set user credits to given value |
+| _[apolo admin set\-user-quota](#apolo-admin-set-user-quota)_| Set user quota to given values |
+| _[apolo admin show\-cluster-options](#apolo-admin-show-cluster-options)_| Show available cluster options |
+| _[apolo admin update-cluster](#apolo-admin-update-cluster)_| Update a cluster |
+| _[apolo admin update\-cluster-user](#apolo-admin-update-cluster-user)_|  |
+| _[apolo admin update\-node-pool](#apolo-admin-update-node-pool)_| Update cluster node pool |
+| _[apolo admin update\-org-cluster](#apolo-admin-update-org-cluster)_| Update org cluster quotas |
+| _[apolo admin update-project](#apolo-admin-update-project)_| Update project settings |
+| _[apolo admin update\-project-user](#apolo-admin-update-project-user)_| Update user access to specified project |
+| _[apolo admin update\-resource-preset](#apolo-admin-update-resource-preset)_| Update existing resource preset |
 
 
 
 
-### neuro admin add-cluster
+### apolo admin add-cluster
 
 Create a new cluster.<br/><br/>Creates cluster entry on admin side and then start its provisioning using<br/>provided config.
 
 **Usage:**
 
 ```bash
-neuro admin add-cluster [OPTIONS] CLUSTER_NAME CONFIG
+apolo admin add-cluster [OPTIONS] CLUSTER_NAME CONFIG
 ```
 
 **Options:**
@@ -519,14 +519,14 @@ Name | Description|
 
 
 
-### neuro admin add-cluster-user
+### apolo admin add-cluster-user
 
 Add user access to specified cluster.<br/><br/>The command supports one of 3 user roles: admin, manager or user.
 
 **Usage:**
 
 ```bash
-neuro admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
+apolo admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
 ```
 
 **Options:**
@@ -541,14 +541,14 @@ Name | Description|
 
 
 
-### neuro admin add-org
+### apolo admin add-org
 
 Create a new org.
 
 **Usage:**
 
 ```bash
-neuro admin add-org [OPTIONS] ORG_NAME
+apolo admin add-org [OPTIONS] ORG_NAME
 ```
 
 **Options:**
@@ -560,14 +560,14 @@ Name | Description|
 
 
 
-### neuro admin add-org-cluster
+### apolo admin add-org-cluster
 
 Add org access to specified cluster.
 
 **Usage:**
 
 ```bash
-neuro admin add-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
+apolo admin add-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
 **Options:**
@@ -585,14 +585,14 @@ Name | Description|
 
 
 
-### neuro admin add-org-cluster-credits
+### apolo admin add-org-cluster-credits
 
 Add given values to org cluster balance
 
 **Usage:**
 
 ```bash
-neuro admin add-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
+apolo admin add-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
 **Options:**
@@ -605,14 +605,14 @@ Name | Description|
 
 
 
-### neuro admin add-org-user
+### apolo admin add-org-user
 
 Add user access to specified org.<br/><br/>The command supports one of 3 user roles: admin, manager or user.
 
 **Usage:**
 
 ```bash
-neuro admin add-org-user [OPTIONS] ORG_NAME USER_NAME [ROLE]
+apolo admin add-org-user [OPTIONS] ORG_NAME USER_NAME [ROLE]
 ```
 
 **Options:**
@@ -624,14 +624,14 @@ Name | Description|
 
 
 
-### neuro admin add-project
+### apolo admin add-project
 
 Add new project to specified cluster.
 
 **Usage:**
 
 ```bash
-neuro admin add-project [OPTIONS] CLUSTER_NAME NAME
+apolo admin add-project [OPTIONS] CLUSTER_NAME NAME
 ```
 
 **Options:**
@@ -646,14 +646,14 @@ Name | Description|
 
 
 
-### neuro admin add-project-user
+### apolo admin add-project-user
 
 Add user access to specified project.<br/><br/>The command supports one of 4 user roles: reader, writer, manager or admin.
 
 **Usage:**
 
 ```bash
-neuro admin add-project-user [OPTIONS] CLUSTER_NAME PROJECT_NAME
+apolo admin add-project-user [OPTIONS] CLUSTER_NAME PROJECT_NAME
                                     USER_NAME [ROLE]
 ```
 
@@ -667,14 +667,14 @@ Name | Description|
 
 
 
-### neuro admin add-resource-preset
+### apolo admin add-resource-preset
 
 Add new resource preset
 
 **Usage:**
 
 ```bash
-neuro admin add-resource-preset [OPTIONS] PRESET_NAME
+apolo admin add-resource-preset [OPTIONS] PRESET_NAME
 ```
 
 **Options:**
@@ -697,14 +697,14 @@ Name | Description|
 
 
 
-### neuro admin add-user-credits
+### apolo admin add-user-credits
 
 Add given values to user quota
 
 **Usage:**
 
 ```bash
-neuro admin add-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
+apolo admin add-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
 **Options:**
@@ -718,14 +718,14 @@ Name | Description|
 
 
 
-### neuro admin generate-cluster-config
+### apolo admin generate-cluster-config
 
 Create a cluster configuration file.
 
 **Usage:**
 
 ```bash
-neuro admin generate-cluster-config [OPTIONS] [CONFIG]
+apolo admin generate-cluster-config [OPTIONS] [CONFIG]
 ```
 
 **Options:**
@@ -738,14 +738,14 @@ Name | Description|
 
 
 
-### neuro admin get-cluster-orgs
+### apolo admin get-cluster-orgs
 
 Print the list of all orgs in the cluster
 
 **Usage:**
 
 ```bash
-neuro admin get-cluster-orgs [OPTIONS] CLUSTER_NAME
+apolo admin get-cluster-orgs [OPTIONS] CLUSTER_NAME
 ```
 
 **Options:**
@@ -757,14 +757,14 @@ Name | Description|
 
 
 
-### neuro admin get-cluster-users
+### apolo admin get-cluster-users
 
 List users in specified cluster
 
 **Usage:**
 
 ```bash
-neuro admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
+apolo admin get-cluster-users [OPTIONS] [CLUSTER_NAME]
 ```
 
 **Options:**
@@ -778,14 +778,14 @@ Name | Description|
 
 
 
-### neuro admin get-clusters
+### apolo admin get-clusters
 
 Print the list of available clusters.
 
 **Usage:**
 
 ```bash
-neuro admin get-clusters [OPTIONS]
+apolo admin get-clusters [OPTIONS]
 ```
 
 **Options:**
@@ -797,14 +797,14 @@ Name | Description|
 
 
 
-### neuro admin get-org-cluster-quota
+### apolo admin get-org-cluster-quota
 
 Get info about org quota in given cluster
 
 **Usage:**
 
 ```bash
-neuro admin get-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
+apolo admin get-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
 **Options:**
@@ -816,14 +816,14 @@ Name | Description|
 
 
 
-### neuro admin get-org-users
+### apolo admin get-org-users
 
 List users in specified org
 
 **Usage:**
 
 ```bash
-neuro admin get-org-users [OPTIONS] ORG_NAME
+apolo admin get-org-users [OPTIONS] ORG_NAME
 ```
 
 **Options:**
@@ -835,14 +835,14 @@ Name | Description|
 
 
 
-### neuro admin get-orgs
+### apolo admin get-orgs
 
 Print the list of available orgs.
 
 **Usage:**
 
 ```bash
-neuro admin get-orgs [OPTIONS]
+apolo admin get-orgs [OPTIONS]
 ```
 
 **Options:**
@@ -854,14 +854,14 @@ Name | Description|
 
 
 
-### neuro admin get-project-users
+### apolo admin get-project-users
 
 List users in specified project
 
 **Usage:**
 
 ```bash
-neuro admin get-project-users [OPTIONS] CLUSTER_NAME PROJECT_NAME
+apolo admin get-project-users [OPTIONS] CLUSTER_NAME PROJECT_NAME
 ```
 
 **Options:**
@@ -874,14 +874,14 @@ Name | Description|
 
 
 
-### neuro admin get-projects
+### apolo admin get-projects
 
 Print the list of all projects in the cluster
 
 **Usage:**
 
 ```bash
-neuro admin get-projects [OPTIONS] CLUSTER_NAME
+apolo admin get-projects [OPTIONS] CLUSTER_NAME
 ```
 
 **Options:**
@@ -894,14 +894,14 @@ Name | Description|
 
 
 
-### neuro admin get-user-quota
+### apolo admin get-user-quota
 
 Get info about user quota in given cluster
 
 **Usage:**
 
 ```bash
-neuro admin get-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+apolo admin get-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
 **Options:**
@@ -914,14 +914,14 @@ Name | Description|
 
 
 
-### neuro admin remove-cluster
+### apolo admin remove-cluster
 
 Drop a cluster<br/><br/>Completely removes cluster from the system.
 
 **Usage:**
 
 ```bash
-neuro admin remove-cluster [OPTIONS] CLUSTER_NAME
+apolo admin remove-cluster [OPTIONS] CLUSTER_NAME
 ```
 
 **Options:**
@@ -934,14 +934,14 @@ Name | Description|
 
 
 
-### neuro admin remove-cluster-user
+### apolo admin remove-cluster-user
 
 Remove user access from the cluster.
 
 **Usage:**
 
 ```bash
-neuro admin remove-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME
+apolo admin remove-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
 **Options:**
@@ -954,14 +954,14 @@ Name | Description|
 
 
 
-### neuro admin remove-org
+### apolo admin remove-org
 
 Drop an org<br/><br/>Completely removes org from the system.
 
 **Usage:**
 
 ```bash
-neuro admin remove-org [OPTIONS] ORG_NAME
+apolo admin remove-org [OPTIONS] ORG_NAME
 ```
 
 **Options:**
@@ -974,14 +974,14 @@ Name | Description|
 
 
 
-### neuro admin remove-org-cluster
+### apolo admin remove-org-cluster
 
 Drop an org cluster<br/><br/>Completely removes org from the cluster.
 
 **Usage:**
 
 ```bash
-neuro admin remove-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
+apolo admin remove-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
 **Options:**
@@ -994,14 +994,14 @@ Name | Description|
 
 
 
-### neuro admin remove-org-user
+### apolo admin remove-org-user
 
 Remove user access from the org.
 
 **Usage:**
 
 ```bash
-neuro admin remove-org-user [OPTIONS] ORG_NAME USER_NAME
+apolo admin remove-org-user [OPTIONS] ORG_NAME USER_NAME
 ```
 
 **Options:**
@@ -1013,14 +1013,14 @@ Name | Description|
 
 
 
-### neuro admin remove-project
+### apolo admin remove-project
 
 Drop a project<br/><br/>Completely removes project from the cluster.
 
 **Usage:**
 
 ```bash
-neuro admin remove-project [OPTIONS] CLUSTER_NAME NAME
+apolo admin remove-project [OPTIONS] CLUSTER_NAME NAME
 ```
 
 **Options:**
@@ -1034,14 +1034,14 @@ Name | Description|
 
 
 
-### neuro admin remove-project-user
+### apolo admin remove-project-user
 
 Remove user access from the project.
 
 **Usage:**
 
 ```bash
-neuro admin remove-project-user [OPTIONS] CLUSTER_NAME PROJECT_NAME
+apolo admin remove-project-user [OPTIONS] CLUSTER_NAME PROJECT_NAME
                                        USER_NAME
 ```
 
@@ -1055,14 +1055,14 @@ Name | Description|
 
 
 
-### neuro admin remove-resource-preset
+### apolo admin remove-resource-preset
 
 Remove resource preset
 
 **Usage:**
 
 ```bash
-neuro admin remove-resource-preset [OPTIONS] PRESET_NAME
+apolo admin remove-resource-preset [OPTIONS] PRESET_NAME
 ```
 
 **Options:**
@@ -1074,14 +1074,14 @@ Name | Description|
 
 
 
-### neuro admin set-org-cluster-credits
+### apolo admin set-org-cluster-credits
 
 Set org cluster credits to given value
 
 **Usage:**
 
 ```bash
-neuro admin set-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
+apolo admin set-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
 **Options:**
@@ -1094,14 +1094,14 @@ Name | Description|
 
 
 
-### neuro admin set-org-cluster-defaults
+### apolo admin set-org-cluster-defaults
 
 Set org cluster defaults to given value
 
 **Usage:**
 
 ```bash
-neuro admin set-org-cluster-defaults [OPTIONS] CLUSTER_NAME ORG_NAME
+apolo admin set-org-cluster-defaults [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
 **Options:**
@@ -1116,14 +1116,14 @@ Name | Description|
 
 
 
-### neuro admin set-org-cluster-quota
+### apolo admin set-org-cluster-quota
 
 Set org cluster quota to given values
 
 **Usage:**
 
 ```bash
-neuro admin set-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
+apolo admin set-org-cluster-quota [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
 **Options:**
@@ -1136,14 +1136,14 @@ Name | Description|
 
 
 
-### neuro admin set-user-credits
+### apolo admin set-user-credits
 
 Set user credits to given value
 
 **Usage:**
 
 ```bash
-neuro admin set-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
+apolo admin set-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
 **Options:**
@@ -1157,14 +1157,14 @@ Name | Description|
 
 
 
-### neuro admin set-user-quota
+### apolo admin set-user-quota
 
 Set user quota to given values
 
 **Usage:**
 
 ```bash
-neuro admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
+apolo admin set-user-quota [OPTIONS] CLUSTER_NAME USER_NAME
 ```
 
 **Options:**
@@ -1178,14 +1178,14 @@ Name | Description|
 
 
 
-### neuro admin show-cluster-options
+### apolo admin show-cluster-options
 
 Show available cluster options.
 
 **Usage:**
 
 ```bash
-neuro admin show-cluster-options [OPTIONS]
+apolo admin show-cluster-options [OPTIONS]
 ```
 
 **Options:**
@@ -1198,14 +1198,14 @@ Name | Description|
 
 
 
-### neuro admin update-cluster
+### apolo admin update-cluster
 
 Update a cluster.
 
 **Usage:**
 
 ```bash
-neuro admin update-cluster [OPTIONS] CLUSTER_NAME
+apolo admin update-cluster [OPTIONS] CLUSTER_NAME
 ```
 
 **Options:**
@@ -1220,12 +1220,12 @@ Name | Description|
 
 
 
-### neuro admin update-cluster-user
+### apolo admin update-cluster-user
 
 **Usage:**
 
 ```bash
-neuro admin update-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
+apolo admin update-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
 ```
 
 **Options:**
@@ -1238,14 +1238,14 @@ Name | Description|
 
 
 
-### neuro admin update-node-pool
+### apolo admin update-node-pool
 
 Update cluster node pool.
 
 **Usage:**
 
 ```bash
-neuro admin update-node-pool [OPTIONS] CLUSTER_NAME NODE_POOL_NAME
+apolo admin update-node-pool [OPTIONS] CLUSTER_NAME NODE_POOL_NAME
 ```
 
 **Options:**
@@ -1258,14 +1258,14 @@ Name | Description|
 
 
 
-### neuro admin update-org-cluster
+### apolo admin update-org-cluster
 
 Update org cluster quotas.
 
 **Usage:**
 
 ```bash
-neuro admin update-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
+apolo admin update-org-cluster [OPTIONS] CLUSTER_NAME ORG_NAME
 ```
 
 **Options:**
@@ -1282,14 +1282,14 @@ Name | Description|
 
 
 
-### neuro admin update-project
+### apolo admin update-project
 
 Update project settings.
 
 **Usage:**
 
 ```bash
-neuro admin update-project [OPTIONS] CLUSTER_NAME NAME
+apolo admin update-project [OPTIONS] CLUSTER_NAME NAME
 ```
 
 **Options:**
@@ -1304,14 +1304,14 @@ Name | Description|
 
 
 
-### neuro admin update-project-user
+### apolo admin update-project-user
 
 Update user access to specified project.<br/><br/>The command supports one of 4 user roles: reader, writer, manager or admin.
 
 **Usage:**
 
 ```bash
-neuro admin update-project-user [OPTIONS] CLUSTER_NAME PROJECT_NAME
+apolo admin update-project-user [OPTIONS] CLUSTER_NAME PROJECT_NAME
                                        USER_NAME [ROLE]
 ```
 
@@ -1325,14 +1325,14 @@ Name | Description|
 
 
 
-### neuro admin update-resource-preset
+### apolo admin update-resource-preset
 
 Update existing resource preset
 
 **Usage:**
 
 ```bash
-neuro admin update-resource-preset [OPTIONS] PRESET_NAME
+apolo admin update-resource-preset [OPTIONS] PRESET_NAME
 ```
 
 **Options:**
@@ -1355,14 +1355,14 @@ Name | Description|
 
 
 
-## neuro blob
+## apolo blob
 
 Blob storage operations.
 
 **Usage:**
 
 ```bash
-neuro blob [OPTIONS] COMMAND [ARGS]...
+apolo blob [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -1376,34 +1376,34 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro blob cp](#neuro-blob-cp)_| Copy blobs into and from Blob Storage |
-| _[neuro blob du](#neuro-blob-du)_| Get storage usage for BUCKET |
-| _[neuro blob glob](#neuro-blob-glob)_| List resources that match PATTERNS |
-| _[neuro blob importbucket](#neuro-blob-importbucket)_| Import an existing bucket |
-| _[neuro blob ls](#neuro-blob-ls)_| List buckets or bucket contents |
-| _[neuro blob lsbucket](#neuro-blob-lsbucket)_| List buckets |
-| _[neuro blob lscredentials](#neuro-blob-lscredentials)_| List bucket credentials |
-| _[neuro blob mkbucket](#neuro-blob-mkbucket)_| Create a new bucket |
-| _[neuro blob mkcredentials](#neuro-blob-mkcredentials)_| Create a new bucket credential |
-| _[neuro blob rm](#neuro-blob-rm)_| Remove blobs from bucket |
-| _[neuro blob rmbucket](#neuro-blob-rmbucket)_| Remove bucket BUCKET |
-| _[neuro blob rmcredentials](#neuro-blob-rmcredentials)_| Remove bucket credential BUCKET_CREDENTIAL |
-| _[neuro blob set\-bucket-publicity](#neuro-blob-set-bucket-publicity)_| Change public access settings for BUCKET |
-| _[neuro blob sign-url](#neuro-blob-sign-url)_| Make signed url for blob in bucket |
-| _[neuro blob statbucket](#neuro-blob-statbucket)_| Get bucket BUCKET |
-| _[neuro blob statcredentials](#neuro-blob-statcredentials)_| Get bucket credential BUCKET_CREDENTIAL |
+| _[apolo blob cp](#apolo-blob-cp)_| Copy blobs into and from Blob Storage |
+| _[apolo blob du](#apolo-blob-du)_| Get storage usage for BUCKET |
+| _[apolo blob glob](#apolo-blob-glob)_| List resources that match PATTERNS |
+| _[apolo blob importbucket](#apolo-blob-importbucket)_| Import an existing bucket |
+| _[apolo blob ls](#apolo-blob-ls)_| List buckets or bucket contents |
+| _[apolo blob lsbucket](#apolo-blob-lsbucket)_| List buckets |
+| _[apolo blob lscredentials](#apolo-blob-lscredentials)_| List bucket credentials |
+| _[apolo blob mkbucket](#apolo-blob-mkbucket)_| Create a new bucket |
+| _[apolo blob mkcredentials](#apolo-blob-mkcredentials)_| Create a new bucket credential |
+| _[apolo blob rm](#apolo-blob-rm)_| Remove blobs from bucket |
+| _[apolo blob rmbucket](#apolo-blob-rmbucket)_| Remove bucket BUCKET |
+| _[apolo blob rmcredentials](#apolo-blob-rmcredentials)_| Remove bucket credential BUCKET_CREDENTIAL |
+| _[apolo blob set\-bucket-publicity](#apolo-blob-set-bucket-publicity)_| Change public access settings for BUCKET |
+| _[apolo blob sign-url](#apolo-blob-sign-url)_| Make signed url for blob in bucket |
+| _[apolo blob statbucket](#apolo-blob-statbucket)_| Get bucket BUCKET |
+| _[apolo blob statcredentials](#apolo-blob-statcredentials)_| Get bucket credential BUCKET_CREDENTIAL |
 
 
 
 
-### neuro blob cp
+### apolo blob cp
 
-Copy blobs into and from Blob Storage.<br/><br/>Either SOURCES or DESTINATION should have `blob://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy files<br/>between Blob Storage \(`blob://`) destination, nor with `storage://` scheme<br/>paths.<br/><br/>Use `/dev/stdin` and `/dev/stdout` file names to upload a file from standard<br/>input or output to stdout.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters that<br/>appear later in the command take precedence over filters that appear earlier<br/>in the command.  If neither \--exclude nor --include options are specified the<br/>default can be changed using the storage.cp-exclude configuration variable<br/>documented in "neuro help user-config".<br/><br/>File permissions, modification times and other attributes will not be passed<br/>to Blob Storage metadata during upload.
+Copy blobs into and from Blob Storage.<br/><br/>Either SOURCES or DESTINATION should have `blob://` scheme. If scheme is<br/>omitted, file:// scheme is assumed. It is currently not possible to copy files<br/>between Blob Storage \(`blob://`) destination, nor with `storage://` scheme<br/>paths.<br/><br/>Use `/dev/stdin` and `/dev/stdout` file names to upload a file from standard<br/>input or output to stdout.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters that<br/>appear later in the command take precedence over filters that appear earlier<br/>in the command.  If neither \--exclude nor --include options are specified the<br/>default can be changed using the storage.cp-exclude configuration variable<br/>documented in "apolo help user-config".<br/><br/>File permissions, modification times and other attributes will not be passed<br/>to Blob Storage metadata during upload.
 
 **Usage:**
 
 ```bash
-neuro blob cp [OPTIONS] [SOURCES]... [DESTINATION]
+apolo blob cp [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Options:**
@@ -1412,7 +1412,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--continue_|Continue copying partially-copied files. Only for copying from Blob Storage.|
-|_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
+|_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "apolo help user-config"|
 |_--exclude TEXT_|Exclude files and directories that match the specified pattern.|
 |_--include TEXT_|Don't exclude files and directories that match the specified pattern.|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: glob]|
@@ -1425,14 +1425,14 @@ Name | Description|
 
 
 
-### neuro blob du
+### apolo blob du
 
 Get storage usage for BUCKET.
 
 **Usage:**
 
 ```bash
-neuro blob du [OPTIONS] BUCKET
+apolo blob du [OPTIONS] BUCKET
 ```
 
 **Options:**
@@ -1447,14 +1447,14 @@ Name | Description|
 
 
 
-### neuro blob glob
+### apolo blob glob
 
 List resources that match PATTERNS.
 
 **Usage:**
 
 ```bash
-neuro blob glob [OPTIONS] [PATTERNS]...
+apolo blob glob [OPTIONS] [PATTERNS]...
 ```
 
 **Options:**
@@ -1467,14 +1467,14 @@ Name | Description|
 
 
 
-### neuro blob importbucket
+### apolo blob importbucket
 
 Import an existing bucket.
 
 **Usage:**
 
 ```bash
-neuro blob importbucket [OPTIONS]
+apolo blob importbucket [OPTIONS]
 ```
 
 **Options:**
@@ -1500,14 +1500,14 @@ Name | Description|
 
 
 
-### neuro blob ls
+### apolo blob ls
 
 List buckets or bucket contents.
 
 **Usage:**
 
 ```bash
-neuro blob ls [OPTIONS] [PATHS]...
+apolo blob ls [OPTIONS] [PATHS]...
 ```
 
 **Options:**
@@ -1523,14 +1523,14 @@ Name | Description|
 
 
 
-### neuro blob lsbucket
+### apolo blob lsbucket
 
 List buckets.
 
 **Usage:**
 
 ```bash
-neuro blob lsbucket [OPTIONS]
+apolo blob lsbucket [OPTIONS]
 ```
 
 **Options:**
@@ -1549,14 +1549,14 @@ Name | Description|
 
 
 
-### neuro blob lscredentials
+### apolo blob lscredentials
 
 List bucket credentials.
 
 **Usage:**
 
 ```bash
-neuro blob lscredentials [OPTIONS]
+apolo blob lscredentials [OPTIONS]
 ```
 
 **Options:**
@@ -1569,14 +1569,14 @@ Name | Description|
 
 
 
-### neuro blob mkbucket
+### apolo blob mkbucket
 
 Create a new bucket.
 
 **Usage:**
 
 ```bash
-neuro blob mkbucket [OPTIONS]
+apolo blob mkbucket [OPTIONS]
 ```
 
 **Options:**
@@ -1592,14 +1592,14 @@ Name | Description|
 
 
 
-### neuro blob mkcredentials
+### apolo blob mkcredentials
 
 Create a new bucket credential.
 
 **Usage:**
 
 ```bash
-neuro blob mkcredentials [OPTIONS] BUCKETS...
+apolo blob mkcredentials [OPTIONS] BUCKETS...
 ```
 
 **Options:**
@@ -1616,14 +1616,14 @@ Name | Description|
 
 
 
-### neuro blob rm
+### apolo blob rm
 
 Remove blobs from bucket.
 
 **Usage:**
 
 ```bash
-neuro blob rm [OPTIONS] PATHS...
+apolo blob rm [OPTIONS] PATHS...
 ```
 
 **Options:**
@@ -1638,14 +1638,14 @@ Name | Description|
 
 
 
-### neuro blob rmbucket
+### apolo blob rmbucket
 
 Remove bucket BUCKET.
 
 **Usage:**
 
 ```bash
-neuro blob rmbucket [OPTIONS] BUCKETS...
+apolo blob rmbucket [OPTIONS] BUCKETS...
 ```
 
 **Options:**
@@ -1661,14 +1661,14 @@ Name | Description|
 
 
 
-### neuro blob rmcredentials
+### apolo blob rmcredentials
 
 Remove bucket credential BUCKET_CREDENTIAL.
 
 **Usage:**
 
 ```bash
-neuro blob rmcredentials [OPTIONS] CREDENTIALS...
+apolo blob rmcredentials [OPTIONS] CREDENTIALS...
 ```
 
 **Options:**
@@ -1681,22 +1681,22 @@ Name | Description|
 
 
 
-### neuro blob set-bucket-publicity
+### apolo blob set-bucket-publicity
 
 Change public access settings for BUCKET<br/>
 
 **Usage:**
 
 ```bash
-neuro blob set-bucket-publicity [OPTIONS] BUCKET {public|private}
+apolo blob set-bucket-publicity [OPTIONS] BUCKET {public|private}
 ```
 
 **Examples:**
 
 ```bash
 
-neuro blob set-bucket-publicity my-bucket public
-neuro blob set-bucket-publicity my-bucket private
+apolo blob set-bucket-publicity my-bucket public
+apolo blob set-bucket-publicity my-bucket private
 
 ```
 
@@ -1712,14 +1712,14 @@ Name | Description|
 
 
 
-### neuro blob sign-url
+### apolo blob sign-url
 
 Make signed url for blob in bucket.
 
 **Usage:**
 
 ```bash
-neuro blob sign-url [OPTIONS] PATH
+apolo blob sign-url [OPTIONS] PATH
 ```
 
 **Options:**
@@ -1732,14 +1732,14 @@ Name | Description|
 
 
 
-### neuro blob statbucket
+### apolo blob statbucket
 
 Get bucket BUCKET.
 
 **Usage:**
 
 ```bash
-neuro blob statbucket [OPTIONS] BUCKET
+apolo blob statbucket [OPTIONS] BUCKET
 ```
 
 **Options:**
@@ -1755,14 +1755,14 @@ Name | Description|
 
 
 
-### neuro blob statcredentials
+### apolo blob statcredentials
 
 Get bucket credential BUCKET_CREDENTIAL.
 
 **Usage:**
 
 ```bash
-neuro blob statcredentials [OPTIONS] BUCKET_CREDENTIAL
+apolo blob statcredentials [OPTIONS] BUCKET_CREDENTIAL
 ```
 
 **Options:**
@@ -1775,14 +1775,14 @@ Name | Description|
 
 
 
-## neuro completion
+## apolo completion
 
 Output shell completion code.
 
 **Usage:**
 
 ```bash
-neuro completion [OPTIONS] COMMAND [ARGS]...
+apolo completion [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -1796,20 +1796,20 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro completion generate](#neuro-completion-generate)_| Show instructions for shell completion |
-| _[neuro completion patch](#neuro-completion-patch)_| Patch shell profile to enable completion |
+| _[apolo completion generate](#apolo-completion-generate)_| Show instructions for shell completion |
+| _[apolo completion patch](#apolo-completion-patch)_| Patch shell profile to enable completion |
 
 
 
 
-### neuro completion generate
+### apolo completion generate
 
 Show instructions for shell completion.
 
 **Usage:**
 
 ```bash
-neuro completion generate [OPTIONS] {bash|zsh}
+apolo completion generate [OPTIONS] {bash|zsh}
 ```
 
 **Options:**
@@ -1821,14 +1821,14 @@ Name | Description|
 
 
 
-### neuro completion patch
+### apolo completion patch
 
 Patch shell profile to enable completion<br/><br/>Patches shell configuration while depending of current shell. Files patched:<br/><br/>bash: `~/.bashrc` zsh: `~/.zshrc`
 
 **Usage:**
 
 ```bash
-neuro completion patch [OPTIONS] {bash|zsh}
+apolo completion patch [OPTIONS] {bash|zsh}
 ```
 
 **Options:**
@@ -1840,14 +1840,14 @@ Name | Description|
 
 
 
-## neuro config
+## apolo config
 
 Client configuration.
 
 **Usage:**
 
 ```bash
-neuro config [OPTIONS] COMMAND [ARGS]...
+apolo config [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -1861,30 +1861,30 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro config aliases](#neuro-config-aliases)_| List available command aliases |
-| _[neuro config docker](#neuro-config-docker)_| Configure local docker client |
-| _[neuro config get-clusters](#neuro-config-get-clusters)_| List available clusters/org pairs |
-| _[neuro config login](#neuro-config-login)_| Log into Neuro Platform |
-| _[neuro config login-headless](#neuro-config-login-headless)_| Log into Neuro Platform in non-GUI environ |
-| _[neuro config login\-with-token](#neuro-config-login-with-token)_| Log into Neuro Platform with token |
-| _[neuro config logout](#neuro-config-logout)_| Log out |
-| _[neuro config show](#neuro-config-show)_| Print current settings |
-| _[neuro config show-token](#neuro-config-show-token)_| Print current authorization token |
-| _[neuro config switch-cluster](#neuro-config-switch-cluster)_| Switch the active cluster |
-| _[neuro config switch-org](#neuro-config-switch-org)_| Switch the active organization |
-| _[neuro config switch-project](#neuro-config-switch-project)_| Switch the active project |
+| _[apolo config aliases](#apolo-config-aliases)_| List available command aliases |
+| _[apolo config docker](#apolo-config-docker)_| Configure local docker client |
+| _[apolo config get-clusters](#apolo-config-get-clusters)_| List available clusters/org pairs |
+| _[apolo config login](#apolo-config-login)_| Log into Apolo Platform |
+| _[apolo config login-headless](#apolo-config-login-headless)_| Log into Apolo Platform in non-GUI environ |
+| _[apolo config login\-with-token](#apolo-config-login-with-token)_| Log into Apolo Platform with token |
+| _[apolo config logout](#apolo-config-logout)_| Log out |
+| _[apolo config show](#apolo-config-show)_| Print current settings |
+| _[apolo config show-token](#apolo-config-show-token)_| Print current authorization token |
+| _[apolo config switch-cluster](#apolo-config-switch-cluster)_| Switch the active cluster |
+| _[apolo config switch-org](#apolo-config-switch-org)_| Switch the active organization |
+| _[apolo config switch-project](#apolo-config-switch-project)_| Switch the active project |
 
 
 
 
-### neuro config aliases
+### apolo config aliases
 
 List available command aliases.
 
 **Usage:**
 
 ```bash
-neuro config aliases [OPTIONS]
+apolo config aliases [OPTIONS]
 ```
 
 **Options:**
@@ -1896,14 +1896,14 @@ Name | Description|
 
 
 
-### neuro config docker
+### apolo config docker
 
-Configure local docker client<br/><br/>This command configures local docker client to use Neuro Platform's docker<br/>registry.
+Configure local docker client<br/><br/>This command configures local docker client to use Apolo Platform's docker<br/>registry.
 
 **Usage:**
 
 ```bash
-neuro config docker [OPTIONS]
+apolo config docker [OPTIONS]
 ```
 
 **Options:**
@@ -1916,14 +1916,14 @@ Name | Description|
 
 
 
-### neuro config get-clusters
+### apolo config get-clusters
 
 List available clusters/org pairs.<br/><br/>This command re-fetches cluster list and then displays each cluster with<br/>available orgs.
 
 **Usage:**
 
 ```bash
-neuro config get-clusters [OPTIONS]
+apolo config get-clusters [OPTIONS]
 ```
 
 **Options:**
@@ -1935,14 +1935,14 @@ Name | Description|
 
 
 
-### neuro config login
+### apolo config login
 
-Log into Neuro Platform.<br/><br/>URL is a platform entrypoint URL.
+Log into Apolo Platform.<br/><br/>URL is a platform entrypoint URL.
 
 **Usage:**
 
 ```bash
-neuro config login [OPTIONS] [URL]
+apolo config login [OPTIONS] [URL]
 ```
 
 **Options:**
@@ -1954,14 +1954,14 @@ Name | Description|
 
 
 
-### neuro config login-headless
+### apolo config login-headless
 
-Log into Neuro Platform in non-GUI environ<br/><br/>URL is a platform entrypoint URL.<br/><br/>The command works similar to "neuro login" but instead of opening a browser<br/>for performing OAuth registration prints an URL that should be open on guest<br/>host.<br/><br/>Then user inputs a code displayed in a browser after successful login back in<br/>neuro command to finish the login process.
+Log into Apolo Platform in non-GUI environ<br/><br/>URL is a platform entrypoint URL.<br/><br/>The command works similar to "apolo login" but instead of opening a browser<br/>for performing OAuth registration prints an URL that should be open on guest<br/>host.<br/><br/>Then user inputs a code displayed in a browser after successful login back in<br/>apolo command to finish the login process.
 
 **Usage:**
 
 ```bash
-neuro config login-headless [OPTIONS] [URL]
+apolo config login-headless [OPTIONS] [URL]
 ```
 
 **Options:**
@@ -1973,14 +1973,14 @@ Name | Description|
 
 
 
-### neuro config login-with-token
+### apolo config login-with-token
 
-Log into Neuro Platform with token.<br/><br/>TOKEN is authentication token provided by administration team. URL is a<br/>platform entrypoint URL.
+Log into Apolo Platform with token.<br/><br/>TOKEN is authentication token provided by administration team. URL is a<br/>platform entrypoint URL.
 
 **Usage:**
 
 ```bash
-neuro config login-with-token [OPTIONS] TOKEN [URL]
+apolo config login-with-token [OPTIONS] TOKEN [URL]
 ```
 
 **Options:**
@@ -1992,14 +1992,14 @@ Name | Description|
 
 
 
-### neuro config logout
+### apolo config logout
 
 Log out.
 
 **Usage:**
 
 ```bash
-neuro config logout [OPTIONS]
+apolo config logout [OPTIONS]
 ```
 
 **Options:**
@@ -2011,14 +2011,14 @@ Name | Description|
 
 
 
-### neuro config show
+### apolo config show
 
 Print current settings.
 
 **Usage:**
 
 ```bash
-neuro config show [OPTIONS]
+apolo config show [OPTIONS]
 ```
 
 **Options:**
@@ -2031,14 +2031,14 @@ Name | Description|
 
 
 
-### neuro config show-token
+### apolo config show-token
 
 Print current authorization token.
 
 **Usage:**
 
 ```bash
-neuro config show-token [OPTIONS]
+apolo config show-token [OPTIONS]
 ```
 
 **Options:**
@@ -2050,14 +2050,14 @@ Name | Description|
 
 
 
-### neuro config switch-cluster
+### apolo config switch-cluster
 
 Switch the active cluster.<br/><br/>CLUSTER_NAME is the cluster name to select.  The interactive prompt is used if<br/>the name is omitted \(default).
 
 **Usage:**
 
 ```bash
-neuro config switch-cluster [OPTIONS] [CLUSTER_NAME]
+apolo config switch-cluster [OPTIONS] [CLUSTER_NAME]
 ```
 
 **Options:**
@@ -2069,14 +2069,14 @@ Name | Description|
 
 
 
-### neuro config switch-org
+### apolo config switch-org
 
 Switch the active organization.<br/><br/>ORG\_NAME is the organization name to select. Use literal "NO_ORG" to switch to<br/>using current cluster directly instead of on behalf of some org.
 
 **Usage:**
 
 ```bash
-neuro config switch-org [OPTIONS] ORG_NAME
+apolo config switch-org [OPTIONS] ORG_NAME
 ```
 
 **Options:**
@@ -2088,14 +2088,14 @@ Name | Description|
 
 
 
-### neuro config switch-project
+### apolo config switch-project
 
 Switch the active project.<br/><br/>PROJECT_NAME is the project name to select. The interactive prompt is used if<br/>the name is omitted \(default).
 
 **Usage:**
 
 ```bash
-neuro config switch-project [OPTIONS] [PROJECT_NAME]
+apolo config switch-project [OPTIONS] [PROJECT_NAME]
 ```
 
 **Options:**
@@ -2107,14 +2107,14 @@ Name | Description|
 
 
 
-## neuro disk
+## apolo disk
 
 Operations with disks.
 
 **Usage:**
 
 ```bash
-neuro disk [OPTIONS] COMMAND [ARGS]...
+apolo disk [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -2128,30 +2128,30 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro disk create](#neuro-disk-create)_| Create a disk |
-| _[neuro disk get](#neuro-disk-get)_| Get disk DISK_ID |
-| _[neuro disk ls](#neuro-disk-ls)_| List disks |
-| _[neuro disk rm](#neuro-disk-rm)_| Remove disk DISK_ID |
+| _[apolo disk create](#apolo-disk-create)_| Create a disk |
+| _[apolo disk get](#apolo-disk-get)_| Get disk DISK_ID |
+| _[apolo disk ls](#apolo-disk-ls)_| List disks |
+| _[apolo disk rm](#apolo-disk-rm)_| Remove disk DISK_ID |
 
 
 
 
-### neuro disk create
+### apolo disk create
 
 Create a disk<br/><br/>Create a disk with at least storage amount STORAGE.<br/><br/>To specify the amount, you can use the following suffixes: "kKMGTPEZY" To use<br/>decimal quantities, append "b" or "B". For example: - 1K or 1k is 1024 bytes -<br/>1Kb or 1KB is 1000 bytes - 20G is 20 * 2 ^ 30 bytes - 20Gb or 20GB is<br/>20.000.000.000 bytes<br/><br/>Note that server can have big granularity \(for example, 1G) so it will<br/>possibly round-up the amount you requested.<br/>
 
 **Usage:**
 
 ```bash
-neuro disk create [OPTIONS] STORAGE
+apolo disk create [OPTIONS] STORAGE
 ```
 
 **Examples:**
 
 ```bash
 
-neuro disk create 10G
-neuro disk create 500M
+apolo disk create 10G
+apolo disk create 500M
 
 ```
 
@@ -2169,14 +2169,14 @@ Name | Description|
 
 
 
-### neuro disk get
+### apolo disk get
 
 Get disk DISK_ID.
 
 **Usage:**
 
 ```bash
-neuro disk get [OPTIONS] DISK
+apolo disk get [OPTIONS] DISK
 ```
 
 **Options:**
@@ -2192,14 +2192,14 @@ Name | Description|
 
 
 
-### neuro disk ls
+### apolo disk ls
 
 List disks.
 
 **Usage:**
 
 ```bash
-neuro disk ls [OPTIONS]
+apolo disk ls [OPTIONS]
 ```
 
 **Options:**
@@ -2218,14 +2218,14 @@ Name | Description|
 
 
 
-### neuro disk rm
+### apolo disk rm
 
 Remove disk DISK_ID.
 
 **Usage:**
 
 ```bash
-neuro disk rm [OPTIONS] DISKS...
+apolo disk rm [OPTIONS] DISKS...
 ```
 
 **Options:**
@@ -2240,14 +2240,14 @@ Name | Description|
 
 
 
-## neuro image
+## apolo image
 
 Container image operations.
 
 **Usage:**
 
 ```bash
-neuro image [OPTIONS] COMMAND [ARGS]...
+apolo image [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -2261,33 +2261,33 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro image digest](#neuro-image-digest)_| Get digest of an image from remote registry |
-| _[neuro image ls](#neuro-image-ls)_| List images |
-| _[neuro image pull](#neuro-image-pull)_| Pull an image from platform registry |
-| _[neuro image push](#neuro-image-push)_| Push an image to platform registry |
-| _[neuro image rm](#neuro-image-rm)_| Remove image from platform registry |
-| _[neuro image size](#neuro-image-size)_| Get image size |
-| _[neuro image tags](#neuro-image-tags)_| List tags for image in platform registry |
+| _[apolo image digest](#apolo-image-digest)_| Get digest of an image from remote registry |
+| _[apolo image ls](#apolo-image-ls)_| List images |
+| _[apolo image pull](#apolo-image-pull)_| Pull an image from platform registry |
+| _[apolo image push](#apolo-image-push)_| Push an image to platform registry |
+| _[apolo image rm](#apolo-image-rm)_| Remove image from platform registry |
+| _[apolo image size](#apolo-image-size)_| Get image size |
+| _[apolo image tags](#apolo-image-tags)_| List tags for image in platform registry |
 
 
 
 
-### neuro image digest
+### apolo image digest
 
 Get digest of an image from remote registry<br/><br/>Image name must be URL with image:// scheme. Image name must contain tag.<br/>
 
 **Usage:**
 
 ```bash
-neuro image digest [OPTIONS] IMAGE
+apolo image digest [OPTIONS] IMAGE
 ```
 
 **Examples:**
 
 ```bash
 
-neuro image digest image:/other-project/alpine:shared
-neuro image digest image:myimage:latest
+apolo image digest image:/other-project/alpine:shared
+apolo image digest image:myimage:latest
 
 ```
 
@@ -2300,14 +2300,14 @@ Name | Description|
 
 
 
-### neuro image ls
+### apolo image ls
 
 List images.
 
 **Usage:**
 
 ```bash
-neuro image ls [OPTIONS]
+apolo image ls [OPTIONS]
 ```
 
 **Options:**
@@ -2327,23 +2327,23 @@ Name | Description|
 
 
 
-### neuro image pull
+### apolo image pull
 
 Pull an image from platform registry.<br/><br/>Remote image name must be URL with image:// scheme. Image names can contain<br/>tag.<br/>
 
 **Usage:**
 
 ```bash
-neuro image pull [OPTIONS] REMOTE_IMAGE [LOCAL_IMAGE]
+apolo image pull [OPTIONS] REMOTE_IMAGE [LOCAL_IMAGE]
 ```
 
 **Examples:**
 
 ```bash
 
-neuro pull image:myimage
-neuro pull image:/other-project/alpine:shared
-neuro pull image:/project/my-alpine:production alpine:from-registry
+apolo pull image:myimage
+apolo pull image:/other-project/alpine:shared
+apolo pull image:/project/my-alpine:production alpine:from-registry
 
 ```
 
@@ -2356,23 +2356,23 @@ Name | Description|
 
 
 
-### neuro image push
+### apolo image push
 
 Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contain tag. If<br/>tags not specified 'latest' will be used as value.<br/>
 
 **Usage:**
 
 ```bash
-neuro image push [OPTIONS] LOCAL_IMAGE [REMOTE_IMAGE]
+apolo image push [OPTIONS] LOCAL_IMAGE [REMOTE_IMAGE]
 ```
 
 **Examples:**
 
 ```bash
 
-neuro push myimage
-neuro push alpine:latest image:my-alpine:production
-neuro push alpine image:/other-project/alpine:shared
+apolo push myimage
+apolo push alpine:latest image:my-alpine:production
+apolo push alpine image:/other-project/alpine:shared
 
 ```
 
@@ -2385,22 +2385,22 @@ Name | Description|
 
 
 
-### neuro image rm
+### apolo image rm
 
 Remove image from platform registry.<br/><br/>Image name must be URL with image:// scheme. Image name must contain tag.<br/>
 
 **Usage:**
 
 ```bash
-neuro image rm [OPTIONS] IMAGES...
+apolo image rm [OPTIONS] IMAGES...
 ```
 
 **Examples:**
 
 ```bash
 
-neuro image rm image:/other-project/alpine:shared
-neuro image rm image:myimage:latest
+apolo image rm image:/other-project/alpine:shared
+apolo image rm image:myimage:latest
 
 ```
 
@@ -2414,22 +2414,22 @@ Name | Description|
 
 
 
-### neuro image size
+### apolo image size
 
 Get image size<br/><br/>Image name must be URL with image:// scheme. Image name must contain tag.<br/>
 
 **Usage:**
 
 ```bash
-neuro image size [OPTIONS] IMAGE
+apolo image size [OPTIONS] IMAGE
 ```
 
 **Examples:**
 
 ```bash
 
-neuro image size image:/other-project/alpine:shared
-neuro image size image:myimage:latest
+apolo image size image:/other-project/alpine:shared
+apolo image size image:myimage:latest
 
 ```
 
@@ -2442,22 +2442,22 @@ Name | Description|
 
 
 
-### neuro image tags
+### apolo image tags
 
 List tags for image in platform registry.<br/><br/>Image name must be URL with image:// scheme.<br/>
 
 **Usage:**
 
 ```bash
-neuro image tags [OPTIONS] IMAGE
+apolo image tags [OPTIONS] IMAGE
 ```
 
 **Examples:**
 
 ```bash
 
-neuro image tags image:/other-project/alpine
-neuro image tags -l image:myimage
+apolo image tags image:/other-project/alpine
+apolo image tags -l image:myimage
 
 ```
 
@@ -2471,14 +2471,14 @@ Name | Description|
 
 
 
-## neuro job
+## apolo job
 
 Job operations.
 
 **Usage:**
 
 ```bash
-neuro job [OPTIONS] COMMAND [ARGS]...
+apolo job [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -2492,31 +2492,31 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro job attach](#neuro-job-attach)_| Attach terminal to a job |
-| _[neuro job browse](#neuro-job-browse)_| Opens a job's URL in a web browser |
-| _[neuro job bump\-life-span](#neuro-job-bump-life-span)_| Increase job life span |
-| _[neuro job exec](#neuro-job-exec)_| Execute command in a running job |
-| _[neuro job generate\-run-command](#neuro-job-generate-run-command)_| Generate command that will rerun given job |
-| _[neuro job kill](#neuro-job-kill)_| Kill job\(s) |
-| _[neuro job logs](#neuro-job-logs)_| Print the logs for a job |
-| _[neuro job ls](#neuro-job-ls)_| List all jobs |
-| _[neuro job port-forward](#neuro-job-port-forward)_| Forward port\(s) of a job |
-| _[neuro job run](#neuro-job-run)_| Run a job |
-| _[neuro job save](#neuro-job-save)_| Save job's state to an image |
-| _[neuro job status](#neuro-job-status)_| Display status of a job |
-| _[neuro job top](#neuro-job-top)_| Display GPU/CPU/Memory usage |
+| _[apolo job attach](#apolo-job-attach)_| Attach terminal to a job |
+| _[apolo job browse](#apolo-job-browse)_| Opens a job's URL in a web browser |
+| _[apolo job bump\-life-span](#apolo-job-bump-life-span)_| Increase job life span |
+| _[apolo job exec](#apolo-job-exec)_| Execute command in a running job |
+| _[apolo job generate\-run-command](#apolo-job-generate-run-command)_| Generate command that will rerun given job |
+| _[apolo job kill](#apolo-job-kill)_| Kill job\(s) |
+| _[apolo job logs](#apolo-job-logs)_| Print the logs for a job |
+| _[apolo job ls](#apolo-job-ls)_| List all jobs |
+| _[apolo job port-forward](#apolo-job-port-forward)_| Forward port\(s) of a job |
+| _[apolo job run](#apolo-job-run)_| Run a job |
+| _[apolo job save](#apolo-job-save)_| Save job's state to an image |
+| _[apolo job status](#apolo-job-status)_| Display status of a job |
+| _[apolo job top](#apolo-job-top)_| Display GPU/CPU/Memory usage |
 
 
 
 
-### neuro job attach
+### apolo job attach
 
 Attach terminal to a job<br/><br/>Attach local standard input, output, and error streams to a running job.
 
 **Usage:**
 
 ```bash
-neuro job attach [OPTIONS] JOB
+apolo job attach [OPTIONS] JOB
 ```
 
 **Options:**
@@ -2529,14 +2529,14 @@ Name | Description|
 
 
 
-### neuro job browse
+### apolo job browse
 
 Opens a job's URL in a web browser.
 
 **Usage:**
 
 ```bash
-neuro job browse [OPTIONS] JOB
+apolo job browse [OPTIONS] JOB
 ```
 
 **Options:**
@@ -2548,14 +2548,14 @@ Name | Description|
 
 
 
-### neuro job bump-life-span
+### apolo job bump-life-span
 
 Increase job life span
 
 **Usage:**
 
 ```bash
-neuro job bump-life-span [OPTIONS] JOB TIMEDELTA
+apolo job bump-life-span [OPTIONS] JOB TIMEDELTA
 ```
 
 **Options:**
@@ -2567,14 +2567,14 @@ Name | Description|
 
 
 
-### neuro job exec
+### apolo job exec
 
 Execute command in a running job.<br/>
 
 **Usage:**
 
 ```bash
-neuro job exec [OPTIONS] JOB -- CMD...
+apolo job exec [OPTIONS] JOB -- CMD...
 ```
 
 **Examples:**
@@ -2582,10 +2582,10 @@ neuro job exec [OPTIONS] JOB -- CMD...
 ```bash
 
 # Provides a shell to the container:
-neuro exec my-job -- /bin/bash
+apolo exec my-job -- /bin/bash
 
 # Executes a single command in the container and returns the control:
-neuro exec --no-tty my-job -- ls -l
+apolo exec --no-tty my-job -- ls -l
 
 ```
 
@@ -2599,14 +2599,14 @@ Name | Description|
 
 
 
-### neuro job generate-run-command
+### apolo job generate-run-command
 
 Generate command that will rerun given job.<br/>
 
 **Usage:**
 
 ```bash
-neuro job generate-run-command [OPTIONS] JOB
+apolo job generate-run-command [OPTIONS] JOB
 ```
 
 **Examples:**
@@ -2614,7 +2614,7 @@ neuro job generate-run-command [OPTIONS] JOB
 ```bash
 
 # You can use the following to directly re-execute it:
-eval $(neuro job generate-run-command <job-id>)
+eval $(apolo job generate-run-command <job-id>)
 
 ```
 
@@ -2627,14 +2627,14 @@ Name | Description|
 
 
 
-### neuro job kill
+### apolo job kill
 
 Kill job\(s).
 
 **Usage:**
 
 ```bash
-neuro job kill [OPTIONS] JOBS...
+apolo job kill [OPTIONS] JOBS...
 ```
 
 **Options:**
@@ -2646,14 +2646,14 @@ Name | Description|
 
 
 
-### neuro job logs
+### apolo job logs
 
 Print the logs for a job.
 
 **Usage:**
 
 ```bash
-neuro job logs [OPTIONS] JOB
+apolo job logs [OPTIONS] JOB
 ```
 
 **Options:**
@@ -2667,26 +2667,26 @@ Name | Description|
 
 
 
-### neuro job ls
+### apolo job ls
 
 List all jobs.<br/>
 
 **Usage:**
 
 ```bash
-neuro job ls [OPTIONS]
+apolo job ls [OPTIONS]
 ```
 
 **Examples:**
 
 ```bash
 
-neuro ps -a
-neuro ps -a --owner=user-1 --owner=user-2
-neuro ps --name my-experiments-v1 -s failed -s succeeded
-neuro ps --description=my favourite job
-neuro ps -s failed -s succeeded -q
-neuro ps -t tag1 -t tag2
+apolo ps -a
+apolo ps -a --owner=user-1 --owner=user-2
+apolo ps --name my-experiments-v1 -s failed -s succeeded
+apolo ps --description=my favourite job
+apolo ps -s failed -s succeeded -q
+apolo ps -t tag1 -t tag2
 
 ```
 
@@ -2701,7 +2701,7 @@ Name | Description|
 |_--cluster CLUSTER_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--distinct_|Show only first job if names are same.|
-|_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
+|_--format COLUMNS_|Output table format, see "apolo help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "apolo help user-config"|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_--org ORG_|Filter out jobs by org name \(multiple option, the current org by default).|
@@ -2717,14 +2717,14 @@ Name | Description|
 
 
 
-### neuro job port-forward
+### apolo job port-forward
 
 Forward port\(s) of a job.<br/><br/>Forwards port\(s) of a running job to local port\(s).<br/>
 
 **Usage:**
 
 ```bash
-neuro job port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
+apolo job port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
 ```
 
 **Examples:**
@@ -2733,16 +2733,16 @@ neuro job port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
 
 # Forward local port 2080 to port 80 of job's container.
 # You can use http://localhost:2080 in browser to access job's served http
-neuro job port-forward my-fastai-job 2080:80
+apolo job port-forward my-fastai-job 2080:80
 
 # Forward local port 2222 to job's port 22
 # Then copy all data from container's folder '/data' to current folder
 # (please run second command in other terminal)
-neuro job port-forward my-job-with-ssh-server 2222:22
+apolo job port-forward my-job-with-ssh-server 2222:22
 rsync -avxzhe ssh -p 2222 root@localhost:/data .
 
 # Forward few ports at once
-neuro job port-forward my-job 2080:80 2222:22 2000:100
+apolo job port-forward my-job 2080:80 2222:22 2000:100
 
 ```
 
@@ -2755,14 +2755,14 @@ Name | Description|
 
 
 
-### neuro job run
+### apolo job run
 
 Run a job<br/><br/>IMAGE docker image name to run in a job.<br/><br/>CMD list will be passed as arguments to the executed job's image.<br/>
 
 **Usage:**
 
 ```bash
-neuro job run [OPTIONS] IMAGE [-- CMD...]
+apolo job run [OPTIONS] IMAGE [-- CMD...]
 ```
 
 **Examples:**
@@ -2770,15 +2770,15 @@ neuro job run [OPTIONS] IMAGE [-- CMD...]
 ```bash
 
 # Starts a container pytorch/pytorch:latest on a machine with smaller GPU resources
-# (see exact values in `neuro config show`) and with two volumes mounted:
+# (see exact values in `apolo config show`) and with two volumes mounted:
 #   storage:/<home-directory>   --> /var/storage/home (in read-write mode),
 #   storage:/neuromation/public --> /var/storage/neuromation (in read-only mode).
-neuro run --preset=gpu-small --volume=storage::/var/storage/home:rw \
+apolo run --preset=gpu-small --volume=storage::/var/storage/home:rw \
 --volume=storage:/neuromation/public:/var/storage/home:ro pytorch/pytorch:latest
 
-# Starts a container using the custom image my-ubuntu:latest stored in neuro
+# Starts a container using the custom image my-ubuntu:latest stored in apolo
 # registry, run /script.sh and pass arg1 and arg2 as its arguments:
-neuro run -s cpu-small --entrypoint=/script.sh image:my-ubuntu:latest -- arg1 arg2
+apolo run -s cpu-small --entrypoint=/script.sh image:my-ubuntu:latest -- arg1 arg2
 
 ```
 
@@ -2793,7 +2793,7 @@ Name | Description|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_\--energy-schedule NAME_|Run job only within a selected energy schedule. Selected preset should have scheduler enabled.|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
-|_\-e, --env VAR=VAL_|Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables.|
+|_\-e, --env VAR=VAL_|Set environment variable in container. Use multiple options to define more than one variable. See `apolo help secrets` for information about passing secrets as environment variables.|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: x]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
@@ -2801,9 +2801,9 @@ Name | Description|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\-n, --name NAME_|Optional job name|
 |_--org ORG_|Run job in a specified org|
-|_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
+|_\--pass-config / --no-pass-config_|Upload apolo config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
-|_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
+|_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `apolo config show`)|
 |_--priority \[low &#124; normal &#124; high]_|Priority used to specify job's start order. Jobs with higher priority will start before ones with lower priority. Priority should be supported by cluster.|
 |_--privileged_|Run job in privileged mode, if it is supported by cluster.|
 |_\-p, --project PROJECT_|Run job in a specified project.|
@@ -2812,7 +2812,7 @@ Name | Description|
 |_--share USER_|Share job write permissions to user or role.|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files.|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. See `apolo help secrets` for information about passing secrets as mounted files.|
 |_\--wait-for-seat / --no-wait-for-seat_|Wait for total running jobs quota  \[default: no\-wait-for-seat]|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: wait-start]|
 |_\-w, --workdir TEXT_|Working directory inside the container|
@@ -2820,23 +2820,23 @@ Name | Description|
 
 
 
-### neuro job save
+### apolo job save
 
 Save job's state to an image.<br/>
 
 **Usage:**
 
 ```bash
-neuro job save [OPTIONS] JOB IMAGE
+apolo job save [OPTIONS] JOB IMAGE
 ```
 
 **Examples:**
 
 ```bash
 
-neuro job save job-id image:ubuntu-patched
-neuro job save my-favourite-job image:ubuntu-patched:v1
-neuro job save my-favourite-job image://bob/ubuntu-patched
+apolo job save job-id image:ubuntu-patched
+apolo job save my-favourite-job image:ubuntu-patched:v1
+apolo job save my-favourite-job image://bob/ubuntu-patched
 
 ```
 
@@ -2849,14 +2849,14 @@ Name | Description|
 
 
 
-### neuro job status
+### apolo job status
 
 Display status of a job.
 
 **Usage:**
 
 ```bash
-neuro job status [OPTIONS] JOB
+apolo job status [OPTIONS] JOB
 ```
 
 **Options:**
@@ -2869,25 +2869,25 @@ Name | Description|
 
 
 
-### neuro job top
+### apolo job top
 
 Display GPU/CPU/Memory usage.<br/>
 
 **Usage:**
 
 ```bash
-neuro job top [OPTIONS] [JOBS]...
+apolo job top [OPTIONS] [JOBS]...
 ```
 
 **Examples:**
 
 ```bash
 
-neuro top
-neuro top job-1 job-2
-neuro top --owner=user-1 --owner=user-2
-neuro top --name my-experiments-v1
-neuro top -t tag1 -t tag2
+apolo top
+apolo top job-1 job-2
+apolo top --owner=user-1 --owner=user-2
+apolo top --name my-experiments-v1
+apolo top -t tag1 -t tag2
 
 ```
 
@@ -2898,7 +2898,7 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_--cluster CLUSTER_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
-|_--format COLUMNS_|Output table format, see "neuro help top\-format" for more info about the format specification. The default can be changed using the job.top-format configuration variable documented in "neuro help user-config"|
+|_--format COLUMNS_|Output table format, see "apolo help top\-format" for more info about the format specification. The default can be changed using the job.top-format configuration variable documented in "apolo help user-config"|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user. Specify `ALL` to show jobs of all users.|
@@ -2912,14 +2912,14 @@ Name | Description|
 
 
 
-## neuro secret
+## apolo secret
 
 Operations with secrets.
 
 **Usage:**
 
 ```bash
-neuro secret [OPTIONS] COMMAND [ARGS]...
+apolo secret [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -2933,29 +2933,29 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro secret add](#neuro-secret-add)_| Add secret KEY with data VALUE |
-| _[neuro secret ls](#neuro-secret-ls)_| List secrets |
-| _[neuro secret rm](#neuro-secret-rm)_| Remove secret KEY |
+| _[apolo secret add](#apolo-secret-add)_| Add secret KEY with data VALUE |
+| _[apolo secret ls](#apolo-secret-ls)_| List secrets |
+| _[apolo secret rm](#apolo-secret-rm)_| Remove secret KEY |
 
 
 
 
-### neuro secret add
+### apolo secret add
 
 Add secret KEY with data VALUE.<br/><br/>If VALUE starts with @ it points to a file with secrets content.<br/>
 
 **Usage:**
 
 ```bash
-neuro secret add [OPTIONS] KEY VALUE
+apolo secret add [OPTIONS] KEY VALUE
 ```
 
 **Examples:**
 
 ```bash
 
-neuro secret add KEY_NAME VALUE
-neuro secret add KEY_NAME @path/to/file.txt
+apolo secret add KEY_NAME VALUE
+apolo secret add KEY_NAME @path/to/file.txt
 
 ```
 
@@ -2971,14 +2971,14 @@ Name | Description|
 
 
 
-### neuro secret ls
+### apolo secret ls
 
 List secrets.
 
 **Usage:**
 
 ```bash
-neuro secret ls [OPTIONS]
+apolo secret ls [OPTIONS]
 ```
 
 **Options:**
@@ -2996,14 +2996,14 @@ Name | Description|
 
 
 
-### neuro secret rm
+### apolo secret rm
 
 Remove secret KEY.
 
 **Usage:**
 
 ```bash
-neuro secret rm [OPTIONS] KEY
+apolo secret rm [OPTIONS] KEY
 ```
 
 **Options:**
@@ -3018,14 +3018,14 @@ Name | Description|
 
 
 
-## neuro service-account
+## apolo service-account
 
 Operations with service accounts.
 
 **Usage:**
 
 ```bash
-neuro service-account [OPTIONS] COMMAND [ARGS]...
+apolo service-account [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -3039,22 +3039,22 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro service-account create](#neuro-service-account-create)_| Create a service account |
-| _[neuro service-account get](#neuro-service-account-get)_| Get service account SERVICE_ACCOUNT |
-| _[neuro service-account ls](#neuro-service-account-ls)_| List service accounts |
-| _[neuro service-account rm](#neuro-service-account-rm)_| Remove service accounts SERVICE_ACCOUNT |
+| _[apolo service-account create](#apolo-service-account-create)_| Create a service account |
+| _[apolo service-account get](#apolo-service-account-get)_| Get service account SERVICE_ACCOUNT |
+| _[apolo service-account ls](#apolo-service-account-ls)_| List service accounts |
+| _[apolo service-account rm](#apolo-service-account-rm)_| Remove service accounts SERVICE_ACCOUNT |
 
 
 
 
-### neuro service-account create
+### apolo service-account create
 
 Create a service account.
 
 **Usage:**
 
 ```bash
-neuro service-account create [OPTIONS]
+apolo service-account create [OPTIONS]
 ```
 
 **Options:**
@@ -3070,14 +3070,14 @@ Name | Description|
 
 
 
-### neuro service-account get
+### apolo service-account get
 
 Get service account SERVICE_ACCOUNT.
 
 **Usage:**
 
 ```bash
-neuro service-account get [OPTIONS] SERVICE_ACCOUNT
+apolo service-account get [OPTIONS] SERVICE_ACCOUNT
 ```
 
 **Options:**
@@ -3089,14 +3089,14 @@ Name | Description|
 
 
 
-### neuro service-account ls
+### apolo service-account ls
 
 List service accounts.
 
 **Usage:**
 
 ```bash
-neuro service-account ls [OPTIONS]
+apolo service-account ls [OPTIONS]
 ```
 
 **Options:**
@@ -3108,14 +3108,14 @@ Name | Description|
 
 
 
-### neuro service-account rm
+### apolo service-account rm
 
 Remove service accounts SERVICE_ACCOUNT.
 
 **Usage:**
 
 ```bash
-neuro service-account rm [OPTIONS] SERVICE_ACCOUNTS...
+apolo service-account rm [OPTIONS] SERVICE_ACCOUNTS...
 ```
 
 **Options:**
@@ -3127,14 +3127,14 @@ Name | Description|
 
 
 
-## neuro storage
+## apolo storage
 
 Storage operations.
 
 **Usage:**
 
 ```bash
-neuro storage [OPTIONS] COMMAND [ARGS]...
+apolo storage [OPTIONS] COMMAND [ARGS]...
 ```
 
 **Options:**
@@ -3148,26 +3148,26 @@ Name | Description|
 
 |Usage|Description|
 |---|---|
-| _[neuro storage cp](#neuro-storage-cp)_| Copy files and directories |
-| _[neuro storage df](#neuro-storage-df)_| Show current storage usage |
-| _[neuro storage glob](#neuro-storage-glob)_| List resources that match PATTERNS |
-| _[neuro storage ls](#neuro-storage-ls)_| List directory contents |
-| _[neuro storage mkdir](#neuro-storage-mkdir)_| Make directories |
-| _[neuro storage mv](#neuro-storage-mv)_| Move or rename files and directories |
-| _[neuro storage rm](#neuro-storage-rm)_| Remove files or directories |
-| _[neuro storage tree](#neuro-storage-tree)_| List storage in a tree-like format |
+| _[apolo storage cp](#apolo-storage-cp)_| Copy files and directories |
+| _[apolo storage df](#apolo-storage-df)_| Show current storage usage |
+| _[apolo storage glob](#apolo-storage-glob)_| List resources that match PATTERNS |
+| _[apolo storage ls](#apolo-storage-ls)_| List directory contents |
+| _[apolo storage mkdir](#apolo-storage-mkdir)_| Make directories |
+| _[apolo storage mv](#apolo-storage-mv)_| Move or rename files and directories |
+| _[apolo storage rm](#apolo-storage-rm)_| Remove files or directories |
+| _[apolo storage tree](#apolo-storage-tree)_| List storage in a tree-like format |
 
 
 
 
-### neuro storage cp
+### apolo storage cp
 
-Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/><br/>Use /dev/stdin and /dev/stdout file names to copy a file from terminal and<br/>print the content of file on the storage to console.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters that<br/>appear later in the command take precedence over filters that appear earlier<br/>in the command.  If neither \--exclude nor --include options are specified the<br/>default can be changed using the storage.cp-exclude configuration variable<br/>documented in "neuro help user-config".<br/>
+Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/><br/>Use /dev/stdin and /dev/stdout file names to copy a file from terminal and<br/>print the content of file on the storage to console.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters that<br/>appear later in the command take precedence over filters that appear earlier<br/>in the command.  If neither \--exclude nor --include options are specified the<br/>default can be changed using the storage.cp-exclude configuration variable<br/>documented in "apolo help user-config".<br/>
 
 **Usage:**
 
 ```bash
-neuro storage cp [OPTIONS] [SOURCES]... [DESTINATION]
+apolo storage cp [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Examples:**
@@ -3175,28 +3175,28 @@ neuro storage cp [OPTIONS] [SOURCES]... [DESTINATION]
 ```bash
 
 # copy local files into remote storage root
-neuro cp foo.txt bar/baz.dat storage:
-neuro cp foo.txt bar/baz.dat -t storage:
+apolo cp foo.txt bar/baz.dat storage:
+apolo cp foo.txt bar/baz.dat -t storage:
 
 # copy local directory `foo` into existing remote directory `bar`
-neuro cp -r foo -t storage:bar
+apolo cp -r foo -t storage:bar
 
 # copy the content of local directory `foo` into existing remote
 # directory `bar`
-neuro cp -r -T storage:foo storage:bar
+apolo cp -r -T storage:foo storage:bar
 
 # download remote file `foo.txt` into local file `/tmp/foo.txt` with
 # explicit file:// scheme set
-neuro cp storage:foo.txt file:///tmp/foo.txt
-neuro cp -T storage:foo.txt file:///tmp/foo.txt
-neuro cp storage:foo.txt file:///tmp
-neuro cp storage:foo.txt -t file:///tmp
+apolo cp storage:foo.txt file:///tmp/foo.txt
+apolo cp -T storage:foo.txt file:///tmp/foo.txt
+apolo cp storage:foo.txt file:///tmp
+apolo cp storage:foo.txt -t file:///tmp
 
 # download other project's remote file into the current directory
-neuro cp storage:/{project}/foo.txt .
+apolo cp storage:/{project}/foo.txt .
 
 # download only files with extension `.out` into the current directory
-neuro cp storage:results/*.out .
+apolo cp storage:results/*.out .
 
 ```
 
@@ -3206,7 +3206,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--continue_|Continue copying partially-copied files.|
-|_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
+|_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "apolo help user-config"|
 |_--exclude TEXT_|Exclude files and directories that match the specified pattern.|
 |_--include TEXT_|Don't exclude files and directories that match the specified pattern.|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: glob]|
@@ -3219,14 +3219,14 @@ Name | Description|
 
 
 
-### neuro storage df
+### apolo storage df
 
 Show current storage usage.<br/><br/>If PATH is specified, show storage usage of which path is a part.
 
 **Usage:**
 
 ```bash
-neuro storage df [OPTIONS] [PATH]
+apolo storage df [OPTIONS] [PATH]
 ```
 
 **Options:**
@@ -3238,14 +3238,14 @@ Name | Description|
 
 
 
-### neuro storage glob
+### apolo storage glob
 
 List resources that match PATTERNS.
 
 **Usage:**
 
 ```bash
-neuro storage glob [OPTIONS] [PATTERNS]...
+apolo storage glob [OPTIONS] [PATTERNS]...
 ```
 
 **Options:**
@@ -3257,14 +3257,14 @@ Name | Description|
 
 
 
-### neuro storage ls
+### apolo storage ls
 
 List directory contents.<br/><br/>By default PATH is equal project's dir \(storage:)
 
 **Usage:**
 
 ```bash
-neuro storage ls [OPTIONS] [PATHS]...
+apolo storage ls [OPTIONS] [PATHS]...
 ```
 
 **Options:**
@@ -3281,14 +3281,14 @@ Name | Description|
 
 
 
-### neuro storage mkdir
+### apolo storage mkdir
 
 Make directories.
 
 **Usage:**
 
 ```bash
-neuro storage mkdir [OPTIONS] PATHS...
+apolo storage mkdir [OPTIONS] PATHS...
 ```
 
 **Options:**
@@ -3301,14 +3301,14 @@ Name | Description|
 
 
 
-### neuro storage mv
+### apolo storage mv
 
 Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage, and<br/>DESTINATION must contain the full path to the target file or directory.<br/>
 
 **Usage:**
 
 ```bash
-neuro storage mv [OPTIONS] [SOURCES]... [DESTINATION]
+apolo storage mv [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Examples:**
@@ -3316,22 +3316,22 @@ neuro storage mv [OPTIONS] [SOURCES]... [DESTINATION]
 ```bash
 
 # move and rename remote file
-neuro mv storage:foo.txt storage:bar/baz.dat
-neuro mv -T storage:foo.txt storage:bar/baz.dat
+apolo mv storage:foo.txt storage:bar/baz.dat
+apolo mv -T storage:foo.txt storage:bar/baz.dat
 
 # move remote files into existing remote directory
-neuro mv storage:foo.txt storage:bar/baz.dat storage:dst
-neuro mv storage:foo.txt storage:bar/baz.dat -t storage:dst
+apolo mv storage:foo.txt storage:bar/baz.dat storage:dst
+apolo mv storage:foo.txt storage:bar/baz.dat -t storage:dst
 
 # move the content of remote directory into other existing
 # remote directory
-neuro mv -T storage:foo storage:bar
+apolo mv -T storage:foo storage:bar
 
 # move remote file into other project's directory
-neuro mv storage:foo.txt storage:/{project}/bar.dat
+apolo mv storage:foo.txt storage:/{project}/bar.dat
 
 # move remote file from other project's directory
-neuro mv storage:/{project}/foo.txt storage:bar.dat
+apolo mv storage:/{project}/foo.txt storage:bar.dat
 
 ```
 
@@ -3347,25 +3347,25 @@ Name | Description|
 
 
 
-### neuro storage rm
+### apolo storage rm
 
 Remove files or directories.<br/>
 
 **Usage:**
 
 ```bash
-neuro storage rm [OPTIONS] PATHS...
+apolo storage rm [OPTIONS] PATHS...
 ```
 
 **Examples:**
 
 ```bash
 
-neuro rm storage:foo/bar
-neuro rm storage:/{project}/foo/bar
-neuro rm storage://{cluster}/{project}/foo/bar
-neuro rm --recursive storage:/{project}/foo/
-neuro rm storage:foo/**/*.tmp
+apolo rm storage:foo/bar
+apolo rm storage:/{project}/foo/bar
+apolo rm storage://{cluster}/{project}/foo/bar
+apolo rm --recursive storage:/{project}/foo/
+apolo rm storage:foo/**/*.tmp
 
 ```
 
@@ -3381,14 +3381,14 @@ Name | Description|
 
 
 
-### neuro storage tree
+### apolo storage tree
 
 List storage in a tree-like format<br/><br/>Tree is a recursive directory listing program that produces a depth indented<br/>listing of files, which is colorized ala dircolors if the LS_COLORS<br/>environment variable is set and output is to tty.  With no arguments, tree<br/>lists the files in the storage: directory.  When directory arguments are<br/>given, tree lists all the files and/or directories found in the given<br/>directories each in turn.  Upon completion of listing all files/directories<br/>found, tree returns the total number of files and/or directories listed.<br/><br/>By default PATH is equal project's dir \(storage:)
 
 **Usage:**
 
 ```bash
-neuro storage tree [OPTIONS] [PATH]
+apolo storage tree [OPTIONS] [PATH]
 ```
 
 **Options:**
@@ -3404,14 +3404,14 @@ Name | Description|
 
 
 
-## neuro attach
+## apolo attach
 
 Attach terminal to a job<br/><br/>Attach local standard input, output, and error streams to a running job.
 
 **Usage:**
 
 ```bash
-neuro attach [OPTIONS] JOB
+apolo attach [OPTIONS] JOB
 ```
 
 **Options:**
@@ -3424,14 +3424,14 @@ Name | Description|
 
 
 
-## neuro cp
+## apolo cp
 
-Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/><br/>Use /dev/stdin and /dev/stdout file names to copy a file from terminal and<br/>print the content of file on the storage to console.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters that<br/>appear later in the command take precedence over filters that appear earlier<br/>in the command.  If neither \--exclude nor --include options are specified the<br/>default can be changed using the storage.cp-exclude configuration variable<br/>documented in "neuro help user-config".<br/>
+Copy files and directories.<br/><br/>Either SOURCES or DESTINATION should have storage:// scheme. If scheme is<br/>omitted, file:// scheme is assumed.<br/><br/>Use /dev/stdin and /dev/stdout file names to copy a file from terminal and<br/>print the content of file on the storage to console.<br/><br/>Any number of \--exclude and --include options can be passed.  The filters that<br/>appear later in the command take precedence over filters that appear earlier<br/>in the command.  If neither \--exclude nor --include options are specified the<br/>default can be changed using the storage.cp-exclude configuration variable<br/>documented in "apolo help user-config".<br/>
 
 **Usage:**
 
 ```bash
-neuro cp [OPTIONS] [SOURCES]... [DESTINATION]
+apolo cp [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Examples:**
@@ -3439,28 +3439,28 @@ neuro cp [OPTIONS] [SOURCES]... [DESTINATION]
 ```bash
 
 # copy local files into remote storage root
-neuro cp foo.txt bar/baz.dat storage:
-neuro cp foo.txt bar/baz.dat -t storage:
+apolo cp foo.txt bar/baz.dat storage:
+apolo cp foo.txt bar/baz.dat -t storage:
 
 # copy local directory `foo` into existing remote directory `bar`
-neuro cp -r foo -t storage:bar
+apolo cp -r foo -t storage:bar
 
 # copy the content of local directory `foo` into existing remote
 # directory `bar`
-neuro cp -r -T storage:foo storage:bar
+apolo cp -r -T storage:foo storage:bar
 
 # download remote file `foo.txt` into local file `/tmp/foo.txt` with
 # explicit file:// scheme set
-neuro cp storage:foo.txt file:///tmp/foo.txt
-neuro cp -T storage:foo.txt file:///tmp/foo.txt
-neuro cp storage:foo.txt file:///tmp
-neuro cp storage:foo.txt -t file:///tmp
+apolo cp storage:foo.txt file:///tmp/foo.txt
+apolo cp -T storage:foo.txt file:///tmp/foo.txt
+apolo cp storage:foo.txt file:///tmp
+apolo cp storage:foo.txt -t file:///tmp
 
 # download other project's remote file into the current directory
-neuro cp storage:/{project}/foo.txt .
+apolo cp storage:/{project}/foo.txt .
 
 # download only files with extension `.out` into the current directory
-neuro cp storage:results/*.out .
+apolo cp storage:results/*.out .
 
 ```
 
@@ -3470,7 +3470,7 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_--continue_|Continue copying partially-copied files.|
-|_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "neuro help user-config"|
+|_\--exclude-from-files FILES_|A list of file names that contain patterns for exclusion files and directories. Used only for uploading. The default can be changed using the storage.cp\-exclude-from-files configuration variable documented in "apolo help user-config"|
 |_--exclude TEXT_|Exclude files and directories that match the specified pattern.|
 |_--include TEXT_|Don't exclude files and directories that match the specified pattern.|
 |_\--glob / --no-glob_|Expand glob patterns in SOURCES with explicit scheme.  \[default: glob]|
@@ -3483,14 +3483,14 @@ Name | Description|
 
 
 
-## neuro exec
+## apolo exec
 
 Execute command in a running job.<br/>
 
 **Usage:**
 
 ```bash
-neuro exec [OPTIONS] JOB -- CMD...
+apolo exec [OPTIONS] JOB -- CMD...
 ```
 
 **Examples:**
@@ -3498,10 +3498,10 @@ neuro exec [OPTIONS] JOB -- CMD...
 ```bash
 
 # Provides a shell to the container:
-neuro exec my-job -- /bin/bash
+apolo exec my-job -- /bin/bash
 
 # Executes a single command in the container and returns the control:
-neuro exec --no-tty my-job -- ls -l
+apolo exec --no-tty my-job -- ls -l
 
 ```
 
@@ -3515,14 +3515,14 @@ Name | Description|
 
 
 
-## neuro help
+## apolo help
 
 Get help on a command.
 
 **Usage:**
 
 ```bash
-neuro help [OPTIONS] [COMMAND]...
+apolo help [OPTIONS] [COMMAND]...
 ```
 
 **Options:**
@@ -3534,14 +3534,14 @@ Name | Description|
 
 
 
-## neuro images
+## apolo images
 
 List images.
 
 **Usage:**
 
 ```bash
-neuro images [OPTIONS]
+apolo images [OPTIONS]
 ```
 
 **Options:**
@@ -3561,14 +3561,14 @@ Name | Description|
 
 
 
-## neuro kill
+## apolo kill
 
 Kill job\(s).
 
 **Usage:**
 
 ```bash
-neuro kill [OPTIONS] JOBS...
+apolo kill [OPTIONS] JOBS...
 ```
 
 **Options:**
@@ -3580,14 +3580,14 @@ Name | Description|
 
 
 
-## neuro login
+## apolo login
 
-Log into Neuro Platform.<br/><br/>URL is a platform entrypoint URL.
+Log into Apolo Platform.<br/><br/>URL is a platform entrypoint URL.
 
 **Usage:**
 
 ```bash
-neuro login [OPTIONS] [URL]
+apolo login [OPTIONS] [URL]
 ```
 
 **Options:**
@@ -3599,14 +3599,14 @@ Name | Description|
 
 
 
-## neuro logout
+## apolo logout
 
 Log out.
 
 **Usage:**
 
 ```bash
-neuro logout [OPTIONS]
+apolo logout [OPTIONS]
 ```
 
 **Options:**
@@ -3618,14 +3618,14 @@ Name | Description|
 
 
 
-## neuro logs
+## apolo logs
 
 Print the logs for a job.
 
 **Usage:**
 
 ```bash
-neuro logs [OPTIONS] JOB
+apolo logs [OPTIONS] JOB
 ```
 
 **Options:**
@@ -3639,14 +3639,14 @@ Name | Description|
 
 
 
-## neuro ls
+## apolo ls
 
 List directory contents.<br/><br/>By default PATH is equal project's dir \(storage:)
 
 **Usage:**
 
 ```bash
-neuro ls [OPTIONS] [PATHS]...
+apolo ls [OPTIONS] [PATHS]...
 ```
 
 **Options:**
@@ -3663,14 +3663,14 @@ Name | Description|
 
 
 
-## neuro mkdir
+## apolo mkdir
 
 Make directories.
 
 **Usage:**
 
 ```bash
-neuro mkdir [OPTIONS] PATHS...
+apolo mkdir [OPTIONS] PATHS...
 ```
 
 **Options:**
@@ -3683,14 +3683,14 @@ Name | Description|
 
 
 
-## neuro mv
+## apolo mv
 
 Move or rename files and directories.<br/><br/>SOURCE must contain path to the file or directory existing on the storage, and<br/>DESTINATION must contain the full path to the target file or directory.<br/>
 
 **Usage:**
 
 ```bash
-neuro mv [OPTIONS] [SOURCES]... [DESTINATION]
+apolo mv [OPTIONS] [SOURCES]... [DESTINATION]
 ```
 
 **Examples:**
@@ -3698,22 +3698,22 @@ neuro mv [OPTIONS] [SOURCES]... [DESTINATION]
 ```bash
 
 # move and rename remote file
-neuro mv storage:foo.txt storage:bar/baz.dat
-neuro mv -T storage:foo.txt storage:bar/baz.dat
+apolo mv storage:foo.txt storage:bar/baz.dat
+apolo mv -T storage:foo.txt storage:bar/baz.dat
 
 # move remote files into existing remote directory
-neuro mv storage:foo.txt storage:bar/baz.dat storage:dst
-neuro mv storage:foo.txt storage:bar/baz.dat -t storage:dst
+apolo mv storage:foo.txt storage:bar/baz.dat storage:dst
+apolo mv storage:foo.txt storage:bar/baz.dat -t storage:dst
 
 # move the content of remote directory into other existing
 # remote directory
-neuro mv -T storage:foo storage:bar
+apolo mv -T storage:foo storage:bar
 
 # move remote file into other project's directory
-neuro mv storage:foo.txt storage:/{project}/bar.dat
+apolo mv storage:foo.txt storage:/{project}/bar.dat
 
 # move remote file from other project's directory
-neuro mv storage:/{project}/foo.txt storage:bar.dat
+apolo mv storage:/{project}/foo.txt storage:bar.dat
 
 ```
 
@@ -3729,14 +3729,14 @@ Name | Description|
 
 
 
-## neuro port-forward
+## apolo port-forward
 
 Forward port\(s) of a job.<br/><br/>Forwards port\(s) of a running job to local port\(s).<br/>
 
 **Usage:**
 
 ```bash
-neuro port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
+apolo port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
 ```
 
 **Examples:**
@@ -3745,16 +3745,16 @@ neuro port-forward [OPTIONS] JOB LOCAL_PORT:REMOTE_RORT...
 
 # Forward local port 2080 to port 80 of job's container.
 # You can use http://localhost:2080 in browser to access job's served http
-neuro job port-forward my-fastai-job 2080:80
+apolo job port-forward my-fastai-job 2080:80
 
 # Forward local port 2222 to job's port 22
 # Then copy all data from container's folder '/data' to current folder
 # (please run second command in other terminal)
-neuro job port-forward my-job-with-ssh-server 2222:22
+apolo job port-forward my-job-with-ssh-server 2222:22
 rsync -avxzhe ssh -p 2222 root@localhost:/data .
 
 # Forward few ports at once
-neuro job port-forward my-job 2080:80 2222:22 2000:100
+apolo job port-forward my-job 2080:80 2222:22 2000:100
 
 ```
 
@@ -3767,26 +3767,26 @@ Name | Description|
 
 
 
-## neuro ps
+## apolo ps
 
 List all jobs.<br/>
 
 **Usage:**
 
 ```bash
-neuro ps [OPTIONS]
+apolo ps [OPTIONS]
 ```
 
 **Examples:**
 
 ```bash
 
-neuro ps -a
-neuro ps -a --owner=user-1 --owner=user-2
-neuro ps --name my-experiments-v1 -s failed -s succeeded
-neuro ps --description=my favourite job
-neuro ps -s failed -s succeeded -q
-neuro ps -t tag1 -t tag2
+apolo ps -a
+apolo ps -a --owner=user-1 --owner=user-2
+apolo ps --name my-experiments-v1 -s failed -s succeeded
+apolo ps --description=my favourite job
+apolo ps -s failed -s succeeded -q
+apolo ps -t tag1 -t tag2
 
 ```
 
@@ -3801,7 +3801,7 @@ Name | Description|
 |_--cluster CLUSTER_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
 |_--distinct_|Show only first job if names are same.|
-|_--format COLUMNS_|Output table format, see "neuro help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "neuro help user-config"|
+|_--format COLUMNS_|Output table format, see "apolo help ps\-format" for more info about the format specification. The default can be changed using the job.ps-format configuration variable documented in "apolo help user-config"|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_--org ORG_|Filter out jobs by org name \(multiple option, the current org by default).|
@@ -3817,23 +3817,23 @@ Name | Description|
 
 
 
-## neuro pull
+## apolo pull
 
 Pull an image from platform registry.<br/><br/>Remote image name must be URL with image:// scheme. Image names can contain<br/>tag.<br/>
 
 **Usage:**
 
 ```bash
-neuro pull [OPTIONS] REMOTE_IMAGE [LOCAL_IMAGE]
+apolo pull [OPTIONS] REMOTE_IMAGE [LOCAL_IMAGE]
 ```
 
 **Examples:**
 
 ```bash
 
-neuro pull image:myimage
-neuro pull image:/other-project/alpine:shared
-neuro pull image:/project/my-alpine:production alpine:from-registry
+apolo pull image:myimage
+apolo pull image:/other-project/alpine:shared
+apolo pull image:/project/my-alpine:production alpine:from-registry
 
 ```
 
@@ -3846,23 +3846,23 @@ Name | Description|
 
 
 
-## neuro push
+## apolo push
 
 Push an image to platform registry.<br/><br/>Remote image must be URL with image:// scheme. Image names can contain tag. If<br/>tags not specified 'latest' will be used as value.<br/>
 
 **Usage:**
 
 ```bash
-neuro push [OPTIONS] LOCAL_IMAGE [REMOTE_IMAGE]
+apolo push [OPTIONS] LOCAL_IMAGE [REMOTE_IMAGE]
 ```
 
 **Examples:**
 
 ```bash
 
-neuro push myimage
-neuro push alpine:latest image:my-alpine:production
-neuro push alpine image:/other-project/alpine:shared
+apolo push myimage
+apolo push alpine:latest image:my-alpine:production
+apolo push alpine image:/other-project/alpine:shared
 
 ```
 
@@ -3875,25 +3875,25 @@ Name | Description|
 
 
 
-## neuro rm
+## apolo rm
 
 Remove files or directories.<br/>
 
 **Usage:**
 
 ```bash
-neuro rm [OPTIONS] PATHS...
+apolo rm [OPTIONS] PATHS...
 ```
 
 **Examples:**
 
 ```bash
 
-neuro rm storage:foo/bar
-neuro rm storage:/{project}/foo/bar
-neuro rm storage://{cluster}/{project}/foo/bar
-neuro rm --recursive storage:/{project}/foo/
-neuro rm storage:foo/**/*.tmp
+apolo rm storage:foo/bar
+apolo rm storage:/{project}/foo/bar
+apolo rm storage://{cluster}/{project}/foo/bar
+apolo rm --recursive storage:/{project}/foo/
+apolo rm storage:foo/**/*.tmp
 
 ```
 
@@ -3909,14 +3909,14 @@ Name | Description|
 
 
 
-## neuro run
+## apolo run
 
 Run a job<br/><br/>IMAGE docker image name to run in a job.<br/><br/>CMD list will be passed as arguments to the executed job's image.<br/>
 
 **Usage:**
 
 ```bash
-neuro run [OPTIONS] IMAGE [-- CMD...]
+apolo run [OPTIONS] IMAGE [-- CMD...]
 ```
 
 **Examples:**
@@ -3924,15 +3924,15 @@ neuro run [OPTIONS] IMAGE [-- CMD...]
 ```bash
 
 # Starts a container pytorch/pytorch:latest on a machine with smaller GPU resources
-# (see exact values in `neuro config show`) and with two volumes mounted:
+# (see exact values in `apolo config show`) and with two volumes mounted:
 #   storage:/<home-directory>   --> /var/storage/home (in read-write mode),
 #   storage:/neuromation/public --> /var/storage/neuromation (in read-only mode).
-neuro run --preset=gpu-small --volume=storage::/var/storage/home:rw \
+apolo run --preset=gpu-small --volume=storage::/var/storage/home:rw \
 --volume=storage:/neuromation/public:/var/storage/home:ro pytorch/pytorch:latest
 
-# Starts a container using the custom image my-ubuntu:latest stored in neuro
+# Starts a container using the custom image my-ubuntu:latest stored in apolo
 # registry, run /script.sh and pass arg1 and arg2 as its arguments:
-neuro run -s cpu-small --entrypoint=/script.sh image:my-ubuntu:latest -- arg1 arg2
+apolo run -s cpu-small --entrypoint=/script.sh image:my-ubuntu:latest -- arg1 arg2
 
 ```
 
@@ -3947,7 +3947,7 @@ Name | Description|
 |_--detach_|Don't attach to job logs and don't wait for exit code|
 |_\--energy-schedule NAME_|Run job only within a selected energy schedule. Selected preset should have scheduler enabled.|
 |_--entrypoint TEXT_|Executable entrypoint in the container \(note that it overwrites `ENTRYPOINT` and `CMD` instructions of the docker image)|
-|_\-e, --env VAR=VAL_|Set environment variable in container. Use multiple options to define more than one variable. See `neuro help secrets` for information about passing secrets as environment variables.|
+|_\-e, --env VAR=VAL_|Set environment variable in container. Use multiple options to define more than one variable. See `apolo help secrets` for information about passing secrets as environment variables.|
 |_\--env-file PATH_|File with environment variables to pass|
 |_\-x, --extshm / -X, --no-extshm_|Request extended '/dev/shm' space  \[default: x]|
 |_\--http-auth / --no-http-auth_|Enable HTTP authentication for forwarded HTTP port  \[default: True]|
@@ -3955,9 +3955,9 @@ Name | Description|
 |_\--life-span TIMEDELTA_|Optional job run-time limit in the format '1d2h3m4s' \(some parts may be missing). Set '0' to disable. Default value '1d' can be changed in the user config.|
 |_\-n, --name NAME_|Optional job name|
 |_--org ORG_|Run job in a specified org|
-|_\--pass-config / --no-pass-config_|Upload neuro config to the job  \[default: no\-pass-config]|
+|_\--pass-config / --no-pass-config_|Upload apolo config to the job  \[default: no\-pass-config]|
 |_\--port-forward LOCAL\_PORT:REMOTE_RORT_|Forward port\(s) of a running job to local port\(s) \(use multiple times for forwarding several ports)|
-|_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `neuro config show`)|
+|_\-s, --preset PRESET_|Predefined resource configuration \(to see available values, run `apolo config show`)|
 |_--priority \[low &#124; normal &#124; high]_|Priority used to specify job's start order. Jobs with higher priority will start before ones with lower priority. Priority should be supported by cluster.|
 |_--privileged_|Run job in privileged mode, if it is supported by cluster.|
 |_\-p, --project PROJECT_|Run job in a specified project.|
@@ -3966,7 +3966,7 @@ Name | Description|
 |_--share USER_|Share job write permissions to user or role.|
 |_--tag TAG_|Optional job tag, multiple values allowed|
 |_\-t, --tty / -T, --no-tty_|Allocate a TTY, can be useful for interactive jobs. By default is on if the command is executed from a terminal, non-tty mode is used if executed from a script.|
-|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. See `neuro help secrets` for information about passing secrets as mounted files.|
+|_\-v, --volume MOUNT_|Mounts directory from vault into container. Use multiple options to mount more than one volume. See `apolo help secrets` for information about passing secrets as mounted files.|
 |_\--wait-for-seat / --no-wait-for-seat_|Wait for total running jobs quota  \[default: no\-wait-for-seat]|
 |_\--wait-start / --no-wait-start_|Wait for a job start or failure  \[default: wait-start]|
 |_\-w, --workdir TEXT_|Working directory inside the container|
@@ -3974,23 +3974,23 @@ Name | Description|
 
 
 
-## neuro save
+## apolo save
 
 Save job's state to an image.<br/>
 
 **Usage:**
 
 ```bash
-neuro save [OPTIONS] JOB IMAGE
+apolo save [OPTIONS] JOB IMAGE
 ```
 
 **Examples:**
 
 ```bash
 
-neuro job save job-id image:ubuntu-patched
-neuro job save my-favourite-job image:ubuntu-patched:v1
-neuro job save my-favourite-job image://bob/ubuntu-patched
+apolo job save job-id image:ubuntu-patched
+apolo job save my-favourite-job image:ubuntu-patched:v1
+apolo job save my-favourite-job image://bob/ubuntu-patched
 
 ```
 
@@ -4003,23 +4003,23 @@ Name | Description|
 
 
 
-## neuro share
+## apolo share
 
 Shares resource with another user.<br/><br/>URI shared resource.<br/><br/>USER username to share resource with.<br/><br/>PERMISSION sharing access right: read, write, or manage.<br/>
 
 **Usage:**
 
 ```bash
-neuro share [OPTIONS] URI USER {read|write|manage}
+apolo share [OPTIONS] URI USER {read|write|manage}
 ```
 
 **Examples:**
 
 ```bash
 
-neuro acl grant storage:///sample_data/ alice manage
-neuro acl grant image:resnet50 bob read
-neuro acl grant job:///my_job_id alice write
+apolo acl grant storage:///sample_data/ alice manage
+apolo acl grant image:resnet50 bob read
+apolo acl grant job:///my_job_id alice write
 
 ```
 
@@ -4032,14 +4032,14 @@ Name | Description|
 
 
 
-## neuro status
+## apolo status
 
 Display status of a job.
 
 **Usage:**
 
 ```bash
-neuro status [OPTIONS] JOB
+apolo status [OPTIONS] JOB
 ```
 
 **Options:**
@@ -4052,25 +4052,25 @@ Name | Description|
 
 
 
-## neuro top
+## apolo top
 
 Display GPU/CPU/Memory usage.<br/>
 
 **Usage:**
 
 ```bash
-neuro top [OPTIONS] [JOBS]...
+apolo top [OPTIONS] [JOBS]...
 ```
 
 **Examples:**
 
 ```bash
 
-neuro top
-neuro top job-1 job-2
-neuro top --owner=user-1 --owner=user-2
-neuro top --name my-experiments-v1
-neuro top -t tag1 -t tag2
+apolo top
+apolo top job-1 job-2
+apolo top --owner=user-1 --owner=user-2
+apolo top --name my-experiments-v1
+apolo top -t tag1 -t tag2
 
 ```
 
@@ -4081,7 +4081,7 @@ Name | Description|
 |_--help_|Show this message and exit.|
 |_--cluster CLUSTER_|Show jobs on a specified cluster \(the current cluster by default).|
 |_\-d, --description DESCRIPTION_|Filter out jobs by description \(exact match).|
-|_--format COLUMNS_|Output table format, see "neuro help top\-format" for more info about the format specification. The default can be changed using the job.top-format configuration variable documented in "neuro help user-config"|
+|_--format COLUMNS_|Output table format, see "apolo help top\-format" for more info about the format specification. The default can be changed using the job.top-format configuration variable documented in "apolo help user-config"|
 |_\--full-uri_|Output full image URI.|
 |_\-n, --name NAME_|Filter out jobs by name.|
 |_\-o, --owner TEXT_|Filter out jobs by owner \(multiple option). Supports `ME` option to filter by the current user. Specify `ALL` to show jobs of all users.|

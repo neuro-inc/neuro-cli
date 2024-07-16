@@ -5,7 +5,7 @@ Access Control List management
 ## Usage
 
 ```bash
-neuro acl [OPTIONS] COMMAND [ARGS]...
+apolo acl [OPTIONS] COMMAND [ARGS]...
 ```
 
 Access Control List management.
@@ -27,7 +27,7 @@ Shares resource with another user
 #### Usage
 
 ```bash
-neuro acl grant [OPTIONS] URI USER [read|write|manage]
+apolo acl grant [OPTIONS] URI USER [read|write|manage]
 ```
 
 Shares resource with another user.
@@ -41,9 +41,9 @@ Shares resource with another user.
 #### Examples
 
 ```bash
-$ neuro acl grant storage:///sample_data/ alice manage
-$ neuro acl grant image:resnet50 bob read
-$ neuro acl grant job:///my_job_id alice write
+$ apolo acl grant storage:///sample_data/ alice manage
+$ apolo acl grant image:resnet50 bob read
+$ apolo acl grant job:///my_job_id alice write
 ```
 
 #### Options
@@ -59,7 +59,7 @@ Revoke user access from another user
 #### Usage
 
 ```bash
-neuro acl revoke [OPTIONS] URI USER
+apolo acl revoke [OPTIONS] URI USER
 ```
 
 Revoke user access from another user.
@@ -71,9 +71,9 @@ Revoke user access from another user.
 #### Examples
 
 ```bash
-$ neuro acl revoke storage:///sample_data/ alice
-$ neuro acl revoke image:resnet50 bob
-$ neuro acl revoke job:///my_job_id alice
+$ apolo acl revoke storage:///sample_data/ alice
+$ apolo acl revoke image:resnet50 bob
+$ apolo acl revoke job:///my_job_id alice
 ```
 
 #### Options
@@ -89,7 +89,7 @@ List shared resources
 #### Usage
 
 ```bash
-neuro acl list [OPTIONS] [URI]
+apolo acl list [OPTIONS] [URI]
 ```
 
 List shared resources.
@@ -101,10 +101,10 @@ To display a list of resources shared `WITH` current user apply --shared option.
 #### Examples
 
 ```bash
-$ neuro acl list
-$ neuro acl list storage://
-$ neuro acl list --shared
-$ neuro acl list --shared image://
+$ apolo acl list
+$ apolo acl list storage://
+$ apolo acl list --shared
+$ apolo acl list --shared image://
 ```
 
 #### Options
@@ -124,7 +124,7 @@ Add new role
 #### Usage
 
 ```bash
-neuro acl add-role [OPTIONS] ROLE_NAME
+apolo acl add-role [OPTIONS] ROLE_NAME
 ```
 
 Add new role.
@@ -132,7 +132,7 @@ Add new role.
 #### Examples
 
 ```bash
-$ neuro acl add-role mycompany/subdivision
+$ apolo acl add-role mycompany/subdivision
 ```
 
 #### Options
@@ -148,7 +148,7 @@ Remove existing role
 #### Usage
 
 ```bash
-neuro acl remove-role [OPTIONS] ROLE_NAME
+apolo acl remove-role [OPTIONS] ROLE_NAME
 ```
 
 Remove existing role.
@@ -156,7 +156,7 @@ Remove existing role.
 #### Examples
 
 ```bash
-$ neuro acl remove-role mycompany/subdivision
+$ apolo acl remove-role mycompany/subdivision
 ```
 
 #### Options

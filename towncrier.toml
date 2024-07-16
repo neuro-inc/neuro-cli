@@ -1,8 +1,8 @@
 [tool.towncrier]
-    package = "neuro_cli"
-    package_dir = "neuro-cli"
+    package = "apolo_cli"
+    package_dir = "apolo-cli"
     directory = "CHANGELOG.D"
     filename = "CHANGELOG.md"
-    name = "Neuro SDK/CLI"
+    name = "Apolo SDK/CLI"
     issue_format = "[#{issue}](https://github.com/neuro-inc/neuro-cli/issues/{issue})"
     start_string = "[comment]: # (towncrier release notes start)\n"
