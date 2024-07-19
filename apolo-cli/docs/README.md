@@ -1,3 +1,3 @@
-# Neu.ro CLI
+# Apolo CLI
 
-Command line interface for [Neu.ro Platform](https://neu.ro).
+Command line interface for [Apolo Platform](https://console.apolo.us).

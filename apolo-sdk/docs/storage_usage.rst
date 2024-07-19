@@ -8,7 +8,7 @@ Storage Usage
 
 
 Use Storage API (available as :attr:`Client.storage`) for uploading files to the
-Neu.ro Storage and downloading them back.  This chapter describes several common
+Apolo Storage and downloading them back.  This chapter describes several common
 scenarios like uploading / downloading directories recursively.
 
 There are many methods in :class:`Storage` namespace, here we describe a few.

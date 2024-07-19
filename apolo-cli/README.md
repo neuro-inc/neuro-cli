@@ -2,7 +2,7 @@
 
 # Preface
 
-Welcome to Apolo CLI tool for https://neu.ro/.
+Welcome to Apolo CLI tool for https://apolo.us/.
 Package ship command line tool called `apolo`. With it you can:
 * Execute and debug jobs
 * Manipulate Data
