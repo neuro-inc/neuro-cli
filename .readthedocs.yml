@@ -3,7 +3,6 @@ sphinx:
   configuration: apolo-sdk/docs/conf.py
 formats: all
 python:
-  version: 3.8
   install:
     - requirements: requirements/doc.txt
 build:
