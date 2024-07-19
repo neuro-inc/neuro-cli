@@ -1024,6 +1024,8 @@ def make_image_name() -> str:
 
 @pytest.fixture(scope="session", autouse=True)
 def drop_old_test_images() -> None:
+    yield
+    logging.warning("Cleaning up old images")
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir_path = Path(tmpdir)
         nmrc_path = _get_nmrc_path(tmpdir_path, False)

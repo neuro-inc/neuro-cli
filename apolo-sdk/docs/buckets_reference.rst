@@ -3,7 +3,7 @@ Buckets API Reference
 =====================
 
 
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 
 Buckets
@@ -17,18 +17,19 @@ Buckets
    solutions different cloud providers support. For AWS it would be S3, for GCP -
    Cloud Storage, etc.
 
-   .. comethod:: list(cluster_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[Bucket]]
-      :async-for:
+   .. method:: list(cluster_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[Bucket]]
+      :async:
 
       List user's buckets, async iterator. Yields :class:`Bucket` instances.
 
       :param str cluster_name: cluster to list buckets. Default is current cluster.
 
-   .. comethod:: create(  \
+   .. method:: create(  \
                         name: typing.Optional[str], \
                         cluster_name: Optional[str] = None, \
                         org_name: Optional[str] = None, \
                  ) -> Bucket
+      :async:
 
       Create a new bucket.
 
@@ -42,7 +43,7 @@ Buckets
 
       :return: Newly created bucket info (:class:`Bucket`)
 
-   .. comethod:: import_external(  \
+   .. method:: import_external(  \
                                  provider: Bucket.Provider, \
                                  provider_bucket_name: str, \
                                  credentials: Mapping[str, str], \
@@ -50,6 +51,7 @@ Buckets
                                  cluster_name: Optional[str] = None, \
                                  org_name: Optional[str] = None, \
                  ) -> Bucket
+      :async:
 
       Import a new bucket.
 
@@ -70,7 +72,8 @@ Buckets
 
       :return: Newly imported bucket info (:class:`Bucket`)
 
-   .. comethod:: get(bucket_id_or_name: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> Bucket
+   .. method:: get(bucket_id_or_name: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> Bucket
+      :async:
 
       Get a bucket with id or name *bucket_id_or_name*.
 
@@ -83,7 +86,8 @@ Buckets
 
       :return: Bucket info (:class:`Bucket`)
 
-   .. comethod:: rm(bucket_id_or_name: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> None
+   .. method:: rm(bucket_id_or_name: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> None
+      :async:
 
       Delete a bucket with id or name *bucket_id_or_name*.
 
@@ -94,7 +98,8 @@ Buckets
       :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
                                Default is current user.
 
-   .. comethod:: request_tmp_credentials(bucket_id_or_name: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> BucketCredentials
+   .. method:: request_tmp_credentials(bucket_id_or_name: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> BucketCredentials
+      :async:
 
       Get a temporary provider credentials to bucket with id or name *bucket_id_or_name*.
 
@@ -107,7 +112,8 @@ Buckets
 
       :return: Bucket credentials info (:class:`BucketCredentials`)
 
-   .. comethod:: set_public_access(bucket_id_or_name: str, public_access: bool, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> Bucket
+   .. method:: set_public_access(bucket_id_or_name: str, public_access: bool, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> Bucket
+      :async:
 
       Enable or disable public (anonymous) read access to bucket.
 
@@ -122,7 +128,8 @@ Buckets
 
       :return: Bucket info (:class:`Bucket`)
 
-   .. comethod:: head_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> BucketEntry
+   .. method:: head_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> BucketEntry
+      :async:
 
       Look up the blob and return it's metadata.
 
@@ -136,13 +143,14 @@ Buckets
 
       :raises: :exc:`ResourceNotFound` if key does not exist.
 
-   .. comethod:: put_blob(  \
+   .. method:: put_blob(  \
                              bucket_id_or_name: str,  \
                              key: str,  \
                              body: Union[AsyncIterator[bytes], bytes], \
                              cluster_name: Optional[str] = None,  \
                              bucket_owner: Optional[str) = None,  \
                           ) -> None
+      :async:
 
       Create or replace blob identified by ``key`` in the bucket, e.g::
 
@@ -169,13 +177,14 @@ Buckets
       :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
                                Default is current user.
 
-   .. comethod:: fetch_blob(  \
+   .. method:: fetch_blob(  \
                              bucket_id_or_name: str,  \
                              key: str,  \
                              offset: int = 0, \
                              cluster_name: Optional[str] = None,  \
                              bucket_owner: Optional[str) = None,  \
                           ) -> AsyncIterator[bytes]
+      :async:
 
       Look up the blob and return it's body content only. The content will be streamed
       using an asynchronous iterator, e.g.::
@@ -191,7 +200,8 @@ Buckets
       :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
                                Default is current user.
 
-   .. comethod:: delete_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> None
+   .. method:: delete_blob(bucket_id_or_name: str, key: str, cluster_name: Optional[str] = None, bucket_owner: Optional[str) = None) -> None
+      :async:
 
       Remove blob from the bucket.
 
@@ -201,9 +211,10 @@ Buckets
       :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
                                Default is current user.
 
-   .. comethod:: list_blobs(uri: URL, \
+   .. method:: list_blobs(uri: URL, \
                               recursive: bool = False, limit: int = 10000 \
                   ) -> AsyncContextManager[AsyncIterator[BucketEntry]]
+      :async:
 
       List blobs in the bucket. You can filter by prefix and return results similar
       to a folder structure if ``recursive=False`` is provided.
@@ -217,7 +228,8 @@ Buckets
       :param limit int: Maximum number of :class:`BucketEntry` objects returned.
 
 
-   .. comethod:: glob_blobs(uri: URL) -> AsyncContextManager[AsyncIterator[BucketEntry]]
+   .. method:: glob_blobs(uri: URL) -> AsyncContextManager[AsyncIterator[BucketEntry]]
+      :async:
 
       Glob search for blobs in the bucket::
 
@@ -233,10 +245,11 @@ Buckets
       :param URL uri: URL that specifies bucket and pattern to glob blobs,
                       e.g. ``yarl.URL("blob:bucket_name/path/**/*.bin")``.
 
-   .. comethod:: upload_file(src: URL, dst: URL, \
+   .. method:: upload_file(src: URL, dst: URL, \
                              *, update: bool = False, \
                              progress: Optional[AbstractFileProgress] = None \
                  ) -> None:
+      :async:
 
       Similarly to :meth:`Storage.upload_file`, allows to upload local file *src* to
       bucket URL *dst*.
@@ -256,11 +269,12 @@ Buckets
          a callback interface for reporting uploading progress, ``None`` for no progress
          report (default).
 
-   .. comethod:: download_file(src: URL, dst: URL, \
+   .. method:: download_file(src: URL, dst: URL, \
                                *, update: bool = False, \
                                continue_: bool = False, \
                                progress: Optional[AbstractFileProgress] = None \
                  ) -> None:
+      :async:
 
       Similarly to :meth:`Storage.download_file`, allows to download remote file
       *src* to local path *dst*.
@@ -287,12 +301,13 @@ Buckets
          no progress report (default).
 
 
-   .. comethod:: upload_dir(src: URL, dst: URL, \
+   .. method:: upload_dir(src: URL, dst: URL, \
                             *, update: bool = False, \
                             filter: Optional[Callable[[str], Awaitable[bool]]] = None, \
                             ignore_file_names: AbstractSet[str] = frozenset(), \
                             progress: Optional[AbstractRecursiveFileProgress] = None \
                  ) -> None:
+      :async:
 
       Similarly to :meth:`Storage.upload_dir`, allows to recursively upload local
       directory *src* to Blob Storage URL *dst*.
@@ -326,12 +341,13 @@ Buckets
          a callback interface for reporting uploading progress, ``None`` for no progress
          report (default).
 
-   .. comethod:: download_dir(src: URL, dst: URL, \
+   .. method:: download_dir(src: URL, dst: URL, \
                               *, update: bool = False, \
                               continue_: bool = False, \
                               filter: Optional[Callable[[str], Awaitable[bool]]] = None, \
                               progress: Optional[AbstractRecursiveFileProgress] = None \
                  ) -> None:
+      :async:
 
       Similarly to :meth:`Storage.download_dir`, allows to recursively download
       remote directory *src* to local path *dst*.
@@ -363,14 +379,16 @@ Buckets
          a callback interface for reporting downloading progress, ``None`` for no
          progress report (default).
 
-   .. comethod:: blob_is_dir(uri: URL) -> bool
+   .. method:: blob_is_dir(uri: URL) -> bool
+      :async:
 
       Check weather *uri* specifies a "folder" blob in a bucket.
 
       :param ~yarl.URL src: URL that specifies bucket and blob key
                             e.g. ``yarl.URL("blob:bucket_name/folder/sub_folder")``.
 
-   .. comethod:: blob_rm(uri: URL, *, recursive: bool = False, progress: Optional[AbstractDeleteProgress] = None) -> None
+   .. method:: blob_rm(uri: URL, *, recursive: bool = False, progress: Optional[AbstractDeleteProgress] = None) -> None
+      :async:
 
       Remove blobs from bucket.
 
@@ -388,7 +406,8 @@ Buckets
       :raises: :exc:`IsADirectoryError` if *uri* points on a directory and *recursive*
                flag is not set.
 
-   .. comethod:: make_signed_url(uri: URL, expires_in_seconds: int = 3600) -> URL
+   .. method:: make_signed_url(uri: URL, expires_in_seconds: int = 3600) -> URL
+      :async:
 
       Generate a singed url that allows temporary access to blob.
 
@@ -399,10 +418,11 @@ Buckets
 
       :return: Signed url (:class:`yarl.URL`)
 
-   .. comethod:: get_disk_usage(bucket_id_or_name: str, \
+   .. method:: get_disk_usage(bucket_id_or_name: str, \
                                 cluster_name: Optional[str] = None, \
                                 bucket_owner: Optional[str) = None, \
                  ) -> AsyncContextManager[AsyncIterator[BucketUsage]]
+      :async:
 
       Get disk space usage of a given bucket. Iterator yield partial results as calculation
       for the whole bucket can take time.
@@ -412,19 +432,20 @@ Buckets
       :param str bucket_owner: bucket owner's username. Used only if looking up for bucket by it's name.
                                Default is current user.
 
-   .. comethod:: persistent_credentials_list(cluster_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[PersistentBucketCredentials]]
-      :async-for:
+   .. method:: persistent_credentials_list(cluster_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[PersistentBucketCredentials]]
+      :async:
 
       List user's bucket persistent credentials, async iterator. Yields :class:`PersistentBucketCredentials` instances.
 
       :param str cluster_name: cluster to list persistent credentials. Default is current cluster.
 
-   .. comethod:: persistent_credentials_create(  \
+   .. method:: persistent_credentials_create(  \
                         bucket_ids: typing.Iterable[str], \
                         name: typing.Optional[str], \
                         read_only: Optional[bool] = False, \
                         cluster_name: Optional[str] = None, \
                  ) -> PersistentBucketCredentials
+      :async:
 
       Create a new persistent credentials for given set of buckets.
 
@@ -440,7 +461,8 @@ Buckets
 
       :return: Newly created credentials info (:class:`PersistentBucketCredentials`)
 
-   .. comethod:: persistent_credentials_get(credential_id_or_name: str, cluster_name: Optional[str] = None) -> PersistentBucketCredentials
+   .. method:: persistent_credentials_get(credential_id_or_name: str, cluster_name: Optional[str] = None) -> PersistentBucketCredentials
+      :async:
 
       Get a persistent credentials with id or name *credential_id_or_name*.
 
@@ -450,7 +472,8 @@ Buckets
 
       :return: Credentials info (:class:`PersistentBucketCredentials`)
 
-   .. comethod:: persistent_credentials_rm(credential_id_or_name: str, cluster_name: Optional[str] = None) -> None
+   .. method:: persistent_credentials_rm(credential_id_or_name: str, cluster_name: Optional[str] = None) -> None
+      :async:
 
       Delete a persistent credentials with id or name *credential_id_or_name*.
 

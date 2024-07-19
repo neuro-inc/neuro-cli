@@ -3,7 +3,7 @@ Parser Reference
 ================
 
 
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 
 Parser
@@ -46,7 +46,7 @@ Parser
 
       The string should fit to ``name[:tag]`` or ``image:name[tag]`` patterns,
       e.g. ``"ubuntu:latest"`` or ``image:my-image:latest``. The former is used for
-      public DockerHub_ images, the later is for Neuro image registry.
+      public DockerHub_ images, the later is for Apolo image registry.
 
       :raise: :exc:`ValueError` if *image* has invalid format.
 

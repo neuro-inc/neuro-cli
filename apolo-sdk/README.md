@@ -2,11 +2,11 @@
 
 # Preface
 
-Welcome to Python Neuro-SDK for https://neu.ro/.
+Welcome to Python Apolo-SDK for https://neu.ro/.
 
 # Documentation
 
-https://neuro-sdk.readthedocs.io/en/latest/
+https://apolo-sdk.readthedocs.io/en/latest/
 
 # Installation
 
@@ -14,7 +14,7 @@ https://neuro-sdk.readthedocs.io/en/latest/
 Install from PyPI:
 
 ```shell
-$ pip install neuro-sdk
+$ pip install apolo-sdk
 ```
 
 # Contributing

@@ -1,4 +1,4 @@
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 
 .. _plugin-reference:
@@ -8,7 +8,7 @@ Plugins API Reference
 ===========================
 
 
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 
 PluginManager
@@ -16,7 +16,7 @@ PluginManager
 
 .. class:: PluginManager
 
-   Allows plugins to register their features. Provided to **neuro_api** entrypoint (check
+   Allows plugins to register their features. Provided to **apolo_api** entrypoint (check
    https://packaging.python.org/specifications/entry-points/ for more info about entry points).
 
    .. attribute:: config

@@ -3,7 +3,7 @@ Users API Reference
 ===================
 
 
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 
 Users
@@ -14,11 +14,12 @@ Users
    User management subsystem, available as :attr:`Client.users`.
 
 
-   .. comethod:: get_acl(\
+   .. method:: get_acl(\
                      user: str, \
                      scheme: Optional[str] = None, *, \
                      uri: Optional[URL] = None \
                  ) -> Sequence[Permission]
+      :async:
 
       Get a list of permissions for *user*.
 
@@ -36,10 +37,11 @@ Users
                return type as immutable list.
 
 
-   .. comethod:: get_shares( \
+   .. method:: get_shares( \
                      user: str, scheme: Optional[str] = None, *, \
                      uri: Optional[URL] = None \
                  ) -> Sequence[Share]
+      :async:
 
       Get resources shared with *user* by others.
 
@@ -57,7 +59,8 @@ Users
       :return: a :class:`typing.Sequence` of :class:`Share` objects.  Consider the
                return type as immutable list.
 
-   .. comethod:: get_subroles(user: str) -> Sequence[str]
+   .. method:: get_subroles(user: str) -> Sequence[str]
+      :async:
 
       Get subroles of given *user*.
 
@@ -66,7 +69,8 @@ Users
       :return: a :class:`typing.Sequence` of :class:`str` objects.  Consider the
                return type as immutable list.
 
-   .. comethod:: share(user: str, permission: Permission) -> None
+   .. method:: share(user: str, permission: Permission) -> None
+      :async:
 
       Share a resource specified by *permission* with *user*.
 
@@ -74,7 +78,8 @@ Users
 
       :param Permission permission: a new permission to add.
 
-   .. comethod:: revoke(user: str, uri: URL) -> None
+   .. method:: revoke(user: str, uri: URL) -> None
+      :async:
 
       Revoke all permissions for a resource specified by *uri* from *user*.
 
@@ -82,13 +87,15 @@ Users
 
       :param URL uri: a resource to revoke.
 
-   .. comethod:: add(role_name: str) -> None
+   .. method:: add(role_name: str) -> None
+      :async:
 
       Add new role.
 
       :param str role_name: role name. Components are separated by "/".
 
-   .. comethod:: remove(role_name: str) -> None
+   .. method:: remove(role_name: str) -> None
+      :async:
 
       Remove existing role.
 

@@ -5,7 +5,7 @@ Storage API Reference
 =====================
 
 
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 
 Storage
@@ -22,9 +22,8 @@ Storage
 
    .. rubric:: Remote filesystem operations
 
-   .. comethod:: glob(uri: URL, *, dironly: bool = False) -> AsyncContextManager[AsyncIterator[URL]]
-      :async-with:
-      :async-for:
+   .. method:: glob(uri: URL, *, dironly: bool = False) -> AsyncContextManager[AsyncIterator[URL]]
+      :async:
 
       Glob the given relative pattern *uri* in the directory represented by this *uri*,
       yielding all matching remote files (of any kind)::
@@ -49,9 +48,8 @@ Storage
       :return: asynchronous iterator that can be used for enumerating found files and
                directories.
 
-   .. comethod:: list(uri: URL) -> AsyncContextManager[AsyncIterator[FileStatus]]
-      :async-with:
-      :async-for:
+   .. method:: list(uri: URL) -> AsyncContextManager[AsyncIterator[FileStatus]]
+      :async:
 
       List a directory *uri* on the storage, e.g.::
 
@@ -65,9 +63,10 @@ Storage
       :return: asynchronous iterator which emits :class:`FileStatus` objects
                for the directory content.
 
-   .. comethod:: mkdir(uri: URL, *, parents: bool = False, \
+   .. method:: mkdir(uri: URL, *, parents: bool = False, \
                        exist_ok: bool = False \
                  ) -> None
+      :async:
 
       Create a directory *uri*. Also create parent directories if *parents* is ``True``,
       fail if directory exists and not *exist_ok*.
@@ -89,7 +88,8 @@ Storage
       :raises: :exc:`FileNotFound` if parent directories don't exist and *parents* flag
                is not set.
 
-   .. comethod:: mv(src: URL, dst: URL) -> None
+   .. method:: mv(src: URL, dst: URL) -> None
+      :async:
 
       Rename remote file or directory *src* to *dst*.
 
@@ -100,7 +100,8 @@ Storage
                             e.g. ``yarl.URL("storage:folder/new.bin")``.
 
 
-   .. comethod:: rm(uri: URL, *, recursive: bool = False) -> None
+   .. method:: rm(uri: URL, *, recursive: bool = False) -> None
+      :async:
 
       Remove remote file or directory *uri*.
 
@@ -113,7 +114,8 @@ Storage
       :raises: :exc:`IsADirectoryError` if *uri* points on a directory and *recursive*
                flag is not set.
 
-   .. comethod:: stat(uri: URL) -> FileStatus
+   .. method:: stat(uri: URL) -> FileStatus
+      :async:
 
       Return information about *uri*.
 
@@ -122,9 +124,10 @@ Storage
 
       :return: data structure for given *uri*, :class:`FileStatus` object.
 
-   .. comethod:: disk_usage(cluster_name: Optional[str] = None, \
+   .. method:: disk_usage(cluster_name: Optional[str] = None, \
                             org_name: Optional[str] = None \
                  ) -> DiskUsageInfo
+      :async:
 
       Return information about disk usage in given cluster and organization.
 
@@ -138,7 +141,8 @@ Storage
 
    .. rubric:: File operations
 
-   .. comethod:: create(uri: URL, data: AsyncIterator[bytes]) -> None
+   .. method:: create(uri: URL, data: AsyncIterator[bytes]) -> None
+      :async:
 
       Create a file on storage under *uri* name, file it with a content from *data*
       asynchronous iterator, e.g.::
@@ -158,7 +162,8 @@ Storage
       :param ~typing.AsyncIterator[bytes] data: asynchronous iterator used as data
                                                 provider for file content.
 
-   .. comethod:: write(uri: URL, data: bytes, offset: int) -> None
+   .. method:: write(uri: URL, data: bytes, offset: int) -> None
+      :async:
 
       Overwrite the part of existing file on storage under *uri* name.
 
@@ -169,9 +174,8 @@ Storage
 
       :param int offset: position in file from which to write.
 
-   .. comethod:: open(uri: URL, offset: int = 0, size: Optional[int] = None) -> AsyncContextManager[AsyncIterator[bytes]]
-      :async-with:
-      :async-for:
+   .. method:: open(uri: URL, offset: int = 0, size: Optional[int] = None) -> AsyncContextManager[AsyncIterator[bytes]]
+      :async:
 
       Get the content of remote file *uri* or its fragment as asynchronous iterator, e.g.::
 
@@ -191,12 +195,13 @@ Storage
 
    .. rubric:: Copy operations
 
-   .. comethod:: download_dir(src: URL, dst: URL, \
+   .. method:: download_dir(src: URL, dst: URL, \
                               *, update: bool = False, \
                               continue_: bool = False, \
                               filter: Optional[Callable[[str], Awaitable[bool]]] = None, \
                               progress: Optional[AbstractRecursiveFileProgress] = None \
                  ) -> None:
+      :async:
 
       Recursively download remote directory *src* to local path *dst*.
 
@@ -227,11 +232,12 @@ Storage
          a callback interface for reporting downloading progress, ``None`` for no
          progress report (default).
 
-   .. comethod:: download_file(src: URL, dst: URL, \
+   .. method:: download_file(src: URL, dst: URL, \
                                *, update: bool = False, \
                                continue_: bool = False, \
                                progress: Optional[AbstractFileProgress] = None \
                  ) -> None:
+      :async:
 
       Download remote file *src* to local path *dst*.
 
@@ -256,13 +262,14 @@ Storage
          a callback interface for reporting downloading progress, ``None`` for
          no progress report (default).
 
-   .. comethod:: upload_dir(src: URL, dst: URL, \
+   .. method:: upload_dir(src: URL, dst: URL, \
                             *, update: bool = False, \
                             continue_: bool = False, \
                             filter: Optional[Callable[[str], Awaitable[bool]]] = None, \
                             ignore_file_names: AbstractSet[str] = frozenset(), \
                             progress: Optional[AbstractRecursiveFileProgress] = None \
                  ) -> None:
+      :async:
 
       Recursively upload local directory *src* to storage URL *dst*.
 
@@ -299,11 +306,12 @@ Storage
          a callback interface for reporting uploading progress, ``None`` for no progress
          report (default).
 
-   .. comethod:: upload_file(src: URL, dst: URL, \
+   .. method:: upload_file(src: URL, dst: URL, \
                              *, update: bool = False, \
                              continue_: bool = False, \
                              progress: Optional[AbstractFileProgress] = None \
                  ) -> None:
+      :async:
 
       Upload local file *src* to storage URL *dst*.
 

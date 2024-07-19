@@ -2,8 +2,8 @@
 
 # Preface
 
-Welcome to Neuro CLI tool for https://neu.ro/.
-Package ship command line tool called `neuro`. With it you can:
+Welcome to Apolo CLI tool for https://neu.ro/.
+Package ship command line tool called `apolo`. With it you can:
 * Execute and debug jobs
 * Manipulate Data
 * Make some fun

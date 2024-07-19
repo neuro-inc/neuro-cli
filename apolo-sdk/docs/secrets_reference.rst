@@ -3,7 +3,7 @@ Secrets API Reference
 =====================
 
 
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 
 Secrets
@@ -14,16 +14,16 @@ Secrets
    Secured secrets subsystems.  Secrets can be passed as mounted files and environment
    variables into a running job.
 
-   .. comethod:: list(cluster_name: Optional[str] = None, org_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[Secret]]
-      :async-with:
-      :async-for:
+   .. method:: list(cluster_name: Optional[str] = None, org_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[Secret]]
+      :async:
 
       List user's secrets, async iterator. Yields :class:`Secret` instances.
 
       :param str cluster_name: cluster to list secrets. Default is current cluster.
       :param str org_name: org to list secrets. Default is current org.
 
-   .. comethod:: add(key: str, value: bytes, cluster_name: Optional[str] = None, org_name: Optional[str] = None) -> None
+   .. method:: add(key: str, value: bytes, cluster_name: Optional[str] = None, org_name: Optional[str] = None) -> None
+      :async:
 
       Add a secret with name *key* and content *value*.
 
@@ -34,7 +34,8 @@ Secrets
       :param str cluster_name: cluster to create a secret. Default is current cluster.
       :param str org_name: org to create a secrets. Default is current org.
 
-   .. comethod:: rm(key: str, cluster_name: Optional[str] = None, org_name: Optional[str] = None) -> None
+   .. method:: rm(key: str, cluster_name: Optional[str] = None, org_name: Optional[str] = None) -> None
+      :async:
 
       Delete a secret *key*.
 

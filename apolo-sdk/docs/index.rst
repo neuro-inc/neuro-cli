@@ -1,40 +1,40 @@
-.. neuro-sdk documentation master file, created by
+.. apolo-sdk documentation master file, created by
    sphinx-quickstart on Tue Aug  6 11:38:43 2019.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
 ====================
-Neuro SDK for Python
+Apolo SDK for Python
 ====================
 
-A Python library for the Neuro Platform API.
+A Python library for the Apolo Platform API.
 
 Installation
 ============
 
-The latest stable release is available on PyPI_. Either add ``neuro-sdk`` to your
+The latest stable release is available on PyPI_. Either add ``apolo-sdk`` to your
 ``requirements.txt`` or install with pip::
 
-   $ pip install -U neuro-sdk
+   $ pip install -U apolo-sdk
 
 
 Getting Started
 ===============
 
 
-To start working with the Neuro Platform you need to login first.  The easiest way
+To start working with the Apolo Platform you need to login first.  The easiest way
 to do it is the using of :term:`CLI` utility::
 
-   $ neuro login
+   $ apolo login
 
 After the login a configuration file is created and it can be read later.
 
-Use :func:`neuro_sdk.get` for initializing client instance from existing
+Use :func:`apolo_sdk.get` for initializing client instance from existing
 configuration file::
 
-  import neuro_sdk
+  import apolo_sdk
 
-  async with neuro_sdk.get() as client:
+  async with apolo_sdk.get() as client:
       async with client.jobs.list() as job_iter:
           jobs = [job async for job in job_iter]
 
@@ -66,4 +66,4 @@ Indices and tables
 * :ref:`search`
 
 
-.. _PyPI: https://pypi.org/project/neuro-sdk/
+.. _PyPI: https://pypi.org/project/apolo-sdk/

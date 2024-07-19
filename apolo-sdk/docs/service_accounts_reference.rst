@@ -3,7 +3,7 @@ ServiceAccounts API Reference
 =============================
 
 
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 
 ServiceAccounts
@@ -14,16 +14,16 @@ ServiceAccounts
    Service accounts subsystems. Service accounts can be used to generate tokens that can be
    used in automated environments by third-party services.
 
-   .. comethod:: list() -> AsyncContextManager[AsyncIterator[ServiceAccount]]
-      :async-with:
-      :async-for:
+   .. method:: list() -> AsyncContextManager[AsyncIterator[ServiceAccount]]
+      :async:
 
       List user's service accounts, async iterator. Yields :class:`ServiceAccount` instances.
 
-   .. comethod:: create(  \
+   .. method:: create(  \
                         name: typing.Optional[str], \
                         default_cluster: typing.Optional[str], \
                  ) -> typing.Tuple[ServiceAccount, str]
+      :async:
 
       Create a service account.
 
@@ -35,7 +35,8 @@ ServiceAccounts
       :return: Pair of newly created service account info and token. This is the only way to
                get token of a service account.
 
-   .. comethod:: get(id_or_name: str) -> ServiceAccount
+   .. method:: get(id_or_name: str) -> ServiceAccount
+      :async:
 
       Get a service account with id or name *id_or_name*.
 
@@ -43,7 +44,8 @@ ServiceAccounts
 
       :return: Service account info (:class:`ServiceAccount`)
 
-   .. comethod:: rm(id_or_name: str) -> None
+   .. method:: rm(id_or_name: str) -> None
+      :async:
 
       Revoke and delete a service account with id or name *id_or_name*.
 

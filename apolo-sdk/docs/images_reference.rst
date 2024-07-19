@@ -3,7 +3,7 @@ Images API Reference
 ====================
 
 
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 
 Images
@@ -13,22 +13,23 @@ Images
 
    Docker image subsystem.
 
-   Used for pushing docker images onto Neuro docker registry for later usage by
+   Used for pushing docker images onto Apolo docker registry for later usage by
    :meth:`Jobs.run` and pulling these images back to local docker.
 
-   .. comethod:: push(local: LocalImage, \
+   .. method:: push(local: LocalImage, \
                       remote: Optional[RemoteImage] = None, \
                       *, \
                       progress: Optional[AbstractDockerImageProgress] = None, \
                  ) -> RemoteImage
+      :async:
 
 
       Push *local* docker image to *remote* side.
 
       :param LocalImage local: a spec of local docker image (e.g. created by ``docker
-                               build``) for pushing on Neuro Registry.
+                               build``) for pushing on Apolo Registry.
 
-      :param RemoteImage remote: a spec for remote image on Neuro
+      :param RemoteImage remote: a spec for remote image on Apolo
                                  Registry. Calculated from *local* image automatically
                                  if ``None`` (default).
 
@@ -41,16 +42,16 @@ Images
                *remote* is ``None`` (:class:`RemoteImage`)
 
 
-   .. comethod:: pull(remote: Optional[RemoteImage] = None, \
+   .. method:: pull(remote: Optional[RemoteImage] = None, \
                       local: LocalImage, \
                       *, \
                       progress: Optional[AbstractDockerImageProgress] = None, \
                  ) -> RemoteImage
+      :async:
 
+      Pull *remote* image from Apolo registry to *local* docker side.
 
-      Pull *remote* image from Neuro registry to *local* docker side.
-
-      :param RemoteImage remote: a spec for remote image on Neuro
+      :param RemoteImage remote: a spec for remote image on Apolo
                                  registry.
 
       :param LocalImage local: a spec of local docker image to pull. Calculated from
@@ -65,30 +66,33 @@ Images
       :return: *local* image if explicitly specified, calculated remote image if
                *local* is ``None`` (:class:`LocalImage`)
 
-   .. comethod:: digest(image: RemoteImage) -> str
+   .. method:: digest(image: RemoteImage) -> str
+      :async:
 
-      Get digest of an image in Neuro registry.
+      Get digest of an image in Apolo registry.
 
-      :param RemoteImage image: a spec for remote image on Neuro
+      :param RemoteImage image: a spec for remote image on Apolo
                                  registry.
 
 
       :return: string representing image digest
 
-   .. comethod:: rm(image: RemoteImage, digest: str) -> str
+   .. method:: rm(image: RemoteImage, digest: str) -> str
+      :async:
 
-      Delete remote image specified by given reference and digest from Neuro registry.
+      Delete remote image specified by given reference and digest from Apolo registry.
 
-      :param RemoteImage image: a spec for remote image on Neuro
+      :param RemoteImage image: a spec for remote image on Apolo
                                  registry.
 
       :param str digest: remote image digest, which can be obtained via `digest` method.
 
 
 
-   .. comethod:: list(cluster_name: Optional[str] = None) -> List[RemoteImage]
+   .. method:: list(cluster_name: Optional[str] = None) -> List[RemoteImage]
+      :async:
 
-      List images on Neuro registry available to the user.
+      List images on Apolo registry available to the user.
 
       :param str cluster_name: name of the cluster.
 
@@ -98,31 +102,34 @@ Images
                (:class:`List[RemoteImage]`)
 
 
-   .. comethod:: tags(image: RemoteImage) -> List[RemoteImage]
+   .. method:: tags(image: RemoteImage) -> List[RemoteImage]
+      :async:
 
       List image references with tags for the specified remote *image*.
 
-      :param RemoteImage image: a spec for remote image without tag on Neuro
+      :param RemoteImage image: a spec for remote image without tag on Apolo
                                 registry.
 
       :return: list of remote images with tags (:class:`List[RemoteImage]`)
 
 
-   .. comethod:: size(image: RemoteImage) -> int
+   .. method:: size(image: RemoteImage) -> int
+      :async:
 
       Return image size.
 
-      :param RemoteImage image: a spec for remote image with tag on Neuro
+      :param RemoteImage image: a spec for remote image with tag on Apolo
                                 registry.
 
       :return: remote image size in bytes
 
 
-   .. comethod:: tag_info(image: RemoteImage) -> Tag
+   .. method:: tag_info(image: RemoteImage) -> Tag
+      :async:
 
       Return info about specified tag.
 
-      :param RemoteImage image: a spec for remote image with tag on Neuro
+      :param RemoteImage image: a spec for remote image with tag on Apolo
                                 registry.
 
       :return: tag information (name and size) (:class:`Tag`)
@@ -138,7 +145,7 @@ AbstractDockerImageProgress
 
    .. method:: pull(data: ImageProgressPull) -> None
 
-      Pulling image from remote Neuro registry to local Docker is started.
+      Pulling image from remote Apolo registry to local Docker is started.
 
       :param ImageProgressPull data: additional data, e.g. local and remote image
                                      objects.
@@ -146,7 +153,7 @@ AbstractDockerImageProgress
 
    .. method:: push(data: ImageProgressPush) -> None
 
-      Pushing image from local Docker to remote Neuro registry is started.
+      Pushing image from local Docker to remote Apolo registry is started.
 
       :param ImageProgressPush data: additional data, e.g. local and remote image
                                      objects.
@@ -224,7 +231,7 @@ RemoteImage
 .. class:: RemoteImage
 
    *Read-only* :class:`~dataclasses.dataclass` for describing *image* in remote
-   registry (Neuro Platform hosted or other registries like DockerHub_).
+   registry (Apolo Platform hosted or other registries like DockerHub_).
 
    .. attribute:: name
 
@@ -252,7 +259,7 @@ RemoteImage
 
    .. attribute:: registry
 
-      Host name for images hosted on Neuro Registry (:class:`str`), ``None`` for
+      Host name for images hosted on Apolo Registry (:class:`str`), ``None`` for
       other registries like DockerHub_.
 
     .. method:: as_docker_url(with_scheme: bool = False) -> str
@@ -269,9 +276,9 @@ RemoteImage
 
        :return: remote image with *tag*
 
-    .. py:classmethod:: new_neuro_image(name: str, registry: str, *, owner: str, cluster_name: str, tag: Optional[str] = None) -> RemoteImage
+    .. py:classmethod:: new_platform_image(name: str, registry: str, *, owner: str, cluster_name: str, tag: Optional[str] = None) -> RemoteImage
 
-        Create a new instance referring to an image hosted on Neuro Platform.
+        Create a new instance referring to an image hosted on Apolo Platform.
 
       :param str name: name of the image
 

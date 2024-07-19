@@ -69,7 +69,6 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
-    "sphinxcontrib.asyncio",
 ]
 
 try:

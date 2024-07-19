@@ -1,4 +1,4 @@
-.. currentmodule:: neuro_sdk
+.. currentmodule:: aplo_sdk
 
 .. _storage-usage:
 
@@ -22,9 +22,9 @@ Upload a Folder
 ===============
 
 
-Use :meth:`Storage.upload_dir` to upload a local directory on the Neuro Storage::
+Use :meth:`Storage.upload_dir` to upload a local directory on the Apolo Storage::
 
-   from neuro_sdk import get
+   from apolo_sdk import get
    from yarl import URL
 
    async with get() as client:
@@ -48,7 +48,7 @@ Storage::
 Download a Folder
 =================
 
-Use :meth:`Storage.download_dir` for downloading data from the Neuro Storage to
+Use :meth:`Storage.download_dir` for downloading data from the Apolo Storage to
 local disk.
 
 The method is a counterpart to :meth:`Storage.upload_dir` and has the same arguments::

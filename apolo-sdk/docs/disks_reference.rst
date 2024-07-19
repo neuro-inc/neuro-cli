@@ -3,7 +3,7 @@ Disks API Reference
 =====================
 
 
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 
 Disks
@@ -13,20 +13,21 @@ Disks
 
    Persistent disks subsystems. Disks can be passed as mounted volumes into a running job.
 
-   .. comethod:: list(cluster_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[Disk]]
-      :async-for:
+   .. method:: list(cluster_name: Optional[str] = None) -> AsyncContextManager[AsyncIterator[Disk]]
+      :async:
 
       List user's disks, async iterator. Yields :class:`Disk` instances.
 
       :param str cluster_name: cluster to list disks. Default is current cluster.
 
-   .. comethod:: create(  \
+   .. method:: create(  \
                         storage: int, \
                         life_span: typing.Optional[datetime.timedelta], \
                         name: typing.Optional[str], \
                         cluster_name: Optional[str] = None, \
                         org_name: Optional[str] = None, \
                  ) -> Disk
+      :async:
 
       Create a disk with capacity of *storage* bytes.
 
@@ -46,7 +47,8 @@ Disks
 
       :return: Newly created disk info (:class:`Disk`)
 
-   .. comethod:: get(disk_id_or_name: str, cluster_name: Optional[str] = None) -> Disk
+   .. method:: get(disk_id_or_name: str, cluster_name: Optional[str] = None) -> Disk
+      :async:
 
       Get a disk with id or name *disk_id_or_name*.
 
@@ -56,7 +58,8 @@ Disks
 
       :return: Disk info (:class:`Disk`)
 
-   .. comethod:: rm(disk_id_or_name: str, cluster_name: Optional[str] = None) -> None
+   .. method:: rm(disk_id_or_name: str, cluster_name: Optional[str] = None) -> None
+      :async:
 
       Delete a disk with id or name *disk_id_or_name*.
 

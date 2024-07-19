@@ -1,11 +1,11 @@
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 Client class
 ============
 
 .. class:: Client
 
-   Neuro Platform client.
+   Apolo Platform client.
 
    For creating a client instance use :class:`Factory` or :func:`get`.
 
@@ -13,7 +13,7 @@ Client class
 
    .. attribute:: username
 
-      User name used for working with Neuro Platform, read-only :class:`str`.
+      User name used for working with Apolo Platform, read-only :class:`str`.
 
    .. attribute:: presets
 
@@ -52,12 +52,13 @@ Client class
 
    .. attribute:: parse
 
-      A set or helpers used for parsing different Neuro API definitions, see
+      A set or helpers used for parsing different Apolo API definitions, see
       :class:`Parser` for details.
 
-   .. comethod:: close()
+   .. method:: close()
+      :async:
 
-      Close Neuro API client, all calls after closing are forbidden.
+      Close Apolo API client, all calls after closing are forbidden.
 
       The method is idempotent.
 

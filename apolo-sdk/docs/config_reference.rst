@@ -1,4 +1,4 @@
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 
 .. _config-reference:
@@ -33,7 +33,7 @@ Config
 
    .. attribute:: username
 
-      User name used for working with Neuro Platform, read-only :class:`str`.
+      User name used for working with Apolo Platform, read-only :class:`str`.
 
    .. attribute:: presets
 
@@ -58,15 +58,17 @@ Config
 
       To switch on another org use :meth:`switch_org`.
 
-   .. comethod:: fetch() -> None
+   .. method:: fetch() -> None
+      :async:
 
-      Fetch available clusters configuration from the Neuro Platform.
+      Fetch available clusters configuration from the Apolo Platform.
 
       .. note::
 
          The call updates local configuration files.
 
-   .. comethod:: switch_cluster(name: str) -> None
+   .. method:: switch_cluster(name: str) -> None
+      :async:
 
       Switch the current cluster to *name*.
 
@@ -74,7 +76,8 @@ Config
 
          The call updates local configuration files.
 
-   .. comethod:: switch_org(name: str) -> None
+   .. method:: switch_org(name: str) -> None
+      :async:
 
       Switch the current org to *name*.
 
@@ -86,7 +89,7 @@ Config
 
    .. attribute:: api_url
 
-      The Neuro Platform URL, :class:`yarl.URL`.
+      The Apolo Platform URL, :class:`yarl.URL`.
 
    .. attribute:: registry_url
 
@@ -106,7 +109,8 @@ Config
 
       :attr:`Cluster.monitoring_url` for the current cluster.
 
-   .. comethod:: get_user_config() -> Mapping[str, Any]
+   .. method:: get_user_config() -> Mapping[str, Any]
+      :async:
 
       Return user-provided config dictionary. Config is loaded from config files.
       There are two configuration files: **global** and **local**, both are optional
@@ -139,15 +143,16 @@ Config
       **cp-exclude-from-files** - list of strings.
 
       There is a plugin system that allows to register additional config parameters. To
-      define a plugin, add a **neuro_api** entrypoint (check
+      define a plugin, add a **apolo_api** entrypoint (check
       https://packaging.python.org/specifications/entry-points/ for more info about entry points).
       Entry point should be callable with single argument of type :class:`PluginManager`.
 
       .. versionadded:: 20.01.15
 
-   .. comethod:: token() -> str
+   .. method:: token() -> str
+      :async:
 
-      *Bearer* token to log into the Neuro Platform.
+      *Bearer* token to log into the Apolo Platform.
 
       The token expires after some period, the call automatically refreshes the token if
       needed.
@@ -161,7 +166,7 @@ Cluster
 
    *Read-only* :class:`~dataclasses.dataclass` for describing a cluster configuration.
 
-   Clusters are loaded on login to the Neuro platform and updated on
+   Clusters are loaded on login to the Apolo platform and updated on
    :meth:`Config.fetch` call.
 
    :meth:`Config.switch_cluster` changes the active cluster.
@@ -199,9 +204,9 @@ Preset
 
 
    *Read-only* :class:`~dataclasses.dataclass` for describing a job configuration
-   provided by Neuro Platform.
+   provided by Apolo Platform.
 
-   Presets list is loaded on login to the Neuro platform and depends on used
+   Presets list is loaded on login to the Apolo platform and depends on used
    cluster.
 
    .. attribute:: cpu

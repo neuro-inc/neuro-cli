@@ -1,4 +1,4 @@
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 .. _jobs-usage:
 
@@ -22,7 +22,7 @@ The method accepts image and
 required resources preset name as parameters and returns :class:`JobDescription` with information about started
 job::
 
-    from neuro_sdk import get
+    from apolo_sdk import get
 
     async with get() as client:
         job = await client.jobs.start(
@@ -38,7 +38,7 @@ The example above starts a job using ``ubuntu:latest`` public image, ``cpu-small
 .. note::
 
    After return from the call a new job is *scheduled* for execution but usually it's
-   status is *pending*.  The Neuro Platform takes time for preparing resources for
+   status is *pending*.  The Apolo Platform takes time for preparing resources for
    a job, pulling image from registry etc.  Startup time can vary from seconds for *hot
    start* to minutes for *cold* one.
 
@@ -68,10 +68,10 @@ The following snippet waits for job's *starting execution* or *failure*::
 
 .. _jobs-usage-mounts:
 
-Mount Neuro Storage folders
+Mount Apolo Storage folders
 =================================
 
-The Neuro Platform provides access to Neuro storage (``storage://``) by
+The Apolo Platform provides access to Apolo storage (``storage://``) by
 *mounted folders* inside a container (*volumes* in `Docker <https://www.docker.com>`_
 glossary).
 
@@ -143,7 +143,7 @@ Expose job's TCP ports locally
 ==============================
 
 Sometimes there is a need to access TCP endpoints exposed by a job executed on the
-Neuro Platform from local workstation.
+Apolo Platform from local workstation.
 
 For example, you've started a gRPC server inside a container on TCP port ``12345`` and
 want to access this service from your laptop.
@@ -178,7 +178,7 @@ Job preemption
 
 Job preemption means that unlike normal jobs preemptible ones can be stopped by kernel
 when the system has lack of resources and restarted later.  All memory and local disk
-changes are lost but data written to the Neuro Storage (see
+changes are lost but data written to the Apolo Storage (see
 :ref:`jobs-usage-mounts` ) is persistent.
 
 To support preemption job's code should be organized in the following way: it dumps

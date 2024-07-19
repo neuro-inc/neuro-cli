@@ -5,7 +5,7 @@ Jobs API Reference
 ==================
 
 
-.. currentmodule:: neuro_sdk
+.. currentmodule:: apolo_sdk
 
 
 Jobs
@@ -17,14 +17,14 @@ Jobs
 
    User can start new job, terminate it, get status, list running jobs etc.
 
-   .. comethod:: attach(id: str, *, \
+   .. method:: attach(id: str, *, \
                       tty: bool = False, \
                       stdin: bool = False, \
                       stdout: bool = False, \
                       stderr: bool = False, \
                       cluster_name: Optional[str] = None, \
                  ) -> AsyncContextManager[StdStream]
-      :async-with:
+      :async:
 
       Get access to standard input, output, and error streams of a running job.
 
@@ -45,14 +45,14 @@ Jobs
       :return: Asynchronous context manager which can be used to access
                stdin/stdout/stderr, see :class:`StdStream` for details.
 
-   .. comethod:: exec(id: str, cmd: str, *, \
+   .. method:: exec(id: str, cmd: str, *, \
                       tty: bool = False, \
                       stdin: bool = False, \
                       stdout: bool = False, \
                       stderr: bool = False, \
                       cluster_name: Optional[str] = None, \
                  ) -> AsyncContextManager[StdStream]
-      :async-with:
+      :async:
 
       Start an exec session, get access to session's standard input, output, and error streams.
 
@@ -75,9 +75,10 @@ Jobs
       :return: Asynchronous context manager which can be used to access
                stdin/stdout/stderr, see :class:`StdStream` for details.
 
-   .. comethod:: get_capacity(*, \
+   .. method:: get_capacity(*, \
                              cluster_name: Optional[str] = None, \
                  ) -> Mapping[str, int]
+      :async:
 
       Get counts of available job for specified cluster for each available preset.
 
@@ -95,13 +96,14 @@ Jobs
       :return: A mapping of *preset_name* to *count*, where *count* is a number of
                concurrent jobs that can be executed using *preset_name*.
 
-   .. comethod:: kill(id: str) -> None
+   .. method:: kill(id: str) -> None
+      :async:
 
       Kill a job.
 
       :param str id: job :attr:`~JobDescription.id` to kill.
 
-   .. comethod:: list(*, statuses: Iterable[JobStatus] = (), \
+   .. method:: list(*, statuses: Iterable[JobStatus] = (), \
                       name: Optional[str] = None, \
                       tags: Sequence[str] = (), \
                       owners: Iterable[str] = (), \
@@ -111,8 +113,7 @@ Jobs
                       limit: Optional[int] = None, \
                       cluster_name: Optional[str] = None, \
                  ) -> AsyncContextManager[AsyncIterator[JobDescription]]
-      :async-with:
-      :async-for:
+      :async:
 
       List user jobs, all scheduled, running and finished jobs by default.
 
@@ -184,14 +185,13 @@ Jobs
       :return: asynchronous iterator which emits :class:`JobDescription` objects.
 
 
-   .. comethod:: monitor(id: str, *, \
+   .. method:: monitor(id: str, *, \
                          cluster_name: Optional[str] = None, \
                          since: Optional[datetime] = None,
                          timestamps: bool = False,
                          separator: Optional[str] = None,
                  ) -> AsyncContextManager[AsyncIterator[bytes]]
-      :async-with:
-      :async-for:
+      :async:
 
       Get job logs as a sequence of data chunks, e.g.::
 
@@ -222,11 +222,11 @@ Jobs
       :return: :class:`~collections.abc.AsyncIterator` over :class:`bytes` log chunks.
 
 
-   .. comethod:: port_forward(id: str, local_port: int, job_port: int, *, \
+   .. method:: port_forward(id: str, local_port: int, job_port: int, *, \
                               no_key_check: bool = False, \
                               cluster_name: Optional[str] = None \
                  ) -> None
-      :async-with:
+      :async:
 
       Forward local port to job, e.g.::
 
@@ -243,7 +243,7 @@ Jobs
 
                                ``None`` means the current cluster (default).
 
-   .. comethod:: run(container: Container, *, \
+   .. method:: run(container: Container, *, \
                      name: Optional[str] = None, \
                      tags: Sequence[str] = (), \
                      description: Optional[str] = None, \
@@ -254,6 +254,7 @@ Jobs
                      life_span: Optional[float] = None, \
                      priority: Optional[JobPriority] = None, \
                  ) -> JobDescription
+      :async:
 
       Start a new job.
 
@@ -296,7 +297,7 @@ Jobs
 
       :return: :class:`JobDescription` instance with information about started job.
 
-   .. comethod:: start(*, \
+   .. method:: start(*, \
                        image: RemoteImage, \
                        preset_name: str, \
                        cluster_name: Optional[str] = None, \
@@ -323,6 +324,7 @@ Jobs
                        privileged: bool = False, \
                        priority: Optional[JobPriority] = None, \
                  ) -> JobDescription
+      :async:
 
       Start a new job.
 
@@ -402,9 +404,10 @@ Jobs
 
       :return: :class:`JobDescription` instance with information about started job.
 
-   .. comethod:: send_signal(id: str, *, \
+   .. method:: send_signal(id: str, *, \
                              cluster_name: Optional[str] = None, \
                  ) -> None
+      :async:
 
       Send ``SIGKILL`` signal to a job.
 
@@ -414,7 +417,8 @@ Jobs
 
                                ``None`` means the current cluster (default).
 
-   .. comethod:: status(id: str) -> JobDescription
+   .. method:: status(id: str) -> JobDescription
+      :async:
 
       Get information about a job.
 
@@ -422,11 +426,10 @@ Jobs
 
       :return: :class:`JobDescription` instance with job status details.
 
-   .. comethod:: top(id: str, *, \
+   .. method:: top(id: str, *, \
                      cluster_name: Optional[str] = None, \
                  ) -> AsyncContextManager[AsyncIterator[JobTelemetry]]
-      :async-with:
-      :async-for:
+      :async:
 
       Get job usage statistics, e.g.::
 
@@ -442,7 +445,8 @@ Jobs
 
       :return: asynchronous iterator which emits `JobTelemetry` objects periodically.
 
-   .. comethod:: bump_life_span(id: str, additional_life_span: float) -> None
+   .. method:: bump_life_span(id: str, additional_life_span: float) -> None
+      :async:
 
       Increase life span of a job.
 
@@ -529,7 +533,7 @@ HTTPPort
 
    .. attribute:: requires_auth
 
-      Authentication in Neuro Platform is required for access to exposed HTTP
+      Authentication in Apolo Platform is required for access to exposed HTTP
       server if ``True``, the port is open publicly otherwise.
 
 
@@ -960,18 +964,21 @@ StdStream
    (:meth:`Jobs.exec`). Use :meth:`read_out` for reading from stdout/stderr and
    :meth:`write_in` for writing into stdin.
 
-   .. comethod:: close() -> None
+   .. method:: close() -> None
+      :async:
 
       Close `StdStream` instance.
 
-   .. comethod:: read_out() -> Optional[Message]
+   .. method:: read_out() -> Optional[Message]
+      :async:
 
       Read next chunk from stdout/stderr.
 
       :return: :class:`Message` instance for read data chunk or `None` if EOF is
                reached or `StdStream` was closed.
 
-   .. comethod:: write_in(data: bytes) -> None
+   .. method:: write_in(data: bytes) -> None
+      :async:
 
       Write *data* to stdin.
 

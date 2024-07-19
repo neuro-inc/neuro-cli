@@ -5,7 +5,7 @@ Reference
 =========
 
 
-.. module:: neuro_sdk
+.. module:: apolo_sdk
 
 
 
