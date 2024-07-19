@@ -1,6 +1,6 @@
 version: 2
 sphinx:
-  configuration: neuro-sdk/docs/conf.py
+  configuration: apolo-sdk/docs/conf.py
 formats: all
 python:
   version: 3.8

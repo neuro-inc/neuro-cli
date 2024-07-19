@@ -1,0 +1,9 @@
+× Job was killed
+
+Get job status:
+
+  apolo status test-job
+
+Fetch job logs:
+
+  apolo logs test-job

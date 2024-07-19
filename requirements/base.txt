@@ -1,5 +1,5 @@
--e neuro-sdk
--e neuro-cli
+-e apolo-sdk
+-e apolo-cli
 aiobotocore==2.4.2
 aiodocker==0.21.0
 aiohttp==3.8.4

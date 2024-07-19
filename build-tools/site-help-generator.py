@@ -10,9 +10,9 @@ from pathlib import Path
 import click
 from click.formatting import wrap_text
 
-from neuro_cli.main import cli
-from neuro_cli.topics import topics
-from neuro_cli.utils import split_examples
+from apolo_cli.main import cli
+from apolo_cli.topics import topics
+from apolo_cli.utils import split_examples
 
 HERE = Path(sys.argv[0]).resolve().parent
 
@@ -143,7 +143,7 @@ def gen_group(group, target_path, parent_ctx):
         out.append("")
         out.append("```bash")
         pieces = group.collect_usage_pieces(ctx)
-        out.append(f"neuro {group.name} " + " ".join(pieces))
+        out.append(f"apolo {group.name} " + " ".join(pieces))
         out.append("```")
         out.append("")
 
@@ -189,7 +189,7 @@ def gen_shortcuts(commands, target_path, ctx):
         anchor = cmd.name
         anchor = f"shortcuts.md#" + anchor.replace(" ", "-")
         out.append(
-            f"| [_neuro {escape_cell(cmd.name)}_]({anchor}) "
+            f"| [_apolo {escape_cell(cmd.name)}_]({anchor}) "
             f"| {escape_cell(cmd.get_short_help_str())} |"
         )
     out.append("\n")
@@ -214,13 +214,13 @@ def gen_summary(target_path, groups, ctx):
 
     out.append("\n## Commands\n")
     for group in groups:
-        out.append(f"* [{group.name}](neuro-cli/docs/{group.name}.md)")
+        out.append(f"* [{group.name}](apolo-cli/docs/{group.name}.md)")
 
     out.append("\n## Topics\n")
     for name in topics.list_commands(ctx):
         topic = topics.get_command(ctx, name)
         out.append(
-            f"* [{topic.get_short_help_str()}](neuro-cli/docs/topic-{topic.name}.md)"
+            f"* [{topic.get_short_help_str()}](apolo-cli/docs/topic-{topic.name}.md)"
         )
 
     fname = target_path / "SUMMARY.md"
@@ -234,7 +234,7 @@ def gen_summary(target_path, groups, ctx):
         exists=True, file_okay=False, dir_okay=True, writable=True, resolve_path=True
     ),
     help="Target dir in platform-web project",
-    default=str(HERE.parent / "neuro-cli/docs"),
+    default=str(HERE.parent / "apolo-cli/docs"),
     show_default=True,
 )
 def main(target_dir):
@@ -250,7 +250,7 @@ def main(target_dir):
     groups = []
     shortcuts = []
     with click.Context(
-        cli, info_name="neuro", color=False, terminal_width=80, max_content_width=80
+        cli, info_name="apolo", color=False, terminal_width=80, max_content_width=80
     ) as ctx:
         for cmd_name in cli.list_commands(ctx):
             cmd = cli.get_command(ctx, cmd_name)

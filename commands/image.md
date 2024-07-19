@@ -5,7 +5,7 @@ Container image operations
 ## Usage
 
 ```bash
-neuro image [OPTIONS] COMMAND [ARGS]...
+apolo image [OPTIONS] COMMAND [ARGS]...
 ```
 
 Container image operations.
@@ -29,7 +29,7 @@ List images
 #### Usage
 
 ```bash
-neuro image ls [OPTIONS]
+apolo image ls [OPTIONS]
 ```
 
 List images.
@@ -49,7 +49,7 @@ Push an image to platform registry
 #### Usage
 
 ```bash
-neuro image push [OPTIONS] LOCAL_IMAGE [REMOTE_IMAGE]
+apolo image push [OPTIONS] LOCAL_IMAGE [REMOTE_IMAGE]
 ```
 
 Push an image to platform registry.
@@ -59,9 +59,9 @@ Remote image must be `URL` with image:// scheme. Image names can contain tag. If
 #### Examples
 
 ```bash
-$ neuro push myimage
-$ neuro push alpine:latest image:my-alpine:production
-$ neuro push alpine image://myfriend/alpine:shared
+$ apolo push myimage
+$ apolo push alpine:latest image:my-alpine:production
+$ apolo push alpine image://myfriend/alpine:shared
 ```
 
 #### Options
@@ -78,7 +78,7 @@ Pull an image from platform registry
 #### Usage
 
 ```bash
-neuro image pull [OPTIONS] REMOTE_IMAGE [LOCAL_IMAGE]
+apolo image pull [OPTIONS] REMOTE_IMAGE [LOCAL_IMAGE]
 ```
 
 Pull an image from platform registry.
@@ -88,9 +88,9 @@ Remote image name must be `URL` with image:// scheme. Image names can contain ta
 #### Examples
 
 ```bash
-$ neuro pull image:myimage
-$ neuro pull image://myfriend/alpine:shared
-$ neuro pull image://username/my-alpine:production alpine:from-registry
+$ apolo pull image:myimage
+$ apolo pull image://myfriend/alpine:shared
+$ apolo pull image://username/my-alpine:production alpine:from-registry
 ```
 
 #### Options
@@ -107,7 +107,7 @@ Remove image from platform registry
 #### Usage
 
 ```bash
-neuro image rm [OPTIONS] IMAGE
+apolo image rm [OPTIONS] IMAGE
 ```
 
 Remove image from platform registry.
@@ -117,8 +117,8 @@ Image name must be `URL` with image:// scheme. Image name must contain tag.
 #### Examples
 
 ```bash
-$ neuro image rm image://myfriend/alpine:shared
-$ neuro image rm image:myimage:latest
+$ apolo image rm image://myfriend/alpine:shared
+$ apolo image rm image:myimage:latest
 ```
 
 #### Options
@@ -135,7 +135,7 @@ Get image size Image name must be URL with...
 #### Usage
 
 ```bash
-neuro image size [OPTIONS] IMAGE
+apolo image size [OPTIONS] IMAGE
 ```
 
 Get image size
@@ -145,8 +145,8 @@ Image name must be `URL` with image:// scheme. Image name must contain tag.
 #### Examples
 
 ```bash
-$ neuro image size image://myfriend/alpine:shared
-$ neuro image size image:myimage:latest
+$ apolo image size image://myfriend/alpine:shared
+$ apolo image size image:myimage:latest
 ```
 
 #### Options
@@ -162,7 +162,7 @@ Get digest of an image from remote registry...
 #### Usage
 
 ```bash
-neuro image digest [OPTIONS] IMAGE
+apolo image digest [OPTIONS] IMAGE
 ```
 
 Get digest of an image from remote registry
@@ -172,8 +172,8 @@ Image name must be `URL` with image:// scheme. Image name must contain tag.
 #### Examples
 
 ```bash
-$ neuro image digest image://myfriend/alpine:shared
-$ neuro image digest image:myimage:latest
+$ apolo image digest image://myfriend/alpine:shared
+$ apolo image digest image:myimage:latest
 ```
 
 #### Options
@@ -189,7 +189,7 @@ List tags for image in platform registry
 #### Usage
 
 ```bash
-neuro image tags [OPTIONS] IMAGE
+apolo image tags [OPTIONS] IMAGE
 ```
 
 List tags for image in platform registry.
@@ -199,8 +199,8 @@ Image name must be `URL` with image:// scheme.
 #### Examples
 
 ```bash
-$ neuro image tags image://myfriend/alpine
-$ neuro image tags -l image:myimage
+$ apolo image tags image://myfriend/alpine
+$ apolo image tags -l image:myimage
 ```
 
 #### Options

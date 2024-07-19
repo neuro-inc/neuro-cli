@@ -2,17 +2,17 @@
 
 Aliases exist to provide for abbreviating a system command, or for adding default arguments to a regularly used command.
 
-Aliases are described in user-config files \(see `neuro help user-config` for details\).
+Aliases are described in user-config files \(see `apolo help user-config` for details\).
 
 `~/.neuro/user.toml` is used for **global** aliases, `.neuro.toml` can be used for saving **project-specific** aliases. Project aliases everrides global ones if the same alias name exists in both configuration files.
 
-There are **internal** and **external** aliases. An **internal** alias executes built-in neuro command in-place, an  **external** alias executes any **system OS** command.
+There are **internal** and **external** aliases. An **internal** alias executes built-in apolo command in-place, an  **external** alias executes any **system OS** command.
 
 ## Internal alias
 
-The internal alias is used for running existing neuro CLI command under a different name and with optional overriden defaults \(passed predefined command-line options and arguments\).
+The internal alias is used for running existing apolo CLI command under a different name and with optional overriden defaults \(passed predefined command-line options and arguments\).
 
-For example, the following alias definition makes `neuro lsl` command that executes `neuro storage ls -hl` for listing the storage content using a long output mode with human-readable file sizes.
+For example, the following alias definition makes `apolo lsl` command that executes `apolo storage ls -hl` for listing the storage content using a long output mode with human-readable file sizes.
 
 ```text
   [alias.lsl]
@@ -34,19 +34,19 @@ Available configuration arguments:
 
   `cmd` key in alias section implies **internal alias** mode.
 
-* `help`: help string, displayed by `neuro du --help`
+* `help`: help string, displayed by `apolo du --help`
 
   command \(optional\),
 
 Internal allases accept additional command line options and agruments, these parameters are passed to underlying command as is.
 
-E.g., `neuro lsl storage:directory` works as `neuro ls -l --human-readable storage:directory`
+E.g., `apolo lsl storage:directory` works as `apolo ls -l --human-readable storage:directory`
 
 ## External alias
 
 The external alias spawns a subprocess with passing default options and arguments, all user-provided arguments are passed to underlying programm as well.
 
-For example, the following configuration defines `neuro du` command as an alias for system `du --human-readable` with optional providing the directory for analyzing.
+For example, the following configuration defines `apolo du` command as an alias for system `du --human-readable` with optional providing the directory for analyzing.
 
 ```text
   [alias.du]
@@ -80,7 +80,7 @@ Available configuration arguments:
 
   the format is described below \(optional\).
 
-* `help`: help string, displayed by `neuro lsl --help`
+* `help`: help string, displayed by `apolo lsl --help`
 
   command \(optional\),
 
@@ -104,7 +104,7 @@ The option definition can contain:
 
 **exec** defines an external system to execute.
 
-The command is spawn in a subprocess, Neuro CLI waits for the subprocess finish, and, in turn, returns the exit code to the outer caller.
+The command is spawn in a subprocess, Apolo CLI waits for the subprocess finish, and, in turn, returns the exit code to the outer caller.
 
 The parameter may specify and executable file along with some options, e.g. `exec = "du --human-readable"` enforces human-readable mode for `du` command.
 
@@ -118,11 +118,11 @@ It is expanded with an option or positional argument specified by `args` or `opt
 
 If the substitution corresponds to optional parameter and it is not provided by user the substitution is expanded to empty string.
 
-If the substitution corresponds to multiple values all of them are provided, e.g. `neuro du folder1 folder2` expands to `du folder1 folder2` since `[FILE]...` argument matches to `folder1 folder2` values.
+If the substitution corresponds to multiple values all of them are provided, e.g. `apolo du folder1 folder2` expands to `du folder1 folder2` since `[FILE]...` argument matches to `folder1 folder2` values.
 
-Options are expanded using longest form if provided, e.g. `neuro du -h` is expanded to `du --human-readable`.
+Options are expanded using longest form if provided, e.g. `apolo du -h` is expanded to `du --human-readable`.
 
-Options with values are expanded as well, e.g. `neuro du -d 1` is expanded to `du --max-depth 1`, `neuro du --max-depth 1` matches to the same command.
+Options with values are expanded as well, e.g. `apolo du -d 1` is expanded to `du --max-depth 1`, `apolo du --max-depth 1` matches to the same command.
 
 ## Simplified mode
 

@@ -36,14 +36,14 @@ update-deps: ### Update dependencies
 		-n ${PYTEST_XDIST_NUM_THREADS} \
 		--dist loadgroup \
 		-m "e2e" \
-		--cov=neuro-cli --cov=neuro-sdk \
+		--cov=apolo-cli --cov=apolo-sdk \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--verbose \
 		--color=$(COLOR) \
 		--durations 10 \
 		$(PYTEST_ARGS) \
-		neuro-cli/tests
+		apolo-cli/tests
 
 .PHONY: e2e
 e2e: .update-deps .e2e ### Run end-to-end tests
@@ -52,12 +52,12 @@ e2e: .update-deps .e2e ### Run end-to-end tests
 .test-sdk:
 	pytest \
 		-m "not e2e" \
-		--cov=neuro-sdk \
+		--cov=apolo-sdk \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--color=$(COLOR) \
 		$(PYTEST_ARGS) \
-		neuro-sdk/tests
+		apolo-sdk/tests
 
 .PHONY: .test-sdk
 test-sdk: .update-deps .test-sdk ### Run unit tests
@@ -66,12 +66,12 @@ test-sdk: .update-deps .test-sdk ### Run unit tests
 .test-cli:
 	pytest \
 		-m "not e2e" \
-		--cov=neuro-cli \
+		--cov=apolo-cli \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--color=$(COLOR) \
 		$(PYTEST_ARGS) \
-		neuro-cli/tests
+		apolo-cli/tests
 
 .PHONY: .test-cli
 test-cli: .update-deps .test-cli ### Run unit tests
@@ -79,7 +79,7 @@ test-cli: .update-deps .test-cli ### Run unit tests
 .PHONY: test-all
 test-all: .update-deps ### Run all tests
 	pytest \
-		--cov=neuro-sdk/neuro_sdk --cov=neuro-sdk/neuro_cli \
+		--cov=apolo-sdk/apolo_sdk --cov=apolo-cli/apolo_cli \
 		--cov-report term-missing:skip-covered \
 		--cov-report xml:coverage.xml \
 		--color=$(COLOR)
@@ -96,8 +96,8 @@ endif
 
 .PHONY: lint
 lint: fmt ### Reformat files, run linters and mypy checks
-	mypy neuro-sdk --show-error-codes
-	mypy neuro-cli --show-error-codes
+	mypy apolo-sdk --show-error-codes
+	mypy apolo-cli --show-error-codes
 
 .PHONY: publish-lint
 publish-lint: ### Check for publishing safety
@@ -120,10 +120,10 @@ docs: ### Generate CLI docs
 
 .PHONY: api-doc
 api-doc: ### Generate API docs
-	make -C neuro-sdk/docs html SPHINXOPTS="-W -E"
-	@echo "open file://`pwd`/neuro-sdk/docs/_build/html/index.html"
+	make -C apolo-sdk/docs html SPHINXOPTS="-W -E"
+	@echo "open file://`pwd`/apolo-sdk/docs/_build/html/index.html"
 
 .PHONY: api-doc-spelling
 api-doc-spelling: ### Spell check API docs
-	make -C neuro-sdk/docs spelling SPHINXOPTS="-W -E"
-	@echo "open file://`pwd`/neuro-sdk/docs/_build/html/index.html"
+	make -C apolo-sdk/docs spelling SPHINXOPTS="-W -E"
+	@echo "open file://`pwd`/apolo-sdk/docs/_build/html/index.html"

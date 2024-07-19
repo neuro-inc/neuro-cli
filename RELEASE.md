@@ -13,9 +13,9 @@
 * After CI is green make a git tag. For version `20.6.22` the tag should be `v20.6.22` (`git tag -a v20.6.22 -m "Release 20.6.22"`).
 * Push a new tag, e.g. `git push origin v20.6.22`.
 * Make sure that CI is green. Restart a job for tagged commit if a flaky test is encountered.
-* Open PyPI (https://pypi.org/project/neuro-sdk/ and https://pypi.org/project/neuro-cli/),
+* Open PyPI (https://pypi.org/project/apolo-sdk/ and https://pypi.org/project/apolo-cli/),
   make sure that a new release is published and all needed files are awailable for downloading
-  (https://pypi.org/project/neuro-sdk/#files and https://pypi.org/project/neuro-cli/#files).
+  (https://pypi.org/project/apolo-sdk/#files and https://pypi.org/project/apolo-cli/#files).
 * Merge created pull request for `platform-web` project to publish updated documentation on the web.
 * Increment version to next alpha, e.g. `__version__ = 20.6.23a0`. Commit this change to master and push on github.
 * Publish a new version announcement on `platform-development` and `platform-feedback` slack channels.

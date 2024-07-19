@@ -1,6 +1,6 @@
 # Introduction
 
-The repository for Neu.ro SDK library and Neu.ro CLI tool.
+The repository for Apolo SDK library and Apolo CLI tool.
 
-Please look at [SDK readme](neuro-sdk/README.md) and [CLI readme](neuro-cli/README.md) for details.
+Please look at [SDK readme](apolo-sdk/README.md) and [CLI readme](apolo-cli/README.md) for details.
 

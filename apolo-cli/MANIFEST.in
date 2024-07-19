@@ -1,0 +1,6 @@
+include LICENSE
+include CHANGELOG.md
+include README.md
+include setup.cfg
+include src/apolo_cli/py.typed
+graft tests
