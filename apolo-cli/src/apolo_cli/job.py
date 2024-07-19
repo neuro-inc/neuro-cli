@@ -1157,8 +1157,7 @@ async def run(
     cluster_config = root.client.config.clusters[cluster_name]
     if not preset:
         preset = next(iter(cluster_config.presets.keys()))
-    job_preset = cluster_config.presets[preset]
-    log.info(f"Using preset '{preset}': {job_preset}")
+    log.info(f"Using preset '{preset}'")
     if tty is None:
         tty = root.tty
     await run_job(
