@@ -1023,7 +1023,7 @@ def make_image_name() -> str:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def drop_old_test_images() -> None:
+def drop_old_test_images() -> Iterator[None]:
     yield
     logging.warning("Cleaning up old images")
     with tempfile.TemporaryDirectory() as tmpdir:
