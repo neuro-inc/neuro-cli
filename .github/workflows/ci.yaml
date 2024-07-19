@@ -223,7 +223,7 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_CLI }}
         TWINE_NON_INTERACTIVE: 1
       run: |
-        twine upload neuro-cli/dist/*
+        twine upload apolo-cli/dist/*
     - name: Merge dists for GitHub Release
       run: |
         mkdir dist
