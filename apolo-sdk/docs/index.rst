@@ -44,7 +44,7 @@ fetches a list of user's jobs.  On exit from ``async with`` statement the ``clie
 object is closed and is not available for future calls.
 
 
-See :ref:`usage` section for ideas how typical operations can be done with Neu.ro
+See :ref:`usage` section for ideas how typical operations can be done with Apolo
 platform. :ref:`reference` section contains the full API reference for all API classes,
 functions etc.
 

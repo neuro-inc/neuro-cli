@@ -2,7 +2,7 @@
 
 ## Understanding permissions
 
-Neu.ro platform supports five levels of access:
+Apolo platform supports five levels of access:
 
 * deny - no access
 * list - permits listing entities, but not looking at their details
@@ -27,7 +27,7 @@ Running `apolo acl list --shared` will show you entities shared by you along wit
 
 ## Roles
 
-Neu.ro platform supports role-based access control. Role is a packed set of permissions to multiple entities which can be shared together. There's several default roles in each cluster, plus users may create their own custom roles.
+Apolo platform supports role-based access control. Role is a packed set of permissions to multiple entities which can be shared together. There's several default roles in each cluster, plus users may create their own custom roles.
 
 Default roles are:
 
