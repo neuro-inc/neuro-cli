@@ -122,9 +122,11 @@ class Disks(metaclass=NoPublicConstructor):
             "life_span": timeout_unused.total_seconds() if timeout_unused else None,
             "name": name,
             "project_name": project_name or self._config.project_name_or_raise,
-            "org_name": org_name
-            if not isinstance(org_name, OrgNameSentinel)
-            else self._config.org_name,
+            "org_name": (
+                org_name
+                if not isinstance(org_name, OrgNameSentinel)
+                else self._config.org_name
+            ),
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()

@@ -1226,13 +1226,11 @@ def _disk_volume_from_api(data: Dict[str, Any]) -> DiskVolume:
 
 
 @overload
-def _parse_datetime(dt: str) -> datetime:
-    ...
+def _parse_datetime(dt: str) -> datetime: ...
 
 
 @overload
-def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:
-    ...
+def _parse_datetime(dt: Optional[str]) -> Optional[datetime]: ...
 
 
 def _parse_datetime(dt: Optional[str]) -> Optional[datetime]:
