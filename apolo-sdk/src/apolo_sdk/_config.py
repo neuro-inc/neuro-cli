@@ -702,6 +702,7 @@ def _deserialize_resource_preset(payload: Dict[str, Any]) -> Tuple[str, Preset]:
             scheduler_enabled=payload.get("scheduler_enabled", False),
             preemptible_node=payload.get("preemptible_node", False),
             resource_pool_names=payload.get("resource_pool_names", ()),
+            available_resource_pool_names=payload.get("avaliable_pool_names", ()),
         ),
     )
 
@@ -868,6 +869,7 @@ def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
         "scheduler_enabled": preset.scheduler_enabled,
         "preemptible_node": preset.preemptible_node,
         "resource_pool_names": preset.resource_pool_names,
+        "available_pool_names": preset.available_resource_pool_names,
     }
 
 

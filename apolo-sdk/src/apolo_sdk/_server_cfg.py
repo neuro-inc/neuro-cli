@@ -24,6 +24,7 @@ class Preset:
     tpu_type: Optional[str] = None
     tpu_software_version: Optional[str] = None
     resource_pool_names: Sequence[str] = ()
+    available_resource_pool_names: Sequence[str] = ()
 
     @property
     def memory_mb(self) -> int:
@@ -157,6 +158,7 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
             tpu_type=tpu_type,
             tpu_software_version=tpu_software_version,
             resource_pool_names=data.get("resource_pool_names", ()),
+            available_resource_pool_names=data.get("available_resource_pool_names", ()),
         )
     cluster_config = Cluster(
         name=payload["name"],
