@@ -17,8 +17,10 @@
 .vscode
 apolo-cli/build
 apolo-cli/dist
+apolo-cli/dist-neuro
 apolo-sdk/build
 apolo-sdk/dist
+apolo-sdk/dist-neuro
 apolo-sdk/docs/_build
 coverage.xml
 pip-wheel-metadata
