@@ -708,7 +708,7 @@ async def test_storage_glob(
         ]
         assert await glob("storage:folder/foo") == [URL("storage:folder/foo")]
         assert await glob("storage:folder/[a-d]*") == [URL("storage:folder/bar")]
-        assert await glob("storage:folder/*/") == [URL("storage:folder/bar")]
+        assert await glob("storage:folder/*/") == [URL("storage:folder/bar/")]
         assert await glob("storage:*") == [URL("storage:folder")]
         assert await glob("storage:**") == [
             URL("storage:"),
@@ -724,12 +724,12 @@ async def test_storage_glob(
             URL("storage:folder"),
             URL("storage:folder/foo"),
         ]
-        assert await glob("storage:**/f*/") == [URL("storage:folder")]
+        assert await glob("storage:**/f*/") == [URL("storage:folder/")]
         assert await glob("storage:**/b*") == [
             URL("storage:folder/bar"),
             URL("storage:folder/bar/baz"),
         ]
-        assert await glob("storage:**/b*/") == [URL("storage:folder/bar")]
+        assert await glob("storage:**/b*/") == [URL("storage:folder/bar/")]
 
 
 async def test_storage_rm_file(
