@@ -762,11 +762,9 @@ class URLCompleter(abc.ABC):
 class PathURLCompleter(URLCompleter, abc.ABC):
     class DirEntry(Protocol):
         @property
-        def name(self) -> str:
-            ...
+        def name(self) -> str: ...
 
-        def is_dir(self) -> bool:
-            ...
+        def is_dir(self) -> bool: ...
 
     def __init__(
         self,
