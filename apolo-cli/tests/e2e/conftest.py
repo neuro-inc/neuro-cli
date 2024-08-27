@@ -24,6 +24,7 @@ from typing import (
     Callable,
     ContextManager,
     Dict,
+    Final,
     Iterator,
     List,
     Optional,
@@ -38,7 +39,6 @@ import click
 import pexpect
 import pytest
 import toml
-from typing_extensions import Final
 from yarl import URL
 
 from apolo_sdk import (
