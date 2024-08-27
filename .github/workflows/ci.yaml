@@ -172,17 +172,18 @@ jobs:
       uses: neuro-inc/prepare-coverage@v22.1.2
       if: matrix.os == 'ubuntu'
 
-  upload-cov:
-    name: Upload coverage
-    needs: [unit, e2e]
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      with:
-        ref: ${{ github.sha }}
-    - name: Upload coverage
-      uses: aio-libs/upload-coverage@v22.1.4
+  # Temporarily disable, the fresh codecov requires TOKEN passed
+  # upload-cov:
+  #   name: Upload coverage
+  #   needs: [unit, e2e]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - name: Checkout
+  #     uses: actions/checkout@v3
+  #     with:
+  #       ref: ${{ github.sha }}
+  #   - name: Upload coverage
+  #     uses: aio-libs/upload-coverage@v22.1.4
 
   deploy:
     name: Deploy
