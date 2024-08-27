@@ -19,6 +19,5 @@ python-jose==3.3.0
 pyyaml==5.3.1
 rich==13.8.0
 toml==0.10.2
-typing_extensions==4.4.0
 wcwidth==0.2.13
-yarl==1.9.4
+yarl==1.8.2
