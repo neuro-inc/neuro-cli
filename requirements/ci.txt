@@ -1,5 +1,4 @@
 -r base.txt
--r mypy.txt
 cmarkgfm==2022.10.27
 markdown-toc==1.2.6
 pexpect==4.8.0
