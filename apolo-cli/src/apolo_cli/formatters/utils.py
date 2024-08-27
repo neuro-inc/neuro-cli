@@ -1,8 +1,7 @@
 import datetime
-from typing import Callable, Optional, overload
+from typing import Callable, Optional, Protocol, overload
 
 import humanize
-from typing_extensions import Protocol
 from yarl import URL
 
 from apolo_sdk import SCHEMES, RemoteImage

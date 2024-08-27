@@ -2,7 +2,7 @@
 
 # Preface
 
-Welcome to Python Apolo-SDK for https://neu.ro/.
+Welcome to Python Apolo-SDK for https://console.apolo.us/.
 
 # Documentation
 

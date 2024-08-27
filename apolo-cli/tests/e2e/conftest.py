@@ -24,6 +24,7 @@ from typing import (
     Callable,
     ContextManager,
     Dict,
+    Final,
     Iterator,
     List,
     Optional,
@@ -38,7 +39,6 @@ import click
 import pexpect
 import pytest
 import toml
-from typing_extensions import Final
 from yarl import URL
 
 from apolo_sdk import (
@@ -589,7 +589,7 @@ class Helper:
 
     def parse_completions(self, raw: str) -> List[Tuple[str, str, str, str]]:
         parts = raw.split("\n")
-        return list(zip(*[iter(parts)] * 4))  # type: ignore
+        return list(zip(*[iter(parts)] * 4))
 
     async def arun_job_and_wait_state(
         self,

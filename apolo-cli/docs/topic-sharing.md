@@ -4,7 +4,7 @@ Using the sharing functionality
 Understanding permissions
 -------------------------
 
-The Neu.ro platform supports five levels of access:
+The Apolo platform supports five levels of access:
 * deny - No access
 * list - Permits listing entities, but not looking at their details
 * read - Read-only access to an entity
@@ -35,7 +35,7 @@ along with users/roles you shared them with.
 Roles
 -----
 
-The Neu.ro platform supports role-based access control. Role is a packed set of
+The Apolo platform supports role-based access control. Role is a packed set of
 permissions to multiple entities which can be shared together. There's several
 default roles in each cluster, and users may additionally create their own custom
 roles.

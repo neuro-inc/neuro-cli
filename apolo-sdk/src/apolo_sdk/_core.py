@@ -282,7 +282,7 @@ def _load_cookies(
 
 
 def _make_cookie(name: str, value: str, domain: str, path: str) -> "Morsel[str]":
-    tmp = SimpleCookie()  # type: ignore
+    tmp = SimpleCookie()
     tmp[name] = value
     cookie = tmp[name]
     cookie["domain"] = domain

@@ -385,8 +385,7 @@ class RichComparator:
                 f"The reference {rel_ref} doesn't exist.\n"
                 "Create it yourself or run pytest with '--rich-gen' option."
             )
-        else:
-            return self.read_file(ref)
+        return self.read_file(ref)
 
     def write_file(self, ref: Path, buf: str) -> None:
         ref.parent.mkdir(parents=True, exist_ok=True)

@@ -45,7 +45,7 @@ jobs:
     - name: Install dependencies
       uses: py-actions/py-dependency-install@v4
       with:
-        path: requirements/ci.txt
+        path: requirements/mypy.txt
     - name: Run linters
       run: |
         make lint
@@ -181,6 +181,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         ref: ${{ github.sha }}
+    #Temporarily disable, the fresh codecov requires TOKEN passed
     - name: Upload coverage
       uses: aio-libs/upload-coverage@v22.1.4
 
@@ -206,10 +207,14 @@ jobs:
       run: |
         cd apolo-sdk
         python -m build
+        sed -i 's/name = apolo-sdk/name = neuro-sdk/g' setup.cfg
+        python -m build -o dist-neuro
     - name: Make CLI dists
       run: |
         cd apolo-cli
         python -m build
+        sed -i 's/name = apolo-cli/name = neuro-cli/g' setup.cfg
+        python -m build -o dist-neuro
     - name: PyPI upload SDK
       env:
         TWINE_USERNAME: __token__
@@ -223,7 +228,23 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_CLI }}
         TWINE_NON_INTERACTIVE: 1
       run: |
-        twine upload neuro-cli/dist/*
+        twine upload apolo-cli/dist/*
+    - name: PyPI upload neuro SDK
+      # for backward compatibility
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_SDK_NEURO }}
+        TWINE_NON_INTERACTIVE: 1
+      run: |
+        twine upload apolo-sdk/dist-neuro/*
+    - name: PyPI upload neuro CLI
+      # for backward compatibility
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN_CLI_NEURO }}
+        TWINE_NON_INTERACTIVE: 1
+      run: |
+        twine upload apolo-cli/dist-neuro/*
     - name: Merge dists for GitHub Release
       run: |
         mkdir dist
