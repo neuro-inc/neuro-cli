@@ -238,8 +238,9 @@ class Storage(metaclass=NoPublicConstructor):
             async for parent in parent_iter:
                 async with aclosing(glob_in_dir(parent, basename, dironly)) as it:
                     async for x in it:
-                        if trailing_slash and not x.path.endswith("/"):
-                            yield URL(str(x) + "/")
+                        sx = str(x)
+                        if trailing_slash and not sx.endswith("/"):
+                            yield URL(sx + "/")
                         else:
                             yield x
 
