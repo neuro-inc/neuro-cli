@@ -6,4 +6,4 @@ pre-commit==3.8.0
 types-certifi==2021.10.8.3
 types-python-dateutil==2.9.0.20240821
 types-PyYAML==6.0.12.3
-types-toml==0.10.8.1
+types-toml==0.10.8.20240310
