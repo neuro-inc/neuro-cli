@@ -3,11 +3,10 @@ import logging
 import sqlite3
 import sys
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, TypedDict
 
 import dateutil.parser
 from packaging.version import parse as parse_version
-from typing_extensions import TypedDict
 from yarl import URL
 
 from ._config import Config

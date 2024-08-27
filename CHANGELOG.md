@@ -5,6 +5,37 @@
 
 [comment]: # (towncrier release notes start)
 
+Apolo SDK/CLI 24.8.1 (2024-08-08)
+=================================
+
+No significant changes.
+
+
+Apolo SDK/CLI 24.8.0 (2024-08-08)
+=================================
+
+Misc
+----
+
+- [#3034](https://github.com/neuro-inc/neuro-cli/issues/3034)
+
+
+Apolo SDK/CLI 24.7.1 (2024-07-19)
+=================================
+
+No significant changes.
+
+
+Apolo SDK/CLI 24.7.0 (2024-07-19)
+=================================
+
+Features
+--------
+
+- Add update-cluster-user command. ([#3009](https://github.com/neuro-inc/neuro-cli/issues/3009))
+- Rename neuro-cli/neuro-sdk to apolo-cli/apolo-sdk ([#3010](https://github.com/neuro-inc/neuro-cli/pull/3010))
+
+
 Neuro SDK/CLI 24.5.0 (2024-05-21)
 =================================
 

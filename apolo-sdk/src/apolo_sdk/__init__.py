@@ -152,7 +152,7 @@ from ._utils import (
     find_project_root,
 )
 
-__version__ = "24.5.0"
+__version__ = "24.8.1"
 
 
 __all__ = (

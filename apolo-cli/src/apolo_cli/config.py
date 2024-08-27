@@ -92,7 +92,7 @@ def _print_welcome(root: Root, url: URL) -> None:
             f"Logged into {url} as [u]{root.client.config.username}[/u]", markup=True
         )
     root.print(
-        "Read the docs at https://docs.neu.ro or run `apolo --help` "
+        "Read the docs at https://docs.apolo.us or run `apolo --help` "
         "to see the reference"
     )
 

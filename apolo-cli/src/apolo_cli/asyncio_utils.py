@@ -22,9 +22,8 @@ from typing import (
     Optional,
     Type,
     TypeVar,
+    final,
 )
-
-from typing_extensions import final
 
 _T = TypeVar("_T")
 _T_co = TypeVar("_T_co", covariant=True)

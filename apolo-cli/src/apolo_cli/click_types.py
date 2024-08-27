@@ -12,6 +12,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Protocol,
     Tuple,
     TypeVar,
     Union,
@@ -27,7 +28,6 @@ from click.shell_completion import (
     ZshComplete,
     add_completion_class,
 )
-from typing_extensions import Protocol
 from yarl import URL
 
 from apolo_sdk import (

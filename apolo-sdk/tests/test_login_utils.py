@@ -192,7 +192,7 @@ async def test_get_server_config_with_token(
                         "memory": 30 * 2**30,
                         "nvidia_gpu": 1,
                         "resource_pool_names": ["nvidia-gpu"],
-                        "available_resource_pool_names": ["nvidia-gpu"],
+                        "available_resource_pool_names": [],
                     },
                     {
                         "name": "nvidia-gpu-large",
@@ -348,6 +348,7 @@ async def test_get_server_config_with_token(
                         memory=30 * 2**30,
                         nvidia_gpu=1,
                         resource_pool_names=["nvidia-gpu"],
+                        available_resource_pool_names=[],
                     ),
                     "nvidia-gpu-large": Preset(
                         credits_per_hour=Decimal("10"),
@@ -355,6 +356,7 @@ async def test_get_server_config_with_token(
                         memory=60 * 2**30,
                         nvidia_gpu=1,
                         resource_pool_names=["nvidia-gpu"],
+                        available_resource_pool_names=["nvidia-gpu"],
                     ),
                     "amd-gpu-small": Preset(
                         credits_per_hour=Decimal("10"),
@@ -362,6 +364,7 @@ async def test_get_server_config_with_token(
                         memory=30 * 2**30,
                         amd_gpu=1,
                         resource_pool_names=["amd-gpu"],
+                        available_resource_pool_names=["amd-gpu"],
                     ),
                     "amd-gpu-large": Preset(
                         credits_per_hour=Decimal("10"),
@@ -369,6 +372,7 @@ async def test_get_server_config_with_token(
                         memory=60 * 2**30,
                         amd_gpu=1,
                         resource_pool_names=["amd-gpu"],
+                        available_resource_pool_names=["amd-gpu"],
                     ),
                     "intel-gpu-small": Preset(
                         credits_per_hour=Decimal("10"),
@@ -376,6 +380,7 @@ async def test_get_server_config_with_token(
                         memory=30 * 2**30,
                         intel_gpu=1,
                         resource_pool_names=["intel-gpu"],
+                        available_resource_pool_names=["intel-gpu"],
                     ),
                     "intel-gpu-large": Preset(
                         credits_per_hour=Decimal("10"),
@@ -383,16 +388,19 @@ async def test_get_server_config_with_token(
                         memory=60 * 2**30,
                         intel_gpu=1,
                         resource_pool_names=["intel-gpu"],
+                        available_resource_pool_names=["intel-gpu"],
                     ),
                     "cpu-small": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=2,
                         memory=2 * 2**30,
+                        available_resource_pool_names=["cpu"],
                     ),
                     "cpu-large": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=3,
                         memory=14 * 2**30,
+                        available_resource_pool_names=["cpu"],
                     ),
                     "cpu-large-p": Preset(
                         credits_per_hour=Decimal("10"),
@@ -400,6 +408,7 @@ async def test_get_server_config_with_token(
                         memory=14 * 2**30,
                         scheduler_enabled=True,
                         preemptible_node=True,
+                        available_resource_pool_names=(),
                     ),
                 },
                 name="default",
