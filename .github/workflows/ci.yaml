@@ -45,7 +45,7 @@ jobs:
     - name: Install dependencies
       uses: py-actions/py-dependency-install@v4
       with:
-        path: requirements/ci.txt
+        path: requirements/mypy.txt
     - name: Run linters
       run: |
         make lint
