@@ -46,8 +46,7 @@ else:
     from typing import Protocol
 
     class _SupportsAclose(Protocol):
-        def aclose(self) -> Awaitable[object]:
-            ...
+        def aclose(self) -> Awaitable[object]: ...
 
     _SupportsAcloseT = TypeVar("_SupportsAcloseT", bound=_SupportsAclose)
 
