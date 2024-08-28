@@ -790,7 +790,7 @@ class PathURLCompleter(URLCompleter, abc.ABC):
         return CompletionItem(
             name,
             type="uri",
-            prefix=str(parent / ""),
+            prefix=str(parent) + "/",
         )
 
     @abc.abstractmethod
