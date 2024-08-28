@@ -8,4 +8,4 @@ pytest-timeout==2.1.0
 pytest-xdist==3.6.1
 re-assert==1.1.0
 towncrier==22.12.0
-trustme==0.9.0
+trustme==1.1.0
