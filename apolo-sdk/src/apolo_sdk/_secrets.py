@@ -81,9 +81,11 @@ class Secrets(metaclass=NoPublicConstructor):
         data = {
             "key": key,
             "value": base64.b64encode(value).decode("ascii"),
-            "org_name": org_name
-            if not isinstance(org_name, OrgNameSentinel)
-            else self._config.org_name,
+            "org_name": (
+                org_name
+                if not isinstance(org_name, OrgNameSentinel)
+                else self._config.org_name
+            ),
             "project_name": project_name or self._config.project_name_or_raise,
         }
         async with self._core.request("POST", url, auth=auth, json=data):

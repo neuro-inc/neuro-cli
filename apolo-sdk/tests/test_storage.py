@@ -101,9 +101,9 @@ async def storage_server(
                 if start >= stop:
                     raise RuntimeError
                 response.set_status(web.HTTPPartialContent.status_code)
-                response.headers[
-                    "Content-Range"
-                ] = f"bytes {start}-{stop - 1}/{len(content)}"
+                response.headers["Content-Range"] = (
+                    f"bytes {start}-{stop - 1}/{len(content)}"
+                )
                 response.content_length = stop - start
             await response.prepare(request)
             chunk_size = 200
