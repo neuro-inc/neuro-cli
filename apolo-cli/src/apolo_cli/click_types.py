@@ -787,10 +787,15 @@ class PathURLCompleter(URLCompleter, abc.ABC):
     ) -> CompletionItem:
         if is_dir:
             name += "/"
+        ppath = parent.path
+        prefix = str(parent)
+        if (parent.host and ppath == "/") or (ppath and not ppath.endswith("/")):
+            if prefix and not prefix.endswith("/"):
+                prefix += "/"
         return CompletionItem(
             name,
             type="uri",
-            prefix=str(parent) + "/",
+            prefix=prefix,
         )
 
     @abc.abstractmethod
@@ -881,8 +886,8 @@ class BlobPathURLCompleter(PathURLCompleter):
         if not self._is_bucket_uri_complete(full_uri, root, incomplete):
             prefix = uri.parent
             full_prefix = full_uri.parent if uri.path else full_uri
-            full_prefix_str = str(full_prefix / "")
-            full_uri_str = str(full_uri if uri.path else full_uri / "")
+            full_prefix_str = str(full_prefix)
+            full_uri_str = str(full_uri) if uri.path else str(full_uri) + "/"
             completions = set()
             async with root.client.buckets.list(cluster_name=full_uri.host) as it:
                 async for bucket in it:
@@ -894,6 +899,8 @@ class BlobPathURLCompleter(PathURLCompleter):
                         if not bucket_uri_str.startswith(full_uri_str):
                             continue
                         path_parts = bucket_uri_str[len(full_prefix_str) :].split("/")
+                        if path_parts and not path_parts[0]:
+                            del path_parts[0]
                         if len(path_parts) == 0:
                             continue
                         name = path_parts[0]
@@ -905,7 +912,7 @@ class BlobPathURLCompleter(PathURLCompleter):
             # benefit from prefix search in list_blobs().
             if incomplete.endswith("/"):
                 prefix = uri
-                full_uri = full_uri / ""
+                full_uri = URL(str(full_uri) + "/")
                 skip_uri_len = len(full_uri.parts)
             else:
                 prefix = uri.parent
