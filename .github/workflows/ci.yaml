@@ -91,6 +91,7 @@ jobs:
       id: pip-cache
       run: |
         echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT    # - name: Cache
+      shell: bash
     - name: Cache PyPI
       uses: actions/cache@v4
       with:
@@ -146,6 +147,7 @@ jobs:
       id: pip-cache
       run: |
         echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT   # - name: Cache
+      shell: bash
     - name: Cache PyPI
       uses: actions/cache@v4
       with:
