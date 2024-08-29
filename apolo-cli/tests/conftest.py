@@ -20,8 +20,6 @@ from apolo_sdk import (
 from apolo_sdk._config import _AuthConfig, _AuthToken, _ConfigData, _save
 from apolo_sdk._tracing import _make_trace_config
 
-from apolo_cli.asyncio_utils import setup_child_watcher
-
 
 def pytest_addoption(parser: Any, pluginmanager: Any) -> None:
     parser.addoption(
@@ -30,9 +28,6 @@ def pytest_addoption(parser: Any, pluginmanager: Any) -> None:
         action="store_true",
         help="Regenerate rich_cmp references from captured texts",
     )
-
-
-setup_child_watcher()
 
 
 @pytest.fixture

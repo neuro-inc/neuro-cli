@@ -213,10 +213,10 @@ def create_auth_code_app(
 async def create_app_server_once(
     app: Application, *, host: str = "127.0.0.1", port: int = 8080
 ) -> AsyncIterator[URL]:
-    runner = AppRunner(app, access_log=None)
+    runner = AppRunner(app, access_log=None, shutdown_timeout=0.0)
     try:
         await runner.setup()
-        site = TCPSite(runner, host, port, shutdown_timeout=0.0)
+        site = TCPSite(runner, host, port)
         await site.start()
         yield URL(site.name)
     finally:

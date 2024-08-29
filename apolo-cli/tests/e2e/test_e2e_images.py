@@ -217,7 +217,6 @@ async def test_images_push_with_specified_name(
     helper: Helper,
     image: str,
     tag: str,
-    event_loop: asyncio.AbstractEventLoop,
     docker: aiodocker.Docker,
 ) -> None:
     # Let`s push image

@@ -227,6 +227,7 @@ class Storage(metaclass=NoPublicConstructor):
             return
         basename = uri.name
         glob_in_dir: Callable[[URL, str, bool], AsyncGenerator[URL, None]]
+        trailing_slash = uri.path.endswith("/")
         if not _has_magic(basename):
             glob_in_dir = self._glob0
         elif not _isrecursive(basename):
@@ -237,7 +238,11 @@ class Storage(metaclass=NoPublicConstructor):
             async for parent in parent_iter:
                 async with aclosing(glob_in_dir(parent, basename, dironly)) as it:
                     async for x in it:
-                        yield x
+                        sx = str(x)
+                        if trailing_slash and not sx.endswith("/"):
+                            yield URL(sx + "/")
+                        else:
+                            yield x
 
     async def _glob2(
         self, parent: URL, pattern: str, dironly: bool
