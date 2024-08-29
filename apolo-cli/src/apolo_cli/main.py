@@ -23,7 +23,6 @@ import apolo_cli
 
 from . import file_logging
 from .alias import find_alias
-from .asyncio_utils import setup_child_watcher
 from .click_types import setup_shell_completion
 from .const import (
     EX_DATAERR,
@@ -58,7 +57,6 @@ def setup_stdout(errors: str) -> None:
 
 
 setup_stdout(errors="replace")
-setup_child_watcher()
 
 
 log = logging.getLogger(__name__)
