@@ -1,6 +1,6 @@
 -e apolo-sdk
 -e apolo-cli
-aiobotocore==2.4.2
+aiobotocore==2.14.0
 aiodocker==0.22.2
 aiohttp==3.10.5
 azure-core==1.28.0
