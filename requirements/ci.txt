@@ -1,5 +1,5 @@
 -r base.txt
-pexpect==4.8.0
+pexpect==4.9.0
 pytest==8.3.2
 pytest-aiohttp==1.0.5
 pytest-asyncio==0.20.3
