@@ -167,7 +167,7 @@ class _Core:
             json=json,
             data=data,
             timeout=timeout,
-            trace_request_ctx=trace_request_ctx,
+            trace_request_ctx=trace_request_ctx,  # type: ignore[arg-type]
             # Use 4mb buffer as sometimes single job response can be huge.
             read_bufsize=2**22,
         ) as resp:
@@ -207,7 +207,10 @@ class _Core:
         except WSServerHandshakeError as e:
             err_text = str(e)
             if e.headers:
-                err_text = e.headers.get("X-Error", err_text)
+                assert isinstance(e.headers, Mapping)
+                err_text = e.headers.get(  # type: ignore[call-overload]
+                    "X-Error", err_text
+                )
             self._raise_error(e.status, err_text)
 
 

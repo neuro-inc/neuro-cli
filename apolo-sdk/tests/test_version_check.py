@@ -9,7 +9,7 @@ import dateutil.parser
 import pytest
 import trustme
 from aiohttp import web
-from aiohttp.abc import AbstractResolver
+from aiohttp.abc import AbstractResolver, ResolveResult
 from aiohttp.test_utils import unused_port
 
 from apolo_sdk import Client, PluginManager
@@ -175,7 +175,7 @@ class FakeResolver(AbstractResolver):
 
     async def resolve(
         self, host: str, port: int = 0, family: int = socket.AF_INET
-    ) -> List[Dict[str, Any]]:
+    ) -> List[ResolveResult]:
         return [
             {
                 "hostname": host,
