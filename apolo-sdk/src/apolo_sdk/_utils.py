@@ -43,17 +43,12 @@ _T_contra = TypeVar("_T_contra", contravariant=True)
 if sys.version_info >= (3, 10):
     from contextlib import aclosing
 else:
-    if sys.version_info >= (3, 8):
-        from typing import Protocol
+    from typing import Protocol
 
-        class _SupportsAclose(Protocol):
-            def aclose(self) -> Awaitable[object]: ...
+    class _SupportsAclose(Protocol):
+        def aclose(self) -> Awaitable[object]: ...
 
-        _SupportsAcloseT = TypeVar("_SupportsAcloseT", bound=_SupportsAclose)
-    else:
-        from typing import AsyncGenerator
-
-        _SupportsAcloseT = TypeVar("_SupportsAcloseT", bound=AsyncGenerator[Any, None])
+    _SupportsAcloseT = TypeVar("_SupportsAcloseT", bound=_SupportsAclose)
 
     class aclosing(AsyncContextManager[_SupportsAcloseT]):
         def __init__(self, thing: _SupportsAcloseT):

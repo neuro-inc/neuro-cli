@@ -3,6 +3,7 @@ import os
 import random
 import secrets
 import shutil
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, List
@@ -192,6 +193,11 @@ async def cmp_dirs(path1: Path, path2: Path) -> bool:
     return same
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 10),
+    reason="pytest_asyncio 0.24 fails with "
+    "'got Future <Future pending> attached to a different loop'",
+)
 async def test_transfer_dir(
     transferer: FileTransferer[Path, Path], src_dir: Path, dst_dir: Path
 ) -> None:
@@ -202,6 +208,11 @@ async def test_transfer_dir(
     assert await cmp_dirs(src, dst_dir / "sub_dir")
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 10),
+    reason="pytest_asyncio 0.24 fails with "
+    "'got Future <Future pending> attached to a different loop'",
+)
 async def test_transfer_dir_dest_exists(
     transferer: FileTransferer[Path, Path], src_dir: Path, dst_dir: Path
 ) -> None:
@@ -241,6 +252,11 @@ async def test_transfer_dir_dest_not_dir(
     assert e.value.args[0] == errno.ENOTDIR
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 10),
+    reason="pytest_asyncio 0.24 fails with "
+    "'got Future <Future pending> attached to a different loop'",
+)
 async def test_transfer_dir_progress(
     transferer: FileTransferer[Path, Path], src_dir: Path, dst_dir: Path
 ) -> None:
@@ -384,6 +400,11 @@ async def test_transfer_dir_continue(
     assert (dst / "dst_newer").read_bytes() == b"already copied more data"
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 10),
+    reason="pytest_asyncio 0.24 fails with "
+    "'got Future <Future pending> attached to a different loop'",
+)
 async def test_transfer_dir_filter(
     transferer: FileTransferer[Path, Path], src_dir: Path, dst_dir: Path
 ) -> None:
@@ -406,6 +427,11 @@ async def test_transfer_dir_filter(
     assert await cmp_dirs(src, dst_dir / "sub_dir")
 
 
+@pytest.mark.skipif(
+    sys.version_info < (3, 10),
+    reason="pytest_asyncio 0.24 fails with "
+    "'got Future <Future pending> attached to a different loop'",
+)
 async def test_transfer_dir_ignore_file_names(
     transferer: FileTransferer[Path, Path], src_dir: Path, dst_dir: Path
 ) -> None:

@@ -362,6 +362,6 @@ class Tag:
 
 def _get_url_authority(url: URL) -> str:
     assert url.host is not None
-    port = url.explicit_port  # type: ignore
+    port = url.explicit_port
     suffix = f":{port}" if port is not None else ""
     return url.host + suffix
