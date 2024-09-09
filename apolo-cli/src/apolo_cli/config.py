@@ -1,4 +1,5 @@
 import asyncio
+import contextvars
 import json
 import os
 import sys
@@ -31,6 +32,8 @@ from .formatters.config import (
 )
 from .root import Root
 from .utils import argument, command, group, option
+
+ROOT: contextvars.ContextVar[Root] = contextvars.ContextVar("ROOT")
 
 
 @group()
@@ -99,11 +102,16 @@ def _print_welcome(root: Root, url: URL) -> None:
 
 async def _show_browser(url: URL) -> None:
     loop = asyncio.get_event_loop()
+    root = ROOT.get()
     success = await loop.run_in_executor(None, webbrowser.open_new, str(url))
     if not success:
         raise Exception(
             "No browser found. For non-GUI environments, use "
             "`apolo config login-headless` to login."
+        )
+    else:
+        root.print(
+            "[dim]Your browser has been opened to visit:[/dim]\n" "    [b]{url}[/b]"
         )
 
 
@@ -116,12 +124,15 @@ async def login(root: Root, url: URL) -> None:
     URL is a platform entrypoint URL.
     """
 
+    token = ROOT.set(root)
     try:
         await root.factory.login(_show_browser, url=url, timeout=root.timeout)
     except (ConfigError, FileExistsError):
         await root.factory.logout()
         root.print("You were successfully logged out.")
         await root.factory.login(_show_browser, url=url, timeout=root.timeout)
+    finally:
+        ROOT.reset(token)
     await root.init_client()
     _print_welcome(root, url)
 
@@ -187,7 +198,11 @@ async def logout(root: Root) -> None:
     """
     Log out.
     """
-    await root.factory.logout(_show_browser)
+    token = ROOT.set(root)
+    try:
+        await root.factory.logout(_show_browser)
+    finally:
+        ROOT.reset(token)
     root.print("Logged out")
 
 
