@@ -33,7 +33,7 @@ from .formatters.config import (
 from .root import Root
 from .utils import argument, command, group, option
 
-ROOT = contextvars.ContextVar("ROOT")
+ROOT: contextvars.ContextVar[Root] = contextvars.ContextVar("ROOT")
 
 
 @group()
