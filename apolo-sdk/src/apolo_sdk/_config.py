@@ -312,12 +312,15 @@ class Config(metaclass=NoPublicConstructor):
                 "Cannot switch the project org. Please edit the '.neuro.toml' file."
             )
         if name not in self._cluster.orgs:
-            cluster_org_names = [org or "NO_ORG" for org in self._cluster.orgs]
-            raise RuntimeError(
-                f"Org {name or 'NO_ORG'} doesn't exist in "
-                f"a list of available orgs {list(cluster_org_names)} for "
-                f"cluster '{self.cluster_name}'. "
-            )
+            # select first available cluster for new org_name
+            for cluster in self.clusters.values():
+                if cluster.orgs and name in cluster.orgs:
+                    await self.switch_cluster(cluster.name)
+                    break
+            else:
+                raise RuntimeError(
+                    f"Cannot find available cluster for org {name or 'NO_ORG'}. "
+                )
         self.__config_data = replace(
             self._config_data,
             org_name=name,

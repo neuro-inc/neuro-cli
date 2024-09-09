@@ -224,8 +224,8 @@ class TestClustersFormatter:
                             description="Filestore",
                             tier=_GoogleFilestoreTier.STANDARD,
                             instances=[
-                                _StorageInstance(size=2**30),
-                                _StorageInstance(name="org", size=2 * 2**30),
+                                _StorageInstance(name="org1", size=2**30),
+                                _StorageInstance(name="org2", size=2 * 2**30),
                             ],
                         ),
                     ),
@@ -261,8 +261,8 @@ class TestClustersFormatter:
                             description="Filestore",
                             tier=_GoogleFilestoreTier.STANDARD,
                             instances=[
-                                _StorageInstance(),
-                                _StorageInstance(name="org"),
+                                _StorageInstance(name="org1"),
+                                _StorageInstance(name="org2"),
                             ],
                         ),
                     ),
