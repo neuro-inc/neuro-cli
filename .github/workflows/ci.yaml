@@ -110,7 +110,7 @@ jobs:
       run: |
         make .test-${{ matrix.cmd }} PYTEST_ARGS=-vvv
     - name: Upload coverage artifact
-      uses: aio-libs/prepare-coverage@v24.9.0
+      uses: aio-libs/prepare-coverage@v24.9.1
       if: matrix.os == 'ubuntu'
 
   e2e:
@@ -171,7 +171,7 @@ jobs:
       run: |
         make .e2e
     - name: Upload coverage artifact
-      uses: neuro-inc/prepare-coverage@v24.9.0
+      uses: neuro-inc/prepare-coverage@v24.9.1
       if: matrix.os == 'ubuntu'
 
   upload-cov:
