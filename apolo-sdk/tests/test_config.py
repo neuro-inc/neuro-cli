@@ -893,6 +893,18 @@ async def test_switch_org(
         assert client.config.org_name == "test-org"
 
 
+async def test_switch_org_select_first_available_cluster(
+    make_client: _MakeClient, multiple_clusters_config: Dict[str, Cluster]
+) -> None:
+    async with make_client(
+        "https://example.org", clusters=multiple_clusters_config
+    ) as client:
+        assert client.config.org_name is None
+        await client.config.switch_org("some-org")
+        assert client.config.org_name == "some-org"
+        assert client.config.cluster_name == "another"
+
+
 async def test_switch_org_keep_project_use_none(make_client: _MakeClient) -> None:
     async with make_client("https://example.org") as client:
         await client.config.switch_cluster("another")
@@ -931,7 +943,9 @@ async def test_switch_org_unknown(
         "https://example.org", clusters=multiple_clusters_config
     ) as client:
         assert client.config.org_name is None
-        with pytest.raises(RuntimeError, match="Org unknown doesn't exist"):
+        with pytest.raises(
+            RuntimeError, match="Cannot find available cluster for org unknown"
+        ):
             await client.config.switch_org("unknown")
         assert client.config.org_name is None
 
