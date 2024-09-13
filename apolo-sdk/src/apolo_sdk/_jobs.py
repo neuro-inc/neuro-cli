@@ -16,7 +16,6 @@ from typing import (
     Optional,
     Sequence,
     Set,
-    Union,
     overload,
 )
 
@@ -52,12 +51,7 @@ from ._url_utils import (
     normalize_secret_uri,
     normalize_storage_path_uri,
 )
-from ._utils import (
-    ORG_NAME_SENTINEL,
-    NoPublicConstructor,
-    OrgNameSentinel,
-    asyncgeneratorcontextmanager,
-)
+from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 log = logging.getLogger(__package__)
 
@@ -352,7 +346,7 @@ class Jobs(metaclass=NoPublicConstructor):
         schedule_timeout: Optional[float] = None,
         restart_policy: JobRestartPolicy = JobRestartPolicy.NEVER,
         life_span: Optional[float] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         priority: Optional[JobPriority] = None,
         project_name: Optional[str] = None,
     ) -> JobDescription:
@@ -370,11 +364,7 @@ class Jobs(metaclass=NoPublicConstructor):
             schedule_timeout=schedule_timeout,
             restart_policy=restart_policy,
             life_span=life_span,
-            org_name=(
-                org_name
-                if not isinstance(org_name, OrgNameSentinel)
-                else self._config.org_name
-            ),
+            org_name=org_name or self._config.org_name,
             priority=priority,
         )
         payload["container"] = _container_to_api(
@@ -404,7 +394,7 @@ class Jobs(metaclass=NoPublicConstructor):
         image: RemoteImage,
         preset_name: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         entrypoint: Optional[str] = None,
         command: Optional[str] = None,
         working_dir: Optional[str] = None,
@@ -458,11 +448,7 @@ class Jobs(metaclass=NoPublicConstructor):
             restart_policy=restart_policy,
             life_span=life_span,
             privileged=privileged,
-            org_name=(
-                org_name
-                if not isinstance(org_name, OrgNameSentinel)
-                else self._config.org_name
-            ),
+            org_name=org_name or self._config.org_name,
             priority=priority,
             energy_schedule_name=energy_schedule_name,
         )
@@ -491,6 +477,8 @@ class Jobs(metaclass=NoPublicConstructor):
         _being_dropped: Optional[bool] = False,
         _logs_removed: Optional[bool] = False,
     ) -> AsyncIterator[JobDescription]:
+        if not org_names:
+            org_names = [self._config.org_name]
         url = self._config.api_url / "jobs"
         headers = {"Accept": "application/x-ndjson"}
         params: MultiDict[str] = MultiDict()

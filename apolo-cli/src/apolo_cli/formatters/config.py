@@ -14,7 +14,6 @@ from rich.text import Text
 
 from apolo_sdk import Cluster, Config, Preset, Quota, _Balance, _ConfigCluster, _Quota
 
-from apolo_cli.click_types import OrgType
 from apolo_cli.utils import format_size
 
 
@@ -89,9 +88,9 @@ class ClustersFormatter:
             pre = "  "
             org_names: List[Text] = [
                 (
-                    Text(org or OrgType.NO_ORG_STR, style="u")
+                    Text(org, style="u")
                     if org == default_org and cluster.name == default_cluster
-                    else Text(org or OrgType.NO_ORG_STR)
+                    else Text(org)
                 )
                 for org in cluster.orgs
             ]

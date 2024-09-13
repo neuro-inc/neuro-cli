@@ -243,7 +243,8 @@ class Factory:
         client = await self.get(timeout=timeout)
 
         await client.config.switch_cluster(cluster)
-        await client.config.switch_org(org_name)
+        if org_name is not None:
+            await client.config.switch_org(org_name)
         if project_name:
             await client.config.switch_project(project_name)
         await client.close()

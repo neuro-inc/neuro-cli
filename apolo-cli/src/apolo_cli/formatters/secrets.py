@@ -10,7 +10,6 @@ from rich.text import Text
 
 from apolo_sdk import Secret
 
-from apolo_cli.click_types import ORG
 from apolo_cli.formatters.utils import URIFormatter
 
 
@@ -35,7 +34,7 @@ class SecretsFormatter(BaseSecretsFormatter):
     def _secret_to_table_row(self, secret: Secret) -> Sequence[str]:
         line = [
             self._uri_formatter(secret.uri),
-            secret.org_name or ORG.NO_ORG_STR,
+            secret.org_name,
             secret.project_name,
         ]
         return line

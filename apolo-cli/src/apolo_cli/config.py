@@ -19,12 +19,7 @@ from apolo_sdk import DEFAULT_API_URL, AuthorizationError, ConfigError
 from apolo_cli.formatters.config import ClustersFormatter
 
 from .alias import list_aliases
-from .click_types import (
-    CLUSTER_ALLOW_UNKNOWN,
-    ORG,
-    ORG_ALLOW_UNKNOWN,
-    PROJECT_ALLOW_UNKNOWN,
-)
+from .click_types import CLUSTER_ALLOW_UNKNOWN, ORG, PROJECT_ALLOW_UNKNOWN
 from .formatters.config import (
     AliasesFormatter,
     ClusterOrgProjectsFormatter,
@@ -86,7 +81,7 @@ def _print_welcome(root: Root, url: URL) -> None:
         root.print(
             f"Logged into {url} as [u]{root.client.config.username}[/u]"
             f", current cluster is [b]{root.client.config.cluster_name}[/b], "
-            f"org is [b]{root.client.config.org_name or ORG.NO_ORG_STR}[/b]",
+            f"org is [b]{root.client.config.org_name}[/b]",
             f"project is [b]{root.client.config.project_name}[/b]",
             markup=True,
         )
@@ -308,18 +303,15 @@ async def switch_cluster(root: Root, cluster_name: Optional[str]) -> None:
 
 
 @command()
-@argument("org_name", required=True, type=ORG_ALLOW_UNKNOWN)
-async def switch_org(root: Root, org_name: Optional[str]) -> None:
+@argument("org_name", required=True, type=ORG)
+async def switch_org(root: Root, org_name: str) -> None:
     """
     Switch the active organization.
 
-    ORG_NAME is the organization name to select. Use literal "NO_ORG" to switch
-    to using current cluster directly instead of on behalf of some org.
+    ORG_NAME is the organization name to select.
     """
     with root.status("Fetching the list of available cluster/org pairs"):
         await root.client.config.fetch()
-    if org_name == ORG.NO_ORG_STR:
-        org_name = None
     await root.client.config.switch_org(org_name)
     root.print(
         f"The current org_name is [u]{rich_escape(org_name or '<no-org>')}[/u]",

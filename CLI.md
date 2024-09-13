@@ -2071,7 +2071,7 @@ Name | Description|
 
 ### apolo config switch-org
 
-Switch the active organization.<br/><br/>ORG\_NAME is the organization name to select. Use literal "NO_ORG" to switch to<br/>using current cluster directly instead of on behalf of some org.
+Switch the active organization.<br/><br/>ORG_NAME is the organization name to select.
 
 **Usage:**
 

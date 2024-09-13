@@ -3,8 +3,6 @@ from typing import Optional, Sequence, Union
 
 from yarl import URL
 
-from apolo_sdk import ORG_NAME_SENTINEL
-
 from .click_types import (
     CLUSTER,
     DISK,
@@ -23,15 +21,7 @@ from .formatters.disks import (
 from .formatters.utils import URIFormatter, get_datetime_formatter, uri_formatter
 from .parse_utils import parse_memory
 from .root import Root
-from .utils import (
-    argument,
-    calc_timeout_unused,
-    command,
-    group,
-    option,
-    parse_org_name,
-    resolve_disk,
-)
+from .utils import argument, calc_timeout_unused, command, group, option, resolve_disk
 
 DEFAULT_DISK_LIFE_SPAN = "1d"
 
@@ -96,9 +86,9 @@ async def ls(
         )
 
     if all_orgs:
-        org_name = ORG_NAME_SENTINEL
+        org_name = None
     else:
-        org_name = parse_org_name(org, root)  # type: ignore
+        org_name = org
 
     if all_projects:
         project_name = None
@@ -188,7 +178,7 @@ async def create(
     disk_timeout_unused = None
     if timeout_unused_seconds:
         disk_timeout_unused = timedelta(seconds=timeout_unused_seconds)
-    org_name = parse_org_name(org, root)
+    org_name = org
 
     disk = await root.client.disks.create(
         parse_memory(storage),
@@ -236,7 +226,7 @@ async def get(
     """
     Get disk DISK_ID.
     """
-    org_name = parse_org_name(org, root)
+    org_name = org
     disk_id = await resolve_disk(
         disk,
         client=root.client,
@@ -293,7 +283,7 @@ async def rm(
     """
     Remove disk DISK_ID.
     """
-    org_name = parse_org_name(org, root)
+    org_name = org
     for disk in disks:
         disk_id = await resolve_disk(
             disk,

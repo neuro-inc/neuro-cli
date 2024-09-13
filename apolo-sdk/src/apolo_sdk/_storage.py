@@ -58,9 +58,7 @@ from ._url_utils import (
 )
 from ._users import Action
 from ._utils import (
-    ORG_NAME_SENTINEL,
     NoPublicConstructor,
-    OrgNameSentinel,
     QueuedCall,
     aclosing,
     asyncgeneratorcontextmanager,
@@ -117,7 +115,7 @@ class DiskUsageInfo:
     total: int
     used: int
     free: int
-    org_name: Optional[str] = None
+    org_name: str
     uri: Optional[URL] = None
 
 
@@ -368,15 +366,11 @@ class Storage(metaclass=NoPublicConstructor):
     async def disk_usage(
         self,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         uri: Optional[URL] = None,
     ) -> DiskUsageInfo:
         cluster_name = cluster_name or self._config.cluster_name
-        org_name_val = (
-            org_name
-            if not isinstance(org_name, OrgNameSentinel)
-            else self._config.org_name
-        )
+        org_name_val = org_name or self._config.org_name
         if uri:
             url = self._get_storage_url(uri)
         else:
@@ -996,7 +990,7 @@ def _file_status_from_api_stat(cluster_name: str, values: Dict[str, Any]) -> Fil
 
 def _disk_usage_from_api(
     cluster_name: str,
-    org_name: Optional[str],
+    org_name: str,
     uri: Optional[URL],
     values: Dict[str, Any],
 ) -> DiskUsageInfo:

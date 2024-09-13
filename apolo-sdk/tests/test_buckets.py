@@ -27,6 +27,8 @@ async def test_list(
                     "provider": "aws",
                     "created_at": created_at.isoformat(),
                     "imported": False,
+                    # support None for backward compatibility
+                    # all new buckets should have real org name
                     "org_name": None,
                     "project_name": "test-project",
                 },
@@ -64,7 +66,7 @@ async def test_list(
             created_at=created_at,
             provider=Bucket.Provider.AWS,
             imported=False,
-            org_name=None,
+            org_name="NO_ORG",
             project_name="test-project",
         ),
         Bucket(
@@ -92,7 +94,7 @@ async def test_add(
         data = await request.json()
         assert data == {
             "name": "test-bucket",
-            "org_name": None,
+            "org_name": "test_org",
             "project_name": "test-project",
         }
         return web.json_response(
@@ -103,6 +105,7 @@ async def test_add(
                 "created_at": created_at.isoformat(),
                 "provider": "aws",
                 "project_name": "test-project",
+                "org_name": "test_org",
             }
         )
 
@@ -111,7 +114,7 @@ async def test_add(
 
     srv = await aiohttp_server(app)
 
-    async with make_client(srv.make_url("/")) as client:
+    async with make_client(srv.make_url("/"), org_name="test_org") as client:
         bucket = await client.buckets.create(name="test-bucket")
         assert bucket == Bucket(
             id="bucket-1",
@@ -121,7 +124,7 @@ async def test_add(
             created_at=created_at,
             provider=Bucket.Provider.AWS,
             imported=False,
-            org_name=None,
+            org_name="test_org",
             project_name="test-project",
         )
 
@@ -186,7 +189,7 @@ async def test_import(
             "provider": "aws",
             "provider_bucket_name": "test-external",
             "credentials": {"key": "value"},
-            "org_name": None,
+            "org_name": "NO_ORG",
             "project_name": "test-project",
         }
         return web.json_response(
@@ -198,6 +201,7 @@ async def test_import(
                 "provider": "aws",
                 "imported": True,
                 "project_name": "test-project",
+                "org_name": "test_org",
             }
         )
 
@@ -221,7 +225,7 @@ async def test_import(
             created_at=created_at,
             provider=Bucket.Provider.AWS,
             imported=True,
-            org_name=None,
+            org_name="test_org",
             project_name="test-project",
         )
 
@@ -300,6 +304,7 @@ async def test_get(
                 "project_name": "test-project",
                 "provider": "aws",
                 "created_at": created_at.isoformat(),
+                "org_name": "test_org",
             }
         )
 
@@ -318,7 +323,7 @@ async def test_get(
             created_at=created_at,
             provider=Bucket.Provider.AWS,
             imported=False,
-            org_name=None,
+            org_name="test_org",
             project_name="test-project",
         )
 

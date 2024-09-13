@@ -79,7 +79,6 @@ from .utils import (
     command,
     group,
     option,
-    parse_org_name,
     resolve_disk,
     resolve_job,
     resolve_job_ex,
@@ -435,11 +434,9 @@ async def ls(
         cluster = root.client.config.cluster_name
 
     if all_orgs:
-        org_names = []
-    elif org:
-        org_names = [parse_org_name(o, root) for o in org]
+        org_names: list[str] = []
     else:
-        org_names = [root.client.config.org_name]
+        org_names = list(org)
 
     if all_projects:
         project_names: Sequence[str] = []
@@ -1153,7 +1150,7 @@ async def run(
         http_port = http
     cmd = _fix_cmd("apolo run", "IMAGE -- CMD...", cmd)
     cluster_name = cluster or root.client.cluster_name
-    org_name = parse_org_name(org, root)
+    org_name = org
     cluster_config = root.client.config.clusters[cluster_name]
     if not preset:
         preset = next(iter(cluster_config.presets.keys()))

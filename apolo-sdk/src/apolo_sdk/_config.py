@@ -8,11 +8,12 @@ import re
 import sqlite3
 import sys
 import time
+from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, replace
 from decimal import Decimal
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, Dict, Iterator, List, Mapping, Optional, Set, Tuple, Union
+from typing import Any, Optional, Union
 
 import toml
 from yarl import URL
@@ -70,6 +71,7 @@ class _ConfigData:
     admin_url: Optional[URL]
     version: str
     project_name: Optional[str]
+    # TODO: make org and cluster mandatory, forbid None values
     cluster_name: Optional[str]
     org_name: Optional[str]
     clusters: Mapping[str, Cluster]
@@ -125,6 +127,13 @@ class Config(metaclass=NoPublicConstructor):
         return MappingProxyType(self._config_data.projects)
 
     @property
+    def available_orgs(self) -> Sequence[str]:
+        ret = set()
+        for cluster in self.clusters.values():
+            ret |= set(cluster.orgs)
+        return tuple(sorted(ret))
+
+    @property
     def cluster_name(self) -> str:
         if not self._config_data.clusters:
             raise RuntimeError(
@@ -144,17 +153,15 @@ class Config(metaclass=NoPublicConstructor):
         return None
 
     @property
-    def cluster_orgs(self) -> List[Optional[str]]:
+    def cluster_orgs(self) -> list[str]:
         return self.clusters[self.cluster_name].orgs
 
     @property
-    def org_name(self) -> Optional[str]:
+    def org_name(self) -> str:
         name = self._get_user_org_name()
-        if name == "NO_ORG":
-            return None
         if name is None:
             name = self._config_data.org_name
-        return name
+        return name or "NO_ORG"
 
     def _get_user_org_name(self) -> Optional[str]:
         config = self._get_user_config()
@@ -189,12 +196,12 @@ class Config(metaclass=NoPublicConstructor):
         return None
 
     @property
-    def cluster_org_projects(self) -> List[Project]:
+    def cluster_org_projects(self) -> list[Project]:
         return self._get_cluster_org_projects(self.cluster_name, self.org_name)
 
     def _get_cluster_org_projects(
         self, cluster_name: str, org_name: Optional[str]
-    ) -> List[Project]:
+    ) -> list[Project]:
         projects = []
         for project in self.projects.values():
             if project.cluster_name == cluster_name and project.org_name == org_name:
@@ -290,12 +297,8 @@ class Config(metaclass=NoPublicConstructor):
         org_name = self.org_name
         if org_name not in cluster_orgs:
             # Cannot keep using same org
-            # If NO_ORG is available - use it
-            # else use first in alphabetical order
-            if None in cluster_orgs:
-                org_name = None
-            else:
-                org_name = sorted(cluster_orgs, key=lambda it: it or "")[0]
+            # Select the first available in selected cluster
+            org_name = sorted(cluster_orgs)[0]
         self.__config_data = replace(
             self._config_data,
             cluster_name=name,
@@ -306,7 +309,7 @@ class Config(metaclass=NoPublicConstructor):
         )
         _save(self._config_data, self._path)
 
-    async def switch_org(self, name: Optional[str]) -> None:
+    async def switch_org(self, name: str) -> None:
         if self._get_user_org_name() is not None:
             raise RuntimeError(
                 "Cannot switch the project org. Please edit the '.neuro.toml' file."
@@ -331,7 +334,7 @@ class Config(metaclass=NoPublicConstructor):
         _save(self._config_data, self._path)
 
     def _get_current_project_for_cluster_org(
-        self, cluster_name: str, org_name: Optional[str]
+        self, cluster_name: str, org_name: str
     ) -> Optional[str]:
         project_name = self.project_name
         if project_name:
@@ -410,7 +413,7 @@ class Config(metaclass=NoPublicConstructor):
         token = await self.token()
         return f"Bearer {token}"
 
-    async def _docker_auth(self) -> Dict[str, str]:
+    async def _docker_auth(self) -> dict[str, str]:
         token = await self.token()
         return {"username": "token", "password": token}
 
@@ -609,7 +612,7 @@ def _load_recovery_data(path: Path) -> _ConfigRecoveryData:
         raise ConfigError(MALFORMED_CONFIG_MSG)
 
 
-def _deserialize_auth_config(payload: Dict[str, Any]) -> _AuthConfig:
+def _deserialize_auth_config(payload: dict[str, Any]) -> _AuthConfig:
     auth_config = json.loads(payload["auth_config"])
     success_redirect_url = auth_config.get("success_redirect_url")
     if success_redirect_url:
@@ -626,9 +629,9 @@ def _deserialize_auth_config(payload: Dict[str, Any]) -> _AuthConfig:
     )
 
 
-def _deserialize_projects(payload: Dict[str, Any]) -> Dict[Project.Key, Project]:
+def _deserialize_projects(payload: dict[str, Any]) -> dict[Project.Key, Project]:
     projects = json.loads(payload["projects"])
-    ret: Dict[Project.Key, Project] = {}
+    ret: dict[Project.Key, Project] = {}
     for project_config in projects:
         project = Project(
             name=project_config["name"],
@@ -640,9 +643,9 @@ def _deserialize_projects(payload: Dict[str, Any]) -> Dict[Project.Key, Project]
     return ret
 
 
-def _deserialize_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
+def _deserialize_clusters(payload: dict[str, Any]) -> dict[str, Cluster]:
     clusters = json.loads(payload["clusters"])
-    ret: Dict[str, Cluster] = {}
+    ret: dict[str, Cluster] = {}
     for cluster_config in clusters:
         cluster = Cluster(
             name=cluster_config["name"],
@@ -667,7 +670,7 @@ def _deserialize_clusters(payload: Dict[str, Any]) -> Dict[str, Cluster]:
     return ret
 
 
-def _deserialize_resource_pool(payload: Dict[str, Any]) -> Tuple[str, ResourcePool]:
+def _deserialize_resource_pool(payload: dict[str, Any]) -> tuple[str, ResourcePool]:
     tpu = None
     if "tpu" in payload:
         tpu = TPUResource(
@@ -690,7 +693,7 @@ def _deserialize_resource_pool(payload: Dict[str, Any]) -> Tuple[str, ResourcePo
     return (payload["name"], resource_pool)
 
 
-def _deserialize_resource_preset(payload: Dict[str, Any]) -> Tuple[str, Preset]:
+def _deserialize_resource_preset(payload: dict[str, Any]) -> tuple[str, Preset]:
     return (
         payload["name"],
         Preset(
@@ -704,13 +707,15 @@ def _deserialize_resource_preset(payload: Dict[str, Any]) -> Tuple[str, Preset]:
             tpu_software_version=payload.get("tpu_software_version", None),
             scheduler_enabled=payload.get("scheduler_enabled", False),
             preemptible_node=payload.get("preemptible_node", False),
-            resource_pool_names=payload.get("resource_pool_names", ()),
-            available_resource_pool_names=payload.get("avaliable_pool_names", ()),
+            resource_pool_names=tuple(payload.get("resource_pool_names", ())),
+            available_resource_pool_names=tuple(
+                payload.get("available_resource_pool_names", ())
+            ),
         ),
     )
 
 
-def _deserialize_auth_token(payload: Dict[str, Any]) -> _AuthToken:
+def _deserialize_auth_token(payload: dict[str, Any]) -> _AuthToken:
     auth_payload = payload["auth_token"]
     return _AuthToken(
         token=auth_payload["token"],
@@ -798,7 +803,7 @@ def _serialize_auth_config(auth_config: _AuthConfig) -> str:
 
 
 def _serialize_projects(projects: Mapping[Project.Key, Project]) -> str:
-    ret: List[Dict[str, Any]] = []
+    ret: list[dict[str, Any]] = []
     for project in projects.values():
         project_config = {
             "name": project.name,
@@ -811,7 +816,7 @@ def _serialize_projects(projects: Mapping[Project.Key, Project]) -> str:
 
 
 def _serialize_clusters(clusters: Mapping[str, Cluster]) -> str:
-    ret: List[Dict[str, Any]] = []
+    ret: list[dict[str, Any]] = []
     for cluster in clusters.values():
         cluster_config = {
             "name": cluster.name,
@@ -836,7 +841,7 @@ def _serialize_clusters(clusters: Mapping[str, Cluster]) -> str:
     return json.dumps(ret)
 
 
-def _serialize_resource_pool(name: str, resource_pool: ResourcePool) -> Dict[str, Any]:
+def _serialize_resource_pool(name: str, resource_pool: ResourcePool) -> dict[str, Any]:
     result = {
         "name": name,
         "min_size": resource_pool.min_size,
@@ -858,7 +863,7 @@ def _serialize_resource_pool(name: str, resource_pool: ResourcePool) -> Dict[str
     return result
 
 
-def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
+def _serialize_resource_preset(name: str, preset: Preset) -> dict[str, Any]:
     return {
         "name": name,
         "credits_per_hour": str(preset.credits_per_hour),
@@ -872,14 +877,14 @@ def _serialize_resource_preset(name: str, preset: Preset) -> Dict[str, Any]:
         "scheduler_enabled": preset.scheduler_enabled,
         "preemptible_node": preset.preemptible_node,
         "resource_pool_names": preset.resource_pool_names,
-        "available_pool_names": preset.available_resource_pool_names,
+        "available_resource_pool_names": preset.available_resource_pool_names,
     }
 
 
 def _merge_user_configs(
     older: Mapping[str, Any], newer: Mapping[str, Any]
 ) -> Mapping[str, Any]:
-    ret: Dict[str, Any] = {}
+    ret: dict[str, Any] = {}
     for key, val in older.items():
         if key not in newer:
             # keep older key/values
@@ -901,7 +906,7 @@ def _merge_user_configs(
 
 def _check_sections(
     config: Mapping[str, Any],
-    valid_names: Set[str],
+    valid_names: set[str],
     filename: Union[str, "os.PathLike[str]"],
 ) -> None:
     extra_sections = config.keys() - valid_names
@@ -1018,7 +1023,7 @@ def _validate_user_config(
 
 
 def _validate_alias(
-    key: str, value: Dict[str, str], filename: Union[str, "os.PathLike[str]"]
+    key: str, value: dict[str, str], filename: Union[str, "os.PathLike[str]"]
 ) -> None:
     # TODO: add validation for both internal and external aliases
     pass
@@ -1045,7 +1050,7 @@ def _load_file(
     return config
 
 
-def _load_schema(db: sqlite3.Connection) -> Dict[str, str]:
+def _load_schema(db: sqlite3.Connection) -> dict[str, str]:
     cur = db.cursor()
     schema = {}
     cur.execute("SELECT type, name, sql from sqlite_master")

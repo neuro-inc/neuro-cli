@@ -1083,7 +1083,7 @@ async def add_resource_preset(
         tpu=tpu_preset,
         scheduler_enabled=scheduler,
         preemptible_node=preemptible_node,
-        resource_pool_names=resource_pool_names,
+        resource_pool_names=tuple(resource_pool_names),
     )
     await root.client._clusters.add_resource_preset(
         root.client.config.cluster_name, preset

@@ -1,18 +1,13 @@
 import base64
 from dataclasses import dataclass
-from typing import AsyncIterator, Optional, Union
+from typing import AsyncIterator, Optional
 
 from yarl import URL
 
 from ._config import Config
 from ._core import _Core
 from ._rewrite import rewrite_module
-from ._utils import (
-    ORG_NAME_SENTINEL,
-    NoPublicConstructor,
-    OrgNameSentinel,
-    asyncgeneratorcontextmanager,
-)
+from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 
 @rewrite_module
@@ -21,7 +16,7 @@ class Secret:
     key: str
     owner: str
     cluster_name: str
-    org_name: Optional[str]
+    org_name: str
     project_name: str
 
     @property
@@ -47,13 +42,12 @@ class Secrets(metaclass=NoPublicConstructor):
     async def list(
         self,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> AsyncIterator[Secret]:
         url = self._get_secrets_url(cluster_name)
         params = {}
-        if not isinstance(org_name, OrgNameSentinel):
-            params["org_name"] = org_name or "NO_ORG"
+        params["org_name"] = org_name or self._config.org_name
         if project_name:
             params["project_name"] = project_name
         auth = await self._config._api_auth()
@@ -64,7 +58,7 @@ class Secrets(metaclass=NoPublicConstructor):
                     key=j["key"],
                     owner=j["owner"],
                     cluster_name=cluster_name or self._config.cluster_name,
-                    org_name=j.get("org_name"),
+                    org_name=j.get("org_name") or "NO_ORG",
                     project_name=j["project_name"],
                 )
 
@@ -73,7 +67,7 @@ class Secrets(metaclass=NoPublicConstructor):
         key: str,
         value: bytes,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> None:
         url = self._get_secrets_url(cluster_name)
@@ -81,11 +75,7 @@ class Secrets(metaclass=NoPublicConstructor):
         data = {
             "key": key,
             "value": base64.b64encode(value).decode("ascii"),
-            "org_name": (
-                org_name
-                if not isinstance(org_name, OrgNameSentinel)
-                else self._config.org_name
-            ),
+            "org_name": org_name or self._config.org_name,
             "project_name": project_name or self._config.project_name_or_raise,
         }
         async with self._core.request("POST", url, auth=auth, json=data):
@@ -95,7 +85,7 @@ class Secrets(metaclass=NoPublicConstructor):
         self,
         key: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> None:
         url = self._get_secrets_url(cluster_name) / key
@@ -103,11 +93,7 @@ class Secrets(metaclass=NoPublicConstructor):
         params = {
             "project_name": project_name or self._config.project_name_or_raise,
         }
-        org_name_val = (
-            org_name
-            if not isinstance(org_name, OrgNameSentinel)
-            else self._config.org_name
-        )
+        org_name_val = org_name or self._config.org_name
         if org_name_val:
             params["org_name"] = org_name_val
         async with self._core.request("DELETE", url, auth=auth, params=params):

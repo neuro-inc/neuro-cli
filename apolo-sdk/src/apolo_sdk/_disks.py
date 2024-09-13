@@ -1,8 +1,9 @@
 import logging
+from collections.abc import AsyncIterator, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import Any, AsyncIterator, Dict, Mapping, Optional, Union
+from typing import Any, Optional
 
 from dateutil.parser import isoparse
 from yarl import URL
@@ -10,12 +11,7 @@ from yarl import URL
 from ._config import Config
 from ._core import _Core
 from ._rewrite import rewrite_module
-from ._utils import (
-    ORG_NAME_SENTINEL,
-    NoPublicConstructor,
-    OrgNameSentinel,
-    asyncgeneratorcontextmanager,
-)
+from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 logger = logging.getLogger(__package__)
 
@@ -29,7 +25,7 @@ class Disk:
     status: "Disk.Status"
     cluster_name: str
     project_name: str
-    org_name: Optional[str]
+    org_name: str
     created_at: datetime
     last_usage: Optional[datetime] = None
     name: Optional[str] = None
@@ -75,7 +71,7 @@ class Disks(metaclass=NoPublicConstructor):
             name=payload.get("name"),
             status=Disk.Status(payload["status"]),
             cluster_name=self._config.cluster_name,
-            org_name=payload.get("org_name"),
+            org_name=payload.get("org_name") or "NO_ORG",
             created_at=isoparse(payload["created_at"]),
             last_usage=last_usage,
             timeout_unused=timeout_unused,
@@ -90,13 +86,12 @@ class Disks(metaclass=NoPublicConstructor):
     async def list(
         self,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> AsyncIterator[Disk]:
         url = self._get_disks_url(cluster_name)
         params = {}
-        if not isinstance(org_name, OrgNameSentinel):
-            params["org_name"] = org_name or "NO_ORG"
+        params["org_name"] = org_name or self._config.org_name
         if project_name:
             params["project_name"] = project_name
 
@@ -113,7 +108,7 @@ class Disks(metaclass=NoPublicConstructor):
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
         project_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
     ) -> Disk:
         url = self._get_disks_url(cluster_name)
         auth = await self._config._api_auth()
@@ -122,11 +117,7 @@ class Disks(metaclass=NoPublicConstructor):
             "life_span": timeout_unused.total_seconds() if timeout_unused else None,
             "name": name,
             "project_name": project_name or self._config.project_name_or_raise,
-            "org_name": (
-                org_name
-                if not isinstance(org_name, OrgNameSentinel)
-                else self._config.org_name
-            ),
+            "org_name": org_name or self._config.org_name,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
             payload = await resp.json()
@@ -136,7 +127,7 @@ class Disks(metaclass=NoPublicConstructor):
         self,
         disk_id_or_name: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> Disk:
         url = self._get_disks_url(cluster_name) / disk_id_or_name
@@ -150,7 +141,7 @@ class Disks(metaclass=NoPublicConstructor):
         self,
         disk_id_or_name: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> None:
         url = self._get_disks_url(cluster_name) / disk_id_or_name
@@ -161,17 +152,13 @@ class Disks(metaclass=NoPublicConstructor):
 
     def _get_url_params(
         self,
-        org_name: Union[Optional[str], OrgNameSentinel],
+        org_name: Optional[str],
         project_name: Optional[str],
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         params = {
             "project_name": project_name or self._config.project_name_or_raise,
         }
-        org_name_val = (
-            org_name
-            if not isinstance(org_name, OrgNameSentinel)
-            else self._config.org_name
-        )
+        org_name_val = org_name or self._config.org_name
         if org_name_val:
             params["org_name"] = org_name_val
         return params

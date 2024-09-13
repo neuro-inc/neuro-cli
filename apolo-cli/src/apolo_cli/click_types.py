@@ -474,7 +474,6 @@ CLUSTER_ALLOW_UNKNOWN = ClusterType(allow_unknown=True)
 
 class OrgType(AsyncType[str]):
     name = "org"
-    NO_ORG_STR = "NO_ORG"
 
     def __init__(self, allow_unknown: bool = False):
         self._allow_unknown = allow_unknown
@@ -489,11 +488,11 @@ class OrgType(AsyncType[str]):
         if self._allow_unknown:
             return value
         client = await root.init_client()
-        org_name = value if value != self.NO_ORG_STR else None
-        if org_name not in client.config.clusters[client.config.cluster_name].orgs:
+        org_name = value
+        if org_name not in client.config.available_orgs:
+            avail = ", ".join(client.config.available_orgs)
             raise click.BadParameter(
-                f"Org {value} is not valid, "
-                "run 'apolo config get-clusters' to get a list of available orgs",
+                f"Org {value} is not valid, " f"available orgs are {{{avail}}}",
                 ctx,
                 param,
             )
@@ -505,7 +504,7 @@ class OrgType(AsyncType[str]):
         # async context manager is used to prevent a message about
         # unclosed session
         async with await root.init_client() as client:
-            org_names = [org or self.NO_ORG_STR for org in client.config.cluster_orgs]
+            org_names = client.config.available_orgs
             return [
                 CompletionItem(org_name)
                 for org_name in org_names

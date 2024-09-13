@@ -20,6 +20,8 @@ async def test_list(
                     "key": "name1",
                     "owner": "test",
                     "project_name": "test-project",
+                    # support no-org secrets for backward compatibility,
+                    # new secrets should always have the real org name
                 },
                 {
                     "key": "name2",
@@ -47,7 +49,7 @@ async def test_list(
             key="name1",
             owner="test",
             cluster_name="default",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="test-project",
         ),
         Secret(
@@ -68,8 +70,8 @@ async def test_add(
         assert data == {
             "key": "name",
             "value": base64.b64encode(b"data").decode("ascii"),
-            "org_name": None,
             "project_name": "test-project",
+            "org_name": "NO_ORG",
         }
         raise web.HTTPCreated
 
@@ -112,8 +114,8 @@ async def test_add_with_project(
         assert data == {
             "key": "name",
             "value": base64.b64encode(b"data").decode("ascii"),
-            "org_name": None,
             "project_name": "project",
+            "org_name": "NO_ORG",
         }
         raise web.HTTPCreated
 

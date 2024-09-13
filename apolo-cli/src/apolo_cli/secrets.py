@@ -1,8 +1,6 @@
 import pathlib
 from typing import Optional
 
-from apolo_sdk import ORG_NAME_SENTINEL
-
 from .click_types import CLUSTER, ORG, PROJECT
 from .formatters.secrets import (
     BaseSecretsFormatter,
@@ -11,7 +9,7 @@ from .formatters.secrets import (
 )
 from .formatters.utils import URIFormatter, uri_formatter
 from .root import Root
-from .utils import argument, command, group, option, parse_org_name
+from .utils import argument, command, group, option
 
 
 @group()
@@ -70,9 +68,9 @@ async def ls(
         )
 
     if all_orgs:
-        org_name = ORG_NAME_SENTINEL
+        org_name = None
     else:
-        org_name = parse_org_name(org, root)  # type: ignore
+        org_name = org
 
     if all_projects:
         project_name = None
@@ -128,7 +126,7 @@ async def add(
       apolo secret add KEY_NAME VALUE
       apolo secret add KEY_NAME @path/to/file.txt
     """
-    org_name = parse_org_name(org, root)
+    org_name = org
     await root.client.secrets.add(
         key,
         read_data(value),
@@ -166,7 +164,7 @@ async def rm(
     Remove secret KEY.
     """
 
-    org_name = parse_org_name(org, root)
+    org_name = org
     await root.client.secrets.rm(
         key, cluster_name=cluster, org_name=org_name, project_name=project
     )

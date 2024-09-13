@@ -1,7 +1,7 @@
 User Configuration:                               
  User Name            user                        
  Current Cluster      default                     
- Current Org          <no-org>                    
+ Current Org          NO_ORG                      
  Current Project      test-project                
  Credits Quota        500.00                      
  Jobs Quota           10                          

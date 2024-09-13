@@ -74,7 +74,7 @@ class TestConfigFormatter:
             scheduler_enabled=False,
             tpu_type="v3-8",
             tpu_software_version="1.14",
-            resource_pool_names=["tpu"],
+            resource_pool_names=("tpu",),
         )
         presets["hybrid"] = Preset(
             credits_per_hour=Decimal("10"),
@@ -86,7 +86,7 @@ class TestConfigFormatter:
             intel_gpu=3,
             tpu_type="v3-64",
             tpu_software_version="1.14",
-            resource_pool_names=["gpu-small", "gpu-large"],
+            resource_pool_names=("gpu-small", "gpu-large"),
         )
         new_config = replace(cluster_config, presets=presets)
 

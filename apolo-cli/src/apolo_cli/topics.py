@@ -194,8 +194,7 @@ async def user_config() -> None:
 
     The name of active organization which overrides the global organization
     name set by `apolo config switch-org`.  Can only be specified in
-    the **local** configuration file. Use literal 'NO_ORG' to setup direct
-    access instead of on behalf of some organization.
+    the **local** configuration file.
 
     **`ps-format`**
 
