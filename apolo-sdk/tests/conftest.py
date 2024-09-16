@@ -93,42 +93,42 @@ def cluster_config() -> Cluster:
                 cpu=7,
                 memory=30 * 2**30,
                 nvidia_gpu=1,
-                resource_pool_names=["nvidia-gpu"],
+                resource_pool_names=("nvidia-gpu",),
             ),
             "nvidia-gpu-large": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory=60 * 2**30,
                 nvidia_gpu=1,
-                resource_pool_names=["nvidia-gpu"],
+                resource_pool_names=("nvidia-gpu",),
             ),
             "amd-gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory=30 * 2**30,
                 amd_gpu=1,
-                resource_pool_names=["amd-gpu"],
+                resource_pool_names=("amd-gpu",),
             ),
             "amd-gpu-large": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory=60 * 2**30,
                 amd_gpu=1,
-                resource_pool_names=["amd-gpu"],
+                resource_pool_names=("amd-gpu",),
             ),
             "intel-gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory=30 * 2**30,
                 intel_gpu=1,
-                resource_pool_names=["intel-gpu"],
+                resource_pool_names=("intel-gpu",),
             ),
             "intel-gpu-large": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory=60 * 2**30,
                 intel_gpu=1,
-                resource_pool_names=["intel-gpu"],
+                resource_pool_names=("intel-gpu",),
             ),
             "cpu-small": Preset(
                 credits_per_hour=Decimal("10"),
@@ -149,7 +149,7 @@ def cluster_config() -> Cluster:
             ),
         },
         name="default",
-        orgs=[None],
+        orgs=["NO_ORG"],
     )
 
 
@@ -219,42 +219,42 @@ def make_client(
                         cpu=7,
                         memory=30 * 2**30,
                         nvidia_gpu=1,
-                        resource_pool_names=["nvidia-gpu"],
+                        resource_pool_names=("nvidia-gpu",),
                     ),
                     "nvidia-gpu-large": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=7,
                         memory=60 * 2**30,
                         nvidia_gpu=1,
-                        resource_pool_names=["nvidia-gpu"],
+                        resource_pool_names=("nvidia-gpu",),
                     ),
                     "amd-gpu-small": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=7,
                         memory=30 * 2**30,
                         amd_gpu=1,
-                        resource_pool_names=["amd-gpu"],
+                        resource_pool_names=("amd-gpu",),
                     ),
                     "amd-gpu-large": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=7,
                         memory=60 * 2**30,
                         amd_gpu=1,
-                        resource_pool_names=["amd-gpu"],
+                        resource_pool_names=("amd-gpu",),
                     ),
                     "intel-gpu-small": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=7,
                         memory=30 * 2**30,
                         intel_gpu=1,
-                        resource_pool_names=["intel-gpu"],
+                        resource_pool_names=("intel-gpu",),
                     ),
                     "intel-gpu-large": Preset(
                         credits_per_hour=Decimal("10"),
                         cpu=7,
                         memory=60 * 2**30,
                         intel_gpu=1,
-                        resource_pool_names=["intel-gpu"],
+                        resource_pool_names=("intel-gpu",),
                     ),
                     "cpu-small": Preset(
                         credits_per_hour=Decimal("10"),
@@ -268,7 +268,7 @@ def make_client(
                     ),
                 },
                 name="default",
-                orgs=[org_name],
+                orgs=[org_name or "NO_ORG"],
             )
             cluster2_config = Cluster(
                 registry_url=(url / "registry2"),
@@ -300,7 +300,7 @@ def make_client(
                     ),
                 },
                 name="another",
-                orgs=[None, "some_org"],
+                orgs=["NO_ORG", "some_org"],
             )
             clusters = {
                 cluster_config.name: cluster_config,
@@ -340,7 +340,7 @@ def make_client(
             org_name = clusters[cluster_name].orgs[0]
         else:
             cluster_name = None
-            org_name = None
+            org_name = "NO_ORG"
         config = _ConfigData(
             auth_config=real_auth_config,
             auth_token=_AuthToken.create_non_expiring(token),

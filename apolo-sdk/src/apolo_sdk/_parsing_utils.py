@@ -120,7 +120,7 @@ class _ImageNameParser:
     def __init__(
         self,
         default_cluster: str,
-        default_org: Optional[str],
+        default_org: str,
         default_project: str,
         registry_urls: Dict[str, URL],
     ):
@@ -264,7 +264,7 @@ class _ImageNameParser:
             org_name = self._default_org_name
         else:
             cluster_name = url.host
-            org_name = None
+            org_name = "NO_ORG"
         if url.path.startswith("/"):
             project_name, _, name = name.partition("/")
             if project_name == self._default_org_name and url.host:

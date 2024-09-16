@@ -171,7 +171,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
     return {
         "default": Cluster(
             name="default",
-            orgs=[None, "test-org"],
+            orgs=["NO_ORG", "test-org"],
             registry_url=URL("https://registry-dev.neu.ro"),
             storage_url=URL("https://storage-dev.neu.ro"),
             users_url=URL("https://users-dev.neu.ro"),
@@ -198,7 +198,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
         ),
         "another": Cluster(
             name="another",
-            orgs=["some-org", None],
+            orgs=["some-org", "NO_ORG"],
             registry_url=URL("https://registry2-dev.neu.ro"),
             storage_url=URL("https://storage2-dev.neu.ro"),
             users_url=URL("https://users2-dev.neu.ro"),
@@ -282,7 +282,7 @@ async def test_get_cluster_name_from_local(
                 credits_per_hour=Decimal("10"),
                 cpu=1,
                 memory=2 * 2**30,
-                resource_pool_names=[],
+                resource_pool_names=(),
             )
         }
 
@@ -300,7 +300,7 @@ async def test_get_cluster_name_from_local(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory=14 * 2**30,
-                resource_pool_names=[],
+                resource_pool_names=(),
             )
         }
 
@@ -361,14 +361,14 @@ async def test_presets(
                 cpu=7,
                 memory=14336 * 2**20,
                 scheduler_enabled=False,
-                resource_pool_names=[],
+                resource_pool_names=(),
             ),
             "cpu-small": Preset(
                 credits_per_hour=Decimal("10"),
                 cpu=7,
                 memory=2048 * 2**20,
                 scheduler_enabled=False,
-                resource_pool_names=[],
+                resource_pool_names=(),
             ),
             "nvidia-gpu-large": Preset(
                 credits_per_hour=Decimal("10"),
@@ -378,7 +378,7 @@ async def test_presets(
                 nvidia_gpu=1,
                 tpu_type=None,
                 tpu_software_version=None,
-                resource_pool_names=["nvidia-gpu"],
+                resource_pool_names=("nvidia-gpu",),
             ),
             "nvidia-gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
@@ -388,7 +388,7 @@ async def test_presets(
                 nvidia_gpu=1,
                 tpu_type=None,
                 tpu_software_version=None,
-                resource_pool_names=["nvidia-gpu"],
+                resource_pool_names=("nvidia-gpu",),
             ),
             "amd-gpu-large": Preset(
                 credits_per_hour=Decimal("10"),
@@ -398,7 +398,7 @@ async def test_presets(
                 amd_gpu=1,
                 tpu_type=None,
                 tpu_software_version=None,
-                resource_pool_names=["amd-gpu"],
+                resource_pool_names=("amd-gpu",),
             ),
             "amd-gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
@@ -408,7 +408,7 @@ async def test_presets(
                 amd_gpu=1,
                 tpu_type=None,
                 tpu_software_version=None,
-                resource_pool_names=["amd-gpu"],
+                resource_pool_names=("amd-gpu",),
             ),
             "intel-gpu-large": Preset(
                 credits_per_hour=Decimal("10"),
@@ -418,7 +418,7 @@ async def test_presets(
                 intel_gpu=1,
                 tpu_type=None,
                 tpu_software_version=None,
-                resource_pool_names=["intel-gpu"],
+                resource_pool_names=("intel-gpu",),
             ),
             "intel-gpu-small": Preset(
                 credits_per_hour=Decimal("10"),
@@ -428,7 +428,7 @@ async def test_presets(
                 intel_gpu=1,
                 tpu_type=None,
                 tpu_software_version=None,
-                resource_pool_names=["intel-gpu"],
+                resource_pool_names=("intel-gpu",),
             ),
         }
 
@@ -464,7 +464,7 @@ async def test_clusters(
         assert dict(client.config.clusters) == {
             "default": Cluster(
                 name="default",
-                orgs=[None],
+                orgs=["NO_ORG"],
                 registry_url=URL("https://registry-dev.neu.ro"),
                 storage_url=srv.make_url("/storage"),
                 users_url=srv.make_url("/"),
@@ -477,7 +477,7 @@ async def test_clusters(
             ),
             "another": Cluster(
                 name="another",
-                orgs=[None, "some_org"],
+                orgs=["NO_ORG", "some_org"],
                 registry_url=srv.make_url("/registry2"),
                 storage_url=srv.make_url("/storage2"),
                 users_url=srv.make_url("/"),
@@ -489,6 +489,16 @@ async def test_clusters(
                 presets=mock.ANY,
             ),
         }
+
+
+async def test_org_names(
+    aiohttp_server: _TestServerFactory, make_client: _MakeClient
+) -> None:
+    app = web.Application()
+    srv = await aiohttp_server(app)
+
+    async with make_client(srv.make_url("/")) as client:
+        assert client.config.available_orgs == ("NO_ORG", "some_org")
 
 
 async def test_project_name(
@@ -608,7 +618,7 @@ async def test_fetch(
         assert client.config.clusters == {
             "default": Cluster(
                 name="default",
-                orgs=[None, "some-org"],
+                orgs=["NO_ORG", "some-org"],
                 registry_url=URL(registry_url),
                 storage_url=URL(storage_url),
                 users_url=URL(users_url),
@@ -639,7 +649,7 @@ async def test_fetch(
         project = Project(
             name="some-project",
             cluster_name="default",
-            org_name=None,
+            org_name="NO_ORG",
             role="admin",
         )
         assert client.config.projects == {project.key: project}
@@ -827,7 +837,7 @@ async def test_switch_cluster_cant_keep_org_use_none(
         assert client.config.org_name == "test-org"
         await client.config.switch_cluster("another")
         assert client.config.cluster_name == "another"
-        assert client.config.org_name is None
+        assert client.config.org_name == "NO_ORG"
 
 
 async def test_switch_cluster_cant_keep_org_use_alphabetical(
@@ -888,7 +898,7 @@ async def test_switch_org(
     async with make_client(
         "https://example.org", clusters=multiple_clusters_config
     ) as client:
-        assert client.config.org_name is None
+        assert client.config.org_name == "NO_ORG"
         await client.config.switch_org("test-org")
         assert client.config.org_name == "test-org"
 
@@ -899,7 +909,7 @@ async def test_switch_org_select_first_available_cluster(
     async with make_client(
         "https://example.org", clusters=multiple_clusters_config
     ) as client:
-        assert client.config.org_name is None
+        assert client.config.org_name == "NO_ORG"
         await client.config.switch_org("some-org")
         assert client.config.org_name == "some-org"
         assert client.config.cluster_name == "another"
@@ -908,7 +918,7 @@ async def test_switch_org_select_first_available_cluster(
 async def test_switch_org_keep_project_use_none(make_client: _MakeClient) -> None:
     async with make_client("https://example.org") as client:
         await client.config.switch_cluster("another")
-        assert client.config.org_name is None
+        assert client.config.org_name == "NO_ORG"
         assert client.config.project_name == "test-project"
         await client.config.switch_org("some_org")
         assert client.config.org_name == "some_org"
@@ -923,8 +933,8 @@ async def test_switch_org_keep_project_use_alphabetical(
         await client.config.switch_org("some_org")
         assert client.config.org_name == "some_org"
         assert client.config.project_name is None
-        await client.config.switch_org(None)
-        assert client.config.org_name is None
+        await client.config.switch_org("NO_ORG")
+        assert client.config.org_name == "NO_ORG"
         assert client.config.project_name == "other-test-project"
 
 
@@ -942,12 +952,12 @@ async def test_switch_org_unknown(
     async with make_client(
         "https://example.org", clusters=multiple_clusters_config
     ) as client:
-        assert client.config.org_name is None
+        assert client.config.org_name == "NO_ORG"
         with pytest.raises(
             RuntimeError, match="Cannot find available cluster for org unknown"
         ):
             await client.config.switch_org("unknown")
-        assert client.config.org_name is None
+        assert client.config.org_name == "NO_ORG"
 
 
 async def test_switch_clusters_local(
@@ -996,7 +1006,7 @@ async def test_switch_org_local(
         local_conf.write_text(toml.dumps({"job": {"org-name": "test-org"}}))
         assert client.config.org_name == "test-org"
         with pytest.raises(RuntimeError, match=r"\.neuro\.toml"):
-            await client.config.switch_org(None)
+            await client.config.switch_org("not-exists")
         assert client.config.org_name == "test-org"
 
 
@@ -1019,7 +1029,7 @@ async def test_no_org_local(
         monkeypatch.chdir(local_dir)
         local_conf = proj_dir / ".neuro.toml"
         local_conf.write_text(toml.dumps({"job": {"org-name": "NO_ORG"}}))
-        assert client.config.org_name is None
+        assert client.config.org_name == "NO_ORG"
 
 
 async def test_switch_project(make_client: _MakeClient) -> None:

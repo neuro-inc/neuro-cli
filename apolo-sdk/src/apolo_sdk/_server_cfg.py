@@ -23,8 +23,8 @@ class Preset:
     preemptible_node: bool = False
     tpu_type: Optional[str] = None
     tpu_software_version: Optional[str] = None
-    resource_pool_names: Sequence[str] = ()
-    available_resource_pool_names: Sequence[str] = ()
+    resource_pool_names: tuple[str, ...] = ()
+    available_resource_pool_names: tuple[str, ...] = ()
 
     @property
     def memory_mb(self) -> int:
@@ -59,11 +59,11 @@ class Project:
     @dataclass(frozen=True)
     class Key:
         cluster_name: str
-        org_name: Optional[str]
+        org_name: str
         project_name: str
 
     cluster_name: str
-    org_name: Optional[str]
+    org_name: str
     name: str
     role: str
 
@@ -80,7 +80,7 @@ class Project:
 @dataclass(frozen=True)
 class Cluster:
     name: str
-    orgs: List[Optional[str]]
+    orgs: List[str]
     registry_url: URL
     storage_url: URL
     users_url: URL
@@ -104,7 +104,7 @@ def _parse_project_config(payload: Dict[str, Any]) -> Project:
     return Project(
         name=payload["name"],
         cluster_name=payload["cluster_name"],
-        org_name=payload.get("org_name"),
+        org_name=payload.get("org_name") or "NO_ORG",
         role=payload["role"],
     )
 
@@ -157,12 +157,19 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
             preemptible_node=data.get("preemptible_node", False),
             tpu_type=tpu_type,
             tpu_software_version=tpu_software_version,
-            resource_pool_names=data.get("resource_pool_names", ()),
-            available_resource_pool_names=data.get("available_resource_pool_names", ()),
+            resource_pool_names=tuple(data.get("resource_pool_names", ())),
+            available_resource_pool_names=tuple(
+                data.get("available_resource_pool_names", ())
+            ),
         )
+    orgs = payload.get("orgs")
+    if not orgs:
+        orgs = ["NO_ORG"]
+    else:
+        orgs = [org if org is not None else "NO_ORG" for org in orgs]
     cluster_config = Cluster(
         name=payload["name"],
-        orgs=payload.get("orgs", [None]),
+        orgs=orgs,
         registry_url=URL(payload["registry_url"]),
         storage_url=URL(payload["storage_url"]),
         users_url=URL(payload["users_url"]),

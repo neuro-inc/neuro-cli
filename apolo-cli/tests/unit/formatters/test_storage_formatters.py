@@ -417,7 +417,11 @@ class TestFilesFormatter:
 class TestUsageFormatter:
     def test_formatter(self, rich_cmp: Any) -> None:
         usage = DiskUsageInfo(
-            total=100000, used=80000, free=20000, cluster_name="default"
+            total=100000,
+            used=80000,
+            free=20000,
+            cluster_name="default",
+            org_name="test-org",
         )
         formatter = DiskUsageFormatter()
         rich_cmp(formatter(usage))

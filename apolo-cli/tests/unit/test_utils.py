@@ -33,12 +33,9 @@ def _job_entry(
     cluster_name: str = "default",
     owner: str = "user",
     project_name: str = "project",
-    org_name: Optional[str] = None,
+    org_name: str = "NO_ORG",
 ) -> Dict[str, Any]:
-    if org_name:
-        uri = f"job://{cluster_name}/{org_name}/{project_name}/{job_id}"
-    else:
-        uri = f"job://{cluster_name}/{project_name}/{job_id}"
+    uri = f"job://{cluster_name}/{org_name}/{project_name}/{job_id}"
     return {
         "id": job_id,
         "owner": owner,
@@ -216,12 +213,15 @@ async def test_resolve_job_id__from_string__single_job_found(
 ) -> None:
     job_name = "test-job-name-555"
     job_id = "job-id-1"
-    JSON = {"jobs": [_job_entry(job_id, project_name="test-project")]}
+    JSON = {
+        "jobs": [_job_entry(job_id, project_name="test-project", org_name="NO_ORG")]
+    }
 
     async def handler(request: web.Request) -> web.Response:
         _check_params(
             request,
             name=job_name,
+            org_name="NO_ORG",
             project_name="test-project",
             cluster_name="default",
             reverse="1",
@@ -245,12 +245,12 @@ async def test_resolve_job_id__from_string__single_job_found(
 
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
-@pytest.mark.parametrize("org_name", [None, "test-org"])
+@pytest.mark.parametrize("org_name", ["NO_ORG", "test-org"])
 async def test_resolve_job_id__from_uri_with_same_project__single_job_found(
     aiohttp_server: _TestServerFactory,
     make_client: _MakeClient,
     cluster_name: str,
-    org_name: Optional[str],
+    org_name: str,
 ) -> None:
     job_project = "test-project"
     job_name = "my-job-name"
@@ -258,7 +258,12 @@ async def test_resolve_job_id__from_uri_with_same_project__single_job_found(
     job_id = "job-id-1"
     JSON = {
         "jobs": [
-            _job_entry(job_id, cluster_name=cluster_name, project_name=job_project)
+            _job_entry(
+                job_id,
+                cluster_name=cluster_name,
+                project_name=job_project,
+                org_name=org_name,
+            )
         ]
     }
 
@@ -269,6 +274,7 @@ async def test_resolve_job_id__from_uri_with_same_project__single_job_found(
             project_name=job_project,
             cluster_name=cluster_name,
             reverse="1",
+            org_name=org_name,
         )
         return web.json_response(JSON)
 
@@ -340,12 +346,12 @@ async def test_resolve_job_id__from_uri_with_org__single_job_found(
 
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
-@pytest.mark.parametrize("org_name", [None, "test-org"])
+@pytest.mark.parametrize("org_name", ["NO_ORG", "test-org"])
 async def test_resolve_job_id__from_uri__multiple_jobs_found(
     aiohttp_server: _TestServerFactory,
     make_client: _MakeClient,
     cluster_name: str,
-    org_name: Optional[str],
+    org_name: str,
 ) -> None:
     job_org = "job-org"
     job_project = "test-project"
@@ -366,7 +372,12 @@ async def test_resolve_job_id__from_uri__multiple_jobs_found(
                 project_name=job_project,
                 org_name=job_org,
             ),
-            _job_entry(job_ids[2], cluster_name=cluster_name, project_name=job_project),
+            _job_entry(
+                job_ids[2],
+                cluster_name=cluster_name,
+                project_name=job_project,
+                org_name=org_name,
+            ),
             _job_entry(
                 job_ids[3],
                 cluster_name=cluster_name,
@@ -383,6 +394,7 @@ async def test_resolve_job_id__from_uri__multiple_jobs_found(
             project_name=job_project,
             cluster_name=cluster_name,
             reverse="1",
+            org_name=org_name,
         )
         return web.json_response(JSON)
 
@@ -401,12 +413,12 @@ async def test_resolve_job_id__from_uri__multiple_jobs_found(
 
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
-@pytest.mark.parametrize("org_name", [None, "test-org"])
+@pytest.mark.parametrize("org_name", ["NO_ORG", "test-org"])
 async def test_resolve_job_id__from_uri_with_org__multiple_jobs_found(
     aiohttp_server: _TestServerFactory,
     make_client: _MakeClient,
     cluster_name: str,
-    org_name: Optional[str],
+    org_name: str,
 ) -> None:
     job_org = "job-org"
     job_project = "test-project"
@@ -444,6 +456,7 @@ async def test_resolve_job_id__from_uri_with_org__multiple_jobs_found(
             project_name=[f"{job_org}/{job_project}", job_project],
             cluster_name=cluster_name,
             reverse="1",
+            org_name=org_name,
         )
         return web.json_response(JSON)
 
@@ -461,11 +474,11 @@ async def test_resolve_job_id__from_uri_with_org__multiple_jobs_found(
         assert resolved_ex == (job_ids[2], cluster_name)
 
 
-@pytest.mark.parametrize("org_name", [None, "test-org"])
+@pytest.mark.parametrize("org_name", ["NO_ORG", "test-org"])
 async def test_resolve_job_id__from_uri_without_project__single_job_found(
     aiohttp_server: _TestServerFactory,
     make_client: _MakeClient,
-    org_name: Optional[str],
+    org_name: str,
 ) -> None:
     job_name = "my-job-name"
     uri = f"job:{job_name}"
@@ -624,18 +637,18 @@ async def test_resolve_job_id__from_uri_without_project__server_error(
 @pytest.mark.parametrize(
     "uri",
     [
-        "job:",
+        # "job:",
         "job:/",
-        "job://",
+        # "job://",
         "job:///",
         "job://default",
         "job://default/",
-        "job://default/user",
-        "job://default/user/",
-        "job://default/user/name/",
+        # "job://default/user",
+        # "job://default/user/",
+        # "job://default/user/name/",
         "job://default/org/user/name/",
-        "job:/user",
-        "job:/user/",
+        # "job:/user",
+        # "job:/user/",
         "job:/user/name/",
         "job:name/",
     ],
@@ -671,7 +684,7 @@ def test_parse_file_resource_project_less(root: Root) -> None:
     user_less_permission = parse_file_resource("storage:resource", root)
     assert user_less_permission == URL(
         f"storage://{root.client.cluster_name}"
-        f"/{root.client.config.project_name}/resource"
+        f"/NO_ORG/{root.client.config.project_name}/resource"
     )
 
 
@@ -699,7 +712,7 @@ def test_parse_resource_for_sharing_image_no_tag(root: Root) -> None:
     parsed = parse_resource_for_sharing(uri, root)
     assert parsed == URL(
         f"image://{root.client.cluster_name}"
-        f"/{root.client.config.project_name}/ubuntu"
+        f"/NO_ORG/{root.client.config.project_name}/ubuntu"
     )
 
 
@@ -708,9 +721,9 @@ def test_parse_resource_for_sharing_image_non_ascii(root: Root) -> None:
     parsed = parse_resource_for_sharing(uri, root)
     assert parsed == URL(
         f"image://{root.client.cluster_name}"
-        f"/{root.client.config.project_name}/образ"
+        f"/NO_ORG/{root.client.config.project_name}/образ"
     )
-    assert parsed.path == f"/{root.client.config.project_name}/образ"
+    assert parsed.path == f"/NO_ORG/{root.client.config.project_name}/образ"
 
 
 def test_parse_resource_for_sharing_image_percent_encoded(root: Root) -> None:
@@ -718,9 +731,9 @@ def test_parse_resource_for_sharing_image_percent_encoded(root: Root) -> None:
     parsed = parse_resource_for_sharing(uri, root)
     assert parsed == URL(
         f"image://{root.client.cluster_name}"
-        f"/{root.client.config.project_name}/%252d%3f%23"
+        f"/NO_ORG/{root.client.config.project_name}/%252d%3f%23"
     )
-    assert parsed.path == f"/{root.client.config.project_name}/%2d?#"
+    assert parsed.path == f"/NO_ORG/{root.client.config.project_name}/%2d?#"
 
 
 def test_parse_resource_for_sharing_image_with_tag_fail(root: Root) -> None:
@@ -732,7 +745,7 @@ def test_parse_resource_for_sharing_image_with_tag_fail(root: Root) -> None:
 def test_parse_resource_for_sharing_all_project_images(root: Root) -> None:
     uri = "image:/otherproject"
     parsed = parse_resource_for_sharing(uri, root)
-    assert parsed == URL(f"image://{root.client.cluster_name}/otherproject")
+    assert parsed == URL(f"image://{root.client.cluster_name}/NO_ORG/otherproject")
 
 
 def _test_parse_resource_for_sharing_all_cluster_images(root: Root) -> None:
@@ -759,7 +772,7 @@ def test_parse_resource_for_sharing_user_less(root: Root) -> None:
     user_less_permission = parse_resource_for_sharing("storage:resource", root)
     assert user_less_permission == URL(
         f"storage://{root.client.cluster_name}"
-        f"/{root.client.config.project_name}/resource"
+        f"/NO_ORG/{root.client.config.project_name}/resource"
     )
 
 

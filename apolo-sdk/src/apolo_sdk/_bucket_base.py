@@ -135,7 +135,7 @@ class Bucket:
     id: str
     owner: str
     cluster_name: str
-    org_name: Optional[str]
+    org_name: str
     project_name: str
     provider: "Bucket.Provider"
     created_at: datetime

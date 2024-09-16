@@ -47,12 +47,7 @@ from ._file_utils import FileSystem, FileTransferer, LocalFS, rm
 from ._parser import Parser
 from ._rewrite import rewrite_module
 from ._url_utils import _extract_path, normalize_local_path_uri
-from ._utils import (
-    ORG_NAME_SENTINEL,
-    NoPublicConstructor,
-    OrgNameSentinel,
-    asyncgeneratorcontextmanager,
-)
+from ._utils import NoPublicConstructor, asyncgeneratorcontextmanager
 
 
 class BucketFS(FileSystem[PurePosixPath]):
@@ -195,7 +190,7 @@ class Buckets(metaclass=NoPublicConstructor):
             imported=payload.get("imported", False),
             public=payload.get("public", False),
             cluster_name=self._config.cluster_name,
-            org_name=payload.get("org_name"),
+            org_name=payload.get("org_name") or "NO_ORG",
             project_name=payload["project_name"],
         )
 
@@ -215,14 +210,10 @@ class Buckets(metaclass=NoPublicConstructor):
 
     def _get_bucket_url_params(
         self,
-        org_name: Union[Optional[str], OrgNameSentinel],
+        org_name: Optional[str],
         project_name: Optional[str],
     ) -> Dict[str, Any]:
-        org_name_val = (
-            org_name
-            if not isinstance(org_name, OrgNameSentinel)
-            else self._config.org_name
-        )
+        org_name_val = org_name or self._config.org_name
         params = {
             "org_name": org_name_val or "NO_ORG",
             "project_name": project_name or self._config.project_name_or_raise,
@@ -233,15 +224,14 @@ class Buckets(metaclass=NoPublicConstructor):
     async def list(
         self,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> AsyncIterator[Bucket]:
         url = self._get_buckets_url(cluster_name)
         auth = await self._config._api_auth()
         headers = {"Accept": "application/x-ndjson"}
         params = {}
-        if not isinstance(org_name, OrgNameSentinel):
-            params["org_name"] = org_name or "NO_ORG"
+        params["org_name"] = org_name or self._config.org_name
         if project_name:
             params["project_name"] = project_name
         async with self._core.request(
@@ -262,18 +252,14 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> Bucket:
         url = self._get_buckets_url(cluster_name)
         auth = await self._config._api_auth()
         data = {
             "name": name,
-            "org_name": (
-                org_name
-                if not isinstance(org_name, OrgNameSentinel)
-                else self._config.org_name
-            ),
+            "org_name": org_name or self._config.org_name,
             "project_name": project_name or self._config.project_name_or_raise,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
@@ -287,7 +273,7 @@ class Buckets(metaclass=NoPublicConstructor):
         credentials: Mapping[str, str],
         name: Optional[str] = None,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> Bucket:
         url = self._get_buckets_url(cluster_name) / "import" / "external"
@@ -297,11 +283,7 @@ class Buckets(metaclass=NoPublicConstructor):
             "provider": provider.value,
             "provider_bucket_name": provider_bucket_name,
             "credentials": credentials,
-            "org_name": (
-                org_name
-                if not isinstance(org_name, OrgNameSentinel)
-                else self._config.org_name
-            ),
+            "org_name": org_name or self._config.org_name,
             "project_name": project_name or self._config.project_name_or_raise,
         }
         async with self._core.request("POST", url, auth=auth, json=data) as resp:
@@ -312,7 +294,7 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         bucket_id_or_name: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> Bucket:
         url = self._get_buckets_url(cluster_name) / bucket_id_or_name
@@ -326,7 +308,7 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         bucket_id_or_name: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> None:
         url = self._get_buckets_url(cluster_name) / bucket_id_or_name
@@ -340,7 +322,7 @@ class Buckets(metaclass=NoPublicConstructor):
         bucket_id_or_name: str,
         public_access: bool,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> Bucket:
         url = self._get_buckets_url(cluster_name) / bucket_id_or_name
@@ -359,7 +341,7 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         bucket_id_or_name: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> BucketCredentials:
         url = (
@@ -378,7 +360,7 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         bucket_id_or_name: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> AsyncIterator[BucketUsage]:
         total_bytes = 0
@@ -418,7 +400,7 @@ class Buckets(metaclass=NoPublicConstructor):
         self,
         bucket_id_or_name: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> AsyncIterator[BucketProvider]:
         bucket = await self.get(
@@ -473,7 +455,7 @@ class Buckets(metaclass=NoPublicConstructor):
         bucket_id_or_name: str,
         key: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> BucketEntry:
         async with self._get_provider_by_exact(
@@ -490,7 +472,7 @@ class Buckets(metaclass=NoPublicConstructor):
         key: str,
         body: Union[AsyncIterator[bytes], bytes],
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> None:
         async with self._get_provider_by_exact(
@@ -508,7 +490,7 @@ class Buckets(metaclass=NoPublicConstructor):
         key: str,
         offset: int = 0,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> AsyncIterator[bytes]:
         async with self._get_provider_by_exact(
@@ -526,7 +508,7 @@ class Buckets(metaclass=NoPublicConstructor):
         bucket_id_or_name: str,
         key: str,
         cluster_name: Optional[str] = None,
-        org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+        org_name: Optional[str] = None,
         project_name: Optional[str] = None,
     ) -> None:
         async with self._get_provider_by_exact(

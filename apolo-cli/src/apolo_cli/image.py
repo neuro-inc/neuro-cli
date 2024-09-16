@@ -22,7 +22,7 @@ from .formatters.images import (
 )
 from .formatters.utils import ImageFormatter, image_formatter, uri_formatter
 from .root import Root
-from .utils import argument, command, format_size, group, option, parse_org_name
+from .utils import argument, command, format_size, group, option
 
 log = logging.getLogger(__name__)
 
@@ -152,7 +152,7 @@ async def ls(
     if all_orgs:
         org_names = None
     elif org:
-        org_names = {parse_org_name(o, root) for o in org}
+        org_names = set(org)
     else:
         org_names = {root.client.config.org_name}
     if org_names:

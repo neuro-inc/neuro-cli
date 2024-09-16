@@ -12,7 +12,6 @@ from rich.text import Text
 from apolo_sdk import Disk
 
 from apolo_cli import utils
-from apolo_cli.click_types import ORG
 from apolo_cli.formatters.utils import DatetimeFormatter, URIFormatter, format_timedelta
 
 
@@ -53,7 +52,7 @@ class DisksFormatter(BaseDisksFormatter):
         ]
         if self._long_format:
             line += [
-                disk.org_name or ORG.NO_ORG_STR,
+                disk.org_name,
                 disk.project_name,
                 self._datetime_formatter(disk.created_at),
                 self._datetime_formatter(disk.last_usage),
@@ -104,7 +103,7 @@ class DiskFormatter:
         table.add_row("Uri", self._uri_formatter(disk.uri))
         if disk.name:
             table.add_row("Name", disk.name)
-        table.add_row("Org name", disk.org_name or ORG.NO_ORG_STR)
+        table.add_row("Org name", disk.org_name)
         table.add_row("Project name", disk.project_name)
         table.add_row("Owner", disk.owner)
         table.add_row("Status", disk.status.value)

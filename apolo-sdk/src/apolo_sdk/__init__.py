@@ -145,12 +145,7 @@ from ._storage import DiskUsageInfo, FileStatus, FileStatusType, Storage
 from ._tracing import gen_trace_id
 from ._url_utils import CLUSTER_SCHEMES as SCHEMES
 from ._users import Action, Permission, Quota, Share, Users
-from ._utils import (
-    ORG_NAME_SENTINEL,
-    OrgNameSentinel,
-    _ContextManager,
-    find_project_root,
-)
+from ._utils import _ContextManager, find_project_root
 
 __version__ = "24.8.1"
 
@@ -213,8 +208,6 @@ __all__ = (
     "LocalImage",
     "NDJSONError",
     "NotSupportedError",
-    "ORG_NAME_SENTINEL",
-    "OrgNameSentinel",
     "PASS_CONFIG_ENV_NAME",
     "Parser",
     "Permission",

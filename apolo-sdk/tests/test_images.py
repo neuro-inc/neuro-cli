@@ -36,7 +36,7 @@ def patch_docker_host() -> Iterator[None]:
 class TestImageParser:
     parser = _ImageNameParser(
         default_cluster="default",
-        default_org=None,
+        default_org="NO_ORG",
         default_project="test-project",
         registry_urls={
             "default": URL("https://reg.neu.ro"),
@@ -111,7 +111,7 @@ class TestImageParser:
     def test_get_registry_hostname(self, registry_url: str) -> None:
         parser = _ImageNameParser(
             default_cluster="test-cluster",
-            default_org=None,
+            default_org="NO_ORG",
             default_project="test-project",
             registry_urls={"test-cluster": URL(registry_url)},
         )
@@ -123,7 +123,7 @@ class TestImageParser:
     def test_get_registry_hostname_with_port(self, registry_url: str) -> None:
         parser = _ImageNameParser(
             default_cluster="test-cluster",
-            default_org=None,
+            default_org="NO_ORG",
             default_project="test-project",
             registry_urls={"test-cluster": URL(registry_url)},
         )
@@ -139,7 +139,7 @@ class TestImageParser:
         with pytest.raises(ValueError, match="Empty hostname in registry URL"):
             _ImageNameParser(
                 default_cluster="test-cluster",
-                default_org=None,
+                default_org="NO_ORG",
                 default_project="test-project",
                 registry_urls={"test-cluster": URL(registry_url)},
             )
@@ -333,7 +333,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="another",
             registry="example.org",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -382,7 +382,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="another",
             registry="example.org",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="org",
         )
 
@@ -395,7 +395,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="another",
             registry="example.org",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="test-org",
         )
 
@@ -409,7 +409,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="another",
             registry="example.org",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -423,7 +423,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="another",
             registry="example.org",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -437,7 +437,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="another",
             registry="example.org",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -451,7 +451,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="another",
             registry="example.org",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -474,7 +474,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="test-project",
         )
 
@@ -488,7 +488,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="test-project",
         )
 
@@ -502,7 +502,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="test-project",
         )
 
@@ -516,7 +516,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="test-project",
         )
 
@@ -535,7 +535,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -547,7 +547,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -566,7 +566,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -580,7 +580,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -613,7 +613,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -625,7 +625,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -644,7 +644,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -658,7 +658,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -677,7 +677,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -691,7 +691,7 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -710,7 +710,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -722,7 +722,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -770,7 +770,7 @@ class TestImageParser:
 
     def test_parse_as_apolo_image_with_registry_prefix(self) -> None:
         image = self.parser.parse_as_platform_image("reg.neu.ro/project/image:tag")
-        assert str(image) == "image://default/project/image:tag"
+        assert str(image) == "image://default/NO_ORG/project/image:tag"
 
     def test_parse_as_apolo_image_with_registry_prefix_special_chars(self) -> None:
         with pytest.raises(ValueError, match="invalid image name"):
@@ -791,7 +791,7 @@ class TestImageParser:
             tag=None,
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="test-project",
         )
 
@@ -822,7 +822,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="default",
             registry="reg.com",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
         local_image = self.parser.convert_to_local_image(platform_image)
@@ -836,7 +836,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="test-project",
         )
 
@@ -860,7 +860,7 @@ class TestImageParser:
             tag="v20.04",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
@@ -872,7 +872,7 @@ class TestImageParser:
             tag="v20.04",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="test-project",
         )
 
@@ -884,7 +884,7 @@ class TestImageParser:
             tag="v20.04",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="test-project",
         )
 
@@ -910,7 +910,7 @@ class TestImageParser:
             tag="latest",
             cluster_name="default",
             registry="reg.neu.ro",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="test-project",
         )
 
@@ -922,7 +922,7 @@ class TestImageParser:
     def test_parse_as_local_image__registry_has_port__platform_registry(self) -> None:
         my_parser = _ImageNameParser(
             default_cluster="test-cluster",
-            default_org=None,
+            default_org="NO_ORG",
             default_project="test-project",
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
@@ -933,7 +933,7 @@ class TestImageParser:
     def test_parse_as_apolo_image__registry_has_port__platform_image(self) -> None:
         my_parser = _ImageNameParser(
             default_cluster="test-cluster",
-            default_org=None,
+            default_org="NO_ORG",
             default_project="test-project",
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
@@ -944,14 +944,14 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="test-cluster",
             registry="localhost:5000",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
     def test_parse_as_apolo_image__registry_has_port__image_in_good_repo(self) -> None:
         my_parser = _ImageNameParser(
             default_cluster="test-cluster",
-            default_org=None,
+            default_org="NO_ORG",
             default_project="test-project",
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
@@ -962,14 +962,14 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="test-cluster",
             registry="localhost:5000",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
     def test_parse_as_apolo_image__registry_has_port__image_in_bad_repo(self) -> None:
         my_parser = _ImageNameParser(
             default_cluster="test-cluster",
-            default_org=None,
+            default_org="NO_ORG",
             default_project="test-project",
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
@@ -980,7 +980,7 @@ class TestImageParser:
     def test_parse_remote__registry_has_port__platform_image(self) -> None:
         my_parser = _ImageNameParser(
             default_cluster="test-cluster",
-            default_org=None,
+            default_org="NO_ORG",
             default_project="test-project",
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
@@ -991,14 +991,14 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="test-cluster",
             registry="localhost:5000",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
     def test_parse_remote__registry_has_port__image_in_good_repo(self) -> None:
         my_parser = _ImageNameParser(
             default_cluster="test-cluster",
-            default_org=None,
+            default_org="NO_ORG",
             default_project="test-project",
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
@@ -1009,14 +1009,14 @@ class TestImageParser:
             tag="v10.04",
             cluster_name="test-cluster",
             registry="localhost:5000",
-            org_name=None,
+            org_name="NO_ORG",
             project_name="project",
         )
 
     def test_parse_remote__registry_has_port__image_in_other_repo(self) -> None:
         my_parser = _ImageNameParser(
             default_cluster="test-cluster",
-            default_org=None,
+            default_org="NO_ORG",
             default_project="test-project",
             registry_urls={"test-cluster": URL("http://localhost:5000")},
         )
@@ -1099,7 +1099,7 @@ class TestRemoteImage:
 class TestImages:
     parser = _ImageNameParser(
         default_cluster="default",
-        default_org=None,
+        default_org="NO_ORG",
         default_project="test-project",
         registry_urls={"default": URL("https://registry-dev.neu.ro")},
     )
@@ -1212,7 +1212,7 @@ class TestImages:
         patched_tag.return_value = True
         patched_push.return_value = message_generator()
         image = self.parser.parse_as_platform_image(
-            "image://default/test-project/bananas:latest"
+            "image://default/NO_ORG/test-project/bananas:latest"
         )
         local_image = self.parser.parse_as_local_image("bananas:latest")
         async with make_client("https://api.localhost.localdomain") as client:
@@ -1331,7 +1331,7 @@ class TestRegistry:
                 tag=None,
                 cluster_name="default",
                 registry=registry,
-                org_name=None,
+                org_name="NO_ORG",
                 project_name="project1",
             ),
             RemoteImage.new_platform_image(
@@ -1339,7 +1339,7 @@ class TestRegistry:
                 tag=None,
                 cluster_name="default",
                 registry=registry,
-                org_name=None,
+                org_name="NO_ORG",
                 project_name="project2",
             ),
         }
@@ -1388,7 +1388,7 @@ class TestRegistry:
                 tag=None,
                 cluster_name="default",
                 registry=registry,
-                org_name=None,
+                org_name="NO_ORG",
                 project_name="project1",
             ),
             RemoteImage.new_platform_image(
@@ -1396,7 +1396,7 @@ class TestRegistry:
                 tag=None,
                 cluster_name="default",
                 registry=registry,
-                org_name=None,
+                org_name="NO_ORG",
                 project_name="project3",
             ),
             RemoteImage.new_platform_image(
@@ -1404,7 +1404,7 @@ class TestRegistry:
                 tag=None,
                 cluster_name="default",
                 registry=registry,
-                org_name=None,
+                org_name="NO_ORG",
                 project_name="project2",
             ),
         }

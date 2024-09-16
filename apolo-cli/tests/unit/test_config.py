@@ -45,7 +45,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
                 "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=1, memory=2**30)
             },
             name="first",
-            orgs=[None],
+            orgs=["NO_ORG"],
         ),
         "second": Cluster(
             registry_url=URL("https://registry2-dev.neu.ro"),
@@ -68,7 +68,7 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
                 "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=2, memory=2**30)
             },
             name="second",
-            orgs=[None],
+            orgs=["NO_ORG"],
         ),
     }
 
@@ -133,7 +133,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
                 "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=1, memory=2**30)
             },
             name="first",
-            orgs=[None],
+            orgs=["NO_ORG"],
         ),
         "second": Cluster(
             registry_url=URL("https://registry2-dev.neu.ro"),
@@ -156,7 +156,7 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
                 "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=2, memory=2**30)
             },
             name="second",
-            orgs=[None],
+            orgs=["NO_ORG"],
         ),
     }
 
@@ -222,10 +222,12 @@ def test_prompt_project(make_client: Callable[..., Client]) -> None:
             presets={
                 "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=1, memory=2**30)
             },
-            orgs=[None],
+            orgs=["NO_ORG"],
         ),
     }
-    project = Project(name="main", cluster_name="default", org_name=None, role="owner")
+    project = Project(
+        name="main", cluster_name="default", org_name="NO_ORG", role="owner"
+    )
     projects = {project.key: project}
 
     root = Root(
@@ -289,10 +291,12 @@ def test_prompt_project_default(make_client: Callable[..., Client]) -> None:
             presets={
                 "cpu-small": Preset(credits_per_hour=Decimal("10"), cpu=1, memory=2**30)
             },
-            orgs=[None],
+            orgs=["NO_ORG"],
         ),
     }
-    project = Project(name="main", cluster_name="default", org_name=None, role="owner")
+    project = Project(
+        name="main", cluster_name="default", org_name="NO_ORG", role="owner"
+    )
     projects = {project.key: project}
 
     root = Root(

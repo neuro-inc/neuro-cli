@@ -12,7 +12,6 @@ from rich.text import Text
 
 from apolo_sdk import ServiceAccount
 
-from apolo_cli.click_types import ORG
 from apolo_cli.formatters.utils import DatetimeFormatter
 
 
@@ -76,7 +75,7 @@ class ServiceAccountFormatter:
         table.add_row("Role", account.role)
         table.add_row("Owner", account.owner)
         table.add_row("Default cluster", account.default_cluster)
-        table.add_row("Default org", account.default_org or ORG.NO_ORG_STR)
+        table.add_row("Default org", account.default_org)
         table.add_row("Default project", account.default_project)
         table.add_row("Created at", self._datetime_formatter(account.created_at))
         return table

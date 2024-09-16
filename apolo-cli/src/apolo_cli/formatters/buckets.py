@@ -10,7 +10,6 @@ from rich.text import Text
 
 from apolo_sdk import Bucket
 
-from apolo_cli.click_types import ORG
 from apolo_cli.formatters.utils import DatetimeFormatter, URIFormatter
 
 
@@ -46,7 +45,7 @@ class BucketsFormatter(BaseBucketsFormatter):
         ]
         if self._long_format:
             line += [
-                bucket.org_name or ORG.NO_ORG_STR,
+                bucket.org_name,
                 bucket.project_name,
                 self._datetime_formatter(bucket.created_at),
                 "√" if bucket.public else "×",
@@ -93,7 +92,7 @@ class BucketFormatter:
         table.add_row("Uri", self._uri_formatter(bucket.uri))
         if bucket.name:
             table.add_row("Name", bucket.name)
-        table.add_row("Org name", bucket.org_name or ORG.NO_ORG_STR)
+        table.add_row("Org name", bucket.org_name)
         table.add_row("Project name", bucket.project_name)
         table.add_row("Created at", self._datetime_formatter(bucket.created_at))
         table.add_row("Provider", bucket.provider)

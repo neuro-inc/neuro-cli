@@ -29,6 +29,7 @@ async def test_list(
                     "status": "Ready",
                     "created_at": created_at.isoformat(),
                     "name": None,
+                    "org_name": "NO_ORG",
                 },
                 {
                     "id": "disk-2",
@@ -65,7 +66,7 @@ async def test_list(
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
             project_name="test-project",
-            org_name=None,
+            org_name="NO_ORG",
             created_at=created_at,
             timeout_unused=None,
             name=None,
@@ -99,7 +100,7 @@ async def test_add(
             "storage": 500,
             "life_span": 3600,
             "name": "test-disk",
-            "org_name": None,
+            "org_name": "NO_ORG",
             "project_name": "test-project",
         }
         return web.json_response(
@@ -129,7 +130,7 @@ async def test_add(
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
             project_name=client.config.project_name_or_raise,
-            org_name=None,
+            org_name="NO_ORG",
             created_at=created_at,
             timeout_unused=timedelta(hours=1),
             name="test-disk",
@@ -212,7 +213,7 @@ async def test_add_with_custom_project_name(
             "storage": 500,
             "life_span": 3600,
             "name": "test-disk",
-            "org_name": None,
+            "org_name": "NO_ORG",
             "project_name": "other-project",
         }
         return web.json_response(resp_pl)
@@ -234,7 +235,7 @@ async def test_add_with_custom_project_name(
         id="disk-1",
         storage=500,
         owner="user",
-        org_name=None,
+        org_name="NO_ORG",
         status=Disk.Status.READY,
         cluster_name=cluster_config.name,
         project_name="other-project",
@@ -300,7 +301,7 @@ async def test_get(
             owner="user",
             status=Disk.Status.READY,
             cluster_name=cluster_config.name,
-            org_name=None,
+            org_name="NO_ORG",
             project_name="some-project",
             created_at=created_at,
         )

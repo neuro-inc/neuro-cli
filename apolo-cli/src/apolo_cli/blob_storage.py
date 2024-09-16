@@ -8,7 +8,6 @@ from rich.text import Text
 from yarl import URL
 
 from apolo_sdk import (
-    ORG_NAME_SENTINEL,
     Bucket,
     Client,
     FileFilter,
@@ -55,7 +54,6 @@ from .utils import (
     format_size,
     group,
     option,
-    parse_org_name,
     resolve_bucket,
     resolve_bucket_credential,
 )
@@ -126,9 +124,9 @@ async def lsbucket(
         )
 
     if all_orgs:
-        org_name = ORG_NAME_SENTINEL
+        org_name = None
     else:
-        org_name = parse_org_name(org, root)  # type: ignore
+        org_name = org
 
     if all_projects:
         project_name = None
@@ -183,7 +181,7 @@ async def mkbucket(
     """
     Create a new bucket.
     """
-    org_name = parse_org_name(org, root)
+    org_name = org
     bucket = await root.client.buckets.create(
         name=name,
         cluster_name=cluster,
@@ -320,7 +318,7 @@ async def importbucket(
     """
     Import an existing bucket.
     """
-    org_name = parse_org_name(org, root)
+    org_name = org
     provider_type = Bucket.Provider(provider)
     credentials = {}
     if provider_type == Bucket.Provider.AWS:
@@ -404,7 +402,7 @@ async def statbucket(
     """
     Get bucket BUCKET.
     """
-    org_name = parse_org_name(org, root)
+    org_name = org
     bucket_obj = await root.client.buckets.get(
         bucket,
         cluster_name=cluster,
@@ -463,7 +461,7 @@ async def du(
     """
     Get storage usage for BUCKET.
     """
-    org_name = parse_org_name(org, root)
+    org_name = org
     bucket_obj = await root.client.buckets.get(
         bucket,
         cluster_name=cluster,
@@ -530,7 +528,7 @@ async def rmbucket(
     """
     Remove bucket BUCKET.
     """
-    org_name = parse_org_name(org, root)
+    org_name = org
     for bucket in buckets:
         bucket_id = await resolve_bucket(
             bucket,
@@ -586,7 +584,7 @@ async def set_bucket_publicity(
       apolo blob set-bucket-publicity my-bucket private
     """
     public = public_level == "public"
-    org_name = parse_org_name(org, root)
+    org_name = org
     await root.client.buckets.set_public_access(
         bucket,
         public,
@@ -1147,7 +1145,7 @@ async def mkcredentials(
     """
     Create a new bucket credential.
     """
-    org_name = parse_org_name(org, root)
+    org_name = org
     bucket_ids = [
         await resolve_bucket(
             bucket,

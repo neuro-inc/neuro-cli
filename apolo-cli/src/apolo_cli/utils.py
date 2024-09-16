@@ -32,15 +32,7 @@ import humanize
 from aiohttp import ClientResponseError
 from yarl import URL
 
-from apolo_sdk import (
-    ORG_NAME_SENTINEL,
-    Action,
-    Client,
-    JobStatus,
-    OrgNameSentinel,
-    ResourceNotFound,
-    Volume,
-)
+from apolo_sdk import Action, Client, JobStatus, ResourceNotFound, Volume
 
 from .parse_utils import parse_timedelta
 from .root import Root
@@ -453,14 +445,14 @@ async def resolve_job_ex(
         project, _, id_or_name = uri.path.lstrip("/").rpartition("/")
         project_names: Dict[str, Optional[str]] = {}
         if "/" not in project:
-            project_names[project] = None
+            project_names[project] = default_org
         elif default_org and project.startswith(default_org + "/"):
             org_name, _, project = project.partition("/")
             project_names[project] = org_name
         elif project == default_project or project.startswith(default_project + "/"):
-            project_names[project] = None
+            project_names[project] = default_org
         else:
-            project_names[project] = None
+            project_names[project] = default_org
             org_name, _, project = project.partition("/")
             project_names[project] = org_name
 
@@ -511,7 +503,7 @@ async def resolve_disk(
     *,
     client: Client,
     cluster_name: Optional[str] = None,
-    org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+    org_name: Optional[str] = None,
     project_name: Optional[str] = None,
 ) -> str:
     if isinstance(id_or_name_or_uri, URL):
@@ -529,7 +521,7 @@ async def resolve_disk(
             cluster = client.config.clusters[cluster_name]
             org_name = possible_org if possible_org in cluster.orgs else None
         else:
-            org_name = ORG_NAME_SENTINEL
+            org_name = None
         if cluster_name and org_name:
             project_name = "/".join(id_or_name_or_uri.parts[2:-1])
         else:
@@ -565,7 +557,7 @@ async def resolve_bucket(
     *,
     client: Client,
     cluster_name: Optional[str] = None,
-    org_name: Union[Optional[str], OrgNameSentinel] = ORG_NAME_SENTINEL,
+    org_name: Optional[str] = None,
     project_name: Optional[str] = None,
 ) -> str:
     # Temporary fast path.
@@ -641,10 +633,6 @@ def parse_permission_action(action: str) -> Action:
         raise ValueError(
             f"invalid permission action '{action}', allowed values: {valid_actions}"
         )
-
-
-def parse_org_name(org: Optional[str], root: Root) -> Optional[str]:
-    return None if org == "NO_ORG" else (org or root.client.config.org_name)
 
 
 def format_size(value: Optional[float]) -> str:
