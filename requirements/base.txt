@@ -20,4 +20,4 @@ pyyaml==6.0.2
 rich==13.8.1
 toml==0.10.2
 wcwidth==0.2.13
-yarl==1.13.0
+yarl==1.13.1
