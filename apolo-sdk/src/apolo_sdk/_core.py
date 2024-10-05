@@ -208,9 +208,7 @@ class _Core:
             err_text = str(e)
             if e.headers:
                 assert isinstance(e.headers, Mapping)
-                err_text = e.headers.get(  # type: ignore[call-overload]
-                    "X-Error", err_text
-                )
+                err_text = e.headers.get("X-Error", err_text)
             self._raise_error(e.status, err_text)
 
 
