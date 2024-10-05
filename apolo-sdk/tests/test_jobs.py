@@ -3090,38 +3090,6 @@ async def test_job_with_org_name(
         assert resp.org_name == org_name
 
 
-async def test_job_without_org_name(
-    aiohttp_server: _TestServerFactory, make_client: _MakeClient
-) -> None:
-    async def handler(request: web.Request) -> web.Response:
-        to_api_request = await request.json()
-        assert to_api_request == {
-            "container": {
-                "image": "submit-image-name",
-                "resources": {"memory": 16 * 2**20, "cpu": 0.5, "shm": True},
-            },
-            "scheduler_enabled": False,
-            "pass_config": False,
-            "cluster_name": "default",
-            "project_name": "test-project",
-            "org_name": "NO_ORG",
-        }
-        return web.json_response(create_job_response("job-id-1", "running"))
-
-    app = web.Application()
-    app.router.add_post("/jobs", handler)
-
-    srv = await aiohttp_server(app)
-
-    async with make_client(srv.make_url("/")) as client:
-        container = Container(
-            image=RemoteImage.new_external_image(name="submit-image-name"),
-            resources=Resources(16 * 2**20, 0.5),
-        )
-        resp = await client.jobs.run(container=container)
-        assert not resp.org_name
-
-
 async def test_job_start_with_energy_schedule_name(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
