@@ -146,6 +146,8 @@ async def test_resolve_job_id__from_uri_with_same_project__no_jobs_found(
         )
         assert resolved_ex == (job_name, cluster_name)
 
+    await srv.close()
+
 
 async def test_resolve_job_id__from_uri_with_other_project__no_jobs_found(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
@@ -175,6 +177,8 @@ async def test_resolve_job_id__from_uri_with_other_project__no_jobs_found(
             await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         with pytest.raises(ValueError):
             await resolve_job_ex(uri, client=client, status={JobStatus.RUNNING})
+
+    await srv.close()
 
 
 async def test_resolve_job_id__from_uri_without_project__no_jobs_found(
@@ -206,6 +210,8 @@ async def test_resolve_job_id__from_uri_without_project__no_jobs_found(
             uri, client=client, status={JobStatus.RUNNING}
         )
         assert resolved_ex == (job_name, "default")
+
+    await srv.close()
 
 
 async def test_resolve_job_id__from_string__single_job_found(
@@ -242,6 +248,8 @@ async def test_resolve_job_id__from_string__single_job_found(
             job_name, client=client, status={JobStatus.RUNNING}
         )
         assert resolved_ex == (job_id, "default")
+
+    await srv.close()
 
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
@@ -290,6 +298,8 @@ async def test_resolve_job_id__from_uri_with_same_project__single_job_found(
             uri, client=client, status={JobStatus.RUNNING}
         )
         assert resolved_ex == (job_id, cluster_name)
+
+    await srv.close()
 
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
@@ -343,6 +353,8 @@ async def test_resolve_job_id__from_uri_with_org__single_job_found(
             uri, client=client, status={JobStatus.RUNNING}
         )
         assert resolved_ex == (job_id, cluster_name)
+
+    await srv.close()
 
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
@@ -411,6 +423,8 @@ async def test_resolve_job_id__from_uri__multiple_jobs_found(
         )
         assert resolved_ex == (job_ids[2], cluster_name)
 
+    await srv.close()
+
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
 @pytest.mark.parametrize("org_name", ["NO_ORG", "test-org"])
@@ -473,6 +487,8 @@ async def test_resolve_job_id__from_uri_with_org__multiple_jobs_found(
         )
         assert resolved_ex == (job_ids[2], cluster_name)
 
+    await srv.close()
+
 
 @pytest.mark.parametrize("org_name", ["NO_ORG", "test-org"])
 async def test_resolve_job_id__from_uri_without_project__single_job_found(
@@ -510,6 +526,8 @@ async def test_resolve_job_id__from_uri_without_project__single_job_found(
         )
         assert resolved_ex == (job_id, "default")
 
+    await srv.close()
+
 
 async def test_resolve_job_id__server_error(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
@@ -541,6 +559,8 @@ async def test_resolve_job_id__server_error(
             job_name, client=client, status={JobStatus.RUNNING}
         )
         assert resolved_ex == (job_id, "default")
+
+    await srv.close()
 
 
 @pytest.mark.parametrize("cluster_name", ["default", "other"])
@@ -574,6 +594,8 @@ async def test_resolve_job_id__from_uri_with_same_project__server_error(
         )
         assert resolved_ex == (job_name, cluster_name)
 
+    await srv.close()
+
 
 async def test_resolve_job_id__from_uri_with_other_project__server_error(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
@@ -602,6 +624,8 @@ async def test_resolve_job_id__from_uri_with_other_project__server_error(
             await resolve_job(uri, client=client, status={JobStatus.RUNNING})
         with pytest.raises(ValueError):
             await resolve_job_ex(uri, client=client, status={JobStatus.RUNNING})
+
+    await srv.close()
 
 
 async def test_resolve_job_id__from_uri_without_project__server_error(
@@ -632,6 +656,8 @@ async def test_resolve_job_id__from_uri_without_project__server_error(
             uri, client=client, status={JobStatus.RUNNING}
         )
         assert resolved_ex == (job_name, "default")
+
+    await srv.close()
 
 
 @pytest.mark.parametrize(
