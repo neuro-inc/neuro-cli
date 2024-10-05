@@ -2,6 +2,7 @@ Job                     test-job
  Owner                   owner                            
  Project                 myproject                        
  Cluster                 default                          
+ Organization            my_org                           
  Status                  pending (ContainerCreating)      
  Image                   test-image                       
  Command                 test-command                     

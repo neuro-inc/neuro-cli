@@ -1,4 +1,4 @@
 ID/NAME                                    STATUS/WHEN     IMAGE   ORG/PROJECT   COMMAND  
  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 
-  j                                          failed          i:l                   c        
+  j                                          failed          i:l     my_org        c        
    name                                       a second ago            myproject

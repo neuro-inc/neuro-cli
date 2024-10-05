@@ -3,6 +3,7 @@ Job                      test-job
  Owner                    test-user                        
  Project                  myproject                        
  Cluster                  default                          
+ Organization             my_org                           
  Description              test job description             
  Status                   running (ContainerRunning)       
  Image                    test-image                       

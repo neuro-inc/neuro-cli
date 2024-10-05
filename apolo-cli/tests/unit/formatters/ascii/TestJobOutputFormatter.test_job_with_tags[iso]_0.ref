@@ -3,6 +3,7 @@ Job                     test-job
  Owner                   test-user                        
  Project                 myproject                        
  Cluster                 default                          
+ Organization            my_org                           
  Description             test job description             
  Status                  failed (ErrorReason)             
  Image                   test-image                       

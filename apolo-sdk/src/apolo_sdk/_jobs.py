@@ -225,6 +225,7 @@ class JobDescription:
     id: str
     owner: str
     cluster_name: str
+    org_name: str
     project_name: str
     status: JobStatus
     history: JobStatusHistory
@@ -244,7 +245,6 @@ class JobDescription:
     life_span: Optional[float] = None
     schedule_timeout: Optional[float] = None
     preset_name: Optional[str] = None
-    org_name: Optional[str] = None
     preemptible_node: bool = False
     privileged: bool = False
     priority: JobPriority = JobPriority.NORMAL
@@ -1059,7 +1059,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         id=res["id"],
         owner=owner,
         cluster_name=cluster_name,
-        org_name=res.get("org_name"),
+        org_name=res.get("org_name") or "NO_ORG",
         history=history,
         container=container,
         scheduler_enabled=res["scheduler_enabled"],
