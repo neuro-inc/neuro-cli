@@ -1018,6 +1018,27 @@ async def add_user_credits(
     type=int,
     help="Number of Intel GPUs",
 )
+@option(
+    "--nvidia-gpu-model",
+    metavar="GPU_MODEL_FREE_TEXT",
+    type=str,
+    help="Nvidia GPU model",
+    required=False,
+)
+@option(
+    "--amd-gpu-model",
+    metavar="GPU_MODEL_FREE_TEXT",
+    type=str,
+    help="AMD GPU model",
+    required=False,
+)
+@option(
+    "--intel-gpu-model",
+    metavar="GPU_MODEL_FREE_TEXT",
+    type=str,
+    help="Intel GPU model",
+    required=False,
+)
 @option("--tpu-type", metavar="TYPE", type=str, help="TPU type")
 @option(
     "tpu_software_version",
@@ -1058,6 +1079,9 @@ async def add_resource_preset(
     nvidia_gpu: Optional[int],
     amd_gpu: Optional[int],
     intel_gpu: Optional[int],
+    nvidia_gpu_model: Optional[str],
+    amd_gpu_model: Optional[str],
+    intel_gpu_model: Optional[str],
     tpu_type: Optional[str],
     tpu_software_version: Optional[str],
     scheduler: bool,
@@ -1082,6 +1106,9 @@ async def add_resource_preset(
         nvidia_gpu=nvidia_gpu,
         amd_gpu=amd_gpu,
         intel_gpu=intel_gpu,
+        nvidia_gpu_model=nvidia_gpu_model,
+        amd_gpu_model=amd_gpu_model,
+        intel_gpu_model=intel_gpu_model,
         tpu=tpu_preset,
         scheduler_enabled=scheduler,
         preemptible_node=preemptible_node,
@@ -1140,6 +1167,24 @@ async def add_resource_preset(
     type=int,
     help="Number of Intel GPUs",
 )
+@option(
+    "--nvidia-gpu-model",
+    metavar="GPU_MODEL_FREE_TEXT",
+    type=str,
+    help="Nvidia GPU model",
+)
+@option(
+    "--amd-gpu-model",
+    metavar="GPU_MODEL_FREE_TEXT",
+    type=str,
+    help="AMD GPU model",
+)
+@option(
+    "--intel-gpu-model",
+    metavar="GPU_MODEL_FREE_TEXT",
+    type=str,
+    help="Intel GPU model",
+)
 @option("--tpu-type", metavar="TYPE", type=str, help="TPU type")
 @option(
     "tpu_software_version",
@@ -1178,6 +1223,9 @@ async def update_resource_preset(
     nvidia_gpu: Optional[int],
     amd_gpu: Optional[int],
     intel_gpu: Optional[int],
+    nvidia_gpu_model: Optional[str],
+    amd_gpu_model: Optional[str],
+    intel_gpu_model: Optional[str],
     tpu_type: Optional[str],
     tpu_software_version: Optional[str],
     scheduler: Optional[bool],
@@ -1204,6 +1252,9 @@ async def update_resource_preset(
         "nvidia_gpu": nvidia_gpu,
         "amd_gpu": amd_gpu,
         "intel_gpu": intel_gpu,
+        "nvidia_gpu_model": nvidia_gpu_model,
+        "amd_gpu_model": amd_gpu_model,
+        "intel_gpu_model": intel_gpu_model,
         "tpu_type": tpu_type,
         "tpu_software_version": tpu_software_version,
         "scheduler_enabled": scheduler,
@@ -1228,6 +1279,9 @@ async def update_resource_preset(
             nvidia_gpu=preset.nvidia_gpu,
             amd_gpu=preset.amd_gpu,
             intel_gpu=preset.intel_gpu,
+            nvidia_gpu_model=preset.nvidia_gpu_model,
+            amd_gpu_model=preset.amd_gpu_model,
+            intel_gpu_model=preset.intel_gpu_model,
             tpu=tpu_preset,
             scheduler_enabled=preset.scheduler_enabled,
             preemptible_node=preset.preemptible_node,

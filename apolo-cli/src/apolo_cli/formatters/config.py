@@ -141,6 +141,7 @@ def _format_presets(
     for name, preset in presets.items():
         row = [name, str(preset.cpu), format_size(preset.memory)]
         if has_nvidia_gpu:
+            # todo: add gpu model?
             row.append(str(preset.nvidia_gpu) if preset.nvidia_gpu else "")
         if has_amd_gpu:
             row.append(str(preset.amd_gpu) if preset.amd_gpu else "")

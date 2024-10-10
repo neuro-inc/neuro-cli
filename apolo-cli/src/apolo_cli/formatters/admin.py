@@ -347,8 +347,13 @@ def _has_idle(node_pools: Iterable[_NodePool]) -> bool:
 
 
 def _gpu(node_pool: _NodePool) -> str:
-    if node_pool.gpu:
-        return f"{node_pool.gpu} x {node_pool.gpu_model}"
+    # todo: should this maybe include a multiple GPUs, each on a newline?
+    if node_pool.nvidia_gpu:
+        return f"{node_pool.nvidia_gpu} x {node_pool.nvidia_gpu_model}"
+    if node_pool.amd_gpu:
+        return f"{node_pool.amd_gpu} x {node_pool.amd_gpu_model}"
+    if node_pool.intel_gpu:
+        return f"{node_pool.intel_gpu} x {node_pool.intel_gpu}"
     return ""
 
 
