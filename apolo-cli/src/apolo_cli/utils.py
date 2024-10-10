@@ -140,7 +140,7 @@ class Context(click.Context):
 
 
 def split_examples(help: str) -> List[str]:
-    return re.split("Example[s]:\n", help, re.IGNORECASE)
+    return re.split("Example[s]:\n", help, flags=re.IGNORECASE)
 
 
 def format_example(example: str, formatter: click.HelpFormatter) -> None:
