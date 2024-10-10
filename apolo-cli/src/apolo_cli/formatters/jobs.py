@@ -128,7 +128,9 @@ class JobStatusFormatter:
         resources.add_row("CPU", f"{job_status.container.resources.cpu:0.1f}")
         if job_status.container.resources.nvidia_gpu:
             resources.add_row(
-                "Nvidia GPU", f"{job_status.container.resources.nvidia_gpu:0.1f}"
+                "Nvidia GPU",
+                # todo: add gpu model?
+                f"{job_status.container.resources.nvidia_gpu:0.1f}",
             )
         if job_status.container.resources.amd_gpu:
             resources.add_row(
