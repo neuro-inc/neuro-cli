@@ -155,6 +155,8 @@ class TestClustersFormatter:
             disk_type=disk_type,
             nvidia_gpu=1 if is_gpu else 0,
             nvidia_gpu_model="nvidia-tesla-k80" if is_gpu else None,
+            amd_gpu=1 if is_gpu else 0,
+            amd_gpu_model="instinct-mi25" if is_gpu else None,
             is_preemptible=is_preemptible,
         )
 

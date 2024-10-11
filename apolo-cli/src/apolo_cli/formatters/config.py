@@ -14,6 +14,7 @@ from rich.text import Text
 
 from apolo_sdk import Cluster, Config, Preset, Quota, _Balance, _ConfigCluster, _Quota
 
+from apolo_cli.formatters.utils import format_multiple_gpus
 from apolo_cli.utils import format_size
 
 
@@ -109,9 +110,7 @@ def _format_presets(
     presets: Mapping[str, Preset],
     available_jobs_counts: Optional[Mapping[str, int]],
 ) -> Table:
-    has_nvidia_gpu = any(p.nvidia_gpu for p in presets.values())
-    has_amd_gpu = any(p.amd_gpu for p in presets.values())
-    has_intel_gpu = any(p.intel_gpu for p in presets.values())
+    has_gpu = any(p.nvidia_gpu or p.amd_gpu or p.intel_gpu for p in presets.values())
     has_tpu = any(p.tpu_type for p in presets.values())
 
     table = Table(
@@ -120,15 +119,11 @@ def _format_presets(
         box=box.SIMPLE_HEAVY,
         show_edge=False,
     )
-    table.add_column("Name", style="bold", justify="left")
+    table.add_column("Name", style="bold", justify="left", max_width=None, no_wrap=True)
     table.add_column("#CPU", justify="right")
     table.add_column("Memory", justify="right")
-    if has_nvidia_gpu:
-        table.add_column("Nvidia GPU", justify="center")
-    if has_amd_gpu:
-        table.add_column("AMD GPU", justify="center")
-    if has_intel_gpu:
-        table.add_column("Intel GPU", justify="center")
+    if has_gpu:
+        table.add_column("GPU", justify="left")
     if has_tpu:
         table.add_column("TPU", justify="left")
     table.add_column("Resource Pools", justify="left")
@@ -140,13 +135,9 @@ def _format_presets(
 
     for name, preset in presets.items():
         row = [name, str(preset.cpu), format_size(preset.memory)]
-        if has_nvidia_gpu:
-            # todo: add gpu model?
-            row.append(str(preset.nvidia_gpu) if preset.nvidia_gpu else "")
-        if has_amd_gpu:
-            row.append(str(preset.amd_gpu) if preset.amd_gpu else "")
-        if has_intel_gpu:
-            row.append(str(preset.intel_gpu) if preset.intel_gpu else "")
+        if has_gpu:
+            row.append(format_multiple_gpus(entity=preset))
+
         if has_tpu:
             tpu = (
                 f"{preset.tpu_type}/{preset.tpu_software_version}"

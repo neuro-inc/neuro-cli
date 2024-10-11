@@ -19,7 +19,7 @@ from rich.text import Text, TextType
 
 from apolo_sdk import JobDescription, JobRestartPolicy, JobStatus, JobTelemetry
 
-from apolo_cli.formatters.utils import DatetimeFormatter
+from apolo_cli.formatters.utils import DatetimeFormatter, format_gpu_string
 from apolo_cli.parse_utils import JobTableFormat, JobTelemetryKeyFunc
 from apolo_cli.utils import format_size
 
@@ -129,16 +129,26 @@ class JobStatusFormatter:
         if job_status.container.resources.nvidia_gpu:
             resources.add_row(
                 "Nvidia GPU",
-                # todo: add gpu model?
-                f"{job_status.container.resources.nvidia_gpu:0.1f}",
+                format_gpu_string(
+                    job_status.container.resources.nvidia_gpu,
+                    job_status.container.resources.nvidia_gpu_model,
+                ),
             )
         if job_status.container.resources.amd_gpu:
             resources.add_row(
-                "AMD GPU", f"{job_status.container.resources.amd_gpu:0.1f}"
+                "AMD GPU",
+                format_gpu_string(
+                    job_status.container.resources.amd_gpu,
+                    job_status.container.resources.amd_gpu_model,
+                ),
             )
         if job_status.container.resources.intel_gpu:
             resources.add_row(
-                "Intel GPU", f"{job_status.container.resources.intel_gpu:0.1f}"
+                "Intel GPU",
+                format_gpu_string(
+                    job_status.container.resources.intel_gpu,
+                    job_status.container.resources.intel_gpu_model,
+                ),
             )
 
         if job_status.container.resources.tpu_type:
