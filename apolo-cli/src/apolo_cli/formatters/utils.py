@@ -1,5 +1,5 @@
 import datetime
-from typing import Callable, Optional, Protocol, overload
+from typing import Callable, Optional, Protocol, Union, overload
 
 import humanize
 from yarl import URL
@@ -155,7 +155,7 @@ def no() -> str:
     return "[red]×[/red]"
 
 
-def format_multiple_gpus(entity: _NodePool | Preset, sep: str = "\n") -> str:
+def format_multiple_gpus(entity: Union[_NodePool, Preset], sep: str = "\n") -> str:
     """
     Constructs a GPU string from the provided `entity`.
     Each GPU make will be separated by a `sep` (newline by default), e.g.:
@@ -177,7 +177,9 @@ def format_multiple_gpus(entity: _NodePool | Preset, sep: str = "\n") -> str:
     return sep.join(gpus)
 
 
-def format_gpu_string(gpu_count: int, gpu_model: str | None, sep: str = " x ") -> str:
+def format_gpu_string(
+    gpu_count: int, gpu_model: Optional[str], sep: str = " x "
+) -> str:
     """
     Constructs a GPU string, applying a separator if a GPU model present, e.g.:
     1 x nvidia-tesla-k80
