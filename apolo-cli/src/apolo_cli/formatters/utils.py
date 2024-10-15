@@ -161,7 +161,7 @@ def no() -> str:
 def format_multiple_gpus(entity: Union[_NodePool, Preset]) -> str:
     """
     Constructs a GPU string from the provided `entity`.
-    Each GPU make will be separated by a `sep` (newline by default), e.g.:
+    Each GPU make will be separated by a newline, e.g.:
 
     Nvidia: 10 x tesla
     AMD: 5 x instinct
