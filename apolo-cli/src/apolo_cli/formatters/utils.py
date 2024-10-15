@@ -6,6 +6,9 @@ from yarl import URL
 
 from apolo_sdk import SCHEMES, Preset, RemoteImage, _NodePool
 
+NEWLINE_SEP = "\n"
+GPU_MODEL_SEP = " x "
+
 URIFormatter = Callable[[URL], str]
 ImageFormatter = Callable[[RemoteImage], str]
 
@@ -155,7 +158,7 @@ def no() -> str:
     return "[red]×[/red]"
 
 
-def format_multiple_gpus(entity: Union[_NodePool, Preset], sep: str = "\n") -> str:
+def format_multiple_gpus(entity: Union[_NodePool, Preset]) -> str:
     """
     Constructs a GPU string from the provided `entity`.
     Each GPU make will be separated by a `sep` (newline by default), e.g.:
@@ -174,12 +177,10 @@ def format_multiple_gpus(entity: Union[_NodePool, Preset], sep: str = "\n") -> s
             continue
         gpus.append(f"{gpu_make}: {format_gpu_string(gpu_count, gpu_model)}")
 
-    return sep.join(gpus)
+    return NEWLINE_SEP.join(gpus)
 
 
-def format_gpu_string(
-    gpu_count: int, gpu_model: Optional[str], sep: str = " x "
-) -> str:
+def format_gpu_string(gpu_count: int, gpu_model: Optional[str]) -> str:
     """
     Constructs a GPU string, applying a separator if a GPU model present, e.g.:
     1 x nvidia-tesla-k80
@@ -187,4 +188,4 @@ def format_gpu_string(
     gpu = [str(gpu_count)]
     if gpu_model:
         gpu.append(gpu_model)
-    return sep.join(gpu)
+    return GPU_MODEL_SEP.join(gpu)
