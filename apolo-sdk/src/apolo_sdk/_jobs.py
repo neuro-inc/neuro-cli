@@ -66,6 +66,9 @@ class Resources:
     nvidia_gpu: Optional[int] = None
     amd_gpu: Optional[int] = None
     intel_gpu: Optional[int] = None
+    nvidia_gpu_model: Optional[str] = None
+    amd_gpu_model: Optional[str] = None
+    intel_gpu_model: Optional[str] = None
     shm: bool = True
     tpu_type: Optional[str] = None
     tpu_software_version: Optional[str] = None
@@ -880,6 +883,12 @@ def _resources_to_api(resources: Resources) -> Dict[str, Any]:
         value["amd_gpu"] = resources.amd_gpu
     if resources.intel_gpu:
         value["intel_gpu"] = resources.intel_gpu
+    if resources.nvidia_gpu_model:
+        value["nvidia_gpu_model"] = resources.nvidia_gpu_model
+    if resources.amd_gpu_model:
+        value["amd_gpu_model"] = resources.amd_gpu_model
+    if resources.intel_gpu_model:
+        value["intel_gpu_model"] = resources.intel_gpu_model
     if resources.tpu_type:
         assert resources.tpu_software_version
         value["tpu"] = {
@@ -902,6 +911,9 @@ def _resources_from_api(data: Dict[str, Any]) -> Resources:
         nvidia_gpu=data.get("nvidia_gpu", None),
         amd_gpu=data.get("amd_gpu", None),
         intel_gpu=data.get("intel_gpu", None),
+        nvidia_gpu_model=data.get("nvidia_gpu_model", None),
+        amd_gpu_model=data.get("amd_gpu_model", None),
+        intel_gpu_model=data.get("intel_gpu_model", None),
         tpu_type=tpu_type,
         tpu_software_version=tpu_software_version,
     )
