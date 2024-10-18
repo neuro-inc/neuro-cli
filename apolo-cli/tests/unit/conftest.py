@@ -51,6 +51,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
                 memory=60 * 2**30,
                 disk_size=150 * 2**30,
                 nvidia_gpu=1,
+                nvidia_gpu_model="nvidia-tesla-k80",
             ),
             "amd-gpu": ResourcePool(
                 min_size=0,
@@ -59,6 +60,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
                 memory=60 * 2**30,
                 disk_size=150 * 2**30,
                 amd_gpu=1,
+                amd_gpu_model="instinct-mi25",
             ),
             "intel-gpu": ResourcePool(
                 min_size=0,
@@ -67,6 +69,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
                 memory=60 * 2**30,
                 disk_size=150 * 2**30,
                 intel_gpu=1,
+                intel_gpu_model="flex-170",
             ),
         },
         presets={
@@ -75,6 +78,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
                 cpu=7,
                 memory=30 * 2**30,
                 nvidia_gpu=1,
+                nvidia_gpu_model="nvidia-tesla-k80",
                 resource_pool_names=("nvidia-gpu",),
             ),
             "nvidia-gpu-large": Preset(
@@ -82,6 +86,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
                 cpu=7,
                 memory=60 * 2**30,
                 nvidia_gpu=1,
+                nvidia_gpu_model="nvidia-A100",
                 resource_pool_names=("nvidia-gpu",),
             ),
             "amd-gpu-small": Preset(
@@ -89,6 +94,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
                 cpu=7,
                 memory=30 * 2**30,
                 amd_gpu=1,
+                amd_gpu_model="instinct-mi25",
                 resource_pool_names=("amd-gpu",),
             ),
             "amd-gpu-large": Preset(
@@ -96,6 +102,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
                 cpu=7,
                 memory=60 * 2**30,
                 amd_gpu=1,
+                amd_gpu_model="instinct-mi100",
                 resource_pool_names=("amd-gpu",),
             ),
             "intel-gpu-small": Preset(
@@ -103,6 +110,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
                 cpu=7,
                 memory=30 * 2**30,
                 intel_gpu=1,
+                intel_gpu_model="flex-170",
                 resource_pool_names=("intel-gpu",),
             ),
             "intel-gpu-large": Preset(
@@ -110,6 +118,7 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
                 cpu=7,
                 memory=60 * 2**30,
                 intel_gpu=1,
+                intel_gpu_model="max-1550",
                 resource_pool_names=("intel-gpu",),
             ),
             "cpu-small": Preset(

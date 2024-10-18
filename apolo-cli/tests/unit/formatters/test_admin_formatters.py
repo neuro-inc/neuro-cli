@@ -153,8 +153,10 @@ class TestClustersFormatter:
             available_memory=46080 * 2**20,
             disk_size=150 * 2**30,
             disk_type=disk_type,
-            gpu=1 if is_gpu else 0,
-            gpu_model="nvidia-tesla-k80" if is_gpu else None,
+            nvidia_gpu=1 if is_gpu else 0,
+            nvidia_gpu_model="nvidia-tesla-k80" if is_gpu else None,
+            amd_gpu=1 if is_gpu else 0,
+            amd_gpu_model="instinct-mi25" if is_gpu else None,
             is_preemptible=is_preemptible,
         )
 

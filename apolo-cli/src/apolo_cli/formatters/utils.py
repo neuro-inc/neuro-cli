@@ -1,10 +1,13 @@
 import datetime
-from typing import Callable, Optional, Protocol, overload
+from typing import Callable, Optional, Protocol, Union, overload
 
 import humanize
 from yarl import URL
 
-from apolo_sdk import SCHEMES, RemoteImage
+from apolo_sdk import SCHEMES, Preset, RemoteImage, _NodePool
+
+NEWLINE_SEP = "\n"
+GPU_MODEL_SEP = " x "
 
 URIFormatter = Callable[[URL], str]
 ImageFormatter = Callable[[RemoteImage], str]
@@ -153,3 +156,36 @@ def yes() -> str:
 
 def no() -> str:
     return "[red]×[/red]"
+
+
+def format_multiple_gpus(entity: Union[_NodePool, Preset]) -> str:
+    """
+    Constructs a GPU string from the provided `entity`.
+    Each GPU make will be separated by a newline, e.g.:
+
+    Nvidia: 10 x tesla
+    AMD: 5 x instinct
+    Intel: 1
+    """
+    gpus = []
+    for gpu_make, gpu_count, gpu_model in (
+        ("Nvidia", entity.nvidia_gpu, entity.nvidia_gpu_model),
+        ("AMD", entity.amd_gpu, entity.amd_gpu_model),
+        ("Intel", entity.intel_gpu, entity.intel_gpu_model),
+    ):
+        if not gpu_count:
+            continue
+        gpus.append(f"{gpu_make}: {format_gpu_string(gpu_count, gpu_model)}")
+
+    return NEWLINE_SEP.join(gpus)
+
+
+def format_gpu_string(gpu_count: int, gpu_model: Optional[str]) -> str:
+    """
+    Constructs a GPU string, applying a separator if a GPU model present, e.g.:
+    1 x nvidia-tesla-k80
+    """
+    gpu = [str(gpu_count)]
+    if gpu_model:
+        gpu.append(gpu_model)
+    return GPU_MODEL_SEP.join(gpu)
