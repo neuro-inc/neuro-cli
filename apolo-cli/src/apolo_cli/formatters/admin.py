@@ -30,7 +30,7 @@ from apolo_sdk import (
 )
 
 from apolo_cli.formatters.config import format_quota_details
-from apolo_cli.formatters.utils import format_datetime_iso
+from apolo_cli.formatters.utils import format_datetime_iso, format_multiple_gpus
 from apolo_cli.utils import format_size
 
 
@@ -39,7 +39,7 @@ class ClusterUserWithInfoFormatter:
         self, clusters_users: Iterable[_ClusterUserWithInfo]
     ) -> RenderableType:
         table = Table(box=box.MINIMAL_HEAVY_HEAD)
-        table.add_column("Name", style="bold")
+        table.add_column("Name", style="bold", max_width=None, no_wrap=True)
         table.add_column("Org")
         table.add_column("Role")
         table.add_column("Email")
@@ -258,7 +258,7 @@ def _format_node_pools(
         box=box.SIMPLE_HEAVY,
         show_edge=True,
     )
-    table.add_column("Name", style="bold", justify="left")
+    table.add_column("Name", style="bold", justify="left", max_width=None, no_wrap=True)
     if type != _CloudProviderType.ON_PREM:
         table.add_column("Machine", style="bold", justify="left")
     table.add_column("CPU", justify="right")
@@ -289,7 +289,7 @@ def _format_node_pools(
             row.append(format_size(node_pool.disk_size))
         if has_preemptible:
             row.append("√" if node_pool.is_preemptible else "×")
-        row.append(_gpu(node_pool))
+        row.append(format_multiple_gpus(node_pool))
         if is_scalable:
             row.append(str(node_pool.min_size))
         row.append(str(node_pool.max_size))
@@ -344,12 +344,6 @@ def _has_idle(node_pools: Iterable[_NodePool]) -> bool:
         if node_pool.idle_size:
             return True
     return False
-
-
-def _gpu(node_pool: _NodePool) -> str:
-    if node_pool.gpu:
-        return f"{node_pool.gpu} x {node_pool.gpu_model}"
-    return ""
 
 
 class OrgsFormatter:

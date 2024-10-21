@@ -19,6 +19,9 @@ class Preset:
     nvidia_gpu: Optional[int] = None
     amd_gpu: Optional[int] = None
     intel_gpu: Optional[int] = None
+    nvidia_gpu_model: Optional[str] = None
+    amd_gpu_model: Optional[str] = None
+    intel_gpu_model: Optional[str] = None
     scheduler_enabled: bool = False
     preemptible_node: bool = False
     tpu_type: Optional[str] = None
@@ -49,6 +52,9 @@ class ResourcePool:
     nvidia_gpu: Optional[int] = None
     amd_gpu: Optional[int] = None
     intel_gpu: Optional[int] = None
+    nvidia_gpu_model: Optional[str] = None
+    amd_gpu_model: Optional[str] = None
+    intel_gpu_model: Optional[str] = None
     tpu: Optional[TPUResource] = None
     is_preemptible: bool = False
 
@@ -136,6 +142,9 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
             nvidia_gpu=data.get("nvidia_gpu"),
             amd_gpu=data.get("amd_gpu"),
             intel_gpu=data.get("intel_gpu"),
+            nvidia_gpu_model=data.get("nvidia_gpu_model"),
+            amd_gpu_model=data.get("amd_gpu_model"),
+            intel_gpu_model=data.get("intel_gpu_model"),
             tpu=tpu,
             is_preemptible=data.get("is_preemptible", False),
         )
@@ -153,6 +162,9 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
             nvidia_gpu=data.get("nvidia_gpu"),
             amd_gpu=data.get("amd_gpu"),
             intel_gpu=data.get("intel_gpu"),
+            nvidia_gpu_model=data.get("nvidia_gpu_model"),
+            amd_gpu_model=data.get("amd_gpu_model"),
+            intel_gpu_model=data.get("intel_gpu_model"),
             scheduler_enabled=data.get("scheduler_enabled", False),
             preemptible_node=data.get("preemptible_node", False),
             tpu_type=tpu_type,

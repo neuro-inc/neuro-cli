@@ -40,6 +40,9 @@ def test_resources_default() -> None:
     assert resources.nvidia_gpu is None
     assert resources.amd_gpu is None
     assert resources.intel_gpu is None
+    assert resources.nvidia_gpu_model is None
+    assert resources.amd_gpu_model is None
+    assert resources.intel_gpu_model is None
     assert resources.shm is True
     assert resources.tpu_type is None
     assert resources.tpu_software_version is None

@@ -1,25 +1,25 @@
-Job                     test-job                         
- Owner                   test-user                        
- Project                 someotherproject                 
- Cluster                 default                          
- Organization            my_org                           
- Description             test job description             
- Status                  succeeded                        
- Image                   test-image                       
- Command                 test-command                     
- Priority                Normal                           
- Price (credits / hour)  15.0000                          
- Current cost            150.0000                         
- Resources                Memory               16 Bytes   
-                          CPU                       0.1   
-                          Nvidia GPU                4.0   
-                          AMD GPU                   5.0   
-                          Intel GPU                 6.0   
-                          TPU                 v2-8/1.14   
-                          Extended SHM space       True   
- TTY                     False                            
- Http URL                http://local.host.test/          
- Created                 2018-09-25T12:28:21.298672+00:00 
- Started                 2018-09-25T12:28:59.759433+00:00 
- Finished                2018-09-25T12:28:59.759433+00:00 
+Job                     test-job                                   
+ Owner                   test-user                                  
+ Project                 someotherproject                           
+ Cluster                 default                                    
+ Organization            my_org                                     
+ Description             test job description                       
+ Status                  succeeded                                  
+ Image                   test-image                                 
+ Command                 test-command                               
+ Priority                Normal                                     
+ Price (credits / hour)  15.0000                                    
+ Current cost            150.0000                                   
+ Resources                Memory                          16 Bytes  
+                          CPU                                  0.1  
+                          Nvidia GPU          4 x nvidia-tesla-k80  
+                          AMD GPU                5 x instinct-mi25  
+                          Intel GPU                   6 x flex-170  
+                          TPU                            v2-8/1.14  
+                          Extended SHM space                  True  
+ TTY                     False                                      
+ Http URL                http://local.host.test/                    
+ Created                 2018-09-25T12:28:21.298672+00:00           
+ Started                 2018-09-25T12:28:59.759433+00:00           
+ Finished                2018-09-25T12:28:59.759433+00:00           
  Exit code               None
