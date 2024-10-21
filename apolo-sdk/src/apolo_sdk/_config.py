@@ -606,7 +606,7 @@ def _load_recovery_data(path: Path) -> _ConfigRecoveryData:
             url=URL(payload["url"]),
             cluster_name=payload["cluster_name"],
             refresh_token=payload["refresh_token"],
-            org_name=payload["org_name"] if "org_name" in payload else None,
+            org_name=payload["org_name"] if "org_name" in payload else "NO_ORG",
         )
     except (AttributeError, KeyError, TypeError, ValueError, sqlite3.DatabaseError):
         raise ConfigError(MALFORMED_CONFIG_MSG)
