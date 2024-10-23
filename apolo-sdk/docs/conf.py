@@ -222,8 +222,8 @@ epub_exclude_files = ["search.html"]
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    "https://docs.python.org/3": None,
-    "https://docs.aiohttp.org/en/latest": None,
-    "https://yarl.readthedocs.io/en/latest": None,
-    "https://multidict.readthedocs.io/en/stable": None,
+    "python": ("https://docs.python.org/3", None),
+    "aiohttp": ("https://docs.aiohttp.org/en/latest", None),
+    "yarl": ("https://yarl.readthedocs.io/en/latest", None),
+    "multidics": ("https://multidict.readthedocs.io/en/stable", None),
 }
