@@ -9,7 +9,7 @@ from yarl import URL
 from ._admin import _Admin
 from ._config import Config
 from ._core import _Core
-from ._errors import ClientError, NotSupportedError
+from ._errors import AuthError, ClientError, NotSupportedError
 from ._rewrite import rewrite_module
 from ._utils import NoPublicConstructor
 
@@ -51,11 +51,18 @@ class Users(metaclass=NoPublicConstructor):
 
     async def get_quota(self) -> Quota:
         try:
-            ret = await self._admin.get_cluster_user(
-                cluster_name=self._config.cluster_name,
-                org_name=self._config.org_name,
-                user_name=self._config.username,
-            )
+            try:
+                ret = await self._admin.get_cluster_user(
+                    cluster_name=self._config.cluster_name,
+                    org_name=self._config.org_name,
+                    user_name=self._config.username,
+                )
+            except AuthError:
+                ret = await self._admin.get_cluster_user(
+                    cluster_name=self._config.cluster_name,
+                    org_name=None,
+                    user_name=self._config.username,
+                )
         except NotSupportedError:
             # FOSS configuration without admin service and limits
             return Quota(credits=None, total_running_jobs=None)
@@ -65,7 +72,7 @@ class Users(metaclass=NoPublicConstructor):
         )
 
     async def get_org_quota(self) -> Optional[Quota]:
-        if self._config.org_name is None:
+        if self._config.org_name in (None, "NO_ORG"):
             return None
         try:
             ret = await self._admin.get_org_cluster(

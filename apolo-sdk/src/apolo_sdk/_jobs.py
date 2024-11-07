@@ -228,7 +228,7 @@ class JobDescription:
     id: str
     owner: str
     cluster_name: str
-    org_name: str
+    org_name: Optional[str]
     project_name: str
     status: JobStatus
     history: JobStatusHistory
@@ -1071,7 +1071,7 @@ def _job_description_from_api(res: Dict[str, Any], parse: Parser) -> JobDescript
         id=res["id"],
         owner=owner,
         cluster_name=cluster_name,
-        org_name=res.get("org_name") or "NO_ORG",
+        org_name=res.get("org_name"),
         history=history,
         container=container,
         scheduler_enabled=res["scheduler_enabled"],
