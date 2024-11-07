@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import configparser
 import json
 import logging
@@ -5,7 +7,7 @@ import os
 import pathlib
 from dataclasses import replace
 from decimal import Decimal, InvalidOperation
-from typing import IO, Any, Dict, Optional, Sequence, Tuple
+from typing import IO, Any, Sequence
 
 import click
 import yaml
@@ -56,6 +58,12 @@ log = logging.getLogger(__name__)
 UNLIMITED = "unlimited"
 
 
+def _get_org(root: Root, org: str | None) -> str | None:
+    if org == "NO_ORG":
+        return None
+    return org or root.client.config.org_name
+
+
 @group()
 def admin() -> None:
     """Cluster administration commands."""
@@ -70,7 +78,7 @@ async def get_clusters(root: Root) -> None:
     with root.status("Fetching the list of clusters"):
         config_clusters = await root.client._clusters.list()
         admin_clusters = await root.client._admin.list_clusters()
-    clusters: Dict[str, Tuple[Optional[_Cluster], Optional[_ConfigCluster]]] = {}
+    clusters: dict[str, tuple[_Cluster | None, _ConfigCluster | None]] = {}
     for config_cluster in config_clusters:
         clusters[config_cluster.name] = (None, config_cluster)
     for admin_cluster in admin_clusters:
@@ -95,7 +103,7 @@ async def get_clusters(root: Root) -> None:
 @argument("cluster_name", required=True, type=str)
 @argument("node_pool_name", required=True, type=str)
 async def update_node_pool(
-    root: Root, cluster_name: str, node_pool_name: str, idle_size: Optional[int]
+    root: Root, cluster_name: str, node_pool_name: str, idle_size: int | None
 ) -> None:
     """
     Update cluster node pool.
@@ -571,9 +579,9 @@ async def generate_vcd(root: Root, session: PromptSession[str]) -> str:
 @argument("cluster_name", required=False, default=None, type=str)
 async def get_cluster_users(
     root: Root,
-    org: Optional[str],
+    org: str | None,
     details: bool,
-    cluster_name: Optional[str],
+    cluster_name: str | None,
 ) -> None:
     """
     List users in specified cluster
@@ -585,7 +593,7 @@ async def get_cluster_users(
         users = await root.client._admin.list_cluster_users(  # type: ignore
             cluster_name=cluster_name,
             with_user_info=details,
-            org_name=org or root.client.config.org_name,
+            org_name=_get_org(root, org),
         )
         users = sorted(users, key=lambda user: (user.user_name, user.org_name or ""))
     with root.pager():
@@ -634,10 +642,10 @@ async def add_cluster_user(
     root: Root,
     cluster_name: str,
     user_name: str,
-    role: Optional[str],
-    credits: Optional[str],
-    jobs: Optional[str],
-    org: Optional[str],
+    role: str | None,
+    credits: str | None,
+    jobs: str | None,
+    org: str | None,
 ) -> None:
     """
     Add user access to specified cluster.
@@ -658,7 +666,7 @@ async def add_cluster_user(
         cluster_name,
         user_name,
         _ClusterUserRoleType(role),
-        org_name=org or root.client.config.org_name,
+        org_name=_get_org(root, org),
         balance=balance,
         quota=quota,
     )
@@ -702,10 +710,10 @@ async def update_cluster_user(
     cluster_name: str,
     user_name: str,
     role: str,
-    org: Optional[str],
+    org: str | None,
 ) -> None:
     cluster_user = await root.client._admin.get_cluster_user(
-        cluster_name, user_name, org_name=org or root.client.config.org_name
+        cluster_name, user_name, org_name=_get_org(root, org)
     )
     cluster_user = replace(cluster_user, role=_ClusterUserRoleType(role))
     await root.client._admin.update_cluster_user(cluster_user)
@@ -735,13 +743,13 @@ def _parse_finite_decimal(value: str) -> Decimal:
     raise click.BadParameter(f"{value} is not valid decimal number")
 
 
-def _parse_credits_value(value: str) -> Optional[Decimal]:
+def _parse_credits_value(value: str) -> Decimal | None:
     if value == UNLIMITED:
         return None
     return _parse_finite_decimal(value)
 
 
-def _parse_jobs_value(value: str) -> Optional[int]:
+def _parse_jobs_value(value: str) -> int | None:
     if value == UNLIMITED:
         return None
     try:
@@ -764,13 +772,13 @@ def _parse_jobs_value(value: str) -> Optional[int]:
     help="org name for org-cluster users",
 )
 async def remove_cluster_user(
-    root: Root, cluster_name: str, user_name: str, org: Optional[str]
+    root: Root, cluster_name: str, user_name: str, org: str | None
 ) -> None:
     """
     Remove user access from the cluster.
     """
     await root.client._admin.delete_cluster_user(
-        cluster_name, user_name, org_name=org or root.client.config.org_name
+        cluster_name, user_name, org_name=_get_org(root, org)
     )
     if not root.quiet:
         root.print(
@@ -799,7 +807,7 @@ async def get_user_quota(
     root: Root,
     cluster_name: str,
     user_name: str,
-    org: Optional[str],
+    org: str | None,
 ) -> None:
     """
     Get info about user quota in given cluster
@@ -807,7 +815,7 @@ async def get_user_quota(
     user_with_quota = await root.client._admin.get_cluster_user(
         cluster_name=cluster_name,
         user_name=user_name,
-        org_name=org or root.client.config.org_name,
+        org_name=_get_org(root, org),
     )
     quota_fmt = AdminQuotaFormatter()
     balance_fmt = BalanceFormatter()
@@ -848,7 +856,7 @@ async def set_user_quota(
     cluster_name: str,
     user_name: str,
     jobs: str,
-    org: Optional[str],
+    org: str | None,
 ) -> None:
     """
     Set user quota to given values
@@ -857,7 +865,7 @@ async def set_user_quota(
         cluster_name=cluster_name,
         user_name=user_name,
         quota=_Quota(total_running_jobs=_parse_jobs_value(jobs)),
-        org_name=org or root.client.config.org_name,
+        org_name=_get_org(root, org),
     )
     fmt = AdminQuotaFormatter()
     root.print(
@@ -896,7 +904,7 @@ async def set_user_credits(
     cluster_name: str,
     user_name: str,
     credits: str,
-    org: Optional[str],
+    org: str | None,
 ) -> None:
     """
     Set user credits to given value
@@ -906,7 +914,7 @@ async def set_user_credits(
         cluster_name=cluster_name,
         user_name=user_name,
         credits=credits_decimal,
-        org_name=org or root.client.config.org_name,
+        org_name=_get_org(root, org),
     )
     fmt = BalanceFormatter()
     root.print(
@@ -945,7 +953,7 @@ async def add_user_credits(
     cluster_name: str,
     user_name: str,
     credits: str,
-    org: Optional[str],
+    org: str | None,
 ) -> None:
     """
     Add given values to user quota
@@ -955,7 +963,7 @@ async def add_user_credits(
         cluster_name,
         user_name,
         delta=additional_credits,
-        org_name=org or root.client.config.org_name,
+        org_name=_get_org(root, org),
     )
     fmt = BalanceFormatter()
     root.print(
@@ -1076,14 +1084,14 @@ async def add_resource_preset(
     credits_per_hour: str,
     cpu: float,
     memory: int,
-    nvidia_gpu: Optional[int],
-    amd_gpu: Optional[int],
-    intel_gpu: Optional[int],
-    nvidia_gpu_model: Optional[str],
-    amd_gpu_model: Optional[str],
-    intel_gpu_model: Optional[str],
-    tpu_type: Optional[str],
-    tpu_software_version: Optional[str],
+    nvidia_gpu: int | None,
+    amd_gpu: int | None,
+    intel_gpu: int | None,
+    nvidia_gpu_model: str | None,
+    amd_gpu_model: str | None,
+    intel_gpu_model: str | None,
+    tpu_type: str | None,
+    tpu_software_version: str | None,
     scheduler: bool,
     preemptible_node: bool,
     resource_pool_names: Sequence[str],
@@ -1217,19 +1225,19 @@ async def add_resource_preset(
 async def update_resource_preset(
     root: Root,
     preset_name: str,
-    credits_per_hour: Optional[str],
-    cpu: Optional[float],
-    memory: Optional[int],
-    nvidia_gpu: Optional[int],
-    amd_gpu: Optional[int],
-    intel_gpu: Optional[int],
-    nvidia_gpu_model: Optional[str],
-    amd_gpu_model: Optional[str],
-    intel_gpu_model: Optional[str],
-    tpu_type: Optional[str],
-    tpu_software_version: Optional[str],
-    scheduler: Optional[bool],
-    preemptible_node: Optional[bool],
+    credits_per_hour: str | None,
+    cpu: float | None,
+    memory: int | None,
+    nvidia_gpu: int | None,
+    amd_gpu: int | None,
+    intel_gpu: int | None,
+    nvidia_gpu_model: str | None,
+    amd_gpu_model: str | None,
+    intel_gpu_model: str | None,
+    tpu_type: str | None,
+    tpu_software_version: str | None,
+    scheduler: bool | None,
+    preemptible_node: bool | None,
     resource_pool_names: Sequence[str],
 ) -> None:
     """
@@ -1241,7 +1249,7 @@ async def update_resource_preset(
     except KeyError:
         raise ValueError(f"Preset '{preset_name}' does not exists")
 
-    kwargs: Dict[str, Any] = {
+    kwargs: dict[str, Any] = {
         "credits_per_hour": (
             _parse_finite_decimal(credits_per_hour)
             if credits_per_hour is not None
@@ -1510,7 +1518,7 @@ async def add_org_cluster(
     default_credits: str,
     default_jobs: str,
     default_role: str,
-    storage_size: Optional[int],
+    storage_size: int | None,
 ) -> None:
     """
     Add org access to specified cluster.
@@ -1841,16 +1849,14 @@ async def add_org_cluster_credits(
     type=str,
     help="org name for org-cluster projects",
 )
-async def get_projects(
-    root: Root, cluster_name: str, org: Optional[str] = None
-) -> None:
+async def get_projects(root: Root, cluster_name: str, org: str | None = None) -> None:
     """
     Print the list of all projects in the cluster
     """
     fmt = ProjectsFormatter()
     with root.status(f"Fetching the list of projects of cluster [b]{cluster_name}[/b]"):
         org_clusters = await root.client._admin.list_projects(
-            cluster_name=cluster_name, org_name=org or root.client.config.org_name
+            cluster_name=cluster_name, org_name=_get_org(root, org)
         )
     with root.pager():
         root.print(fmt(org_clusters))
@@ -1884,7 +1890,7 @@ async def add_project(
     root: Root,
     name: str,
     cluster_name: str,
-    org: Optional[str],
+    org: str | None,
     default_role: str,
     default: bool = False,
 ) -> None:
@@ -1896,7 +1902,7 @@ async def add_project(
     project = await root.client._admin.create_project(
         name=name,
         cluster_name=cluster_name,
-        org_name=org or root.client.config.org_name,
+        org_name=_get_org(root, org),
         default_role=_ProjectUserRoleType(default_role),
         is_default=default,
     )
@@ -1949,7 +1955,7 @@ async def update_project(
     root: Root,
     name: str,
     cluster_name: str,
-    org: Optional[str],
+    org: str | None,
     default_role: str,
     default: bool = False,
 ) -> None:
@@ -1960,7 +1966,7 @@ async def update_project(
     project = _Project(
         name=name,
         cluster_name=cluster_name,
-        org_name=org or root.client.config.org_name,
+        org_name=_get_org(root, org),
         default_role=_ProjectUserRoleType(default_role),
         is_default=default,
     )
@@ -1989,7 +1995,7 @@ async def update_project(
     help="org name for org-cluster projects",
 )
 async def remove_project(
-    root: Root, name: str, cluster_name: str, org: Optional[str], force: bool
+    root: Root, name: str, cluster_name: str, org: str | None, force: bool
 ) -> None:
     """
     Drop a project
@@ -2008,7 +2014,7 @@ async def remove_project(
     await root.client._admin.delete_project(
         project_name=name,
         cluster_name=cluster_name,
-        org_name=org or root.client.config.org_name,
+        org_name=_get_org(root, org),
     )
 
 
@@ -2023,7 +2029,7 @@ async def remove_project(
     help="org name for org-cluster projects",
 )
 async def get_project_users(
-    root: Root, cluster_name: str, project_name: str, org: Optional[str]
+    root: Root, cluster_name: str, project_name: str, org: str | None
 ) -> None:
     """
     List users in specified project
@@ -2035,7 +2041,7 @@ async def get_project_users(
         users = await root.client._admin.list_project_users(
             project_name=project_name,
             cluster_name=cluster_name,
-            org_name=org or root.client.config.org_name,
+            org_name=_get_org(root, org),
             with_user_info=True,
         )
     with root.pager():
@@ -2064,9 +2070,9 @@ async def add_project_user(
     root: Root,
     cluster_name: str,
     project_name: str,
-    org: Optional[str],
+    org: str | None,
     user_name: str,
-    role: Optional[None],
+    role: None | None,
 ) -> None:
     """
     Add user access to specified project.
@@ -2076,7 +2082,7 @@ async def add_project_user(
     user = await root.client._admin.create_project_user(
         project_name=project_name,
         cluster_name=cluster_name,
-        org_name=org or root.client.config.org_name,
+        org_name=_get_org(root, org),
         user_name=user_name,
         role=_ProjectUserRoleType(role) if role else None,
     )
@@ -2110,7 +2116,7 @@ async def update_project_user(
     root: Root,
     cluster_name: str,
     project_name: str,
-    org: Optional[str],
+    org: str | None,
     user_name: str,
     role: str,
 ) -> None:
@@ -2122,7 +2128,7 @@ async def update_project_user(
     user = _ProjectUser(
         project_name=project_name,
         cluster_name=cluster_name,
-        org_name=org or root.client.config.org_name,
+        org_name=_get_org(root, org),
         user_name=user_name,
         role=_ProjectUserRoleType(role),
     )
@@ -2152,7 +2158,7 @@ async def remove_project_user(
     root: Root,
     cluster_name: str,
     project_name: str,
-    org: Optional[str],
+    org: str | None,
     user_name: str,
 ) -> None:
     """
@@ -2161,7 +2167,7 @@ async def remove_project_user(
     await root.client._admin.delete_project_user(
         project_name=project_name,
         cluster_name=cluster_name,
-        org_name=org or root.client.config.org_name,
+        org_name=_get_org(root, org),
         user_name=user_name,
     )
     if not root.quiet:
