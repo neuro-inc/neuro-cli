@@ -29,6 +29,8 @@ from ._utils import NoPublicConstructor, aclosing
 REPOS_PER_PAGE = 30
 TAGS_PER_PAGE = 30
 
+DEFAULT_PUSH_TIMEOUT = 20 * 60  # 20 minutes
+
 log = logging.getLogger(__package__)
 
 
@@ -109,7 +111,9 @@ class Images(metaclass=NoPublicConstructor):
         auth = await self._config._docker_auth()
         try:
             async with aclosing(  # type: ignore
-                self._docker.images.push(repo, auth=auth, stream=True)
+                self._docker.images.push(
+                    repo, auth=auth, stream=True, timeout=DEFAULT_PUSH_TIMEOUT
+                )
             ) as it:
                 async for obj in it:
                     step = _try_parse_image_progress_step(obj, remote.tag)
