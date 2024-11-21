@@ -173,7 +173,7 @@ async def storage_server(
         else:
             raise web.HTTPInternalServerError(text=f"Unsupported operation {op}")
 
-    return await aiohttp_raw_server(handler)
+    return await aiohttp_raw_server(handler)  # type: ignore[arg-type]
 
 
 async def test_storage_ls_legacy(
