@@ -6,6 +6,7 @@
 .dmypy.json
 .eggs
 .env
+.idea
 .ipynb_checkpoints
 .mypy_cache
 .pytest_cache

@@ -9,4 +9,4 @@ _TestServerFactory = Callable[[Application], Awaitable[_TestServer]]
 _RawTestServerFactory = Callable[
     [Callable[[Request], Awaitable[StreamResponse]]], Awaitable[RawTestServer]
 ]
-_TestClientFactory = Callable[[Application], Awaitable[_TestClient]]
+_TestClientFactory = Callable[[Application], Awaitable[_TestClient]]  # type: ignore
