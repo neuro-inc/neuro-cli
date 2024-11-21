@@ -10,5 +10,5 @@ _RawTestServerFactory = Callable[
     [Callable[[Request], Awaitable[StreamResponse]]], Awaitable[RawTestServer]
 ]
 _TestClientFactory = Callable[
-    [Application], Awaitable[_TestClient]
-]  # type: ignore[arg-type]
+    [Application], Awaitable[_TestClient]  # type: ignore[arg-type]
+]
