@@ -1,11 +1,9 @@
 import asyncio
 import socket
 import ssl
-import time
 from typing import Any, AsyncIterator, Callable, Dict, List, Optional, Tuple
 
 import aiohttp
-import dateutil.parser
 import pytest
 import trustme
 from aiohttp import web
