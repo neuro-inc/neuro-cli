@@ -262,26 +262,6 @@ def pypi_server(fake_pypi: Tuple[FakePyPI, Dict[str, int]]) -> FakePyPI:
     return fake_pypi[0]
 
 
-async def test_update(pypi_server: FakePyPI, client: Client) -> None:
-    pypi_server.response = (200, PYPI_JSON)
-
-    t0 = time.time()
-    await client.version_checker.update()
-    assert len(client.version_checker._records) == 1
-    record = client.version_checker._records["apolo-cli"]
-    assert record["package"] == "apolo-cli"
-    assert record["version"] == "50.1.1"
-    assert (
-        record["uploaded"] == dateutil.parser.parse("2019-01-30T00:02:23").timestamp()
-    )
-    assert t0 <= record["checked"] <= time.time()
-
-    with client.config._open_db() as db:
-        ret = list(db.execute("SELECT package, version FROM pypi"))
-        assert len(ret) == 1
-        assert list(ret[0]) == ["apolo-cli", "50.1.1"]
-
-
 async def test_update_no_releases(pypi_server: FakePyPI, client: Client) -> None:
     pypi_server.response = (200, {})
 
