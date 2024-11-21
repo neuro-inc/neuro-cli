@@ -845,8 +845,7 @@ def _parse_commit_started_chunk(
     details_json = obj.get("details", {})
     image = details_json.get("image")
     if not image:
-        error_details = {"message": "Missing required details: 'image'"}
-        raise DockerError(400, error_details)
+        raise DockerError(400, {"message": "Missing required details: 'image'"})
     return ImageCommitStarted(job_id, parse.remote_image(image))
 
 
@@ -860,15 +859,14 @@ def _parse_commit_finished_chunk(
 def _raise_for_invalid_commit_chunk(obj: Dict[str, Any], expect_started: bool) -> None:
     _raise_on_error_chunk(obj)
     if "status" not in obj.keys():
-        error_details = {"message": 'Missing required field: "status"'}
-        raise DockerError(400, error_details)
+        raise DockerError(400, {"message": 'Missing required field: "status"'})
     status = obj["status"]
     expected = "CommitStarted" if expect_started else "CommitFinished"
     if status != expected:
-        error_details = {
-            "message": f"Invalid commit status: '{status}', expecting: '{expected}'"
-        }
-        raise DockerError(400, error_details)
+        raise DockerError(
+            400,
+            {"message": f"Invalid commit status: '{status}', expecting: '{expected}'"},
+        )
 
 
 def _resources_to_api(resources: Resources) -> Dict[str, Any]:
