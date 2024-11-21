@@ -474,8 +474,9 @@ def _open_db_rw(
         os.chmod(config_file, 0o600)
 
         conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL")
-        yield conn
+        with conn as db:
+            db.execute("PRAGMA journal_mode=WAL")
+            yield db
     except sqlite3.DatabaseError as exc:
         if not suppress_errors:
             raise
