@@ -200,7 +200,7 @@ class _Core:
                 abs_url,
                 headers=real_headers,
                 heartbeat=heartbeat,
-                timeout=aiohttp.ClientWSTimeout(timeout),
+                timeout=timeout,  # type: ignore
                 receive_timeout=receive_timeout,
             ) as ws:
                 yield ws
