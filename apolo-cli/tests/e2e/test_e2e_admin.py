@@ -376,6 +376,25 @@ def test_remove_org_user_does_not_exist(helper: Helper, tmp_test_org: str) -> No
 
 
 @pytest.mark.e2e
+def test_org_level_defaults(
+    helper: Helper, tmp_test_org: str, test_user_names: List[str]
+) -> None:
+    helper.run_cli(
+        [
+            "admin",
+            "set-org-defaults",
+            "--user-default-credits",
+            "21",
+            tmp_test_org,
+        ]
+    )
+    username = test_user_names[0]
+    helper.run_cli(["admin", "add-org-user", tmp_test_org, username, "user"])
+    captured = helper.run_cli(["admin", "get-org-users", tmp_test_org])
+    assert "Credits: 21" in captured.out
+
+
+@pytest.mark.e2e
 @pytest.mark.skip
 def test_list_org_clusters(
     helper: Helper, tmp_test_org: str, tmp_test_cluster: str

@@ -57,7 +57,7 @@ class TestInternalAlias:
             f"""\
             Usage: {prog_name} lsl [OPTIONS]
 
-            Alias for "pytest storage ls -l"
+            Alias for "{prog_name} storage ls -l"
 
             Options:
               --help  Show this message and exit.
@@ -88,7 +88,7 @@ class TestInternalAlias:
             f"""\
             Usage: {prog_name} lsl [OPTIONS]
 
-            Alias for "pytest storage ls -l"
+            Alias for "{prog_name} storage ls -l"
 
             Custom ls with long output.
 

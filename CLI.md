@@ -14,7 +14,7 @@
 		* [apolo admin add-cluster-user](#apolo-admin-add-cluster-user)
 		* [apolo admin add-org](#apolo-admin-add-org)
 		* [apolo admin add-org-cluster](#apolo-admin-add-org-cluster)
-		* [apolo admin add-org-cluster-credits](#apolo-admin-add-org-cluster-credits)
+		* [apolo admin add-org-credits](#apolo-admin-add-org-credits)
 		* [apolo admin add-org-user](#apolo-admin-add-org-user)
 		* [apolo admin add-project](#apolo-admin-add-project)
 		* [apolo admin add-project-user](#apolo-admin-add-project-user)
@@ -38,9 +38,10 @@
 		* [apolo admin remove-project](#apolo-admin-remove-project)
 		* [apolo admin remove-project-user](#apolo-admin-remove-project-user)
 		* [apolo admin remove-resource-preset](#apolo-admin-remove-resource-preset)
-		* [apolo admin set-org-cluster-credits](#apolo-admin-set-org-cluster-credits)
 		* [apolo admin set-org-cluster-defaults](#apolo-admin-set-org-cluster-defaults)
 		* [apolo admin set-org-cluster-quota](#apolo-admin-set-org-cluster-quota)
+		* [apolo admin set-org-credits](#apolo-admin-set-org-credits)
+		* [apolo admin set-org-defaults](#apolo-admin-set-org-defaults)
 		* [apolo admin set-user-credits](#apolo-admin-set-user-credits)
 		* [apolo admin set-user-quota](#apolo-admin-set-user-quota)
 		* [apolo admin show-cluster-options](#apolo-admin-show-cluster-options)
@@ -453,15 +454,15 @@ Name | Description|
 |Usage|Description|
 |---|---|
 | _[apolo admin add-cluster](#apolo-admin-add-cluster)_| Create a new cluster |
-| _[apolo admin add\-cluster-user](#apolo-admin-add-cluster-user)_| Add user access to specified cluster |
+| _[apolo admin add\-cluster-user](#apolo-admin-add-cluster-user)_| Add user access to a specified cluster |
 | _[apolo admin add-org](#apolo-admin-add-org)_| Create a new org |
 | _[apolo admin add\-org-cluster](#apolo-admin-add-org-cluster)_| Add org access to specified cluster |
-| _[apolo admin add\-org-cluster-credits](#apolo-admin-add-org-cluster-credits)_| Add given values to org cluster balance |
+| _[apolo admin add\-org-credits](#apolo-admin-add-org-credits)_| Add given values to org balance |
 | _[apolo admin add\-org-user](#apolo-admin-add-org-user)_| Add user access to specified org |
 | _[apolo admin add-project](#apolo-admin-add-project)_| Add new project to specified cluster |
 | _[apolo admin add\-project-user](#apolo-admin-add-project-user)_| Add user access to specified project |
 | _[apolo admin add\-resource-preset](#apolo-admin-add-resource-preset)_| Add new resource preset |
-| _[apolo admin add\-user-credits](#apolo-admin-add-user-credits)_| Add given values to user quota |
+| _[apolo admin add\-user-credits](#apolo-admin-add-user-credits)_| Add given values to user credits |
 | _[apolo admin generate\-cluster-config](#apolo-admin-generate-cluster-config)_| Create a cluster configuration file |
 | _[apolo admin get\-cluster-orgs](#apolo-admin-get-cluster-orgs)_| Print the list of all orgs in the cluster |
 | _[apolo admin get\-cluster-users](#apolo-admin-get-cluster-users)_| List users in specified cluster |
@@ -480,9 +481,10 @@ Name | Description|
 | _[apolo admin remove-project](#apolo-admin-remove-project)_| Drop a project |
 | _[apolo admin remove\-project-user](#apolo-admin-remove-project-user)_| Remove user access from the project |
 | _[apolo admin remove\-resource-preset](#apolo-admin-remove-resource-preset)_| Remove resource preset |
-| _[apolo admin set\-org-cluster-credits](#apolo-admin-set-org-cluster-credits)_| Set org cluster credits to given value |
 | _[apolo admin set\-org-cluster-defaults](#apolo-admin-set-org-cluster-defaults)_| Set org cluster defaults to given value |
 | _[apolo admin set\-org-cluster-quota](#apolo-admin-set-org-cluster-quota)_| Set org cluster quota to given values |
+| _[apolo admin set\-org-credits](#apolo-admin-set-org-credits)_| Set org credits to given value |
+| _[apolo admin set\-org-defaults](#apolo-admin-set-org-defaults)_| Set org defaults to a given value |
 | _[apolo admin set\-user-credits](#apolo-admin-set-user-credits)_| Set user credits to given value |
 | _[apolo admin set\-user-quota](#apolo-admin-set-user-quota)_| Set user quota to given values |
 | _[apolo admin show\-cluster-options](#apolo-admin-show-cluster-options)_| Show available cluster options |
@@ -521,7 +523,7 @@ Name | Description|
 
 ### apolo admin add-cluster-user
 
-Add user access to specified cluster.<br/><br/>The command supports one of 3 user roles: admin, manager or user.
+Add user access to a specified cluster.<br/><br/>The command supports one of three user roles: admin, manager or user.
 
 **Usage:**
 
@@ -534,7 +536,6 @@ apolo admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
-|_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)|
 |_\-j, --jobs AMOUNT_|Maximum running jobs quota \(`unlimited' stands for no limit)|
 |_--org ORG_|org name for org-cluster users|
 
@@ -585,14 +586,14 @@ Name | Description|
 
 
 
-### apolo admin add-org-cluster-credits
+### apolo admin add-org-credits
 
-Add given values to org cluster balance
+Add given values to org balance
 
 **Usage:**
 
 ```bash
-apolo admin add-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
+apolo admin add-org-credits [OPTIONS] ORG
 ```
 
 **Options:**
@@ -702,12 +703,12 @@ Name | Description|
 
 ### apolo admin add-user-credits
 
-Add given values to user quota
+Add given values to user credits
 
 **Usage:**
 
 ```bash
-apolo admin add-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
+apolo admin add-user-credits [OPTIONS] ORG USER_NAME
 ```
 
 **Options:**
@@ -716,7 +717,6 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-c, --credits AMOUNT_|Credits amount to add  \[required]|
-|_--org ORG_|org name for org-cluster users|
 
 
 
@@ -1077,26 +1077,6 @@ Name | Description|
 
 
 
-### apolo admin set-org-cluster-credits
-
-Set org cluster credits to given value
-
-**Usage:**
-
-```bash
-apolo admin set-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
-```
-
-**Options:**
-
-Name | Description|
-|----|------------|
-|_--help_|Show this message and exit.|
-|_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[required]|
-
-
-
-
 ### apolo admin set-org-cluster-defaults
 
 Set org cluster defaults to given value
@@ -1139,14 +1119,14 @@ Name | Description|
 
 
 
-### apolo admin set-user-credits
+### apolo admin set-org-credits
 
-Set user credits to given value
+Set org credits to given value
 
 **Usage:**
 
 ```bash
-apolo admin set-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
+apolo admin set-org-credits [OPTIONS] ORG
 ```
 
 **Options:**
@@ -1155,7 +1135,46 @@ Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
 |_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[required]|
-|_--org ORG_|org name for org-cluster users|
+
+
+
+
+### apolo admin set-org-defaults
+
+Set org defaults to a given value
+
+**Usage:**
+
+```bash
+apolo admin set-org-defaults [OPTIONS] ORG_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\--user-default-credits AMOUNT_|Default credits amount to set for org users \(`unlimited' stands for no limit)  \[default: unlimited]|
+
+
+
+
+### apolo admin set-user-credits
+
+Set user credits to given value
+
+**Usage:**
+
+```bash
+apolo admin set-user-credits [OPTIONS] ORG USER_NAME
+```
+
+**Options:**
+
+Name | Description|
+|----|------------|
+|_--help_|Show this message and exit.|
+|_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)  \[required]|
 
 
 

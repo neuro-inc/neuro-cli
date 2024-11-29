@@ -45,8 +45,6 @@ class ClusterUserWithInfoFormatter:
         table.add_column("Email")
         table.add_column("Full name")
         table.add_column("Registered")
-        table.add_column("Credits", max_width=10, overflow="fold")
-        table.add_column("Spent credits", max_width=14, overflow="fold")
         table.add_column("Max jobs", max_width=10, overflow="fold")
         rows = []
 
@@ -59,8 +57,6 @@ class ClusterUserWithInfoFormatter:
                     user.user_info.email,
                     user.user_info.full_name,
                     format_datetime_iso(user.user_info.created_at),
-                    format_quota_details(user.balance.credits),
-                    format_quota_details(user.balance.spent_credits),
                     format_quota_details(user.quota.total_running_jobs),
                 )
             )
@@ -95,6 +91,8 @@ class OrgUserFormatter:
         table.add_column("Email")
         table.add_column("Full name")
         table.add_column("Registered")
+        table.add_column("Credits", max_width=10, overflow="fold")
+        table.add_column("Spent credits", max_width=14, overflow="fold")
         rows = []
 
         for user in org_users:
@@ -105,6 +103,8 @@ class OrgUserFormatter:
                     user.user_info.email,
                     user.user_info.full_name,
                     format_datetime_iso(user.user_info.created_at),
+                    format_quota_details(user.balance.credits),
+                    format_quota_details(user.balance.spent_credits),
                 )
             )
         rows.sort(key=operator.itemgetter(0))
@@ -344,6 +344,20 @@ def _has_idle(node_pools: Iterable[_NodePool]) -> bool:
         if node_pool.idle_size:
             return True
     return False
+
+
+class OrgFormatter:
+    def __call__(self, org: _Org) -> RenderableType:
+        table = Table(box=None, show_header=False, show_edge=False)
+        table.add_column()
+        table.add_column(style="bold")
+        table.add_row("Name", org.name)
+        table.add_row("Credits", format_quota_details(org.balance.credits))
+        table.add_row("Spent credits", format_quota_details(org.balance.spent_credits))
+        table.add_row(
+            "User default credits", format_quota_details(org.user_default_credits)
+        )
+        return table
 
 
 class OrgsFormatter:

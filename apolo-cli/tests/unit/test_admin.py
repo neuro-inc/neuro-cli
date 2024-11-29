@@ -17,6 +17,8 @@ from apolo_sdk import (
     _EFSPerformanceMode,
     _EFSThroughputMode,
     _NodePoolOptions,
+    _OrgUserRoleType,
+    _OrgUserWithInfo,
     _Quota,
     _ResourcePreset,
     _TPUPreset,
@@ -37,7 +39,6 @@ def mock_create_cluster_user() -> Iterator[None]:
             cluster_name: str,
             user_name: str,
             role: _ClusterUserRoleType,
-            balance: _Balance,
             quota: _Quota,
             org_name: Optional[str] = None,
         ) -> _ClusterUserWithInfo:
@@ -48,7 +49,7 @@ def mock_create_cluster_user() -> Iterator[None]:
                 org_name=org_name,
                 role=_ClusterUserRoleType.MANAGER,
                 quota=quota,
-                balance=balance,
+                balance=_Balance(),
                 user_info=_UserInfo(
                     email="some@email.com",
                     created_at=None,
@@ -67,7 +68,6 @@ def test_add_cluster_user_print_result(run_cli: _RunCli) -> None:
     assert not capture.err
     assert "Added ivan to cluster default as manager" in capture.out
     assert "Jobs: unlimited" in capture.out
-    assert "Credits: unlimited" in capture.out
     assert capture.code == 0
 
     # Same with quiet mode
@@ -78,40 +78,6 @@ def test_add_cluster_user_print_result(run_cli: _RunCli) -> None:
     assert not capture.err
     assert not capture.out
     assert capture.code == 0
-
-
-def test_add_cluster_user_with_credits(run_cli: _RunCli) -> None:
-    for value in ("1234.5", "0", "-1234.5", "unlimited"):
-        with mock_create_cluster_user():
-            capture = run_cli(
-                [
-                    "admin",
-                    "add-cluster-user",
-                    "default",
-                    "ivan",
-                    "admin",
-                    "--credits",
-                    value,
-                ]
-            )
-        assert not capture.err
-        assert capture.code == 0
-
-    for value in ("spam", "inf", "nan", "infinity", "Infinity"):
-        with mock_create_cluster_user():
-            capture = run_cli(
-                [
-                    "admin",
-                    "add-cluster-user",
-                    "default",
-                    "ivan",
-                    "admin",
-                    "--credits",
-                    value,
-                ]
-            )
-        assert f"{value} is not valid decimal number" in capture.err, capture
-        assert capture.code == 2
 
 
 def test_add_cluster_user_with_jobs(run_cli: _RunCli) -> None:
@@ -208,21 +174,18 @@ def test_update_cluster_user(run_cli: _RunCli) -> None:
 
 
 def test_set_user_credits(run_cli: _RunCli) -> None:
-    with mock.patch.object(_Admin, "update_cluster_user_balance") as mocked:
+    with mock.patch.object(_Admin, "update_org_user_balance") as mocked:
 
-        async def update_cluster_user_balance(
-            cluster_name: str,
+        async def update_org_user_balance(
+            org_name: str,
             user_name: str,
             credits: Optional[Decimal],
-            org_name: Optional[str] = None,
-        ) -> _ClusterUserWithInfo:
-            return _ClusterUserWithInfo(
-                cluster_name=cluster_name,
-                user_name=user_name,
-                role=_ClusterUserRoleType.USER,
-                quota=_Quota(),
-                balance=_Balance(credits=credits),
+        ) -> _OrgUserWithInfo:
+            return _OrgUserWithInfo(
                 org_name=org_name,
+                user_name=user_name,
+                role=_OrgUserRoleType.USER,
+                balance=_Balance(credits=credits),
                 user_info=_UserInfo(email=f"{user_name}@example.org"),
             )
 
@@ -232,48 +195,45 @@ def test_set_user_credits(run_cli: _RunCli) -> None:
             ("-1234.5", "-1234.50"),
             ("unlimited", "unlimited"),
         ):
-            mocked.side_effect = update_cluster_user_balance
+            mocked.side_effect = update_org_user_balance
             capture = run_cli(
                 ["admin", "set-user-credits", "default", "ivan", "--credits", value]
             )
             assert not capture.err
             assert capture.out == (
-                f"New credits for ivan on cluster default:\n"
+                f"New credits for ivan as member of org default:\n"
                 f"Credits: {outvalue}\n"
                 f"Credits spent: 0.00"
             )
             assert capture.code == 0
 
         for value in ("spam", "inf", "nan", "infinity", "Infinity"):
-            mocked.side_effect = update_cluster_user_balance
+            mocked.side_effect = update_org_user_balance
             capture = run_cli(
                 ["admin", "set-user-credits", "default", "ivan", "--credits", value]
             )
             assert f"{value} is not valid decimal number" in capture.err
             assert capture.code == 2
 
-        mocked.side_effect = update_cluster_user_balance
+        mocked.side_effect = update_org_user_balance
         capture = run_cli(["admin", "set-user-credits", "default", "ivan"])
         assert "Missing option '-c' / '--credits'." in capture.err
         assert capture.code == 2
 
 
 def test_add_user_credits(run_cli: _RunCli) -> None:
-    with mock.patch.object(_Admin, "update_cluster_user_balance_by_delta") as mocked:
+    with mock.patch.object(_Admin, "update_org_user_balance_by_delta") as mocked:
 
-        async def update_cluster_user_balance_by_delta(
-            cluster_name: str,
+        async def update_org_user_balance_by_delta(
+            org_name: str,
             user_name: str,
             delta: Decimal,
-            org_name: Optional[str] = None,
-        ) -> _ClusterUserWithInfo:
-            return _ClusterUserWithInfo(
-                cluster_name=cluster_name,
-                user_name=user_name,
-                role=_ClusterUserRoleType.USER,
-                quota=_Quota(),
-                balance=_Balance(credits=100 + delta),
+        ) -> _OrgUserWithInfo:
+            return _OrgUserWithInfo(
                 org_name=org_name,
+                user_name=user_name,
+                role=_OrgUserRoleType.USER,
+                balance=_Balance(credits=100 + delta),
                 user_info=_UserInfo(email=f"{user_name}@example.org"),
             )
 
@@ -282,27 +242,27 @@ def test_add_user_credits(run_cli: _RunCli) -> None:
             ("0", "100.00"),
             ("-1234.5", "-1134.50"),
         ):
-            mocked.side_effect = update_cluster_user_balance_by_delta
+            mocked.side_effect = update_org_user_balance_by_delta
             capture = run_cli(
                 ["admin", "add-user-credits", "default", "ivan", "--credits", value]
             )
             assert not capture.err
             assert capture.out == (
-                f"New credits for ivan on cluster default:\n"
+                f"New credits for ivan as member of org default:\n"
                 f"Credits: {outvalue}\n"
                 f"Credits spent: 0.00"
             )
             assert capture.code == 0
 
         for value in ("spam", "unlimited", "inf", "nan", "infinity", "Infinity"):
-            mocked.side_effect = update_cluster_user_balance_by_delta
+            mocked.side_effect = update_org_user_balance_by_delta
             capture = run_cli(
                 ["admin", "add-user-credits", "default", "ivan", "--credits", value]
             )
             assert f"{value} is not valid decimal number" in capture.err
             assert capture.code == 2
 
-        mocked.side_effect = update_cluster_user_balance_by_delta
+        mocked.side_effect = update_org_user_balance_by_delta
         capture = run_cli(["admin", "add-user-credits", "default", "ivan"])
         assert "Missing option '-c' / '--credits'." in capture.err
         assert capture.code == 2
