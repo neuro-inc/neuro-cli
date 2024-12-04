@@ -608,7 +608,7 @@ Name | Description|
 
 ### apolo admin add-org-user
 
-Add user access to specified org.<br/><br/>The command supports one of 3 user roles: admin, manager or user.
+Add user access to specified org.<br/><br/>The command supports one of three user roles: admin, manager or user.
 
 **Usage:**
 
@@ -621,6 +621,7 @@ apolo admin add-org-user [OPTIONS] ORG_NAME USER_NAME [ROLE]
 Name | Description|
 |----|------------|
 |_--help_|Show this message and exit.|
+|_\-c, --credits AMOUNT_|Credits amount to set \(`unlimited' stands for no limit)|
 
 
 

@@ -194,14 +194,15 @@ apolo admin add-org-user [OPTIONS] ORG_NAME USER_NAME [ROLE]
 
 Add user access to specified org.
 
-The command supports one of 3 user roles:
-admin, manager or user.
+The command supports one of three user
+roles: admin, manager or user.
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\) |
 
 
 

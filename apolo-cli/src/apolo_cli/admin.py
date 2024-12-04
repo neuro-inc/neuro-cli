@@ -1360,21 +1360,37 @@ async def get_org_users(root: Root, org_name: str) -> None:
     metavar="[ROLE]",
     type=click.Choice([str(role) for role in list(_OrgUserRoleType)]),
 )
+@option(
+    "-c",
+    "--credits",
+    metavar="AMOUNT",
+    type=str,
+    default=None,
+    show_default=True,
+    help="Credits amount to set (`unlimited' stands for no limit)",
+)
 async def add_org_user(
     root: Root,
     org_name: str,
     user_name: str,
     role: str,
+    credits: str | None,
 ) -> None:
     """
     Add user access to specified org.
 
-    The command supports one of 3 user roles: admin, manager or user.
+    The command supports one of three user roles: admin, manager or user.
     """
+    if credits is None and role == "user":
+        balance = None
+    else:
+        balance = _Balance(credits=_parse_credits_value(credits or UNLIMITED))
+
     user = await root.client._admin.create_org_user(
-        org_name,
-        user_name,
-        _OrgUserRoleType(role),
+        org_name=org_name,
+        user_name=user_name,
+        role=_OrgUserRoleType(role),
+        balance=balance,
     )
     if not root.quiet:
         root.print(
@@ -1383,6 +1399,8 @@ async def add_org_user(
             f"[bold]{rich_escape(user.role)}[/bold]",
             markup=True,
         )
+        balance_fmt = BalanceFormatter()
+        root.print(balance_fmt(user.balance))
 
 
 @command()

@@ -62,6 +62,33 @@ def mock_create_cluster_user() -> Iterator[None]:
         yield
 
 
+@contextmanager
+def mock_create_org_user() -> Iterator[None]:
+    with mock.patch.object(_Admin, "create_org_user") as mocked:
+
+        async def create_org_user(
+            org_name: str,
+            user_name: str,
+            role: _OrgUserRoleType,
+            balance: _Balance,
+        ) -> _OrgUserWithInfo:
+            return _OrgUserWithInfo(
+                user_name=user_name,
+                org_name=org_name,
+                role=role,
+                balance=balance,
+                user_info=_UserInfo(
+                    email="some@email.com",
+                    created_at=None,
+                    first_name=None,
+                    last_name=None,
+                ),
+            )
+
+        mocked.side_effect = create_org_user
+        yield
+
+
 def test_add_cluster_user_print_result(run_cli: _RunCli) -> None:
     with mock_create_cluster_user():
         capture = run_cli(["admin", "add-cluster-user", "default", "ivan", "admin"])
@@ -660,3 +687,37 @@ def test_update_node_pool(run_cli: _RunCli) -> None:
         )
         assert not capture.err
         assert not capture.out
+
+
+def test_add_org_user_with_credits(run_cli: _RunCli) -> None:
+    for value in ("1234.5", "0", "-1234.5", "unlimited"):
+        with mock_create_org_user():
+            capture = run_cli(
+                [
+                    "admin",
+                    "add-org-user",
+                    "default",
+                    "ivan",
+                    "admin",
+                    "--credits",
+                    value,
+                ]
+            )
+        assert not capture.err
+        assert capture.code == 0
+
+    for value in ("spam", "inf", "nan", "infinity", "Infinity"):
+        with mock_create_cluster_user():
+            capture = run_cli(
+                [
+                    "admin",
+                    "add-org-user",
+                    "default",
+                    "ivan",
+                    "admin",
+                    "--credits",
+                    value,
+                ]
+            )
+        assert f"{value} is not valid decimal number" in capture.err, capture
+        assert capture.code == 2
