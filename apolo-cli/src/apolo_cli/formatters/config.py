@@ -87,7 +87,7 @@ class BalanceFormatter:
         )
 
     @staticmethod
-    def calculate_balance_color(credits: Optional[Decimal] = None):
+    def calculate_balance_color(credits: Optional[Decimal] = None) -> str:
         if not credits:  # handles both `0` and `None` cases
             return "none"
         return "green" if credits >= 0 else "red"
