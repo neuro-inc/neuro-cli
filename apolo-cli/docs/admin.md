@@ -14,15 +14,15 @@ Cluster administration commands.
 | Usage | Description |
 | :--- | :--- |
 | [_add-cluster_](admin.md#add-cluster) | Create a new cluster |
-| [_add-cluster-user_](admin.md#add-cluster-user) | Add user access to specified cluster |
+| [_add-cluster-user_](admin.md#add-cluster-user) | Add user access to a specified cluster |
 | [_add-org_](admin.md#add-org) | Create a new org |
 | [_add-org-cluster_](admin.md#add-org-cluster) | Add org access to specified cluster |
-| [_add-org-cluster-credits_](admin.md#add-org-cluster-credits) | Add given values to org cluster balance |
+| [_add-org-credits_](admin.md#add-org-credits) | Add given values to org balance |
 | [_add-org-user_](admin.md#add-org-user) | Add user access to specified org |
 | [_add-project_](admin.md#add-project) | Add new project to specified cluster |
 | [_add-project-user_](admin.md#add-project-user) | Add user access to specified project |
 | [_add-resource-preset_](admin.md#add-resource-preset) | Add new resource preset |
-| [_add-user-credits_](admin.md#add-user-credits) | Add given values to user quota |
+| [_add-user-credits_](admin.md#add-user-credits) | Add given values to user credits |
 | [_generate-cluster-config_](admin.md#generate-cluster-config) | Create a cluster configuration file |
 | [_get-cluster-orgs_](admin.md#get-cluster-orgs) | Print the list of all orgs in the cluster |
 | [_get-cluster-users_](admin.md#get-cluster-users) | List users in specified cluster |
@@ -41,9 +41,10 @@ Cluster administration commands.
 | [_remove-project_](admin.md#remove-project) | Drop a project |
 | [_remove-project-user_](admin.md#remove-project-user) | Remove user access from the project |
 | [_remove-resource-preset_](admin.md#remove-resource-preset) | Remove resource preset |
-| [_set-org-cluster-credits_](admin.md#set-org-cluster-credits) | Set org cluster credits to given value |
 | [_set-org-cluster-defaults_](admin.md#set-org-cluster-defaults) | Set org cluster defaults to given value |
 | [_set-org-cluster-quota_](admin.md#set-org-cluster-quota) | Set org cluster quota to given values |
+| [_set-org-credits_](admin.md#set-org-credits) | Set org credits to given value |
+| [_set-org-defaults_](admin.md#set-org-defaults) | Set org defaults to a given value |
 | [_set-user-credits_](admin.md#set-user-credits) | Set user credits to given value |
 | [_set-user-quota_](admin.md#set-user-quota) | Set user quota to given values |
 | [_show-cluster-options_](admin.md#show-cluster-options) | Show available cluster options |
@@ -86,7 +87,7 @@ provided config.
 
 ### add-cluster-user
 
-Add user access to specified cluster
+Add user access to a specified cluster
 
 
 #### Usage
@@ -95,17 +96,16 @@ Add user access to specified cluster
 apolo admin add-cluster-user [OPTIONS] CLUSTER_NAME USER_NAME [ROLE]
 ```
 
-Add user access to specified cluster.
+Add user access to a specified cluster.
 
-The command supports one of 3 user
-roles: admin, manager or user.
+The command supports one of three
+user roles: admin, manager or user.
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\) |
 | _-j, --jobs AMOUNT_ | Maximum running jobs quota \(`unlimited' stands for no limit\) |
 | _--org ORG_ | org name for org-cluster users |
 
@@ -159,18 +159,18 @@ Add org access to specified cluster.
 
 
 
-### add-org-cluster-credits
+### add-org-credits
 
-Add given values to org cluster balance
+Add given values to org balance
 
 
 #### Usage
 
 ```bash
-apolo admin add-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
+apolo admin add-org-credits [OPTIONS] ORG
 ```
 
-Add given values to org cluster balance
+Add given values to org balance
 
 #### Options
 
@@ -194,14 +194,15 @@ apolo admin add-org-user [OPTIONS] ORG_NAME USER_NAME [ROLE]
 
 Add user access to specified org.
 
-The command supports one of 3 user roles:
-admin, manager or user.
+The command supports one of three user
+roles: admin, manager or user.
 
 #### Options
 
 | Name | Description |
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\) |
 
 
 
@@ -291,16 +292,16 @@ Add new resource preset
 
 ### add-user-credits
 
-Add given values to user quota
+Add given values to user credits
 
 
 #### Usage
 
 ```bash
-apolo admin add-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
+apolo admin add-user-credits [OPTIONS] ORG USER_NAME
 ```
 
-Add given values to user quota
+Add given values to user credits
 
 #### Options
 
@@ -308,7 +309,6 @@ Add given values to user quota
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _-c, --credits AMOUNT_ | Credits amount to add  _\[required\]_ |
-| _--org ORG_ | org name for org-cluster users |
 
 
 
@@ -711,28 +711,6 @@ Remove resource preset
 
 
 
-### set-org-cluster-credits
-
-Set org cluster credits to given value
-
-
-#### Usage
-
-```bash
-apolo admin set-org-cluster-credits [OPTIONS] CLUSTER_NAME ORG_NAME
-```
-
-Set org cluster credits to given value
-
-#### Options
-
-| Name | Description |
-| :--- | :--- |
-| _--help_ | Show this message and exit. |
-| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[required\]_ |
-
-
-
 ### set-org-cluster-defaults
 
 Set org cluster defaults to given value
@@ -779,6 +757,50 @@ Set org cluster quota to given values
 
 
 
+### set-org-credits
+
+Set org credits to given value
+
+
+#### Usage
+
+```bash
+apolo admin set-org-credits [OPTIONS] ORG
+```
+
+Set org credits to given value
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[required\]_ |
+
+
+
+### set-org-defaults
+
+Set org defaults to a given value
+
+
+#### Usage
+
+```bash
+apolo admin set-org-defaults [OPTIONS] ORG_NAME
+```
+
+Set org defaults to a given value
+
+#### Options
+
+| Name | Description |
+| :--- | :--- |
+| _--help_ | Show this message and exit. |
+| _--user-default-credits AMOUNT_ | Default credits amount to set for org users \(`unlimited' stands for no limit\)  _\[default: unlimited\]_ |
+
+
+
 ### set-user-credits
 
 Set user credits to given value
@@ -787,7 +809,7 @@ Set user credits to given value
 #### Usage
 
 ```bash
-apolo admin set-user-credits [OPTIONS] CLUSTER_NAME USER_NAME
+apolo admin set-user-credits [OPTIONS] ORG USER_NAME
 ```
 
 Set user credits to given value
@@ -798,7 +820,6 @@ Set user credits to given value
 | :--- | :--- |
 | _--help_ | Show this message and exit. |
 | _-c, --credits AMOUNT_ | Credits amount to set \(`unlimited' stands for no limit\)  _\[required\]_ |
-| _--org ORG_ | org name for org-cluster users |
 
 
 
