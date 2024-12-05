@@ -29,6 +29,8 @@ from apolo_sdk import (
     _NodePoolOptions,
     _OnPremCloudProvider,
     _OrgCluster,
+    _OrgUserRoleType,
+    _OrgUserWithInfo,
     _Quota,
     _StorageInstance,
     _UserInfo,
@@ -40,6 +42,7 @@ from apolo_cli.formatters.admin import (
     ClusterUserFormatter,
     ClusterUserWithInfoFormatter,
     OrgClusterFormatter,
+    OrgUserFormatter,
 )
 
 RichCmp = Callable[[RenderableType], None]
@@ -471,3 +474,71 @@ class TestCloudProviderOptionsFormatter:
             ],
         )
         rich_cmp(formatter(options))
+
+
+class TestOrgUserFormatter:
+    def test_list_users_with_user_info(self, rich_cmp: RichCmp) -> None:
+        formatter = OrgUserFormatter()
+        users = [
+            _OrgUserWithInfo(
+                user_name="denis",
+                org_name="org",
+                role=_OrgUserRoleType("admin"),
+                balance=_Balance(),
+                user_info=_UserInfo(
+                    first_name="denis",
+                    last_name="admin",
+                    email="denis@domain.name",
+                    created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
+                ),
+            ),
+            _OrgUserWithInfo(
+                user_name="andrew",
+                org_name="org",
+                role=_OrgUserRoleType("manager"),
+                balance=_Balance(credits=Decimal(100)),
+                user_info=_UserInfo(
+                    first_name="andrew",
+                    last_name=None,
+                    email="andrew@domain.name",
+                    created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
+                ),
+            ),
+            _OrgUserWithInfo(
+                user_name="ivan",
+                org_name="org",
+                role=_OrgUserRoleType("user"),
+                balance=_Balance(),
+                user_info=_UserInfo(
+                    first_name=None,
+                    last_name="user",
+                    email="ivan@domain.name",
+                    created_at=isoparse("2017-03-04T12:28:59.759433+00:00"),
+                ),
+            ),
+            _OrgUserWithInfo(
+                user_name="alex",
+                org_name="org",
+                role=_OrgUserRoleType("user"),
+                balance=_Balance(credits=Decimal(100), spent_credits=Decimal(20)),
+                user_info=_UserInfo(
+                    first_name=None,
+                    last_name=None,
+                    email="alex@domain.name",
+                    created_at=None,
+                ),
+            ),
+            _OrgUserWithInfo(
+                user_name="alex",
+                org_name="org",
+                role=_OrgUserRoleType("user"),
+                balance=_Balance(credits=Decimal(100), spent_credits=Decimal(20)),
+                user_info=_UserInfo(
+                    first_name=None,
+                    last_name=None,
+                    email="alex@domain.name",
+                    created_at=None,
+                ),
+            ),
+        ]
+        rich_cmp(formatter(users))

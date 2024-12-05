@@ -1,0 +1,9 @@
+╷         ╷                    ╷             ╷                                  ╷           ╷                
+  Name   │ Role    │ Email              │ Full name   │ Registered                       │ Credits   │ Spent credits  
+╺━━━━━━━━┿━━━━━━━━━┿━━━━━━━━━━━━━━━━━━━━┿━━━━━━━━━━━━━┿━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┿━━━━━━━━━━━┿━━━━━━━━━━━━━━━╸
+  alex   │ user    │ alex@domain.name   │             │                                  │ 100.00    │ 20.00          
+  alex   │ user    │ alex@domain.name   │             │                                  │ 100.00    │ 20.00          
+  andrew │ manager │ andrew@domain.name │ andrew      │ 2017-03-04T12:28:59.759433+00:00 │ 100.00    │ 0.00           
+  denis  │ admin   │ denis@domain.name  │ denis admin │ 2017-03-04T12:28:59.759433+00:00 │ unlimited │ 0.00           
+  ivan   │ user    │ ivan@domain.name   │ user        │ 2017-03-04T12:28:59.759433+00:00 │ unlimited │ 0.00           
+         ╵         ╵                    ╵             ╵                                  ╵           ╵
