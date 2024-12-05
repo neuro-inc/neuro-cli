@@ -22,7 +22,8 @@ from apolo_cli.stats import (
 def db() -> sqlite3.Connection:
     db = sqlite3.connect(":memory:")
     db.row_factory = sqlite3.Row
-    return db
+    yield db
+    db.close()
 
 
 def check_tables(db: sqlite3.Connection) -> None:
