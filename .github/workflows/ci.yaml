@@ -65,7 +65,7 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         continue-on-error: [false]
         cmd: [sdk, cli]
         # temporarily disable windows tests
@@ -75,6 +75,9 @@ jobs:
           os: macos
           continue-on-error: false
         - python-version: '3.11'
+          os: macos
+          continue-on-error: false
+        - python-version: '3.12'
           os: macos
           continue-on-error: false
         # os: [ubuntu, macos, windows]
@@ -87,15 +90,15 @@ jobs:
         #   os: macos
         # - python-version: '3.11'
         #   os: windows
-        include:
-        - python-version: '3.13'
-          os: ubuntu
-          cmd: sdk
-          continue-on-error: true
-        - python-version: '3.13'
-          os: ubuntu
-          cmd: cli
-          continue-on-error: true
+        # include:
+        # - python-version: '3.14'
+        #   os: ubuntu
+        #   cmd: sdk
+        #   continue-on-error: true
+        # - python-version: '3.14'
+        #   os: ubuntu
+        #   cmd: cli
+        #   continue-on-error: true
       fail-fast: false
     runs-on: ${{ matrix.os }}-latest
     timeout-minutes: 15
@@ -141,7 +144,7 @@ jobs:
       (github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]')
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
         os: [ubuntu, macos, windows]
         exclude:
         - python-version: '3.10'
@@ -151,6 +154,10 @@ jobs:
         - python-version: '3.11'
           os: macos
         - python-version: '3.11'
+          os: windows
+        - python-version: '3.12'
+          os: macos
+        - python-version: '3.12'
           os: windows
       fail-fast: false
     runs-on: ${{ matrix.os }}-latest
