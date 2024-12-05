@@ -69,11 +69,28 @@ class BalanceFormatter:
         credits_details = format_quota_details(balance.credits)
         spent_credits_details = format_quota_details(balance.spent_credits)
         return RichGroup(
-            Text.assemble(Text("Credits", style="bold"), f": ", credits_details),
             Text.assemble(
-                Text("Credits spent", style="bold"), f": ", spent_credits_details
+                Text("Credits", style="bold"),
+                f": ",
+                Text(
+                    credits_details, style=self.calculate_balance_color(balance.credits)
+                ),
+            ),
+            Text.assemble(
+                Text("Credits spent", style="bold"),
+                f": ",
+                Text(
+                    spent_credits_details,
+                    style=self.calculate_balance_color(balance.spent_credits),
+                ),
             ),
         )
+
+    @staticmethod
+    def calculate_balance_color(credits: Optional[Decimal] = None) -> str:
+        if not credits:  # handles both `0` and `None` cases
+            return "none"
+        return "green" if credits >= 0 else "red"
 
 
 class ClustersFormatter:

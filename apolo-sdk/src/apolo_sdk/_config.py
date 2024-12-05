@@ -474,10 +474,10 @@ def _open_db_rw(
         os.chmod(config_file, 0o600)
 
         conn.row_factory = sqlite3.Row
-        with conn as db:
-            db.execute("PRAGMA journal_mode=WAL")
-            yield db
+        conn.execute("PRAGMA journal_mode=WAL")
+        yield conn
     except sqlite3.DatabaseError as exc:
+        conn.close()
         if not suppress_errors:
             raise
         msg = "Cannot send the usage statistics: %s"
@@ -528,8 +528,7 @@ def _open_db_ro(
         if not skip_schema_check:
             _check_db(conn)
         conn.row_factory = sqlite3.Row
-        with conn as db:
-            yield db
+        yield conn
     finally:
         conn.close()
 
