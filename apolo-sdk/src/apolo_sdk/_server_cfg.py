@@ -85,7 +85,7 @@ class Project:
 @rewrite_module
 @dataclass(frozen=True)
 class AppsConfig:
-    apps_hostname_templates: Sequence[str] = ()
+    hostname_templates: Sequence[str] = ()
 
 
 @rewrite_module
@@ -188,11 +188,12 @@ def _parse_cluster_config(payload: Dict[str, Any]) -> Cluster:
         orgs = [org if org is not None else "NO_ORG" for org in orgs]
 
     apps_payload = payload.get("apps", {})
-    apps_config = AppsConfig()
     if apps_payload:
         apps_config = AppsConfig(
-            apps_hostname_templates=apps_payload.get("apps_hostname_templates", [])
+            hostname_templates=apps_payload.get("apps_hostname_templates", [])
         )
+    else:
+        apps_config = AppsConfig()
 
     cluster_config = Cluster(
         name=payload["name"],

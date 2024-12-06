@@ -152,7 +152,7 @@ def cluster_config() -> Cluster:
         name="default",
         orgs=["NO_ORG"],
         apps=AppsConfig(
-            apps_hostname_templates=["{app_name}.default.neu.ro"],
+            hostname_templates=["{app_name}.default.neu.ro"],
         ),
     )
 
@@ -273,7 +273,7 @@ def make_client(
                 },
                 name="default",
                 orgs=[org_name or "NO_ORG"],
-                apps=AppsConfig(apps_hostname_templates=["{app_name}.default.neu.ro"]),
+                apps=AppsConfig(hostname_templates=["{app_name}.default.neu.ro"]),
             )
             cluster2_config = Cluster(
                 registry_url=(url / "registry2"),
@@ -306,7 +306,7 @@ def make_client(
                 },
                 name="another",
                 orgs=["NO_ORG", "some_org"],
-                apps=AppsConfig(apps_hostname_templates=["{app_name2}.default.neu.ro"]),
+                apps=AppsConfig(hostname_templates=["{app_name2}.default.neu.ro"]),
             )
             clusters = {
                 cluster_config.name: cluster_config,

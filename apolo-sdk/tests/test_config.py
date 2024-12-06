@@ -196,7 +196,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
                     memory=2 * 2**30,
                 )
             },
-            apps=AppsConfig(apps_hostname_templates=["{name}.dev.neu.ro"]),
+            apps=AppsConfig(hostname_templates=["{name}.dev.neu.ro"]),
         ),
         "another": Cluster(
             name="another",
@@ -224,7 +224,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
                     memory=14 * 2**30,
                 )
             },
-            apps=AppsConfig(apps_hostname_templates=["{name}.dev.neu.ro"]),
+            apps=AppsConfig(hostname_templates=["{name}.dev.neu.ro"]),
         ),
         "third": Cluster(
             name="third",
@@ -252,7 +252,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
                     memory=14 * 2**30,
                 )
             },
-            apps=AppsConfig(apps_hostname_templates=["{name}.dev.neu.ro"]),
+            apps=AppsConfig(hostname_templates=["{name}.dev.neu.ro"]),
         ),
     }
 
@@ -478,7 +478,7 @@ async def test_clusters(
                 buckets_url=srv.make_url("/buckets"),
                 resource_pools=mock.ANY,
                 presets=mock.ANY,
-                apps=AppsConfig(apps_hostname_templates=["{app_name}.default.neu.ro"]),
+                apps=AppsConfig(hostname_templates=["{app_name}.default.neu.ro"]),
             ),
             "another": Cluster(
                 name="another",
@@ -492,7 +492,7 @@ async def test_clusters(
                 buckets_url=srv.make_url("/buckets2"),
                 resource_pools=mock.ANY,
                 presets=mock.ANY,
-                apps=AppsConfig(apps_hostname_templates=["{app_name2}.default.neu.ro"]),
+                apps=AppsConfig(hostname_templates=["{app_name2}.default.neu.ro"]),
             ),
         }
 
@@ -649,7 +649,7 @@ async def test_fetch(
                         scheduler_enabled=False,
                     )
                 },
-                apps=AppsConfig(apps_hostname_templates=()),
+                apps=AppsConfig(hostname_templates=()),
             )
         }
 

@@ -416,7 +416,7 @@ async def test_get_server_config_with_token(
                 },
                 name="default",
                 orgs=["NO_ORG"],
-                apps=AppsConfig(apps_hostname_templates="customtemplate"),
+                apps=AppsConfig(hostname_templates="customtemplate"),
             )
         },
         projects={project.key: project},
