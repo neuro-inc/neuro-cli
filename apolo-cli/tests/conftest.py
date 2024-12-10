@@ -330,7 +330,7 @@ def make_client(
             clusters=clusters,
             projects=projects or {},
         )
-        config_dir = tmp_path / ".neuro"
+        config_dir = tmp_path / ".apolo"
         _save(config, config_dir)
         session = aiohttp.ClientSession(trace_configs=[_make_trace_config()])
         return Client._create(

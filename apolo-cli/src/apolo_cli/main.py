@@ -2,8 +2,6 @@ import asyncio
 import functools
 import io
 import logging
-import os
-import shutil
 import sys
 import warnings
 from importlib import import_module
@@ -133,15 +131,10 @@ class MainGroup(Group):
                 raise click.UsageError(f"{option} requires --trace")
             hide_token_bool = kwargs["hide_token"]
 
-        # The following code is compatibility layer with old images
-        # New client doesn't make use of NEURO_STEAL_CONFIG, but
-        # it is better to remove it from storage
-        # TODO: remove this and upload_and_map_config function
-        if "NEURO_STEAL_CONFIG" in os.environ:
-            path = Path(os.environ["NEURO_STEAL_CONFIG"])
-            if path.exists():
-                shutil.rmtree(path)
-        # End of compatibility layer
+        config_path = kwargs["config_path"]
+        if config_path == apolo_sdk.DEFAULT_CONFIG_PATH:
+            # TODO: remove this fallback eventually
+            config_path = kwargs["neuromation_config"]
 
         root = Root(
             verbosity=verbosity,
@@ -382,6 +375,15 @@ def print_options(
     help="Give less output. Option is additive, and can be used up to 2 times.",
 )
 @option(
+    "--config-path",
+    type=click.Path(dir_okay=True, file_okay=False),
+    required=False,
+    help="Path to config directory.",
+    default=apolo_sdk.DEFAULT_CONFIG_PATH,
+    metavar="PATH",
+    envvar=apolo_sdk.CONFIG_ENV_NAME,
+)
+@option(
     "--neuromation-config",
     type=click.Path(dir_okay=True, file_okay=False),
     required=False,
@@ -467,6 +469,7 @@ def cli(
     ctx: click.Context,
     verbose: int,
     quiet: bool,
+    config_path: str,
     neuromation_config: str,
     show_traceback: bool,
     color: str,

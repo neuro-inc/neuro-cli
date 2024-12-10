@@ -34,9 +34,12 @@ if sys.version_info >= (3, 11):
 else:
     from importlib_metadata import entry_points
 
-DEFAULT_CONFIG_PATH = "~/.neuro"
-CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
-PASS_CONFIG_ENV_NAME = "NEURO_PASSED_CONFIG"
+DEFAULT_CONFIG_PATH = "~/.apolo"
+OLD_DEFAULT_CONFIG_PATH = "~/.neuro"
+CONFIG_ENV_NAME = "APOLO_CONFIG"
+OLD_CONFIG_ENV_NAME = "NEUROMATION_CONFIG"
+PASS_CONFIG_ENV_NAME = "APOLO_PASSED_CONFIG"
+OLD_PASS_CONFIG_ENV_NAME = "NEURO_PASSED_CONFIG"
 DEFAULT_API_URL = URL("https://staging.neu.ro/api/v1")
 
 
@@ -64,6 +67,22 @@ async def __make_session(
     )
 
 
+def _choose_path(explicit: Optional[Path]) -> Path:
+    if explicit is not None:
+        return explicit.expanduser()
+
+    items = [
+        os.environ.get(CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH),
+        os.environ.get(OLD_CONFIG_ENV_NAME, OLD_DEFAULT_CONFIG_PATH),
+    ]
+    paths = [Path(item).expanduser() for item in items]
+    for path in paths:
+        if (path / "db").exists():
+            return path
+    else:
+        return paths[0]
+
+
 @rewrite_module
 class Factory:
     def __init__(
@@ -73,9 +92,7 @@ class Factory:
         trace_id: Optional[str] = None,
         trace_sampled: Optional[bool] = None,
     ) -> None:
-        if path is None:
-            path = Path(os.environ.get(CONFIG_ENV_NAME, DEFAULT_CONFIG_PATH))
-        self._path = path.expanduser()
+        self._path = _choose_path(path)
         self._trace_configs = [_make_trace_config()]
         if trace_configs:
             self._trace_configs += trace_configs
@@ -94,7 +111,10 @@ class Factory:
         return (self._path / "db").exists()
 
     async def get(self, *, timeout: aiohttp.ClientTimeout = DEFAULT_TIMEOUT) -> Client:
-        if not self.is_config_present and PASS_CONFIG_ENV_NAME in os.environ:
+        if (
+            not self.is_config_present
+            and {PASS_CONFIG_ENV_NAME, OLD_PASS_CONFIG_ENV_NAME} & os.environ.keys()
+        ):
             await self.login_with_passed_config(timeout=timeout)
         try:
             return await self._get(timeout=timeout)
@@ -227,9 +247,12 @@ class Factory:
             try:
                 config_data = os.environ[PASS_CONFIG_ENV_NAME]
             except KeyError:
-                raise ConfigError(
-                    f"Config env variable {PASS_CONFIG_ENV_NAME} " "is not present"
-                )
+                try:
+                    config_data = os.environ[OLD_PASS_CONFIG_ENV_NAME]
+                except KeyError:
+                    raise ConfigError(
+                        f"Config env variable {PASS_CONFIG_ENV_NAME} " "is not present"
+                    )
         try:
             data = json.loads(base64.b64decode(config_data).decode())
             token = data["token"]

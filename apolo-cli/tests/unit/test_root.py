@@ -18,7 +18,7 @@ def root_uninitialized() -> Iterator[Root]:
         tty=False,
         disable_pypi_version_check=False,
         network_timeout=60,
-        config_path=Path("~/.neuro"),
+        config_path=Path("~/.apolo"),
         verbosity=0,
         trace=False,
         trace_hide_token=True,

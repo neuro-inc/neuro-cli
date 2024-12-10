@@ -13,7 +13,7 @@ from apolo_sdk._utils import queue_calls
 def project_root(tmp_path: Path) -> Path:
     project_root = tmp_path / "neuro-project"
     os.mkdir(project_root)
-    with open(project_root / ".neuro.toml", "w"):
+    with open(project_root / ".apolo.toml", "w"):
         pass
     return project_root
 

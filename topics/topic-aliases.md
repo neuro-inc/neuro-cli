@@ -4,7 +4,7 @@ Aliases exist to provide for abbreviating a system command, or for adding defaul
 
 Aliases are described in user-config files \(see `apolo help user-config` for details\).
 
-`~/.neuro/user.toml` is used for **global** aliases, `.neuro.toml` can be used for saving **project-specific** aliases. Project aliases everrides global ones if the same alias name exists in both configuration files.
+`~/.apolo/user.toml` is used for **global** aliases, `.apolo.toml` can be used for saving **project-specific** aliases. Project aliases everrides global ones if the same alias name exists in both configuration files.
 
 There are **internal** and **external** aliases. An **internal** alias executes built-in apolo command in-place, an  **external** alias executes any **system OS** command.
 
@@ -25,7 +25,7 @@ Available configuration arguments:
 * `[alias.lsl]`: defines a subgroup for named alias,
 
   ```text
-               `lsl` in this case.
+			   `lsl` in this case.
   ```
 
 * `cmd`: command to execute with provided overridden options,
@@ -53,12 +53,12 @@ For example, the following configuration defines `apolo du` command as an alias 
   exec = "du"
   args = "[FILE]..."
   options = [
-    "-h, --human-readable   print sizes in powers of 1024 (e.g., 1023M)",
-    "-d, --max-depth=N  max recursion level for subdirectories lookup",
+	"-h, --human-readable   print sizes in powers of 1024 (e.g., 1023M)",
+	"-d, --max-depth=N  max recursion level for subdirectories lookup",
   ]
   help = '''
-    Summarize disk usage of the set of FILEs,
-    recursively for directories.
+	Summarize disk usage of the set of FILEs,
+	recursively for directories.
   '''
 ```
 
@@ -127,4 +127,3 @@ Options with values are expanded as well, e.g. `apolo du -d 1` is expanded to `d
 ## Simplified mode
 
 In **simplified mode** the `exec` value does not contain any **substitutions**. In this case all parsed `options` and `args` are appended to executed command automatically if provided, e.g. `exec = "du"` is expanded to `exec = "du {human_readable} {max_depth} {file}"`
-

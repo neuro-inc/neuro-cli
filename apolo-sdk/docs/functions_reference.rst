@@ -84,8 +84,8 @@ Config Factory
    Platform and logging out.
 
    *path* (:class:`pathlib.Path`) can be provided for pointing on a *custom*
-   configuration directory (``~/.nmrc`` by default). The default value can be overridden
-   by ``NEUROMATION_CONFIG`` environment variable.
+   configuration directory (``~/.apolo`` by default). The default value can be overridden
+   by ``APOLO_CONFIG`` environment variable.
 
    .. attribute:: path
 
@@ -209,7 +209,7 @@ Config Factory
 
        Log into Apolo Platform using config data passed by platform. Use this only
        to login from the job that was started with ``pass_config=True``. Inside such
-       job, `config_data` is available under ``NEURO_PASSED_CONFIG`` environment variable.
+       job, `config_data` is available under ``APOLO_PASSED_CONFIG`` environment variable.
 
        :param str config_data: config data passed by platform.
 

@@ -267,7 +267,7 @@ class Config(metaclass=NoPublicConstructor):
     async def switch_project(self, name: str) -> None:
         if self._get_user_project_name() is not None:
             raise RuntimeError(
-                "Cannot switch the project. Please edit the '.neuro.toml' file."
+                "Cannot switch the project. Please edit the '.apolo.toml' file."
             )
         cluster_name = self.cluster_name
         org_name = self.org_name
@@ -287,7 +287,7 @@ class Config(metaclass=NoPublicConstructor):
         if self._get_user_cluster_name() is not None:
             raise RuntimeError(
                 "Cannot switch the project cluster. "
-                "Please edit the '.neuro.toml' file."
+                "Please edit the '.apolo.toml' file."
             )
         if name not in self.clusters:
             raise RuntimeError(
@@ -313,7 +313,7 @@ class Config(metaclass=NoPublicConstructor):
     async def switch_org(self, name: str) -> None:
         if self._get_user_org_name() is not None:
             raise RuntimeError(
-                "Cannot switch the project org. Please edit the '.neuro.toml' file."
+                "Cannot switch the project org. Please edit the '.apolo.toml' file."
             )
         if name not in self._cluster.orgs:
             # select first available cluster for new org_name
@@ -454,7 +454,11 @@ def _load_user_config(plugin_manager: PluginManager, path: Path) -> Mapping[str,
     except ConfigError:
         return config
     else:
-        filename = project_root / ".neuro.toml"
+        filename = project_root / ".apolo.toml"
+        if not filename.exists():
+            filename2 = project_root / ".neuro.toml"
+            if filename2.exists():
+                filename = filename2
         local_config = _load_file(
             plugin_manager, filename, allow_cluster_name=True, allow_org_name=True
         )

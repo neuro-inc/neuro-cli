@@ -196,6 +196,9 @@ def find_project_root(path: Optional[Path] = None) -> Path:
         path = Path.cwd()
     here = path
     while here.parent != here:
+        config = here / ".apolo.toml"
+        if config.exists():
+            return here
         config = here / ".neuro.toml"
         if config.exists():
             return here
