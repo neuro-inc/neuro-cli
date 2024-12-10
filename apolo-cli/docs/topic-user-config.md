@@ -8,10 +8,10 @@ There are two types of configuration files that a project may have: **global** a
 **local**. Both of these are completely optional.
 
 The global file is located in the standard apolo config path. Apolo CLI uses the
-`~/.neuro` folder by default, so the full path for the global config file is
-`~/.neuro/user.toml`.
+`~/.apolo` folder by default, so the full path for the global config file is
+`~/.apolo/user.toml`.
 
-The local config file is named `.neuro.toml` and the CLI searches for this file
+The local config file is named `.apolo.toml` and the CLI searches for this file
 starting from the current folder up to the root directory.
 
 Local and global configurations that were found by the CLI are then merged.
@@ -93,10 +93,10 @@ Default value for the `apolo cp --exclude-from-files=XXX` option.
 
 The value is a list of filenames that contain patterns for excluding files
 and directories from being uploaded. For every processed folder,
-patterns from the matched exclusion files (e.g., ".neuroignore")
+patterns from the matched exclusion files (e.g., ".apoloignore")
 are read and recursively applied to the directory content.
 
-Default is `[".neuroignore"]`.
+Default is `[".apoloignore"]`.
 
 The format of these files is the same as the format of `.gitignore` files:
 every line contains a pattern, and the exclamation mark `!` is used to negate
@@ -126,7 +126,7 @@ parts of the value.
   # storage section
   [storage]
   cp-exclude = ["*.jpg", "!main.jpg"]
-  cp-exclude-from-files = [".neuroignore", ".gitignore"]
+  cp-exclude-from-files = [".apoloignore", ".gitignore"]
 
   # jobs section
   [disk]

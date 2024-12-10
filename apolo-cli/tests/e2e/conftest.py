@@ -834,7 +834,7 @@ def _get_nmrc_path(tmp_path: Any, require_admin: bool) -> Optional[Path]:
             )
         )
         # Setup user config
-        local_conf = nmrc_path / ".neuro.toml"
+        local_conf = nmrc_path / ".apolo.toml"
         local_conf.write_text(toml.dumps({"job": {"life-span": "10m"}}))
         return nmrc_path
     else:

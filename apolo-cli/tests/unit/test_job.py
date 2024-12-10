@@ -212,7 +212,7 @@ async def test_calc_ps_columns_section_doesnt_exist(
 ) -> None:
     async with make_client("https://example.com") as client:
         monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
+        local_conf = tmp_path / ".apolo.toml"
         # empty config
         local_conf.write_text("")
         assert await calc_ps_columns(client, None) == get_default_ps_columns()
@@ -223,7 +223,7 @@ async def test_calc_top_columns_section_doesnt_exist(
 ) -> None:
     async with make_client("https://example.com") as client:
         monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
+        local_conf = tmp_path / ".apolo.toml"
         # empty config
         local_conf.write_text("")
         assert await calc_top_columns(client, None) == get_default_top_columns()
@@ -240,7 +240,7 @@ async def test_calc_ps_columns_user_spec(
         plugin_manager=plugin_manager,
     ) as client:
         monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
+        local_conf = tmp_path / ".apolo.toml"
         # empty config
         local_conf.write_text(toml.dumps({"job": {"ps-format": "{id}, {status}"}}))
         assert await calc_ps_columns(client, None) == [
@@ -259,7 +259,7 @@ async def test_calc_top_columns_user_spec(
         "https://example.com", plugin_manager=plugin_manager
     ) as client:
         monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
+        local_conf = tmp_path / ".apolo.toml"
         # empty config
         local_conf.write_text(toml.dumps({"job": {"top-format": "{id}, {cpu}"}}))
         assert await calc_top_columns(client, None) == [
@@ -341,7 +341,7 @@ def test_job_to_args_drop_env_when_pass_config() -> None:
             image=RemoteImage.new_external_image(name="test-image"),
             resources=Resources(memory=16, cpu=0.1, shm=True),
             env={
-                "NEURO_PASSED_CONFIG": "base64 data here",
+                "APOLO_PASSED_CONFIG": "base64 data here",
             },
         ),
         scheduler_enabled=False,

@@ -16,7 +16,7 @@ API functions
    Look for project root directory.
 
    Folder is considered a project root when it
-   contains ``.neuro.toml``. Search begins at **path** or :meth:`Path.cwd` (current
+   contains ``.apolo.toml``. Search begins at **path** or :meth:`Path.cwd` (current
    working directory) when **path** is **None** and checks all parent folders sequentially.
    Will raise an :class:`ConfigError` if search reaches root directory.
 
@@ -117,9 +117,9 @@ Config
       and can be absent.
 
       The global file is named ``user.toml`` and the API search for it in the path
-      provided to :class:`Factory` or :func:`get` (``$HOME/.neuro/user.toml`` by default).
+      provided to :class:`Factory` or :func:`get` (``$HOME/.apolo/user.toml`` by default).
 
-      The local config file is named ``.neuro.toml``, and the API search for this file
+      The local config file is named ``.apolo.toml``, and the API search for this file
       starting from the current folder up to the root directory.
 
       Found local and global configurations are merged.

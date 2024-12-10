@@ -2246,18 +2246,18 @@ async def test_storage_upload_dir_with_ignore_file_names(
     for name in "one", "two", "three":
         (local_dir / name).write_bytes(b"")
         (local_dir2 / name).write_bytes(b"")
-    (local_dir / ".neuroignore").write_text("one")
+    (local_dir / ".apoloignore").write_text("one")
     (local_dir2 / ".gitignore").write_text("two")
 
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_dir(
             URL(local_dir.as_uri()),
             URL("storage:folder"),
-            ignore_file_names={".neuroignore", ".gitignore"},
+            ignore_file_names={".apoloignore", ".gitignore"},
         )
 
     names = sorted(os.listdir(storage_path / "folder"))
-    assert names == [".neuroignore", "nested", "three", "two"]
+    assert names == [".apoloignore", "nested", "three", "two"]
     names = sorted(os.listdir(storage_path / "folder" / "nested"))
     assert names == [".gitignore", "three"]
 
@@ -2272,14 +2272,14 @@ async def test_storage_upload_dir_with_parent_ignore_file_names(
     for name in "one", "two", "three":
         (local_dir / name).write_bytes(b"")
         (local_dir2 / name).write_bytes(b"")
-    (tmp_path / ".neuroignore").write_text("one")
+    (tmp_path / ".apoloignore").write_text("one")
     (parent_dir / ".gitignore").write_text("*/two")
 
     async with make_client(storage_server.make_url("/")) as client:
         await client.storage.upload_dir(
             URL(local_dir.as_uri()),
             URL("storage:folder"),
-            ignore_file_names={".neuroignore", ".gitignore"},
+            ignore_file_names={".apoloignore", ".gitignore"},
         )
 
     names = sorted(os.listdir(storage_path / "folder"))

@@ -36,6 +36,7 @@ from .formatters.storage import (
 from .root import Root
 from .utils import Option, argument, command, group, option, parse_file_resource
 
+APOLOIGNORE_FILENAME = ".apoloignore"
 NEUROIGNORE_FILENAME = ".neuroignore"
 
 log = logging.getLogger(__name__)
@@ -825,7 +826,7 @@ async def calc_ignore_file_names(
         return exclude_from_files.split()
     config = await client.config.get_user_config()
     section = config.get("storage")
-    ignore_file_names = [NEUROIGNORE_FILENAME]
+    ignore_file_names = [APOLOIGNORE_FILENAME, NEUROIGNORE_FILENAME]
     if section is not None:
         ignore_file_names = section.get("cp-exclude-from-files", ignore_file_names)
     return ignore_file_names
