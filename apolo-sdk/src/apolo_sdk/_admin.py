@@ -1,7 +1,7 @@
 # Admin API is experimental,
 # remove underscore prefix after stabilizing and making public
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, AsyncIterator, Dict, Optional, Union
 
 import aiohttp
 from neuro_admin_client import AdminClientBase
@@ -21,7 +21,7 @@ from neuro_admin_client import ProjectUserRoleType as _ProjectUserRoleType
 from neuro_admin_client import ProjectUserWithInfo as _ProjectUserWithInfo
 from neuro_admin_client import Quota as _Quota
 from neuro_admin_client import UserInfo as _UserInfo
-from yarl import URL
+from yarl import URL, Query
 
 from ._config import Config
 from ._core import _Core
@@ -73,7 +73,7 @@ class _Admin(AdminClientBase, metaclass=NoPublicConstructor):
         path: str,
         *,
         json: Optional[Dict[str, Any]] = None,
-        params: Union[Sequence[Tuple[str, str]], Mapping[str, str], None] = None,
+        params: Union[Query, None] = None,
     ) -> AsyncIterator[aiohttp.ClientResponse]:
         url = self._admin_url / path
         auth = await self._config._api_auth()
