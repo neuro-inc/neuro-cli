@@ -28,7 +28,7 @@ _ApiFactory = Callable[[URL], AsyncContextManager[_Core]]
 async def api_factory() -> AsyncIterator[_ApiFactory]:
     @asynccontextmanager
     async def factory(url: URL) -> AsyncIterator[_Core]:
-        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.load_verify_locations(capath=certifi.where())
         connector = aiohttp.TCPConnector(ssl=ssl_context)
         session = aiohttp.ClientSession(connector=connector)

@@ -7,22 +7,12 @@ import time
 from contextlib import asynccontextmanager
 from http.cookies import Morsel, SimpleCookie
 from types import SimpleNamespace
-from typing import (
-    Any,
-    AsyncIterator,
-    Dict,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import Any, AsyncIterator, Dict, List, Mapping, Optional, Sequence, Union
 
 import aiohttp
 from aiohttp import ClientWebSocketResponse, WSServerHandshakeError
 from multidict import CIMultiDict
-from yarl import URL
+from yarl import URL, Query
 
 from ._errors import (
     AuthenticationError,
@@ -134,7 +124,7 @@ class _Core:
         url: URL,
         *,
         auth: str,
-        params: Union[Sequence[Tuple[str, str]], Mapping[str, str], None] = None,
+        params: Union[Query, None] = None,
         data: Any = None,
         json: Any = None,
         headers: Optional[Mapping[str, str]] = None,
