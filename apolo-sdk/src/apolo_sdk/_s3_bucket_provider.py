@@ -138,7 +138,7 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
         # If verify is not None aiohttp raises error `verify_ssl, ssl_context,
         # fingerprint and ssl parameters are mutually exclusive`.
         #
-        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
+        ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
         ssl_context.load_verify_locations(capath=certifi.where())
         # config = AioConfig(connector_args={"ssl_context": ssl_context})
         config = AioConfig(max_pool_connections=100)
