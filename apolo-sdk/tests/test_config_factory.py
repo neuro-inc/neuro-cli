@@ -25,6 +25,7 @@ from apolo_sdk import (
     __version__,
 )
 from apolo_sdk._config import _AuthConfig, _AuthToken, _ConfigData
+from apolo_sdk._config_factory import _choose_path
 from apolo_sdk._login import JWT_STANDALONE_SECRET
 
 from tests import _TestServerFactory
@@ -45,13 +46,13 @@ def tmp_home(tmp_path: Path, monkeypatch: Any) -> Path:
 def config_dir(
     tmp_home: Path, token: str, auth_config: _AuthConfig, cluster_config: Cluster
 ) -> Path:
-    config_path = tmp_home / ".neuro"
+    config_path = tmp_home / ".apolo"
     _create_config(config_path, token, auth_config, cluster_config)
     return config_path
 
 
 def _create_config(
-    nmrc_path: Path,
+    rc_path: Path,
     token: str,
     auth_config: _AuthConfig,
     cluster_config: Cluster,
@@ -69,8 +70,8 @@ def _create_config(
         projects={project.key: project} if project else {},
         project_name=project.name if project else None,
     )
-    Factory(nmrc_path)._save(config)
-    assert nmrc_path.exists()
+    Factory(rc_path)._save(config)
+    assert rc_path.exists()
     return token
 
 
@@ -287,12 +288,12 @@ class TestConfigFileInteraction:
             await Factory().get()
 
     async def test_config_dir_is_file(self, tmp_home: Path) -> None:
-        Path(tmp_home / ".neuro").write_text("something")
+        Path(tmp_home / ".apolo").write_text("something")
         with pytest.raises(ConfigError, match=r"not a directory"):
             await Factory().get()
 
     async def test_config_file_is_dir(self, tmp_home: Path) -> None:
-        path = Path(tmp_home / ".neuro")
+        path = Path(tmp_home / ".apolo")
         path.mkdir()
         (path / "db").mkdir()
         with pytest.raises(ConfigError, match=r"not a regular file"):
@@ -305,7 +306,7 @@ class TestConfigFileInteraction:
         auth_config: _AuthConfig,
         cluster_config: Cluster,
     ) -> None:
-        token = _create_config(tmp_home / ".neuro", token, auth_config, cluster_config)
+        token = _create_config(tmp_home / ".apolo", token, auth_config, cluster_config)
         client = await Factory().get()
         await client.close()
         assert await client.config.token() == token
@@ -317,7 +318,7 @@ class TestConfigFileInteraction:
         auth_config: _AuthConfig,
         cluster_config: Cluster,
     ) -> None:
-        _create_config(tmp_home / ".neuro", token, auth_config, cluster_config)
+        _create_config(tmp_home / ".apolo", token, auth_config, cluster_config)
         client = await Factory().get()
         await client.close()
         assert len(client.presets) > 0
@@ -339,7 +340,7 @@ class TestConfigFileInteraction:
             name="test-project",
             role="owner",
         )
-        _create_config(tmp_home / ".neuro", token, auth_config, cluster_config, project)
+        _create_config(tmp_home / ".apolo", token, auth_config, cluster_config, project)
         client = await Factory().get()
         await client.close()
         assert client.config.project_name == project.name
@@ -395,8 +396,8 @@ class TestLogin:
         self, tmp_home: Path, mock_for_login: _TestServer
     ) -> None:
         await Factory().login(self.show_dummy_browser, url=mock_for_login.make_url("/"))
-        nmrc_path = tmp_home / ".neuro"
-        assert Path(nmrc_path).exists(), "Config file not written after login "
+        rc_path = tmp_home / ".apolo"
+        assert Path(rc_path).exists(), "Config file not written after login "
 
     async def test_login_to_server_without_auth(
         self,
@@ -407,10 +408,10 @@ class TestLogin:
             MockForLoginControl(), auth_enabled=False
         )
         await Factory().login(self.show_dummy_browser, url=mock_for_login.make_url("/"))
-        nmrc_path = tmp_home / ".neuro"
-        assert Path(nmrc_path).exists(), "Config file not written after login "
+        rc_path = tmp_home / ".apolo"
+        assert Path(rc_path).exists(), "Config file not written after login "
 
-        client = await Factory(Path(nmrc_path)).get()
+        client = await Factory(Path(rc_path)).get()
         await client.close()
         token = await client.config.token()
 
@@ -431,8 +432,8 @@ class TestLoginWithToken:
         await Factory().login_with_token(
             token="tokenstr", url=mock_for_login.make_url("/")
         )
-        nmrc_path = tmp_home / ".neuro"
-        assert Path(nmrc_path).exists(), "Config file not written after login "
+        rc_path = tmp_home / ".apolo"
+        assert Path(rc_path).exists(), "Config file not written after login "
 
     async def test_incorrect_token(
         self, tmp_home: Path, mock_for_login: _TestServer
@@ -441,8 +442,8 @@ class TestLoginWithToken:
             await Factory().login_with_token(
                 token="incorrect", url=mock_for_login.make_url("/")
             )
-        nmrc_path = tmp_home / ".neuro"
-        assert not Path(nmrc_path).exists(), "Config file not written after login "
+        rc_path = tmp_home / ".apolo"
+        assert not Path(rc_path).exists(), "Config file not written after login "
 
 
 class TestLoginPassedConfig:
@@ -491,8 +492,8 @@ class TestLoginPassedConfig:
         set_conf_to_env("tokenstr")
         client = await Factory().get()
         await client.close()
-        nmrc_path = tmp_home / ".neuro"
-        assert Path(nmrc_path).exists(), "Config file not written after login "
+        rc_path = tmp_home / ".apolo"
+        assert Path(rc_path).exists(), "Config file not written after login "
 
     async def test_auto_login_fail(
         self, tmp_home: Path, set_conf_to_env: Callable[[str], None]
@@ -500,16 +501,16 @@ class TestLoginPassedConfig:
         set_conf_to_env("incorrect")
         with pytest.raises(AuthError):
             await Factory().get()
-        nmrc_path = tmp_home / ".neuro"
-        assert not Path(nmrc_path).exists(), "Config file not written after login "
+        rc_path = tmp_home / ".apolo"
+        assert not Path(rc_path).exists(), "Config file not written after login "
 
     async def test_normal_login(
         self, tmp_home: Path, set_conf_to_env: Callable[[str], None]
     ) -> None:
         set_conf_to_env("tokenstr")
         await Factory().login_with_passed_config()
-        nmrc_path = tmp_home / ".neuro"
-        assert Path(nmrc_path).exists(), "Config file not written after login "
+        rc_path = tmp_home / ".apolo"
+        assert Path(rc_path).exists(), "Config file not written after login "
 
     async def test_normal_login_direct_token(
         self,
@@ -518,8 +519,8 @@ class TestLoginPassedConfig:
     ) -> None:
         token_data = make_conf_data("tokenstr")  # type: ignore
         await Factory().login_with_passed_config(token_data)
-        nmrc_path = tmp_home / ".neuro"
-        assert Path(nmrc_path).exists(), "Config file not written after login "
+        rc_path = tmp_home / ".apolo"
+        assert Path(rc_path).exists(), "Config file not written after login "
 
     async def test_incorrect_token(
         self, tmp_home: Path, set_conf_to_env: Callable[[str], None]
@@ -527,8 +528,8 @@ class TestLoginPassedConfig:
         set_conf_to_env("incorrect")
         with pytest.raises(AuthError):
             await Factory().login_with_passed_config()
-        nmrc_path = tmp_home / ".neuro"
-        assert not Path(nmrc_path).exists(), "Config file written after bad login "
+        rc_path = tmp_home / ".apolo"
+        assert not Path(rc_path).exists(), "Config file written after bad login "
 
     async def test_bad_data(
         self,
@@ -538,8 +539,8 @@ class TestLoginPassedConfig:
         monkeypatch.setenv(PASS_CONFIG_ENV_NAME, "something")
         with pytest.raises(ConfigError):
             await Factory().login_with_passed_config()
-        nmrc_path = tmp_home / ".neuro"
-        assert not Path(nmrc_path).exists(), "Config file written after bad login "
+        rc_path = tmp_home / ".apolo"
+        assert not Path(rc_path).exists(), "Config file written after bad login "
 
     async def test_no_data(
         self,
@@ -548,8 +549,8 @@ class TestLoginPassedConfig:
     ) -> None:
         with pytest.raises(ConfigError):
             await Factory().login_with_passed_config()
-        nmrc_path = tmp_home / ".neuro"
-        assert not Path(nmrc_path).exists(), "Config file written after bad login "
+        rc_path = tmp_home / ".apolo"
+        assert not Path(rc_path).exists(), "Config file written after bad login "
 
     async def test_login_project_set(
         self,
@@ -561,8 +562,8 @@ class TestLoginPassedConfig:
         monkeypatch.setenv(PASS_CONFIG_ENV_NAME, pass_cfg_data)
         client = await Factory().get()
         await client.close()
-        nmrc_path = tmp_home / ".neuro"
-        assert Path(nmrc_path).exists(), "Config file not written after login "
+        rc_path = tmp_home / ".apolo"
+        assert Path(rc_path).exists(), "Config file not written after login "
         assert client.config.project_name == "default2"
         assert client.config.org_name == "NO_ORG"
 
@@ -595,8 +596,8 @@ class TestHeadlessLogin:
         await Factory().login_headless(
             get_auth_code_cb, url=mock_for_login.make_url("/")
         )
-        nmrc_path = tmp_home / ".neuro"
-        assert Path(nmrc_path).exists(), "Config file not written after login "
+        rc_path = tmp_home / ".apolo"
+        assert Path(rc_path).exists(), "Config file not written after login "
 
 
 class TestLogout:
@@ -666,3 +667,40 @@ class TestConfigRecovery:
 
         await mock_for_login.close()
         await asyncio.sleep(0.01)
+
+
+class TestChoosePath:
+    def test_explicit(self, tmp_home: Path) -> None:
+        path = tmp_home / "explicit"
+        assert _choose_path(path) == path
+
+    def test_default(self, tmp_home: Path) -> None:
+        assert _choose_path(None) == Path("~/.apolo").expanduser()
+
+    def test_fallback(self, tmp_home: Path) -> None:
+        path = tmp_home / ".neuro"
+        path.mkdir()
+        (path / "db").write_text("")
+        assert _choose_path(None) == path
+
+    def test_default_wins(self, tmp_home: Path) -> None:
+        path = tmp_home / ".apolo"
+        path.mkdir()
+        old_path = tmp_home / ".neuro"
+        old_path.mkdir()
+        (path / "db").write_text("")
+        assert _choose_path(None) == path
+
+    def test_config_overrides(self, tmp_home: Path, monkeypatch: Any) -> None:
+        path = tmp_home / "config_overrride"
+        path.mkdir()
+        (path / "db").write_text("")
+        monkeypatch.setenv("APOLO_CONFIG", str(path))
+        assert _choose_path(None) == path
+
+    def test_old_config_overrides(self, tmp_home: Path, monkeypatch: Any) -> None:
+        path = tmp_home / "old_config_overrride"
+        path.mkdir()
+        (path / "db").write_text("")
+        monkeypatch.setenv("NEUROMATION_CONFIG", str(path))
+        assert _choose_path(None) == path

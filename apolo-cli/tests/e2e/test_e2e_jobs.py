@@ -745,15 +745,16 @@ def test_job_run_exit_code(helper: Helper) -> None:
     Matches(r"Exit code\s+101") == store_out
 
 
+@pytest.mark.parametrize("envvar", ["APOLO_PASSED_CONFIG", "NEURO_PASSED_CONFIG"])
 @pytest.mark.e2e
-def test_pass_config(helper: Helper) -> None:
+def test_pass_config(envvar: str, helper: Helper) -> None:
     captured = helper.run_cli_run_job(
         [
             "--no-wait-start",
             "--pass-config",
             UBUNTU_IMAGE_NAME,
             "--",
-            'bash -c "sleep 15 && [ ! -z NEURO_PASSED_CONFIG ]"',
+            f'bash -c "sleep 15 && [ ! -z {envvar} ]"',
         ],
         verbosity=-1,
     )

@@ -4,9 +4,9 @@ The Apolo client supports user configuration files to provide default values for
 
 There are two configuration files: **global** and **local**, both are optional and can be absent.
 
-The global file is located in the standard apolo config path. "apolo" CLI uses `~/.neuro` folder by default, the path for global config file is `~/.neuro/user.toml`.
+The global file is located in the standard apolo config path. "apolo" CLI uses `~/.apolo` folder by default, the path for global config file is `~/.apolo/user.toml`.
 
-The local config file is named .neuro.toml, the CLI search for this file starting from the current folder up to the root directory.
+The local config file is named .apolo.toml, the CLI search for this file starting from the current folder up to the root directory.
 
 Found local and global configurations are merged. If a parameter is present are both global and local versions the local parameter take a precedence.
 
@@ -58,9 +58,9 @@ Exclamation mark ! is used to negate the pattern, e.g. `["*.jpg", "!main.jpg"]` 
 
 Default value for `apolo cp --exclude-from-files=XXX` option.
 
-The value is a list of filenames that contain patterns for exclusion files and directories from uploading. For every proceeded folder patterns from matched exclusion files \(e.g. ".neuroignore"\) are read and recursively applied to the directory content.
+The value is a list of filenames that contain patterns for exclusion files and directories from uploading. For every proceeded folder patterns from matched exclusion files \(e.g. ".apoloignore"\) are read and recursively applied to the directory content.
 
-Default is `[".neuroignore"]`.
+Default is `[".apoloignore"]`.
 
 The format of files is the same as the format of `.gitignore` files: every line contains a pattern, exclamation mark `!` is used to negate the pattern, empty lines and lines which start with `#` are ignored.
 
@@ -85,10 +85,9 @@ _Example:_
   # storage section
   [storage]
   cp-exclude = ["*.jpg", "!main.jpg"]
-  cp-exclude-from-files = [".neuroignore", ".gitignore"]
+  cp-exclude-from-files = [".apoloignore", ".gitignore"]
 
   # jobs section
   [disk]
   life-span = "7d"
 ```
-

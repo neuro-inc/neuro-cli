@@ -94,7 +94,7 @@ def service_account_token_fmtr(token: str, account: ServiceAccount) -> Renderabl
 
     lines = [
         "Full token with cluster and API url embedded (this value can "
-        "be used as [b]NEURO_PASSED_CONFIG[/b] environment variable):\n",
+        "be used as [b]APOLO_PASSED_CONFIG[/b] environment variable):\n",
         token,
         "\nJust auth token (this value can be passed to [b]apolo config"
         " login-with-token[/b]):\n",

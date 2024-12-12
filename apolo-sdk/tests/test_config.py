@@ -159,7 +159,7 @@ async def test_get_user_config_from_local(
         local_dir = proj_dir / "folder"
         local_dir.mkdir(parents=True, exist_ok=True)
         monkeypatch.chdir(local_dir)
-        local_conf = proj_dir / ".neuro.toml"
+        local_conf = proj_dir / ".apolo.toml"
         # FIXME: the example may be broken in future versions
         local_conf.write_text(toml.dumps({"alias": {"pss": {"cmd": "job ps --short"}}}))
         assert await client.config.get_user_config() == {
@@ -290,7 +290,7 @@ async def test_get_cluster_name_from_local(
             )
         }
 
-        local_conf = proj_dir / ".neuro.toml"
+        local_conf = proj_dir / ".apolo.toml"
         local_conf.write_text(toml.dumps({"job": {"cluster-name": "another"}}))
         assert client.config.cluster_name == "another"
         assert client.config.registry_url == URL("https://registry2-dev.neu.ro")
@@ -326,7 +326,7 @@ async def test_get_cluster_name_from_local_invalid_cluster(
         monkeypatch.chdir(local_dir)
         assert client.config.cluster_name == "default"
 
-        local_conf = proj_dir / ".neuro.toml"
+        local_conf = proj_dir / ".apolo.toml"
         local_conf.write_text(toml.dumps({"job": {"cluster-name": "unknown"}}))
         assert client.config.cluster_name == "unknown"
         match = "Cluster unknown doesn't exist.*Please edit local user config file"
@@ -984,10 +984,10 @@ async def test_switch_clusters_local(
         local_dir = proj_dir / "folder"
         local_dir.mkdir(parents=True, exist_ok=True)
         monkeypatch.chdir(local_dir)
-        local_conf = proj_dir / ".neuro.toml"
+        local_conf = proj_dir / ".apolo.toml"
         local_conf.write_text(toml.dumps({"job": {"cluster-name": "another"}}))
         assert client.config.cluster_name == "another"
-        with pytest.raises(RuntimeError, match=r"\.neuro\.toml"):
+        with pytest.raises(RuntimeError, match=r"\.apolo\.toml"):
             await client.config.switch_cluster("default")
         assert client.config.cluster_name == "another"
 
@@ -1009,10 +1009,10 @@ async def test_switch_org_local(
         local_dir = proj_dir / "folder"
         local_dir.mkdir(parents=True, exist_ok=True)
         monkeypatch.chdir(local_dir)
-        local_conf = proj_dir / ".neuro.toml"
+        local_conf = proj_dir / ".apolo.toml"
         local_conf.write_text(toml.dumps({"job": {"org-name": "test-org"}}))
         assert client.config.org_name == "test-org"
-        with pytest.raises(RuntimeError, match=r"\.neuro\.toml"):
+        with pytest.raises(RuntimeError, match=r"\.apolo\.toml"):
             await client.config.switch_org("not-exists")
         assert client.config.org_name == "test-org"
 
@@ -1034,7 +1034,7 @@ async def test_no_org_local(
         local_dir = proj_dir / "folder"
         local_dir.mkdir(parents=True, exist_ok=True)
         monkeypatch.chdir(local_dir)
-        local_conf = proj_dir / ".neuro.toml"
+        local_conf = proj_dir / ".apolo.toml"
         local_conf.write_text(toml.dumps({"job": {"org-name": "NO_ORG"}}))
         assert client.config.org_name == "NO_ORG"
 
@@ -1066,10 +1066,10 @@ async def test_switch_project_local(
         local_dir = proj_dir / "folder"
         local_dir.mkdir(parents=True, exist_ok=True)
         monkeypatch.chdir(local_dir)
-        local_conf = proj_dir / ".neuro.toml"
+        local_conf = proj_dir / ".apolo.toml"
         local_conf.write_text(toml.dumps({"job": {"project-name": "test-project"}}))
         assert client.config.project_name == "test-project"
-        with pytest.raises(RuntimeError, match=r"\.neuro\.toml"):
+        with pytest.raises(RuntimeError, match=r"\.apolo\.toml"):
             await client.config.switch_project("test-project")
         assert client.config.project_name == "test-project"
 

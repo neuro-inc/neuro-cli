@@ -7,8 +7,8 @@ add default arguments to commonly used commands.
 Aliases are described in user-config files
 (see `apolo help user-config` for details).
 
-`~/.neuro/user.toml` is used for **global** aliases, and
-`.neuro.toml` can be used for saving **project-specific** aliases.
+`~/.apolo/user.toml` is used for **global** aliases, and
+`.apolo.toml` can be used for saving **project-specific** aliases.
 Project aliases overrides global ones if the same alias
 name exists in both configuration files.
 

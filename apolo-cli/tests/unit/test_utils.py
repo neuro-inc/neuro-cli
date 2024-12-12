@@ -943,7 +943,7 @@ async def test_calc_life_span_none_default(
         "https://example.com", plugin_manager=plugin_manager
     ) as client:
         monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
+        local_conf = tmp_path / ".apolo.toml"
         local_conf.write_text(toml.dumps({"job": {"life-span": "1d2h3m4s"}}))
         expected = timedelta(days=1, hours=2, minutes=3, seconds=4)
         assert (
@@ -961,7 +961,7 @@ async def test_calc_life_span_default_life_span_all_keys(
         "https://example.com", plugin_manager=plugin_manager
     ) as client:
         monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
+        local_conf = tmp_path / ".apolo.toml"
         # empty config
         local_conf.write_text(toml.dumps({"job": {"life-span": "1d2h3m4s"}}))
 
@@ -984,7 +984,7 @@ async def test_calc_default_life_span_invalid(
         "https://example.com", plugin_manager=plugin_manager
     ) as client:
         monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
+        local_conf = tmp_path / ".apolo.toml"
         # empty config
         local_conf.write_text(toml.dumps({"job": {"life-span": "invalid"}}))
         with pytest.raises(
@@ -1002,7 +1002,7 @@ async def test_calc_default_life_span_default_value(
 ) -> None:
     async with make_client("https://example.com") as client:
         monkeypatch.chdir(tmp_path)
-        local_conf = tmp_path / ".neuro.toml"
+        local_conf = tmp_path / ".apolo.toml"
         # empty config
         local_conf.write_text(toml.dumps(cast(Dict[str, Any], {})))
         default = parse_timedelta("1d")

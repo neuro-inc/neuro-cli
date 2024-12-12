@@ -156,10 +156,10 @@ async def user_config() -> None:
     **local**. Both of these are completely optional.
 
     The global file is located in the standard apolo config path. Apolo CLI uses the
-    `~/.neuro` folder by default, so the full path for the global config file is
-    `~/.neuro/user.toml`.
+    `~/.apolo` folder by default, so the full path for the global config file is
+    `~/.apolo/user.toml`.
 
-    The local config file is named `.neuro.toml` and the CLI searches for this file
+    The local config file is named `.apolo.toml` and the CLI searches for this file
     starting from the current folder up to the root directory.
 
     Local and global configurations that were found by the CLI are then merged.
@@ -241,10 +241,10 @@ async def user_config() -> None:
 
     The value is a list of filenames that contain patterns for excluding files
     and directories from being uploaded. For every processed folder,
-    patterns from the matched exclusion files (e.g., ".neuroignore")
+    patterns from the matched exclusion files (e.g., ".apoloignore")
     are read and recursively applied to the directory content.
 
-    Default is `[".neuroignore"]`.
+    Default is `[".apoloignore"]`.
 
     The format of these files is the same as the format of `.gitignore` files:
     every line contains a pattern, and the exclamation mark `!` is used to negate
@@ -274,7 +274,7 @@ async def user_config() -> None:
       # storage section
       [storage]
       cp-exclude = ["*.jpg", "!main.jpg"]
-      cp-exclude-from-files = [".neuroignore", ".gitignore"]
+      cp-exclude-from-files = [".apoloignore", ".gitignore"]
 
       # jobs section
       [disk]
@@ -296,8 +296,8 @@ async def aliases() -> None:
     Aliases are described in user-config files
     (see `apolo help user-config` for details).
 
-    `~/.neuro/user.toml` is used for **global** aliases, and
-    `.neuro.toml` can be used for saving **project-specific** aliases.
+    `~/.apolo/user.toml` is used for **global** aliases, and
+    `.apolo.toml` can be used for saving **project-specific** aliases.
     Project aliases overrides global ones if the same alias
     name exists in both configuration files.
 
