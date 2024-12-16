@@ -81,9 +81,9 @@ async def test_calc_ignore_file_names_default(
         local_conf = tmp_path / ".apolo.toml"
         # empty config
         local_conf.write_text("")
-        assert await calc_ignore_file_names(client, None) == [".apoloignore"]
+        assert await calc_ignore_file_names(client, None) == [".apoloignore", ".neuroignore"]
         local_conf.write_text(toml.dumps({"storage": {}}))
-        assert await calc_ignore_file_names(client, None) == [".apoloignore"]
+        assert await calc_ignore_file_names(client, None) == [".apoloignore", ".neuroignore"]
 
 
 async def test_calc_ignore_file_names_user_spec(
