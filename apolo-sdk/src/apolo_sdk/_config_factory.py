@@ -57,7 +57,7 @@ async def __make_session(
     from . import __version__
 
     ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    ssl_context.load_verify_locations(capath=certifi.where())
+    ssl_context.load_verify_locations(cafile=certifi.where())
     connector = aiohttp.TCPConnector(ssl=ssl_context)
     return aiohttp.ClientSession(
         timeout=timeout,
