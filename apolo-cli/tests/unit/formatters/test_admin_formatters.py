@@ -6,10 +6,6 @@ from dateutil.parser import isoparse
 from rich.console import RenderableType
 
 from apolo_sdk import (
-    _AWSStorageOptions,
-    _AzureReplicationType,
-    _AzureStorageOptions,
-    _AzureStorageTier,
     _Balance,
     _CloudProviderOptions,
     _CloudProviderType,
@@ -19,12 +15,9 @@ from apolo_sdk import (
     _ClusterUserRoleType,
     _ClusterUserWithInfo,
     _ConfigCluster,
-    _EFSPerformanceMode,
-    _EFSThroughputMode,
     _GoogleCloudProvider,
     _GoogleFilestoreTier,
     _GoogleStorage,
-    _GoogleStorageOptions,
     _NodePool,
     _NodePoolOptions,
     _OnPremCloudProvider,
@@ -394,13 +387,7 @@ class TestCloudProviderOptionsFormatter:
                     gpu_model="nvidia-tesla-k80",
                 ),
             ],
-            storages=[
-                _AWSStorageOptions(
-                    id="generalPurpose_bursting",
-                    performance_mode=_EFSPerformanceMode.GENERAL_PURPOSE,
-                    throughput_mode=_EFSThroughputMode.BURSTING,
-                )
-            ],
+            storages=[],
         )
         rich_cmp(formatter(options))
 
@@ -428,14 +415,7 @@ class TestCloudProviderOptionsFormatter:
                     gpu_model="nvidia-tesla-k80",
                 ),
             ],
-            storages=[
-                _GoogleStorageOptions(
-                    id="standard",
-                    tier=_GoogleFilestoreTier.STANDARD,
-                    min_capacity=1 * 2**40,
-                    max_capacity=60 * 2**40,
-                )
-            ],
+            storages=[],
         )
         rich_cmp(formatter(options))
 
@@ -463,15 +443,7 @@ class TestCloudProviderOptionsFormatter:
                     gpu_model="nvidia-tesla-k80",
                 ),
             ],
-            storages=[
-                _AzureStorageOptions(
-                    id="standard",
-                    tier=_AzureStorageTier.STANDARD,
-                    replication_type=_AzureReplicationType.LRS,
-                    min_file_share_size=100 * 2**30,
-                    max_file_share_size=100 * 2**40,
-                )
-            ],
+            storages=[],
         )
         rich_cmp(formatter(options))
 
