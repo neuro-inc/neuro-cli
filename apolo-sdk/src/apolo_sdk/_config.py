@@ -108,6 +108,10 @@ class Config(metaclass=NoPublicConstructor):
             return ret
 
     @property
+    def path(self) -> Path:
+        return self._path
+
+    @property
     def username(self) -> str:
         return self._config_data.auth_token.username
 

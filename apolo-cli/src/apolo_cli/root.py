@@ -70,7 +70,7 @@ class Root:
     tty: bool
     disable_pypi_version_check: bool
     network_timeout: float
-    config_path: Path
+    config_path: Optional[Path]
     trace: bool
     force_trace_all: bool
     verbosity: int
