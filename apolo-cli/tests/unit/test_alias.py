@@ -1062,6 +1062,7 @@ def test_external_alias_simplified(
 
 
 async def _test_list_aliases(root: Root) -> None:
+    assert root.config_path is not None
     user_cfg = root.config_path / "user.toml"
     user_cfg.write_text(
         toml.dumps(
@@ -1090,6 +1091,7 @@ async def test_list_aliases_no_logged_in(root_no_logged_in: Root) -> None:
 
 
 async def test_find_alias_no_logged_in(root_no_logged_in: Root) -> None:
+    assert root_no_logged_in.config_path is not None
     user_cfg = root_no_logged_in.config_path / "user.toml"
     user_cfg.write_text(
         toml.dumps(

@@ -135,6 +135,8 @@ class MainGroup(Group):
         if config_path == apolo_sdk.DEFAULT_CONFIG_PATH:
             # TODO: remove this fallback eventually
             config_path = kwargs["neuromation_config"]
+            if config_path == apolo_sdk.DEFAULT_CONFIG_PATH:
+                config_path = None
 
         root = Root(
             verbosity=verbosity,
@@ -142,7 +144,7 @@ class MainGroup(Group):
             tty=tty,
             disable_pypi_version_check=kwargs["disable_pypi_version_check"],
             network_timeout=kwargs["network_timeout"],
-            config_path=Path(kwargs["neuromation_config"]),
+            config_path=Path(config_path) if config_path is not None else None,
             trace=kwargs["trace"],
             force_trace_all=kwargs["x_trace_all"],
             trace_hide_token=hide_token_bool,
