@@ -228,7 +228,10 @@ class Root:
         path = data.url.raw_path
         if data.url.raw_query_string:
             path += "?" + data.url.raw_query_string
-        lines = [f"> {data.method} {path} HTTP/1.1"]
+        lines = [
+            f"> {data.method} {path} HTTP/1.1",
+            f"> Host: {data.url.host_port_subcomponent}",
+        ]
         for key, val in data.headers.items():
             if self.trace_hide_token:
                 val = self._sanitize_header_value(val)
