@@ -61,8 +61,8 @@ def _create_config(
     config = _ConfigData(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
-        url=URL("https://dev.neu.ro/api/v1"),
-        admin_url=URL("https://dev.neu.ro/apis/admin/v1"),
+        url=URL("https://api.dev.apolo.us/api/v1"),
+        admin_url=URL("https://api.dev.apolo.us/apis/admin/v1"),
         version=__version__,
         cluster_name=cluster_config.name,
         org_name=cluster_config.orgs[0],
@@ -102,7 +102,7 @@ async def mock_for_login_factory(
                 "logout_url": str(srv.make_url("/v2/logout")),
                 "admin_url": str(srv.make_url("/apis/admin/v1")),
                 "client_id": control.client_id,
-                "audience": "https://test.dev.neu.ro",
+                "audience": "https://test.api.dev.apolo.us",
                 "headless_callback_url": str(srv.make_url("/oauth/show-code")),
                 "callback_urls": callback_urls,
                 "success_redirect_url": "http://example.com",
@@ -589,7 +589,7 @@ class TestHeadlessLogin:
                 client_id="banana",
                 redirect_uri=str(mock_for_login.make_url("/oauth/show-code")),
                 scope="offline_access",
-                audience="https://test.dev.neu.ro",
+                audience="https://test.api.dev.apolo.us",
             )
             return "test_code"
 

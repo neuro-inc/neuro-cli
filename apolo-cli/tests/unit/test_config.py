@@ -25,13 +25,13 @@ async def cmd() -> None:
 def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
     clusters = {
         "first": Cluster(
-            registry_url=URL("https://registry-dev.neu.ro"),
-            storage_url=URL("https://storage-dev.neu.ro"),
-            users_url=URL("https://users-dev.neu.ro"),
-            monitoring_url=URL("https://monitoring-dev.neu.ro"),
-            secrets_url=URL("https://secrets-dev.neu.ro"),
-            disks_url=URL("https://disks-dev.neu.ro"),
-            buckets_url=URL("https://buckets-dev.neu.ro"),
+            registry_url=URL("https://registry-api.dev.apolo.us"),
+            storage_url=URL("https://storage-api.dev.apolo.us"),
+            users_url=URL("https://users-api.dev.apolo.us"),
+            monitoring_url=URL("https://monitoring-api.dev.apolo.us"),
+            secrets_url=URL("https://secrets-api.dev.apolo.us"),
+            disks_url=URL("https://disks-api.dev.apolo.us"),
+            buckets_url=URL("https://buckets-api.dev.apolo.us"),
             resource_pools={
                 "cpu": ResourcePool(
                     min_size=1,
@@ -49,13 +49,13 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
             apps=AppsConfig(),
         ),
         "second": Cluster(
-            registry_url=URL("https://registry2-dev.neu.ro"),
-            storage_url=URL("https://storage2-dev.neu.ro"),
-            users_url=URL("https://users2-dev.neu.ro"),
-            monitoring_url=URL("https://monitoring2-dev.neu.ro"),
-            secrets_url=URL("https://secrets2-dev.neu.ro"),
-            disks_url=URL("https://disks2-dev.neu.ro"),
-            buckets_url=URL("https://buckets2-dev.neu.ro"),
+            registry_url=URL("https://registry2-api.dev.apolo.us"),
+            storage_url=URL("https://storage2-api.dev.apolo.us"),
+            users_url=URL("https://users2-api.dev.apolo.us"),
+            monitoring_url=URL("https://monitoring2-api.dev.apolo.us"),
+            secrets_url=URL("https://secrets2-api.dev.apolo.us"),
+            disks_url=URL("https://disks2-api.dev.apolo.us"),
+            buckets_url=URL("https://buckets2-api.dev.apolo.us"),
             resource_pools={
                 "cpu": ResourcePool(
                     min_size=1,
@@ -115,13 +115,13 @@ def test_prompt_cluster(make_client: Callable[..., Client]) -> None:
 def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
     clusters = {
         "first": Cluster(
-            registry_url=URL("https://registry-dev.neu.ro"),
-            storage_url=URL("https://storage-dev.neu.ro"),
-            users_url=URL("https://users-dev.neu.ro"),
-            monitoring_url=URL("https://monitoring-dev.neu.ro"),
-            secrets_url=URL("https://secrets-dev.neu.ro"),
-            disks_url=URL("https://disks-dev.neu.ro"),
-            buckets_url=URL("https://buckets-dev.neu.ro"),
+            registry_url=URL("https://registry-api.dev.apolo.us"),
+            storage_url=URL("https://storage-api.dev.apolo.us"),
+            users_url=URL("https://users-api.dev.apolo.us"),
+            monitoring_url=URL("https://monitoring-api.dev.apolo.us"),
+            secrets_url=URL("https://secrets-api.dev.apolo.us"),
+            disks_url=URL("https://disks-api.dev.apolo.us"),
+            buckets_url=URL("https://buckets-api.dev.apolo.us"),
             resource_pools={
                 "cpu": ResourcePool(
                     min_size=1,
@@ -139,13 +139,13 @@ def test_prompt_cluster_default(make_client: Callable[..., Client]) -> None:
             apps=AppsConfig(),
         ),
         "second": Cluster(
-            registry_url=URL("https://registry2-dev.neu.ro"),
-            storage_url=URL("https://storage2-dev.neu.ro"),
-            users_url=URL("https://users2-dev.neu.ro"),
-            monitoring_url=URL("https://monitoring2-dev.neu.ro"),
-            secrets_url=URL("https://secrets2-dev.neu.ro"),
-            disks_url=URL("https://disks2-dev.neu.ro"),
-            buckets_url=URL("https://disks2-dev.neu.ro"),
+            registry_url=URL("https://registry2-api.dev.apolo.us"),
+            storage_url=URL("https://storage2-api.dev.apolo.us"),
+            users_url=URL("https://users2-api.dev.apolo.us"),
+            monitoring_url=URL("https://monitoring2-api.dev.apolo.us"),
+            secrets_url=URL("https://secrets2-api.dev.apolo.us"),
+            disks_url=URL("https://disks2-api.dev.apolo.us"),
+            buckets_url=URL("https://disks2-api.dev.apolo.us"),
             resource_pools={
                 "cpu": ResourcePool(
                     min_size=1,
@@ -207,13 +207,13 @@ def test_prompt_project(make_client: Callable[..., Client]) -> None:
     clusters = {
         "default": Cluster(
             name="default",
-            registry_url=URL("https://registry-dev.neu.ro"),
-            storage_url=URL("https://storage-dev.neu.ro"),
-            users_url=URL("https://users-dev.neu.ro"),
-            monitoring_url=URL("https://monitoring-dev.neu.ro"),
-            secrets_url=URL("https://secrets-dev.neu.ro"),
-            disks_url=URL("https://disks-dev.neu.ro"),
-            buckets_url=URL("https://buckets-dev.neu.ro"),
+            registry_url=URL("https://registry-api.dev.apolo.us"),
+            storage_url=URL("https://storage-api.dev.apolo.us"),
+            users_url=URL("https://users-api.dev.apolo.us"),
+            monitoring_url=URL("https://monitoring-api.dev.apolo.us"),
+            secrets_url=URL("https://secrets-api.dev.apolo.us"),
+            disks_url=URL("https://disks-api.dev.apolo.us"),
+            buckets_url=URL("https://buckets-api.dev.apolo.us"),
             resource_pools={
                 "cpu": ResourcePool(
                     min_size=1,
@@ -277,13 +277,13 @@ def test_prompt_project_default(make_client: Callable[..., Client]) -> None:
     clusters = {
         "default": Cluster(
             name="default",
-            registry_url=URL("https://registry-dev.neu.ro"),
-            storage_url=URL("https://storage-dev.neu.ro"),
-            users_url=URL("https://users-dev.neu.ro"),
-            monitoring_url=URL("https://monitoring-dev.neu.ro"),
-            secrets_url=URL("https://secrets-dev.neu.ro"),
-            disks_url=URL("https://disks-dev.neu.ro"),
-            buckets_url=URL("https://buckets-dev.neu.ro"),
+            registry_url=URL("https://registry-api.dev.apolo.us"),
+            storage_url=URL("https://storage-api.dev.apolo.us"),
+            users_url=URL("https://users-api.dev.apolo.us"),
+            monitoring_url=URL("https://monitoring-api.dev.apolo.us"),
+            secrets_url=URL("https://secrets-api.dev.apolo.us"),
+            disks_url=URL("https://disks-api.dev.apolo.us"),
+            buckets_url=URL("https://buckets-api.dev.apolo.us"),
             resource_pools={
                 "cpu": ResourcePool(
                     min_size=1,

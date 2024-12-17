@@ -829,35 +829,35 @@ def test_image_autocomplete(run_autocomplete: _RunAC) -> None:
             "default": [
                 RemoteImage.new_platform_image(
                     name="bananas",
-                    registry="registry-dev.neu.ro",
+                    registry="registry-api.dev.apolo.us",
                     cluster_name="default",
                     org_name=None,
                     project_name="project",
                 ),
                 RemoteImage.new_platform_image(
                     name="lemons",
-                    registry="registry-dev.neu.ro",
+                    registry="registry-api.dev.apolo.us",
                     cluster_name="default",
                     org_name=None,
                     project_name="project",
                 ),
                 RemoteImage.new_platform_image(
                     name="library/bananas",
-                    registry="registry-dev.neu.ro",
+                    registry="registry-api.dev.apolo.us",
                     cluster_name="default",
                     org_name=None,
                     project_name="project",
                 ),
                 RemoteImage.new_platform_image(
                     name="library/bananas",
-                    registry="registry-dev.neu.ro",
+                    registry="registry-api.dev.apolo.us",
                     cluster_name="default",
                     org_name=None,
                     project_name="other-project",
                 ),
                 RemoteImage.new_platform_image(
                     name="library/bananas",
-                    registry="registry-dev.neu.ro",
+                    registry="registry-api.dev.apolo.us",
                     cluster_name="default",
                     org_name="org",
                     project_name="project",
@@ -866,7 +866,7 @@ def test_image_autocomplete(run_autocomplete: _RunAC) -> None:
             "other": [
                 RemoteImage.new_platform_image(
                     name="library/bananas",
-                    registry="registry2-dev.neu.ro",
+                    registry="registry2-api.dev.apolo.us",
                     cluster_name="other",
                     org_name=None,
                     project_name="project",
@@ -1021,14 +1021,14 @@ def test_nonascii_image_autocomplete(run_autocomplete: _RunAC) -> None:
         images = [
             RemoteImage.new_platform_image(
                 name="ima?ge",
-                registry="registry-dev.neu.ro",
+                registry="registry-api.dev.apolo.us",
                 cluster_name="default",
                 org_name=None,
                 project_name="project",
             ),
             RemoteImage.new_platform_image(
                 name="образ",
-                registry="registry-dev.neu.ro",
+                registry="registry-api.dev.apolo.us",
                 cluster_name="default",
                 org_name=None,
                 project_name="project",
@@ -1128,7 +1128,7 @@ def test_image_tag_autocomplete(run_autocomplete: _RunAC) -> None:
     ) as mocked_tags:
         image = RemoteImage.new_platform_image(
             name="library/bananas",
-            registry="registry-dev.neu.ro",
+            registry="registry-api.dev.apolo.us",
             cluster_name="default",
             org_name=None,
             project_name="other-project",

@@ -117,7 +117,7 @@ def make_record(uid: str, url: URL, cmd: str, args: str, version: str) -> str:
         "el": args,                    # event label, "[{}, {"all", true}]
         "an": "apolo",                 # application name, apolo
         "av": version,                 # application version, 20.01.15
-        "aid": str(url),               # application id, https://dev.neu.ro/api/v1
+        "aid": str(url),               # application id, https://api.dev.apolo.us/api/v1
     }
     # fmt: on
     return urlencode(ret, quote_via=urlquote)

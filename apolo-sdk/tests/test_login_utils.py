@@ -19,8 +19,8 @@ async def test_get_server_config_no_clusters(
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neu.ro"
-    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    audience = "https://platform.api.dev.apolo.us"
+    headless_callback_url = "https://api.dev.apolo.us/oauth/show-code"
     callback_urls = [
         "http://127.0.0.1:54540",
         "http://127.0.0.1:54541",
@@ -71,8 +71,8 @@ async def test_get_server_config_no_callback_urls(
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neu.ro"
-    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    audience = "https://platform.api.dev.apolo.us"
+    headless_callback_url = "https://api.dev.apolo.us/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "auth_url": auth_url,
@@ -112,20 +112,20 @@ async def test_get_server_config_no_callback_urls(
 async def test_get_server_config_with_token(
     aiohttp_client: _TestClientFactory,
 ) -> None:
-    admin_url = "https://admin-dev.neu.ro"
-    registry_url = "https://registry.dev.neu.ro"
-    storage_url = "https://storage.dev.neu.ro"
-    users_url = "https://dev.neu.ro/users"
-    monitoring_url = "https://dev.neu.ro/monitoring"
-    secrets_url = "https://dev.neu.ro/secrets"
-    disks_url = "https://dev.neu.ro/disks"
-    buckets_url = "https://dev.neu.ro/buckets"
+    admin_url = "https://admin-api.dev.apolo.us"
+    registry_url = "https://registry.api.dev.apolo.us"
+    storage_url = "https://storage.api.dev.apolo.us"
+    users_url = "https://api.dev.apolo.us/users"
+    monitoring_url = "https://api.dev.apolo.us/monitoring"
+    secrets_url = "https://api.dev.apolo.us/secrets"
+    disks_url = "https://api.dev.apolo.us/disks"
+    buckets_url = "https://api.dev.apolo.us/buckets"
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neu.ro"
-    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    audience = "https://platform.api.dev.apolo.us"
+    headless_callback_url = "https://api.dev.apolo.us/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "authorized": True,
@@ -430,8 +430,8 @@ async def test_get_server_config_with_token_no_clusters(
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neu.ro"
-    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    audience = "https://platform.api.dev.apolo.us"
+    headless_callback_url = "https://api.dev.apolo.us/oauth/show-code"
     callback_urls = [
         "http://127.0.0.1:54540",
         "http://127.0.0.1:54541",
@@ -485,8 +485,8 @@ async def test_get_server_config_unauthorized(
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neu.ro"
-    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    audience = "https://platform.api.dev.apolo.us"
+    headless_callback_url = "https://api.dev.apolo.us/oauth/show-code"
     callback_urls = [
         "http://127.0.0.1:54540",
         "http://127.0.0.1:54541",

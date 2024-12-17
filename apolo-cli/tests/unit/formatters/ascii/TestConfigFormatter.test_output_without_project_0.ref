@@ -1,12 +1,12 @@
-User Configuration:                               
- User Name            user                        
- Current Cluster      default                     
- Current Org          NO_ORG                      
- Current Project      <no-project>                
- Credits Quota        500.00                      
- Jobs Quota           10                          
- API URL              https://dev.neu.ro/api/v1   
- Docker Registry URL  https://registry-dev.neu.ro 
+User Configuration:                                     
+ User Name            user                              
+ Current Cluster      default                           
+ Current Org          NO_ORG                            
+ Current Project      <no-project>                      
+ Credits Quota        500.00                            
+ Jobs Quota           10                                
+ API URL              https://api.dev.apolo.us/api/v1   
+ Docker Registry URL  https://registry-api.dev.apolo.us 
 Resource Presets:                                                                                                                      
  Name               #CPU    Memory   GPU                            Resource Pools   Round Robin   Preemptible Node   Credits per hour 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

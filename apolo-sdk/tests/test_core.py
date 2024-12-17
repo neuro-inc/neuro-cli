@@ -191,7 +191,7 @@ def test_load_cookies_valid() -> None:
         VALUES (?, ?, ?, ?, ?)""",
             (
                 "NEURO_STORAGEAPI_SESSION",
-                "https://dev.neu.ro",
+                "https://api.dev.apolo.us",
                 "/",
                 "cookie-value",
                 now,
@@ -201,7 +201,7 @@ def test_load_cookies_valid() -> None:
             _make_cookie(
                 "NEURO_STORAGEAPI_SESSION",
                 "cookie-value",
-                "https://dev.neu.ro",
+                "https://api.dev.apolo.us",
                 "/",
             )
         ] == _load_cookies(db, now=now)
@@ -214,14 +214,14 @@ def test_save_load_multiple_cookies() -> None:
         c1 = _make_cookie(
             "NEURO_STORAGEAPI_SESSION",
             "cookie-value",
-            "https://dev.neu.ro",
+            "https://api.dev.apolo.us",
             "/",
         )
 
         c2 = _make_cookie(
             "NEURO_REGISTRYAPI_SESSION",
             "cookie-value",
-            "https://dev.neu.ro",
+            "https://api.dev.apolo.us",
             "/",
         )
 
@@ -237,14 +237,14 @@ def test_save_load_multiple_cookies_last_stamps() -> None:
         c1 = _make_cookie(
             "NEURO_STORAGEAPI_SESSION",
             "cookie-value",
-            "https://dev.neu.ro",
+            "https://api.dev.apolo.us",
             "/",
         )
 
         c2 = _make_cookie(
             "NEURO_REGISTRYAPI_SESSION",
             "cookie-value",
-            "https://dev.neu.ro",
+            "https://api.dev.apolo.us",
             "/",
         )
 
@@ -253,7 +253,7 @@ def test_save_load_multiple_cookies_last_stamps() -> None:
         c3 = _make_cookie(
             "NEURO_REGISTRYAPI_SESSION",
             "cookie-value2",
-            "https://dev.neu.ro",
+            "https://api.dev.apolo.us",
             "/",
         )
 

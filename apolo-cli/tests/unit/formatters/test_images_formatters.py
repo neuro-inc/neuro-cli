@@ -78,7 +78,7 @@ class TestDockerImageProgress:
                     RemoteImage.new_platform_image(
                         name="output",
                         tag="stream",
-                        registry="https://registry-dev.neu.ro",
+                        registry="https://registry-api.dev.apolo.us",
                         cluster_name="test-cluster",
                         org_name=None,
                         project_name="test-project",
@@ -101,7 +101,7 @@ class TestDockerImageProgress:
                     RemoteImage.new_platform_image(
                         name="output",
                         tag="stream",
-                        registry="https://registry-dev.neu.ro",
+                        registry="https://registry-api.dev.apolo.us",
                         cluster_name="test-cluster",
                         org_name=None,
                         project_name="test-project",
@@ -123,7 +123,7 @@ class TestDockerImageProgress:
                     RemoteImage.new_platform_image(
                         name="output",
                         tag="stream",
-                        registry="https://registry-dev.neu.ro",
+                        registry="https://registry-api.dev.apolo.us",
                         cluster_name="test-cluster",
                         org_name=None,
                         project_name="test-project",
@@ -143,7 +143,7 @@ class TestDockerImageProgress:
                     target_image=RemoteImage.new_platform_image(
                         name="output",
                         tag="stream",
-                        registry="https://registry-dev.neu.ro",
+                        registry="https://registry-api.dev.apolo.us",
                         cluster_name="test-cluster",
                         org_name=None,
                         project_name="test-project",
@@ -168,7 +168,7 @@ class TestDockerImageProgress:
                     RemoteImage.new_platform_image(
                         name="output",
                         tag="stream",
-                        registry="https://registry-dev.neu.ro",
+                        registry="https://registry-api.dev.apolo.us",
                         cluster_name="test-cluster",
                         org_name=None,
                         project_name="test-project",
@@ -193,7 +193,7 @@ class TestDockerImageProgress:
                     RemoteImage.new_platform_image(
                         name="output",
                         tag="stream",
-                        registry="https://registry-dev.neu.ro",
+                        registry="https://registry-api.dev.apolo.us",
                         cluster_name="test-cluster",
                         org_name=None,
                         project_name="test-project",
@@ -217,7 +217,7 @@ class TestDockerImageProgress:
                     RemoteImage.new_platform_image(
                         name="output",
                         tag="stream",
-                        registry="https://registry-dev.neu.ro",
+                        registry="https://registry-api.dev.apolo.us",
                         cluster_name="test-cluster",
                         org_name=None,
                         project_name="test-project",
