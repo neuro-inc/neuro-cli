@@ -6,7 +6,6 @@ from unittest import mock
 from apolo_sdk import (
     Preset,
     _Admin,
-    _AWSStorageOptions,
     _Balance,
     _CloudProviderOptions,
     _CloudProviderType,
@@ -14,8 +13,6 @@ from apolo_sdk import (
     _ClusterUser,
     _ClusterUserRoleType,
     _ClusterUserWithInfo,
-    _EFSPerformanceMode,
-    _EFSThroughputMode,
     _NodePoolOptions,
     _OrgUserRoleType,
     _OrgUserWithInfo,
@@ -377,13 +374,7 @@ def test_show_cluster_config_options(run_cli: _RunCli) -> None:
                     gpu_model="nvidia-tesla-k80",
                 )
             ],
-            storages=[
-                _AWSStorageOptions(
-                    id="generalpurpose_bursting",
-                    performance_mode=_EFSPerformanceMode.GENERAL_PURPOSE,
-                    throughput_mode=_EFSThroughputMode.BURSTING,
-                )
-            ],
+            storages=[],
         )
 
         async def get_cloud_provider_options(

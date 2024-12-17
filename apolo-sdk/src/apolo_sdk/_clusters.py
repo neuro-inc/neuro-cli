@@ -6,11 +6,9 @@ from typing import Any, AsyncIterator, Dict, List, Mapping, Optional
 import aiohttp
 from neuro_config_client import AWSCloudProvider as _AWSCloudProvider
 from neuro_config_client import AWSStorage as _AWSStorage
-from neuro_config_client import AWSStorageOptions as _AWSStorageOptions
 from neuro_config_client import AzureCloudProvider as _AzureCloudProvider
 from neuro_config_client import AzureReplicationType as _AzureReplicationType
 from neuro_config_client import AzureStorage as _AzureStorage
-from neuro_config_client import AzureStorageOptions as _AzureStorageOptions
 from neuro_config_client import AzureStorageTier as _AzureStorageTier
 from neuro_config_client import CloudProvider as _CloudProvider
 from neuro_config_client import CloudProviderOptions as _CloudProviderOptions
@@ -26,14 +24,12 @@ from neuro_config_client import EnergySchedulePeriod as _EnergySchedulePeriod
 from neuro_config_client import GoogleCloudProvider as _GoogleCloudProvider
 from neuro_config_client import GoogleFilestoreTier as _GoogleFilestoreTier
 from neuro_config_client import GoogleStorage as _GoogleStorage
-from neuro_config_client import GoogleStorageOptions as _GoogleStorageOptions
 from neuro_config_client import NodePool as _NodePool
 from neuro_config_client import NodePoolOptions as _NodePoolOptions
 from neuro_config_client import OnPremCloudProvider as _OnPremCloudProvider
 from neuro_config_client import ResourcePreset as _ResourcePreset
 from neuro_config_client import Storage as _Storage
 from neuro_config_client import StorageInstance as _StorageInstance
-from neuro_config_client import StorageOptions as _StorageOptions
 from neuro_config_client import TPUPreset as _TPUPreset
 from neuro_config_client import VCDCloudProvider as _VCDCloudProvider
 from neuro_config_client import VCDCloudProviderOptions as _VCDCloudProviderOptions
@@ -49,11 +45,9 @@ from ._utils import NoPublicConstructor
 __all__ = [
     "_AWSCloudProvider",
     "_AWSStorage",
-    "_AWSStorageOptions",
     "_AzureCloudProvider",
     "_AzureReplicationType",
     "_AzureStorage",
-    "_AzureStorageOptions",
     "_AzureStorageTier",
     "_CloudProvider",
     "_CloudProviderOptions",
@@ -69,14 +63,12 @@ __all__ = [
     "_GoogleCloudProvider",
     "_GoogleFilestoreTier",
     "_GoogleStorage",
-    "_GoogleStorageOptions",
     "_NodePool",
     "_NodePoolOptions",
     "_OnPremCloudProvider",
     "_ResourcePreset",
     "_Storage",
     "_StorageInstance",
-    "_StorageOptions",
     "_TPUPreset",
     "_VCDCloudProvider",
     "_VCDCloudProviderOptions",
