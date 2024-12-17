@@ -1101,7 +1101,7 @@ class TestImages:
         default_cluster="default",
         default_org="NO_ORG",
         default_project="test-project",
-        registry_urls={"default": URL("https://registry-dev.neu.ro")},
+        registry_urls={"default": URL("https://registry-api.dev.apolo.us")},
     )
 
     @mock.patch(

@@ -13,6 +13,7 @@ import tempfile
 from collections import namedtuple
 from contextlib import asynccontextmanager, contextmanager, suppress
 from datetime import datetime, timedelta, timezone
+from functools import cached_property
 from hashlib import sha1
 from os.path import join
 from pathlib import Path
@@ -60,15 +61,6 @@ from apolo_sdk import login_with_token
 from apolo_cli.utils import resolve_job
 
 from tests.e2e.utils import FILE_SIZE_B, NGINX_IMAGE_NAME, JobWaitStateStopReached
-
-if sys.version_info >= (3, 8):  # pragma: no cover
-    from functools import cached_property
-else:
-    from functools import lru_cache
-
-    def cached_property(func):
-        return property(lru_cache()(func))
-
 
 JOB_TIMEOUT = 5 * 60
 JOB_WAIT_SLEEP_SECONDS = 2
@@ -828,7 +820,7 @@ def _get_nmrc_path(tmp_path: Any, require_admin: bool) -> Optional[Path]:
         asyncio.run(
             login_with_token(
                 e2e_test_token,
-                url=URL("https://dev.neu.ro/api/v1"),
+                url=URL("https://api.dev.apolo.us/api/v1"),
                 path=nmrc_path,
                 timeout=CLIENT_TIMEOUT,
             )

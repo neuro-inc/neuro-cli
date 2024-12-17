@@ -173,13 +173,13 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
         "default": Cluster(
             name="default",
             orgs=["NO_ORG", "test-org"],
-            registry_url=URL("https://registry-dev.neu.ro"),
-            storage_url=URL("https://storage-dev.neu.ro"),
-            users_url=URL("https://users-dev.neu.ro"),
-            monitoring_url=URL("https://jobs-dev.neu.ro"),
-            secrets_url=URL("https://secrets-dev.neu.ro"),
-            disks_url=URL("https://disks-dev.neu.ro"),
-            buckets_url=URL("https://buckets-dev.neu.ro"),
+            registry_url=URL("https://registry-api.dev.apolo.us"),
+            storage_url=URL("https://storage-api.dev.apolo.us"),
+            users_url=URL("https://users-api.dev.apolo.us"),
+            monitoring_url=URL("https://jobs-api.dev.apolo.us"),
+            secrets_url=URL("https://secrets-api.dev.apolo.us"),
+            disks_url=URL("https://disks-api.dev.apolo.us"),
+            buckets_url=URL("https://buckets-api.dev.apolo.us"),
             resource_pools={
                 "cpu": ResourcePool(
                     min_size=1,
@@ -196,18 +196,18 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
                     memory=2 * 2**30,
                 )
             },
-            apps=AppsConfig(hostname_templates=["{name}.dev.neu.ro"]),
+            apps=AppsConfig(hostname_templates=["{name}.api.dev.apolo.us"]),
         ),
         "another": Cluster(
             name="another",
             orgs=["some-org", "NO_ORG"],
-            registry_url=URL("https://registry2-dev.neu.ro"),
-            storage_url=URL("https://storage2-dev.neu.ro"),
-            users_url=URL("https://users2-dev.neu.ro"),
-            monitoring_url=URL("https://jobs2-dev.neu.ro"),
-            secrets_url=URL("https://secrets2-dev.neu.ro"),
-            disks_url=URL("https://disks2-dev.neu.ro"),
-            buckets_url=URL("https://buckets2-dev.neu.ro"),
+            registry_url=URL("https://registry2-api.dev.apolo.us"),
+            storage_url=URL("https://storage2-api.dev.apolo.us"),
+            users_url=URL("https://users2-api.dev.apolo.us"),
+            monitoring_url=URL("https://jobs2-api.dev.apolo.us"),
+            secrets_url=URL("https://secrets2-api.dev.apolo.us"),
+            disks_url=URL("https://disks2-api.dev.apolo.us"),
+            buckets_url=URL("https://buckets2-api.dev.apolo.us"),
             resource_pools={
                 "cpu": ResourcePool(
                     min_size=1,
@@ -224,18 +224,18 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
                     memory=14 * 2**30,
                 )
             },
-            apps=AppsConfig(hostname_templates=["{name}.dev.neu.ro"]),
+            apps=AppsConfig(hostname_templates=["{name}.api.dev.apolo.us"]),
         ),
         "third": Cluster(
             name="third",
             orgs=["some-org", "a-org"],
-            registry_url=URL("https://registry3-dev.neu.ro"),
-            storage_url=URL("https://storage3-dev.neu.ro"),
-            users_url=URL("https://users3-dev.neu.ro"),
-            monitoring_url=URL("https://jobs3-dev.neu.ro"),
-            secrets_url=URL("https://secrets3-dev.neu.ro"),
-            disks_url=URL("https://disks3-dev.neu.ro"),
-            buckets_url=URL("https://buckets3-dev.neu.ro"),
+            registry_url=URL("https://registry3-api.dev.apolo.us"),
+            storage_url=URL("https://storage3-api.dev.apolo.us"),
+            users_url=URL("https://users3-api.dev.apolo.us"),
+            monitoring_url=URL("https://jobs3-api.dev.apolo.us"),
+            secrets_url=URL("https://secrets3-api.dev.apolo.us"),
+            disks_url=URL("https://disks3-api.dev.apolo.us"),
+            buckets_url=URL("https://buckets3-api.dev.apolo.us"),
             resource_pools={
                 "cpu": ResourcePool(
                     min_size=1,
@@ -252,7 +252,7 @@ def multiple_clusters_config() -> Dict[str, Cluster]:
                     memory=14 * 2**30,
                 )
             },
-            apps=AppsConfig(hostname_templates=["{name}.dev.neu.ro"]),
+            apps=AppsConfig(hostname_templates=["{name}.api.dev.apolo.us"]),
         ),
     }
 
@@ -275,12 +275,12 @@ async def test_get_cluster_name_from_local(
         local_dir.mkdir(parents=True, exist_ok=True)
         monkeypatch.chdir(local_dir)
         assert client.config.cluster_name == "default"
-        assert client.config.registry_url == URL("https://registry-dev.neu.ro")
-        assert client.config.storage_url == URL("https://storage-dev.neu.ro")
-        assert client.config.monitoring_url == URL("https://jobs-dev.neu.ro")
-        assert client.config.secrets_url == URL("https://secrets-dev.neu.ro")
-        assert client.config.disk_api_url == URL("https://disks-dev.neu.ro")
-        assert client.config.bucket_api_url == URL("https://buckets-dev.neu.ro")
+        assert client.config.registry_url == URL("https://registry-api.dev.apolo.us")
+        assert client.config.storage_url == URL("https://storage-api.dev.apolo.us")
+        assert client.config.monitoring_url == URL("https://jobs-api.dev.apolo.us")
+        assert client.config.secrets_url == URL("https://secrets-api.dev.apolo.us")
+        assert client.config.disk_api_url == URL("https://disks-api.dev.apolo.us")
+        assert client.config.bucket_api_url == URL("https://buckets-api.dev.apolo.us")
         assert client.config.presets == {
             "cpu-small": Preset(
                 credits_per_hour=Decimal("10"),
@@ -293,12 +293,12 @@ async def test_get_cluster_name_from_local(
         local_conf = proj_dir / ".apolo.toml"
         local_conf.write_text(toml.dumps({"job": {"cluster-name": "another"}}))
         assert client.config.cluster_name == "another"
-        assert client.config.registry_url == URL("https://registry2-dev.neu.ro")
-        assert client.config.storage_url == URL("https://storage2-dev.neu.ro")
-        assert client.config.monitoring_url == URL("https://jobs2-dev.neu.ro")
-        assert client.config.secrets_url == URL("https://secrets2-dev.neu.ro")
-        assert client.config.disk_api_url == URL("https://disks2-dev.neu.ro")
-        assert client.config.bucket_api_url == URL("https://buckets2-dev.neu.ro")
+        assert client.config.registry_url == URL("https://registry2-api.dev.apolo.us")
+        assert client.config.storage_url == URL("https://storage2-api.dev.apolo.us")
+        assert client.config.monitoring_url == URL("https://jobs2-api.dev.apolo.us")
+        assert client.config.secrets_url == URL("https://secrets2-api.dev.apolo.us")
+        assert client.config.disk_api_url == URL("https://disks2-api.dev.apolo.us")
+        assert client.config.bucket_api_url == URL("https://buckets2-api.dev.apolo.us")
         assert client.config.presets == {
             "cpu-large": Preset(
                 credits_per_hour=Decimal("10"),
@@ -469,7 +469,7 @@ async def test_clusters(
             "default": Cluster(
                 name="default",
                 orgs=["NO_ORG"],
-                registry_url=URL("https://registry-dev.neu.ro"),
+                registry_url=URL("https://registry-api.dev.apolo.us"),
                 storage_url=srv.make_url("/storage"),
                 users_url=srv.make_url("/"),
                 monitoring_url=srv.make_url("/jobs"),
@@ -546,20 +546,20 @@ async def test_projects(
 async def test_fetch(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    admin_url = "https://admin-dev.neu.ro"
-    registry_url = "https://registry2-dev.neu.ro"
-    storage_url = "https://storage2-dev.neu.ro"
-    users_url = "https://users2-dev.neu.ro"
-    monitoring_url = "https://jobs2-dev.neu.ro"
-    secrets_url = "https://secrets2-dev.neu.ro"
-    disks_url = "https://disks2-dev.neu.ro"
-    buckets_url = "https://buckets2-dev.neu.ro"
+    admin_url = "https://admin-api.dev.apolo.us"
+    registry_url = "https://registry2-api.dev.apolo.us"
+    storage_url = "https://storage2-api.dev.apolo.us"
+    users_url = "https://users2-api.dev.apolo.us"
+    monitoring_url = "https://jobs2-api.dev.apolo.us"
+    secrets_url = "https://secrets2-api.dev.apolo.us"
+    disks_url = "https://disks2-api.dev.apolo.us"
+    buckets_url = "https://buckets2-api.dev.apolo.us"
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neu.ro."
-    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    audience = "https://platform.api.dev.apolo.us."
+    headless_callback_url = "https://api.dev.apolo.us/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "authorized": True,
@@ -665,19 +665,19 @@ async def test_fetch(
 async def test_fetch_without_admin_url(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
-    registry_url = "https://registry2-dev.neu.ro"
-    storage_url = "https://storage2-dev.neu.ro"
-    users_url = "https://users2-dev.neu.ro"
-    monitoring_url = "https://jobs2-dev.neu.ro"
-    secrets_url = "https://secrets2-dev.neu.ro"
-    disks_url = "https://disks2-dev.neu.ro"
-    buckets_url = "https://buckets2-dev.neu.ro"
+    registry_url = "https://registry2-api.dev.apolo.us"
+    storage_url = "https://storage2-api.dev.apolo.us"
+    users_url = "https://users2-api.dev.apolo.us"
+    monitoring_url = "https://jobs2-api.dev.apolo.us"
+    secrets_url = "https://secrets2-api.dev.apolo.us"
+    disks_url = "https://disks2-api.dev.apolo.us"
+    buckets_url = "https://buckets2-api.dev.apolo.us"
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neu.ro."
-    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    audience = "https://platform.api.dev.apolo.us."
+    headless_callback_url = "https://api.dev.apolo.us/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "authorized": True,
@@ -737,20 +737,20 @@ async def test_fetch_dropped_selected_cluster(
     aiohttp_server: _TestServerFactory, make_client: _MakeClient
 ) -> None:
     # the test returns the same as for valid answer but the cluster name is different
-    admin_url = "https://admin-dev.neu.ro"
-    registry_url = "https://registry2-dev.neu.ro"
-    storage_url = "https://storage2-dev.neu.ro"
-    users_url = "https://users2-dev.neu.ro"
-    monitoring_url = "https://jobs2-dev.neu.ro"
-    secrets_url = "https://secrets2-dev.neu.ro"
-    disks_url = "https://disks2-dev.neu.ro"
-    buckets_url = "https://buckets2-dev.neu.ro"
+    admin_url = "https://admin-api.dev.apolo.us"
+    registry_url = "https://registry2-api.dev.apolo.us"
+    storage_url = "https://storage2-api.dev.apolo.us"
+    users_url = "https://users2-api.dev.apolo.us"
+    monitoring_url = "https://jobs2-api.dev.apolo.us"
+    secrets_url = "https://secrets2-api.dev.apolo.us"
+    disks_url = "https://disks2-api.dev.apolo.us"
+    buckets_url = "https://buckets2-api.dev.apolo.us"
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
     audience = "https://platform.dev.neuro.io"
-    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    headless_callback_url = "https://api.dev.apolo.us/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "authorized": True,
@@ -1079,20 +1079,20 @@ async def test_check_server_mismatch_clusters(
 ) -> None:
     # the test returns the same as for valid answer but the cluster name is different
 
-    admin_url = "https://admin-dev.neu.ro"
-    registry_url = "https://registry2-dev.neu.ro"
-    storage_url = "https://storage2-dev.neu.ro"
-    users_url = "https://users2-dev.neu.ro"
-    monitoring_url = "https://jobs2-dev.neu.ro"
-    secrets_url = "https://secrets2-dev.neu.ro"
-    disks_url = "https://disks2-dev.neu.ro"
-    buckets_url = "https://buckets2-dev.neu.ro"
+    admin_url = "https://admin-api.dev.apolo.us"
+    registry_url = "https://registry2-api.dev.apolo.us"
+    storage_url = "https://storage2-api.dev.apolo.us"
+    users_url = "https://users2-api.dev.apolo.us"
+    monitoring_url = "https://jobs2-api.dev.apolo.us"
+    secrets_url = "https://secrets2-api.dev.apolo.us"
+    disks_url = "https://disks2-api.dev.apolo.us"
+    buckets_url = "https://buckets2-api.dev.apolo.us"
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
     client_id = "this_is_client_id"
-    audience = "https://platform.dev.neu.ro"
-    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    audience = "https://platform.api.dev.apolo.us"
+    headless_callback_url = "https://api.dev.apolo.us/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "authorized": True,
@@ -1156,19 +1156,19 @@ async def test_check_server_mismatch_auth(
 ) -> None:
     # the test returns the same as for valid answer but the cluster name is different
 
-    admin_url = "https://admin-dev.neu.ro"
-    registry_url = "https://registry2-dev.neu.ro"
-    storage_url = "https://storage2-dev.neu.ro"
-    users_url = "https://users2-dev.neu.ro"
-    monitoring_url = "https://jobs2-dev.neu.ro"
-    secrets_url = "https://secrets2-dev.neu.ro"
-    disks_url = "https://disks2-dev.neu.ro"
-    buckets_url = "https://buckets2-dev.neu.ro"
+    admin_url = "https://admin-api.dev.apolo.us"
+    registry_url = "https://registry2-api.dev.apolo.us"
+    storage_url = "https://storage2-api.dev.apolo.us"
+    users_url = "https://users2-api.dev.apolo.us"
+    monitoring_url = "https://jobs2-api.dev.apolo.us"
+    secrets_url = "https://secrets2-api.dev.apolo.us"
+    disks_url = "https://disks2-api.dev.apolo.us"
+    buckets_url = "https://buckets2-api.dev.apolo.us"
     auth_url = "https://dev-neuro.auth0.com/authorize"
     token_url = "https://dev-neuro.auth0.com/oauth/token"
     logout_url = "https://dev-neuro.auth0.com/v2/logout"
-    audience = "https://platform.dev.neu.ro"
-    headless_callback_url = "https://dev.neu.ro/oauth/show-code"
+    audience = "https://platform.api.dev.apolo.us"
+    headless_callback_url = "https://api.dev.apolo.us/oauth/show-code"
     success_redirect_url = "https://platform.neu.ro"
     JSON = {
         "authorized": True,

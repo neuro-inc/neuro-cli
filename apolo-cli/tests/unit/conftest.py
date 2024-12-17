@@ -29,13 +29,13 @@ log = logging.getLogger(__name__)
 def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
     nmrc_path = tmp_path / "conftest.nmrc"
     cluster_config = Cluster(
-        registry_url=URL("https://registry-dev.neu.ro"),
-        storage_url=URL("https://storage-dev.neu.ro"),
-        users_url=URL("https://users-dev.neu.ro"),
-        monitoring_url=URL("https://monitoring-dev.neu.ro"),
-        secrets_url=URL("https://secrets-dev.neu.ro"),
-        disks_url=URL("https://disks-dev.neu.ro"),
-        buckets_url=URL("https://buckets-dev.neu.ro"),
+        registry_url=URL("https://registry-api.dev.apolo.us"),
+        storage_url=URL("https://storage-api.dev.apolo.us"),
+        users_url=URL("https://users-api.dev.apolo.us"),
+        monitoring_url=URL("https://monitoring-api.dev.apolo.us"),
+        secrets_url=URL("https://secrets-api.dev.apolo.us"),
+        disks_url=URL("https://disks-api.dev.apolo.us"),
+        buckets_url=URL("https://buckets-api.dev.apolo.us"),
         resource_pools={
             "cpu": ResourcePool(
                 min_size=1,
@@ -137,13 +137,13 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
         apps=AppsConfig(),
     )
     cluster2_config = Cluster(
-        registry_url=URL("https://registry2-dev.neu.ro"),
-        storage_url=URL("https://storage2-dev.neu.ro"),
-        users_url=URL("https://users2-dev.neu.ro"),
-        monitoring_url=URL("https://monitoring2-dev.neu.ro"),
-        secrets_url=URL("https://secrets2-dev.neu.ro"),
-        disks_url=URL("https://disks2-dev.neu.ro"),
-        buckets_url=URL("https://buckets2-dev.neu.ro"),
+        registry_url=URL("https://registry2-api.dev.apolo.us"),
+        storage_url=URL("https://storage2-api.dev.apolo.us"),
+        users_url=URL("https://users2-api.dev.apolo.us"),
+        monitoring_url=URL("https://monitoring2-api.dev.apolo.us"),
+        secrets_url=URL("https://secrets2-api.dev.apolo.us"),
+        disks_url=URL("https://disks2-api.dev.apolo.us"),
+        buckets_url=URL("https://buckets2-api.dev.apolo.us"),
         resource_pools={
             "cpu": ResourcePool(
                 min_size=1,
@@ -167,8 +167,8 @@ def nmrc_path(tmp_path: Path, token: str, auth_config: _AuthConfig) -> Path:
     config = _ConfigData(
         auth_config=auth_config,
         auth_token=_AuthToken.create_non_expiring(token),
-        url=URL("https://dev.neu.ro/api/v1"),
-        admin_url=URL("https://dev.neu.ro/apis/admin/v1"),
+        url=URL("https://api.dev.apolo.us/api/v1"),
+        admin_url=URL("https://api.dev.apolo.us/apis/admin/v1"),
         version=__version__,
         cluster_name=cluster_config.name,
         org_name=cluster_config.orgs[0],

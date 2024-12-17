@@ -94,7 +94,7 @@ class TestConfigFormatter:
         new_config = replace(cluster_config, presets=presets)
 
         client = make_client(
-            "https://dev.neu.ro/api/v1", clusters={new_config.name: new_config}
+            "https://api.dev.apolo.us/api/v1", clusters={new_config.name: new_config}
         )
         out = ConfigFormatter()(
             client.config,
@@ -140,7 +140,7 @@ class TestConfigFormatter:
         rich_cmp: RichCmp,
     ) -> None:
         client = make_client(
-            "https://dev.neu.ro/api/v1",
+            "https://api.dev.apolo.us/api/v1",
             clusters={cluster_config.name: cluster_config},
             projects={},
             project_name=None,

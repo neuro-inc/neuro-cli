@@ -34,8 +34,8 @@ def auth_config() -> _AuthConfig:
         token_url=URL("https://dev-neuro.auth0.com/oauth/token"),
         logout_url=URL("https://dev-neuro.auth0.com/v2/logout"),
         client_id="CLIENT-ID",
-        audience="https://platform.dev.neu.ro",
-        headless_callback_url=URL("https://https://dev.neu.ro/oauth/show-code"),
+        audience="https://platform.api.dev.apolo.us",
+        headless_callback_url=URL("https://https://api.dev.apolo.us/oauth/show-code"),
         success_redirect_url=URL("https://neu.ro/#running-your-first-job"),
         callback_urls=[
             URL("http://127.0.0.1:54540"),
@@ -48,13 +48,13 @@ def auth_config() -> _AuthConfig:
 @pytest.fixture
 def cluster_config() -> Cluster:
     return Cluster(
-        registry_url=URL("https://registry-dev.neu.ro"),
-        storage_url=URL("https://storage-dev.neu.ro"),
-        users_url=URL("https://users-dev.neu.ro"),
-        monitoring_url=URL("https://monitoring-dev.neu.ro"),
-        secrets_url=URL("https://secrets-dev.neu.ro"),
-        disks_url=URL("https://disks-dev.neu.ro"),
-        buckets_url=URL("https://buckets-dev.neu.ro"),
+        registry_url=URL("https://registry-api.dev.apolo.us"),
+        storage_url=URL("https://storage-api.dev.apolo.us"),
+        users_url=URL("https://users-api.dev.apolo.us"),
+        monitoring_url=URL("https://monitoring-api.dev.apolo.us"),
+        secrets_url=URL("https://secrets-api.dev.apolo.us"),
+        disks_url=URL("https://disks-api.dev.apolo.us"),
+        buckets_url=URL("https://buckets-api.dev.apolo.us"),
         resource_pools={
             "cpu": ResourcePool(
                 min_size=1,
@@ -164,7 +164,7 @@ def make_client(
     def go(
         url_str: str,
         *,
-        registry_url: str = "https://registry-dev.neu.ro",
+        registry_url: str = "https://registry-api.dev.apolo.us",
         trace_id: str = "bd7a977555f6b982",
         clusters: Optional[Dict[str, Cluster]] = None,
         projects: Optional[Dict[Project.Key, Project]] = None,
