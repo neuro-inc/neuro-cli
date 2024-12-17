@@ -139,7 +139,7 @@ async def test_parse_remote(make_client: _MakeClient) -> None:
     assert result == RemoteImage.new_platform_image(
         name="bananas",
         tag="latest",
-        registry="registry-dev.neu.ro",
+        registry="registry-api.dev.apolo.us",
         cluster_name="default",
         org_name="NO_ORG",
         project_name="project",

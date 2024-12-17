@@ -2438,7 +2438,7 @@ async def test_list_incorrect_image(
         create_job_response("job-id-1", "running"),
         create_job_response("job-id-2", "pending", image="some.com/path:tag"),
         create_job_response(
-            "job-id-3", "failed", image="registry-dev.neu.ro/path/:tag"
+            "job-id-3", "failed", image="registry-api.dev.apolo.us/path/:tag"
         ),
         create_job_response("job-id-4", "failed", image=""),
         create_job_response("job-id-5", "failed", image=":"),

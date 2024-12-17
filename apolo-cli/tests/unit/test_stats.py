@@ -112,7 +112,7 @@ def test_delete_oldest(db: sqlite3.Connection) -> None:
 def test_make_record_cli() -> None:
     record = make_record(
         uid="uid",
-        url=URL("https://dev.neu.ro/api/v1"),
+        url=URL("https://api.dev.apolo.us/api/v1"),
         cmd="cmd",
         args="args",
         version="version",
@@ -125,7 +125,7 @@ def test_make_record_web_shell() -> None:
     os.environ[NEURO_EVENT_CATEGORY] = "WEB-CLI"
     record = make_record(
         uid="uid",
-        url=URL("https://dev.neu.ro/api/v1"),
+        url=URL("https://api.dev.apolo.us/api/v1"),
         cmd="cmd",
         args="args",
         version="version",

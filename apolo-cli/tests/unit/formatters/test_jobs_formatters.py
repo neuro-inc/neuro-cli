@@ -2070,7 +2070,7 @@ class TestTabularJobRow:
             self._job_descr_with_status(
                 root,
                 JobStatus.PENDING,
-                "registry-dev.neu.ro/test-project/swiss-box:red",
+                "registry-api.dev.apolo.us/test-project/swiss-box:red",
             ),
             "bob",
             image_formatter=image_fmtr,
@@ -2086,7 +2086,7 @@ class TestTabularJobRow:
             self._job_descr_with_status(
                 root,
                 JobStatus.PENDING,
-                "registry-dev.neu.ro/bob/swiss-box:red",
+                "registry-api.dev.apolo.us/bob/swiss-box:red",
             ),
             "owner",
             image_formatter=str,

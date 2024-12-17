@@ -314,8 +314,8 @@ async def auth_config(
         token_url=auth_server / "oauth/token",
         logout_url=auth_server / "v2/logout",
         client_id=auth_client_id,
-        audience="https://platform.dev.neu.ro",
-        headless_callback_url=URL("https://dev.neu.ro/oauth/show-code"),
+        audience="https://platform.api.dev.apolo.us",
+        headless_callback_url=URL("https://api.dev.apolo.us/oauth/show-code"),
         callback_urls=[URL(f"http://127.0.0.1:{port}")],
     )
 
@@ -417,9 +417,9 @@ class TestHeadlessNegotiator:
                 code_challenge=mock.ANY,
                 code_challenge_method="S256",
                 client_id="test_client_id",
-                redirect_uri="https://dev.neu.ro/oauth/show-code",
+                redirect_uri="https://api.dev.apolo.us/oauth/show-code",
                 scope="offline_access",
-                audience="https://platform.dev.neu.ro",
+                audience="https://platform.api.dev.apolo.us",
             )
             return "test_code"
 
