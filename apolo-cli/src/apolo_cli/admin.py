@@ -336,17 +336,18 @@ credentials:
   access_key_id: {access_key_id}
   secret_access_key: {secret_access_key}
 node_pools:
-- id: m5_2xlarge_8
+- machine_type: m5.2xlarge
   min_size: 1
   max_size: 4
-- id: p2_xlarge_4
+- machine_type: p2.xlarge
   min_size: 1
   max_size: 4
-- id: p3_2xlarge_8
+- machine_type: p3.2xlarge
   min_size: 0
   max_size: 1
 storage:
-  id: generalpurpose_bursting
+  performance_mode: generalPurpose
+  throughput_mode: bursting
   instances:
   - {}
 """
@@ -392,21 +393,21 @@ zones:
 project: {project_name}
 credentials: {credentials}
 node_pools:
-- id: n1_highmem_8
+- machine_type: n1-highmem-8
   min_size: 1
   max_size: 4
-- id: n1_highmem_8
+- machine_type: n1-highmem-8
   min_size: 1
   max_size: 4
-  gpu: 1
-  gpu_model: nvidia-tesla-k80
-- id: n1_highmem_8
+  nvidia_gpu: 1
+  nvidia_gpu_model: nvidia-tesla-k80
+- machine_type: n1-highmem-8
   min_size: 0
   max_size: 1
-  gpu: 1
-  gpu_model: nvidia-tesla-v100
+  nvidia_gpu: 1
+  nvidia_gpu_model: nvidia-tesla-v100
 storage:
-  id: gcs-nfs
+  tier: PREMIUM
   instances:
   - {}
 """
@@ -436,17 +437,17 @@ credentials:
   client_id: {client_id}
   client_secret: {client_secret}
 node_pools:
-- id: standard_d8_v3_8
+- machine_type: Standard_D8_v3
   min_size: 1
   max_size: 4
-- id: standard_nc6_6
+- machine_type: Standard_NC6
   min_size: 1
   max_size: 4
-- id: standard_nc6s_v3_6
+- machine_type: Standard_NC6s_v3
   min_size: 0
   max_size: 1
 storage:
-  id: premium_lrs
+  tier: Premium
   instances:
   - size: {file_share_size}
 """
@@ -485,14 +486,14 @@ credentials:
   user: {user}
   password: {password}
 node_pools:
-- id: {kubernetes_node_pool_id}
+- machine_type: {kubernetes_node_pool_machine_type}
   role: kubernetes
   name: kubernetes
   min_size: 3
   max_size: 3
   disk_type: {storage_profile_name}
   disk_size: 40_000_000_000
-- id: {platform_node_pool_id}
+- machine_type: {platform_node_pool_machine_type}
   role: platform
   name: platform
   min_size: 3
@@ -564,8 +565,12 @@ async def generate_vcd(root: Root, session: PromptSession[str]) -> str:
     )
     storage_size_gb = await session.prompt_async("Storage size (Gb): ")
     args["storage_size"] = storage_size_gb * 10**9
-    args["kubernetes_node_pool_id"] = cloud_provider.kubernetes_node_pool_id
-    args["platform_node_pool_id"] = cloud_provider.platform_node_pool_id
+    args["kubernetes_node_pool_id"] = await session.prompt_async(
+        "Kubernetes node pool machine type: "
+    )
+    args["platform_node_pool_id"] = await session.prompt_async(
+        "Platform node pool machine type: "
+    )
     return VCD_TEMPLATE.format_map(args)
 
 

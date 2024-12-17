@@ -7,18 +7,14 @@ from rich.console import RenderableType
 from rich.rule import Rule
 from rich.styled import Styled
 from rich.table import Column, Table
-from rich.text import Text
 
 from apolo_sdk import (
-    _AWSStorageOptions,
-    _AzureStorageOptions,
     _CloudProviderOptions,
     _CloudProviderType,
     _Cluster,
     _ClusterUser,
     _ClusterUserWithInfo,
     _ConfigCluster,
-    _GoogleStorageOptions,
     _NodePool,
     _NodePoolOptions,
     _Org,
@@ -373,7 +369,6 @@ class CloudProviderOptionsFormatter:
     def __call__(self, options: _CloudProviderOptions) -> RenderableType:
         out: list[RenderableType] = []
         table = Table(
-            Column("Id"),
             Column("Machine"),
             Column("CPU"),
             Column("CPU Avail"),
@@ -388,7 +383,6 @@ class CloudProviderOptionsFormatter:
         )
         for np in options.node_pools:
             table.add_row(
-                np.id,
                 np.machine_type,
                 str(np.cpu),
                 str(np.available_cpu),
@@ -397,78 +391,12 @@ class CloudProviderOptionsFormatter:
                 self._gpu(np),
             )
         out.append(table)
-        out.append(Text())
-        if options.type == _CloudProviderType.AWS:
-            out.append(self._format_aws_storages(options.storages))  # type: ignore
-        elif options.type == _CloudProviderType.GCP:
-            out.append(self._format_google_storages(options.storages))  # type: ignore
-        elif options.type == _CloudProviderType.AZURE:
-            out.append(self._format_azure_storages(options.storages))  # type: ignore
-        else:
-            out.pop()
         return RichGroup(*out)
 
     def _gpu(self, node_pool: _NodePoolOptions) -> str:
         if node_pool.gpu:
             return f"{node_pool.gpu} x {node_pool.gpu_model}"
         return ""
-
-    def _format_aws_storages(self, storages: Iterable[_AWSStorageOptions]) -> Table:
-        table = Table(
-            Column("Id"),
-            Column("Performance"),
-            Column("Throughput"),
-            box=box.SIMPLE_HEAVY,
-            show_edge=False,
-            title="Available storages:",
-            title_justify="left",
-            title_style="bold italic",
-        )
-        for s in storages:
-            table.add_row(s.id, s.performance_mode, s.throughput_mode)
-        return table
-
-    def _format_google_storages(
-        self, storages: Iterable[_GoogleStorageOptions]
-    ) -> Table:
-        table = Table(
-            Column("Id"),
-            Column("Tier"),
-            Column("Capacity"),
-            box=box.SIMPLE_HEAVY,
-            show_edge=False,
-            title="Available storages:",
-            title_justify="left",
-            title_style="bold italic",
-        )
-        for s in storages:
-            min_capacity = format_size(s.min_capacity)
-            max_capacity = format_size(s.max_capacity)
-            table.add_row(s.id, s.tier.capitalize(), f"{min_capacity} - {max_capacity}")
-        return table
-
-    def _format_azure_storages(self, storages: Iterable[_AzureStorageOptions]) -> Table:
-        table = Table(
-            Column("Id"),
-            Column("Tier"),
-            Column("Replication"),
-            Column("Capacity"),
-            box=box.SIMPLE_HEAVY,
-            show_edge=False,
-            title="Available storages:",
-            title_justify="left",
-            title_style="bold italic",
-        )
-        for s in storages:
-            min_capacity = format_size(s.min_file_share_size)
-            max_capacity = format_size(s.max_file_share_size)
-            table.add_row(
-                s.id,
-                s.tier.capitalize(),
-                s.replication_type,
-                f"{min_capacity} - {max_capacity}",
-            )
-        return table
 
 
 class ProjectsFormatter:
