@@ -139,7 +139,7 @@ class S3Provider(MeasureTimeDiffMixin, BucketProvider):
         # fingerprint and ssl parameters are mutually exclusive`.
         #
         ssl_context = ssl.create_default_context()
-        ssl_context.load_verify_locations(capath=certifi.where())
+        ssl_context.load_verify_locations(cadata=certifi.contents())
         # config = AioConfig(connector_args={"ssl_context": ssl_context})
         config = AioConfig(max_pool_connections=100)
 
