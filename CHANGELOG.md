@@ -5,6 +5,18 @@
 
 [comment]: # (towncrier release notes start)
 
+# Apolo SDK/CLI 24.12.1 (2024-12-18)
+
+### Features
+
+- Added cluster-bound apps configuration into the SDK. ([#3142](https://github.com/neuro-inc/neuro-cli/issues/3142))
+- Prefer `.apolo` configuration folder and `.apoloignore` files and folders over old `.neuro` based names; old names are still supported. ([#3145](https://github.com/neuro-inc/neuro-cli/issues/3145))
+
+### Bugfixes
+
+- Stop using deprecated `ssl.PROTOCOL_TLS` in favor of `ssl.PROTOCOL_TLS_CLIENT` ([#3146](https://github.com/neuro-inc/neuro-cli/issues/3146))
+
+
 # Apolo SDK/CLI 24.12.1 (2024-12-16)
 
 ### Features
