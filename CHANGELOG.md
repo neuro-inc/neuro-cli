@@ -5,22 +5,24 @@
 
 [comment]: # (towncrier release notes start)
 
-# Apolo SDK/CLI 24.12.1 (2024-12-18)
-
-### Features
-
-- Added cluster-bound apps configuration into the SDK. ([#3142](https://github.com/neuro-inc/neuro-cli/issues/3142))
-- Prefer `.apolo` configuration folder and `.apoloignore` files and folders over old `.neuro` based names; old names are still supported. ([#3145](https://github.com/neuro-inc/neuro-cli/issues/3145))
+# Apolo SDK/CLI 24.12.3 (2024-12-19)
 
 ### Bugfixes
 
-- Stop using deprecated `ssl.PROTOCOL_TLS` in favor of `ssl.PROTOCOL_TLS_CLIENT` ([#3146](https://github.com/neuro-inc/neuro-cli/issues/3146))
+- Fix S3 acceess by dropping aiobotocore patching and using public API instead. ([#3155](https://github.com/neuro-inc/neuro-cli/issues/3155))
+
+
+# Apolo SDK/CLI 24.12.2 (2024-12-18)
+
+No significant changes.
 
 
 # Apolo SDK/CLI 24.12.1 (2024-12-16)
 
 ### Features
 
+- Added cluster-bound apps configuration into the SDK. ([#3142](https://github.com/neuro-inc/neuro-cli/issues/3142))
+- Prefer `.apolo` configuration folder and `.apoloignore` files and folders over old `.neuro` based names; old names are still supported. ([#3145](https://github.com/neuro-inc/neuro-cli/issues/3145))
 - Balance is no longer stored on a cluster level, and was moved to an organization level, e.g.,
   to an org itself, and to an org users, instead of a cluster / cluster users.
 
@@ -33,6 +35,10 @@
 	- `apolo admin add-user-credits` cmd is now expecting an org name instead of a cluster name.
 	- `apolo admin set-org-cluster-credits` was removed in a favor of an `apolo admin set-org-credits`.
 	- `apolo admin add-org-cluster-credits` was removed in a favor of an `apolo admin add-org-credits`. ([#3137](https://github.com/neuro-inc/neuro-cli/issues/3137))
+
+### Bugfixes
+
+- Stop using deprecated `ssl.PROTOCOL_TLS` in favor of `ssl.PROTOCOL_TLS_CLIENT` ([#3146](https://github.com/neuro-inc/neuro-cli/issues/3146))
 
 
 # Apolo SDK/CLI 24.11.4 (2024-11-22)
